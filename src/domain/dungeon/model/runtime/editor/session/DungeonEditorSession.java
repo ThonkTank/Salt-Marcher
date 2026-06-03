@@ -1,7 +1,7 @@
-package src.domain.dungeon.model.worldspace.session.model;
+package src.domain.dungeon.model.runtime.editor.session;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 
 public record DungeonEditorSession(
         @Nullable MapId selectedMapId,

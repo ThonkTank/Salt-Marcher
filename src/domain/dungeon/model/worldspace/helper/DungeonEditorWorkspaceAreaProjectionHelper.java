@@ -6,7 +6,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonMapFacts;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorWorkspaceAreaProjectionHelper {
     public List<DungeonEditorWorkspaceValues.Area> project(DungeonMapFacts safeFacts) {

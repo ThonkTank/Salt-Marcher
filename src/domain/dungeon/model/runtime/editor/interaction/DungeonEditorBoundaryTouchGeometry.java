@@ -1,17 +1,17 @@
-package src.domain.dungeon.model.worldspace.interaction.model;
+package src.domain.dungeon.model.runtime.editor.interaction;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellKey;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.TravelHeading;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryRoomTouch;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Area;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Cell;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Edge;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.CellKey;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.TravelHeading;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.BoundaryRoomTouch;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Area;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Cell;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Edge;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 
 public record DungeonEditorBoundaryTouchGeometry(Cell start, Cell end) {
 

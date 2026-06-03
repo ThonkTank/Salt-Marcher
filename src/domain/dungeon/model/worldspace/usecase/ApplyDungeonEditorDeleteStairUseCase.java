@@ -3,9 +3,9 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.Objects;
 import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorMainViewPointerTarget;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorMainViewPointerTarget;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorDeleteStairUseCase {

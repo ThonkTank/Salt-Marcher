@@ -1,7 +1,7 @@
-package src.domain.dungeon.model.worldspace.interaction.model;
+package src.domain.dungeon.model.runtime.editor.interaction;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 
 public record DungeonEditorMainViewEffect(
         DungeonEditorSessionValues.@Nullable Selection selection,

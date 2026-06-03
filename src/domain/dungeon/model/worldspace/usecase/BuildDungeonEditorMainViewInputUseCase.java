@@ -1,8 +1,8 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorMainViewInput;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorMainViewPointerTarget;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorMainViewInput;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorMainViewPointerTarget;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.worldspace.DungeonEditorHandleType;
 import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;

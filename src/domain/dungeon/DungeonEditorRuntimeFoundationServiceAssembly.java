@@ -12,12 +12,12 @@ final class DungeonEditorRuntimeFoundationServiceAssembly {
             DungeonAuthoredPublishedStateServiceAssembly publishedState,
             DungeonEditorPublishedStateServiceAssembly editorPublishedState
     ) {
-        src.domain.dungeon.model.worldspace.session.model.DungeonEditorDungeonState dungeonState =
-                new src.domain.dungeon.model.worldspace.session.model.DungeonEditorDungeonState();
+        src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState dungeonState =
+                new src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState();
         DungeonEditorAuthoredUseCasesServiceAssembly.AuthoredUseCases authoredUseCases =
                 DungeonEditorAuthoredUseCasesServiceAssembly.create(registry, publishedState, dungeonState);
-        src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow workflow =
-                new src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow();
+        src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow workflow =
+                new src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow();
         src.domain.dungeon.model.worldspace.usecase.InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter =
                 new src.domain.dungeon.model.worldspace.usecase.InterpretDungeonEditorMainViewInputUseCase();
         src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorSnapshotUseCase snapshotBuilder =
@@ -48,8 +48,8 @@ final class DungeonEditorRuntimeFoundationServiceAssembly {
 
     record RuntimeFoundation(
             DungeonEditorAuthoredUseCasesServiceAssembly.AuthoredUseCases authoredUseCases,
-            src.domain.dungeon.model.worldspace.session.model.DungeonEditorDungeonState dungeonState,
-            src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow workflow,
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState dungeonState,
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow workflow,
             src.domain.dungeon.model.worldspace.usecase.InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
             src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorSnapshotUseCase snapshotBuilder,
             src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase,

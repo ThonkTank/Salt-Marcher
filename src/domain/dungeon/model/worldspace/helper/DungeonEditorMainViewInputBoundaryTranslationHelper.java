@@ -1,13 +1,13 @@
 package src.domain.dungeon.model.worldspace.helper;
 
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.VertexTarget;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.HandleTarget;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.HitTarget;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.HitKind;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorMainViewPointerTarget;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.VertexTarget;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.BoundaryTarget;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.HandleTarget;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.HitTarget;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.HitKind;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorMainViewPointerTarget;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
 
 public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
@@ -139,12 +139,12 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
         return HitKind.EMPTY;
     }
 
-    private static src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellTarget toCellTarget(
+    private static src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.CellTarget toCellTarget(
             DungeonEditorWorkspaceValues.Cell cell
     ) {
         DungeonEditorWorkspaceValues.Cell safeCell =
                 cell == null ? DungeonEditorWorkspaceValues.Cell.empty() : cell;
-        return new src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellTarget(
+        return new src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.CellTarget(
                 safeCell.q(),
                 safeCell.r(),
                 safeCell.level());

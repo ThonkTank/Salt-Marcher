@@ -3,7 +3,7 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.Objects;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonStairShape;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorCreateStairUseCase {

@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace.session.model;
+package src.domain.dungeon.model.runtime.editor.session;
 
 final class DungeonEditorSessionWorkflowState {
     private DungeonEditorSession current = DungeonEditorSession.empty();

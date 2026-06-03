@@ -1,7 +1,7 @@
 package src.domain.dungeon;
 
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionSnapshot;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.worldspace.usecase.DungeonEditorSnapshotPublication;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;

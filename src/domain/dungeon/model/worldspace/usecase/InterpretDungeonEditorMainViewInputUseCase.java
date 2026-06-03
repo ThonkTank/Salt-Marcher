@@ -2,13 +2,13 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorMainViewInputBoundaryTranslationHelper;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionState;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.PointerState;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInterpretation;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorMainViewInput;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionState;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInterpretation;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorMainViewInput;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class InterpretDungeonEditorMainViewInputUseCase {

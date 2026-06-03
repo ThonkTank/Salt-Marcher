@@ -1,7 +1,6 @@
-package src.domain.dungeon.model.worldspace.session.model;
+package src.domain.dungeon.model.runtime.editor.session;
 
 import java.util.List;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 
 public record DungeonEditorRoomNarrationInput(
         long roomId,

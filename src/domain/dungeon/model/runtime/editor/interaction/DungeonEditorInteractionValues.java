@@ -1,8 +1,8 @@
-package src.domain.dungeon.model.worldspace.interaction.model;
+package src.domain.dungeon.model.runtime.editor.interaction;
 
 import java.util.Comparator;
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorInteractionValues {
 

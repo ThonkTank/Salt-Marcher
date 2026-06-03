@@ -6,12 +6,12 @@ import src.domain.dungeon.model.worldspace.helper.DungeonEditorWorkspaceAreaProj
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorWorkspaceBoundaryProjectionHelper;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorWorkspaceFeatureProjectionHelper;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorWorkspaceHandleProjectionHelper;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorDungeonState;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonEditorHandleFacts;
 import src.domain.dungeon.model.worldspace.DungeonMapFacts;
 import src.domain.dungeon.model.worldspace.DungeonTopology;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository;
 
 public final class DungeonEditorAuthoredPublicationUseCase {

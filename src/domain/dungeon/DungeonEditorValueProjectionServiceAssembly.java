@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorViewMode;
 
@@ -37,7 +37,7 @@ final class DungeonEditorValueProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonEditorHandleRef handleRef(
-            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.HandleRef handleRef
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.HandleRef handleRef
     ) {
         if (handleRef == null) {
             return src.domain.dungeon.published.DungeonEditorHandleRef.empty();
@@ -61,18 +61,18 @@ final class DungeonEditorValueProjectionServiceAssembly {
     }
 
     static List<src.domain.dungeon.published.DungeonCellRef> cells(
-            List<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Cell> cells
+            List<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Cell> cells
     ) {
         List<src.domain.dungeon.published.DungeonCellRef> result = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Cell cell
-                : cells == null ? List.<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Cell>of() : cells) {
+        for (src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Cell cell
+                : cells == null ? List.<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Cell>of() : cells) {
             result.add(cell(cell));
         }
         return List.copyOf(result);
     }
 
     static src.domain.dungeon.published.DungeonCellRef cell(
-            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Cell mapCell
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Cell mapCell
     ) {
         return mapCell == null
                 ? new src.domain.dungeon.published.DungeonCellRef(0, 0, 0)
@@ -80,7 +80,7 @@ final class DungeonEditorValueProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonEdgeRef edge(
-            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Edge mapEdge
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Edge mapEdge
     ) {
         if (mapEdge == null) {
             return new src.domain.dungeon.published.DungeonEdgeRef(

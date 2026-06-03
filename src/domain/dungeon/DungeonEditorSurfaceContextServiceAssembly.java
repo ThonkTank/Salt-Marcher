@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
 
 final class DungeonEditorSurfaceContextServiceAssembly {
@@ -32,25 +32,25 @@ final class DungeonEditorSurfaceContextServiceAssembly {
 
     private static void addWorkspaceMapLevels(
             SortedSet<Integer> levels,
-            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot map
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot map
     ) {
-        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Area area : map.areas()) {
+        for (src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Area area : map.areas()) {
             addWorkspaceCellLevels(levels, area.cells());
         }
-        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Feature feature : map.features()) {
+        for (src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Feature feature : map.features()) {
             addWorkspaceCellLevels(levels, feature.cells());
         }
-        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Handle handle : map.editorHandles()) {
+        for (src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Handle handle : map.editorHandles()) {
             levels.add(handle.cell().level());
         }
     }
 
     private static void addWorkspaceCellLevels(
             SortedSet<Integer> levels,
-            List<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Cell> cells
+            List<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Cell> cells
     ) {
-        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Cell cell
-                : cells == null ? List.<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Cell>of() : cells) {
+        for (src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Cell cell
+                : cells == null ? List.<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Cell>of() : cells) {
             levels.add(cell.level());
         }
     }

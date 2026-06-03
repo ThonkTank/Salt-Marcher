@@ -1,9 +1,8 @@
-package src.domain.dungeon.model.worldspace.session.model;
+package src.domain.dungeon.model.runtime.editor.session;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
 
 public final class DungeonEditorSessionWorkflow {
     public static final String MAP_CREATED = "CREATED";

@@ -6,12 +6,12 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionSnapshot;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Area;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Cell;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Feature;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Handle;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Area;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Cell;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Feature;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Handle;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 
 public interface DungeonEditorSnapshotProjectionLevelProjectionHelper {
 

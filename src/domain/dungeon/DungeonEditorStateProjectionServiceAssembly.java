@@ -3,7 +3,7 @@ package src.domain.dungeon;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.published.DungeonEditorSurface;
 
 final class DungeonEditorStateProjectionServiceAssembly {
@@ -12,7 +12,7 @@ final class DungeonEditorStateProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonEditorStateSnapshot snapshot(
-            src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionSnapshot.SnapshotData snapshot,
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot.SnapshotData snapshot,
             @Nullable DungeonEditorSurface surface
     ) {
         return new src.domain.dungeon.published.DungeonEditorStateSnapshot(
@@ -77,11 +77,11 @@ final class DungeonEditorStateProjectionServiceAssembly {
     }
 
     private static List<src.domain.dungeon.published.DungeonEdgeRef> edges(
-            List<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Edge> edges
+            List<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Edge> edges
     ) {
         List<src.domain.dungeon.published.DungeonEdgeRef> result = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Edge edge
-                : edges == null ? List.<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Edge>of() : edges) {
+        for (src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Edge edge
+                : edges == null ? List.<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Edge>of() : edges) {
             result.add(DungeonEditorValueProjectionServiceAssembly.edge(edge));
         }
         return List.copyOf(result);

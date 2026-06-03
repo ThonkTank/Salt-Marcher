@@ -1,9 +1,8 @@
-package src.domain.dungeon.model.worldspace.session.model;
+package src.domain.dungeon.model.runtime.editor.session;
 
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 
 public final class DungeonEditorSessionValues {

@@ -1,9 +1,9 @@
 package src.domain.dungeon.model.worldspace.helper;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorBoundaryTouchGeometry;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.BoundaryTarget;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorBoundaryTouchGeometry;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.BoundaryTarget;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorBoundaryRoomTouchHelper {
 

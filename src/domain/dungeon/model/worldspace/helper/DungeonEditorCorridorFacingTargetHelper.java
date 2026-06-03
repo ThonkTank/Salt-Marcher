@@ -3,11 +3,11 @@ package src.domain.dungeon.model.worldspace.helper;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellKey;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.TravelHeading;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.CellKey;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.TravelHeading;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorCorridorFacingTargetHelper {
 

@@ -5,10 +5,10 @@ import java.util.Optional;
 import src.domain.dungeon.model.worldspace.DungeonEditorHandleType;
 import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
 public final class MoveDungeonEditorHandleUseCase {
     private final DungeonEditorSessionWorkflow workflow;

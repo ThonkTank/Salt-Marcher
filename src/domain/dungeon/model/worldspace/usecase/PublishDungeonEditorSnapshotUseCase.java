@@ -1,8 +1,8 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSession;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSession;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 
 public final class PublishDungeonEditorSnapshotUseCase {
     private final DungeonEditorSnapshotPublication publication;

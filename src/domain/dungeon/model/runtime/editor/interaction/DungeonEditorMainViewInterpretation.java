@@ -1,6 +1,6 @@
-package src.domain.dungeon.model.worldspace.interaction.model;
+package src.domain.dungeon.model.runtime.editor.interaction;
 
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.InteractionState;
 
 public record DungeonEditorMainViewInterpretation(
         InteractionState nextState,

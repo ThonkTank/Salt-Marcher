@@ -1,7 +1,7 @@
 package src.domain.dungeon.model.worldspace.helper;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSession;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSession;
 
 public interface DungeonEditorSnapshotStateProjectionHelper {
 

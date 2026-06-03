@@ -1,7 +1,7 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.worldspace.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorCreateCorridorUseCase {

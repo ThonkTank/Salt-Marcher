@@ -1,11 +1,11 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.DragSession;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.InteractionState;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInterpretation;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.DragSession;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.InteractionState;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInterpretation;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 
 final class InterpretDungeonEditorMainViewScrollUseCase {
 

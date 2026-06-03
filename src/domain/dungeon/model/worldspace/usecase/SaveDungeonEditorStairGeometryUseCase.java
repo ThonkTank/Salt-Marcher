@@ -3,7 +3,7 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.Locale;
 import java.util.Objects;
 import src.domain.dungeon.model.worldspace.DungeonStairShape;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 
 public final class SaveDungeonEditorStairGeometryUseCase {
     private static final String INVALID_STAIR_GEOMETRY_STATUS = "Treppengeometrie ungueltig.";

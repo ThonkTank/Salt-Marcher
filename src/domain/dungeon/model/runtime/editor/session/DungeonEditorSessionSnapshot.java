@@ -1,11 +1,10 @@
-package src.domain.dungeon.model.worldspace.session.model;
+package src.domain.dungeon.model.runtime.editor.session;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Inspector;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapId;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Inspector;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 
 public final class DungeonEditorSessionSnapshot {
 

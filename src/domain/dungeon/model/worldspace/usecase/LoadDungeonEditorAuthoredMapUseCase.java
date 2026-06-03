@@ -1,7 +1,7 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 

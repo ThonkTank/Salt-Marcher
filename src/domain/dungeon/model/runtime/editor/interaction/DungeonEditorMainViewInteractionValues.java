@@ -1,16 +1,16 @@
-package src.domain.dungeon.model.worldspace.interaction.model;
+package src.domain.dungeon.model.runtime.editor.interaction;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellKey;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellTarget;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.TravelHeading;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.VertexKey;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.VertexTarget;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.CellKey;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.CellTarget;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.TravelHeading;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.VertexKey;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.VertexTarget;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchOrientation;
 import src.domain.dungeon.model.worldspace.DungeonEditorHandleType;
 import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;

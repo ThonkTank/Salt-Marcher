@@ -5,7 +5,7 @@ import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 
 public final class CreateDungeonEditorAuthoredTransitionUseCase {
 

@@ -2,11 +2,11 @@ package src.domain.dungeon.model.worldspace.helper;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.CellKey;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.TravelHeading;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorInteractionValues.VertexKey;
-import src.domain.dungeon.model.worldspace.interaction.model.DungeonEditorMainViewInteractionValues.EdgeKey;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.CellKey;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.TravelHeading;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.VertexKey;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.EdgeKey;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorBoundaryEdgesHelper {
     public Set<EdgeKey> internal(Set<CellKey> cells) {

@@ -10,7 +10,7 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
     static AuthoredUseCases create(
             ServiceRegistry registry,
             DungeonAuthoredPublishedStateServiceAssembly publishedState,
-            src.domain.dungeon.model.worldspace.session.model.DungeonEditorDungeonState dungeonState
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState dungeonState
     ) {
         src.domain.dungeon.model.worldspace.usecase.ApplyDungeonMapCatalogUseCase catalogUseCase = mapCatalogUseCase(registry);
         src.domain.dungeon.model.worldspace.usecase.LoadDungeonSnapshotUseCase loadSnapshotUseCase = loadDungeonSnapshotUseCase(registry);

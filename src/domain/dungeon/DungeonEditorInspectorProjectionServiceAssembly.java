@@ -9,7 +9,7 @@ final class DungeonEditorInspectorProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonInspectorSnapshot inspector(
-            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Inspector inspector
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Inspector inspector
     ) {
         if (inspector == null) {
             return null;
@@ -22,21 +22,21 @@ final class DungeonEditorInspectorProjectionServiceAssembly {
     }
 
     private static List<src.domain.dungeon.published.DungeonInspectorSnapshot.RoomNarrationCard> cards(
-            List<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomNarrationCard> cards
+            List<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomNarrationCard> cards
     ) {
         List<src.domain.dungeon.published.DungeonInspectorSnapshot.RoomNarrationCard> result = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomNarrationCard card
-                : cards == null ? List.<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomNarrationCard>of() : cards) {
+        for (src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomNarrationCard card
+                : cards == null ? List.<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomNarrationCard>of() : cards) {
             result.add(card(card));
         }
         return List.copyOf(result);
     }
 
     private static src.domain.dungeon.published.DungeonInspectorSnapshot.RoomNarrationCard card(
-            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomNarrationCard card
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomNarrationCard card
     ) {
-        src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomNarrationCard safeCard = card == null
-                ? new src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomNarrationCard(0L, "Raum", "", List.of())
+        src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomNarrationCard safeCard = card == null
+                ? new src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomNarrationCard(0L, "Raum", "", List.of())
                 : card;
         return new src.domain.dungeon.published.DungeonInspectorSnapshot.RoomNarrationCard(
                 safeCard.roomId(),
@@ -46,23 +46,23 @@ final class DungeonEditorInspectorProjectionServiceAssembly {
     }
 
     private static List<src.domain.dungeon.published.DungeonInspectorSnapshot.RoomExitNarration> exits(
-            List<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomExitNarration> exits
+            List<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomExitNarration> exits
     ) {
         List<src.domain.dungeon.published.DungeonInspectorSnapshot.RoomExitNarration> result = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomExitNarration exit
-                : exits == null ? List.<src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomExitNarration>of() : exits) {
+        for (src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomExitNarration exit
+                : exits == null ? List.<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomExitNarration>of() : exits) {
             result.add(exit(exit));
         }
         return List.copyOf(result);
     }
 
     private static src.domain.dungeon.published.DungeonInspectorSnapshot.RoomExitNarration exit(
-            src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomExitNarration exit
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomExitNarration exit
     ) {
-        src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomExitNarration safeExit = exit == null
-                ? new src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.RoomExitNarration(
+        src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomExitNarration safeExit = exit == null
+                ? new src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.RoomExitNarration(
                         "",
-                        src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.Cell.empty(),
+                        src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Cell.empty(),
                         "",
                         "")
                 : exit;

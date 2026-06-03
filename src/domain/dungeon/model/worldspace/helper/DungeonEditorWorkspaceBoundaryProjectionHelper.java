@@ -7,7 +7,7 @@ import src.domain.dungeon.model.worldspace.DungeonBoundaryFacts;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonEdge;
 import src.domain.dungeon.model.worldspace.DungeonMapFacts;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorWorkspaceBoundaryProjectionHelper {
     public List<DungeonEditorWorkspaceValues.Boundary> project(DungeonMapFacts safeFacts) {

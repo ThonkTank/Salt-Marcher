@@ -5,14 +5,14 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorSnapshotProjectionLevelProjectionHelper;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorSnapshotStateProjectionHelper;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorDungeonFacts;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorDungeonState;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSession;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionSnapshot;
-import src.domain.dungeon.model.worldspace.session.model.DungeonEditorSessionValues;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapId;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSnapshot;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues.MapSummary;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonFacts;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSession;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSummary;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 
 public final class BuildDungeonEditorSnapshotUseCase {

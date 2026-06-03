@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace.session.model;
+package src.domain.dungeon.model.runtime.editor.session;
 
 public final class DungeonEditorMainViewInput {
     private final double canvasX;

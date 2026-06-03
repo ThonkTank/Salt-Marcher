@@ -1,6 +1,5 @@
-package src.domain.dungeon.model.worldspace.session.model;
+package src.domain.dungeon.model.runtime.editor.session;
 
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
 import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 

@@ -6,7 +6,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonEditorHandle;
 import src.domain.dungeon.model.worldspace.DungeonEditorHandleFacts;
-import src.domain.dungeon.model.worldspace.workspace.model.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorWorkspaceHandleProjectionHelper {
     public List<DungeonEditorWorkspaceValues.Handle> project(List<DungeonEditorHandleFacts> handles) {

@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace.workspace.model;
+package src.domain.dungeon.model.runtime.editor.session;
 
 import java.util.List;
 import java.util.Objects;
