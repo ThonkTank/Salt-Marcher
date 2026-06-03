@@ -108,31 +108,22 @@ public record DungeonMap(
         if (transitionId <= NO_TRANSITION_ID) {
             return this;
         }
-        List<DungeonTransition> nextTransitions = new ArrayList<>();
-        boolean changed = false;
-        for (DungeonTransition transition : connections.transitions()) {
-            if (transition.transitionId() == transitionId) {
-                nextTransitions.add(transition.withDescription(description));
-                changed = true;
-            } else {
-                nextTransitions.add(transition);
-            }
-        }
-        return changed
-                ? new DungeonMap(
+        ConnectionCatalog nextConnections = connections.withTransitionDescription(transitionId, description);
+        return nextConnections.equals(connections)
+                ? this
+                : new DungeonMap(
                         metadata,
                         topology,
                         topologyIndex,
                         spaces,
                         rooms,
-                        new ConnectionCatalog(connections.corridors(), connections.stairs(), nextTransitions),
+                        nextConnections,
                         features,
-                        revision + 1L)
-                : this;
+                        revision + 1L);
     }
 
     public boolean canDeleteTransition(long transitionId) {
-        return DungeonTransitionCatalogCoreAdapter.canDelete(connections.transitions(), transitionId);
+        return connections.canDeleteTransition(transitionId);
     }
 
     public @Nullable DungeonTransition transitionById(long transitionId) {
@@ -166,16 +157,14 @@ public record DungeonMap(
         if (!canDeleteTransition(transitionId)) {
             return this;
         }
-        List<DungeonTransition> nextTransitions = DungeonTransitionCatalogCoreAdapter.withoutTransition(
-                connections.transitions(),
-                transitionId);
+        ConnectionCatalog nextConnections = connections.withoutTransition(transitionId);
         return new DungeonMap(
                 metadata,
                 topology,
                 null,
                 spaces,
                 rooms,
-                new ConnectionCatalog(connections.corridors(), connections.stairs(), nextTransitions),
+                nextConnections,
                 features,
                 revision + 1L);
     }

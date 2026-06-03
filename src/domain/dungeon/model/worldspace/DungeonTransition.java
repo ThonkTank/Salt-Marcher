@@ -36,10 +36,6 @@ public record DungeonTransition(
         return coreTransition().isPlaced();
     }
 
-    public DungeonTransition withDescription(String nextDescription) {
-        return fromCore(coreTransition().withDescription(nextDescription));
-    }
-
     Transition coreTransition() {
         return coreTransition(transitionId, mapId, description, anchor, destination, linkedTransitionId);
     }

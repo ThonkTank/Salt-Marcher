@@ -52,6 +52,22 @@ public record TransitionCatalog(List<Transition> transitions) {
         return new TransitionCatalog(result);
     }
 
+    public TransitionCatalog withDescription(long transitionId, String description) {
+        if (transitionId <= NO_TRANSITION_ID) {
+            return this;
+        }
+        List<Transition> result = new ArrayList<>();
+        boolean changed = false;
+        for (Transition transition : transitions) {
+            Transition nextTransition = transition.transitionId() == transitionId
+                    ? transition.withDescription(description)
+                    : transition;
+            result.add(nextTransition);
+            changed = changed || !nextTransition.equals(transition);
+        }
+        return changed ? new TransitionCatalog(result) : this;
+    }
+
     public TransitionCatalog withMapLocalAuthoredTransitionLink(AuthoredTransitionLink link) {
         if (!link.isValid()) {
             return this;

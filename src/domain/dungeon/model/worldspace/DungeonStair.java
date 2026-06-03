@@ -7,7 +7,6 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.stair.Stair;
-import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
 
 public record DungeonStair(
@@ -63,57 +62,8 @@ public record DungeonStair(
         return core().isReadable();
     }
 
-    DungeonStair withRecomputedGeometry(
-            DungeonStairShape shape,
-            DungeonCell anchor,
-            DungeonEdgeDirection direction,
-            int dimension1,
-            int dimension2
-    ) {
-        return fromCore(core().withRecomputedGeometry(new StairGeometrySpec(
-                coreShape(shape),
-                anchor.geometry(),
-                direction.geometry(),
-                dimension1,
-                dimension2)));
-    }
-
     DungeonStair withMovedHandle(int handleIndex, int deltaQ, int deltaR, int deltaLevel) {
         return fromCore(core().withMovedHandle(handleIndex, deltaQ, deltaR, deltaLevel));
-    }
-
-    static DungeonStair authored(
-            long stairId,
-            long mapId,
-            DungeonStairShape shape,
-            DungeonCell anchor
-    ) {
-        int dimension1 = shape.defaultEditorDimension1();
-        int dimension2 = shape.defaultEditorDimension2();
-        return fromCore(Stair.authored(
-                stairId,
-                mapId,
-                new StairGeometrySpec(
-                        coreShape(shape),
-                        anchor.geometry(),
-                        Direction.NORTH,
-                        dimension1,
-                        dimension2)));
-    }
-
-    static DungeonStair corridorBound(
-            long stairId,
-            long mapId,
-            long corridorId,
-            List<DungeonCell> path,
-            DungeonCell upperExit
-    ) {
-        return fromCore(Stair.corridorBound(
-                stairId,
-                mapId,
-                corridorId,
-                DungeonStairGeometryValues.coreCells(path),
-                upperExit.geometry()));
     }
 
     Stair core() {
@@ -130,7 +80,7 @@ public record DungeonStair(
                 corridorId());
     }
 
-    private static DungeonStair fromCore(Stair stair) {
+    static DungeonStair fromCore(Stair stair) {
         return new DungeonStair(
                 stair.stairId(),
                 stair.mapId(),

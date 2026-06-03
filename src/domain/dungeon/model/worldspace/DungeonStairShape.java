@@ -30,10 +30,6 @@ public enum DungeonStairShape {
         return core().defaultEditorDimension2();
     }
 
-    public int normalizedEditorDimension1(int dimension1) {
-        return core().normalizedEditorDimension1(dimension1);
-    }
-
     public static DungeonStairShape parse(String value) {
         if (value == null || value.isBlank()) {
             return defaultShape();
