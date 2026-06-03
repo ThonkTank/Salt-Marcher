@@ -144,17 +144,21 @@ public record DungeonMap(
         return null;
     }
 
-    public DungeonMap withTransition(DungeonTransition replacement) {
-        List<DungeonTransition> nextTransitions = DungeonTransitionCatalogCoreAdapter.withTransition(
+    public DungeonMap withMapLocalAuthoredTransitionLink(
+            long sourceMapId,
+            long sourceTransitionId,
+            long targetMapId,
+            long targetTransitionId,
+            boolean bidirectional
+    ) {
+        List<DungeonTransition> nextTransitions = DungeonTransitionCatalogCoreAdapter.withMapLocalAuthoredTransitionLink(
                 connections.transitions(),
-                replacement);
-        return nextTransitions.equals(connections.transitions()) ? this : withTransitions(nextTransitions);
-    }
-
-    public DungeonMap withoutReverseLinksToTransition(long transitionId) {
-        List<DungeonTransition> nextTransitions = DungeonTransitionCatalogCoreAdapter.withoutReverseLinksTo(
-                connections.transitions(),
-                transitionId);
+                DungeonTransitionCatalogCoreAdapter.authoredTransitionLink(
+                        sourceMapId,
+                        sourceTransitionId,
+                        targetMapId,
+                        targetTransitionId,
+                        bidirectional));
         return nextTransitions.equals(connections.transitions()) ? this : withTransitions(nextTransitions);
     }
 

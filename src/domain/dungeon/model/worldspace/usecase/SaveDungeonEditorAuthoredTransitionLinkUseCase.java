@@ -6,6 +6,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
@@ -54,22 +57,14 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
             return false;
         }
         Map<Long, DungeonMap> pendingMaps = loadedMaps(loaded.sourceMap(), loaded.targetMap(), loaded.sourceTransition());
-        replacePendingTransition(
+        applyAuthoredTransitionLinkToLoadedMaps(
                 pendingMaps,
-                loaded.sourceIdentity().value(),
-                loaded.sourceTransition().withDestination(
-                        DungeonTransitionDestination.dungeonMapDestination(targetMapId, targetTransitionId)));
-        clearReverseLinksToSource(pendingMaps, loaded.sourceTransition().transitionId());
-        if (bidirectional) {
-            DungeonTransition pendingTargetTransition = Objects.requireNonNull(
-                    pendingMaps.get(loaded.targetIdentity().value()),
-                    "targetMap").transitionById(targetTransitionId);
-            replacePendingTransition(
-                    pendingMaps,
-                    loaded.targetIdentity().value(),
-                    Objects.requireNonNull(pendingTargetTransition, "targetTransition")
-                            .withLinkedTransitionId(loaded.sourceTransition().transitionId()));
-        }
+                authoredTransitionLink(
+                        loaded.sourceIdentity().value(),
+                        loaded.sourceTransition().transitionId(),
+                        loaded.targetIdentity().value(),
+                        targetTransitionId,
+                        bidirectional));
         List<DungeonMap> savedMaps = repository.saveAll(List.copyOf(pendingMaps.values()));
         DungeonMap savedSourceMap = savedSourceMap(savedMaps, loaded.sourceIdentity().value());
         publish(savedSourceMap);
@@ -136,21 +131,31 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
                 : 0L;
     }
 
-    private void replacePendingTransition(
+    private void applyAuthoredTransitionLinkToLoadedMaps(
             Map<Long, DungeonMap> pendingMaps,
-            long mapId,
-            DungeonTransition replacement
+            AuthoredTransitionLink link
     ) {
-        DungeonMap map = pendingMaps.get(mapId);
-        if (map != null) {
-            pendingMaps.put(mapId, map.withTransition(replacement));
+        for (Map.Entry<Long, DungeonMap> entry : pendingMaps.entrySet()) {
+            entry.setValue(entry.getValue().withMapLocalAuthoredTransitionLink(
+                    link.source().mapId(),
+                    link.source().transitionId(),
+                    link.target().mapId(),
+                    link.target().transitionId(),
+                    link.directionality() == TransitionLinkDirectionality.BIDIRECTIONAL));
         }
     }
 
-    private void clearReverseLinksToSource(Map<Long, DungeonMap> pendingMaps, long sourceTransitionId) {
-        for (Map.Entry<Long, DungeonMap> entry : pendingMaps.entrySet()) {
-            entry.setValue(entry.getValue().withoutReverseLinksToTransition(sourceTransitionId));
-        }
+    private static AuthoredTransitionLink authoredTransitionLink(
+            long sourceMapId,
+            long sourceTransitionId,
+            long targetMapId,
+            long targetTransitionId,
+            boolean bidirectional
+    ) {
+        return new AuthoredTransitionLink(
+                new TransitionEndpoint(sourceMapId, sourceTransitionId),
+                new TransitionEndpoint(targetMapId, targetTransitionId),
+                bidirectional ? TransitionLinkDirectionality.BIDIRECTIONAL : TransitionLinkDirectionality.ONE_WAY);
     }
 
     private DungeonMap savedSourceMap(List<DungeonMap> savedMaps, long sourceMapId) {

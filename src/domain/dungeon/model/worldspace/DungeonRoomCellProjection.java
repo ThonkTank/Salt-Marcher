@@ -6,12 +6,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.CellLoopRasterizer;
+import src.domain.dungeon.model.core.geometry.CellLoopRasterizer.CellLoop;
 
 public final class DungeonRoomCellProjection {
 
     public static final DungeonCell LOOP_SEPARATOR = new DungeonCell(Integer.MIN_VALUE, Integer.MIN_VALUE, 0);
     private static final DungeonCellTraversalSupport TRAVERSAL_SUPPORT = new DungeonCellTraversalSupport();
-    private static final DungeonRoomCellRasterizer RASTERIZER = new DungeonRoomCellRasterizer();
 
     public Map<Long, List<DungeonCell>> cellsByRoom(
             DungeonRoomCluster cluster,
@@ -67,7 +69,10 @@ public final class DungeonRoomCellProjection {
     }
 
     public List<DungeonCell> relativeCellLoops(DungeonCell center, List<DungeonCell> cells) {
-        return RASTERIZER.relativeCellLoops(center, cells, LOOP_SEPARATOR);
+        if (center == null || cells == null || cells.isEmpty()) {
+            return List.of();
+        }
+        return flattenedDungeonCells(CellLoopRasterizer.relativeCellLoops(center.geometry(), coreCells(cells)));
     }
 
     private static Map<Long, List<DungeonCell>> normalizeCellsByRoom(Map<Long, List<DungeonCell>> source) {
@@ -94,7 +99,60 @@ public final class DungeonRoomCellProjection {
             int level,
             List<DungeonCell> relativeVertices
     ) {
-        return RASTERIZER.cellsFromRelativeVertices(center, level, relativeVertices, LOOP_SEPARATOR);
+        Set<DungeonCell> result = new LinkedHashSet<>();
+        for (Cell cell : CellLoopRasterizer.cellsFromRelativeVertices(
+                center.geometry(),
+                level,
+                coreLoops(relativeVertices))) {
+            result.add(DungeonCell.fromGeometry(cell));
+        }
+        return Set.copyOf(result);
+    }
+
+    private static List<CellLoop> coreLoops(List<DungeonCell> cells) {
+        List<CellLoop> loops = new ArrayList<>();
+        List<Cell> currentLoop = new ArrayList<>();
+        for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
+            if (LOOP_SEPARATOR.equals(cell)) {
+                if (!currentLoop.isEmpty()) {
+                    loops.add(new CellLoop(currentLoop));
+                    currentLoop = new ArrayList<>();
+                }
+                continue;
+            }
+            if (cell != null) {
+                currentLoop.add(cell.geometry());
+            }
+        }
+        if (!currentLoop.isEmpty()) {
+            loops.add(new CellLoop(currentLoop));
+        }
+        return List.copyOf(loops);
+    }
+
+    private static List<Cell> coreCells(List<DungeonCell> cells) {
+        List<Cell> result = new ArrayList<>();
+        for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
+            if (cell != null) {
+                result.add(cell.geometry());
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<DungeonCell> flattenedDungeonCells(List<CellLoop> loops) {
+        List<DungeonCell> result = new ArrayList<>();
+        List<CellLoop> safeLoops = loops == null ? List.of() : loops;
+        boolean separateLoops = safeLoops.size() > 1;
+        for (CellLoop loop : safeLoops) {
+            for (Cell cell : loop.vertices()) {
+                result.add(DungeonCell.fromGeometry(cell));
+            }
+            if (separateLoops) {
+                result.add(LOOP_SEPARATOR);
+            }
+        }
+        return List.copyOf(result);
     }
 
 }

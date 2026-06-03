@@ -5,6 +5,9 @@ import java.util.List;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 
 final class DungeonTransitionCatalogCoreAdapter {
 
@@ -43,19 +46,24 @@ final class DungeonTransitionCatalogCoreAdapter {
         return fromCoreCatalog(toCoreCatalog(transitions).withoutTransition(transitionId));
     }
 
-    static List<DungeonTransition> withTransition(
+    static List<DungeonTransition> withMapLocalAuthoredTransitionLink(
             List<DungeonTransition> transitions,
-            DungeonTransition replacement
+            AuthoredTransitionLink link
     ) {
-        return fromCoreCatalog(toCoreCatalog(transitions).withTransition(
-                replacement == null ? null : replacement.coreTransition()));
+        return fromCoreCatalog(toCoreCatalog(transitions).withMapLocalAuthoredTransitionLink(link));
     }
 
-    static List<DungeonTransition> withoutReverseLinksTo(
-            List<DungeonTransition> transitions,
-            long transitionId
+    static AuthoredTransitionLink authoredTransitionLink(
+            long sourceMapId,
+            long sourceTransitionId,
+            long targetMapId,
+            long targetTransitionId,
+            boolean bidirectional
     ) {
-        return fromCoreCatalog(toCoreCatalog(transitions).withoutReverseLinksTo(transitionId));
+        return new AuthoredTransitionLink(
+                new TransitionEndpoint(sourceMapId, sourceTransitionId),
+                new TransitionEndpoint(targetMapId, targetTransitionId),
+                bidirectional ? TransitionLinkDirectionality.BIDIRECTIONAL : TransitionLinkDirectionality.ONE_WAY);
     }
 
     private static TransitionCatalog toCoreCatalog(List<DungeonTransition> transitions) {

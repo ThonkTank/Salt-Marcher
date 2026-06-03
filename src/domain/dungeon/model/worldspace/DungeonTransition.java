@@ -40,18 +40,6 @@ public record DungeonTransition(
         return fromCore(coreTransition().withDescription(nextDescription));
     }
 
-    public DungeonTransition withDestination(DungeonTransitionDestination nextDestination) {
-        Transition nextTransition = coreTransition().withDestination(
-                (nextDestination == null
-                        ? DungeonTransitionDestination.overworldTileDestination(0L, 0L)
-                        : nextDestination).coreDestination());
-        return fromCore(nextTransition);
-    }
-
-    public DungeonTransition withLinkedTransitionId(@Nullable Long nextLinkedTransitionId) {
-        return fromCore(coreTransition().withLinkedTransitionId(nextLinkedTransitionId));
-    }
-
     Transition coreTransition() {
         return coreTransition(transitionId, mapId, description, anchor, destination, linkedTransitionId);
     }
