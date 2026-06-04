@@ -35,7 +35,9 @@ Required proof rows for this catalog must publish
 `OwnerSuite=DoorInvariantHarness`, `ProofType=ModelInvariant`, and the
 invariant id. If the first implementation routes proof through the existing
 aggregated dungeon harness surface, those fields still identify the Door
-family proof owner.
+family proof owner. The topology identity row may instead publish
+`OwnerSuite=TopologyInvariantHarness` because it proves Door identity through
+the `DungeonMap` topology coordination surface.
 
 ## Door Invariant Catalog
 
@@ -50,7 +52,7 @@ mechanics, while the target family owner remains unqualified.
 | `DGI-DOOR-002` | Door bounded collection or index | Door lookup and uniqueness are collection-wide invariants. | A boundary location maps to at most one local door identity inside the cluster scope. | Harness proves duplicate insertion normalizes or rejects and lookup by boundary returns the same local door identity. | Qualified by `OwnerSuite=DoorInvariantHarness`. | Persistence key shape and stable topology identity. |
 | `DGI-DOOR-003` | Door owner with Wall owner collaboration | Door materialization is not room-structure policy. | Door materialization consumes wall/floor facts to decide eligible door creation; invalid edges and existing doors are no-ops. | Harness proves single-room and split-room materialization eligibility plus existing-door rejection. | Qualified by `OwnerSuite=DoorInvariantHarness`. | Real View replacement route remains `DE-DOOR-*`. |
 | `DGI-DOOR-004` | Door owner with Corridor path owner collaboration | Corridor-bound doors are protected authored endpoints. | Door deletion is rejected when corridor/path bindings still reference the door; for unbound deletes, the Door owner exposes restored wall boundary state for the caller to apply. | Harness proves protected delete rejection, unbound removal, and restored wall boundary state through door owner APIs. | Qualified by `OwnerSuite=DoorInvariantHarness`. | Full corridor reroute behavior. |
-| `DGI-DOOR-005` | Door owner with `DungeonMap` topology coordination | Door identity remains map-stable. | Door operations preserve stable topology identity where the door survives and release it only when the door is removed. | Harness proves create, update, protected reject, and delete identity behavior. | Target | Topology graph migration. |
+| `DGI-DOOR-005` | Door owner with `DungeonMap` topology coordination | Door identity remains map-stable. | Door operations preserve stable topology identity where the door survives and release it only when the door is removed. | Harness proves create, update, protected reject, and delete identity behavior. | Qualified by `OwnerSuite=TopologyInvariantHarness`. | Topology graph migration. |
 
 ## References
 
