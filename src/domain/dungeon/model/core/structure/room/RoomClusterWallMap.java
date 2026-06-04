@@ -1,0 +1,74 @@
+package src.domain.dungeon.model.core.structure.room;
+
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.geometry.EdgeKey;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
+
+public final class RoomClusterWallMap {
+    private final Map<EdgeKey, BoundaryRow> rowsByKey;
+
+    public RoomClusterWallMap(@Nullable Cell center, Iterable<BoundaryRow> rows) {
+        Cell resolvedCenter = center == null ? new Cell(0, 0, 0) : center;
+        this.rowsByKey = RoomClusterWallRows.normalizeRows(resolvedCenter, rows);
+    }
+
+    private RoomClusterWallMap(Map<EdgeKey, BoundaryRow> rowsByKey) {
+        this.rowsByKey = RoomClusterWallRows.copyRowsByKey(rowsByKey);
+    }
+
+    public static RoomClusterWallMap fromKeyedRows(Map<EdgeKey, BoundaryRow> rowsByKey) {
+        return new RoomClusterWallMap(rowsByKey);
+    }
+
+    public Optional<RoomClusterBoundaryStretchPlan.Selection> stretchSelection(
+            RoomClusterFloorMap floorMap,
+            List<Edge> sourceEdges,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        return RoomClusterBoundaryStretchPlan.resolve(
+                floorMap == null ? List.of() : floorMap.allCells(),
+                sourceEdges,
+                rowsByKey,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof RoomClusterWallMap that
+                && rowsByKey.equals(that.rowsByKey);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(rowsByKey);
+    }
+
+    static @Nullable BoundaryRow materializeRow(
+            Iterable<Cell> clusterCells,
+            @Nullable Cell center,
+            long clusterId,
+            @Nullable Edge edge,
+            @Nullable BoundaryKind kind
+    ) {
+        return RoomClusterWallMaterialization.materializeRow(clusterCells, center, clusterId, edge, kind);
+    }
+
+    static List<BoundaryRow> sortedRows(Iterable<BoundaryRow> rows) {
+        return RoomClusterWallRows.sortedRows(rows);
+    }
+
+    static EdgeKey keyForRow(@Nullable Cell center, BoundaryRow row) {
+        return RoomClusterWallRows.keyForRow(center, row);
+    }
+}

@@ -120,8 +120,7 @@ final class DungeonStructureInvariantHarness {
                 results,
                 OWNER,
                 "DGI-STR-009",
-                "Room structure owns boundary-row materialization from cluster cells, center, edge geometry, "
-                        + "relative cell, direction, and boundary kind");
+                "Room structure keeps boundary-row materialization compatibility while Wall owner owns wall/open policy");
         assertRoomPartitionInvariants();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -133,13 +132,13 @@ final class DungeonStructureInvariantHarness {
                 results,
                 OWNER,
                 "DGI-STR-011",
-                "Room structure owns persisted boundary-row ordering and level grouping; geometry owns edge-key identity");
+                "Room structure keeps boundary-row ordering compatibility while Wall owner owns row normalization");
         assertRoomBoundaryStretchPlanInvariants();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
                 OWNER,
                 "DGI-STR-012",
-                "Room structure owns boundary-stretch selection, movement strip, connector path, and outward-side rules");
+                "Room structure keeps stretch-plan compatibility while Wall owner owns wall-map stretch behavior");
     }
 
     private static void assertCorridorStructureInvariants() {
