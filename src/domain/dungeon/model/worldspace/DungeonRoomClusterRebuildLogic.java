@@ -28,10 +28,8 @@ final class DungeonRoomClusterRebuildLogic {
         return new DungeonMap(
                 dungeonMap.metadata(),
                 nextTopology,
-                dungeonMap.spaces(),
                 new RoomCatalog(rooms),
                 dungeonMap.connections(),
-                dungeonMap.features(),
                 dungeonMap.revision() + 1L);
     }
 
@@ -49,10 +47,8 @@ final class DungeonRoomClusterRebuildLogic {
         return new DungeonMap(
                 dungeonMap.metadata(),
                 nextTopology,
-                dungeonMap.spaces(),
                 new RoomCatalog(rooms),
                 dungeonMap.connections(),
-                dungeonMap.features(),
                 dungeonMap.revision() + 1L);
     }
 

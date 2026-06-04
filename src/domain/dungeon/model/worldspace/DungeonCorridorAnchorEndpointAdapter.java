@@ -134,13 +134,11 @@ final class DungeonCorridorAnchorEndpointAdapter {
                 dungeonMap.metadata(),
                 dungeonMap.topology(),
                 dungeonMap.topologyIndex(),
-                dungeonMap.spaces(),
                 dungeonMap.rooms(),
                 new ConnectionCatalog(
                         nextCorridors,
                         dungeonMap.connections().stairs(),
                         dungeonMap.connections().transitions()),
-                dungeonMap.features(),
                 dungeonMap.revision() + 1L);
     }
 

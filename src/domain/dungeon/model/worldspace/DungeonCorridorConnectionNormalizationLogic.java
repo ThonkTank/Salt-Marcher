@@ -27,10 +27,8 @@ public final class DungeonCorridorConnectionNormalizationLogic {
                 dungeonMap.metadata(),
                 dungeonMap.topology(),
                 dungeonMap.topologyIndex(),
-                dungeonMap.spaces(),
                 dungeonMap.rooms(),
                 normalized,
-                dungeonMap.features(),
                 dungeonMap.revision() + 1L);
     }
 

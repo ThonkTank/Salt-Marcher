@@ -20,10 +20,8 @@ public final class DungeonMapAuthoring {
         return new DungeonMap(
                 new DungeonMapMetadata(mapId, mapName),
                 topology,
-                SpaceCatalog.empty(),
                 RoomCatalog.empty(),
                 ConnectionCatalog.empty(),
-                FeatureCatalog.empty(),
                 revision);
     }
 
@@ -40,10 +38,8 @@ public final class DungeonMapAuthoring {
                 new DungeonMapMetadata(mapId, mapName),
                 topology,
                 topologyIndex,
-                SpaceCatalog.empty(),
                 rooms,
                 connections,
-                FeatureCatalog.empty(),
                 revision);
     }
 
@@ -52,10 +48,8 @@ public final class DungeonMapAuthoring {
                 new DungeonMapMetadata(dungeonMap.metadata().mapId(), mapName),
                 dungeonMap.topology(),
                 dungeonMap.topologyIndex(),
-                dungeonMap.spaces(),
                 dungeonMap.rooms(),
                 dungeonMap.connections(),
-                dungeonMap.features(),
                 dungeonMap.revision() + 1L);
     }
 }

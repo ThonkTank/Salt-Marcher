@@ -977,13 +977,11 @@ final class DungeonStructureInvariantHarness {
                         new src.domain.dungeon.model.worldspace.DungeonMapIdentity(4L),
                         "transition proof map"),
                 src.domain.dungeon.model.worldspace.SpatialTopology.empty(),
-                src.domain.dungeon.model.worldspace.SpaceCatalog.empty(),
                 src.domain.dungeon.model.worldspace.RoomCatalog.empty(),
                 new src.domain.dungeon.model.worldspace.ConnectionCatalog(
                         List.of(),
                         List.of(),
                         List.of(transitions)),
-                src.domain.dungeon.model.worldspace.FeatureCatalog.empty(),
                 0L);
     }
 

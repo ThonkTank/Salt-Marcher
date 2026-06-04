@@ -11,10 +11,8 @@ public record DungeonMap(
         DungeonMapMetadata metadata,
         SpatialTopology topology,
         DungeonMapTopology topologyIndex,
-        SpaceCatalog spaces,
         RoomCatalog rooms,
         ConnectionCatalog connections,
-        FeatureCatalog features,
         long revision
 ) {
     private static final long NO_TRANSITION_ID = 0L;
@@ -23,31 +21,25 @@ public record DungeonMap(
     public DungeonMap(
             DungeonMapMetadata metadata,
             SpatialTopology topology,
-            SpaceCatalog spaces,
             RoomCatalog rooms,
             ConnectionCatalog connections,
-            FeatureCatalog features,
             long revision
     ) {
-        this(metadata, topology, null, spaces, rooms, connections, features, revision);
+        this(metadata, topology, null, rooms, connections, revision);
     }
 
     public DungeonMap(
             DungeonMapMetadata metadata,
             SpatialTopology topology,
             @Nullable DungeonMapTopology topologyIndex,
-            SpaceCatalog spaces,
             RoomCatalog rooms,
             ConnectionCatalog connections,
-            FeatureCatalog features,
             long revision
     ) {
         this.metadata = metadata;
         this.topology = topology == null ? SpatialTopology.empty() : topology;
-        this.spaces = spaces == null ? SpaceCatalog.empty() : spaces;
         this.rooms = rooms == null ? RoomCatalog.empty() : rooms;
         this.connections = connections == null ? ConnectionCatalog.empty() : connections;
-        this.features = features == null ? FeatureCatalog.empty() : features;
         this.topologyIndex = DungeonMapTopology.merge(
                 topologyIndex,
                 DungeonMapTopology.from(this.topology, this.rooms, this.connections));
@@ -96,10 +88,8 @@ public record DungeonMap(
                         metadata,
                         topology,
                         topologyIndex,
-                        spaces,
                         new RoomCatalog(nextRooms),
                         connections,
-                        features,
                         revision + 1L)
                 : this;
     }
@@ -116,10 +106,8 @@ public record DungeonMap(
                         metadata,
                         topology,
                         topologyIndex,
-                        spaces,
                         rooms,
                         nextConnections,
-                        features,
                         revision + 1L);
     }
 
@@ -147,10 +135,8 @@ public record DungeonMap(
                 metadata,
                 topology,
                 null,
-                spaces,
                 rooms,
                 nextConnections,
-                features,
                 revision + 1L);
     }
 
@@ -163,10 +149,8 @@ public record DungeonMap(
                 metadata,
                 topology,
                 null,
-                spaces,
                 rooms,
                 nextConnections,
-                features,
                 revision + 1L);
     }
 
@@ -182,10 +166,8 @@ public record DungeonMap(
                 metadata,
                 topology,
                 null,
-                spaces,
                 rooms,
                 connections.stairOperations().withoutStair(stairId),
-                features,
                 revision + 1L);
     }
 
@@ -204,10 +186,8 @@ public record DungeonMap(
                 metadata,
                 topology,
                 null,
-                spaces,
                 rooms,
                 nextConnections,
-                features,
                 revision + 1L);
     }
 
@@ -238,10 +218,8 @@ public record DungeonMap(
                 metadata,
                 topology,
                 null,
-                spaces,
                 rooms,
                 nextConnections,
-                features,
                 revision + 1L);
     }
 
@@ -302,10 +280,8 @@ public record DungeonMap(
                 metadata,
                 topology,
                 null,
-                spaces,
                 rooms,
                 nextConnections,
-                features,
                 revision + 1L);
     }
 

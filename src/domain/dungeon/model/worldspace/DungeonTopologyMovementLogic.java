@@ -26,10 +26,8 @@ public final class DungeonTopologyMovementLogic {
                 dungeonMap.metadata(),
                 nextTopology,
                 dungeonMap.topologyIndex(),
-                dungeonMap.spaces(),
                 nextRooms,
                 dungeonMap.connections(),
-                dungeonMap.features(),
                 dungeonMap.revision() + 1L);
     }
 
