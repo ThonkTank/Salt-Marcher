@@ -1,6 +1,7 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import src.domain.dungeon.model.core.component.CorridorAnchor;
@@ -10,6 +11,7 @@ import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorEndpointMaterialization;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorSnap;
@@ -21,6 +23,7 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoomSet;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
+import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
@@ -95,6 +98,13 @@ final class DungeonStructureInvariantHarness {
                 "DGI-STR-007",
                 "Transition structure owns destination normalization, labels, replacement, reverse-link cleanup, "
                         + "and protected delete policy");
+        assertRoomStructureInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-STR-008",
+                "Room structure owns door-boundary materialization eligibility from room cells, edge geometry, "
+                        + "and existing boundary kind");
     }
 
     private static void assertCorridorStructureInvariants() {
@@ -507,6 +517,45 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(referencedAnchor),
                 pruningRules.pruneDetachedAnchors(List.of(owner, dependent)).getFirst().bindings().anchorBindings(),
                 "adapter pruning preserves referenced anchor by topology ref");
+    }
+
+    private static void assertRoomStructureInvariants() {
+        Map<Long, List<Cell>> singleRoomCells = Map.of(
+                1L,
+                List.of(new Cell(0, 0, 0)));
+        Map<Long, List<Cell>> splitRoomCells = Map.of(
+                1L,
+                List.of(new Cell(0, 0, 0)),
+                2L,
+                List.of(new Cell(1, 0, 0)));
+        Edge northEdge = Edge.sideOf(new Cell(0, 0, 0), Direction.NORTH);
+        Edge eastEdge = Edge.sideOf(new Cell(0, 0, 0), Direction.EAST);
+
+        assertTrue(RoomClusterDoorBoundaryMaterialization.forEdge(
+                        northEdge,
+                        singleRoomCells,
+                        RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.NONE)
+                .materializesDoor(), "core room door materialization allows single-room wall creation");
+        assertFalse(RoomClusterDoorBoundaryMaterialization.forEdge(
+                        northEdge,
+                        singleRoomCells,
+                        RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.DOOR)
+                .materializesDoor(), "core room door materialization rejects existing door no-op");
+        assertFalse(RoomClusterDoorBoundaryMaterialization.forEdge(
+                        eastEdge,
+                        splitRoomCells,
+                        RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.NONE)
+                .materializesDoor(), "core room door materialization rejects split-room edge without boundary");
+        assertTrue(RoomClusterDoorBoundaryMaterialization.forEdge(
+                        eastEdge,
+                        splitRoomCells,
+                        RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.NON_DOOR)
+                .materializesDoor(), "core room door materialization converts split-room non-door boundary");
+        assertFalse(RoomClusterDoorBoundaryMaterialization.forEdge(
+                        Edge.sideOf(new Cell(8, 8, 0), Direction.NORTH),
+                        singleRoomCells,
+                        RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.NONE)
+                .materializesDoor(), "core room door materialization rejects untouched room edge");
     }
 
     private static void assertStairStructureInvariants() {

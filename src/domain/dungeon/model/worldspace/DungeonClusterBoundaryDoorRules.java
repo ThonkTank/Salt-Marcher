@@ -9,6 +9,8 @@ final class DungeonClusterBoundaryDoorRules {
 
     private static final DungeonCorridorBindingLookupLogic CORRIDOR_BINDING_LOOKUP_SERVICE =
             new DungeonCorridorBindingLookupLogic();
+    private static final DungeonClusterBoundaryDoorDecisionAdapter DOOR_DECISION_ADAPTER =
+            new DungeonClusterBoundaryDoorDecisionAdapter();
 
     boolean removeBoundaryIfAllowed(
             DungeonMap dungeonMap,
@@ -44,7 +46,7 @@ final class DungeonClusterBoundaryDoorRules {
             DungeonClusterBoundary candidate
     ) {
         if (resolvedKind == DungeonClusterBoundaryKind.DOOR
-                && !editableDoorBoundary(existing, edge, roomCells)) {
+                && !DOOR_DECISION_ADAPTER.allowsDoorMaterialization(existing, edge, roomCells)) {
             return false;
         }
         if (resolvedKind == DungeonClusterBoundaryKind.WALL
@@ -57,51 +59,5 @@ final class DungeonClusterBoundaryDoorRules {
         }
         boundaries.put(key, candidate);
         return true;
-    }
-
-    private boolean editableDoorBoundary(
-            @Nullable DungeonClusterBoundary existing,
-            DungeonEdge edge,
-            Map<Long, List<DungeonCell>> roomCells
-    ) {
-        long touchingRoomCount = touchingRoomCount(edge, roomCells);
-        if (touchesMultipleRooms(touchingRoomCount)) {
-            return existing != null && existing.kind() != DungeonClusterBoundaryKind.DOOR;
-        }
-        return touchesSingleRoom(touchingRoomCount) && (existing == null || existing.kind() != DungeonClusterBoundaryKind.DOOR);
-    }
-
-    private long touchingRoomCount(DungeonEdge edge, Map<Long, List<DungeonCell>> cellsByRoom) {
-        if (edge == null || cellsByRoom.isEmpty()) {
-            return 0L;
-        }
-        Set<DungeonCell> touching = Set.copyOf(edge.touchingCells());
-        long result = 0L;
-        for (List<DungeonCell> roomCells : cellsByRoom.values()) {
-            if (touchesRoom(roomCells, touching)) {
-                result++;
-                if (touchesMultipleRooms(result)) {
-                    return result;
-                }
-            }
-        }
-        return result;
-    }
-
-    private boolean touchesMultipleRooms(long touchingRoomCount) {
-        return touchingRoomCount > 1L;
-    }
-
-    private boolean touchesSingleRoom(long touchingRoomCount) {
-        return touchingRoomCount == 1L;
-    }
-
-    private boolean touchesRoom(List<DungeonCell> roomCells, Set<DungeonCell> touching) {
-        for (DungeonCell cell : roomCells == null ? List.<DungeonCell>of() : roomCells) {
-            if (touching.contains(cell)) {
-                return true;
-            }
-        }
-        return false;
     }
 }
