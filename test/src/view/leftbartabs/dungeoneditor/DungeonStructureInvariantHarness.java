@@ -37,12 +37,9 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
-import src.domain.dungeon.model.core.structure.transition.Transition;
-import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
-import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
@@ -106,7 +103,7 @@ final class DungeonStructureInvariantHarness {
                 results,
                 OWNER,
                 "DGI-STR-007",
-                "Transition structure owns destination normalization, labels, replacement, reverse-link cleanup, "
+                "Transition structure keeps transition compatibility while Transition owner owns local facts, links, "
                         + "and protected delete policy");
         assertRoomStructureInvariants();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
@@ -879,45 +876,6 @@ final class DungeonStructureInvariantHarness {
     }
 
     private static void assertTransitionStructureInvariants() {
-        TransitionDestination dungeonDestination = TransitionDestination.dungeonMap(12L, 20L);
-        TransitionDestination overworldDestination = TransitionDestination.overworldTile(5L, 9L);
-        assertTrue(dungeonDestination.isValid(), "core transition dungeon destination validates map id");
-        assertEquals("Dungeon 12 / Übergang 20", dungeonDestination.label(),
-                "core transition dungeon destination label includes target transition");
-        assertTrue(overworldDestination.isValid(), "core transition overworld destination validates map and tile");
-        assertEquals("Overworld-Feld 9", overworldDestination.label(),
-                "core transition overworld destination label uses tile");
-
-        Transition source = new Transition(1L, 4L, " source ", new Cell(0, 0, 0), dungeonDestination, null);
-        Transition oldTarget = new Transition(2L, 4L, "", new Cell(1, 0, 0), overworldDestination, 1L);
-        Transition target = new Transition(3L, 4L, "", new Cell(1, 1, 0), overworldDestination, null);
-        Transition remoteReference = new Transition(
-                4L,
-                4L,
-                "",
-                new Cell(2, 0, 0),
-                TransitionDestination.dungeonMap(14L, 3L),
-                null);
-        TransitionCatalog catalog = new TransitionCatalog(List.of(source, oldTarget, target, remoteReference));
-
-        assertEquals("source", source.description(), "core transition trims description");
-        assertFalse(catalog.canDelete(1L), "core transition protects selected transition with reverse link");
-        assertFalse(catalog.canDelete(2L), "core transition protects previous target while it has a reverse link");
-        assertFalse(catalog.canDelete(3L), "core transition protects transition referenced elsewhere");
-        assertTrue(catalog.canDelete(4L), "core transition allows unreferenced transition delete");
-        assertEquals(List.of(1L, 2L, 3L), transitionIds(catalog.withoutTransition(4L)),
-                "core transition catalog removes deletable transition");
-        assertEquals(List.of(1L, 2L, 3L, 4L), transitionIds(catalog.withoutTransition(3L)),
-                "core transition catalog keeps protected transition");
-
-        TransitionCatalog linkedCatalog = catalog.withMapLocalAuthoredTransitionLink(bidirectionalLink(4L, 1L, 4L, 3L));
-        assertEquals(TransitionDestination.dungeonMap(4L, 3L), linkedCatalog.transitions().getFirst().destination(),
-                "core transition catalog updates source destination through authored link policy");
-        assertEquals(null, linkedCatalog.transitions().get(1).linkedTransitionId(),
-                "core transition catalog clears previous reverse linked id");
-        assertEquals(1L, linkedCatalog.transitions().get(2).linkedTransitionId(),
-                "core transition catalog applies new bidirectional target link");
-        assertTrue(linkedCatalog.canDelete(2L), "core transition allows previous target after reverse link cleanup");
         assertWorldspaceTransitionAdapterCompatibility();
     }
 
@@ -986,14 +944,6 @@ final class DungeonStructureInvariantHarness {
                         .get(2)
                         .linkedTransitionId(),
                 "worldspace transition adapter applies new bidirectional target link through core catalog");
-    }
-
-    private static List<Long> transitionIds(TransitionCatalog catalog) {
-        List<Long> result = new java.util.ArrayList<>();
-        for (Transition transition : catalog.transitions()) {
-            result.add(transition.transitionId());
-        }
-        return List.copyOf(result);
     }
 
     private static AuthoredTransitionLink bidirectionalLink(
