@@ -12,7 +12,7 @@ import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceProjection;
 import src.domain.dungeon.model.runtime.travel.projection.TravelTransitionTarget;
 import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
-import src.domain.dungeon.model.worldspace.DungeonAreaType;
+import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryFacts;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;

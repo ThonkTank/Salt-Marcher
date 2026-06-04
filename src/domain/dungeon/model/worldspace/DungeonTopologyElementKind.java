@@ -1,6 +1,8 @@
 package src.domain.dungeon.model.worldspace;
 
 import java.util.Locale;
+import src.domain.dungeon.model.core.projection.DungeonAreaType;
+import src.domain.dungeon.model.core.projection.DungeonFeatureType;
 
 public final class DungeonTopologyElementKind {
     private static final String DOOR_KIND = "door";

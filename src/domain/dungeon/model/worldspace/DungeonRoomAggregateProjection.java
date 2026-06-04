@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 
 import java.util.List;
+import src.domain.dungeon.model.core.projection.DungeonAreaType;
 
 final class DungeonRoomAggregateProjection {
 

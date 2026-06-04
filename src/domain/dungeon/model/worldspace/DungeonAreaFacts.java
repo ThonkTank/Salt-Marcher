@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.projection.DungeonAreaType;
 
 public final class DungeonAreaFacts {
     private final DungeonAreaType kind;

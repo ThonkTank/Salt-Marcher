@@ -8,7 +8,7 @@ import java.util.Set;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
-import src.domain.dungeon.model.worldspace.DungeonAreaType;
+import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;

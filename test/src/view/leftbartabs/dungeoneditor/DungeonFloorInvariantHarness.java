@@ -12,7 +12,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
 import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
-import src.domain.dungeon.model.worldspace.DungeonAreaType;
+import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonDerivedStateProjection;
