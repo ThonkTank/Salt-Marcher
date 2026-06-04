@@ -23,6 +23,7 @@ public final class DungeonEditorToolBehaviorHarness {
                 DungeonFloorInvariantHarness.run(results);
                 DungeonWallInvariantHarness.run(results);
                 DungeonDoorInvariantHarness.run(results);
+                DungeonPathInvariantHarness.run(results);
                 DungeonTransitionInvariantHarness.run(results);
                 DungeonStructureInvariantHarness.run(results);
                 DungeonEditorStairHarness.run(results);
