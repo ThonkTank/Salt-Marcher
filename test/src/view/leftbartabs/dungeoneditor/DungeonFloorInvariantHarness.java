@@ -11,6 +11,14 @@ import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
+import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
+import src.domain.dungeon.model.worldspace.DungeonAreaType;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.worldspace.DungeonDerivedStateProjection;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
+import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 
 final class DungeonFloorInvariantHarness {
 
@@ -50,6 +58,12 @@ final class DungeonFloorInvariantHarness {
                 OWNER,
                 "DGI-FLOOR-005",
                 "Floor owner reports no-op and changed floor mutations while DungeonMap keeps revision policy outside the owner");
+        assertDungeonLevelFloorProjection();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-FLOOR-006",
+                "Dungeon-level floor facts are immutable projections derived from structure-owned floor maps");
     }
 
     private static void assertStructureComposesFloorMap() {
@@ -158,6 +172,63 @@ final class DungeonFloorInvariantHarness {
                 "floor mutation returns the next floor owner");
     }
 
+    private static void assertDungeonLevelFloorProjection() {
+        DungeonMap map = projectionMap();
+        DungeonDerivedState derived = new DungeonDerivedStateProjection().project(map);
+        Set<Set<DungeonCell>> projectedRooms = roomAreaCellSets(derived);
+
+        assertTrue(projectedRooms.contains(Set.of(
+                        new DungeonCell(1, 1, 0),
+                        new DungeonCell(2, 1, 0))),
+                "floor projection includes first structure-owned room floor cells");
+        assertTrue(projectedRooms.contains(Set.of(
+                        new DungeonCell(5, 1, 0),
+                        new DungeonCell(6, 1, 0))),
+                "floor projection includes second structure-owned room floor cells");
+        assertEquals(2, projectedRooms.size(),
+                "floor projection builds one read-side room area per authored structure cluster");
+
+        DungeonAreaFacts firstArea = firstRoomArea(derived);
+        assertThrowsUnsupported(
+                () -> firstArea.cells().add(new DungeonCell(99, 99, 0)),
+                "floor projection exposes immutable read-side cell facts");
+        assertEquals(projectedRooms, roomAreaCellSets(derived),
+                "rejected projection mutation leaves derived floor facts unchanged");
+
+        DungeonMap changed = map.paintRoomRectangle(new DungeonCell(10, 1, 0), new DungeonCell(10, 1, 0));
+        Set<Set<DungeonCell>> changedRooms =
+                roomAreaCellSets(new DungeonDerivedStateProjection().project(changed));
+        assertTrue(changedRooms.contains(Set.of(new DungeonCell(10, 1, 0))),
+                "floor projection changes only after routing mutation through DungeonMap structure ownership");
+        assertEquals(projectedRooms, roomAreaCellSets(derived),
+                "original floor projection remains a snapshot after authored structure mutation");
+    }
+
+    private static DungeonMap projectionMap() {
+        return DungeonMapAuthoring.empty(new DungeonMapIdentity(80L), "Floor Projection")
+                .paintRoomRectangle(new DungeonCell(1, 1, 0), new DungeonCell(2, 1, 0))
+                .paintRoomRectangle(new DungeonCell(5, 1, 0), new DungeonCell(6, 1, 0));
+    }
+
+    private static Set<Set<DungeonCell>> roomAreaCellSets(DungeonDerivedState derived) {
+        java.util.LinkedHashSet<Set<DungeonCell>> result = new java.util.LinkedHashSet<>();
+        for (DungeonAreaFacts area : derived.map().areas()) {
+            if (area.kind() == DungeonAreaType.ROOM) {
+                result.add(Set.copyOf(area.cells()));
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static DungeonAreaFacts firstRoomArea(DungeonDerivedState derived) {
+        for (DungeonAreaFacts area : derived.map().areas()) {
+            if (area.kind() == DungeonAreaType.ROOM) {
+                return area;
+            }
+        }
+        throw new IllegalStateException("Expected at least one projected room area.");
+    }
+
     private static void assertEquals(Object expected, Object actual, String message) {
         if (!java.util.Objects.equals(expected, actual)) {
             throw new IllegalStateException(message + " expected=" + expected + " actual=" + actual);
@@ -174,5 +245,14 @@ final class DungeonFloorInvariantHarness {
         if (value) {
             throw new IllegalStateException(message);
         }
+    }
+
+    private static void assertThrowsUnsupported(Runnable action, String message) {
+        try {
+            action.run();
+        } catch (UnsupportedOperationException expected) {
+            return;
+        }
+        throw new IllegalStateException(message);
     }
 }

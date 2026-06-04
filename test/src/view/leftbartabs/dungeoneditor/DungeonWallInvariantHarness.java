@@ -18,6 +18,17 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPl
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
+import src.domain.dungeon.model.worldspace.DungeonBoundaryFacts;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
+import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.worldspace.DungeonDerivedStateProjection;
+import src.domain.dungeon.model.worldspace.DungeonEdge;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
+import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.worldspace.DungeonRoom;
 
 final class DungeonWallInvariantHarness {
 
@@ -57,6 +68,12 @@ final class DungeonWallInvariantHarness {
                 OWNER,
                 "DGI-WALL-005",
                 "Wall owner and Door owner share one boundary surface without duplicate wall/door state");
+        assertDungeonLevelWallProjection();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-WALL-006",
+                "Dungeon-level wall facts are immutable projections derived from structure-owned wall maps");
     }
 
     private static void assertStructureLocalWallMap() {
@@ -250,6 +267,73 @@ final class DungeonWallInvariantHarness {
                 });
     }
 
+    private static void assertDungeonLevelWallProjection() {
+        DungeonMap map = projectionMap();
+        DungeonDerivedState derived = new DungeonDerivedStateProjection().project(map);
+        DungeonEdge firstNorthWall = DungeonEdge.sideOf(new DungeonCell(1, 1, 0), DungeonEdgeDirection.NORTH);
+        DungeonEdge secondNorthWall = DungeonEdge.sideOf(new DungeonCell(5, 1, 0), DungeonEdgeDirection.NORTH);
+        Set<DungeonEdge> projectedWalls = wallEdges(derived);
+
+        assertTrue(projectedWalls.contains(firstNorthWall),
+                "wall projection includes first structure-owned wall boundary");
+        assertTrue(projectedWalls.contains(secondNorthWall),
+                "wall projection includes second structure-owned wall boundary");
+        assertThrowsUnsupported(
+                () -> derived.map().boundaries().add(derived.map().boundaries().getFirst()),
+                "wall projection exposes immutable read-side boundary facts");
+        assertEquals(projectedWalls, wallEdges(derived),
+                "rejected projection mutation leaves derived wall facts unchanged");
+
+        long firstClusterId = clusterIdForAnchor(map, new DungeonCell(1, 1, 0));
+        DungeonMap opened = map.editClusterBoundaries(
+                firstClusterId,
+                List.of(firstNorthWall),
+                DungeonClusterBoundaryKind.OPEN,
+                false);
+        Set<DungeonEdge> openedWalls = wallEdges(new DungeonDerivedStateProjection().project(opened));
+        assertFalse(openedWalls.contains(firstNorthWall),
+                "wall projection changes only after routing boundary mutation through DungeonMap structure ownership");
+        assertEquals(projectedWalls, wallEdges(derived),
+                "original wall projection remains a snapshot after authored structure mutation");
+    }
+
+    private static DungeonMap projectionMap() {
+        DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(81L), "Wall Projection")
+                .paintRoomRectangle(new DungeonCell(1, 1, 0), new DungeonCell(2, 1, 0))
+                .paintRoomRectangle(new DungeonCell(5, 1, 0), new DungeonCell(6, 1, 0));
+        DungeonEdge firstNorthWall = DungeonEdge.sideOf(new DungeonCell(1, 1, 0), DungeonEdgeDirection.NORTH);
+        DungeonEdge secondNorthWall = DungeonEdge.sideOf(new DungeonCell(5, 1, 0), DungeonEdgeDirection.NORTH);
+        map = map.editClusterBoundaries(
+                clusterIdForAnchor(map, new DungeonCell(1, 1, 0)),
+                List.of(firstNorthWall),
+                DungeonClusterBoundaryKind.WALL,
+                false);
+        return map.editClusterBoundaries(
+                clusterIdForAnchor(map, new DungeonCell(5, 1, 0)),
+                List.of(secondNorthWall),
+                DungeonClusterBoundaryKind.WALL,
+                false);
+    }
+
+    private static Set<DungeonEdge> wallEdges(DungeonDerivedState derived) {
+        java.util.LinkedHashSet<DungeonEdge> result = new java.util.LinkedHashSet<>();
+        for (DungeonBoundaryFacts boundary : derived.map().boundaries()) {
+            if ("wall".equals(boundary.kind())) {
+                result.add(boundary.edge());
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static long clusterIdForAnchor(DungeonMap map, DungeonCell anchor) {
+        for (DungeonRoom room : map.rooms().rooms()) {
+            if (room.primaryAnchor().equals(anchor)) {
+                return room.clusterId();
+            }
+        }
+        throw new IllegalStateException("Expected room anchor " + anchor);
+    }
+
     private static void assertEquals(Object expected, Object actual, String message) {
         if (!java.util.Objects.equals(expected, actual)) {
             throw new IllegalStateException(message + " expected=" + expected + " actual=" + actual);
@@ -266,5 +350,14 @@ final class DungeonWallInvariantHarness {
         if (value) {
             throw new IllegalStateException(message);
         }
+    }
+
+    private static void assertThrowsUnsupported(Runnable action, String message) {
+        try {
+            action.run();
+        } catch (UnsupportedOperationException expected) {
+            return;
+        }
+        throw new IllegalStateException(message);
     }
 }
