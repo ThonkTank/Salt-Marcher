@@ -9,7 +9,8 @@ import org.jspecify.annotations.Nullable;
 
 final class DungeonClusterBoundaryGeometryLogic {
 
-    private static final int PERIMETER_INSIDE_CELL_COUNT = 1;
+    private static final DungeonClusterBoundaryMaterializationAdapter BOUNDARY_MATERIALIZATION =
+            new DungeonClusterBoundaryMaterializationAdapter();
 
     Map<Integer, List<DungeonClusterBoundary>> filterBoundaries(
             Iterable<DungeonClusterBoundary> boundaries,
@@ -36,29 +37,12 @@ final class DungeonClusterBoundaryGeometryLogic {
             DungeonClusterBoundaryKind kind,
             @Nullable DungeonTopologyRef topologyRef
     ) {
-        if (invalidBoundaryEdge(edge)) {
-            return null;
-        }
-        List<DungeonCell> touchingCells = DungeonCellOrdering.sortedCells(edge.touchingCells());
-        if (invalidTouchingCells(touchingCells)) {
-            return null;
-        }
-        List<DungeonCell> insideCells = insideCells(touchingCells, clusterCells);
-        if (!supportsBoundaryKind(kind, insideCells)) {
-            return null;
-        }
-        DungeonCell baseCell = insideCells.getFirst();
-        DungeonEdgeDirection direction = directionFrom(baseCell, edge);
-        if (direction == null) {
-            return null;
-        }
-        return new DungeonClusterBoundary(
-                clusterId,
-                baseCell.level(),
-                new DungeonCell(baseCell.q() - center.q(), baseCell.r() - center.r(), baseCell.level()),
-                direction,
+        DungeonClusterBoundaryMaterializationAdapter.ClusterBoundaryMaterialization materialization =
+                BOUNDARY_MATERIALIZATION.prepare(clusterCells, center, clusterId);
+        return materialization.materializeBoundary(
+                edge,
                 kind,
-                topologyRef == null ? DungeonTopologyRef.empty() : topologyRef);
+                topologyRef);
     }
 
     @Nullable DungeonClusterBoundary openBoundaryForEdge(
@@ -67,29 +51,10 @@ final class DungeonClusterBoundaryGeometryLogic {
             long clusterId,
             DungeonEdge edge
     ) {
-        if (invalidBoundaryEdge(edge)) {
-            return null;
-        }
-        List<DungeonCell> touchingCells = DungeonCellOrdering.sortedCells(edge.touchingCells());
-        if (invalidTouchingCells(touchingCells)) {
-            return null;
-        }
-        List<DungeonCell> insideCells = insideCells(touchingCells, clusterCells);
-        if (insideCells.size() != PERIMETER_INSIDE_CELL_COUNT) {
-            return null;
-        }
-        DungeonCell baseCell = insideCells.getFirst();
-        DungeonEdgeDirection direction = directionFrom(baseCell, edge);
-        if (direction == null) {
-            return null;
-        }
-        return new DungeonClusterBoundary(
-                clusterId,
-                baseCell.level(),
-                new DungeonCell(baseCell.q() - center.q(), baseCell.r() - center.r(), baseCell.level()),
-                direction,
-                DungeonClusterBoundaryKind.OPEN,
-                DungeonTopologyRef.empty());
+        DungeonClusterBoundaryMaterializationAdapter.ClusterBoundaryMaterialization materialization =
+                BOUNDARY_MATERIALIZATION.prepare(clusterCells, center, clusterId);
+        return materialization.materializeOpenBoundary(
+                edge);
     }
 
     private boolean retainsBoundary(DungeonClusterBoundary boundary, DungeonBoundaryTouch touch) {
@@ -97,24 +62,6 @@ final class DungeonClusterBoundaryGeometryLogic {
             return touch.touchesCluster();
         }
         return touch.touchesCluster();
-    }
-
-    private boolean invalidBoundaryEdge(DungeonEdge edge) {
-        return edge == null || edge.from() == null || edge.to() == null;
-    }
-
-    private boolean invalidTouchingCells(List<DungeonCell> touchingCells) {
-        return touchingCells.size() != 2 || touchingCells.getFirst().level() != touchingCells.get(1).level();
-    }
-
-    private boolean supportsBoundaryKind(DungeonClusterBoundaryKind kind, List<DungeonCell> insideCells) {
-        if (insideCells.isEmpty()) {
-            return false;
-        }
-        if (kind == DungeonClusterBoundaryKind.DOOR) {
-            return insideCells.size() <= 2;
-        }
-        return insideCells.size() <= 2;
     }
 
     private DungeonBoundaryTouch touch(DungeonEdge edge, Set<DungeonCell> clusterCells) {
@@ -130,15 +77,5 @@ final class DungeonClusterBoundaryGeometryLogic {
             }
         }
         return List.copyOf(result);
-    }
-
-    private @Nullable DungeonEdgeDirection directionFrom(DungeonCell cell, DungeonEdge edge) {
-        DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
-        for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
-            if (DungeonBoundaryKey.from(DungeonEdge.sideOf(cell, direction)).equals(key)) {
-                return direction;
-            }
-        }
-        return null;
     }
 }

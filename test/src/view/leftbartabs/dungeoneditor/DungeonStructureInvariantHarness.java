@@ -23,6 +23,8 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoomSet;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
@@ -105,6 +107,13 @@ final class DungeonStructureInvariantHarness {
                 "DGI-STR-008",
                 "Room structure owns door-boundary materialization eligibility from room cells, edge geometry, "
                         + "and existing boundary kind");
+        assertRoomBoundaryMaterializationInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-STR-009",
+                "Room structure owns boundary-row materialization from cluster cells, center, edge geometry, "
+                        + "relative cell, direction, and boundary kind");
     }
 
     private static void assertCorridorStructureInvariants() {
@@ -556,6 +565,66 @@ final class DungeonStructureInvariantHarness {
                         singleRoomCells,
                         RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.NONE)
                 .materializesDoor(), "core room door materialization rejects untouched room edge");
+    }
+
+    private static void assertRoomBoundaryMaterializationInvariants() {
+        Set<Cell> clusterCells = Set.of(new Cell(2, 3, 0), new Cell(3, 3, 0));
+        Cell center = new Cell(2, 3, 0);
+        Edge northEdge = Edge.sideOf(new Cell(2, 3, 0), Direction.NORTH);
+        Edge sharedEdge = Edge.sideOf(new Cell(2, 3, 0), Direction.EAST);
+
+        BoundaryRow northBoundary = RoomClusterBoundaryMaterialization.forEdge(
+                clusterCells,
+                center,
+                42L,
+                northEdge,
+                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
+        assertTrue(northBoundary != null, "core room boundary materializes perimeter wall row");
+        assertEquals(42L, northBoundary.clusterId(), "core room boundary keeps cluster id");
+        assertEquals(0, northBoundary.level(), "core room boundary uses base-cell level");
+        assertEquals(new Cell(0, 0, 0), northBoundary.relativeCell(), "core room boundary stores center-relative cell");
+        assertEquals(Direction.NORTH, northBoundary.direction(), "core room boundary derives direction from edge");
+        assertEquals(RoomClusterBoundaryMaterialization.BoundaryKind.WALL, northBoundary.kind(),
+                "core room boundary preserves requested kind");
+
+        BoundaryRow doorBoundary = RoomClusterBoundaryMaterialization.forEdge(
+                clusterCells,
+                center,
+                42L,
+                northEdge,
+                RoomClusterBoundaryMaterialization.BoundaryKind.DOOR);
+        assertTrue(doorBoundary != null, "core room boundary materializes perimeter door row");
+        assertEquals(RoomClusterBoundaryMaterialization.BoundaryKind.DOOR, doorBoundary.kind(),
+                "core room boundary preserves requested door kind");
+
+        BoundaryRow openBoundary = RoomClusterBoundaryMaterialization.openForEdge(
+                clusterCells,
+                center,
+                42L,
+                northEdge);
+        assertTrue(openBoundary != null, "core room boundary materializes perimeter open row");
+        assertEquals(null, RoomClusterBoundaryMaterialization.openForEdge(
+                        clusterCells,
+                        center,
+                        42L,
+                        sharedEdge),
+                "core room open boundary rejects split-room interior edge");
+        assertEquals(RoomClusterBoundaryMaterialization.BoundaryKind.OPEN, openBoundary.kind(),
+                "core room open boundary accepts perimeter edge");
+        assertEquals(null, RoomClusterBoundaryMaterialization.forEdge(
+                        clusterCells,
+                        center,
+                        42L,
+                        new Edge(new Cell(1, 1, 0), new Cell(2, 1, 1)),
+                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL),
+                "core room boundary rejects cross-level edge");
+        assertEquals(null, RoomClusterBoundaryMaterialization.forEdge(
+                        clusterCells,
+                        center,
+                        42L,
+                        Edge.sideOf(new Cell(8, 8, 0), Direction.NORTH),
+                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL),
+                "core room boundary rejects untouched edge");
     }
 
     private static void assertStairStructureInvariants() {
