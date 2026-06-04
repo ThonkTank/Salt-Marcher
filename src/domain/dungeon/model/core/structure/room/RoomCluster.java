@@ -6,13 +6,15 @@ import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.door.DoorIndex;
 
 public record RoomCluster(
         long clusterId,
         long mapId,
         Cell center,
         RoomClusterFloorMap floorMap,
-        RoomClusterWallMap wallMap
+        RoomClusterWallMap wallMap,
+        DoorIndex doorIndex
 ) {
     public RoomCluster(long clusterId, long mapId, Cell center, Map<Integer, List<Cell>> cellsByLevel) {
         this(clusterId, mapId, center, new RoomClusterFloorMap(cellsByLevel), new RoomClusterWallMap(center, List.of()));
@@ -22,12 +24,23 @@ public record RoomCluster(
         this(clusterId, mapId, center, floorMap, new RoomClusterWallMap(center, List.of()));
     }
 
+    public RoomCluster(
+            long clusterId,
+            long mapId,
+            Cell center,
+            RoomClusterFloorMap floorMap,
+            RoomClusterWallMap wallMap
+    ) {
+        this(clusterId, mapId, center, floorMap, wallMap, DoorIndex.from(List.of()));
+    }
+
     public RoomCluster {
         clusterId = Math.max(0L, clusterId);
         mapId = Math.max(0L, mapId);
         center = center == null ? new Cell(0, 0, 0) : center;
         floorMap = floorMap == null ? new RoomClusterFloorMap(Map.of()) : floorMap;
         wallMap = wallMap == null ? new RoomClusterWallMap(center, List.of()) : wallMap;
+        doorIndex = doorIndex == null ? DoorIndex.from(List.of()) : doorIndex;
     }
 
     public static RoomCluster fromCells(long clusterId, long mapId, Set<Cell> cells) {
@@ -39,6 +52,11 @@ public record RoomCluster(
     @Override
     public RoomClusterFloorMap floorMap() {
         return new RoomClusterFloorMap(floorMap.cellsByLevel());
+    }
+
+    @Override
+    public DoorIndex doorIndex() {
+        return DoorIndex.from(doorIndex.doors());
     }
 
     public List<Cell> cellsAt(int level) {
@@ -59,7 +77,8 @@ public record RoomCluster(
                 mapId,
                 center,
                 floorMap.replaceCellsByLevel(nextCellsByLevel).floorMap(),
-                wallMap);
+                wallMap,
+                doorIndex);
     }
 
     public List<Edge> boundingSideEdges(Cell corner, boolean vertical) {

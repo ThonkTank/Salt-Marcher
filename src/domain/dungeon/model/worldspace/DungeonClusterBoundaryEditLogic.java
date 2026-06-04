@@ -163,13 +163,7 @@ final class DungeonClusterBoundaryEditLogic {
         if (existing == null) {
             return;
         }
-        boundaries.put(key, new DungeonClusterBoundary(
-                existing.clusterId(),
-                existing.level(),
-                existing.relativeCell(),
-                existing.direction(),
-                DungeonClusterBoundaryKind.WALL,
-                DungeonTopologyRef.empty()));
+        boundaries.put(key, DOOR_RULES.restoredWallBoundary(existing));
     }
 
     private boolean insertOpenBoundaryIfNeeded(

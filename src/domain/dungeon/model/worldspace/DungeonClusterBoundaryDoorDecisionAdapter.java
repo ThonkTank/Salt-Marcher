@@ -7,6 +7,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 
 final class DungeonClusterBoundaryDoorDecisionAdapter {
@@ -23,16 +24,16 @@ final class DungeonClusterBoundaryDoorDecisionAdapter {
                 .materializesDoor();
     }
 
-    private static RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind boundaryKind(
+    private static DoorBoundaryMaterialization.ExistingBoundaryKind boundaryKind(
             @Nullable DungeonClusterBoundary boundary
     ) {
         if (boundary == null) {
-            return RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.NONE;
+            return DoorBoundaryMaterialization.ExistingBoundaryKind.NONE;
         }
         if (boundary.kind() == DungeonClusterBoundaryKind.DOOR) {
-            return RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.DOOR;
+            return DoorBoundaryMaterialization.ExistingBoundaryKind.DOOR;
         }
-        return RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.NON_DOOR;
+        return DoorBoundaryMaterialization.ExistingBoundaryKind.NON_DOOR;
     }
 
     private static @Nullable Edge coreEdge(@Nullable DungeonEdge edge) {

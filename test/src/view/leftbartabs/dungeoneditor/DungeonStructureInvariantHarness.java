@@ -25,6 +25,7 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoomSet;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
+import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
@@ -110,8 +111,8 @@ final class DungeonStructureInvariantHarness {
                 results,
                 OWNER,
                 "DGI-STR-008",
-                "Room structure owns door-boundary materialization eligibility from room cells, edge geometry, "
-                        + "and existing boundary kind");
+                "Room structure keeps door-boundary materialization compatibility while Door owner owns "
+                        + "door policy");
         assertRoomBoundaryMaterializationInvariants();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -565,27 +566,27 @@ final class DungeonStructureInvariantHarness {
         assertTrue(RoomClusterDoorBoundaryMaterialization.forEdge(
                         northEdge,
                         singleRoomCells,
-                        RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.NONE)
+                        DoorBoundaryMaterialization.ExistingBoundaryKind.NONE)
                 .materializesDoor(), "core room door materialization allows single-room wall creation");
         assertFalse(RoomClusterDoorBoundaryMaterialization.forEdge(
                         northEdge,
                         singleRoomCells,
-                        RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.DOOR)
+                        DoorBoundaryMaterialization.ExistingBoundaryKind.DOOR)
                 .materializesDoor(), "core room door materialization rejects existing door no-op");
         assertFalse(RoomClusterDoorBoundaryMaterialization.forEdge(
                         eastEdge,
                         splitRoomCells,
-                        RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.NONE)
+                        DoorBoundaryMaterialization.ExistingBoundaryKind.NONE)
                 .materializesDoor(), "core room door materialization rejects split-room edge without boundary");
         assertTrue(RoomClusterDoorBoundaryMaterialization.forEdge(
                         eastEdge,
                         splitRoomCells,
-                        RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.NON_DOOR)
+                        DoorBoundaryMaterialization.ExistingBoundaryKind.NON_DOOR)
                 .materializesDoor(), "core room door materialization converts split-room non-door boundary");
         assertFalse(RoomClusterDoorBoundaryMaterialization.forEdge(
                         Edge.sideOf(new Cell(8, 8, 0), Direction.NORTH),
                         singleRoomCells,
-                        RoomClusterDoorBoundaryMaterialization.ExistingBoundaryKind.NONE)
+                        DoorBoundaryMaterialization.ExistingBoundaryKind.NONE)
                 .materializesDoor(), "core room door materialization rejects untouched room edge");
     }
 
