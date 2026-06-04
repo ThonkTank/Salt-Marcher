@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-01
+Last Reviewed: 2026-06-04
 Source of Truth: Core Dungeon model invariant proof rows that supplement Dungeon Editor real-route behavior proof.
 
 # Dungeon Core Model Invariants
@@ -55,6 +55,7 @@ use the editor behavior catalog's `Ready` route status vocabulary.
 | `DGI-STR-007` | `DungeonStructureInvariantHarness` | `core/structure/Transition`, `TransitionCatalog`, `TransitionDestination` plus transitional `worldspace/DungeonTransition` adapter compatibility | Transition structure owns destination normalization, labels, placed-state, replacement by id, reverse-link cleanup, transition-reference checks, and protected delete policy. The transitional worldspace adapter proves these catalog operations round-trip through core without taking over policy ownership. Map-level materialization and persistence remain outside this invariant row until later integration slices. |
 | `DGI-STR-008` | `DungeonStructureInvariantHarness` | `core/structure/room/RoomClusterDoorBoundaryMaterialization` | Room structure owns door-boundary materialization eligibility from room-cell ownership, edge geometry, and existing boundary kind. Single-room edges can materialize a door when the edge is not already a door; split-room edges require an existing non-door boundary; zero-touch and existing-door cases are rejected as no-ops. Topology-ref identity, persisted boundary rows, partition rebuild, and corridor-bound door-delete protection remain in `worldspace` until later room/topology migration slices. |
 | `DGI-STR-009` | `DungeonStructureInvariantHarness` | `core/structure/room/RoomClusterBoundaryMaterialization` | Room structure owns boundary-row materialization from cluster-cell ownership, center-relative cell derivation, edge direction derivation, and requested boundary kind. Perimeter wall and open rows can materialize from core geometry; open rows require exactly one cluster-side touching cell, split-room interior open rows are rejected, and invalid or untouched edges are rejected. Topology-ref identity, persisted boundary maps, boundary ordering, partition rebuild, transitional adapter compatibility, and corridor-bound delete protection remain in `worldspace` until later room/topology migration slices. |
+| `DGI-STR-010` | `DungeonStructureInvariantHarness` | `core/structure/room/RoomClusterRoomPartition` | Room structure owns closed-boundary partitioning of cluster cells into rooms, reuse of existing room ids by floor anchor, allocation of ids for new split-room components, and boundary-aware room-cell assignment. Worldspace remains transitional adapter glue for persisted boundary rows, narration, topology-ref identity, boundary ordering, and map-level rebuild until later room/topology migration slices. |
 
 ## References
 

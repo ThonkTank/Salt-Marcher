@@ -13,26 +13,15 @@ import src.domain.dungeon.model.core.geometry.CellLoopRasterizer.CellLoop;
 public final class DungeonRoomCellProjection {
 
     public static final DungeonCell LOOP_SEPARATOR = new DungeonCell(Integer.MIN_VALUE, Integer.MIN_VALUE, 0);
-    private static final DungeonCellTraversalSupport TRAVERSAL_SUPPORT = new DungeonCellTraversalSupport();
+    private static final DungeonRoomCellPartitionAdapter PARTITION_ADAPTER =
+            new DungeonRoomCellPartitionAdapter();
 
     public Map<Long, List<DungeonCell>> cellsByRoom(
             DungeonRoomCluster cluster,
             List<DungeonRoom> rooms
     ) {
-        Map<Long, List<DungeonCell>> result = new LinkedHashMap<>();
         List<DungeonRoom> safeRooms = rooms == null ? List.of() : rooms;
-        for (Integer level : levels(cluster, safeRooms)) {
-            DungeonRoomCellAssignmentSupport.assignLevelCells(result, this, cluster, safeRooms, level);
-        }
-        for (DungeonRoom room : safeRooms) {
-            List<DungeonCell> roomCells = result.get(room.roomId());
-            if (roomCells == null) {
-                roomCells = new ArrayList<>();
-                result.put(room.roomId(), roomCells);
-            }
-            roomCells.add(room.primaryAnchor());
-        }
-        return normalizeCellsByRoom(result);
+        return PARTITION_ADAPTER.cellsByRoom(cluster, safeRooms, cellsByLevel(cluster, safeRooms));
     }
 
     public Map<Integer, List<DungeonCell>> cellsByLevel(
@@ -73,14 +62,6 @@ public final class DungeonRoomCellProjection {
             return List.of();
         }
         return flattenedDungeonCells(CellLoopRasterizer.relativeCellLoops(center.geometry(), coreCells(cells)));
-    }
-
-    private static Map<Long, List<DungeonCell>> normalizeCellsByRoom(Map<Long, List<DungeonCell>> source) {
-        Map<Long, List<DungeonCell>> normalized = new LinkedHashMap<>();
-        for (Map.Entry<Long, List<DungeonCell>> entry : source.entrySet()) {
-            normalized.put(entry.getKey(), DungeonCellOrdering.sortedCells(entry.getValue()));
-        }
-        return Map.copyOf(normalized);
     }
 
     private static Set<Integer> levels(DungeonRoomCluster cluster, List<DungeonRoom> rooms) {

@@ -23,9 +23,13 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoomSet;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
+import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
+import src.domain.dungeon.model.core.structure.room.RoomCluster;
+import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
+import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
@@ -114,6 +118,12 @@ final class DungeonStructureInvariantHarness {
                 "DGI-STR-009",
                 "Room structure owns boundary-row materialization from cluster cells, center, edge geometry, "
                         + "relative cell, direction, and boundary kind");
+        assertRoomPartitionInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-STR-010",
+                "Room structure owns closed-boundary room partitioning, room-id reuse, and room-cell assignment");
     }
 
     private static void assertCorridorStructureInvariants() {
@@ -625,6 +635,39 @@ final class DungeonStructureInvariantHarness {
                         Edge.sideOf(new Cell(8, 8, 0), Direction.NORTH),
                         RoomClusterBoundaryMaterialization.BoundaryKind.WALL),
                 "core room boundary rejects untouched edge");
+    }
+
+    private static void assertRoomPartitionInvariants() {
+        Cell left = new Cell(0, 0, 0);
+        Cell middle = new Cell(1, 0, 0);
+        Cell right = new Cell(2, 0, 0);
+        Edge split = Edge.sideOf(left, Direction.EAST);
+        RoomCluster cluster = new RoomCluster(9L, 2L, left, Map.of(0, List.of(left, middle, right)));
+        Room existingRoom = new Room(7L, 2L, 9L, "Bestand", Map.of(0, left));
+        RoomClusterWork work = new RoomClusterWork(cluster, List.of(existingRoom));
+
+        List<Room> rooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
+                work,
+                Map.of(0, List.of(split)),
+                20L);
+        assertEquals(List.of(7L, 20L), roomIds(rooms), "core room partition reuses anchor room and reserves split room");
+        assertEquals(Map.of(0, left), rooms.getFirst().floorAnchors(),
+                "core room partition preserves existing room anchor");
+        assertEquals(Map.of(0, middle), rooms.get(1).floorAnchors(),
+                "core room partition anchors new component at sorted first cell");
+        assertEquals(Map.of(
+                        7L, List.of(left),
+                        20L, List.of(middle, right)),
+                RoomClusterRoomPartition.cellsByRoom(cluster, rooms, Map.of(0, List.of(split))),
+                "core room partition assigns cells behind closed boundaries");
+    }
+
+    private static List<Long> roomIds(List<Room> rooms) {
+        List<Long> result = new java.util.ArrayList<>();
+        for (Room room : rooms) {
+            result.add(room.roomId());
+        }
+        return List.copyOf(result);
     }
 
     private static void assertStairStructureInvariants() {

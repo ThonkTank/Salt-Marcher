@@ -145,14 +145,12 @@ final class DungeonRoomClusterWorkLogic {
             return result + 1L;
         }
 
-        long reserveRoomId() {
-            long reserved = nextRoomId;
-            nextRoomId += 1L;
-            return reserved;
-        }
-
         RoomClusterCollection.IdAllocation toCore() {
             return new RoomClusterCollection.IdAllocation(nextClusterId, nextRoomId);
+        }
+
+        long nextRoomId() {
+            return nextRoomId;
         }
     }
 }
