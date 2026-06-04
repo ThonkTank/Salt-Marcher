@@ -1,9 +1,14 @@
 package src.domain.dungeon.model.worldspace;
 
-import java.util.ArrayList;
+import java.util.ArrayDeque;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
+import src.domain.dungeon.model.core.geometry.EdgeKey;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
 
 final class DungeonClusterBoundaryOrdering {
 
@@ -11,49 +16,98 @@ final class DungeonClusterBoundaryOrdering {
     }
 
     static Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap(DungeonRoomCluster cluster) {
+        Map<BoundaryRow, Queue<DungeonClusterBoundary>> boundariesByRow = boundariesByRow(flatten(
+                cluster == null ? null : cluster.boundariesByLevel()));
+        List<BoundaryRow> orderedRows = RoomClusterBoundaryOrdering.sortedRows(boundariesByRow.keySet());
         Map<DungeonBoundaryKey, DungeonClusterBoundary> result = new LinkedHashMap<>();
-        for (List<DungeonClusterBoundary> boundaries : cluster.boundariesByLevel().values()) {
-            for (DungeonClusterBoundary boundary : boundaries) {
-                result.put(DungeonBoundaryKey.from(boundary.absoluteEdge(cluster.center())), boundary);
+        for (BoundaryRow row : orderedRows) {
+            DungeonBoundaryKey key = dungeonKey(RoomClusterBoundaryOrdering.boundaryKey(
+                    cluster == null ? null : cluster.center().geometry(),
+                    row));
+            Queue<DungeonClusterBoundary> rowBoundaries = boundariesByRow.get(row);
+            while (rowBoundaries != null && !rowBoundaries.isEmpty()) {
+                result.put(key, rowBoundaries.remove());
             }
         }
         return result;
     }
 
     static Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel(Iterable<DungeonClusterBoundary> boundaries) {
-        Map<Integer, List<DungeonClusterBoundary>> grouped = new LinkedHashMap<>();
-        for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
-            List<DungeonClusterBoundary> levelBoundaries = grouped.get(boundary.level());
-            if (levelBoundaries == null) {
-                levelBoundaries = new ArrayList<>();
-                grouped.put(boundary.level(), levelBoundaries);
-            }
-            levelBoundaries.add(boundary);
-        }
-        return sortedBoundariesByLevel(grouped);
+        return orderedBoundariesByLevel(boundaries);
     }
 
-    private static Map<Integer, List<DungeonClusterBoundary>> sortedBoundariesByLevel(
-            Map<Integer, List<DungeonClusterBoundary>> grouped
+    private static Map<Integer, List<DungeonClusterBoundary>> orderedBoundariesByLevel(
+            Iterable<DungeonClusterBoundary> boundaries
     ) {
+        Map<BoundaryRow, Queue<DungeonClusterBoundary>> boundariesByRow = boundariesByRow(boundaries);
+        Map<Integer, List<BoundaryRow>> coreRowsByLevel =
+                RoomClusterBoundaryOrdering.boundariesByLevel(boundariesByRow.keySet());
         Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : grouped.entrySet()) {
-            List<DungeonClusterBoundary> sorted = new ArrayList<>(entry.getValue());
-            sorted.sort(DungeonClusterBoundaryOrdering::compareBoundaries);
-            result.put(entry.getKey(), List.copyOf(sorted));
+        for (Map.Entry<Integer, List<BoundaryRow>> entry : coreRowsByLevel.entrySet()) {
+            List<DungeonClusterBoundary> levelBoundaries = new java.util.ArrayList<>();
+            for (BoundaryRow row : entry.getValue()) {
+                Queue<DungeonClusterBoundary> rowBoundaries = boundariesByRow.get(row);
+                while (rowBoundaries != null && !rowBoundaries.isEmpty()) {
+                    levelBoundaries.add(rowBoundaries.remove());
+                }
+            }
+            result.put(entry.getKey(), List.copyOf(levelBoundaries));
         }
         return Map.copyOf(result);
     }
 
-    private static int compareBoundaries(DungeonClusterBoundary left, DungeonClusterBoundary right) {
-        int rowComparison = Integer.compare(left.relativeCell().r(), right.relativeCell().r());
-        if (rowComparison != 0) {
-            return rowComparison;
+    private static Map<BoundaryRow, Queue<DungeonClusterBoundary>> boundariesByRow(
+            Iterable<DungeonClusterBoundary> boundaries
+    ) {
+        Map<BoundaryRow, Queue<DungeonClusterBoundary>> result = new LinkedHashMap<>();
+        for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
+            if (boundary == null) {
+                continue;
+            }
+            BoundaryRow row = coreRow(boundary);
+            Queue<DungeonClusterBoundary> rowBoundaries = result.get(row);
+            if (rowBoundaries == null) {
+                rowBoundaries = new ArrayDeque<>();
+                result.put(row, rowBoundaries);
+            }
+            rowBoundaries.add(boundary);
         }
-        int columnComparison = Integer.compare(left.relativeCell().q(), right.relativeCell().q());
-        if (columnComparison != 0) {
-            return columnComparison;
+        return result;
+    }
+
+    private static List<DungeonClusterBoundary> flatten(
+            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+    ) {
+        List<DungeonClusterBoundary> result = new java.util.ArrayList<>();
+        for (List<DungeonClusterBoundary> boundaries
+                : boundariesByLevel == null ? List.<List<DungeonClusterBoundary>>of() : boundariesByLevel.values()) {
+            result.addAll(boundaries);
         }
-        return left.direction().name().compareTo(right.direction().name());
+        return List.copyOf(result);
+    }
+
+    private static BoundaryRow coreRow(DungeonClusterBoundary boundary) {
+        return new BoundaryRow(
+                boundary.clusterId(),
+                boundary.level(),
+                boundary.relativeCell().geometry(),
+                boundary.direction().geometry(),
+                coreKind(boundary.kind()));
+    }
+
+    private static BoundaryKind coreKind(DungeonClusterBoundaryKind kind) {
+        if (kind == DungeonClusterBoundaryKind.DOOR) {
+            return BoundaryKind.DOOR;
+        }
+        if (kind == DungeonClusterBoundaryKind.OPEN) {
+            return BoundaryKind.OPEN;
+        }
+        return BoundaryKind.WALL;
+    }
+
+    private static DungeonBoundaryKey dungeonKey(EdgeKey key) {
+        return new DungeonBoundaryKey(
+                DungeonCell.fromGeometry(key.lower()),
+                DungeonCell.fromGeometry(key.upper()));
     }
 }

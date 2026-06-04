@@ -9,6 +9,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.geometry.EdgeKey;
 
 final class RoomClusterRoomComponents {
 
@@ -45,7 +46,7 @@ final class RoomClusterRoomComponents {
         List<RoomComponent> result = new ArrayList<>();
         for (Map.Entry<Integer, List<Cell>> entry : work.cellsByLevel().entrySet()) {
             int level = entry.getKey();
-            Set<RoomClusterBoundaryTraversal.EdgeKey> barriers =
+            Set<EdgeKey> barriers =
                     RoomClusterBoundaryTraversal.barriersAt(barriersByLevel, level);
             for (Set<Cell> component : RoomClusterBoundaryTraversal.connectedComponents(entry.getValue(), barriers)) {
                 List<Cell> cells = RoomClusterCells.sortedCells(component);

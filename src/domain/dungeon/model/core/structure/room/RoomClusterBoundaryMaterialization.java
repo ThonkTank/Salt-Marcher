@@ -7,9 +7,9 @@ import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.geometry.EdgeKey;
 
 public final class RoomClusterBoundaryMaterialization {
     private static final int TOUCHING_CELL_COUNT = 2;
@@ -94,9 +94,9 @@ public final class RoomClusterBoundaryMaterialization {
     }
 
     private static @Nullable Direction directionFrom(Cell cell, Edge edge) {
-        BoundaryEdgeKey key = BoundaryEdgeKey.from(edge);
+        EdgeKey key = EdgeKey.from(edge);
         for (Direction direction : Direction.values()) {
-            if (BoundaryEdgeKey.from(Edge.sideOf(cell, direction)).equals(key)) {
+            if (EdgeKey.from(Edge.sideOf(cell, direction)).equals(key)) {
                 return direction;
             }
         }
@@ -123,14 +123,4 @@ public final class RoomClusterBoundaryMaterialization {
         }
     }
 
-    private record BoundaryEdgeKey(Cell lower, Cell upper) {
-
-        private static BoundaryEdgeKey from(Edge edge) {
-            Cell from = edge.from();
-            Cell to = edge.to();
-            return CellOrdering.compareCells(from, to) <= 0
-                    ? new BoundaryEdgeKey(from, to)
-                    : new BoundaryEdgeKey(to, from);
-        }
-    }
 }

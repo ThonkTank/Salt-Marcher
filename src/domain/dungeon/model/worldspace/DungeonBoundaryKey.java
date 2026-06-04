@@ -1,5 +1,8 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.EdgeKey;
+
 public record DungeonBoundaryKey(
         DungeonCell lower,
         DungeonCell upper
@@ -13,24 +16,14 @@ public record DungeonBoundaryKey(
     }
 
     public long stableId() {
-        long hash = 17L;
-        hash = 31L * hash + cellHash(lower);
-        hash = 31L * hash + cellHash(upper);
-        return Math.max(1L, Math.abs(hash));
-    }
-
-    private static long cellHash(DungeonCell cell) {
-        if (cell == null) {
-            return 0L;
-        }
-        long hash = 17L;
-        hash = 31L * hash + cell.q();
-        hash = 31L * hash + cell.r();
-        hash = 31L * hash + cell.level();
-        return hash;
+        return new EdgeKey(coreCell(lower), coreCell(upper)).stableId();
     }
 
     private static int compareCells(DungeonCell left, DungeonCell right) {
         return DungeonCellOrdering.compareCells(left, right);
+    }
+
+    private static Cell coreCell(DungeonCell cell) {
+        return cell == null ? null : cell.geometry();
     }
 }

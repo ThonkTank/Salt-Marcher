@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.geometry.EdgeKey;
 
 final class RoomClusterRoomAssignment {
 
@@ -42,7 +43,7 @@ final class RoomClusterRoomAssignment {
             RoomCluster cluster,
             List<Room> rooms,
             int level,
-            Set<RoomClusterBoundaryTraversal.EdgeKey> barriers
+            Set<EdgeKey> barriers
     ) {
         Set<Cell> clusterCells = clusterCells(cluster, rooms, level);
         Set<Cell> unclaimedCells = new LinkedHashSet<>(clusterCells);
@@ -57,7 +58,7 @@ final class RoomClusterRoomAssignment {
             int level,
             Set<Cell> clusterCells,
             Set<Cell> unclaimedCells,
-            Set<RoomClusterBoundaryTraversal.EdgeKey> barriers
+            Set<EdgeKey> barriers
     ) {
         if (room == null) {
             return;

@@ -9,9 +9,9 @@ import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.geometry.EdgeKey;
 
 final class RoomClusterBoundaryTraversal {
 
@@ -122,14 +122,4 @@ final class RoomClusterBoundaryTraversal {
         return result;
     }
 
-    record EdgeKey(Cell lower, Cell upper) {
-
-        private static EdgeKey from(Edge edge) {
-            Cell from = edge.from();
-            Cell to = edge.to();
-            return CellOrdering.compareCells(from, to) <= 0
-                    ? new EdgeKey(from, to)
-                    : new EdgeKey(to, from);
-        }
-    }
 }

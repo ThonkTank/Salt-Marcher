@@ -12,6 +12,7 @@ import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorEndpointMaterialization;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorSnap;
@@ -26,6 +27,7 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
 import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
@@ -124,6 +126,12 @@ final class DungeonStructureInvariantHarness {
                 OWNER,
                 "DGI-STR-010",
                 "Room structure owns closed-boundary room partitioning, room-id reuse, and room-cell assignment");
+        assertRoomBoundaryOrderingInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-STR-011",
+                "Room structure owns persisted boundary-row ordering and level grouping; geometry owns edge-key identity");
     }
 
     private static void assertCorridorStructureInvariants() {
@@ -660,6 +668,69 @@ final class DungeonStructureInvariantHarness {
                         20L, List.of(middle, right)),
                 RoomClusterRoomPartition.cellsByRoom(cluster, rooms, Map.of(0, List.of(split))),
                 "core room partition assigns cells behind closed boundaries");
+    }
+
+    private static void assertRoomBoundaryOrderingInvariants() {
+        Cell center = new Cell(5, 7, 0);
+        BoundaryRow south = new BoundaryRow(
+                42L,
+                0,
+                new Cell(0, 1, 0),
+                Direction.SOUTH,
+                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
+        BoundaryRow north = new BoundaryRow(
+                42L,
+                0,
+                new Cell(0, 0, 0),
+                Direction.NORTH,
+                RoomClusterBoundaryMaterialization.BoundaryKind.DOOR);
+        BoundaryRow east = new BoundaryRow(
+                42L,
+                0,
+                new Cell(0, 0, 0),
+                Direction.EAST,
+                RoomClusterBoundaryMaterialization.BoundaryKind.OPEN);
+        BoundaryRow upper = new BoundaryRow(
+                42L,
+                1,
+                new Cell(-1, 0, 1),
+                Direction.WEST,
+                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
+
+        assertEquals(
+                List.of(east, north, south, upper),
+                RoomClusterBoundaryOrdering.sortedRows(List.of(south, upper, north, east)),
+                "core room boundary ordering sorts by level, row, column, direction name");
+        Map<Integer, List<BoundaryRow>> rowsByLevel =
+                RoomClusterBoundaryOrdering.boundariesByLevel(List.of(south, upper, north, east));
+        assertEquals(List.of(east, north, south), rowsByLevel.get(0),
+                "core room boundary ordering groups sorted rows by level");
+        assertEquals(List.of(upper), rowsByLevel.get(1),
+                "core room boundary ordering preserves upper level rows");
+
+        assertEquals(
+                EdgeKey.from(Edge.sideOf(new Cell(5, 7, 0), Direction.NORTH)),
+                RoomClusterBoundaryOrdering.boundaryKey(center, north),
+                "core room boundary ordering keys rows by center-relative absolute edge");
+        EdgeKey northKey = EdgeKey.from(Edge.sideOf(new Cell(5, 7, 0), Direction.NORTH));
+        assertTrue(northKey.stableId() > 0L,
+                "core room boundary ordering produces positive stable edge ids");
+        assertEquals(
+                northKey,
+                new EdgeKey(northKey.upper(), northKey.lower()),
+                "core geometry edge key canonicalizes reversed endpoints");
+        assertEquals(
+                northKey.stableId(),
+                new EdgeKey(northKey.upper(), northKey.lower()).stableId(),
+                "core geometry edge key keeps stable ids endpoint-order independent");
+        assertEquals(
+                northKey.stableId(),
+                src.domain.dungeon.model.worldspace.DungeonBoundaryKey.from(
+                        src.domain.dungeon.model.worldspace.DungeonEdge.sideOf(
+                                new DungeonCell(5, 7, 0),
+                                DungeonEdgeDirection.NORTH))
+                        .stableId(),
+                "worldspace boundary key adapter delegates stable ids to core geometry");
     }
 
     private static List<Long> roomIds(List<Room> rooms) {
