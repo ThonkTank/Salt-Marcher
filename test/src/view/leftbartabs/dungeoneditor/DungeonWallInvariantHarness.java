@@ -8,6 +8,9 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
+import src.domain.dungeon.model.core.structure.door.Door;
+import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
+import src.domain.dungeon.model.core.structure.door.DoorIndex;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
@@ -48,6 +51,12 @@ final class DungeonWallInvariantHarness {
                 OWNER,
                 "DGI-WALL-004",
                 "Wall owner computes stretch source selection and connector paths from wall map state");
+        assertWallDoorBoundarySurface();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-WALL-005",
+                "Wall owner and Door owner share one boundary surface without duplicate wall/door state");
     }
 
     private static void assertStructureLocalWallMap() {
@@ -200,6 +209,47 @@ final class DungeonWallInvariantHarness {
                 "wall owner returns core connector path derivation");
     }
 
+    private static void assertWallDoorBoundarySurface() {
+        Cell center = new Cell(0, 0, 0);
+        Door door = new Door(7L, 1L, 42L, center, Direction.EAST);
+        BoundaryRow wallRow = new BoundaryRow(42L, 0, center, Direction.EAST,
+                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
+        BoundaryRow doorRow = boundaryRow(door.doorBoundaryState());
+
+        assertTrue(DoorBoundaryMaterialization.forEdge(
+                        Edge.sideOf(center, Direction.EAST),
+                        Map.of(1L, List.of(center), 2L, List.of(new Cell(1, 0, 0))),
+                        DoorBoundaryMaterialization.ExistingBoundaryKind.NON_DOOR)
+                .materializesDoor(), "door owner allows conversion of existing non-door wall boundary");
+        assertFalse(DoorBoundaryMaterialization.forEdge(
+                        Edge.sideOf(center, Direction.EAST),
+                        Map.of(1L, List.of(center), 2L, List.of(new Cell(1, 0, 0))),
+                        DoorBoundaryMaterialization.ExistingBoundaryKind.DOOR)
+                .materializesDoor(), "door owner rejects duplicate door boundary materialization");
+        assertEquals(new RoomClusterWallMap(center, List.of(doorRow)),
+                new RoomClusterWallMap(center, List.of(wallRow, doorRow)),
+                "wall owner normalizes one boundary surface where door replaces wall");
+
+        DoorIndex index = new DoorIndex(List.of(door));
+        assertEquals(new DoorIndex(List.of()), index.withoutDoor(door, false),
+                "door owner removes unbound door from the bounded boundary surface");
+        assertEquals(new RoomClusterWallMap(center, List.of(wallRow)),
+                new RoomClusterWallMap(center, List.of(boundaryRow(door.restoredWallState()))),
+                "door owner exposes restored wall state for the wall boundary surface");
+    }
+
+    private static BoundaryRow boundaryRow(Door.BoundaryState state) {
+        return new BoundaryRow(
+                state.clusterId(),
+                state.level(),
+                state.relativeCell(),
+                state.direction(),
+                switch (state.kind()) {
+                    case DOOR -> RoomClusterBoundaryMaterialization.BoundaryKind.DOOR;
+                    case WALL -> RoomClusterBoundaryMaterialization.BoundaryKind.WALL;
+                });
+    }
+
     private static void assertEquals(Object expected, Object actual, String message) {
         if (!java.util.Objects.equals(expected, actual)) {
             throw new IllegalStateException(message + " expected=" + expected + " actual=" + actual);
@@ -208,6 +258,12 @@ final class DungeonWallInvariantHarness {
 
     private static void assertTrue(boolean value, String message) {
         if (!value) {
+            throw new IllegalStateException(message);
+        }
+    }
+
+    private static void assertFalse(boolean value, String message) {
+        if (value) {
             throw new IllegalStateException(message);
         }
     }
