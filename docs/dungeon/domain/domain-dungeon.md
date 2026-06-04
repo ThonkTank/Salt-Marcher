@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-03
+Last Reviewed: 2026-06-04
 Source of Truth: Dungeon write model, ownership boundaries, and domain
 invariants.
 
@@ -56,6 +56,9 @@ Target state:
 - `worldspace` is no longer the target model family
 - authored dungeon truth lives under `dungeon/model/core/**`
 - editor and travel runtime state live under `dungeon/model/runtime/**`
+- authored floor, wall, path, door, and transition behavior lives in
+  self-managed core owners inside the `DungeonMap` aggregate boundary instead
+  of being temporary projections from broad structure or runtime managers
 - topology repair, split or merge behavior, identity preservation, and derived
   rebuild rules remain in the dungeon domain and move to the deepest owning
   core object instead of staying in broad operation or helper classes
@@ -99,6 +102,14 @@ DungeonMap
 
 The aggregate is the transaction boundary and the behavioral owner of mutable
 topology.
+
+`DungeonMap` remains the aggregate root, transaction boundary, revision owner,
+and persistence frame. It must not become the central policy owner for floor,
+wall, path, door, or transition behavior. Room clusters, corridors, stairs,
+doors, and transitions compose durable core owners for those concepts inside
+the aggregate boundary; those owners keep their own local and collection-wide
+invariants while `DungeonMap` coordinates cross-owner consistency and
+publication.
 
 ## Core And Runtime Model Families
 

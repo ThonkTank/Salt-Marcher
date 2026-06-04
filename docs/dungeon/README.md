@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
+Last Reviewed: 2026-06-04
 Source of Truth: Routing entrypoint for the dungeon gameplay and domain
 documentation bundle.
 
@@ -31,6 +31,10 @@ Generic map-canvas behavior and dungeon map-surface adoption now live in
 
 - [Dungeon Domain Model](./domain/domain-dungeon.md)
 
+### Verification
+
+- [Dungeon Core Model Invariants](./verification/verification-dungeon-core-model-invariants.md)
+
 ### Delivery
 
 - [Dungeon Delivery Notes](./delivery/delivery-dungeon.md)
@@ -41,7 +45,3 @@ Generic map-canvas behavior and dungeon map-surface adoption now live in
 - [Dungeon Map Adoption Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
 - [Dungeon Map Surface Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-dungeon-surface.md:1)
 - [Maps Canvas Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/requirements/requirements-maps-canvas.md:1)
-
-## References
-
-- [Dungeon README Stub](/home/aaron/Schreibtisch/projects/SaltMarcher/src/domain/dungeon/README.md:1)

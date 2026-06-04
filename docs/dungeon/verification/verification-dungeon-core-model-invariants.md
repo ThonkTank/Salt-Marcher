@@ -1,13 +1,32 @@
 Status: Draft
 Owner: SaltMarcher Team
 Last Reviewed: 2026-06-04
-Source of Truth: Core Dungeon model invariant proof rows that supplement Dungeon Editor real-route behavior proof.
+Source of Truth: Index for current Core Dungeon model invariant proof rows and
+target family-specific invariant catalogs.
 
 # Dungeon Core Model Invariants
 
-This document owns model-only invariant proof rows for Dungeon Core objects.
-These rows supplement real-route `DE-*` behavior proof and never close a
-catalog `Ready` behavior row by themselves.
+This document indexes current model-only invariant proof rows for Dungeon Core
+objects and routes target component-family invariant obligations to the
+family-specific catalogs below. These rows supplement real-route `DE-*`
+behavior proof and never close a catalog `Ready` behavior row by themselves.
+
+## Target Family Catalogs
+
+The target family catalogs describe the Dungeon domain target-state
+component-owner migration direction. They may intentionally name owners that
+are not yet the current code shape; their `Current Status` column distinguishes
+target obligations from qualified proof.
+
+Each family catalog names the eventual focused family harness or OwnerSuite
+proof expected for migration slices. This documentation pass does not create a
+new Gradle task or public verification gate.
+
+- [Floor invariants](verification-dungeon-floor-invariants.md)
+- [Wall invariants](verification-dungeon-wall-invariants.md)
+- [Path invariants](verification-dungeon-path-invariants.md)
+- [Door invariants](verification-dungeon-door-invariants.md)
+- [Transition invariants](verification-dungeon-transition-invariants.md)
 
 ## Proof Model
 
@@ -42,7 +61,7 @@ use the editor behavior catalog's `Ready` route status vocabulary.
 | `DGI-CMP-002` | `DungeonComponentInvariantHarness` | `core/component/CorridorAnchor` | Corridor anchors keep local id, host corridor id normalization, position, relocation, and position-match invariants; missing positions are rejected by core while legacy defaults remain in transitional adapters. |
 | `DGI-CMP-003` | `DungeonComponentInvariantHarness` | `core/component/CorridorDoorBinding`, `CorridorWaypoint`, `CorridorAnchorRef` | Corridor binding components keep local door, waypoint, and anchor-reference values plus transitional adapter compatibility. Topology refs remain transitional adapter identity until the structure or graph owner is migrated. |
 
-## Structure Invariants
+## Qualified Structure Invariants
 
 | ID | OwnerSuite | Scope | Expected invariant |
 | --- | --- | --- | --- |
@@ -57,6 +76,17 @@ use the editor behavior catalog's `Ready` route status vocabulary.
 | `DGI-STR-009` | `DungeonStructureInvariantHarness` | `core/structure/room/RoomClusterBoundaryMaterialization` | Room structure owns boundary-row materialization from cluster-cell ownership, center-relative cell derivation, edge direction derivation, and requested boundary kind. Perimeter wall and open rows can materialize from core geometry; open rows require exactly one cluster-side touching cell, split-room interior open rows are rejected, and invalid or untouched edges are rejected. Topology-ref identity, persisted boundary maps, partition rebuild, transitional adapter compatibility, and corridor-bound delete protection remain in `worldspace` until later room/topology migration slices. |
 | `DGI-STR-010` | `DungeonStructureInvariantHarness` | `core/structure/room/RoomClusterRoomPartition` | Room structure owns closed-boundary partitioning of cluster cells into rooms, reuse of existing room ids by floor anchor, allocation of ids for new split-room components, and boundary-aware room-cell assignment. Worldspace remains transitional adapter glue for persisted boundary rows, narration, topology-ref identity, and map-level rebuild until later room/topology migration slices. |
 | `DGI-STR-011` | `DungeonStructureInvariantHarness` | `core/structure/room/RoomClusterBoundaryOrdering`, `core/geometry/EdgeKey`, plus transitional `worldspace/DungeonBoundaryKey` adapter compatibility | Room structure owns persisted boundary-row sorting by level, row, column, and direction name plus sorted level grouping for boundary maps. Geometry owns normalized edge-key identity and positive stable ids. The transitional worldspace boundary-key adapter delegates stable-id calculation to core geometry. Worldspace remains transitional adapter glue for topology-ref preservation, persisted boundary record publication, boundary edit transactions, partition rebuild, and corridor-bound door-delete protection until later room/topology migration slices. |
+
+## Pending Structure Invariant Rows
+
+Pending rows are visible planning evidence from active migration slices. They
+are not qualified by this documentation-only pass and must not be cited as
+current proof until their production/test slice completes the required proof and
+review.
+
+| ID | Intended OwnerSuite | Scope | Expected invariant |
+| --- | --- | --- | --- |
+| `DGI-STR-012` | `DungeonStructureInvariantHarness` | `core/structure/room/RoomClusterBoundaryStretchPlan` | Room structure owns boundary-stretch orientation, contiguous source-edge selection, outward-side detection, movement-normal validation, moved strip-cell derivation, boundary vertices, connector-path derivation, and source edge-key identity. Worldspace remains transitional adapter glue for persisted boundary records, topology-ref preservation, corridor-bound boundary protection, boundary mutation transactions, partition rebuild, and map-level publication until later room/topology migration slices. |
 
 ## References
 
