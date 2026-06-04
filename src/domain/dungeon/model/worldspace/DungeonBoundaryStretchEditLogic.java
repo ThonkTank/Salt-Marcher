@@ -44,7 +44,7 @@ final class DungeonBoundaryStretchEditLogic {
                 deltaR,
                 deltaLevel,
                 boundaries);
-        if (stretch.isEmpty() || stretch.get().stationary()) {
+        if (stretch.isEmpty() || stretch.get().movement() == 0) {
             return dungeonMap;
         }
         Optional<StretchMutationResult> mutation = applyStretchMutation(dungeonMap, target, stretch.get(), boundaries);

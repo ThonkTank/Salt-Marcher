@@ -25,7 +25,8 @@ final class DungeonBoundaryStretchConnectorLogic {
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             boolean requireTouch
     ) {
-        for (BoundaryVertex endpoint : List.of(stretch.vertices().getFirst(), stretch.vertices().getLast())) {
+        List<BoundaryVertex> vertices = DungeonBoundaryStretchSelectionGeometry.vertices(stretch);
+        for (BoundaryVertex endpoint : List.of(vertices.getFirst(), vertices.getLast())) {
             boolean touchesOuter = BOUNDARY_LOOKUP_SERVICE.touchesOuterBoundary(clusterCells, endpoint);
             boolean hasAttachment = BOUNDARY_LOOKUP_SERVICE.hasPerpendicularBoundary(
                     boundaries,
@@ -50,7 +51,7 @@ final class DungeonBoundaryStretchConnectorLogic {
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             BoundaryVertex endpoint
     ) {
-        List<DungeonEdge> connectorPath = stretch.connectorPath(endpoint);
+        List<DungeonEdge> connectorPath = DungeonBoundaryStretchSelectionGeometry.connectorPath(stretch, endpoint);
         if (connectorPath.isEmpty()) {
             return true;
         }

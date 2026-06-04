@@ -76,16 +76,6 @@ use the editor behavior catalog's `Ready` route status vocabulary.
 | `DGI-STR-009` | `DungeonStructureInvariantHarness` | `core/structure/room/RoomClusterBoundaryMaterialization` | Room structure owns boundary-row materialization from cluster-cell ownership, center-relative cell derivation, edge direction derivation, and requested boundary kind. Perimeter wall and open rows can materialize from core geometry; open rows require exactly one cluster-side touching cell, split-room interior open rows are rejected, and invalid or untouched edges are rejected. Topology-ref identity, persisted boundary maps, partition rebuild, transitional adapter compatibility, and corridor-bound delete protection remain in `worldspace` until later room/topology migration slices. |
 | `DGI-STR-010` | `DungeonStructureInvariantHarness` | `core/structure/room/RoomClusterRoomPartition` | Room structure owns closed-boundary partitioning of cluster cells into rooms, reuse of existing room ids by floor anchor, allocation of ids for new split-room components, and boundary-aware room-cell assignment. Worldspace remains transitional adapter glue for persisted boundary rows, narration, topology-ref identity, and map-level rebuild until later room/topology migration slices. |
 | `DGI-STR-011` | `DungeonStructureInvariantHarness` | `core/structure/room/RoomClusterBoundaryOrdering`, `core/geometry/EdgeKey`, plus transitional `worldspace/DungeonBoundaryKey` adapter compatibility | Room structure owns persisted boundary-row sorting by level, row, column, and direction name plus sorted level grouping for boundary maps. Geometry owns normalized edge-key identity and positive stable ids. The transitional worldspace boundary-key adapter delegates stable-id calculation to core geometry. Worldspace remains transitional adapter glue for topology-ref preservation, persisted boundary record publication, boundary edit transactions, partition rebuild, and corridor-bound door-delete protection until later room/topology migration slices. |
-
-## Pending Structure Invariant Rows
-
-Pending rows are visible planning evidence from active migration slices. They
-are not qualified by this documentation-only pass and must not be cited as
-current proof until their production/test slice completes the required proof and
-review.
-
-| ID | Intended OwnerSuite | Scope | Expected invariant |
-| --- | --- | --- | --- |
 | `DGI-STR-012` | `DungeonStructureInvariantHarness` | `core/structure/room/RoomClusterBoundaryStretchPlan` | Room structure owns boundary-stretch orientation, contiguous source-edge selection, outward-side detection, movement-normal validation, moved strip-cell derivation, boundary vertices, connector-path derivation, and source edge-key identity. Worldspace remains transitional adapter glue for persisted boundary records, topology-ref preservation, corridor-bound boundary protection, boundary mutation transactions, partition rebuild, and map-level publication until later room/topology migration slices. |
 
 ## References

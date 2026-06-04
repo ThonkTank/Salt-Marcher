@@ -3,6 +3,7 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
@@ -28,6 +29,7 @@ import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
@@ -132,6 +134,12 @@ final class DungeonStructureInvariantHarness {
                 OWNER,
                 "DGI-STR-011",
                 "Room structure owns persisted boundary-row ordering and level grouping; geometry owns edge-key identity");
+        assertRoomBoundaryStretchPlanInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-STR-012",
+                "Room structure owns boundary-stretch selection, movement strip, connector path, and outward-side rules");
     }
 
     private static void assertCorridorStructureInvariants() {
@@ -731,6 +739,63 @@ final class DungeonStructureInvariantHarness {
                                 DungeonEdgeDirection.NORTH))
                         .stableId(),
                 "worldspace boundary key adapter delegates stable ids to core geometry");
+    }
+
+    private static void assertRoomBoundaryStretchPlanInvariants() {
+        Cell left = new Cell(0, 0, 0);
+        Cell right = new Cell(1, 0, 0);
+        Edge northLeft = Edge.sideOf(left, Direction.NORTH);
+        Edge northRight = Edge.sideOf(right, Direction.NORTH);
+        Map<EdgeKey, BoundaryRow> boundaries = Map.of(
+                EdgeKey.from(northLeft),
+                new BoundaryRow(
+                        42L,
+                        0,
+                        new Cell(0, 0, 0),
+                        Direction.NORTH,
+                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL),
+                EdgeKey.from(northRight),
+                new BoundaryRow(
+                        42L,
+                        0,
+                        new Cell(1, 0, 0),
+                        Direction.NORTH,
+                        RoomClusterBoundaryMaterialization.BoundaryKind.WALL));
+
+        RoomClusterBoundaryStretchPlan.Selection outward =
+                RoomClusterBoundaryStretchPlan.resolve(
+                        Set.of(left, right),
+                        List.of(northRight, northLeft),
+                        boundaries,
+                        0,
+                        -1,
+                        0)
+                        .orElseThrow(() -> new IllegalStateException("expected stretch selection"));
+        assertEquals(RoomClusterBoundaryStretchPlan.Orientation.HORIZONTAL, outward.orientation(),
+                "core room stretch derives horizontal orientation");
+        assertTrue(outward.outer(), "core room stretch marks perimeter row as outer");
+        assertTrue(outward.movesOutward(), "core room stretch resolves outward movement");
+        assertEquals(List.of(
+                        EdgeKey.from(northLeft),
+                        EdgeKey.from(northRight)),
+                new java.util.ArrayList<>(outward.sourceKeys()),
+                "core room stretch preserves sorted source keys");
+        assertEquals(Set.of(new Cell(0, -1, 0), new Cell(1, -1, 0)),
+                outward.stripCells(),
+                "core room stretch computes moved strip cells");
+        assertEquals(
+                List.of(new Edge(new Cell(0, 0, 0), new Cell(0, -1, 0))),
+                outward.connectorPath(outward.vertices().getFirst()),
+                "core room stretch computes connector path for moved endpoint");
+        assertEquals(Optional.empty(),
+                RoomClusterBoundaryStretchPlan.resolve(
+                        Set.of(left, right),
+                        List.of(northLeft, northRight),
+                        boundaries,
+                        1,
+                        0,
+                        0),
+                "core room stretch rejects movement outside the boundary normal");
     }
 
     private static List<Long> roomIds(List<Room> rooms) {

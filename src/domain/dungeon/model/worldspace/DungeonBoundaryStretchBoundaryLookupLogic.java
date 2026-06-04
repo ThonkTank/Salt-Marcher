@@ -13,7 +13,7 @@ final class DungeonBoundaryStretchBoundaryLookupLogic {
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             StretchSelection stretch
     ) {
-        List<BoundaryVertex> vertices = stretch.vertices();
+        List<BoundaryVertex> vertices = DungeonBoundaryStretchSelectionGeometry.vertices(stretch);
         for (int index = 1; index < vertices.size() - 1; index++) {
             if (hasPerpendicularBoundary(boundaries, stretch.sourceKeys(), vertices.get(index), stretch.orientation())) {
                 return false;

@@ -57,11 +57,11 @@ final class DungeonBoundaryStretchMutationLogic {
     ) {
         Map<Integer, List<DungeonCell>> nextCellsByLevel = new LinkedHashMap<>(target.cellsByLevel());
         Set<DungeonCell> currentLevelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
-        Set<DungeonCell> stripCells = stretch.stripCells();
+        Set<DungeonCell> stripCells = DungeonBoundaryStretchSelectionGeometry.stripCells(stretch);
         if (stripCells.isEmpty()) {
             return Optional.empty();
         }
-        if (stretch.movesOutward()) {
+        if (DungeonBoundaryStretchSelectionGeometry.movesOutward(stretch)) {
             currentLevelCells.addAll(stripCells);
         } else {
             currentLevelCells.removeAll(stripCells);
@@ -71,7 +71,7 @@ final class DungeonBoundaryStretchMutationLogic {
         }
         nextCellsByLevel.put(stretch.level(), DungeonCellOrdering.sortedCells(currentLevelCells));
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(boundaryMap);
-        for (BoundaryVertex vertex : stretch.vertices()) {
+        for (BoundaryVertex vertex : DungeonBoundaryStretchSelectionGeometry.vertices(stretch)) {
             if (!BOUNDARY_LOOKUP_SERVICE.hasPerpendicularBoundary(
                     boundaries,
                     stretch.sourceKeys(),
