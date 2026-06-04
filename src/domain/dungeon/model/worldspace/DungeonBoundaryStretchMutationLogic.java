@@ -69,7 +69,7 @@ final class DungeonBoundaryStretchMutationLogic {
         if (currentLevelCells.isEmpty()) {
             return Optional.empty();
         }
-        nextCellsByLevel.put(stretch.level(), DungeonCellOrdering.sortedCells(currentLevelCells));
+        nextCellsByLevel.put(stretch.level(), DungeonCell.sortedByGeometry(currentLevelCells));
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(boundaryMap);
         for (BoundaryVertex vertex : DungeonBoundaryStretchSelectionGeometry.vertices(stretch)) {
             if (!BOUNDARY_LOOKUP_SERVICE.hasPerpendicularBoundary(

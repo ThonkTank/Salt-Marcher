@@ -120,7 +120,7 @@ final class DungeonClusterBoundaryEditLogic {
         if (edge == null || edge.from() == null || edge.to() == null) {
             return false;
         }
-        List<DungeonCell> touchingCells = DungeonCellOrdering.sortedCells(edge.touchingCells());
+        List<DungeonCell> touchingCells = DungeonCell.sortedByGeometry(edge.touchingCells());
         return touchingCells.size() == 2 && touchingCells.getFirst().level() == touchingCells.get(1).level();
     }
 

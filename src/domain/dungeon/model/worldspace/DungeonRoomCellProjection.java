@@ -30,7 +30,7 @@ public final class DungeonRoomCellProjection {
     ) {
         Map<Integer, List<DungeonCell>> result = new LinkedHashMap<>();
         for (Integer level : levels(cluster, rooms)) {
-            result.put(level, DungeonCellOrdering.sortedCells(clusterCells(cluster, rooms, level)));
+            result.put(level, DungeonCell.sortedByGeometry(clusterCells(cluster, rooms, level)));
         }
         return Map.copyOf(result);
     }

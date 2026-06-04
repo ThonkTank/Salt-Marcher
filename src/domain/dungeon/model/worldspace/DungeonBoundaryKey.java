@@ -20,7 +20,7 @@ public record DungeonBoundaryKey(
     }
 
     private static int compareCells(DungeonCell left, DungeonCell right) {
-        return DungeonCellOrdering.compareCells(left, right);
+        return DungeonCell.compareByGeometry(left, right);
     }
 
     private static Cell coreCell(DungeonCell cell) {

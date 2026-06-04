@@ -33,7 +33,7 @@ public record DungeonRoomTopologyClusterWork(
         for (List<DungeonCell> cells : cellsByLevel.values()) {
             result.addAll(cells);
         }
-        return DungeonCellOrdering.sortedCells(result);
+        return DungeonCell.sortedByGeometry(result);
     }
 
     RoomClusterWork toCore() {

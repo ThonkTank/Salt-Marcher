@@ -28,7 +28,7 @@ public final class DungeonFeatureReadProjection {
                     DungeonFeatureType.STAIR,
                     stair.stairId(),
                     stair.name(),
-                    DungeonCellOrdering.sortedCells(stair.occupiedCells()),
+                    DungeonCell.sortedByGeometry(stair.occupiedCells()),
                     stairDescription(stair),
                     stairDestinationLabel(stair),
                     stairFacts(stair)));
