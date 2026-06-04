@@ -23,12 +23,22 @@ final class DungeonCorridorBindingsCoreAdapter {
             CorridorBindings coreBindings,
             DungeonCorridorDoorBinding replacementDoor
     ) {
+        return fromCore(source, coreBindings, replacementDoor, null);
+    }
+
+    static DungeonCorridorBindings fromCore(
+            DungeonCorridorBindings source,
+            CorridorBindings coreBindings,
+            DungeonCorridorDoorBinding replacementDoor,
+            DungeonCorridorAnchorBinding replacementAnchor
+    ) {
         return new DungeonCorridorBindings(
                 coreBindings.waypoints(),
                 doorBindingsFromCore(source.doorBindings(), coreBindings.doorBindings(), replacementDoor),
                 DungeonCorridorAnchorTopologyRefAdapter.worldspaceAnchorBindings(
                         coreBindings.anchorBindings(),
-                        source.anchorBindings()),
+                        source.anchorBindings(),
+                        replacementAnchor),
                 coreBindings.anchorRefs());
     }
 

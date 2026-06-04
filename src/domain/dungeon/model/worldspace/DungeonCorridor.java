@@ -29,13 +29,6 @@ public record DungeonCorridor(
         return DungeonCorridorCoreAdapter.toCore(this).isReadable();
     }
 
-    public DungeonCorridor withAnchorBinding(DungeonCorridorAnchorBinding binding) {
-        if (binding == null) {
-            return this;
-        }
-        return withBindings(bindings.withAnchorBinding(binding));
-    }
-
     public DungeonCorridor withBindings(DungeonCorridorBindings nextBindings) {
         return new DungeonCorridor(corridorId, mapId, level, roomIds, nextBindings);
     }

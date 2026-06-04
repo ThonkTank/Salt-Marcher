@@ -23,12 +23,16 @@ final class DungeonCorridorAnchorTopologyRefAdapter {
 
     static List<DungeonCorridorAnchorBinding> worldspaceAnchorBindings(
             List<CorridorAnchor> coreAnchors,
-            List<DungeonCorridorAnchorBinding> existingBindings
+            List<DungeonCorridorAnchorBinding> existingBindings,
+            DungeonCorridorAnchorBinding replacementBinding
     ) {
         List<DungeonCorridorAnchorBinding> remaining = nonNullAnchorBindings(existingBindings);
         List<DungeonCorridorAnchorBinding> result = new ArrayList<>();
         for (CorridorAnchor coreAnchor : coreAnchors) {
-            DungeonCorridorAnchorBinding binding = matchingExistingAnchorBinding(coreAnchor, remaining);
+            DungeonCorridorAnchorBinding binding = replacementOrExistingAnchorBinding(
+                    coreAnchor,
+                    replacementBinding,
+                    remaining);
             if (binding != null) {
                 result.add(binding);
             }
@@ -85,6 +89,17 @@ final class DungeonCorridorAnchorTopologyRefAdapter {
             }
         }
         return null;
+    }
+
+    private static DungeonCorridorAnchorBinding replacementOrExistingAnchorBinding(
+            CorridorAnchor coreAnchor,
+            DungeonCorridorAnchorBinding replacementBinding,
+            List<DungeonCorridorAnchorBinding> remaining
+    ) {
+        if (replacementBinding != null && replacementBinding.anchorId() == coreAnchor.anchorId()) {
+            return replacementBinding;
+        }
+        return matchingExistingAnchorBinding(coreAnchor, remaining);
     }
 
     private static CorridorAnchorRef matchingExistingRef(

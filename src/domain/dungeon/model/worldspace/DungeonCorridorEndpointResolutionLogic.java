@@ -1,6 +1,5 @@
 package src.domain.dungeon.model.worldspace;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
@@ -13,6 +12,8 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint
 public final class DungeonCorridorEndpointResolutionLogic {
 
     private static final DungeonCorridorHostCellsAdapter HOST_CELLS_ADAPTER = new DungeonCorridorHostCellsAdapter();
+    private static final DungeonCorridorAnchorEndpointAdapter ANCHOR_ENDPOINT_ADAPTER =
+            new DungeonCorridorAnchorEndpointAdapter();
     private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
 
     public @Nullable ResolvedEndpointResult resolve(DungeonMap dungeonMap, DungeonCorridorEndpoint endpoint) {
@@ -69,38 +70,11 @@ public final class DungeonCorridorEndpointResolutionLogic {
         }
         CorridorHostCells hostCells =
                 HOST_CELLS_ADAPTER.hostCells(dungeonMap, dungeonMap.connections().corridors());
-        if (hostCells.cellsFor(host.corridorId()).isEmpty()) {
-            return null;
-        }
-        DungeonCell anchorCell =
-                DungeonCell.fromGeometry(hostCells.snapToHostCell(host.corridorId(), endpoint.anchorCell().geometry()));
-        DungeonCorridorAnchorBinding existing = findAnchorBinding(host, endpoint.topologyRef(), anchorCell);
-        if (existing != null) {
-            return new ResolvedEndpointResult(dungeonMap, resolvedAnchor(existing), null);
-        }
-        long anchorId = nextAnchorId(dungeonMap);
-        DungeonCorridorAnchorBinding created = new DungeonCorridorAnchorBinding(
-                anchorId,
-                host.corridorId(),
-                anchorCell,
-                endpoint.topologyRef().present() ? endpoint.topologyRef() : DungeonTopologyRef.corridorAnchor(anchorId));
-        List<DungeonCorridor> updatedCorridors = new ArrayList<>();
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
-            updatedCorridors.add(corridor.corridorId() == host.corridorId()
-                    ? corridor.withAnchorBinding(created)
-                    : corridor);
-        }
-        DungeonMap mapped = copyWithUnprunedConnections(
-                dungeonMap,
-                new ConnectionCatalog(
-                        List.copyOf(updatedCorridors),
-                        dungeonMap.connections().stairs(),
-                        dungeonMap.connections().transitions()));
-        DungeonCorridorAnchorBinding resolved = findAnchorBinding(
-                LOOKUP_SERVICE.corridor(mapped, host.corridorId()),
-                created.topologyRef(),
-                created.absoluteCell());
-        return resolved == null ? null : new ResolvedEndpointResult(mapped, resolvedAnchor(resolved), null);
+        DungeonCorridorAnchorEndpointAdapter.AnchorEndpointResult resolved =
+                ANCHOR_ENDPOINT_ADAPTER.materialize(dungeonMap, endpoint, hostCells);
+        return resolved == null
+                ? null
+                : new ResolvedEndpointResult(resolved.map(), resolvedAnchor(resolved.anchorBinding()), null);
     }
 
     private static DungeonMap ensureDoorBoundary(DungeonMap dungeonMap, long clusterId, DungeonEdge edge) {
@@ -130,50 +104,6 @@ public final class DungeonCorridorEndpointResolutionLogic {
             }
         }
         return null;
-    }
-
-    @Nullable
-    private static DungeonCorridorAnchorBinding findAnchorBinding(
-            @Nullable DungeonCorridor host,
-            DungeonTopologyRef topologyRef,
-            DungeonCell anchorCell
-    ) {
-        if (host == null) {
-            return null;
-        }
-        for (DungeonCorridorAnchorBinding binding : host.bindings().anchorBindings()) {
-            if (binding != null && binding.matches(topologyRef, anchorCell)) {
-                return binding;
-            }
-        }
-        return null;
-    }
-
-    private static long nextAnchorId(DungeonMap dungeonMap) {
-        long result = 0L;
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
-            if (corridor == null) {
-                continue;
-            }
-            for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
-                if (binding != null && binding.anchorId() > result) {
-                    result = binding.anchorId();
-                }
-            }
-        }
-        return result + 1L;
-    }
-
-    private static DungeonMap copyWithUnprunedConnections(DungeonMap dungeonMap, ConnectionCatalog nextConnections) {
-        return new DungeonMap(
-                dungeonMap.metadata(),
-                dungeonMap.topology(),
-                dungeonMap.topologyIndex(),
-                dungeonMap.spaces(),
-                dungeonMap.rooms(),
-                nextConnections,
-                dungeonMap.features(),
-                dungeonMap.revision() + 1L);
     }
 
     private static CorridorResolvedEndpoint resolvedAnchor(DungeonCorridorAnchorBinding binding) {

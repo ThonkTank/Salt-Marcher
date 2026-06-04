@@ -24,33 +24,6 @@ public record DungeonCorridorBindings(
         return new DungeonCorridorBindings(List.of(), List.of(), List.of(), List.of());
     }
 
-    public DungeonCorridorBindings withAnchorBinding(DungeonCorridorAnchorBinding binding) {
-        if (binding == null || !binding.topologyRef().present()) {
-            return this;
-        }
-        List<DungeonCorridorAnchorBinding> updated = new java.util.ArrayList<>();
-        for (DungeonCorridorAnchorBinding existing : anchorBindings) {
-            if (existing != null && !existing.topologyRef().equals(binding.topologyRef())) {
-                updated.add(existing);
-            }
-        }
-        CorridorBindings currentCore = DungeonCorridorBindingsCoreAdapter.toCore(this);
-        CorridorBindings updatedCore = new CorridorBindings(
-                waypoints,
-                currentCore.doorBindings(),
-                DungeonCorridorAnchorTopologyRefAdapter.coreAnchorBindings(updated),
-                currentCore.anchorRefs())
-                .withAnchorBinding(binding.toCore());
-        updated.add(binding);
-        return new DungeonCorridorBindings(
-                waypoints,
-                doorBindings,
-                DungeonCorridorAnchorTopologyRefAdapter.worldspaceAnchorBindings(
-                        updatedCore.anchorBindings(),
-                        updated),
-                anchorRefs);
-    }
-
     public DungeonCorridorBindings withInteriorRouteAnchors(
             CorridorRoutePlan routePlan,
             List<DungeonCorridorAnchorBinding> routeAnchors

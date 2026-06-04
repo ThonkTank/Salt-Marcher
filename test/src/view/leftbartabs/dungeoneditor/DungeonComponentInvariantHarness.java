@@ -126,8 +126,8 @@ final class DungeonComponentInvariantHarness {
                 moved.topologyRef(),
                 "moved adapter topology ref preservation");
         assertEquals(new DungeonCell(4, 5, 1), moved.absoluteCell(), "adapter moved anchor cell");
-        assertTrue(moved.matches(null, new DungeonCell(4, 5, 1)), "adapter cell match");
-        assertFalse(moved.matches(null, new DungeonCell(4, 6, 1)), "adapter cell mismatch");
+        assertTrue(moved.toCore().matchesPosition(new Cell(4, 5, 1)), "adapter cell match");
+        assertFalse(moved.toCore().matchesPosition(new Cell(4, 6, 1)), "adapter cell mismatch");
     }
 
     private static void assertCorridorBindingComponentInvariants() {

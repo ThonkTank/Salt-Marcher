@@ -11,6 +11,7 @@ import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorEndpointMaterialization;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorSnap;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointBinding;
@@ -50,7 +51,7 @@ final class DungeonStructureInvariantHarness {
                 "DGI-STR-001",
                 "Corridor structure owns room-set normalization/removal, binding container rules, "
                         + "resolved endpoint shape, door removal by room, anchor binding/ref replacement by local anchor id, "
-                        + "anchor snapping to the nearest host cell with level/row/column tie-breaks "
+                        + "anchor snapping/materialization to the nearest host cell with level/row/column tie-breaks "
                         + "and fallback behavior, host-cell lookup by corridor id, "
                         + "plus target-local waypoint or anchor-ref removal rules");
         assertWorldspaceAdapterPreservesTopologyRefIdentity();
@@ -211,6 +212,46 @@ final class DungeonStructureInvariantHarness {
                 "corridor host cells preserve host cell order");
         assertEquals(new Cell(2, 2, 0), hostCells.snapToHostCell(9L, new Cell(3, 2, 0)),
                 "corridor host cells snap by host corridor id");
+        Corridor hostCorridor = new Corridor(9L, 1L, 0, List.of(), CorridorBindings.empty());
+        CorridorAnchorEndpointMaterialization createdAnchor =
+                CorridorAnchorEndpointMaterialization.materialize(
+                        List.of(hostCorridor),
+                        9L,
+                        new Cell(3, 2, 0),
+                        0L,
+                        hostCells);
+        assertTrue(createdAnchor != null, "corridor anchor endpoint creates host anchor");
+        createdAnchor = Objects.requireNonNull(createdAnchor);
+        assertEquals(new CorridorAnchor(1L, 9L, new Cell(2, 2, 0)), createdAnchor.anchor(),
+                "corridor anchor endpoint materialization snaps created anchor");
+        assertEquals(List.of(new CorridorAnchor(1L, 9L, new Cell(2, 2, 0))),
+                createdAnchor.corridors().getFirst().bindings().anchorBindings(),
+                "corridor anchor endpoint materialization updates host corridor");
+        assertTrue(createdAnchor.changed(), "corridor anchor endpoint reports created anchor change");
+        CorridorAnchorEndpointMaterialization reusedById =
+                CorridorAnchorEndpointMaterialization.materialize(
+                        createdAnchor.corridors(),
+                        9L,
+                        new Cell(4, 4, 0),
+                        1L,
+                        hostCells);
+        assertTrue(reusedById != null, "corridor anchor endpoint reuses preferred anchor id");
+        reusedById = Objects.requireNonNull(reusedById);
+        assertEquals(new CorridorAnchor(1L, 9L, new Cell(2, 2, 0)), reusedById.anchor(),
+                "corridor anchor endpoint keeps preferred anchor position");
+        assertFalse(reusedById.changed(), "corridor anchor endpoint reports preferred anchor reuse as unchanged");
+        CorridorAnchorEndpointMaterialization reusedByPosition =
+                CorridorAnchorEndpointMaterialization.materialize(
+                        createdAnchor.corridors(),
+                        9L,
+                        new Cell(2, 2, 0),
+                        0L,
+                        hostCells);
+        assertTrue(reusedByPosition != null, "corridor anchor endpoint reuses snapped position");
+        reusedByPosition = Objects.requireNonNull(reusedByPosition);
+        assertEquals(new CorridorAnchor(1L, 9L, new Cell(2, 2, 0)), reusedByPosition.anchor(),
+                "corridor anchor endpoint keeps matching-position anchor");
+        assertFalse(reusedByPosition.changed(), "corridor anchor endpoint reports position reuse as unchanged");
         assertEquals(List.of(firstRef), withAnchors.withoutAnchorRef(5L).anchorRefs(), "anchor ref delete by id");
         assertEquals(List.of(), withAnchors.withoutAnchorRefAndRouteWaypoints(5L).waypoints(),
                 "anchor target delete clears route waypoints");
@@ -279,7 +320,7 @@ final class DungeonStructureInvariantHarness {
                         stableRef);
         DungeonCorridorBindings bindings = new DungeonCorridorBindings(List.of(), List.of(), List.of(first), List.of());
 
-        DungeonCorridorBindings replaced = bindings.withAnchorBinding(replacement);
+        DungeonCorridorBindings replaced = bindings.replaceAnchorBindings(List.of(replacement));
         assertEquals(List.of(replacement), replaced.anchorBindings(),
                 "adapter anchor replacement follows topology ref when anchor id differs");
 

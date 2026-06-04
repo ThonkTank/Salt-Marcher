@@ -31,13 +31,6 @@ public record DungeonCorridorAnchorBinding(
                 topologyRef);
     }
 
-    public boolean matches(DungeonTopologyRef ref, DungeonCell anchorCell) {
-        return matchesTopologyRef(ref)
-                || anchorCell != null
-                && new CorridorAnchor(anchorId, hostCorridorId, absoluteCell.geometry())
-                        .matchesPosition(anchorCell.geometry());
-    }
-
     public boolean matchesTopologyRef(DungeonTopologyRef ref) {
         return ref != null && ref.present() && topologyRef.equals(ref);
     }

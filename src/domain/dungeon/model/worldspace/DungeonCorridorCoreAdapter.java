@@ -19,6 +19,15 @@ final class DungeonCorridorCoreAdapter {
             src.domain.dungeon.model.core.structure.corridor.Corridor coreCorridor,
             DungeonCorridorDoorBinding replacementDoor
     ) {
+        return fromCore(source, coreCorridor, replacementDoor, null);
+    }
+
+    static DungeonCorridor fromCore(
+            DungeonCorridor source,
+            src.domain.dungeon.model.core.structure.corridor.Corridor coreCorridor,
+            DungeonCorridorDoorBinding replacementDoor,
+            DungeonCorridorAnchorBinding replacementAnchor
+    ) {
         return new DungeonCorridor(
                 coreCorridor.corridorId(),
                 coreCorridor.mapId(),
@@ -27,7 +36,8 @@ final class DungeonCorridorCoreAdapter {
                 DungeonCorridorBindingsCoreAdapter.fromCore(
                         source.bindings(),
                         coreCorridor.bindings(),
-                        replacementDoor));
+                        replacementDoor,
+                        replacementAnchor));
     }
 
 }
