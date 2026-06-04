@@ -10,6 +10,7 @@ import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
+import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
 
 final class DungeonFloorInvariantHarness {
 
@@ -37,6 +38,12 @@ final class DungeonFloorInvariantHarness {
                 OWNER,
                 "DGI-FLOOR-003",
                 "Room-cell assignment derives from the cluster floor owner and closed boundary facts");
+        assertFloorAnchorDerivationAndReuse();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-FLOOR-004",
+                "Floor owner derives deterministic room floor anchors and reuses surviving room anchors");
         assertFloorMutationResult();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -99,6 +106,43 @@ final class DungeonFloorInvariantHarness {
                         rooms,
                         Map.of(0, List.of(Edge.sideOf(left, Direction.EAST)))),
                 "room assignment partitions every floor-owned cell exactly once");
+    }
+
+    private static void assertFloorAnchorDerivationAndReuse() {
+        Cell upperFirst = new Cell(1, 0, 1);
+        Cell upperLater = new Cell(2, 0, 1);
+        Cell lowerFirst = new Cell(0, 0, 0);
+        Cell lowerLater = new Cell(1, 0, 0);
+        RoomCluster cluster = RoomCluster.fromCells(9L, 2L, Set.of(upperLater, lowerLater, upperFirst, lowerFirst));
+        RoomClusterWork work = new RoomClusterWork(cluster, List.of(new Room(
+                7L,
+                2L,
+                9L,
+                "Bestand",
+                Map.of(0, lowerFirst, 1, upperFirst))));
+
+        assertEquals(Map.of(0, lowerFirst, 1, upperFirst),
+                Room.anchorsByLevel(cluster.floorMap().cellsByLevel()),
+                "floor owner derives one sorted anchor per owned floor level");
+        assertEquals(Map.of(0, lowerFirst, 1, upperFirst),
+                work.rebuiltRoom().orElseThrow().floorAnchors(),
+                "floor owner rebuild keeps anchors derived from the owned floor map");
+
+        Edge split = Edge.sideOf(lowerFirst, Direction.EAST);
+        List<Room> splitRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
+                work,
+                Map.of(0, List.of(split)),
+                20L);
+        assertEquals(7L, splitRooms.getFirst().roomId(),
+                "floor owner reuses surviving room id when its anchor remains in a component");
+        assertEquals(Map.of(0, lowerFirst), splitRooms.getFirst().floorAnchors(),
+                "floor owner preserves surviving room anchor after partition");
+        assertEquals(20L, splitRooms.get(1).roomId(),
+                "floor owner allocates a deterministic room id for a new split component");
+        assertEquals(Map.of(0, lowerLater), splitRooms.get(1).floorAnchors(),
+                "floor owner anchors new split component at sorted first cell");
+        assertEquals(Map.of(1, upperFirst), splitRooms.get(2).floorAnchors(),
+                "floor owner derives an anchor for the remaining upper-level component");
     }
 
     private static void assertFloorMutationResult() {
