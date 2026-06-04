@@ -46,6 +46,18 @@ public record CorridorEndpointSemantics(
         return new CorridorEndpointSemantics(Kind.ANCHOR, 0L, null, ref);
     }
 
+    public boolean matchesDoorBinding(CorridorDoorBinding binding) {
+        return switch (kind) {
+            case STABLE_DOOR -> binding != null;
+            case DOOR_LOCATION -> doorBinding.equals(binding);
+            case ANCHOR -> false;
+        };
+    }
+
+    public boolean matchesAnchorRef(CorridorAnchorRef ref) {
+        return kind == Kind.ANCHOR && anchorRef.equals(ref);
+    }
+
     public enum Kind {
         STABLE_DOOR,
         DOOR_LOCATION,

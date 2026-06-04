@@ -102,8 +102,8 @@ final class DungeonCorridorCreationLogic {
                 level,
                 roomIds(startResolved, endResolved),
                 DungeonCorridorBindings.empty());
-        corridor = startResolved.endpoint().applyTo(corridor);
-        return endResolved.endpoint().applyTo(corridor);
+        corridor = startResolved.applyTo(corridor);
+        return endResolved.applyTo(corridor);
     }
 
     private List<Long> roomIds(

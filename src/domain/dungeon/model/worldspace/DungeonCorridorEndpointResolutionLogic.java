@@ -2,19 +2,17 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
-import src.domain.dungeon.model.core.structure.corridor.Corridor;
-import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
+import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 
 /**
  * Owns authored corridor endpoint resolution and materialization.
  */
 public final class DungeonCorridorEndpointResolutionLogic {
 
-    private static final DungeonCorridorConnectionNormalizationLogic CONNECTION_NORMALIZATION_SERVICE =
-            new DungeonCorridorConnectionNormalizationLogic();
+    private static final DungeonCorridorHostCellsAdapter HOST_CELLS_ADAPTER = new DungeonCorridorHostCellsAdapter();
     private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
 
     public @Nullable ResolvedEndpointResult resolve(DungeonMap dungeonMap, DungeonCorridorEndpoint endpoint) {
@@ -55,7 +53,10 @@ public final class DungeonCorridorEndpointResolutionLogic {
                         endpoint.roomCell().level()),
                 endpoint.direction(),
                 boundary.resolvedTopologyRef(mappedCluster.center()));
-        return new ResolvedEndpointResult(mapped, ResolvedCorridorEndpoint.forDoor(binding));
+        return new ResolvedEndpointResult(
+                mapped,
+                CorridorResolvedEndpoint.forDoor(binding.toCore(), DungeonCorridorSemanticsRules.doorSemantics(binding)),
+                binding);
     }
 
     private static @Nullable ResolvedEndpointResult resolveAnchorEndpoint(
@@ -66,16 +67,16 @@ public final class DungeonCorridorEndpointResolutionLogic {
         if (host == null) {
             return null;
         }
-        Map<Long, List<DungeonCell>> cellsByCorridor =
-                CONNECTION_NORMALIZATION_SERVICE.corridorCellsByCorridor(dungeonMap, dungeonMap.connections().corridors());
-        List<DungeonCell> hostCells = cellsByCorridor.getOrDefault(host.corridorId(), List.of());
-        if (hostCells.isEmpty()) {
+        CorridorHostCells hostCells =
+                HOST_CELLS_ADAPTER.hostCells(dungeonMap, dungeonMap.connections().corridors());
+        if (hostCells.cellsFor(host.corridorId()).isEmpty()) {
             return null;
         }
-        DungeonCell anchorCell = CONNECTION_NORMALIZATION_SERVICE.snapToHostCorridorCell(endpoint.anchorCell(), hostCells);
+        DungeonCell anchorCell =
+                DungeonCell.fromGeometry(hostCells.snapToHostCell(host.corridorId(), endpoint.anchorCell().geometry()));
         DungeonCorridorAnchorBinding existing = findAnchorBinding(host, endpoint.topologyRef(), anchorCell);
         if (existing != null) {
-            return new ResolvedEndpointResult(dungeonMap, ResolvedCorridorEndpoint.forAnchor(existing));
+            return new ResolvedEndpointResult(dungeonMap, resolvedAnchor(existing), null);
         }
         long anchorId = nextAnchorId(dungeonMap);
         DungeonCorridorAnchorBinding created = new DungeonCorridorAnchorBinding(
@@ -99,7 +100,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
                 LOOKUP_SERVICE.corridor(mapped, host.corridorId()),
                 created.topologyRef(),
                 created.absoluteCell());
-        return resolved == null ? null : new ResolvedEndpointResult(mapped, ResolvedCorridorEndpoint.forAnchor(resolved));
+        return resolved == null ? null : new ResolvedEndpointResult(mapped, resolvedAnchor(resolved), null);
     }
 
     private static DungeonMap ensureDoorBoundary(DungeonMap dungeonMap, long clusterId, DungeonEdge edge) {
@@ -175,52 +176,20 @@ public final class DungeonCorridorEndpointResolutionLogic {
                 dungeonMap.revision() + 1L);
     }
 
-    public record ResolvedEndpointResult(DungeonMap map, ResolvedCorridorEndpoint endpoint) {
+    private static CorridorResolvedEndpoint resolvedAnchor(DungeonCorridorAnchorBinding binding) {
+        CorridorAnchorRef ref = new CorridorAnchorRef(binding.hostCorridorId(), binding.topologyRef().id());
+        return CorridorResolvedEndpoint.forAnchor(ref);
     }
 
-    public record ResolvedCorridorEndpoint(
-            @Nullable Long roomId,
-            @Nullable DungeonCorridorDoorBinding doorBinding,
-            CorridorEndpointBinding binding
+    public record ResolvedEndpointResult(
+            DungeonMap map,
+            CorridorResolvedEndpoint endpoint,
+            @Nullable DungeonCorridorDoorBinding replacementDoor
     ) {
-        public ResolvedCorridorEndpoint {
-            binding = java.util.Objects.requireNonNull(binding, "binding");
-            if (binding.doorBinding() != null) {
-                if (roomId == null
-                        || doorBinding == null
-                        || roomId.longValue() != doorBinding.roomId()
-                        || !doorBinding.toCore().equals(binding.doorBinding())) {
-                    throw new IllegalArgumentException("resolved door endpoint must match core door binding");
-                }
-            } else {
-                if (doorBinding != null || roomId != null) {
-                    throw new IllegalArgumentException("resolved anchor endpoint must not expose door state");
-                }
-            }
-        }
-
-        static ResolvedCorridorEndpoint forDoor(DungeonCorridorDoorBinding binding) {
-            return new ResolvedCorridorEndpoint(
-                    binding.roomId(),
-                    binding,
-                    CorridorEndpointBinding.forDoor(binding.toCore()));
-        }
-
-        static ResolvedCorridorEndpoint forAnchor(DungeonCorridorAnchorBinding binding) {
-            CorridorAnchorRef ref = new CorridorAnchorRef(binding.hostCorridorId(), binding.topologyRef().id());
-            return new ResolvedCorridorEndpoint(
-                    null,
-                    null,
-                    CorridorEndpointBinding.forAnchor(ref));
-        }
-
-        public @Nullable CorridorAnchorRef anchorRef() {
-            return binding.anchorRef();
-        }
-
         public DungeonCorridor applyTo(DungeonCorridor corridor) {
-            Corridor coreCorridor = binding.applyTo(DungeonCorridorCoreAdapter.toCore(corridor));
-            return DungeonCorridorCoreAdapter.fromCore(corridor, coreCorridor, doorBinding);
+            src.domain.dungeon.model.core.structure.corridor.Corridor coreCorridor =
+                    endpoint.applyTo(DungeonCorridorCoreAdapter.toCore(corridor));
+            return DungeonCorridorCoreAdapter.fromCore(corridor, coreCorridor, replacementDoor);
         }
     }
 }

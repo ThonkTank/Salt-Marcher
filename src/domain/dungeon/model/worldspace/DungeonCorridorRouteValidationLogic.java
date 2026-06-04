@@ -3,14 +3,13 @@ package src.domain.dungeon.model.worldspace;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;
 
 final class DungeonCorridorRouteValidationLogic {
-    private static final DungeonCorridorConnectionNormalizationLogic CONNECTION_NORMALIZATION_SERVICE =
-            new DungeonCorridorConnectionNormalizationLogic();
+    private static final DungeonCorridorHostCellsAdapter HOST_CELLS_ADAPTER = new DungeonCorridorHostCellsAdapter();
     private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
 
     CorridorRouteValidation validateRoute(
@@ -47,12 +46,11 @@ final class DungeonCorridorRouteValidationLogic {
         if (host == null) {
             return null;
         }
-        Map<Long, List<DungeonCell>> cellsByCorridor =
-                CONNECTION_NORMALIZATION_SERVICE.corridorCellsByCorridor(dungeonMap, dungeonMap.connections().corridors());
-        List<DungeonCell> hostCells = cellsByCorridor.getOrDefault(host.corridorId(), List.of());
-        return hostCells.isEmpty()
+        CorridorHostCells hostCells =
+                HOST_CELLS_ADAPTER.hostCells(dungeonMap, dungeonMap.connections().corridors());
+        return hostCells.cellsFor(host.corridorId()).isEmpty()
                 ? null
-                : CONNECTION_NORMALIZATION_SERVICE.snapToHostCorridorCell(endpoint.anchorCell(), hostCells);
+                : DungeonCell.fromGeometry(hostCells.snapToHostCell(host.corridorId(), endpoint.anchorCell().geometry()));
     }
 
     private static Set<Cell> roomCells(DungeonMap dungeonMap) {

@@ -6,18 +6,18 @@ import java.util.Objects;
 import java.util.Set;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointSemantics;
-import src.domain.dungeon.model.worldspace.DungeonCorridorEndpointResolutionLogic.ResolvedCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 
 /**
  * Owns corridor endpoint equivalence and deduplication semantics.
  */
 public final class DungeonCorridorSemanticsRules {
 
-    public boolean sameEndpoint(ResolvedCorridorEndpoint left, ResolvedCorridorEndpoint right) {
+    public boolean sameEndpoint(CorridorResolvedEndpoint left, CorridorResolvedEndpoint right) {
         return semanticsOf(left).equals(semanticsOf(right));
     }
 
-    public boolean matchingCorridorExists(List<DungeonCorridor> corridors, ResolvedCorridorEndpoint start, ResolvedCorridorEndpoint end) {
+    public boolean matchingCorridorExists(List<DungeonCorridor> corridors, CorridorResolvedEndpoint start, CorridorResolvedEndpoint end) {
         Set<CorridorEndpointSemantics> requested = Set.of(semanticsOf(start), semanticsOf(end));
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
             if (corridor != null && explicitEndpointSemantics(corridor).equals(requested)) {
@@ -40,18 +40,12 @@ public final class DungeonCorridorSemanticsRules {
         return Set.copyOf(result);
     }
 
-    private static CorridorEndpointSemantics semanticsOf(ResolvedCorridorEndpoint endpoint) {
+    private static CorridorEndpointSemantics semanticsOf(CorridorResolvedEndpoint endpoint) {
         Objects.requireNonNull(endpoint, "endpoint");
-        if (endpoint.doorBinding() != null) {
-            return doorSemantics(endpoint.doorBinding());
-        }
-        if (endpoint.anchorRef() != null) {
-            return CorridorEndpointSemantics.forAnchor(endpoint.anchorRef());
-        }
-        throw new IllegalArgumentException("resolved endpoint must expose door or anchor semantics");
+        return endpoint.semantics();
     }
 
-    private static CorridorEndpointSemantics doorSemantics(DungeonCorridorDoorBinding binding) {
+    static CorridorEndpointSemantics doorSemantics(DungeonCorridorDoorBinding binding) {
         return isDoorTopologyRef(binding.topologyRef())
                 ? CorridorEndpointSemantics.forStableDoor(binding.topologyRef().id())
                 : CorridorEndpointSemantics.forDoor(binding.toCore());

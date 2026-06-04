@@ -14,7 +14,10 @@ import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorSnap;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointSemantics;
+import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
+import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoomSet;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
 import src.domain.dungeon.model.core.structure.stair.Stair;
@@ -30,7 +33,6 @@ import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.worldspace.DungeonCorridorEndpointResolutionLogic.ResolvedCorridorEndpoint;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 final class DungeonStructureInvariantHarness {
@@ -47,9 +49,10 @@ final class DungeonStructureInvariantHarness {
                 OWNER,
                 "DGI-STR-001",
                 "Corridor structure owns room-set normalization/removal, binding container rules, "
-                        + "door removal by room, anchor binding/ref replacement by local anchor id, "
+                        + "resolved endpoint shape, door removal by room, anchor binding/ref replacement by local anchor id, "
                         + "anchor snapping to the nearest host cell with level/row/column tie-breaks "
-                        + "and fallback behavior, plus target-local waypoint or anchor-ref removal rules");
+                        + "and fallback behavior, host-cell lookup by corridor id, "
+                        + "plus target-local waypoint or anchor-ref removal rules");
         assertWorldspaceAdapterPreservesTopologyRefIdentity();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -147,11 +150,32 @@ final class DungeonStructureInvariantHarness {
         assertThrowsIllegalArgument(
                 () -> CorridorEndpointBinding.forAnchor(new CorridorAnchorRef(0L, 0L)),
                 "corridor endpoint rejects missing anchor ref shape");
-        DungeonCorridorDoorBinding worldspaceDoor =
-                new DungeonCorridorDoorBinding(4L, 10L, new DungeonCell(0, 1, 0), DungeonEdgeDirection.NORTH, null);
         assertThrowsIllegalArgument(
-                () -> new ResolvedCorridorEndpoint(null, worldspaceDoor, CorridorEndpointBinding.forAnchor(firstRef)),
-                "resolved corridor endpoint rejects mismatched worldspace and core endpoint shape");
+                () -> new CorridorResolvedEndpoint(null,
+                        CorridorEndpointBinding.forDoor(firstDoor),
+                        CorridorEndpointSemantics.forDoor(firstDoor)),
+                "resolved corridor endpoint rejects missing door room id");
+        assertThrowsIllegalArgument(
+                () -> new CorridorResolvedEndpoint(4L,
+                        CorridorEndpointBinding.forAnchor(firstRef),
+                        CorridorEndpointSemantics.forAnchor(firstRef)),
+                "resolved corridor endpoint rejects anchor room id");
+        assertThrowsIllegalArgument(
+                () -> new CorridorResolvedEndpoint(4L,
+                        CorridorEndpointBinding.forDoor(firstDoor),
+                        CorridorEndpointSemantics.forAnchor(firstRef)),
+                "resolved corridor endpoint rejects door with anchor semantics");
+        assertThrowsIllegalArgument(
+                () -> new CorridorResolvedEndpoint(null,
+                        CorridorEndpointBinding.forAnchor(firstRef),
+                        CorridorEndpointSemantics.forStableDoor(7L)),
+                "resolved corridor endpoint rejects anchor with stable door semantics");
+        assertEquals(
+                firstDoor,
+                CorridorResolvedEndpoint.forDoor(firstDoor, CorridorEndpointSemantics.forDoor(firstDoor))
+                        .binding()
+                        .doorBinding(),
+                "resolved corridor endpoint exposes core door binding");
         assertEquals(
                 new Cell(1, 2, 1),
                 CorridorAnchorSnap.nearestHostCell(
@@ -180,6 +204,13 @@ final class DungeonStructureInvariantHarness {
                 new Cell(0, 0, 0),
                 CorridorAnchorSnap.nearestHostCell(null, List.of()),
                 "corridor anchor snap keeps missing desired cell at origin");
+        CorridorHostCells hostCells = new CorridorHostCells(java.util.Map.of(
+                9L,
+                List.of(new Cell(4, 4, 0), new Cell(2, 2, 0))));
+        assertEquals(List.of(new Cell(4, 4, 0), new Cell(2, 2, 0)), hostCells.cellsFor(9L),
+                "corridor host cells preserve host cell order");
+        assertEquals(new Cell(2, 2, 0), hostCells.snapToHostCell(9L, new Cell(3, 2, 0)),
+                "corridor host cells snap by host corridor id");
         assertEquals(List.of(firstRef), withAnchors.withoutAnchorRef(5L).anchorRefs(), "anchor ref delete by id");
         assertEquals(List.of(), withAnchors.withoutAnchorRefAndRouteWaypoints(5L).waypoints(),
                 "anchor target delete clears route waypoints");
