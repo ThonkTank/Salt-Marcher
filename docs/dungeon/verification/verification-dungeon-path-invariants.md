@@ -34,7 +34,9 @@ Required proof rows for this catalog must publish
 `OwnerSuite=PathInvariantHarness`, `ProofType=ModelInvariant`, and the
 invariant id. If the first implementation routes proof through the existing
 aggregated dungeon harness surface, those fields still identify the Path family
-proof owner.
+proof owner. The runtime projection row may instead publish
+`OwnerSuite=RuntimeProjectionInvariantHarness` because it proves that runtime
+travel projection consumes authored Path facts without owning Path truth.
 
 ## Path Invariant Catalog
 
@@ -49,7 +51,7 @@ mechanics, while the target family owner remains unqualified.
 | `DGI-PATH-002` | `CorridorRoute` and `CorridorRoutePlan` | A corridor composes one path owner. | Corridor route cells, route validation, route split planning, waypoint insertion, and route no-op detection are owned by corridor-local route owners. | Harness proves endpoint route derivation, blocked route rejection, split route anchor planning, and unchanged route no-op through the path owner. | Qualified by `OwnerSuite=PathInvariantHarness`. | Stable topology identity. |
 | `DGI-PATH-003` | Stair path owner | Stair generated paths are authored path behavior. | Stair path cells, generated exits, dimension-derived path shape, and readable path invariants are owned by stair structure through shared path primitives. | Harness proves generated path cells, exit placement, readability, occupancy, and room-interior crossing rejection. | Qualified by `OwnerSuite=PathInvariantHarness`. | State-panel real-route proof. |
 | `DGI-PATH-004` | Boundary or wall path owner | Boundary drawing/deletion paths are authored wall-path behavior. | Boundary pathfinding uses wall/floor facts and shared primitives, while wall-specific commit/delete policy stays with the wall owner. | Harness proves wall-owned connector-path derivation from floor and wall facts without runtime-only ownership of authored path policy. | Qualified by `OwnerSuite=PathInvariantHarness`. | UI pointer route mechanics. |
-| `DGI-PATH-005` | Runtime travel projection over core path/graph facts | Runtime may project path facts but must not own authored path truth. | Travel traversal planning consumes core path/graph/transition facts and owns only transient travel session or projection state. | Harness or travel proof shows traversal actions can be recomputed from core-authored facts without persisting runtime path truth. | Target | Full travel UI behavior. |
+| `DGI-PATH-005` | Runtime travel projection over core path/graph facts | Runtime may project path facts but must not own authored path truth. | Travel traversal planning consumes core path/graph/transition facts and owns only transient travel session or projection state. | Harness proves traversal actions can be recomputed from core-authored area and boundary facts without persisting runtime path truth. | Qualified by `OwnerSuite=RuntimeProjectionInvariantHarness`. | Full travel UI behavior. |
 
 ## References
 

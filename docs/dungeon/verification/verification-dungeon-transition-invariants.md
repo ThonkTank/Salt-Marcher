@@ -36,7 +36,10 @@ Required proof rows for this catalog must publish
 `OwnerSuite=TransitionInvariantHarness`, `ProofType=ModelInvariant`, and the
 invariant id. If the first implementation routes proof through the existing
 aggregated dungeon harness surface, those fields still identify the Transition
-family proof owner.
+family proof owner. The runtime projection row may instead publish
+`OwnerSuite=RuntimeProjectionInvariantHarness` because it proves that runtime
+travel projection consumes authored Transition facts without owning Transition
+truth.
 
 ## Transition Invariant Catalog
 
@@ -52,7 +55,7 @@ the `DGI-TRANSITION-*` id prefix to match the spelled family-name convention.
 | `DGI-TRANSITION-002` | Bounded transition collection | Link behavior can span multiple transitions. | Link replacement, reverse-link creation, and reverse-link cleanup are owned by a transition collection scoped to the authored map set being mutated. | Harness proves one-way and bidirectional link replacement plus cleanup of stale reverse links. | Qualified by `OwnerSuite=TransitionInvariantHarness`. | Cross-map repository transaction shape and transition-reference delete checks. |
 | `DGI-TRANSITION-003` | Transition owner with `DungeonMap` topology coordination | Transition identity remains map-stable. | Transition operations preserve topology identity where the transition survives and release it only when deletion succeeds. | Harness proves create, description update, link update, protected reject, and delete identity behavior. | Target | Topology graph migration. |
 | `DGI-TRANSITION-004` | Transition collection | Protected delete is transition-owned policy. | A transition cannot be deleted while it owns a link or is referenced by another transition destination/link. | Harness proves selected linked, reverse linked, and destination-reference delete rejection. | Qualified by `OwnerSuite=TransitionInvariantHarness`. | Real View route remains `DE-TRN-*`. |
-| `DGI-TRANSITION-005` | Runtime travel projection over transition facts | Runtime may project transitions but must not own authored transition truth. | Travel transition targets are derived from core transition facts and stored only as runtime projection/session state. | Harness or travel proof shows travel actions recompute from authored transition facts without persisting runtime transition truth. | Target | Full travel UI behavior. |
+| `DGI-TRANSITION-005` | Runtime travel projection over transition facts | Runtime may project transitions but must not own authored transition truth. | Travel transition targets are derived from core transition facts and stored only as runtime projection/session state. | Harness proves travel actions and transition targets recompute from authored transition facts without persisting runtime transition truth. | Qualified by `OwnerSuite=RuntimeProjectionInvariantHarness`. | Full travel UI behavior. |
 
 ## References
 
