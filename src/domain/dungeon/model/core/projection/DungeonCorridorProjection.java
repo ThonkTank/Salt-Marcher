@@ -1,11 +1,10 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
-import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
-import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
+import src.domain.dungeon.model.worldspace.DungeonState;
 
-record DungeonCorridorProjection(
+public record DungeonCorridorProjection(
         long nextBoundaryId,
         List<DungeonState> aggregates,
         List<DungeonAreaFacts> areas,
@@ -13,7 +12,7 @@ record DungeonCorridorProjection(
         List<DungeonRelationGraph.ContainmentRelation> containment,
         List<DungeonRelationGraph.ConnectionRelation> connections
 ) {
-    DungeonCorridorProjection {
+    public DungeonCorridorProjection {
         aggregates = aggregates == null ? List.of() : List.copyOf(aggregates);
         areas = areas == null ? List.of() : List.copyOf(areas);
         boundaries = boundaries == null ? List.of() : List.copyOf(boundaries);

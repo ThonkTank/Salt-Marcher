@@ -14,6 +14,7 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
+import src.domain.dungeon.model.core.projection.DungeonCorridorProjection;
 
 final class DungeonCorridorProjectionAssembler {
 

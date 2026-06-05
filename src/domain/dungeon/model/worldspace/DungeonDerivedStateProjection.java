@@ -6,6 +6,7 @@ import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTraversalLinkProjection;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
+import src.domain.dungeon.model.core.projection.DungeonCorridorProjection;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryProjection;

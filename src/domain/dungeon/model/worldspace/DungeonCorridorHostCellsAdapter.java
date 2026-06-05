@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
+import src.domain.dungeon.model.core.projection.DungeonCorridorProjection;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 
 final class DungeonCorridorHostCellsAdapter {
