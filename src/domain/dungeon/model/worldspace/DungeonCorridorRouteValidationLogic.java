@@ -5,12 +5,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;
 
 final class DungeonCorridorRouteValidationLogic {
     private static final DungeonCorridorHostCellsAdapter HOST_CELLS_ADAPTER = new DungeonCorridorHostCellsAdapter();
-    private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
+    private static final DungeonMapLookupAdapter LOOKUP_ADAPTER = new DungeonMapLookupAdapter();
 
     CorridorRouteValidation validateRoute(
             DungeonMap dungeonMap,
@@ -42,7 +43,7 @@ final class DungeonCorridorRouteValidationLogic {
         if (!endpoint.isAnchorEndpoint()) {
             return null;
         }
-        DungeonCorridor host = LOOKUP_SERVICE.corridor(dungeonMap, endpoint.hostCorridorId());
+        DungeonCorridor host = LOOKUP_ADAPTER.corridor(dungeonMap, endpoint.hostCorridorId());
         if (host == null) {
             return null;
         }

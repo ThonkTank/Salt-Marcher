@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
+import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 
@@ -14,7 +15,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
     private static final DungeonCorridorHostCellsAdapter HOST_CELLS_ADAPTER = new DungeonCorridorHostCellsAdapter();
     private static final DungeonCorridorAnchorEndpointAdapter ANCHOR_ENDPOINT_ADAPTER =
             new DungeonCorridorAnchorEndpointAdapter();
-    private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
+    private static final DungeonMapLookupAdapter LOOKUP_ADAPTER = new DungeonMapLookupAdapter();
 
     public @Nullable ResolvedEndpointResult resolve(DungeonMap dungeonMap, DungeonCorridorEndpoint endpoint) {
         java.util.Objects.requireNonNull(dungeonMap, "dungeonMap");
@@ -34,13 +35,13 @@ public final class DungeonCorridorEndpointResolutionLogic {
             DungeonMap dungeonMap,
             DungeonCorridorEndpoint endpoint
     ) {
-        DungeonRoomCluster cluster = LOOKUP_SERVICE.cluster(dungeonMap, endpoint.clusterId());
+        DungeonRoomCluster cluster = LOOKUP_ADAPTER.cluster(dungeonMap, endpoint.clusterId());
         if (cluster == null) {
             return null;
         }
         DungeonEdge edge = DungeonEdge.sideOf(endpoint.roomCell(), endpoint.direction());
         DungeonMap mapped = ensureDoorBoundary(dungeonMap, endpoint.clusterId(), edge);
-        DungeonRoomCluster mappedCluster = LOOKUP_SERVICE.cluster(mapped, endpoint.clusterId());
+        DungeonRoomCluster mappedCluster = LOOKUP_ADAPTER.cluster(mapped, endpoint.clusterId());
         DungeonClusterBoundary boundary = boundaryAt(mapped, endpoint.clusterId(), edge);
         if (mappedCluster == null || boundary == null || !boundary.isDoor()) {
             return null;
@@ -64,7 +65,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
             DungeonMap dungeonMap,
             DungeonCorridorEndpoint endpoint
     ) {
-        DungeonCorridor host = LOOKUP_SERVICE.corridor(dungeonMap, endpoint.hostCorridorId());
+        DungeonCorridor host = LOOKUP_ADAPTER.corridor(dungeonMap, endpoint.hostCorridorId());
         if (host == null) {
             return null;
         }
@@ -92,7 +93,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
 
     @Nullable
     private static DungeonClusterBoundary boundaryAt(DungeonMap dungeonMap, long clusterId, DungeonEdge edge) {
-        DungeonRoomCluster cluster = LOOKUP_SERVICE.cluster(dungeonMap, clusterId);
+        DungeonRoomCluster cluster = LOOKUP_ADAPTER.cluster(dungeonMap, clusterId);
         if (cluster == null || edge == null) {
             return null;
         }

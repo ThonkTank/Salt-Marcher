@@ -1,8 +1,19 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonRoom;
+import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 
-public final class DungeonMapLookupLogic {
+/**
+ * Transitional adapter while authored map aggregate carriers still live in worldspace.
+ *
+ * <p>Delete this adapter when the productive corridor callers consume the core
+ * aggregate owner directly or when `DungeonMap` and its contained authored
+ * carriers have moved out of `worldspace`.
+ */
+public final class DungeonMapLookupAdapter {
 
     public @Nullable DungeonRoom room(DungeonMap dungeonMap, long roomId) {
         for (DungeonRoom room : dungeonMap.rooms().rooms()) {

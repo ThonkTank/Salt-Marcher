@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.worldspace;
 
 import java.util.Objects;
+import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
 
 final class DungeonCorridorMergeDeleteLogic {
@@ -9,7 +10,7 @@ final class DungeonCorridorMergeDeleteLogic {
             new DungeonCorridorConnectionNormalizationLogic();
     private static final DungeonCorridorMutationRules MUTATION_RULES =
             new DungeonCorridorMutationRules();
-    private static final DungeonMapLookupLogic LOOKUP_SERVICE = new DungeonMapLookupLogic();
+    private static final DungeonMapLookupAdapter LOOKUP_ADAPTER = new DungeonMapLookupAdapter();
     private static final DungeonCorridorTargetDeleteLogic TARGET_DELETE_SERVICE =
             new DungeonCorridorTargetDeleteLogic();
 
@@ -25,7 +26,7 @@ final class DungeonCorridorMergeDeleteLogic {
         if (MUTATION_RULES.invalidCorridorId(corridorId)) {
             return dungeonMap;
         }
-        DungeonCorridor existing = LOOKUP_SERVICE.corridor(dungeonMap, corridorId);
+        DungeonCorridor existing = LOOKUP_ADAPTER.corridor(dungeonMap, corridorId);
         if (existing == null) {
             return dungeonMap;
         }
