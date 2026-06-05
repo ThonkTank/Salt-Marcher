@@ -207,17 +207,16 @@ Forbidden shortcuts:
 
 ## Focused Surface Propagation
 
-Focused verification selection is computed from requested production-handoff,
-focused-handoff, technical layer-surface, direct build-harness diagnostic, or
-bundle-selector task names during root settings evaluation by the
-`saltmarcher.settings` plugin from `tools/gradle/build-logic-settings`.
+Focused verification selection is computed by the shared verification task
+request classifier during root settings evaluation from requested
+production-handoff, focused-handoff, technical layer-surface, direct
+build-harness diagnostic, or bundle-selector task names.
 `focused-handoff` expands focused paths and optional area ids through the typed
 diagnostic surface catalog before selecting bundle ids. Technical layer
-surfaces and direct build-harness diagnostics expand to their owning bundle ids
-there, and direct internal bundle-selector task requests are still translated
-to the same bundle-id set. Those selector and diagnostic tasks stay technical
-implementation seams, not a second public verification API. The settings plugin
-also classifies the requested surface into the engines that the task graph can
+surfaces, direct build-harness diagnostics, and direct internal bundle-selector
+task requests translate to the same bundle-id set. Those selector and
+diagnostic tasks stay technical implementation seams, not a second public
+verification API. The classifier also selects the engines the task graph can
 consume. Focused surfaces MUST NOT include build-harness, quality-rules, or
 Error Prone included builds, and MUST NOT register jQAssistant engine tasks,
 unless the selected surface or active bundle descriptors require that engine.
@@ -240,7 +239,8 @@ inside the active checkout, match the selected or inferred area, and contain at
 least one input consumed by the selected focused surface. A path that is
 missing, absolute, glob-shaped, outside the selected area's source roots, a
 file, or a directory with no selected-surface inputs is an invalid focused
-scope and MUST fail instead of producing a green no-op result.
+scope and MUST fail instead of producing a green no-op result. Empty execution fails in the task; paths with no filter-aware surface may fail during configuration.
+Metadata requests may inspect `focused-handoff` without paths.
 
 Included builds consume those facts and MUST NOT reconstruct the root repo
 state from alternative checkout-relative guessing when the propagated repo root

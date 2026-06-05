@@ -15,8 +15,7 @@ internal data class VerificationLifecycleOwnerSpec(
 internal data class VerificationLifecycleSurfaceSpec(
     val surfaceId: String,
     val publicTaskName: String,
-    val description: String,
-    val dependencyTaskNames: List<String>
+    val description: String
 )
 
 internal data class VerificationLifecycleCatalog(
@@ -34,6 +33,8 @@ internal data class VerificationLifecycleCatalog(
         .filter { owner -> owner.phase == phase }
         .flatMap { owner -> listOf(owner.taskName) + owner.dependencyTaskNames }
         .distinct()
+
+    fun checkDependencyTaskNames(): List<String> = listOf(surface(ProductionHandoffSurfaceId).publicTaskName)
 }
 
 internal enum class VerificationLifecyclePhase {
@@ -80,18 +81,15 @@ internal fun standardVerificationLifecycleCatalog(): VerificationLifecycleCatalo
         verificationLifecycleOwner("dead-code", "checkNoDeadCode", VerificationLifecyclePhase.HYGIENE),
     )
     val owners = compileIntegrityOwners + structureOwners + hygieneOwners
-    val dependencyTaskNames = owners.map(VerificationLifecycleOwnerSpec::taskName)
     val checkSurface = verificationLifecycleSurface(
         surfaceId = CheckSurfaceId,
         publicTaskName = CheckTaskName,
-        description = "Run the central local build-health aggregate.",
-        dependencyTaskNames = listOf(ProductionHandoffTaskName)
+        description = "Run the central local build-health aggregate."
     )
     val productionHandoffSurface = verificationLifecycleSurface(
         surfaceId = ProductionHandoffSurfaceId,
         publicTaskName = ProductionHandoffTaskName,
-        description = "Run the public production-code handoff surface through the verification core and internal quality owners.",
-        dependencyTaskNames = dependencyTaskNames
+        description = "Run the public production-code handoff surface through the verification core and internal quality owners."
     )
 
     return VerificationLifecycleCatalog(
@@ -116,11 +114,9 @@ private fun verificationLifecycleOwner(
 private fun verificationLifecycleSurface(
     surfaceId: String,
     publicTaskName: String,
-    description: String,
-    dependencyTaskNames: List<String>
+    description: String
 ): VerificationLifecycleSurfaceSpec = VerificationLifecycleSurfaceSpec(
     surfaceId = surfaceId,
     publicTaskName = publicTaskName,
-    description = description,
-    dependencyTaskNames = dependencyTaskNames
+    description = description
 )

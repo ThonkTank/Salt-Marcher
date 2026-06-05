@@ -34,6 +34,8 @@ internal open class VerificationHarnessExtension(
     private val includeQualityRulesErrorProne: Boolean,
     private val jqassistantTaskRegistrar: JqassistantTaskRegistrar
 ) {
+    private val focusedSelection = FocusedVerificationPaths.selection()
+
     private fun compileJavaTaskName(sourceSetName: String): String =
         "compile${sourceSetName.replaceFirstChar(Char::uppercaseChar)}Java"
 
@@ -61,7 +63,7 @@ internal open class VerificationHarnessExtension(
             setSource(project.files(roots).asFileTree.matching {
                 FocusedVerificationPaths.configureDefaultSourceFilter(this, includes)
             }.matching {
-                FocusedVerificationPaths.configureFocusedCompileSourceFilter(this, roots, includes)
+                FocusedVerificationPaths.configureFocusedCompileSourceFilter(this, roots, includes, focusedSelection)
             })
             classpath = mainClassesSupportClasspath + mainSourceSet.compileClasspath
             options.sourcepath = project.files()
@@ -77,13 +79,13 @@ internal open class VerificationHarnessExtension(
                 options.errorprone.disableWarningsInGeneratedCode.set(true)
                 options.errorprone.disableAllChecks.set(true)
                 options.compilerArgs.add("-XDaddTypeAnnotationsToSymbol=true")
-                FocusedVerificationPaths.errorProneExcludedPathsPattern()?.let { excludedPathsPattern ->
+                FocusedVerificationPaths.errorProneExcludedPathsPattern(focusedSelection)?.let { excludedPathsPattern ->
                     options.errorprone.excludedPaths.set(excludedPathsPattern)
                 }
                 checkerNames.forEach(options.errorprone::error)
             }
             inputs.property("focusedVerificationCheckerNames", checkerNames.joinToString(","))
-            inputs.property("focusedVerificationPaths", FocusedVerificationPaths.propertyInput())
+            inputs.property("focusedVerificationPaths", FocusedVerificationPaths.propertyInput(focusedSelection))
         }
     }
 
@@ -101,9 +103,9 @@ internal open class VerificationHarnessExtension(
         val sourceSetName = "${bundleId.replaceFirstChar(Char::lowercaseChar)}EnforcementArchunit"
         val mainClassesSupportClasspath = project.files(project.layout.buildDirectory.dir("classes/java/main"))
         requireArchunitSources(bundleId, taskName, archunitSourceRoots, archunitIncludes)
-        val hasFocusedSelection = FocusedVerificationPaths.hasSelection()
+        val hasFocusedSelection = FocusedVerificationPaths.hasSelection(focusedSelection)
         val filterMainClasses = hasFocusedSelection &&
-            FocusedVerificationPaths.selectionContainsPathUnderAnyRoot(mainClassFilterRoots)
+            FocusedVerificationPaths.selectionContainsPathUnderAnyRoot(mainClassFilterRoots, focusedSelection)
         val focusedMainClassSources = if (filterMainClasses) {
             project.files(mainClassFilterRoots).asFileTree.matching {
                 FocusedVerificationPaths.configureDefaultSourceFilter(this, mainClassFilterIncludes)
@@ -111,7 +113,8 @@ internal open class VerificationHarnessExtension(
                 FocusedVerificationPaths.configureFocusedCompileSourceFilter(
                     this,
                     mainClassFilterRoots,
-                    mainClassFilterIncludes
+                    mainClassFilterIncludes,
+                    focusedSelection
                 )
             }
         } else {
@@ -121,7 +124,7 @@ internal open class VerificationHarnessExtension(
             project.provider { sourceTree.files.filter { file -> file.isFile } }
         }
         val mainClassesDirectory = if (filterMainClasses) {
-            val focusedOutputKey = FocusedVerificationPaths.focusedOutputKey() ?: "focused"
+            val focusedOutputKey = FocusedVerificationPaths.focusedOutputKey(focusedSelection) ?: "focused"
             val focusedCompileTaskName =
                 "compile${bundleId.replaceFirstChar(Char::uppercaseChar)}ArchunitFocusedMainClasses"
             val focusedMainClassesDirectory =
@@ -134,7 +137,7 @@ internal open class VerificationHarnessExtension(
                 options.sourcepath = project.files()
                 destinationDirectory.set(focusedMainClassesDirectory)
                 options.errorprone.enabled.set(false)
-                inputs.property("focusedVerificationPaths", FocusedVerificationPaths.propertyInput())
+                inputs.property("focusedVerificationPaths", FocusedVerificationPaths.propertyInput(focusedSelection))
             }
             focusedCompileTask to focusedMainClassesDirectory
         } else {
@@ -211,9 +214,9 @@ internal open class VerificationHarnessExtension(
     ): JqassistantTaskPair {
         val compileJava = project.tasks.named<JavaCompile>("compileJava")
         val mainClassesSupportClasspath = project.files(project.layout.buildDirectory.dir("classes/java/main"))
-        val selectedFocusedOutputKey = FocusedVerificationPaths.focusedOutputKey()
+        val selectedFocusedOutputKey = FocusedVerificationPaths.focusedOutputKey(focusedSelection)
         val focusJqassistant = selectedFocusedOutputKey != null &&
-            FocusedVerificationPaths.selectionContainsPathUnderAnyRoot(taskSpec.sourceRoots)
+            FocusedVerificationPaths.selectionContainsPathUnderAnyRoot(taskSpec.sourceRoots, focusedSelection)
         var focusedCompileTask: TaskProvider<JavaCompile>? = null
         val mainClassesDirectory = if (focusJqassistant) {
             val focusedOutputKey = selectedFocusedOutputKey ?: error("Missing focused output key.")
@@ -230,7 +233,8 @@ internal open class VerificationHarnessExtension(
                     FocusedVerificationPaths.configureFocusedCompileSourceFilter(
                         this,
                         taskSpec.sourceRoots,
-                        taskSpec.sourceIncludes
+                        taskSpec.sourceIncludes,
+                        focusedSelection
                     )
                 }
                 )
@@ -238,7 +242,7 @@ internal open class VerificationHarnessExtension(
                 options.sourcepath = project.files()
                 destinationDirectory.set(filteredMainClassesDirectory)
                 options.errorprone.enabled.set(false)
-                inputs.property("focusedVerificationPaths", FocusedVerificationPaths.propertyInput())
+                inputs.property("focusedVerificationPaths", FocusedVerificationPaths.propertyInput(focusedSelection))
             }
             filteredMainClassesDirectory
         } else {
@@ -248,7 +252,7 @@ internal open class VerificationHarnessExtension(
             FocusedVerificationPaths.configureDefaultSourceFilter(this, taskSpec.sourceIncludes)
         }.matching {
             if (focusJqassistant) {
-                FocusedVerificationPaths.configureFocusedSourceFilter(this, taskSpec.sourceRoots)
+                FocusedVerificationPaths.configureFocusedSourceFilter(this, taskSpec.sourceRoots, focusedSelection)
             }
         }
         return jqassistantTaskRegistrar.registerTaskPair(
@@ -273,7 +277,7 @@ internal open class VerificationHarnessExtension(
                 project.layout.projectDirectory.asFileTree.matching {
                     FocusedVerificationPaths.configureDefaultSourceFilter(this, listOf("resources/**", "shell/**", "src/**"))
                 }.matching {
-                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf(""))
+                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf(""), focusedSelection)
                     exclude("**/.gradle/**")
                     exclude("**/.git/**")
                 }
@@ -288,7 +292,7 @@ internal open class VerificationHarnessExtension(
                     include("**/*.css", "**/*.scss", "**/*.sass", "**/*.less", "**/*.styl")
                     exclude("**/.git/**", "**/.gradle/**", "**/build/**")
                 }.matching {
-                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf(""))
+                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf(""), focusedSelection)
                 }
             )
             canonicalStylesheetRelativePath.set("resources/salt-marcher.css")
@@ -311,14 +315,14 @@ internal open class VerificationHarnessExtension(
                     include("**/*.css", "**/*.scss", "**/*.sass", "**/*.less", "**/*.styl")
                     exclude("**/.git/**", "**/.gradle/**", "**/build/**")
                 }.matching {
-                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf(""))
+                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf(""), focusedSelection)
                 }
             )
             javaSourceFiles.from(
                 project.files("bootstrap", "shell", "src").asFileTree.matching {
                     FocusedVerificationPaths.configureDefaultSourceFilter(this, listOf("**/*.java"))
                 }.matching {
-                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf("bootstrap", "shell", "src"))
+                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf("bootstrap", "shell", "src"), focusedSelection)
                 }
             )
             successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
@@ -330,7 +334,7 @@ internal open class VerificationHarnessExtension(
                 project.files("bootstrap", "shell", "src").asFileTree.matching {
                     FocusedVerificationPaths.configureDefaultSourceFilter(this, listOf("**/*.java"))
                 }.matching {
-                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf("bootstrap", "shell", "src"))
+                    FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf("bootstrap", "shell", "src"), focusedSelection)
                 }
             )
             successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))

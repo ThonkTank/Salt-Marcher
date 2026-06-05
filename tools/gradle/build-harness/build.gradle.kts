@@ -25,7 +25,8 @@ java {
 val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
     ?.let(::File)
     ?: projectDir.parentFile.parentFile.parentFile
-val focusedVerificationPaths = FocusedVerificationPaths.selectedPaths()
+val focusedVerificationSelection = FocusedVerificationPaths.selection()
+val focusedVerificationPaths = focusedVerificationSelection.paths
 
 val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
 val focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
@@ -33,7 +34,8 @@ val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
 val diagnosticSurfaceCatalog = standardEnforcementDiagnosticSurfaceCatalog(enforcementBundles.catalog)
 FocusedVerificationPaths.validateSelection(
     repoRootDir,
-    activeEnforcementBundleIds.map { bundleId -> enforcementBundles.descriptor(bundleId) }
+    activeEnforcementBundleIds.map { bundleId -> enforcementBundles.descriptor(bundleId) },
+    focusedVerificationSelection
 )
 
 val sourceSets = the<SourceSetContainer>()

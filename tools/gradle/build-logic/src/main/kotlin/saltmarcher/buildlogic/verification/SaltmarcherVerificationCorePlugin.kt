@@ -15,6 +15,7 @@ import saltmarcher.buildlogic.enforcement.BuildHarnessTaskKind
 import saltmarcher.buildlogic.enforcement.EnforcementBundleDescriptor
 import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 import saltmarcher.buildlogic.enforcement.standardEnforcementDiagnosticSurfaceCatalog
+import saltmarcher.buildlogic.enforcement.VerificationTaskRequestClassifier
 import saltmarcher.buildlogic.shared.FocusedHandoffTaskName
 import saltmarcher.buildlogic.shared.ProductionHandoffCompileIntegrityTaskName
 import saltmarcher.buildlogic.shared.ProductionHandoffHygieneTaskName
@@ -39,32 +40,19 @@ internal fun Project.configureVerificationCore() {
 
     fun descriptor(bundleId: String): EnforcementBundleDescriptor = enforcementBundles.descriptor(bundleId)
 
+    val requestedTaskNames = requestedTaskNames()
     val activeDescriptors = activeEnforcementBundleIds.map(::descriptor)
-    if (focusedHandoffRequested()) {
-        require(FocusedVerificationPaths.hasSelection()) {
-            "Focused handoff requires at least one focused verification path."
-        }
-    }
-    FocusedVerificationPaths.validateSelection(rootDir, activeDescriptors)
+    val focusedSelection = FocusedVerificationPaths.selection()
+    FocusedVerificationPaths.validateSelection(rootDir, activeDescriptors, focusedSelection)
 
     fun defaultBundleDisplayName(bundleId: String): String = bundleId.replaceFirstChar(Char::uppercaseChar)
-
-    fun activeSurfaceBuildHarnessTaskNames(kind: BuildHarnessTaskKind): List<String> =
-        diagnosticSurfaceCatalog.surfacesInOrder
-            .filter { surface ->
-                surface.bundleIds
-                    .filter(activeEnforcementBundleIds::contains)
-                    .map(::descriptor)
-                    .any { descriptor -> descriptor.buildHarnessTasks.any { task -> task.kind == kind } }
-            }
-            .map { surface -> surface.buildHarnessTaskName(kind) }
 
     val focusedCompileTasksByBundleId = registerFocusedCompileTasksByBundleId(
         activeDescriptors,
         verificationHarness,
         focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode
     )
-    val nearMissCompileTask = if (nearMissVerificationRequested()) {
+    val nearMissCompileTask = if (VerificationTaskRequestClassifier.nearMissVerificationRequested(requestedTaskNames)) {
         verificationHarness.registerFocusedVerificationCompileTask(
             FocusedVerificationSliceKey(
                 verificationSourceRoots = listOf("bootstrap", "shell", "src"),
@@ -178,11 +166,17 @@ internal fun Project.configureVerificationCore() {
     }
 
     val focusedHandoffCompileIntegrity = systemBoolean("saltmarcher.focusedHandoffCompileIntegrity", defaultValue = false)
-    val focusedHandoffSurfaceTaskNames = FocusedVerificationPaths.selectedSurfaceIds()
+    val focusedHandoffSurfaceTaskNames = focusedSelection.surfaceIds
         .map { surfaceId -> diagnosticSurfaceCatalog.surface(surfaceId).diagnosticTaskName }
     tasks.register(FocusedHandoffTaskName) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the package-focused handoff surface through Gradle-owned diagnostic surface selection."
+        doFirst {
+            require(FocusedVerificationPaths.hasSelection(focusedSelection)) {
+                "Focused handoff requires at least one focused verification path."
+            }
+            FocusedVerificationPaths.validateSelection(rootDir, activeDescriptors, focusedSelection)
+        }
         focusedHandoffSurfaceTaskNames.forEach(::dependsOn)
         if (focusedHandoffCompileIntegrity) {
             dependsOn("compileJava", "compileTestJava")
@@ -194,7 +188,11 @@ internal fun Project.configureVerificationCore() {
         description = "Run all Markdown-backed architecture and enforcement documentation checks through the verification core."
         if (includeBuildHarness) {
             dependsOn(gradle.includedBuild("build-harness").task(":documentationEnforcementCheck"))
-            activeSurfaceBuildHarnessTaskNames(BuildHarnessTaskKind.DOCUMENTATION)
+            diagnosticSurfaceCatalog.buildHarnessTaskNamesForActiveBundles(
+                BuildHarnessTaskKind.DOCUMENTATION,
+                activeEnforcementBundleIds,
+                ::descriptor
+            )
                 .map { taskName -> gradle.includedBuild("build-harness").task(":$taskName") }
                 .forEach(::dependsOn)
         }
@@ -281,7 +279,7 @@ internal fun Project.configureVerificationCore() {
                 markProductionHandoffStructure.name
             ),
         productionHandoffHygieneDependencyTaskNames,
-        productionHandoffRequested = productionHandoffRequested(),
+        productionHandoffRequested = VerificationTaskRequestClassifier.productionHandoffRequested(requestedTaskNames),
         phaseCompletionMarkerPath = productionHandoffMarkerLayout.structureMarker.get().asFile.absolutePath
     )
 
@@ -327,39 +325,9 @@ private data class ProductionHandoffHygienePhaseBarrier(
         !productionHandoffRequested || java.io.File(phaseCompletionMarkerPath).isFile
 }
 
-private fun Project.productionHandoffRequested(): Boolean {
-    val requestedSurfaceNames = setOf(
-        ProductionHandoffSurfaceId,
-        ProductionHandoffCompileIntegrityTaskName,
-        ProductionHandoffStructureTaskName,
-        ProductionHandoffHygieneTaskName,
-        "production-handoff",
-        "check",
-        "build"
-    )
-    return gradle.startParameter.taskNames
-        .map { taskName -> taskName.substringAfterLast(':') }
-        .any(requestedSurfaceNames::contains)
-}
-
-private fun Project.nearMissVerificationRequested(): Boolean {
-    val requestedTaskNames = gradle.startParameter.taskNames
-        .map { taskName -> taskName.substringAfterLast(':') }
-        .toSet()
-    val requestedSurfaceNames = setOf(
-        ProductionHandoffSurfaceId,
-        ProductionHandoffHygieneTaskName,
-        "production-handoff",
-        "check",
-        "build",
-        "checkRewriteNearMisses"
-    )
-    return requestedTaskNames.any(requestedSurfaceNames::contains)
-}
-
-private fun Project.focusedHandoffRequested(): Boolean = gradle.startParameter.taskNames
+private fun Project.requestedTaskNames(): Set<String> = gradle.startParameter.taskNames
     .map { taskName -> taskName.substringAfterLast(':') }
-    .any { taskName -> taskName == FocusedHandoffTaskName }
+    .toSet()
 
 private fun Project.productionHandoffMarkerLayout(): ProductionHandoffMarkerLayout =
     ProductionHandoffMarkerLayout(

@@ -76,9 +76,13 @@ verification routing/lifecycle changes still need the broader
 The Gradle verification core treats an empty focused scope as a failure:
 nonexistent paths, files instead of directories, area/path mismatches, and
 directories without selected-surface inputs must fail instead of producing a
-green no-op run. Handoff text for `focused-handoff` MUST report the literal
-paths, selected area, engine surfaces that ran, and any broad supplemental
-steps such as `--with compile-integrity`.
+green no-op run. Empty focused execution fails in the `focused-handoff` task;
+non-empty paths that select no filter-aware surface may fail during
+configuration. Metadata and discovery requests such as
+`./gradlew help --task focused-handoff` may inspect the public task without
+supplying a focused path. Handoff text for `focused-handoff` MUST report the
+literal paths, selected area, engine surfaces that ran, and any broad
+supplemental steps such as `--with compile-integrity`.
 
 `./gradlew checkDocumentationEnforcement --console=plain` is the focused
 `Blocking Local Gate` for Markdown-backed architecture and enforcement
@@ -186,15 +190,16 @@ synthetic included-build mirrors, wrapper-published plugin repositories,
 generated descriptor snapshots, or wrapper-owned retained-failure export
 surfaces.
 
-The verification core still computes focused bundle selection during settings
-evaluation and still registers the same technical layer surfaces,
-`checkDocumentationEnforcement`, and staged lifecycle tasks. The included
-builds and bundle descriptors are resolved directly from the active worktree
-layout. Settings evaluation also publishes request-scope engine facts so a
-focused task graph includes only the build-harness, quality-rules,
-quality-rules-errorprone included builds, plus jQAssistant task registration,
-that the selected surface can actually consume. This graph pruning does not
-change the public proof route or the checks behind a requested surface.
+The shared verification task request classifier still computes focused bundle
+selection during settings evaluation. The verification core still registers the
+same technical layer surfaces, `checkDocumentationEnforcement`, and staged
+lifecycle tasks. The included builds and bundle descriptors are resolved
+directly from the active worktree layout. Settings evaluation also publishes
+request-scope engine facts so a focused task graph includes only the
+build-harness, quality-rules, quality-rules-errorprone included builds, plus
+jQAssistant task registration, that the selected surface can actually consume.
+This graph pruning does not change the public proof route or the checks behind
+a requested surface.
 Direct build-harness diagnostics participate in the same focused-selection
 mechanism: the settings plugin activates the matching layer-surface bundles, or
 all topology-owning bundles for `allBuildHarnessTopologyCheck`, before the

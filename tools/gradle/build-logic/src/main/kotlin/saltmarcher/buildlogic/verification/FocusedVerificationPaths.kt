@@ -14,8 +14,20 @@ private val IgnoredRepositoryScanSegments = setOf(".codex", ".git", ".gradle", "
 private val BuildLogicSourceRoots = listOf("tools/gradle/build-logic/src/main/kotlin")
 private val BuildHarnessSourceRoots = listOf("tools/gradle/build-harness/src/main/java")
 
+data class FocusedVerificationSelection(
+    val paths: List<String>,
+    val surfaceIds: List<String>
+)
+
 object FocusedVerificationPaths {
-    fun selectedPaths(): List<String> = System.getProperty(FocusedVerificationPathsProperty)
+    fun selection(): FocusedVerificationSelection = FocusedVerificationSelection(
+        paths = selectedPathsFromSystem(),
+        surfaceIds = selectedSurfaceIdsFromSystem()
+    )
+
+    fun selectedPaths(): List<String> = selection().paths
+
+    private fun selectedPathsFromSystem(): List<String> = System.getProperty(FocusedVerificationPathsProperty)
         ?.split(',')
         .orEmpty()
         .map(String::trim)
@@ -28,45 +40,47 @@ object FocusedVerificationPaths {
             }
         }
 
-    fun propertyInput(): String = selectedPaths().joinToString(",")
+    fun propertyInput(selection: FocusedVerificationSelection = selection()): String = selection.paths.joinToString(",")
 
-    fun hasSelection(): Boolean = selectedPaths().isNotEmpty()
+    fun hasSelection(selection: FocusedVerificationSelection = selection()): Boolean = selection.paths.isNotEmpty()
 
-    fun focusedOutputKey(): String? {
-        val paths = selectedPaths()
-        if (paths.isEmpty()) {
+    fun focusedOutputKey(selection: FocusedVerificationSelection = selection()): String? {
+        if (selection.paths.isEmpty()) {
             return null
         }
         val digest = MessageDigest.getInstance("SHA-256")
-        paths.sorted().forEach { path -> digest.update("path:$path\n".toByteArray()) }
-        selectedSurfaceIds().sorted().forEach { surfaceId -> digest.update("surface:$surfaceId\n".toByteArray()) }
+        selection.paths.sorted().forEach { path -> digest.update("path:$path\n".toByteArray()) }
+        selection.surfaceIds.sorted().forEach { surfaceId -> digest.update("surface:$surfaceId\n".toByteArray()) }
         val hash = digest.digest()
             .take(6)
             .joinToString("") { byte -> "%02x".format(byte) }
         return "focused-$hash"
     }
 
-    fun validateSelection(repoRootDir: File, activeDescriptors: List<EnforcementBundleDescriptor>) {
-        val paths = selectedPaths()
-        if (paths.isEmpty()) {
+    fun validateSelection(
+        repoRootDir: File,
+        activeDescriptors: List<EnforcementBundleDescriptor>,
+        selection: FocusedVerificationSelection = selection()
+    ) {
+        if (selection.paths.isEmpty()) {
             return
         }
 
         val repoRoot = repoRootDir.canonicalFile
-        val allowedRoots = allowedSourceRoots(activeDescriptors)
-        val selectedSurfaceRoots = selectedSurfaceRoots(activeDescriptors)
+        val allowedRoots = allowedSourceRoots(activeDescriptors, selection)
+        val selectedSurfaceRoots = selectedSurfaceRoots(activeDescriptors, selection)
         val inputSpecs = focusedInputSpecs(activeDescriptors)
         require(inputSpecs.isNotEmpty()) {
             "Focused verification paths require a selected filter-aware verification surface."
         }
         selectedSurfaceRoots.forEach { (surfaceId, roots) ->
-            require(paths.any { path -> pathIsUnderAnyRoot(repoRoot, path, roots) }) {
+            require(selection.paths.any { path -> pathIsUnderAnyRoot(repoRoot, path, roots) }) {
                 "Focused verification surface '$surfaceId' has no focused path under its allowed roots: " +
                     roots.joinToString(", ") + "."
             }
         }
 
-        paths.forEach { path ->
+        selection.paths.forEach { path ->
             val selectedDirectory = File(repoRoot, path).canonicalFile
             require(selectedDirectory.toPath().startsWith(repoRoot.toPath())) {
                 "Focused verification path '$path' must stay inside the repository root."
@@ -92,10 +106,14 @@ object FocusedVerificationPaths {
         filter.exclude("**/build/**")
     }
 
-    fun configureFocusedSourceFilter(filter: PatternFilterable, sourceRoots: List<String>) {
-        val focusedIncludes = sourceRootRelativeIncludes(sourceRoots)
+    fun configureFocusedSourceFilter(
+        filter: PatternFilterable,
+        sourceRoots: List<String>,
+        selection: FocusedVerificationSelection = selection()
+    ) {
+        val focusedIncludes = sourceRootRelativeIncludes(sourceRoots, selection)
         if (focusedIncludes.isEmpty()) {
-            if (hasSelection()) {
+            if (hasSelection(selection)) {
                 filter.include("__saltmarcher_no_focused_inputs__")
             }
             return
@@ -106,28 +124,32 @@ object FocusedVerificationPaths {
     fun configureFocusedCompileSourceFilter(
         filter: PatternFilterable,
         sourceRoots: List<String>,
-        defaultIncludes: List<String>
+        defaultIncludes: List<String>,
+        selection: FocusedVerificationSelection = selection()
     ) {
-        configureFocusedSourceFilter(filter, sourceRoots)
-        if (hasSelection() && selectionContainsPathUnderAnyRoot(sourceRoots)) {
+        configureFocusedSourceFilter(filter, sourceRoots, selection)
+        if (hasSelection(selection) && selectionContainsPathUnderAnyRoot(sourceRoots, selection)) {
             defaultIncludes
                 .filter(::isSupportSeamInclude)
                 .forEach(filter::include)
         }
     }
 
-    fun errorProneExcludedPathsPattern(): String? {
-        val paths = selectedPaths()
-        if (paths.isEmpty()) {
+    fun errorProneExcludedPathsPattern(selection: FocusedVerificationSelection = selection()): String? {
+        if (selection.paths.isEmpty()) {
             return null
         }
-        val includedPathExpression = paths
+        val includedPathExpression = selection.paths
             .joinToString("|") { path -> Regex.escape(path) }
         return "^(?!.*(^|/)($includedPathExpression)(/|$)).*"
     }
 
-    fun configureClassFileFilter(filter: PatternFilterable, sourceRoots: List<String>) {
-        selectedPaths()
+    fun configureClassFileFilter(
+        filter: PatternFilterable,
+        sourceRoots: List<String>,
+        selection: FocusedVerificationSelection = selection()
+    ) {
+        selection.paths
             .filter { path ->
                 sourceRoots.any { sourceRoot -> sourceRootRelativePath(path, sourceRoot) != null }
             }
@@ -136,8 +158,11 @@ object FocusedVerificationPaths {
             .forEach(filter::include)
     }
 
-    fun selectionContainsPathUnderAnyRoot(sourceRoots: List<String>): Boolean =
-        selectedPaths().any { selectedPath ->
+    fun selectionContainsPathUnderAnyRoot(
+        sourceRoots: List<String>,
+        selection: FocusedVerificationSelection = selection()
+    ): Boolean =
+        selection.paths.any { selectedPath ->
             sourceRoots.any { sourceRoot -> sourceRootRelativePath(selectedPath, sourceRoot) != null }
         }
 
@@ -158,7 +183,10 @@ object FocusedVerificationPaths {
             path.split('/').any { segment -> segment == "." || segment == ".." } ||
             path.any { character -> character == '*' || character == '?' || character == '[' || character == ']' }
 
-    private fun sourceRootRelativeIncludes(sourceRoots: List<String>): List<String> = selectedPaths()
+    private fun sourceRootRelativeIncludes(
+        sourceRoots: List<String>,
+        selection: FocusedVerificationSelection
+    ): List<String> = selection.paths
         .flatMap { selectedPath ->
             sourceRoots.mapNotNull { sourceRoot ->
                 sourceRootRelativePath(selectedPath, sourceRoot)
@@ -193,16 +221,21 @@ object FocusedVerificationPaths {
             normalizedInclude.startsWith("api/**")
     }
 
-    fun selectedSurfaceIds(): List<String> = System.getProperty(FocusedDiagnosticSurfaceIdsProperty)
+    fun selectedSurfaceIds(): List<String> = selection().surfaceIds
+
+    private fun selectedSurfaceIdsFromSystem(): List<String> = System.getProperty(FocusedDiagnosticSurfaceIdsProperty)
         ?.split(',')
         .orEmpty()
         .map(String::trim)
         .filter(String::isNotEmpty)
         .distinct()
 
-    private fun selectedSurfaceRoots(activeDescriptors: List<EnforcementBundleDescriptor>): Map<String, List<String>> {
+    private fun selectedSurfaceRoots(
+        activeDescriptors: List<EnforcementBundleDescriptor>,
+        selection: FocusedVerificationSelection
+    ): Map<String, List<String>> {
         val diagnosticSurfaceCatalog = standardEnforcementDiagnosticSurfaceCatalog()
-        return selectedSurfaceIds()
+        return selection.surfaceIds
             .associateWith { surfaceId ->
                 val surface = diagnosticSurfaceCatalog.surface(surfaceId)
                 (surface.focusSourceRoots + activeDescriptors
@@ -214,11 +247,14 @@ object FocusedVerificationPaths {
                     .map(::normalizePath)
                     .filter(String::isNotEmpty)
                     .distinct()
-        }
+            }
     }
 
-    private fun allowedSourceRoots(activeDescriptors: List<EnforcementBundleDescriptor>): List<String> {
-        val surfaceRoots = selectedSurfaceRoots(activeDescriptors).values.flatten()
+    private fun allowedSourceRoots(
+        activeDescriptors: List<EnforcementBundleDescriptor>,
+        selection: FocusedVerificationSelection
+    ): List<String> {
+        val surfaceRoots = selectedSurfaceRoots(activeDescriptors, selection).values.flatten()
         return surfaceRoots.ifEmpty {
             activeDescriptors
                 .flatMap { descriptor ->

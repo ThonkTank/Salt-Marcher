@@ -41,6 +41,19 @@ data class EnforcementDiagnosticSurfaceCatalog(
         .flatMap { path -> surfacesInOrder.filter { surface -> surface.matchesFocusedPath(path) } }
         .map(EnforcementDiagnosticSurfaceSpec::surfaceId)
         .distinct()
+
+    fun buildHarnessTaskNamesForActiveBundles(
+        kind: BuildHarnessTaskKind,
+        activeBundleIds: List<String>,
+        descriptor: (String) -> EnforcementBundleDescriptor
+    ): List<String> = surfacesInOrder
+        .filter { surface ->
+            surface.bundleIds
+                .filter(activeBundleIds::contains)
+                .map(descriptor)
+                .any { bundle -> bundle.buildHarnessTasks.any { task -> task.kind == kind } }
+        }
+        .map { surface -> surface.buildHarnessTaskName(kind) }
 }
 
 private fun enforcementDiagnosticSurface(
