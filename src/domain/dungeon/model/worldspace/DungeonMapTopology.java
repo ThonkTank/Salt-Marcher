@@ -9,6 +9,7 @@ import java.util.OptionalLong;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 
 /**
  * Map-owned topology index for authored element refs and semantic bindings.

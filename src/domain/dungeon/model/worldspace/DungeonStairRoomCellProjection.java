@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 
 final class DungeonStairRoomCellProjection {
     private final DungeonRoomCellProjection roomCellProjection = new DungeonRoomCellProjection();

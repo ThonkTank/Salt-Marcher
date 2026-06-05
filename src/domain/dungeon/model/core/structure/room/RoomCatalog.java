@@ -1,8 +1,8 @@
-package src.domain.dungeon.model.worldspace;
-
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.List;
 import java.util.Optional;
+import src.domain.dungeon.model.worldspace.DungeonRoom;
 
 /**
  * Authored rooms loaded from the dungeon write model.

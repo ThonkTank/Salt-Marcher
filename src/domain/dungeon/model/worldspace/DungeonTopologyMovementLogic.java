@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 
 /**
  * Owns authored topology movement while the aggregate stays the public mutation

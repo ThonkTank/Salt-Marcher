@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 
 public final class DungeonMapAuthoring {
 

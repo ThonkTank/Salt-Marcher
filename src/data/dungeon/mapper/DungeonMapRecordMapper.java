@@ -9,7 +9,7 @@ import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonMapTopology;
 import src.domain.dungeon.model.worldspace.DungeonTopology;
-import src.domain.dungeon.model.worldspace.RoomCatalog;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.worldspace.SpatialTopology;
 
 import java.util.List;

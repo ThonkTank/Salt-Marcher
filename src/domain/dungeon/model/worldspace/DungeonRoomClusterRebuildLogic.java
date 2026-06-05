@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 
 final class DungeonRoomClusterRebuildLogic {
 
