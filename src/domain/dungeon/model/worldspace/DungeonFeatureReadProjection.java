@@ -116,7 +116,7 @@ public final class DungeonFeatureReadProjection {
     }
 
     private static String destinationLabel(DungeonTransitionDestination destination) {
-        return DungeonTransitionLabels.destinationLabel(destination);
+        return destination == null ? "" : destination.coreDestination().label();
     }
 
     private static DungeonRelationGraph.FeatureRelation transitionRelation(
