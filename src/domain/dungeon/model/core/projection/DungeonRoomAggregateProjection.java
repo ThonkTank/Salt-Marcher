@@ -1,22 +1,22 @@
-package src.domain.dungeon.model.worldspace;
-
-import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
-
+package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
-import src.domain.dungeon.model.core.projection.DungeonAreaType;
+import java.util.Map;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonRoom;
+import src.domain.dungeon.model.worldspace.DungeonState;
 
-final class DungeonRoomAggregateProjection {
+public final class DungeonRoomAggregateProjection {
 
     private DungeonRoomAggregateProjection() {
     }
 
-    static void addRoomAggregates(
+    public static void addRoomAggregates(
             List<DungeonState> aggregates,
             List<DungeonAreaFacts> areas,
             long clusterId,
             List<DungeonRoom> clusterRooms,
-            java.util.Map<Long, List<DungeonCell>> roomCells
+            Map<Long, List<DungeonCell>> roomCells
     ) {
         for (DungeonRoom room : clusterRooms) {
             List<DungeonCell> cells = roomCells.getOrDefault(room.roomId(), List.of(room.primaryAnchor()));
