@@ -1,20 +1,20 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
-import java.util.Comparator;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonRoom;
-import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
+import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomExitDescription;
-import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
-import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 import src.domain.dungeon.model.worldspace.DungeonTraversalEndpoint;
 import src.domain.dungeon.model.worldspace.DungeonTraversalLink;
 

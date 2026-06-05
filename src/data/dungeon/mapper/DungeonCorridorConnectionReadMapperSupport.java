@@ -10,8 +10,10 @@ import src.data.dungeon.model.DungeonCorridorWaypointRecord;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
 import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
@@ -61,9 +63,9 @@ final class DungeonCorridorConnectionReadMapperSupport {
                     new DungeonCell(record.relativeCellX(), record.relativeCellY(), 0),
                     DungeonEdgeDirection.parse(record.edgeDirection()),
                     record.topologyElementId() == null
-                            ? src.domain.dungeon.model.worldspace.DungeonTopologyRef.empty()
-                            : new src.domain.dungeon.model.worldspace.DungeonTopologyRef(
-                                    src.domain.dungeon.model.worldspace.DungeonTopologyElementKind.DOOR,
+                            ? DungeonTopologyRef.empty()
+                            : new DungeonTopologyRef(
+                                    DungeonTopologyElementKind.DOOR,
                                     record.topologyElementId())));
         }
         return List.copyOf(result);
@@ -78,11 +80,11 @@ final class DungeonCorridorConnectionReadMapperSupport {
                     record.hostCorridorId(),
                     new DungeonCell(record.cellX(), record.cellY(), record.cellZ()),
                     record.topologyElementId() == null
-                            ? new src.domain.dungeon.model.worldspace.DungeonTopologyRef(
-                                    src.domain.dungeon.model.worldspace.DungeonTopologyElementKind.CORRIDOR_ANCHOR,
+                            ? new DungeonTopologyRef(
+                                    DungeonTopologyElementKind.CORRIDOR_ANCHOR,
                                     record.anchorId())
-                            : new src.domain.dungeon.model.worldspace.DungeonTopologyRef(
-                                    src.domain.dungeon.model.worldspace.DungeonTopologyElementKind.CORRIDOR_ANCHOR,
+                            : new DungeonTopologyRef(
+                                    DungeonTopologyElementKind.CORRIDOR_ANCHOR,
                                     record.topologyElementId())));
         }
         return List.copyOf(result);

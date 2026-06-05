@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchOrientation;
-import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorBoundaryTouchGeometry;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues;

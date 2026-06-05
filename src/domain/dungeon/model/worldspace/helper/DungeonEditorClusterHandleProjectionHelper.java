@@ -3,16 +3,16 @@ package src.domain.dungeon.model.worldspace.helper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjectionKind;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
-import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
-import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjectionKind;
 
 public final class DungeonEditorClusterHandleProjectionHelper {
 

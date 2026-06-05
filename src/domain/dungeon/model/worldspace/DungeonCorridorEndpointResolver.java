@@ -1,14 +1,14 @@
 package src.domain.dungeon.model.worldspace;
 
-import org.jspecify.annotations.Nullable;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 final class DungeonCorridorEndpointResolver {
 

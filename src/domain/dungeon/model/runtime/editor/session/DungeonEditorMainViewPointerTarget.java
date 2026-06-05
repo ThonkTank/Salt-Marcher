@@ -1,7 +1,7 @@
 package src.domain.dungeon.model.runtime.editor.session;
 
-import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
-import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public record DungeonEditorMainViewPointerTarget(
         int targetCode,

@@ -1,8 +1,13 @@
 package src.domain.dungeon.model.worldspace;
 
 import java.util.Objects;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public final class DungeonBoundaryFacts {
+    private static final String DOOR_KIND = "door";
+    private static final String OPEN_KIND = "open";
+
     private final String kind;
     private final long id;
     private final String label;
@@ -21,7 +26,7 @@ public final class DungeonBoundaryFacts {
         this.label = label == null || label.isBlank() ? "Boundary" : label;
         this.edge = edge;
         this.topologyRef = topologyRef == null
-                ? new DungeonTopologyRef(DungeonTopologyElementKind.fromBoundaryKind(kind), id)
+                ? new DungeonTopologyRef(topologyKind(kind), id)
                 : topologyRef;
     }
 
@@ -43,6 +48,20 @@ public final class DungeonBoundaryFacts {
 
     public DungeonTopologyRef topologyRef() {
         return topologyRef;
+    }
+
+    private static DungeonTopologyElementKind topologyKind(String kind) {
+        if (kind == null || kind.isBlank()) {
+            return DungeonTopologyElementKind.WALL;
+        }
+        String normalized = kind.trim();
+        if (DOOR_KIND.equalsIgnoreCase(normalized)) {
+            return DungeonTopologyElementKind.DOOR;
+        }
+        if (OPEN_KIND.equalsIgnoreCase(normalized)) {
+            return DungeonTopologyElementKind.EMPTY;
+        }
+        return DungeonTopologyElementKind.WALL;
     }
 
     @Override

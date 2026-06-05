@@ -1,13 +1,6 @@
-package src.domain.dungeon.model.worldspace;
-
-import java.util.Locale;
-import src.domain.dungeon.model.core.projection.DungeonAreaType;
-import src.domain.dungeon.model.core.projection.DungeonFeatureType;
+package src.domain.dungeon.model.core.graph;
 
 public final class DungeonTopologyElementKind {
-    private static final String DOOR_KIND = "door";
-    private static final String OPEN_KIND = "open";
-
     public static final DungeonTopologyElementKind EMPTY = new DungeonTopologyElementKind("EMPTY");
     public static final DungeonTopologyElementKind ROOM = new DungeonTopologyElementKind("ROOM");
     public static final DungeonTopologyElementKind CORRIDOR = new DungeonTopologyElementKind("CORRIDOR");
@@ -34,28 +27,6 @@ public final class DungeonTopologyElementKind {
             case "TRANSITION" -> TRANSITION;
             default -> EMPTY;
         };
-    }
-
-    public static DungeonTopologyElementKind fromAreaType(DungeonAreaType kind) {
-        return kind == DungeonAreaType.CORRIDOR ? CORRIDOR : ROOM;
-    }
-
-    public static DungeonTopologyElementKind fromBoundaryKind(String kind) {
-        if (kind == null || kind.isBlank()) {
-            return WALL;
-        }
-        String normalized = kind.trim().toLowerCase(Locale.ROOT);
-        if (DOOR_KIND.equals(normalized)) {
-            return DOOR;
-        }
-        if (OPEN_KIND.equals(normalized)) {
-            return EMPTY;
-        }
-        return WALL;
-    }
-
-    public static DungeonTopologyElementKind fromFeatureType(DungeonFeatureType kind) {
-        return kind == DungeonFeatureType.TRANSITION ? TRANSITION : STAIR;
     }
 
     public String name() {

@@ -2,13 +2,14 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.ArrayList;
 import java.util.List;
-import src.domain.dungeon.model.worldspace.DungeonState;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryFacts;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonFeatureFacts;
-import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
-import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonState;
 
 final class BuildDungeonSelectionFactsUseCase {
 
@@ -139,7 +140,13 @@ final class BuildDungeonSelectionFactsUseCase {
 
         private static boolean matchesAggregate(DungeonTopologyRef topologyRef, DungeonState aggregate) {
             return aggregate.id() == topologyRef.id()
-                    && DungeonTopologyElementKind.fromAreaType(aggregate.kind()) == topologyRef.kind();
+                    && topologyKind(aggregate.kind()) == topologyRef.kind();
+        }
+
+        private static DungeonTopologyElementKind topologyKind(DungeonAreaType kind) {
+            return kind == DungeonAreaType.CORRIDOR
+                    ? DungeonTopologyElementKind.CORRIDOR
+                    : DungeonTopologyElementKind.ROOM;
         }
     }
 

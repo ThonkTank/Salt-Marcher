@@ -2,13 +2,13 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
 
 /**
  * Loads the current committed dungeon snapshot.

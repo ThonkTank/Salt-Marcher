@@ -1,6 +1,8 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
@@ -16,8 +18,6 @@ import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
 import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
-import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
-import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 import src.domain.dungeon.model.worldspace.DungeonTransition;
 
 final class DungeonTopologyInvariantHarness {

@@ -5,9 +5,10 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 
 // Remove this bridge when worldspace boundary callers use RoomClusterBoundaryMaterialization directly.
 final class DungeonClusterBoundaryMaterializationAdapter {

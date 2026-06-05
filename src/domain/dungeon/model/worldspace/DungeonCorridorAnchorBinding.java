@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public record DungeonCorridorAnchorBinding(
         long anchorId,

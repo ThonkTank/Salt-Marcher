@@ -7,11 +7,12 @@ import java.util.Locale;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.data.dungeon.model.DungeonTopologyElementRecord;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.worldspace.DungeonMapTopology;
-import src.domain.dungeon.model.worldspace.DungeonTopologyElementKind;
-import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
 
 final class DungeonTopologyElementRecordMapperSupport {
+    private static final String DOOR_EDGE_TYPE = "DOOR";
     private static final String OPEN_EDGE_TYPE = "OPEN";
 
     private DungeonTopologyElementRecordMapperSupport() {
@@ -68,8 +69,22 @@ final class DungeonTopologyElementRecordMapperSupport {
             return DungeonTopologyRef.empty();
         }
         return new DungeonTopologyRef(
-                DungeonTopologyElementKind.fromBoundaryKind(edgeType),
+                topologyKindForBoundary(edgeType),
                 topologyElementId);
+    }
+
+    private static DungeonTopologyElementKind topologyKindForBoundary(String edgeType) {
+        if (edgeType == null || edgeType.isBlank()) {
+            return DungeonTopologyElementKind.WALL;
+        }
+        String normalized = edgeType.trim();
+        if (OPEN_EDGE_TYPE.equalsIgnoreCase(normalized)) {
+            return DungeonTopologyElementKind.EMPTY;
+        }
+        if (DOOR_EDGE_TYPE.equalsIgnoreCase(normalized)) {
+            return DungeonTopologyElementKind.DOOR;
+        }
+        return DungeonTopologyElementKind.WALL;
     }
 
     private static DungeonTopologyElementKind topologyKind(String value) {

@@ -1,6 +1,8 @@
 package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonFeatureType;
 
 public record DungeonFeatureFacts(
@@ -62,7 +64,7 @@ public record DungeonFeatureFacts(
         destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
         facts = copyFacts(facts);
         topologyRef = topologyRef == null
-                ? new DungeonTopologyRef(DungeonTopologyElementKind.fromFeatureType(kind), id)
+                ? new DungeonTopologyRef(topologyKind(kind), id)
                 : topologyRef;
     }
 
@@ -88,6 +90,12 @@ public record DungeonFeatureFacts(
     private static DungeonTopologyRef defaultTopologyRef(DungeonFeatureType kind, long id) {
         DungeonFeatureType resolvedKind = kind == null ? DungeonFeatureType.STAIR : kind;
         long resolvedId = Math.max(1L, id);
-        return new DungeonTopologyRef(DungeonTopologyElementKind.fromFeatureType(resolvedKind), resolvedId);
+        return new DungeonTopologyRef(topologyKind(resolvedKind), resolvedId);
+    }
+
+    private static DungeonTopologyElementKind topologyKind(DungeonFeatureType kind) {
+        return kind == DungeonFeatureType.TRANSITION
+                ? DungeonTopologyElementKind.TRANSITION
+                : DungeonTopologyElementKind.STAIR;
     }
 }

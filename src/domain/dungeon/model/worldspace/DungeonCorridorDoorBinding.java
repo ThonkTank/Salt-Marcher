@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace;
 import src.domain.dungeon.model.core.component.CorridorDoorBinding;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public record DungeonCorridorDoorBinding(
         long roomId,

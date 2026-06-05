@@ -16,7 +16,7 @@ import src.domain.dungeon.model.worldspace.DungeonEditorHandleMovementKind;
 import src.domain.dungeon.model.worldspace.DungeonEditorHandleMovement;
 import src.domain.dungeon.model.worldspace.DungeonRoomExitDescription;
 import src.domain.dungeon.model.worldspace.DungeonRoomNarration;
-import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public interface DungeonEditorAuthoredOperationHelper {
 

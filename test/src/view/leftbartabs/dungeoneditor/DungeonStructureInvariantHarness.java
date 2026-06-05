@@ -346,8 +346,8 @@ final class DungeonStructureInvariantHarness {
     }
 
     private static void assertWorldspaceAdapterPreservesTopologyRefIdentity() {
-        src.domain.dungeon.model.worldspace.DungeonTopologyRef stableRef =
-                src.domain.dungeon.model.worldspace.DungeonTopologyRef.corridorAnchor(30L);
+        src.domain.dungeon.model.core.graph.DungeonTopologyRef stableRef =
+                src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(30L);
         src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding first =
                 new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
                         3L,
@@ -373,8 +373,8 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(replacementRef), refBindings.withAnchorRef(replacementRef).anchorRefs(),
                 "core anchor ref replacement follows topology ref when host id differs");
 
-        src.domain.dungeon.model.worldspace.DungeonTopologyRef splitAnchorRef =
-                src.domain.dungeon.model.worldspace.DungeonTopologyRef.corridorAnchor(70L);
+        src.domain.dungeon.model.core.graph.DungeonTopologyRef splitAnchorRef =
+                src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(70L);
         src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding splitAnchor =
                 new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
                         7L,
@@ -511,10 +511,10 @@ final class DungeonStructureInvariantHarness {
     }
 
     private static void assertWorldspaceCorridorNetworkAdapterCompatibility() {
-        src.domain.dungeon.model.worldspace.DungeonTopologyRef stableRef =
-                src.domain.dungeon.model.worldspace.DungeonTopologyRef.corridorAnchor(70L);
-        src.domain.dungeon.model.worldspace.DungeonTopologyRef detachedRef =
-                src.domain.dungeon.model.worldspace.DungeonTopologyRef.corridorAnchor(71L);
+        src.domain.dungeon.model.core.graph.DungeonTopologyRef stableRef =
+                src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(70L);
+        src.domain.dungeon.model.core.graph.DungeonTopologyRef detachedRef =
+                src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(71L);
         src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding referencedAnchor =
                 new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
                         7L,

@@ -23,7 +23,7 @@ import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
 import src.domain.dungeon.model.worldspace.DungeonMapFacts;
 import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonTopology;
-import src.domain.dungeon.model.worldspace.DungeonTopologyRef;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 final class DungeonRuntimeProjectionInvariantHarness {
 

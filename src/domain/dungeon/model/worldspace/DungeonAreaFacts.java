@@ -2,6 +2,8 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
 
 public final class DungeonAreaFacts {
@@ -45,7 +47,11 @@ public final class DungeonAreaFacts {
         this.label = label == null || label.isBlank() ? "Area" : label;
         this.cells = cells == null ? List.of() : List.copyOf(cells);
         this.topologyRef = topologyRef == null
-                ? new DungeonTopologyRef(DungeonTopologyElementKind.fromAreaType(this.kind), id)
+                ? new DungeonTopologyRef(
+                        this.kind == DungeonAreaType.CORRIDOR
+                                ? DungeonTopologyElementKind.CORRIDOR
+                                : DungeonTopologyElementKind.ROOM,
+                        id)
                 : topologyRef;
     }
 
@@ -75,7 +81,11 @@ public final class DungeonAreaFacts {
 
     private static DungeonTopologyRef defaultTopologyRef(DungeonAreaType kind, long id) {
         DungeonAreaType safeKind = kind == null ? DungeonAreaType.ROOM : kind;
-        return new DungeonTopologyRef(DungeonTopologyElementKind.fromAreaType(safeKind), id);
+        return new DungeonTopologyRef(
+                safeKind == DungeonAreaType.CORRIDOR
+                        ? DungeonTopologyElementKind.CORRIDOR
+                        : DungeonTopologyElementKind.ROOM,
+                id);
     }
 
     public boolean isCorridor() {
