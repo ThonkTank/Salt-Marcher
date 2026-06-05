@@ -1,12 +1,12 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryKey;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundary;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;

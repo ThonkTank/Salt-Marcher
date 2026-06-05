@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.ArrayList;
 import java.util.List;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;

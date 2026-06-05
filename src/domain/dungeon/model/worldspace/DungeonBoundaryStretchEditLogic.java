@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchMutationResult;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
 

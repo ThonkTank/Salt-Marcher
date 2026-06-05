@@ -12,6 +12,7 @@ import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
@@ -730,7 +731,7 @@ final class DungeonStructureInvariantHarness {
                 "core geometry edge key keeps stable ids endpoint-order independent");
         assertEquals(
                 northKey.stableId(),
-                src.domain.dungeon.model.worldspace.DungeonBoundaryKey.from(
+                DungeonBoundaryKey.from(
                         src.domain.dungeon.model.worldspace.DungeonEdge.sideOf(
                                 new DungeonCell(5, 7, 0),
                                 DungeonEdgeDirection.NORTH))

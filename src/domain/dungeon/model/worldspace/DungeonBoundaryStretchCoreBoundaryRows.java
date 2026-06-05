@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;

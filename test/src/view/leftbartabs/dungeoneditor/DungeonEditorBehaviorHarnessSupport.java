@@ -64,7 +64,7 @@ import shell.host.AppShell;
 import src.data.dungeon.model.DungeonPersistenceSchema;
 import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.domain.dungeon.DungeonServiceContribution;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonEdge;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;

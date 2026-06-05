@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;

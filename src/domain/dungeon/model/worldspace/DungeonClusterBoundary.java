@@ -1,5 +1,6 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public record DungeonClusterBoundary(

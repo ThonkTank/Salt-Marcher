@@ -1,7 +1,7 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.geometry;
 
-import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.EdgeKey;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonEdge;
 
 public record DungeonBoundaryKey(
         DungeonCell lower,
@@ -20,10 +20,19 @@ public record DungeonBoundaryKey(
     }
 
     private static int compareCells(DungeonCell left, DungeonCell right) {
-        return DungeonCell.compareByGeometry(left, right);
+        if (left == null && right == null) {
+            return 0;
+        }
+        if (left == null) {
+            return -1;
+        }
+        if (right == null) {
+            return 1;
+        }
+        return CellOrdering.compareCells(coreCell(left), coreCell(right));
     }
 
     private static Cell coreCell(DungeonCell cell) {
-        return cell == null ? null : cell.geometry();
+        return cell == null ? null : new Cell(cell.q(), cell.r(), cell.level());
     }
 }

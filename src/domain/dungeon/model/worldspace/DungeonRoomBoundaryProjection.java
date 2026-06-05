@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
 import java.util.Map;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;

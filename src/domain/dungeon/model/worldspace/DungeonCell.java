@@ -46,19 +46,6 @@ public final class DungeonCell {
         return List.copyOf(result);
     }
 
-    static int compareByGeometry(DungeonCell left, DungeonCell right) {
-        if (left == null && right == null) {
-            return 0;
-        }
-        if (left == null) {
-            return -1;
-        }
-        if (right == null) {
-            return 1;
-        }
-        return CellOrdering.compareCells(left.geometry(), right.geometry());
-    }
-
     public int q() {
         return geometry.q();
     }

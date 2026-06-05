@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 
 final class DungeonCorridorBindingLookupLogic {
 
