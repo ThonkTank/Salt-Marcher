@@ -3,7 +3,7 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 
 /**

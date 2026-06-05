@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
-import src.domain.dungeon.model.worldspace.DungeonState;
 
 public final class DungeonRoomAggregateProjection {
 

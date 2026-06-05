@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
-import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonTransition;

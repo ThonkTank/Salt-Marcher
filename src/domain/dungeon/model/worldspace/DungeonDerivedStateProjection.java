@@ -7,9 +7,11 @@ import src.domain.dungeon.model.core.graph.DungeonTraversalLinkProjection;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonCorridorProjection;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryProjection;
+import src.domain.dungeon.model.core.projection.DungeonState;
 
 /**
  * Rebuilds read-side dungeon state from authored dungeon truth.

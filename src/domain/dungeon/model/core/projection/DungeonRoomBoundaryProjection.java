@@ -7,7 +7,6 @@ import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
-import src.domain.dungeon.model.worldspace.DungeonState;
 
 public record DungeonRoomBoundaryProjection(
         List<DungeonState> aggregates,

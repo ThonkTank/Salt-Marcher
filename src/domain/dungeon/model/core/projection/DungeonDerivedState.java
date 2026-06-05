@@ -1,9 +1,8 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTraversalLink;
-import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 
 /**
  * Derived dungeon lookup and render state built from committed truth.

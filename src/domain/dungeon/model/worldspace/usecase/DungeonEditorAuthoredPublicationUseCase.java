@@ -10,7 +10,7 @@ import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceAreaProject
 import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceBoundaryProjectionHelper;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceFeatureProjectionHelper;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceHandleProjectionHelper;
-import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonTopology;
 import src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository;
 

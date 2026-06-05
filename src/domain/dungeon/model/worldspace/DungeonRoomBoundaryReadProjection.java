@@ -8,6 +8,7 @@ import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryProjection;
 import src.domain.dungeon.model.core.projection.DungeonRoomAggregateProjection;
 import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryProjection;
+import src.domain.dungeon.model.core.projection.DungeonState;
 
 final class DungeonRoomBoundaryReadProjection {
 

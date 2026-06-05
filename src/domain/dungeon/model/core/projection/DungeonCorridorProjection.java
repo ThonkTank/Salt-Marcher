@@ -2,7 +2,6 @@ package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
-import src.domain.dungeon.model.worldspace.DungeonState;
 
 public record DungeonCorridorProjection(
         long nextBoundaryId,

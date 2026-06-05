@@ -21,7 +21,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
-import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonDerivedStateProjection;
 import src.domain.dungeon.model.worldspace.DungeonEdge;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;

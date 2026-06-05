@@ -8,8 +8,8 @@ import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
-import src.domain.dungeon.model.worldspace.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonState;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
+import src.domain.dungeon.model.core.projection.DungeonState;
 
 final class BuildDungeonSelectionFactsUseCase {
 

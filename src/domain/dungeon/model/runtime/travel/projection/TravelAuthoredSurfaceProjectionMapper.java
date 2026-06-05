@@ -2,7 +2,7 @@ package src.domain.dungeon.model.runtime.travel.projection;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.DungeonDerivedState;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;

@@ -1,7 +1,7 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
-import src.domain.dungeon.model.core.projection.DungeonAreaType;
+import src.domain.dungeon.model.worldspace.DungeonCell;
 
 /**
  * Identity-bearing authored dungeon area.
