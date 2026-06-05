@@ -3,7 +3,7 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.Objects;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
-import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 
 public final class LoadDungeonEditorAuthoredMapUseCase {
 

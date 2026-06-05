@@ -5,7 +5,7 @@ import src.data.dungeon.gateway.local.DungeonSqliteMapBatchGateway;
 import src.data.dungeon.mapper.DungeonMapRecordMapper;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
-import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 
 import java.util.List;
 import java.util.Objects;

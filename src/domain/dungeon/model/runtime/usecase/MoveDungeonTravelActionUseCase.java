@@ -17,7 +17,7 @@ import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionMovem
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.MoveStatus;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.OverworldTarget;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 import src.domain.dungeon.model.worldspace.usecase.BuildDungeonDerivedStateUseCase;
 import src.domain.dungeon.model.worldspace.usecase.LoadDungeonMapUseCase;

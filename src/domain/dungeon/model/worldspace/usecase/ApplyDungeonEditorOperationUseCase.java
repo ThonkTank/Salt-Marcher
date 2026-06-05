@@ -7,7 +7,7 @@ import src.domain.dungeon.model.core.structure.DungeonMapOperationFeedbackRules;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 

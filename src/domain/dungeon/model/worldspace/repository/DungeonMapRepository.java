@@ -1,7 +1,7 @@
 package src.domain.dungeon.model.worldspace.repository;
 
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 
 import java.util.List;
 import java.util.Optional;

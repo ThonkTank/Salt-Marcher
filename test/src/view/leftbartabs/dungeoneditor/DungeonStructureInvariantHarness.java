@@ -974,8 +974,8 @@ final class DungeonStructureInvariantHarness {
             src.domain.dungeon.model.worldspace.DungeonTransition... transitions
     ) {
         return new src.domain.dungeon.model.worldspace.DungeonMap(
-                new src.domain.dungeon.model.worldspace.DungeonMapMetadata(
-                        new src.domain.dungeon.model.worldspace.DungeonMapIdentity(4L),
+                new src.domain.dungeon.model.core.structure.DungeonMapMetadata(
+                        new src.domain.dungeon.model.core.structure.DungeonMapIdentity(4L),
                         "transition proof map"),
                 src.domain.dungeon.model.worldspace.SpatialTopology.empty(),
                 src.domain.dungeon.model.worldspace.RoomCatalog.empty(),

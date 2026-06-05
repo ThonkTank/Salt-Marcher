@@ -69,7 +69,7 @@ import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonEdge;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;

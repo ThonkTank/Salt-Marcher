@@ -6,7 +6,7 @@ import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceProjectio
 import src.domain.dungeon.model.runtime.travel.projection.TravelPositionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceFacts;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.usecase.BuildDungeonDerivedStateUseCase;
 import src.domain.dungeon.model.worldspace.usecase.LoadDungeonMapUseCase;
 
