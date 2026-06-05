@@ -3,7 +3,7 @@ package src.domain.dungeon;
 import java.util.List;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.worldspace.DungeonTopology;
 import src.domain.dungeon.published.DungeonTopologyKind;
 

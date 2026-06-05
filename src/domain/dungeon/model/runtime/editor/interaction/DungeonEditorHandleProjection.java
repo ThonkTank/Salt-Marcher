@@ -1,6 +1,8 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.runtime.editor.interaction;
 
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 public record DungeonEditorHandleProjection(
         DungeonEditorHandleProjectionKind kind,

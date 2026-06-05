@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.runtime.editor.interaction;
 
 public enum DungeonEditorHandleProjectionKind {
     CLUSTER_LABEL,

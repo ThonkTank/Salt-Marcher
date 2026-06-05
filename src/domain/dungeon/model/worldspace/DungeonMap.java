@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
 /**
  * Canonical aggregate root state for one authored dungeon map.

@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.runtime.editor.interaction;
 
 public final class DungeonEditorHandleMovementKind {
     public static final DungeonEditorHandleMovementKind UNKNOWN = new DungeonEditorHandleMovementKind("UNKNOWN");
@@ -36,31 +36,31 @@ public final class DungeonEditorHandleMovementKind {
         return CLUSTER_LABEL;
     }
 
-    boolean isClusterLabel() {
+    public boolean isClusterLabel() {
         return this == CLUSTER_LABEL;
     }
 
-    boolean isUnknown() {
+    public boolean isUnknown() {
         return this == UNKNOWN;
     }
 
-    boolean isClusterCorner() {
+    public boolean isClusterCorner() {
         return this == CLUSTER_CORNER;
     }
 
-    boolean isDoor() {
+    public boolean isDoor() {
         return this == DOOR;
     }
 
-    boolean isCorridorAnchor() {
+    public boolean isCorridorAnchor() {
         return this == CORRIDOR_ANCHOR;
     }
 
-    boolean isCorridorWaypoint() {
+    public boolean isCorridorWaypoint() {
         return this == CORRIDOR_WAYPOINT;
     }
 
-    boolean isStairAnchor() {
+    public boolean isStairAnchor() {
         return this == STAIR_ANCHOR;
     }
 }

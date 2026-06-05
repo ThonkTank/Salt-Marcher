@@ -6,16 +6,17 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjectionKind;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjectionKind;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 import src.domain.dungeon.model.worldspace.DungeonStair;
 import src.domain.dungeon.model.worldspace.DungeonStairExit;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorClusterHandleProjectionHelper;
+
 
 /**
  * Publishes authored editor handles from one dungeon map snapshot.

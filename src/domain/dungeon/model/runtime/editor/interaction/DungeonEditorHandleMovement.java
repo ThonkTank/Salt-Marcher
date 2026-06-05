@@ -1,6 +1,8 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.runtime.editor.interaction;
 
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 public record DungeonEditorHandleMovement(
         DungeonEditorHandleMovementKind kind,
@@ -24,5 +26,4 @@ public record DungeonEditorHandleMovement(
         cell = cell == null ? new DungeonCell(0, 0, 0) : cell;
         direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
     }
-
 }

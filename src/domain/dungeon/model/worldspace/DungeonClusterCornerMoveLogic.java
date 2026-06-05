@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace;
 import java.util.ArrayList;
 import java.util.List;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
 final class DungeonClusterCornerMoveLogic {
 

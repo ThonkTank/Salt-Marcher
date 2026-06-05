@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonEditorHandleProjection;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 
 /**
  * Assembles committed dungeon snapshot data from authored truth and derived state.
