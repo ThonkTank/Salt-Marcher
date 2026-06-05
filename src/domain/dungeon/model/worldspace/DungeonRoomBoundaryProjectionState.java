@@ -11,6 +11,7 @@ import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryProjection;
+import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryTouchSupport;
 
 final class DungeonRoomBoundaryProjectionState {
 

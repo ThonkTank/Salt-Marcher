@@ -1,16 +1,17 @@
-package src.domain.dungeon.model.worldspace;
-
+package src.domain.dungeon.model.core.projection;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonEdge;
 
-final class DungeonRoomBoundaryTouchSupport {
+public final class DungeonRoomBoundaryTouchSupport {
 
     private DungeonRoomBoundaryTouchSupport() {
     }
 
-    static boolean containsAnyRoomCell(Map<Long, List<DungeonCell>> cellsByRoom, DungeonCell cell) {
+    public static boolean containsAnyRoomCell(Map<Long, List<DungeonCell>> cellsByRoom, DungeonCell cell) {
         for (List<DungeonCell> cells : cellsByRoom.values()) {
             if (cells.contains(cell)) {
                 return true;
@@ -19,7 +20,7 @@ final class DungeonRoomBoundaryTouchSupport {
         return false;
     }
 
-    static List<Long> touchingRoomIds(DungeonEdge edge, Map<Long, List<DungeonCell>> cellsByRoom) {
+    public static List<Long> touchingRoomIds(DungeonEdge edge, Map<Long, List<DungeonCell>> cellsByRoom) {
         List<Long> result = new ArrayList<>();
         List<DungeonCell> touchingCells = edge.touchingCells();
         for (Map.Entry<Long, List<DungeonCell>> entry : cellsByRoom.entrySet()) {
