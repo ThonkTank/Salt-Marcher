@@ -1,7 +1,9 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.graph;
 
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 public record DungeonTraversalLink(
         String key,

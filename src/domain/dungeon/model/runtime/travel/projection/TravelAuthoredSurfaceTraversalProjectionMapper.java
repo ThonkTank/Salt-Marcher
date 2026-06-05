@@ -2,9 +2,10 @@ package src.domain.dungeon.model.runtime.travel.projection;
 
 import java.util.ArrayList;
 import java.util.List;
-import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.core.graph.DungeonTraversalLink;
+import src.domain.dungeon.model.core.graph.DungeonTraversalLinkProjection;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
-import src.domain.dungeon.model.worldspace.DungeonTraversalLink;
+import src.domain.dungeon.model.worldspace.DungeonMap;
 
 final class TravelAuthoredSurfaceTraversalProjectionMapper {
 
@@ -17,7 +18,7 @@ final class TravelAuthoredSurfaceTraversalProjectionMapper {
     ) {
         List<TravelAuthoredSurface.TraversalLinkInput> result = new ArrayList<>();
         for (DungeonTraversalLink link
-                : new src.domain.dungeon.model.worldspace.DungeonTraversalLinkProjection().project(dungeonMap, mapFacts)) {
+                : new DungeonTraversalLinkProjection().project(dungeonMap, mapFacts)) {
             if (link != null) {
                 result.add(toTraversalLink(link));
             }

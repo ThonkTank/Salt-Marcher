@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.graph;
 
 public record DungeonTraversalSource(
         DungeonTraversalSourceKind kind,

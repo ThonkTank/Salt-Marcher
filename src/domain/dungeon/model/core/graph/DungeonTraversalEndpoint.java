@@ -1,4 +1,6 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.graph;
+
+import src.domain.dungeon.model.worldspace.DungeonCell;
 
 public record DungeonTraversalEndpoint(
         DungeonCell tile,
