@@ -2,9 +2,9 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Locale;
 import java.util.Objects;
+import src.domain.dungeon.model.core.structure.stair.StairShape;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
-import src.domain.dungeon.model.worldspace.DungeonStairShape;
 
 public final class SaveDungeonEditorStairGeometryUseCase {
     private static final String INVALID_STAIR_GEOMETRY_STATUS = "Treppengeometrie ungueltig.";
@@ -25,7 +25,7 @@ public final class SaveDungeonEditorStairGeometryUseCase {
 
     public void execute(StairGeometryInput input) {
         StairGeometryInput safeInput = input == null ? StairGeometryInput.empty() : input;
-        DungeonStairShape shape = supportedShape(safeInput.shapeName());
+        StairShape shape = supportedShape(safeInput.shapeName());
         if (!workflow.session().hasSelectedMap()
                 || safeInput.stairId() <= 0L
                 || shape == null
@@ -61,9 +61,8 @@ public final class SaveDungeonEditorStairGeometryUseCase {
         };
     }
 
-    private static DungeonStairShape supportedShape(String value) {
-        DungeonStairShape shape = DungeonStairShape.parse(value);
-        return shape.supportedEditorShape() ? shape : null;
+    private static StairShape supportedShape(String value) {
+        return StairShape.supportedEditorShape(value);
     }
 
     public record StairGeometryInput(

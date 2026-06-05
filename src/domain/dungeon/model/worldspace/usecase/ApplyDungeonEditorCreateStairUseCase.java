@@ -2,10 +2,10 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.stair.StairShape;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
-import src.domain.dungeon.model.worldspace.DungeonStairShape;
 
 public final class ApplyDungeonEditorCreateStairUseCase {
     private static final String INVALID_STAIR_GEOMETRY_STATUS = "Treppengeometrie ungueltig.";
@@ -25,18 +25,18 @@ public final class ApplyDungeonEditorCreateStairUseCase {
     }
 
     public void press(MainViewInput input) {
-        press(input, DungeonStairShape.STRAIGHT);
+        press(input, StairShape.STRAIGHT);
     }
 
     public void pressSquare(MainViewInput input) {
-        press(input, DungeonStairShape.SQUARE);
+        press(input, StairShape.SQUARE);
     }
 
     public void pressCircular(MainViewInput input) {
-        press(input, DungeonStairShape.CIRCULAR);
+        press(input, StairShape.CIRCULAR);
     }
 
-    private void press(MainViewInput input, DungeonStairShape shape) {
+    private void press(MainViewInput input, StairShape shape) {
         if (!workflow.session().hasSelectedMap() || input == null) {
             effectUseCase.publishCurrent();
             return;

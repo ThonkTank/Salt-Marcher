@@ -11,7 +11,6 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.worldspace.DungeonStairExit;
 
 final class DungeonComponentInvariantHarness {
 
@@ -52,7 +51,6 @@ final class DungeonComponentInvariantHarness {
         assertEquals("Upper Landing", labelled.label(), "trimmed exit label");
 
         assertThrowsNullPosition();
-        assertWorldspaceAdapterCompatibility();
     }
 
     private static void assertThrowsNullPosition() {
@@ -62,13 +60,6 @@ final class DungeonComponentInvariantHarness {
             return;
         }
         throw new IllegalStateException("StairExit must reject null position");
-    }
-
-    private static void assertWorldspaceAdapterCompatibility() {
-        DungeonStairExit defaulted = new DungeonStairExit(-2L, null, "");
-        assertEquals(0L, defaulted.exitId(), "adapter exit id lower bound");
-        assertEquals(new Cell(0, 0, 0), defaulted.position(), "adapter null position default");
-        assertEquals("Ausgang z=0 (0,0)", defaulted.label(), "adapter default label");
     }
 
     private static void assertCorridorAnchorInvariants() {

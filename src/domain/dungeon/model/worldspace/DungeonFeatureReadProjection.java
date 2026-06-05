@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.ArrayList;
 import java.util.List;
+import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
@@ -91,7 +92,7 @@ public final class DungeonFeatureReadProjection {
             return "";
         }
         List<String> labels = new ArrayList<>();
-        for (DungeonStairExit exit : stair.exits()) {
+        for (StairExit exit : stair.exits()) {
             String label = exit == null ? "" : exit.label();
             if (!label.isBlank() && !labels.contains(label)) {
                 labels.add(label);

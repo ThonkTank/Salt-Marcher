@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
@@ -16,7 +17,6 @@ import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonStair;
-import src.domain.dungeon.model.worldspace.DungeonStairExit;
 
 public final class DungeonTraversalLinkProjection {
 
@@ -77,11 +77,11 @@ public final class DungeonTraversalLinkProjection {
     }
 
     private static void appendStairLinks(List<DungeonTraversalLink> result, CellAreaIndex index, DungeonStair stair) {
-        List<DungeonStairExit> exits = stair.exits();
+        List<StairExit> exits = stair.exits();
         for (int leftIndex = 0; leftIndex < exits.size(); leftIndex++) {
             for (int rightIndex = leftIndex + 1; rightIndex < exits.size(); rightIndex++) {
-                DungeonStairExit left = exits.get(leftIndex);
-                DungeonStairExit right = exits.get(rightIndex);
+                StairExit left = exits.get(leftIndex);
+                StairExit right = exits.get(rightIndex);
                 result.add(new DungeonTraversalLink(
                         traversalKey(DungeonTraversalSourceKind.STAIR, stair.stairId(), left.position(), right.position()),
                         new DungeonTraversalSource(DungeonTraversalSourceKind.STAIR, stair.stairId(), stair.name()),
@@ -96,7 +96,7 @@ public final class DungeonTraversalLinkProjection {
         return new DungeonTraversalEndpoint(tile, area == null ? 0L : area.id(), area == null ? "" : area.label());
     }
 
-    private static DungeonTraversalEndpoint stairEndpoint(CellAreaIndex index, DungeonStairExit exit) {
+    private static DungeonTraversalEndpoint stairEndpoint(CellAreaIndex index, StairExit exit) {
         DungeonAreaFacts area = index.areaAt(exit.position());
         return new DungeonTraversalEndpoint(exit.position(), area == null ? 0L : area.id(), exit.label());
     }

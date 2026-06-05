@@ -5,11 +5,11 @@ import java.util.List;
 import src.data.dungeon.model.DungeonStairExitRecord;
 import src.data.dungeon.model.DungeonStairPathNodeRecord;
 import src.data.dungeon.model.DungeonStairRecord;
+import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.structure.stair.StairShape;
 import src.domain.dungeon.model.worldspace.DungeonStair;
-import src.domain.dungeon.model.worldspace.DungeonStairExit;
-import src.domain.dungeon.model.worldspace.DungeonStairShape;
 
 final class DungeonStairRecordMapperSupport {
 
@@ -24,7 +24,7 @@ final class DungeonStairRecordMapperSupport {
                     record.mapId(),
                     record.name(),
                     new DungeonStair.Geometry(
-                            DungeonStairShape.parse(record.shape()),
+                            StairShape.parse(record.shape()),
                             directionFromCode(record.direction()),
                             record.dimension1(),
                             record.dimension2(),
@@ -62,10 +62,10 @@ final class DungeonStairRecordMapperSupport {
         return List.copyOf(result);
     }
 
-    private static List<DungeonStairExit> toStairExits(List<DungeonStairExitRecord> records) {
-        List<DungeonStairExit> result = new ArrayList<>();
+    private static List<StairExit> toStairExits(List<DungeonStairExitRecord> records) {
+        List<StairExit> result = new ArrayList<>();
         for (DungeonStairExitRecord record : records == null ? List.<DungeonStairExitRecord>of() : records) {
-            result.add(new DungeonStairExit(
+            result.add(new StairExit(
                     record.exitId(),
                     new Cell(record.cellX(), record.cellY(), record.cellZ()),
                     record.label()));
@@ -81,9 +81,9 @@ final class DungeonStairRecordMapperSupport {
         return List.copyOf(result);
     }
 
-    private static List<DungeonStairExitRecord> toStairExitRecords(long stairId, List<DungeonStairExit> exits) {
+    private static List<DungeonStairExitRecord> toStairExitRecords(long stairId, List<StairExit> exits) {
         List<DungeonStairExitRecord> result = new ArrayList<>();
-        for (DungeonStairExit exit : exits == null ? List.<DungeonStairExit>of() : exits) {
+        for (StairExit exit : exits == null ? List.<StairExit>of() : exits) {
             result.add(new DungeonStairExitRecord(
                     stairId,
                     exit.exitId(),

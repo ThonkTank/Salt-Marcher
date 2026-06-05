@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
@@ -29,7 +30,7 @@ public record DungeonStair(
         geometry = geometry == null ? Geometry.empty() : geometry;
     }
 
-    public DungeonStairShape shape() {
+    public StairShape shape() {
         return geometry.shape();
     }
 
@@ -49,7 +50,7 @@ public record DungeonStair(
         return geometry.path();
     }
 
-    public List<DungeonStairExit> exits() {
+    public List<StairExit> exits() {
         return geometry.exits();
     }
 
@@ -78,12 +79,12 @@ public record DungeonStair(
                 stairId,
                 mapId,
                 name,
-                coreShape(shape()),
+                shape(),
                 direction(),
                 dimension1(),
                 dimension2(),
                 DungeonStairGeometryValues.cells(path()),
-                DungeonStairGeometryValues.coreExits(exits()),
+                exits(),
                 corridorId());
     }
 
@@ -93,12 +94,12 @@ public record DungeonStair(
                 stair.mapId(),
                 stair.name(),
                 new Geometry(
-                        worldspaceShape(stair.shape()),
+                        stair.shape(),
                         direction(stair.direction()),
                         stair.dimension1(),
                         stair.dimension2(),
                         DungeonStairGeometryValues.cells(stair.path()),
-                        DungeonStairGeometryValues.worldspaceExits(stair.exits()),
+                        stair.exits(),
                         stair.corridorId()));
     }
 
@@ -235,7 +236,7 @@ public record DungeonStair(
             int dimension2,
             boolean useEditorDefaults
     ) {
-        DungeonStairShape shape = DungeonStairGeometryValues.supportedShape(shapeName);
+        StairShape shape = DungeonStairGeometryValues.supportedShape(shapeName);
         return DungeonStairGeometryValues.geometrySpec(
                 shape,
                 anchor,
@@ -246,14 +247,6 @@ public record DungeonStair(
 
     private static Set<Cell> roomCells(SpatialTopology topology, RoomCatalog rooms) {
         return STAIR_ROOM_CELLS.roomCells(topology, rooms);
-    }
-
-    private static StairShape coreShape(DungeonStairShape shape) {
-        return StairShape.parse(shape == null ? "" : shape.name());
-    }
-
-    private static DungeonStairShape worldspaceShape(StairShape shape) {
-        return DungeonStairShape.parse(shape == null ? "" : shape.name());
     }
 
     private static Direction direction(Direction direction) {
@@ -272,16 +265,16 @@ public record DungeonStair(
     }
 
     public record Geometry(
-            DungeonStairShape shape,
+            StairShape shape,
             Direction direction,
             int dimension1,
             int dimension2,
             List<Cell> path,
-            List<DungeonStairExit> exits,
+            List<StairExit> exits,
             @Nullable Long corridorId
     ) {
         public Geometry {
-            shape = shape == null ? DungeonStairShape.defaultShape() : shape;
+            shape = shape == null ? StairShape.defaultShape() : shape;
             direction = direction == null ? Direction.NORTH : direction;
             dimension1 = Math.max(0, dimension1);
             dimension2 = Math.max(0, dimension2);
@@ -296,13 +289,13 @@ public record DungeonStair(
         }
 
         @Override
-        public List<DungeonStairExit> exits() {
+        public List<StairExit> exits() {
             return List.copyOf(exits);
         }
 
         static Geometry empty() {
             return new Geometry(
-                    DungeonStairShape.defaultShape(),
+                    StairShape.defaultShape(),
                     Direction.NORTH,
                     0,
                     0,

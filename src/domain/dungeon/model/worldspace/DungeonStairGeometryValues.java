@@ -14,9 +14,8 @@ final class DungeonStairGeometryValues {
     private DungeonStairGeometryValues() {
     }
 
-    static @Nullable DungeonStairShape supportedShape(String value) {
-        StairShape shape = StairShape.supportedEditorShape(value);
-        return shape == null ? null : DungeonStairShape.parse(shape.name());
+    static @Nullable StairShape supportedShape(String value) {
+        return StairShape.supportedEditorShape(value);
     }
 
     static @Nullable Direction supportedCardinalDirection(String value) {
@@ -44,8 +43,8 @@ final class DungeonStairGeometryValues {
                 null).path());
     }
 
-    static List<DungeonStairExit> sortedExits(List<DungeonStairExit> source) {
-        return worldspaceExits(new Stair(
+    static List<StairExit> sortedExits(List<StairExit> source) {
+        return new Stair(
                 0L,
                 0L,
                 "",
@@ -54,12 +53,12 @@ final class DungeonStairGeometryValues {
                 0,
                 0,
                 List.of(),
-                coreExits(source),
-                null).exits());
+                nonNullExits(source),
+                null).exits();
     }
 
     static @Nullable StairGeometrySpec geometrySpec(
-            DungeonStairShape shape,
+            StairShape shape,
             Cell anchor,
             Direction direction,
             int dimension1,
@@ -69,7 +68,7 @@ final class DungeonStairGeometryValues {
             return null;
         }
         return new StairGeometrySpec(
-                StairShape.parse(shape.name()),
+                shape,
                 anchor,
                 direction,
                 dimension1,
@@ -86,24 +85,11 @@ final class DungeonStairGeometryValues {
         return List.copyOf(result);
     }
 
-    static List<StairExit> coreExits(List<DungeonStairExit> source) {
+    private static List<StairExit> nonNullExits(List<StairExit> source) {
         List<StairExit> result = new ArrayList<>();
-        for (DungeonStairExit exit : source == null ? List.<DungeonStairExit>of() : source) {
-            if (exit != null) {
-                result.add(new StairExit(exit.exitId(), exit.position(), exit.label()));
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    static List<DungeonStairExit> worldspaceExits(List<StairExit> source) {
-        List<DungeonStairExit> result = new ArrayList<>();
         for (StairExit exit : source == null ? List.<StairExit>of() : source) {
             if (exit != null) {
-                result.add(new DungeonStairExit(
-                        exit.exitId(),
-                        exit.position(),
-                        exit.label()));
+                result.add(exit);
             }
         }
         return List.copyOf(result);

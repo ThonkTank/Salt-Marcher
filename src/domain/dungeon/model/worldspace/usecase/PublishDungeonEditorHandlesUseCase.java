@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
@@ -13,7 +14,6 @@ import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 import src.domain.dungeon.model.worldspace.DungeonStair;
-import src.domain.dungeon.model.worldspace.DungeonStairExit;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorClusterHandleProjectionHelper;
 
 /**
@@ -113,7 +113,7 @@ public final class PublishDungeonEditorHandlesUseCase {
             }
             int offset = stair.path().size();
             for (int index = 0; index < stair.exits().size(); index++) {
-                DungeonStairExit exit = stair.exits().get(index);
+                StairExit exit = stair.exits().get(index);
                 result.add(stairHandle(stair, exit.position(), offset + index, exit.label()));
             }
         }
