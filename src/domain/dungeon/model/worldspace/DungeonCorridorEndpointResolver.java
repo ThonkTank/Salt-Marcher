@@ -9,6 +9,7 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDoorBindingGeometry;
 
 final class DungeonCorridorEndpointResolver {
 
