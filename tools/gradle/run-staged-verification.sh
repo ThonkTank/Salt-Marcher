@@ -154,20 +154,19 @@ run_observable_gradle() {
     local phase_fail_fast="$1"
     shift
     local task_names=("$@")
+    local observable_cmd=("$REPO_ROOT/tools/gradle/run-observable-gradle.sh")
+
+    if [[ "$phase_fail_fast" == true ]]; then
+        observable_cmd+=(--fail-fast)
+    fi
+    observable_cmd+=("${task_names[@]}")
+    if [[ ${#extra_args[@]} -gt 0 ]]; then
+        observable_cmd+=(-- "${extra_args[@]}")
+    fi
 
     (
         cd "$REPO_ROOT"
-        if [[ ${#extra_args[@]} -gt 0 ]]; then
-            if [[ "$phase_fail_fast" == true ]]; then
-                "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" --fail-fast "${task_names[@]}" -- "${extra_args[@]}"
-            else
-                "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" "${task_names[@]}" -- "${extra_args[@]}"
-            fi
-        elif [[ "$phase_fail_fast" == true ]]; then
-            "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" --fail-fast "${task_names[@]}"
-        else
-            "$REPO_ROOT/tools/gradle/run-observable-gradle.sh" "${task_names[@]}"
-        fi
+        "${observable_cmd[@]}"
     )
 }
 
@@ -258,17 +257,10 @@ run_focused_handoff() {
     run_observable_gradle "$fail_fast" focused-handoff
 }
 
-if [[ "${requested_surfaces[0]}" == "focused-handoff" ]]; then
-    if ! is_supported_surface "${requested_surfaces[0]}"; then
-        echo "[staged-verification] Unsupported entrypoint: ${requested_surfaces[0]}" >&2
-        usage >&2
-        exit 64
-    fi
-    run_surface "focused-handoff"
-elif [[ ${#requested_surfaces[@]} -eq 1 ]]; then
-    run_surface "${requested_surfaces[0]}"
-else
+if [[ "${requested_surfaces[0]}" != "focused-handoff" && ${#requested_surfaces[@]} -ne 1 ]]; then
     echo "[staged-verification] Expected exactly one entrypoint, got ${#requested_surfaces[@]}" >&2
     usage >&2
     exit 64
 fi
+
+run_surface "${requested_surfaces[0]}"
