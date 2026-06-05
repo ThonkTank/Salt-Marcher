@@ -22,8 +22,8 @@ public record DungeonStair(
 ) {
     private static final String DEFAULT_STAIR_NAME_PREFIX = "Treppe ";
     private static final long NO_STAIR_ID = 0L;
-    private static final DungeonStairRoomCellProjection STAIR_ROOM_CELLS =
-            new DungeonStairRoomCellProjection();
+    private static final DungeonRoomCellProjection ROOM_CELL_PROJECTION =
+            new DungeonRoomCellProjection();
 
     public DungeonStair {
         name = name == null || name.isBlank() ? defaultName(stairId) : name.trim();
@@ -246,7 +246,25 @@ public record DungeonStair(
     }
 
     private static Set<Cell> roomCells(SpatialTopology topology, RoomCatalog rooms) {
-        return STAIR_ROOM_CELLS.roomCells(topology, rooms);
+        Set<Cell> result = new LinkedHashSet<>();
+        for (DungeonRoomCluster cluster : topology.roomClusters()) {
+            for (List<Cell> cells : ROOM_CELL_PROJECTION.cellsByRoom(
+                    cluster,
+                    clusterRooms(rooms, cluster.clusterId())).values()) {
+                result.addAll(cells);
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static List<DungeonRoom> clusterRooms(RoomCatalog rooms, long clusterId) {
+        List<DungeonRoom> result = new ArrayList<>();
+        for (DungeonRoom room : rooms.rooms()) {
+            if (room != null && room.clusterId() == clusterId) {
+                result.add(room);
+            }
+        }
+        return List.copyOf(result);
     }
 
     private static Direction direction(Direction direction) {
