@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
 import java.util.Optional;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.Room;
 
 final class DungeonRoomClusterRoomRebuildLogic {

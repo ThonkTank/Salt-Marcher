@@ -3,8 +3,8 @@ package src.domain.dungeon.model.runtime.travel.projection;
 import java.util.ArrayList;
 import java.util.List;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
-import src.domain.dungeon.model.worldspace.DungeonRoomExitDescription;
 
 final class TravelAuthoredSurfaceNarrationProjectionMapper {
 

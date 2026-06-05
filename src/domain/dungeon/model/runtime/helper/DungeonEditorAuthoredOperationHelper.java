@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovementKind;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorRoomNarrationInput;
@@ -15,8 +17,6 @@ import src.domain.dungeon.model.worldspace.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.worldspace.DungeonEdge;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonEditorAuthoredOperation;
-import src.domain.dungeon.model.worldspace.DungeonRoomExitDescription;
-import src.domain.dungeon.model.worldspace.DungeonRoomNarration;
 
 
 public interface DungeonEditorAuthoredOperationHelper {

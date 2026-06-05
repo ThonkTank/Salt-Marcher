@@ -1,4 +1,7 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.room;
+
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 public record DungeonRoomExitDescription(
         DungeonCell roomCell,

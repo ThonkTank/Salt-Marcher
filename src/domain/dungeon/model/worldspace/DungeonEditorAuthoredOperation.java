@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
 public final class DungeonEditorAuthoredOperation {

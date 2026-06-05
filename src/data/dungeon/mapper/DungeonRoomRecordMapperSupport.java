@@ -8,11 +8,11 @@ import java.util.Map;
 import src.data.dungeon.model.DungeonRoomExitDescriptionRecord;
 import src.data.dungeon.model.DungeonRoomFloorRecord;
 import src.data.dungeon.model.DungeonRoomRecord;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.DungeonRoomExitDescription;
-import src.domain.dungeon.model.worldspace.DungeonRoomNarration;
 
 final class DungeonRoomRecordMapperSupport {
 
