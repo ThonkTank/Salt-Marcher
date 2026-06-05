@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.ArrayList;
 import java.util.List;
+import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonFeatureType;
 
 public final class DungeonFeatureReadProjection {

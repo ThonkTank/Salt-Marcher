@@ -18,7 +18,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPl
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryFacts;
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;

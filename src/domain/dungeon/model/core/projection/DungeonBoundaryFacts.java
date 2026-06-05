@@ -1,8 +1,9 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.Objects;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.worldspace.DungeonEdge;
 
 public final class DungeonBoundaryFacts {
     private static final String DOOR_KIND = "door";

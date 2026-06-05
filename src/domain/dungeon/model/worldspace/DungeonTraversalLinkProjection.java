@@ -8,6 +8,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
+import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
+import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 
 public final class DungeonTraversalLinkProjection {
 

@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
+
 
 import java.util.List;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;

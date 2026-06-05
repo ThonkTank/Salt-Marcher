@@ -2,6 +2,10 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.ArrayList;
 import java.util.List;
+import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
+import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
+import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 
 /**
  * Rebuilds read-side dungeon state from authored dungeon truth.

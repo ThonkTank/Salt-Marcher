@@ -3,10 +3,10 @@ package src.domain.dungeon.model.runtime.helper;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryFacts;
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonEdge;
-import src.domain.dungeon.model.worldspace.DungeonMapFacts;
+import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
 public final class DungeonEditorWorkspaceBoundaryProjectionHelper {

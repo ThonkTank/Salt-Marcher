@@ -1,9 +1,9 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.core.projection.DungeonFeatureType;
+import src.domain.dungeon.model.worldspace.DungeonCell;
 
 public record DungeonFeatureFacts(
         DungeonFeatureType kind,

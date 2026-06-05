@@ -5,10 +5,10 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
-import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryFacts;
-import src.domain.dungeon.model.worldspace.DungeonFeatureFacts;
-import src.domain.dungeon.model.worldspace.DungeonMapFacts;
+import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
+import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
+import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 
 final class TravelSurfaceMapProjectionMapper {
 

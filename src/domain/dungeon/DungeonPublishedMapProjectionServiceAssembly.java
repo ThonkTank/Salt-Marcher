@@ -23,11 +23,11 @@ final class DungeonPublishedMapProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonMapSnapshot mapSnapshot(
-            src.domain.dungeon.model.worldspace.DungeonMapFacts facts,
+            src.domain.dungeon.model.core.projection.DungeonMapFacts facts,
             List<DungeonEditorHandleProjection> handles
     ) {
-        src.domain.dungeon.model.worldspace.DungeonMapFacts safeFacts = facts == null
-                ? new src.domain.dungeon.model.worldspace.DungeonMapFacts(DungeonTopology.SQUARE, 1, 1, List.of(), List.of())
+        src.domain.dungeon.model.core.projection.DungeonMapFacts safeFacts = facts == null
+                ? new src.domain.dungeon.model.core.projection.DungeonMapFacts(DungeonTopology.SQUARE, 1, 1, List.of(), List.of())
                 : facts;
         List<DungeonEditorHandleProjection> safeHandles = handles == null ? List.of() : List.copyOf(handles);
         return new src.domain.dungeon.published.DungeonMapSnapshot(
@@ -74,11 +74,11 @@ final class DungeonPublishedMapProjectionServiceAssembly {
         return Math.max(0, (int) revision);
     }
 
-    private static DungeonTopologyKind topology(src.domain.dungeon.model.worldspace.DungeonMapFacts facts) {
+    private static DungeonTopologyKind topology(src.domain.dungeon.model.core.projection.DungeonMapFacts facts) {
         return facts.topology() == DungeonTopology.HEX ? DungeonTopologyKind.HEX : DungeonTopologyKind.SQUARE;
     }
 
-    private static src.domain.dungeon.published.DungeonAreaSnapshot area(src.domain.dungeon.model.worldspace.DungeonAreaFacts area) {
+    private static src.domain.dungeon.published.DungeonAreaSnapshot area(src.domain.dungeon.model.core.projection.DungeonAreaFacts area) {
         return new src.domain.dungeon.published.DungeonAreaSnapshot(
                 area.kind() == DungeonAreaType.CORRIDOR ? src.domain.dungeon.published.DungeonAreaKind.CORRIDOR : src.domain.dungeon.published.DungeonAreaKind.ROOM,
                 area.id(),

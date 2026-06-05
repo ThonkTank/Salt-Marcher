@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
+
 
 import java.util.List;
 import java.util.Map;

@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 
 final class DungeonRoomBoundaryProjectionState {
 

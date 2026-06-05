@@ -4,11 +4,11 @@ import java.util.ArrayList;
 import java.util.List;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
-import src.domain.dungeon.model.worldspace.DungeonAreaFacts;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryFacts;
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
+import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonFeatureFacts;
 import src.domain.dungeon.model.worldspace.DungeonState;
 
 final class BuildDungeonSelectionFactsUseCase {

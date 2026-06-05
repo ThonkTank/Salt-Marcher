@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.worldspace.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.worldspace.DungeonMapFacts;
+import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.worldspace.DungeonMapIdentity;
 
 public final class TravelAuthoredSurfaceProjectionMapper {

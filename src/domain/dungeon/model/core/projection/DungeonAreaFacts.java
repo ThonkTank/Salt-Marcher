@@ -1,10 +1,10 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.core.projection.DungeonAreaType;
+import src.domain.dungeon.model.worldspace.DungeonCell;
 
 public final class DungeonAreaFacts {
     private final DungeonAreaType kind;

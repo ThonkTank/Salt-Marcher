@@ -3,7 +3,7 @@ package src.domain.dungeon.model.runtime.travel.projection;
 import java.util.ArrayList;
 import java.util.List;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapFacts;
+import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.worldspace.DungeonTraversalLink;
 
 final class TravelAuthoredSurfaceTraversalProjectionMapper {

@@ -9,7 +9,9 @@ import java.util.Objects;
 import java.util.Set;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 
 final class DungeonCorridorProjectionAssembler {
 
