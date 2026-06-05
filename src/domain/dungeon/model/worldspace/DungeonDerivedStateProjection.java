@@ -8,6 +8,7 @@ import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
+import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryProjection;
 
 /**
  * Rebuilds read-side dungeon state from authored dungeon truth.

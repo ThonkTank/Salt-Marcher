@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryProjection;
+import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryProjection;
 
 final class DungeonRoomBoundaryReadProjection {
 

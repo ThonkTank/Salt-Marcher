@@ -1,13 +1,15 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
-import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
-import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
+import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.worldspace.DungeonRoom;
+import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.worldspace.DungeonState;
 
-record DungeonRoomBoundaryProjection(
+public record DungeonRoomBoundaryProjection(
         List<DungeonState> aggregates,
         List<DungeonAreaFacts> areas,
         List<DungeonBoundaryFacts> boundaries,
@@ -19,7 +21,7 @@ record DungeonRoomBoundaryProjection(
         Map<Long, DungeonRoomCluster> clustersById,
         long nextBoundaryId
 ) {
-    DungeonRoomBoundaryProjection {
+    public DungeonRoomBoundaryProjection {
         aggregates = List.copyOf(aggregates);
         areas = List.copyOf(areas);
         boundaries = List.copyOf(boundaries);
