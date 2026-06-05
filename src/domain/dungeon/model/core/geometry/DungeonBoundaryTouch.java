@@ -1,6 +1,7 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.geometry;
 
 import java.util.List;
+import src.domain.dungeon.model.worldspace.DungeonCell;
 
 public record DungeonBoundaryTouch(List<DungeonCell> insideCells) {
 
