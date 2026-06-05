@@ -6,7 +6,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
@@ -24,7 +27,7 @@ final class DungeonRoomBoundaryProjectionState {
     private final Map<DungeonBoundaryKey, Long> boundaryIdsByKey = new LinkedHashMap<>();
     private long nextBoundaryId = 1_000L;
 
-    void addAuthoredBoundaries(DungeonRoomCluster cluster, Map<Long, List<DungeonCell>> roomCells) {
+    void addAuthoredBoundaries(DungeonRoomCluster cluster, Map<Long, List<Cell>> roomCells) {
         for (List<DungeonClusterBoundary> levelBoundaries : cluster.boundariesByLevel().values()) {
             for (DungeonClusterBoundary boundary : levelBoundaries) {
                 addBoundary(cluster, boundary, roomCells);
@@ -35,10 +38,10 @@ final class DungeonRoomBoundaryProjectionState {
     void addPerimeterBoundaries(
             DungeonRoomCluster cluster,
             List<DungeonRoom> clusterRooms,
-            Map<Long, List<DungeonCell>> roomCells
+            Map<Long, List<Cell>> roomCells
     ) {
         for (DungeonRoom room : clusterRooms) {
-            for (DungeonCell cell : roomCells.getOrDefault(room.roomId(), List.of())) {
+            for (Cell cell : roomCells.getOrDefault(room.roomId(), List.of())) {
                 addCellPerimeter(cluster, roomCells, cell);
             }
         }
@@ -55,11 +58,11 @@ final class DungeonRoomBoundaryProjectionState {
 
     private void addCellPerimeter(
             DungeonRoomCluster cluster,
-            Map<Long, List<DungeonCell>> roomCells,
-            DungeonCell cell
+            Map<Long, List<Cell>> roomCells,
+            Cell cell
     ) {
-        for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
-            DungeonCell neighbor = direction.neighborOf(cell);
+        for (Direction direction : Direction.values()) {
+            Cell neighbor = direction.neighborOf(cell);
             if (DungeonRoomBoundaryTouchSupport.containsAnyRoomCell(roomCells, neighbor)) {
                 continue;
             }
@@ -69,13 +72,13 @@ final class DungeonRoomBoundaryProjectionState {
 
     private static DungeonClusterBoundary perimeterBoundary(
             DungeonRoomCluster cluster,
-            DungeonCell cell,
-            DungeonEdgeDirection direction
+            Cell cell,
+            Direction direction
     ) {
         return new DungeonClusterBoundary(
                 cluster.clusterId(),
                 cell.level(),
-                new DungeonCell(
+                new Cell(
                         cell.q() - cluster.center().q(),
                         cell.r() - cluster.center().r(),
                         cell.level()),
@@ -86,9 +89,9 @@ final class DungeonRoomBoundaryProjectionState {
     private void addBoundary(
             DungeonRoomCluster cluster,
             DungeonClusterBoundary boundary,
-            Map<Long, List<DungeonCell>> roomCells
+            Map<Long, List<Cell>> roomCells
     ) {
-        DungeonEdge edge = boundary.absoluteEdge(cluster.center());
+        Edge edge = boundary.absoluteEdge(cluster.center());
         DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
         if (!seenBoundaries.add(key)) {
             return;

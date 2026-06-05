@@ -1,9 +1,9 @@
 package src.domain.dungeon.model.core.projection;
 
 import java.util.Objects;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonEdge;
 
 public final class DungeonBoundaryFacts {
     private static final String DOOR_KIND = "door";
@@ -12,14 +12,14 @@ public final class DungeonBoundaryFacts {
     private final String kind;
     private final long id;
     private final String label;
-    private final DungeonEdge edge;
+    private final Edge edge;
     private final DungeonTopologyRef topologyRef;
 
     public DungeonBoundaryFacts(
             String kind,
             long id,
             String label,
-            DungeonEdge edge,
+            Edge edge,
             DungeonTopologyRef topologyRef
     ) {
         this.kind = kind == null || kind.isBlank() ? "boundary" : kind;
@@ -43,7 +43,7 @@ public final class DungeonBoundaryFacts {
         return label;
     }
 
-    public DungeonEdge edge() {
+    public Edge edge() {
         return edge;
     }
 

@@ -3,8 +3,8 @@ package src.domain.dungeon.model.runtime.helper;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
@@ -19,7 +19,7 @@ public final class DungeonEditorWorkspaceAreaProjectionHelper {
 
     private static DungeonEditorWorkspaceValues.Area area(DungeonAreaFacts area) {
         List<DungeonEditorWorkspaceValues.Cell> cells = new ArrayList<>();
-        for (DungeonCell cell : area.cells()) {
+        for (Cell cell : area.cells()) {
             cells.add(cell(cell));
         }
         return new DungeonEditorWorkspaceValues.Area(
@@ -31,7 +31,7 @@ public final class DungeonEditorWorkspaceAreaProjectionHelper {
                 area.topologyRef());
     }
 
-    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable DungeonCell cell) {
+    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable Cell cell) {
         return cell == null
                 ? DungeonEditorWorkspaceValues.Cell.empty()
                 : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level());

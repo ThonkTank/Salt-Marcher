@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryProjection;
 import src.domain.dungeon.model.core.projection.DungeonRoomAggregateProjection;
@@ -21,11 +22,11 @@ final class DungeonRoomBoundaryReadProjection {
         Map<Long, DungeonRoomCluster> clustersById = clustersById(topology.roomClusters());
         List<DungeonState> aggregates = new ArrayList<>();
         List<DungeonAreaFacts> areas = new ArrayList<>();
-        Map<Long, List<DungeonCell>> allRoomCells = new LinkedHashMap<>();
+        Map<Long, List<Cell>> allRoomCells = new LinkedHashMap<>();
         DungeonRoomBoundaryProjectionState state = new DungeonRoomBoundaryProjectionState();
         for (DungeonRoomCluster cluster : topology.roomClusters()) {
             List<DungeonRoom> clusterRooms = roomsByCluster.getOrDefault(cluster.clusterId(), List.of());
-            Map<Long, List<DungeonCell>> roomCells = roomCellProjector.cellsByRoom(cluster, clusterRooms);
+            Map<Long, List<Cell>> roomCells = roomCellProjector.cellsByRoom(cluster, clusterRooms);
             allRoomCells.putAll(roomCells);
             DungeonRoomAggregateProjection.addRoomAggregates(aggregates, areas, cluster.clusterId(), clusterRooms, roomCells);
             state.addAuthoredBoundaries(cluster, roomCells);

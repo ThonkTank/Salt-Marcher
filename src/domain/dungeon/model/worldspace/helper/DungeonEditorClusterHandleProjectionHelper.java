@@ -3,17 +3,16 @@ package src.domain.dungeon.model.worldspace.helper;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjectionKind;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
-
 
 public final class DungeonEditorClusterHandleProjectionHelper {
 
@@ -41,7 +40,7 @@ public final class DungeonEditorClusterHandleProjectionHelper {
         }
         DungeonRoom room = rooms.getFirst();
         result.add(clusterLabel(cluster, room));
-        for (Map.Entry<Integer, List<DungeonCell>> entry : CELL_PROJECTOR.cellsByLevel(cluster, rooms).entrySet()) {
+        for (Map.Entry<Integer, List<Cell>> entry : CELL_PROJECTOR.cellsByLevel(cluster, rooms).entrySet()) {
             appendClusterCornerHandles(result, cluster, room, entry.getKey(), entry.getValue());
         }
     }
@@ -56,7 +55,7 @@ public final class DungeonEditorClusterHandleProjectionHelper {
                 room.roomId(),
                 0,
                 cluster.center(),
-                DungeonEdgeDirection.NORTH,
+                Direction.NORTH,
                 room.name());
     }
 
@@ -80,9 +79,9 @@ public final class DungeonEditorClusterHandleProjectionHelper {
             DungeonRoomCluster cluster,
             DungeonRoom room,
             int level,
-            List<DungeonCell> cells
+            List<Cell> cells
     ) {
-        List<DungeonCell> corners = boundingCorners(cells, level);
+        List<Cell> corners = boundingCorners(cells, level);
         for (int index = 0; index < corners.size(); index++) {
             result.add(clusterCorner(cluster, room, corners.get(index), index));
         }
@@ -91,7 +90,7 @@ public final class DungeonEditorClusterHandleProjectionHelper {
     private static DungeonEditorHandleProjection clusterCorner(
             DungeonRoomCluster cluster,
             DungeonRoom room,
-            DungeonCell corner,
+            Cell corner,
             int index
     ) {
         return new DungeonEditorHandleProjection(
@@ -103,11 +102,11 @@ public final class DungeonEditorClusterHandleProjectionHelper {
                 room.roomId(),
                 index,
                 corner,
-                DungeonEdgeDirection.NORTH,
+                Direction.NORTH,
                 "Ecke " + (index + 1));
     }
 
-    private static List<DungeonCell> boundingCorners(List<DungeonCell> cells, int level) {
+    private static List<Cell> boundingCorners(List<Cell> cells, int level) {
         if (cells == null || cells.isEmpty()) {
             return List.of();
         }
@@ -115,16 +114,16 @@ public final class DungeonEditorClusterHandleProjectionHelper {
         int maxQ = minQ;
         int minR = cells.getFirst().r();
         int maxR = minR;
-        for (DungeonCell cell : cells) {
+        for (Cell cell : cells) {
             minQ = Math.min(minQ, cell.q());
             maxQ = Math.max(maxQ, cell.q());
             minR = Math.min(minR, cell.r());
             maxR = Math.max(maxR, cell.r());
         }
         return List.of(
-                new DungeonCell(minQ, minR, level),
-                new DungeonCell(maxQ + 1, minR, level),
-                new DungeonCell(maxQ + 1, maxR + 1, level),
-                new DungeonCell(minQ, maxR + 1, level));
+                new Cell(minQ, minR, level),
+                new Cell(maxQ + 1, minR, level),
+                new Cell(maxQ + 1, maxR + 1, level),
+                new Cell(minQ, maxR + 1, level));
     }
 }

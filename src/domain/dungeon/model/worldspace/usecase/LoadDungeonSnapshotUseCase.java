@@ -2,13 +2,13 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 
 /**
  * Loads the current committed dungeon snapshot.
@@ -57,14 +57,14 @@ public final class LoadDungeonSnapshotUseCase {
 
     public record RoomExitNarrationData(
             String label,
-            DungeonCell cell,
-            DungeonEdgeDirection direction,
+            Cell cell,
+            Direction direction,
             String description
     ) {
         public RoomExitNarrationData {
             label = label == null || label.isBlank() ? "Ausgang" : label.trim();
-            cell = cell == null ? new DungeonCell(0, 0, 0) : cell;
-            direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+            cell = cell == null ? new Cell(0, 0, 0) : cell;
+            direction = direction == null ? Direction.NORTH : direction;
             description = description == null ? "" : description;
         }
     }

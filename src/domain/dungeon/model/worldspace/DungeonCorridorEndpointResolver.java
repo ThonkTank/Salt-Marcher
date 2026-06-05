@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDoorBindingGeometry;
 
@@ -17,7 +20,7 @@ final class DungeonCorridorEndpointResolver {
             DungeonCorridor corridor,
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
-            Map<Long, List<DungeonCell>> roomCellsByRoom,
+            Map<Long, List<Cell>> roomCellsByRoom,
             Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef
     ) {
         List<CorridorEndpoint> endpoints = new ArrayList<>();
@@ -50,7 +53,7 @@ final class DungeonCorridorEndpointResolver {
             Map<Long, DungeonCorridorDoorBinding> bindingsByRoom,
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
-            Map<Long, List<DungeonCell>> roomCellsByRoom
+            Map<Long, List<Cell>> roomCellsByRoom
     ) {
         for (Long roomId : corridor.roomIds()) {
             CorridorEndpoint endpoint = boundEndpoint(roomId, bindingsByRoom, clustersById);
@@ -122,29 +125,29 @@ final class DungeonCorridorEndpointResolver {
             DungeonCorridor corridor,
             Long roomId,
             Map<Long, DungeonRoom> roomsById,
-            Map<Long, List<DungeonCell>> roomCellsByRoom
+            Map<Long, List<Cell>> roomCellsByRoom
     ) {
         DungeonRoom room = roomsById.get(roomId);
         if (room == null) {
             return null;
         }
-        List<DungeonCell> roomCells = roomCellsByRoom.getOrDefault(roomId, List.of(room.primaryAnchor()));
-        Set<DungeonCell> roomCellSet = new LinkedHashSet<>(roomCells);
-        DungeonCell anchor = room.primaryAnchor();
-        DungeonCell selectedRoomCell = nearestRoomCell(roomCells, anchor);
-        for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
-            DungeonCell corridorCell = direction.neighborOf(selectedRoomCell);
+        List<Cell> roomCells = roomCellsByRoom.getOrDefault(roomId, List.of(room.primaryAnchor()));
+        Set<Cell> roomCellSet = new LinkedHashSet<>(roomCells);
+        Cell anchor = room.primaryAnchor();
+        Cell selectedRoomCell = nearestRoomCell(roomCells, anchor);
+        for (Direction direction : Direction.values()) {
+            Cell corridorCell = direction.neighborOf(selectedRoomCell);
             if (!roomCellSet.contains(corridorCell)) {
                 return new CorridorEndpoint(
                         CorridorEndpointKind.DOOR,
                         roomId,
                         null,
                         corridorCell,
-                        DungeonEdge.sideOf(selectedRoomCell, direction),
+                        Edge.sideOf(selectedRoomCell, direction),
                         DungeonTopologyRef.empty());
             }
         }
-        DungeonCell fallbackCorridorCell = new DungeonCell(
+        Cell fallbackCorridorCell = new Cell(
                 selectedRoomCell.q(),
                 selectedRoomCell.r() + 1,
                 corridor.level());
@@ -153,11 +156,11 @@ final class DungeonCorridorEndpointResolver {
                 roomId,
                 null,
                 fallbackCorridorCell,
-                DungeonEdge.sideOf(selectedRoomCell, DungeonEdgeDirection.SOUTH),
+                Edge.sideOf(selectedRoomCell, Direction.SOUTH),
                 DungeonTopologyRef.empty());
     }
 
-    private static int manhattan(DungeonCell left, DungeonCell right) {
+    private static int manhattan(Cell left, Cell right) {
         if (left == null || right == null) {
             return Integer.MAX_VALUE;
         }
@@ -166,9 +169,9 @@ final class DungeonCorridorEndpointResolver {
                 + Math.abs(left.level() - right.level());
     }
 
-    private static DungeonCell nearestRoomCell(List<DungeonCell> roomCells, DungeonCell anchor) {
-        DungeonCell result = anchor;
-        for (DungeonCell cell : roomCells == null ? List.<DungeonCell>of() : roomCells) {
+    private static Cell nearestRoomCell(List<Cell> roomCells, Cell anchor) {
+        Cell result = anchor;
+        for (Cell cell : roomCells == null ? List.<Cell>of() : roomCells) {
             if (cell != null && betterRoomCell(cell, result, anchor)) {
                 result = cell;
             }
@@ -176,7 +179,7 @@ final class DungeonCorridorEndpointResolver {
         return result;
     }
 
-    private static boolean betterRoomCell(DungeonCell candidate, DungeonCell current, DungeonCell anchor) {
+    private static boolean betterRoomCell(Cell candidate, Cell current, Cell anchor) {
         int distanceComparison = Integer.compare(manhattan(candidate, anchor), manhattan(current, anchor));
         if (distanceComparison != 0) {
             return distanceComparison < 0;
@@ -192,8 +195,8 @@ final class DungeonCorridorEndpointResolver {
             CorridorEndpointKind kind,
             @Nullable Long roomId,
             @Nullable Long hostCorridorId,
-            DungeonCell corridorCell,
-            @Nullable DungeonEdge edge,
+            Cell corridorCell,
+            @Nullable Edge edge,
             DungeonTopologyRef topologyRef
     ) {
         CorridorEndpoint {

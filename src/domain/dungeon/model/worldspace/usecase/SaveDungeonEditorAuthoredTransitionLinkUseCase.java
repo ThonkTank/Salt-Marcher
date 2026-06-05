@@ -137,7 +137,7 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
     ) {
         for (Map.Entry<Long, DungeonMap> entry : pendingMaps.entrySet()) {
             DungeonMap map = entry.getValue();
-            entry.setValue(map.withTransitionConnections(map.connections().withMapLocalAuthoredTransitionLink(link)));
+            entry.setValue(map.withMapLocalAuthoredTransitionLink(link));
         }
     }
 

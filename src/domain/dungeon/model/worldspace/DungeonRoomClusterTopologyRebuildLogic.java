@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.geometry.Cell;
 
 final class DungeonRoomClusterTopologyRebuildLogic {
     private static final DungeonRoomCellProjection CELL_PROJECTOR = new DungeonRoomCellProjection();
@@ -33,10 +34,10 @@ final class DungeonRoomClusterTopologyRebuildLogic {
 
     private static Map<Integer, List<DungeonClusterBoundary>> preservedBoundaries(DungeonRoomTopologyClusterWork work) {
         Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
-        Map<Integer, List<DungeonCell>> oldCellsByLevel = CELL_PROJECTOR.cellsByLevel(work.cluster(), work.rooms());
+        Map<Integer, List<Cell>> oldCellsByLevel = CELL_PROJECTOR.cellsByLevel(work.cluster(), work.rooms());
         for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : work.cluster().boundariesByLevel().entrySet()) {
-            Set<DungeonCell> oldCells = new LinkedHashSet<>(oldCellsByLevel.getOrDefault(entry.getKey(), List.of()));
-            Set<DungeonCell> newCells = new LinkedHashSet<>(work.cellsByLevel().getOrDefault(entry.getKey(), List.of()));
+            Set<Cell> oldCells = new LinkedHashSet<>(oldCellsByLevel.getOrDefault(entry.getKey(), List.of()));
+            Set<Cell> newCells = new LinkedHashSet<>(work.cellsByLevel().getOrDefault(entry.getKey(), List.of()));
             List<DungeonClusterBoundary> preserved = new ArrayList<>();
             for (DungeonClusterBoundary boundary : entry.getValue()) {
                 if (boundary != null && keepBoundary(work.cluster(), boundary, oldCells, newCells)) {
@@ -53,23 +54,23 @@ final class DungeonRoomClusterTopologyRebuildLogic {
     private static boolean keepBoundary(
             DungeonRoomCluster cluster,
             DungeonClusterBoundary boundary,
-            Set<DungeonCell> oldCells,
-            Set<DungeonCell> newCells
+            Set<Cell> oldCells,
+            Set<Cell> newCells
     ) {
-        DungeonCell cell = boundary.absoluteCell(cluster.center());
+        Cell cell = boundary.absoluteCell(cluster.center());
         if (!newCells.contains(cell)) {
             return false;
         }
-        DungeonCell neighbor = boundary.direction().neighborOf(cell);
+        Cell neighbor = boundary.direction().neighborOf(cell);
         if (!newCells.contains(neighbor)) {
             return true;
         }
         return boundary.isDoor() || oldCells.contains(cell) && oldCells.contains(neighbor);
     }
 
-    private static Map<Integer, List<DungeonCell>> verticesByLevel(DungeonRoomTopologyClusterWork work) {
-        Map<Integer, List<DungeonCell>> verticesByLevel = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<DungeonCell>> entry : work.cellsByLevel().entrySet()) {
+    private static Map<Integer, List<Cell>> verticesByLevel(DungeonRoomTopologyClusterWork work) {
+        Map<Integer, List<Cell>> verticesByLevel = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<Cell>> entry : work.cellsByLevel().entrySet()) {
             if (!entry.getValue().isEmpty()) {
                 verticesByLevel.put(
                         entry.getKey(),

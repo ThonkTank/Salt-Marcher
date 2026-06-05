@@ -9,10 +9,8 @@ import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonStairExit;
 
 final class DungeonComponentInvariantHarness {
@@ -69,7 +67,7 @@ final class DungeonComponentInvariantHarness {
     private static void assertWorldspaceAdapterCompatibility() {
         DungeonStairExit defaulted = new DungeonStairExit(-2L, null, "");
         assertEquals(0L, defaulted.exitId(), "adapter exit id lower bound");
-        assertEquals(new DungeonCell(0, 0, 0), defaulted.position(), "adapter null position default");
+        assertEquals(new Cell(0, 0, 0), defaulted.position(), "adapter null position default");
         assertEquals("Ausgang z=0 (0,0)", defaulted.label(), "adapter default label");
     }
 
@@ -107,25 +105,25 @@ final class DungeonComponentInvariantHarness {
         DungeonCorridorAnchorBinding defaulted = new DungeonCorridorAnchorBinding(-4L, -6L, null, null);
         assertEquals(0L, defaulted.anchorId(), "adapter anchor id lower bound");
         assertEquals(0L, defaulted.hostCorridorId(), "adapter host id lower bound");
-        assertEquals(new DungeonCell(0, 0, 0), defaulted.absoluteCell(), "adapter null anchor cell default");
+        assertEquals(new Cell(0, 0, 0), defaulted.absoluteCell(), "adapter null anchor cell default");
         assertEquals(DungeonTopologyRef.corridorAnchor(0L), defaulted.topologyRef(), "adapter default topology ref");
 
         DungeonCorridorAnchorBinding retained = new DungeonCorridorAnchorBinding(
                 8L,
                 13L,
-                new DungeonCell(2, 3, 0),
+                new Cell(2, 3, 0),
                 DungeonTopologyRef.corridorAnchor(8L));
         assertEquals(8L, retained.anchorId(), "adapter anchor id preservation");
         assertEquals(13L, retained.hostCorridorId(), "adapter host id preservation");
 
-        DungeonCorridorAnchorBinding moved = retained.withAbsoluteCell(new DungeonCell(4, 5, 1));
+        DungeonCorridorAnchorBinding moved = retained.withAbsoluteCell(new Cell(4, 5, 1));
         assertEquals(8L, moved.anchorId(), "moved adapter anchor id preservation");
         assertEquals(13L, moved.hostCorridorId(), "moved adapter host id preservation");
         assertEquals(
                 DungeonTopologyRef.corridorAnchor(8L),
                 moved.topologyRef(),
                 "moved adapter topology ref preservation");
-        assertEquals(new DungeonCell(4, 5, 1), moved.absoluteCell(), "adapter moved anchor cell");
+        assertEquals(new Cell(4, 5, 1), moved.absoluteCell(), "adapter moved anchor cell");
         assertTrue(moved.toCore().matchesPosition(new Cell(4, 5, 1)), "adapter cell match");
         assertFalse(moved.toCore().matchesPosition(new Cell(4, 6, 1)), "adapter cell mismatch");
     }
@@ -175,20 +173,20 @@ final class DungeonComponentInvariantHarness {
         DungeonCorridorDoorBinding defaultedDoor = new DungeonCorridorDoorBinding(-1L, -2L, null, null, null);
         assertEquals(0L, defaultedDoor.roomId(), "adapter door room lower bound");
         assertEquals(0L, defaultedDoor.clusterId(), "adapter door cluster lower bound");
-        assertEquals(new DungeonCell(0, 0, 0), defaultedDoor.relativeCell(), "adapter door null cell default");
-        assertEquals(DungeonEdgeDirection.NORTH, defaultedDoor.direction(), "adapter door null direction default");
+        assertEquals(new Cell(0, 0, 0), defaultedDoor.relativeCell(), "adapter door null cell default");
+        assertEquals(Direction.NORTH, defaultedDoor.direction(), "adapter door null direction default");
         assertEquals(DungeonTopologyRef.empty(), defaultedDoor.topologyRef(), "adapter door null topology ref");
 
         DungeonCorridorDoorBinding retainedDoor = new DungeonCorridorDoorBinding(
                 12L,
                 14L,
-                new DungeonCell(2, 3, 1),
-                DungeonEdgeDirection.WEST,
+                new Cell(2, 3, 1),
+                Direction.WEST,
                 DungeonTopologyRef.door(21L));
         assertEquals(12L, retainedDoor.roomId(), "adapter door room id preservation");
         assertEquals(14L, retainedDoor.clusterId(), "adapter door cluster id preservation");
-        assertEquals(new DungeonCell(2, 3, 1), retainedDoor.relativeCell(), "adapter door relative cell");
-        assertEquals(DungeonEdgeDirection.WEST, retainedDoor.direction(), "adapter door direction");
+        assertEquals(new Cell(2, 3, 1), retainedDoor.relativeCell(), "adapter door relative cell");
+        assertEquals(Direction.WEST, retainedDoor.direction(), "adapter door direction");
         assertTrue(retainedDoor.topologyRef().present(), "adapter door topology ref present");
 
         CorridorWaypoint defaultedWaypoint = corridorWaypoint(-9L, null, 2);
@@ -196,16 +194,16 @@ final class DungeonComponentInvariantHarness {
         assertEquals(new Cell(0, 0, 2), defaultedWaypoint.relativeCell(), "adapter waypoint null default");
         assertEquals(new Cell(4, 5, 2), defaultedWaypoint.absoluteCell(new Cell(4, 5, 2)),
                 "adapter waypoint absolute default");
-        CorridorWaypoint retainedWaypoint = corridorWaypoint(17L, new DungeonCell(1, -2, 3), 3);
+        CorridorWaypoint retainedWaypoint = corridorWaypoint(17L, new Cell(1, -2, 3), 3);
         assertEquals(17L, retainedWaypoint.clusterId(), "adapter waypoint cluster preservation");
         assertEquals(new Cell(8, 5, 3), retainedWaypoint.absoluteCell(new Cell(7, 7, 3)),
                 "adapter waypoint absolute retained");
     }
 
-    private static CorridorWaypoint corridorWaypoint(long clusterId, DungeonCell relativeCell, int level) {
+    private static CorridorWaypoint corridorWaypoint(long clusterId, Cell relativeCell, int level) {
         Cell cell = relativeCell == null
                 ? new Cell(0, 0, level)
-                : new Cell(relativeCell.q(), relativeCell.r(), relativeCell.level());
+                : relativeCell;
         return new CorridorWaypoint(clusterId, cell, level);
     }
 

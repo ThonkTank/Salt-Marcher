@@ -5,9 +5,9 @@ import java.util.List;
 import src.data.dungeon.model.DungeonStairExitRecord;
 import src.data.dungeon.model.DungeonStairPathNodeRecord;
 import src.data.dungeon.model.DungeonStairRecord;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.worldspace.DungeonStair;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonStairExit;
 import src.domain.dungeon.model.worldspace.DungeonStairShape;
 
@@ -25,7 +25,7 @@ final class DungeonStairRecordMapperSupport {
                     record.name(),
                     new DungeonStair.Geometry(
                             DungeonStairShape.parse(record.shape()),
-                            DungeonEdgeDirection.fromCode(record.direction()),
+                            directionFromCode(record.direction()),
                             record.dimension1(),
                             record.dimension2(),
                             toStairPath(record.pathNodes()),
@@ -53,11 +53,11 @@ final class DungeonStairRecordMapperSupport {
         return List.copyOf(result);
     }
 
-    private static List<DungeonCell> toStairPath(List<DungeonStairPathNodeRecord> records) {
-        List<DungeonCell> result = new ArrayList<>();
+    private static List<Cell> toStairPath(List<DungeonStairPathNodeRecord> records) {
+        List<Cell> result = new ArrayList<>();
         for (DungeonStairPathNodeRecord record
                 : records == null ? List.<DungeonStairPathNodeRecord>of() : records) {
-            result.add(new DungeonCell(record.cellX(), record.cellY(), record.cellZ()));
+            result.add(new Cell(record.cellX(), record.cellY(), record.cellZ()));
         }
         return List.copyOf(result);
     }
@@ -67,15 +67,15 @@ final class DungeonStairRecordMapperSupport {
         for (DungeonStairExitRecord record : records == null ? List.<DungeonStairExitRecord>of() : records) {
             result.add(new DungeonStairExit(
                     record.exitId(),
-                    new DungeonCell(record.cellX(), record.cellY(), record.cellZ()),
+                    new Cell(record.cellX(), record.cellY(), record.cellZ()),
                     record.label()));
         }
         return List.copyOf(result);
     }
 
-    private static List<DungeonStairPathNodeRecord> toStairPathRecords(long stairId, List<DungeonCell> path) {
+    private static List<DungeonStairPathNodeRecord> toStairPathRecords(long stairId, List<Cell> path) {
         List<DungeonStairPathNodeRecord> result = new ArrayList<>();
-        for (DungeonCell cell : path == null ? List.<DungeonCell>of() : path) {
+        for (Cell cell : path == null ? List.<Cell>of() : path) {
             result.add(new DungeonStairPathNodeRecord(stairId, cell.q(), cell.r(), cell.level()));
         }
         return List.copyOf(result);
@@ -95,15 +95,24 @@ final class DungeonStairRecordMapperSupport {
         return List.copyOf(result);
     }
 
-    private static int directionCode(DungeonEdgeDirection direction) {
-        DungeonEdgeDirection safeDirection = direction == null ? DungeonEdgeDirection.NORTH : direction;
-        if (safeDirection == DungeonEdgeDirection.EAST) {
+    private static Direction directionFromCode(int code) {
+        return switch (code) {
+            case 1 -> Direction.EAST;
+            case 2 -> Direction.SOUTH;
+            case 3 -> Direction.WEST;
+            default -> Direction.NORTH;
+        };
+    }
+
+    private static int directionCode(Direction direction) {
+        Direction safeDirection = direction == null ? Direction.NORTH : direction;
+        if (safeDirection == Direction.EAST) {
             return 1;
         }
-        if (safeDirection == DungeonEdgeDirection.SOUTH) {
+        if (safeDirection == Direction.SOUTH) {
             return 2;
         }
-        if (safeDirection == DungeonEdgeDirection.WEST) {
+        if (safeDirection == Direction.WEST) {
             return 3;
         }
         return 0;

@@ -10,33 +10,38 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;
 
 final class DungeonCorridorRouteValidationLogic {
-    private static final DungeonCorridorHostCellsAdapter HOST_CELLS_ADAPTER = new DungeonCorridorHostCellsAdapter();
     private static final DungeonMapLookupAdapter LOOKUP_ADAPTER = new DungeonMapLookupAdapter();
 
     CorridorRouteValidation validateRoute(
             DungeonMap dungeonMap,
             DungeonCorridorEndpoint start,
-            DungeonCorridorEndpoint end
+            DungeonCorridorEndpoint end,
+            CorridorHostCells hostCells
     ) {
-        CorridorRoute route = route(dungeonMap, start, end);
+        CorridorRoute route = route(dungeonMap, start, end, hostCells);
         return new CorridorRouteValidation(
-                worldspaceCells(route.cells()),
+                copiedCells(route.cells()),
                 route.present() && !route.blockedBy(roomCells(dungeonMap)));
     }
 
-    private CorridorRoute route(DungeonMap dungeonMap, DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {
+    private CorridorRoute route(
+            DungeonMap dungeonMap,
+            DungeonCorridorEndpoint start,
+            DungeonCorridorEndpoint end,
+            CorridorHostCells hostCells
+    ) {
         if (dungeonMap == null || start == null || end == null) {
             return new CorridorRoute(List.of());
         }
-        DungeonCell startCell = corridorCell(dungeonMap, start);
-        DungeonCell endCell = corridorCell(dungeonMap, end);
+        Cell startCell = corridorCell(dungeonMap, start, hostCells);
+        Cell endCell = corridorCell(dungeonMap, end, hostCells);
         if (startCell == null || endCell == null) {
             return new CorridorRoute(List.of());
         }
-        return CorridorRoute.between(startCell.geometry(), endCell.geometry());
+        return CorridorRoute.between(startCell, endCell);
     }
 
-    private DungeonCell corridorCell(DungeonMap dungeonMap, DungeonCorridorEndpoint endpoint) {
+    private Cell corridorCell(DungeonMap dungeonMap, DungeonCorridorEndpoint endpoint, CorridorHostCells hostCells) {
         if (endpoint.isDoorEndpoint()) {
             return endpoint.direction().neighborOf(endpoint.roomCell());
         }
@@ -47,11 +52,9 @@ final class DungeonCorridorRouteValidationLogic {
         if (host == null) {
             return null;
         }
-        CorridorHostCells hostCells =
-                HOST_CELLS_ADAPTER.hostCells(dungeonMap, dungeonMap.connections().corridors());
         return hostCells.cellsFor(host.corridorId()).isEmpty()
                 ? null
-                : DungeonCell.fromGeometry(hostCells.snapToHostCell(host.corridorId(), endpoint.anchorCell().geometry()));
+                : hostCells.snapToHostCell(host.corridorId(), endpoint.anchorCell());
     }
 
     private static Set<Cell> roomCells(DungeonMap dungeonMap) {
@@ -59,8 +62,8 @@ final class DungeonCorridorRouteValidationLogic {
         Set<Cell> result = new LinkedHashSet<>();
         for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
             List<DungeonRoom> clusterRooms = clusterRooms(dungeonMap, cluster.clusterId());
-            for (List<DungeonCell> cells : projection.cellsByRoom(cluster, clusterRooms).values()) {
-                result.addAll(coreCells(cells));
+            for (List<Cell> cells : projection.cellsByRoom(cluster, clusterRooms).values()) {
+                result.addAll(nonNullCells(cells));
             }
         }
         return Set.copyOf(result);
@@ -76,25 +79,25 @@ final class DungeonCorridorRouteValidationLogic {
         return List.copyOf(result);
     }
 
-    private static List<DungeonCell> worldspaceCells(List<Cell> cells) {
-        List<DungeonCell> result = new ArrayList<>();
+    private static List<Cell> copiedCells(List<Cell> cells) {
+        List<Cell> result = new ArrayList<>();
         for (Cell cell : cells) {
-            result.add(DungeonCell.fromGeometry(cell));
+            result.add(cell);
         }
         return List.copyOf(result);
     }
 
-    private static List<Cell> coreCells(List<DungeonCell> cells) {
+    private static List<Cell> nonNullCells(List<Cell> cells) {
         List<Cell> result = new ArrayList<>();
-        for (DungeonCell cell : cells) {
+        for (Cell cell : cells) {
             if (cell != null) {
-                result.add(cell.geometry());
+                result.add(cell);
             }
         }
         return List.copyOf(result);
     }
 
-    record CorridorRouteValidation(List<DungeonCell> routeCells, boolean hasValidRoute) {
+    record CorridorRouteValidation(List<Cell> routeCells, boolean hasValidRoute) {
         CorridorRouteValidation {
             routeCells = routeCells == null ? List.of() : List.copyOf(routeCells);
         }

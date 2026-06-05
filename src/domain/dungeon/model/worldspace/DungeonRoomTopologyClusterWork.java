@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
@@ -12,7 +13,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
 public record DungeonRoomTopologyClusterWork(
         DungeonRoomCluster cluster,
         List<DungeonRoom> rooms,
-        Map<Integer, List<DungeonCell>> cellsByLevel
+        Map<Integer, List<Cell>> cellsByLevel
 ) {
 
     public DungeonRoomTopologyClusterWork {
@@ -20,21 +21,21 @@ public record DungeonRoomTopologyClusterWork(
         cellsByLevel = copyCellsByLevel(cellsByLevel);
     }
 
-    public List<DungeonCell> cellsAt(int level) {
+    public List<Cell> cellsAt(int level) {
         return cellsByLevel.getOrDefault(level, List.of());
     }
 
     @Override
-    public Map<Integer, List<DungeonCell>> cellsByLevel() {
+    public Map<Integer, List<Cell>> cellsByLevel() {
         return copyCellsByLevel(cellsByLevel);
     }
 
-    public List<DungeonCell> allCells() {
-        List<DungeonCell> result = new ArrayList<>();
-        for (List<DungeonCell> cells : cellsByLevel.values()) {
+    public List<Cell> allCells() {
+        List<Cell> result = new ArrayList<>();
+        for (List<Cell> cells : cellsByLevel.values()) {
             result.addAll(cells);
         }
-        return DungeonCell.sortedByGeometry(result);
+        return CellOrdering.sortedCells(result);
     }
 
     RoomClusterWork toCore() {
@@ -75,24 +76,24 @@ public record DungeonRoomTopologyClusterWork(
         return DungeonRoomNarration.empty();
     }
 
-    private static Map<Integer, List<DungeonCell>> fromCoreCellsByLevel(Map<Integer, List<Cell>> source) {
-        Map<Integer, List<DungeonCell>> result = new LinkedHashMap<>();
+    private static Map<Integer, List<Cell>> fromCoreCellsByLevel(Map<Integer, List<Cell>> source) {
+        Map<Integer, List<Cell>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<Cell>> entry : source.entrySet()) {
-            List<DungeonCell> cells = new ArrayList<>();
+            List<Cell> cells = new ArrayList<>();
             for (Cell cell : entry.getValue()) {
-                cells.add(DungeonCell.fromGeometry(cell));
+                cells.add(cell);
             }
             result.put(entry.getKey(), List.copyOf(cells));
         }
         return Map.copyOf(result);
     }
 
-    private static Map<Integer, List<DungeonCell>> copyCellsByLevel(Map<Integer, List<DungeonCell>> source) {
+    private static Map<Integer, List<Cell>> copyCellsByLevel(Map<Integer, List<Cell>> source) {
         if (source == null || source.isEmpty()) {
             return Map.of();
         }
-        Map<Integer, List<DungeonCell>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<DungeonCell>> entry : source.entrySet()) {
+        Map<Integer, List<Cell>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<Cell>> entry : source.entrySet()) {
             if (entry.getKey() != null && entry.getValue() != null) {
                 result.put(entry.getKey(), List.copyOf(entry.getValue()));
             }

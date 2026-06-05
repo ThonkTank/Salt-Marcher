@@ -8,11 +8,11 @@ import java.util.Map;
 import src.data.dungeon.model.DungeonRoomExitDescriptionRecord;
 import src.data.dungeon.model.DungeonRoomFloorRecord;
 import src.data.dungeon.model.DungeonRoomRecord;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 final class DungeonRoomRecordMapperSupport {
 
@@ -39,7 +39,7 @@ final class DungeonRoomRecordMapperSupport {
         List<DungeonRoomRecord> result = new ArrayList<>();
         for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
             int primaryLevel = room.primaryLevel();
-            DungeonCell primaryAnchor = room.primaryAnchor();
+            Cell primaryAnchor = room.primaryAnchor();
             result.add(new DungeonRoomRecord(
                     room.roomId(),
                     room.mapId(),
@@ -57,15 +57,15 @@ final class DungeonRoomRecordMapperSupport {
 
     private static List<DungeonRoomFloorRecord> toFloorRecords(
             long roomId,
-            Map<Integer, DungeonCell> floorAnchors,
+            Map<Integer, Cell> floorAnchors,
             int primaryLevel
     ) {
         List<DungeonRoomFloorRecord> result = new ArrayList<>();
-        for (Map.Entry<Integer, DungeonCell> entry : floorAnchors.entrySet()) {
+        for (Map.Entry<Integer, Cell> entry : floorAnchors.entrySet()) {
             if (entry.getKey() == primaryLevel) {
                 continue;
             }
-            DungeonCell anchor = entry.getValue();
+            Cell anchor = entry.getValue();
             result.add(new DungeonRoomFloorRecord(roomId, entry.getKey(), anchor.q(), anchor.r()));
         }
         return List.copyOf(result);
@@ -88,11 +88,11 @@ final class DungeonRoomRecordMapperSupport {
         return List.copyOf(result);
     }
 
-    private static Map<Integer, DungeonCell> floorAnchors(DungeonRoomRecord room) {
-        Map<Integer, DungeonCell> result = new LinkedHashMap<>();
-        result.put(room.levelZ(), new DungeonCell(room.componentX(), room.componentY(), room.levelZ()));
+    private static Map<Integer, Cell> floorAnchors(DungeonRoomRecord room) {
+        Map<Integer, Cell> result = new LinkedHashMap<>();
+        result.put(room.levelZ(), new Cell(room.componentX(), room.componentY(), room.levelZ()));
         for (DungeonRoomFloorRecord floor : room.floors()) {
-            result.put(floor.levelZ(), new DungeonCell(floor.anchorX(), floor.anchorY(), floor.levelZ()));
+            result.put(floor.levelZ(), new Cell(floor.anchorX(), floor.anchorY(), floor.levelZ()));
         }
         return Collections.unmodifiableMap(result);
     }
@@ -105,8 +105,8 @@ final class DungeonRoomRecordMapperSupport {
         for (DungeonRoomExitDescriptionRecord record
                 : records == null ? List.<DungeonRoomExitDescriptionRecord>of() : records) {
             result.add(new DungeonRoomExitDescription(
-                    new DungeonCell(record.cellX(), record.cellY(), level),
-                    DungeonEdgeDirection.parse(record.edgeDirection()),
+                    new Cell(record.cellX(), record.cellY(), level),
+                    Direction.parse(record.edgeDirection()),
                     record.description()));
         }
         return List.copyOf(result);

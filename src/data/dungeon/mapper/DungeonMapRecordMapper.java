@@ -1,18 +1,17 @@
 package src.data.dungeon.mapper;
 
+import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonGridBoundsRecord;
+import src.data.dungeon.model.DungeonMapRecord;
+import src.domain.dungeon.model.core.geometry.DungeonTopology;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.worldspace.ConnectionCatalog;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonMapTopology;
-import src.domain.dungeon.model.worldspace.DungeonTopology;
-import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.worldspace.SpatialTopology;
-
-import java.util.List;
 
 /**
  * Maps source-local dungeon rows into the domain aggregate.

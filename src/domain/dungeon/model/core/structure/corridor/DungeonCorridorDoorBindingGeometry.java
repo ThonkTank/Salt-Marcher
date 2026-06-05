@@ -3,9 +3,9 @@ package src.domain.dungeon.model.core.structure.corridor;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.worldspace.DungeonEdge;
 
 public final class DungeonCorridorDoorBindingGeometry {
 
@@ -20,29 +20,29 @@ public final class DungeonCorridorDoorBindingGeometry {
         return result;
     }
 
-    public static DungeonCell absoluteRoomCell(
+    public static Cell absoluteRoomCell(
             DungeonCorridorDoorBinding binding,
-            @Nullable DungeonCell clusterCenter
+            @Nullable Cell clusterCenter
     ) {
-        DungeonCell relativeCell = binding.relativeCell();
-        DungeonCell center = clusterCenter == null ? new DungeonCell(0, 0, relativeCell.level()) : clusterCenter;
-        return new DungeonCell(
+        Cell relativeCell = binding.relativeCell();
+        Cell center = clusterCenter == null ? new Cell(0, 0, relativeCell.level()) : clusterCenter;
+        return new Cell(
                 center.q() + relativeCell.q(),
                 center.r() + relativeCell.r(),
                 center.level());
     }
 
-    public static DungeonCell absoluteCorridorCell(
+    public static Cell absoluteCorridorCell(
             DungeonCorridorDoorBinding binding,
-            @Nullable DungeonCell clusterCenter
+            @Nullable Cell clusterCenter
     ) {
         return binding.direction().neighborOf(absoluteRoomCell(binding, clusterCenter));
     }
 
-    public static DungeonEdge absoluteDoorEdge(
+    public static Edge absoluteDoorEdge(
             DungeonCorridorDoorBinding binding,
-            @Nullable DungeonCell clusterCenter
+            @Nullable Cell clusterCenter
     ) {
-        return DungeonEdge.sideOf(absoluteRoomCell(binding, clusterCenter), binding.direction());
+        return Edge.sideOf(absoluteRoomCell(binding, clusterCenter), binding.direction());
     }
 }

@@ -3,7 +3,10 @@ package src.domain.dungeon.model.worldspace;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.BoundaryVertex;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchOrientation;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
@@ -41,14 +44,14 @@ final class DungeonBoundaryStretchBoundaryLookupLogic {
         return false;
     }
 
-    boolean touchesOuterBoundary(Set<DungeonCell> clusterCells, BoundaryVertex vertex) {
-        for (DungeonCell cell : clusterCells) {
-            for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
-                DungeonCell neighbor = direction.neighborOf(cell);
+    boolean touchesOuterBoundary(Set<Cell> clusterCells, BoundaryVertex vertex) {
+        for (Cell cell : clusterCells) {
+            for (Direction direction : Direction.values()) {
+                Cell neighbor = direction.neighborOf(cell);
                 if (clusterCells.contains(neighbor)) {
                     continue;
                 }
-                if (touches(DungeonBoundaryKey.from(DungeonEdge.sideOf(cell, direction)), vertex)) {
+                if (touches(DungeonBoundaryKey.from(Edge.sideOf(cell, direction)), vertex)) {
                     return true;
                 }
             }
@@ -60,7 +63,7 @@ final class DungeonBoundaryStretchBoundaryLookupLogic {
         return sameVertex(key.lower(), vertex) || sameVertex(key.upper(), vertex);
     }
 
-    private boolean sameVertex(DungeonCell cell, BoundaryVertex vertex) {
+    private boolean sameVertex(Cell cell, BoundaryVertex vertex) {
         return cell != null
                 && vertex != null
                 && cell.q() == vertex.q()

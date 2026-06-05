@@ -1,10 +1,10 @@
 package src.domain.dungeon;
 
 import java.util.List;
+import src.domain.dungeon.model.core.geometry.DungeonTopology;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
-import src.domain.dungeon.model.worldspace.DungeonTopology;
 import src.domain.dungeon.published.DungeonTopologyKind;
 
 final class DungeonPublishedMapProjectionServiceAssembly {
@@ -52,9 +52,9 @@ final class DungeonPublishedMapProjectionServiceAssembly {
                 safeHandles.stream().map(DungeonPublishedMapProjectionServiceAssembly::handle).toList());
     }
 
-    static src.domain.dungeon.published.DungeonCellRef cell(src.domain.dungeon.model.worldspace.DungeonCell cell) {
-        src.domain.dungeon.model.worldspace.DungeonCell safeCell =
-                cell == null ? new src.domain.dungeon.model.worldspace.DungeonCell(0, 0, 0) : cell;
+    static src.domain.dungeon.published.DungeonCellRef cell(src.domain.dungeon.model.core.geometry.Cell cell) {
+        src.domain.dungeon.model.core.geometry.Cell safeCell =
+                cell == null ? new src.domain.dungeon.model.core.geometry.Cell(0, 0, 0) : cell;
         return new src.domain.dungeon.published.DungeonCellRef(safeCell.q(), safeCell.r(), safeCell.level());
     }
 
@@ -108,7 +108,7 @@ final class DungeonPublishedMapProjectionServiceAssembly {
                 handle.direction().name());
     }
 
-    private static src.domain.dungeon.published.DungeonEdgeRef edge(src.domain.dungeon.model.worldspace.DungeonEdge edge) {
+    private static src.domain.dungeon.published.DungeonEdgeRef edge(src.domain.dungeon.model.core.geometry.Edge edge) {
         if (edge == null) {
             return new src.domain.dungeon.published.DungeonEdgeRef(cell(null), cell(null));
         }

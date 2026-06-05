@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 
 final class DungeonCorridorCreationLogic {
 
@@ -17,6 +19,7 @@ final class DungeonCorridorCreationLogic {
     private static final DungeonCorridorRouteValidationLogic ROUTE_VALIDATION_SERVICE =
             new DungeonCorridorRouteValidationLogic();
     private static final DungeonCorridorRouteSplitLogic ROUTE_SPLIT_SERVICE = new DungeonCorridorRouteSplitLogic();
+    private static final DungeonDerivedStateProjection DERIVED_STATE_PROJECTION = new DungeonDerivedStateProjection();
 
     DungeonMap createCorridor(
             DungeonMap dungeonMap,
@@ -28,19 +31,23 @@ final class DungeonCorridorCreationLogic {
         if (!validCreateEndpoints(start, end) || MUTATION_RULES.sameClusterOnly(dungeonMap, start, end)) {
             return dungeonMap;
         }
+        CorridorHostCells initialHostCells = hostCells(dungeonMap, dungeonMap.connections().corridors());
         DungeonCorridorRouteValidationLogic.CorridorRouteValidation routeValidation =
-                ROUTE_VALIDATION_SERVICE.validateRoute(dungeonMap, start, end);
+                ROUTE_VALIDATION_SERVICE.validateRoute(dungeonMap, start, end, initialHostCells);
         if (!routeValidation.hasValidRoute()) {
             return dungeonMap;
         }
-        List<DungeonCell> routeCells = routeValidation.routeCells();
+        List<Cell> routeCells = routeValidation.routeCells();
         DungeonCorridorEndpointResolutionLogic.ResolvedEndpointResult startResolved =
-                ENDPOINT_RESOLUTION_SERVICE.resolve(dungeonMap, start);
+                ENDPOINT_RESOLUTION_SERVICE.resolve(dungeonMap, start, initialHostCells);
         if (startResolved == null) {
             return dungeonMap;
         }
         DungeonCorridorEndpointResolutionLogic.ResolvedEndpointResult endResolved =
-                ENDPOINT_RESOLUTION_SERVICE.resolve(startResolved.map(), end);
+                ENDPOINT_RESOLUTION_SERVICE.resolve(
+                        startResolved.map(),
+                        end,
+                        hostCellsForResolvedMap(dungeonMap, initialHostCells, startResolved.map()));
         if (endResolved == null || CORRIDOR_SEMANTICS_POLICY.sameEndpoint(startResolved.endpoint(), endResolved.endpoint())) {
             return dungeonMap;
         }
@@ -61,20 +68,36 @@ final class DungeonCorridorCreationLogic {
                 endResolved.map().connections().stairs(),
                 endResolved.map().connections().transitions());
         if (!start.sameLevelAs(end)) {
-            DungeonCell upperExit = new DungeonCell(
+            Cell upperExit = new Cell(
                     routeCells.getLast().q(),
                     routeCells.getLast().r(),
                     end.level());
-            nextConnections = nextConnections.stairOperations().withCorridorBoundStair(
-                    stairId,
-                    endResolved.map().metadata().mapId().value(),
-                    corridor.corridorId(),
-                    routeCells,
-                    upperExit);
+            nextConnections = nextConnections.withStairs(
+                    DungeonStair.withCorridorBound(
+                            nextConnections.stairCollection(),
+                            stairId,
+                            endResolved.map().metadata().mapId().value(),
+                            corridor.corridorId(),
+                            routeCells,
+                            upperExit));
         }
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 endResolved.map(),
                 nextConnections);
+    }
+
+    private static CorridorHostCells hostCells(DungeonMap dungeonMap, List<DungeonCorridor> corridors) {
+        return new CorridorHostCells(DERIVED_STATE_PROJECTION.corridorCellsByCorridor(dungeonMap, corridors));
+    }
+
+    private static CorridorHostCells hostCellsForResolvedMap(
+            DungeonMap sourceMap,
+            CorridorHostCells sourceHostCells,
+            DungeonMap resolvedMap
+    ) {
+        return resolvedMap == sourceMap
+                ? sourceHostCells
+                : hostCells(resolvedMap, resolvedMap.connections().corridors());
     }
 
     private boolean validCreateEndpoints(DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {

@@ -3,11 +3,11 @@ package src.domain.dungeon.model.worldspace.repository;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 
 public interface DungeonAuthoredPublishedStateRepository {
 
@@ -224,19 +224,19 @@ public interface DungeonAuthoredPublishedStateRepository {
 
     final class RoomExitNarrationPublication {
         private final String label;
-        private final DungeonCell cell;
-        private final DungeonEdgeDirection direction;
+        private final Cell cell;
+        private final Direction direction;
         private final String description;
 
         public RoomExitNarrationPublication(
                 String label,
-                DungeonCell cell,
-                DungeonEdgeDirection direction,
+                Cell cell,
+                Direction direction,
                 String description
         ) {
             this.label = label == null || label.isBlank() ? "Ausgang" : label;
-            this.cell = cell == null ? new DungeonCell(0, 0, 0) : cell;
-            this.direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+            this.cell = cell == null ? new Cell(0, 0, 0) : cell;
+            this.direction = direction == null ? Direction.NORTH : direction;
             this.description = description == null ? "" : description;
         }
 
@@ -244,11 +244,11 @@ public interface DungeonAuthoredPublishedStateRepository {
             return label;
         }
 
-        public DungeonCell cell() {
+        public Cell cell() {
             return cell;
         }
 
-        public DungeonEdgeDirection direction() {
+        public Direction direction() {
             return direction;
         }
 

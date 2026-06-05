@@ -22,8 +22,8 @@ final class DungeonClusterBoundaryOrdering {
         List<BoundaryRow> orderedRows = RoomClusterBoundaryOrdering.sortedRows(boundariesByRow.keySet());
         Map<DungeonBoundaryKey, DungeonClusterBoundary> result = new LinkedHashMap<>();
         for (BoundaryRow row : orderedRows) {
-            DungeonBoundaryKey key = dungeonKey(RoomClusterBoundaryOrdering.boundaryKey(
-                    cluster == null ? null : cluster.center().geometry(),
+            DungeonBoundaryKey key = boundaryKey(RoomClusterBoundaryOrdering.boundaryKey(
+                    cluster == null ? null : cluster.center(),
                     row));
             Queue<DungeonClusterBoundary> rowBoundaries = boundariesByRow.get(row);
             while (rowBoundaries != null && !rowBoundaries.isEmpty()) {
@@ -91,8 +91,8 @@ final class DungeonClusterBoundaryOrdering {
         return new BoundaryRow(
                 boundary.clusterId(),
                 boundary.level(),
-                boundary.relativeCell().geometry(),
-                boundary.direction().geometry(),
+                boundary.relativeCell(),
+                boundary.direction(),
                 coreKind(boundary.kind()));
     }
 
@@ -106,9 +106,9 @@ final class DungeonClusterBoundaryOrdering {
         return BoundaryKind.WALL;
     }
 
-    private static DungeonBoundaryKey dungeonKey(EdgeKey key) {
+    private static DungeonBoundaryKey boundaryKey(EdgeKey key) {
         return new DungeonBoundaryKey(
-                DungeonCell.fromGeometry(key.lower()),
-                DungeonCell.fromGeometry(key.upper()));
+                key.lower(),
+                key.upper());
     }
 }

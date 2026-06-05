@@ -13,11 +13,11 @@ final class DungeonStairRoomCellProjection {
     Set<Cell> roomCells(SpatialTopology topology, RoomCatalog rooms) {
         Set<Cell> result = new LinkedHashSet<>();
         for (DungeonRoomCluster cluster : topology.roomClusters()) {
-            for (List<DungeonCell> cells : roomCellProjection.cellsByRoom(
+            for (List<Cell> cells : roomCellProjection.cellsByRoom(
                     cluster,
                     clusterRooms(rooms, cluster.clusterId())).values()) {
-                for (DungeonCell cell : cells) {
-                    result.add(cell.geometry());
+                for (Cell cell : cells) {
+                    result.add(cell);
                 }
             }
         }

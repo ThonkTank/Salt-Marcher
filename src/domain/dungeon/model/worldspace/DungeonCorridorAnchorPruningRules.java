@@ -3,13 +3,13 @@ package src.domain.dungeon.model.worldspace;
 import java.util.List;
 
 /**
- * Transitional topology-ref adapter for core corridor network rules.
+ * Prunes hosted corridor anchors that are no longer referenced by route anchors.
  */
 public final class DungeonCorridorAnchorPruningRules {
 
     public List<DungeonCorridor> pruneDetachedAnchors(List<DungeonCorridor> corridors) {
-        return DungeonCorridorTopologyIdentityAdapter.fromCoreNetwork(
+        return DungeonCorridor.fromCoreNetwork(
                 corridors,
-                DungeonCorridorTopologyIdentityAdapter.toCoreNetwork(corridors).withoutDetachedAnchors());
+                DungeonCorridor.coreNetwork(corridors).withoutDetachedAnchors());
     }
 }

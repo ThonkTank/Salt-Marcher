@@ -3,11 +3,10 @@ package src.domain.dungeon.model.runtime.helper;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-
 
 public final class DungeonEditorWorkspaceHandleProjectionHelper {
     public List<DungeonEditorWorkspaceValues.Handle> project(List<DungeonEditorHandleProjection> handles) {
@@ -34,7 +33,7 @@ public final class DungeonEditorWorkspaceHandleProjectionHelper {
         return new DungeonEditorWorkspaceValues.Handle(ref, handle.label(), workspaceCell);
     }
 
-    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable DungeonCell cell) {
+    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable Cell cell) {
         return cell == null
                 ? DungeonEditorWorkspaceValues.Cell.empty()
                 : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level());

@@ -4,7 +4,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
 
 final class DungeonClusterBoundaryEditLogic {
 
@@ -21,7 +24,7 @@ final class DungeonClusterBoundaryEditLogic {
     DungeonMap editBoundaries(
             DungeonMap dungeonMap,
             long clusterId,
-            List<DungeonEdge> edges,
+            List<Edge> edges,
             DungeonClusterBoundaryKind kind,
             boolean deleteBoundary
     ) {
@@ -60,23 +63,23 @@ final class DungeonClusterBoundaryEditLogic {
     private BoundaryEditResult editBoundaries(
             DungeonMap dungeonMap,
             DungeonRoomTopologyClusterWork target,
-            List<DungeonEdge> edges,
+            List<Edge> edges,
             DungeonClusterBoundaryKind kind,
             boolean deleteBoundary
     ) {
         DungeonClusterBoundaryKind resolvedKind = kind == null ? DungeonClusterBoundaryKind.WALL : kind;
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries =
                 DungeonClusterBoundaryOrdering.boundaryMap(target.cluster());
-        Map<Long, List<DungeonCell>> roomCells = CELL_PROJECTOR.cellsByRoom(target.cluster(), target.rooms());
+        Map<Long, List<Cell>> roomCells = CELL_PROJECTOR.cellsByRoom(target.cluster(), target.rooms());
         boolean changed = false;
-        for (DungeonEdge edge : edges) {
+        for (Edge edge : edges) {
             if (deleteBoundary) {
                 changed = removeExistingBoundaryIfAllowed(dungeonMap, target, boundaries, resolvedKind, edge)
                         || changed;
                 continue;
             }
             DungeonClusterBoundary candidate = GEOMETRY_SERVICE.boundaryForEdge(
-                    edge == null || edge.from() == null ? Set.of() : Set.copyOf(target.cellsAt(edge.from().level())),
+                    edge == null ? Set.of() : Set.copyOf(target.cellsAt(edge.from().level())),
                     target.cluster().center(),
                     target.cluster().clusterId(),
                     edge,
@@ -105,7 +108,7 @@ final class DungeonClusterBoundaryEditLogic {
             DungeonRoomTopologyClusterWork target,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             DungeonClusterBoundaryKind resolvedKind,
-            DungeonEdge edge
+            Edge edge
     ) {
         if (!validBoundaryEdge(edge)) {
             return false;
@@ -117,18 +120,18 @@ final class DungeonClusterBoundaryEditLogic {
                 : deleteDoorBoundary(dungeonMap, target, boundaries, resolvedKind, key, existing);
     }
 
-    private boolean validBoundaryEdge(DungeonEdge edge) {
-        if (edge == null || edge.from() == null || edge.to() == null) {
+    private boolean validBoundaryEdge(Edge edge) {
+        if (edge == null) {
             return false;
         }
-        List<DungeonCell> touchingCells = DungeonCell.sortedByGeometry(edge.touchingCells());
+        List<Cell> touchingCells = CellOrdering.sortedCells(edge.touchingCells());
         return touchingCells.size() == 2 && touchingCells.getFirst().level() == touchingCells.get(1).level();
     }
 
     private boolean deleteWallBoundary(
             DungeonRoomTopologyClusterWork target,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
-            DungeonEdge edge,
+            Edge edge,
             DungeonBoundaryKey key,
             DungeonClusterBoundary existing
     ) {
@@ -170,7 +173,7 @@ final class DungeonClusterBoundaryEditLogic {
     private boolean insertOpenBoundaryIfNeeded(
             DungeonRoomTopologyClusterWork target,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
-            DungeonEdge edge,
+            Edge edge,
             DungeonBoundaryKey key,
             DungeonClusterBoundary existing
     ) {
@@ -197,7 +200,7 @@ final class DungeonClusterBoundaryEditLogic {
         return true;
     }
 
-    private boolean invalidBoundaryEditRequest(long clusterId, List<DungeonEdge> edges) {
+    private boolean invalidBoundaryEditRequest(long clusterId, List<Edge> edges) {
         return clusterId <= 0L || edges == null || edges.isEmpty();
     }
 

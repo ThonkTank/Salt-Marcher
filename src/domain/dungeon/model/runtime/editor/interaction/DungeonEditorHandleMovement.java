@@ -1,8 +1,8 @@
 package src.domain.dungeon.model.runtime.editor.interaction;
 
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 public record DungeonEditorHandleMovement(
         DungeonEditorHandleMovementKind kind,
@@ -12,8 +12,8 @@ public record DungeonEditorHandleMovement(
         long corridorId,
         long roomId,
         int index,
-        DungeonCell cell,
-        DungeonEdgeDirection direction
+        Cell cell,
+        Direction direction
 ) {
     public DungeonEditorHandleMovement {
         kind = kind == null ? DungeonEditorHandleMovementKind.defaultKind() : kind;
@@ -23,7 +23,7 @@ public record DungeonEditorHandleMovement(
         corridorId = Math.max(0L, corridorId);
         roomId = Math.max(0L, roomId);
         index = Math.max(0, index);
-        cell = cell == null ? new DungeonCell(0, 0, 0) : cell;
-        direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+        cell = cell == null ? new Cell(0, 0, 0) : cell;
+        direction = direction == null ? Direction.NORTH : direction;
     }
 }

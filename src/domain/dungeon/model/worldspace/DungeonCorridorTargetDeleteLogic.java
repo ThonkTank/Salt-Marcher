@@ -18,7 +18,7 @@ final class DungeonCorridorTargetDeleteLogic {
             long roomId,
             int waypointIndex
     ) {
-        Corridor current = DungeonCorridorCoreAdapter.toCore(existing);
+        Corridor current = existing.toCore();
         Corridor updatedCore = switch (targetKind) {
             case "DOOR" -> DOOR_TARGET_DELETE_SERVICE.deleteDoor(
                     dungeonMap,
@@ -33,7 +33,7 @@ final class DungeonCorridorTargetDeleteLogic {
         if (updatedCore.equals(current) || updatedCore.endpointCount() < 2) {
             return dungeonMap;
         }
-        DungeonCorridor updated = DungeonCorridorCoreAdapter.fromCore(existing, updatedCore, null);
+        DungeonCorridor updated = DungeonCorridor.fromCore(existing, updatedCore, null);
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 dungeonMap,
                 new ConnectionCatalog(

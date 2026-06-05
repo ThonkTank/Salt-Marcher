@@ -4,8 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.data.dungeon.model.DungeonTransitionRecord;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.worldspace.DungeonTransition;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 
 final class DungeonTransitionRecordMapperSupport {
@@ -39,11 +39,11 @@ final class DungeonTransitionRecordMapperSupport {
         return List.copyOf(result);
     }
 
-    private static @Nullable DungeonCell transitionAnchor(DungeonTransitionRecord record) {
+    private static @Nullable Cell transitionAnchor(DungeonTransitionRecord record) {
         if (record.cellX() == null) {
             return null;
         }
-        return new DungeonCell(
+        return new Cell(
                 record.cellX(),
                 record.cellY() == null ? 0 : record.cellY(),
                 record.levelZ() == null ? 0 : record.levelZ());
@@ -61,7 +61,7 @@ final class DungeonTransitionRecordMapperSupport {
     }
 
     private static DungeonTransitionRecord toTransitionRecord(DungeonTransition transition) {
-        DungeonCell anchor = transition.anchor();
+        Cell anchor = transition.anchor();
         DestinationRecord destination = destinationRecord(transition.destination());
         return new DungeonTransitionRecord(
                 transition.transitionId(),

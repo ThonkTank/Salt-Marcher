@@ -1,15 +1,15 @@
 package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 
 public record DungeonFeatureFacts(
         DungeonFeatureType kind,
         long id,
         String label,
-        List<DungeonCell> cells,
+        List<Cell> cells,
         String description,
         String destinationLabel,
         List<String> facts,
@@ -20,7 +20,7 @@ public record DungeonFeatureFacts(
             DungeonFeatureType kind,
             long id,
             String label,
-            List<DungeonCell> cells,
+            List<Cell> cells,
             String description,
             String destinationLabel
     ) {
@@ -39,7 +39,7 @@ public record DungeonFeatureFacts(
             DungeonFeatureType kind,
             long id,
             String label,
-            List<DungeonCell> cells,
+            List<Cell> cells,
             String description,
             String destinationLabel,
             List<String> facts

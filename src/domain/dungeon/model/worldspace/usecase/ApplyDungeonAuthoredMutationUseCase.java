@@ -2,9 +2,9 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonEditorAuthoredOperation;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.worldspace.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonStair;
 import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
@@ -40,7 +40,7 @@ public final class ApplyDungeonAuthoredMutationUseCase {
 
     boolean canCreateStair(
             @Nullable DungeonMapIdentity mapId,
-            @Nullable DungeonCell anchor,
+            @Nullable Cell anchor,
             String shapeName
     ) {
         return applyDungeonEditorOperationUseCase.canCreateStair(mapId, anchor, shapeName);
@@ -48,7 +48,7 @@ public final class ApplyDungeonAuthoredMutationUseCase {
 
     boolean canCreateTransition(
             @Nullable DungeonMapIdentity mapId,
-            @Nullable DungeonCell anchor,
+            @Nullable Cell anchor,
             @Nullable DungeonTransitionDestination destination
     ) {
         return applyDungeonEditorOperationUseCase.canCreateTransition(mapId, anchor, destination);

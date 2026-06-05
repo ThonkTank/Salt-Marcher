@@ -1,25 +1,22 @@
 package src.domain.dungeon.model.core.geometry;
 
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonEdge;
-
 public record DungeonBoundaryKey(
-        DungeonCell lower,
-        DungeonCell upper
+        Cell lower,
+        Cell upper
 ) {
 
-    public static DungeonBoundaryKey from(DungeonEdge edge) {
-        DungeonCell from = edge.from();
-        DungeonCell to = edge.to();
+    public static DungeonBoundaryKey from(Edge edge) {
+        Cell from = edge.from();
+        Cell to = edge.to();
         int comparison = compareCells(from, to);
         return comparison <= 0 ? new DungeonBoundaryKey(from, to) : new DungeonBoundaryKey(to, from);
     }
 
     public long stableId() {
-        return new EdgeKey(coreCell(lower), coreCell(upper)).stableId();
+        return new EdgeKey(lower, upper).stableId();
     }
 
-    private static int compareCells(DungeonCell left, DungeonCell right) {
+    private static int compareCells(Cell left, Cell right) {
         if (left == null && right == null) {
             return 0;
         }
@@ -29,10 +26,6 @@ public record DungeonBoundaryKey(
         if (right == null) {
             return 1;
         }
-        return CellOrdering.compareCells(coreCell(left), coreCell(right));
-    }
-
-    private static Cell coreCell(DungeonCell cell) {
-        return cell == null ? null : new Cell(cell.q(), cell.r(), cell.level());
+        return CellOrdering.compareCells(left, right);
     }
 }

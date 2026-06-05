@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace;
 import java.util.Objects;
 import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
+import src.domain.dungeon.model.core.structure.stair.StairCollection;
 
 final class DungeonCorridorMergeDeleteLogic {
 
@@ -40,17 +41,19 @@ final class DungeonCorridorMergeDeleteLogic {
                     roomId,
                     waypointIndex);
         }
-        CorridorNetwork network = DungeonCorridorTopologyIdentityAdapter.toCoreNetwork(dungeonMap.connections().corridors());
+        CorridorNetwork network = DungeonCorridor.coreNetwork(dungeonMap.connections().corridors());
         if (!network.canDeleteCorridor(corridorId)) {
             return dungeonMap;
         }
+        StairCollection withoutCorridorStairs =
+                DungeonStair.withoutCorridorBound(dungeonMap.connections().stairCollection(), corridorId);
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 dungeonMap,
                 new ConnectionCatalog(
-                        DungeonCorridorTopologyIdentityAdapter.fromCoreNetwork(
+                        DungeonCorridor.fromCoreNetwork(
                                 dungeonMap.connections().corridors(),
                                 network.withoutCorridor(corridorId)),
-                        dungeonMap.connections().stairOperations().withoutCorridorBoundStairs(corridorId).stairs(),
-                        dungeonMap.connections().transitions()));
+                        withoutCorridorStairs,
+                        dungeonMap.connections().transitionCatalog()));
     }
 }

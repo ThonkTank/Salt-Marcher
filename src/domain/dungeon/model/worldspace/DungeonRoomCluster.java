@@ -9,26 +9,26 @@ import src.domain.dungeon.model.core.structure.room.RoomCluster;
 public record DungeonRoomCluster(
         long clusterId,
         long mapId,
-        DungeonCell center,
-        Map<Integer, List<DungeonCell>> relativeVerticesByLevel,
+        Cell center,
+        Map<Integer, List<Cell>> relativeVerticesByLevel,
         Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
 ) {
     public DungeonRoomCluster(
             long clusterId,
             long mapId,
-            DungeonCell center,
-            Map<Integer, List<DungeonCell>> relativeVerticesByLevel,
+            Cell center,
+            Map<Integer, List<Cell>> relativeVerticesByLevel,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
         this.clusterId = clusterId;
         this.mapId = mapId;
-        this.center = center == null ? new DungeonCell(0, 0, 0) : center;
+        this.center = center == null ? new Cell(0, 0, 0) : center;
         this.relativeVerticesByLevel = copyNestedLists(relativeVerticesByLevel);
         this.boundariesByLevel = copyNestedLists(boundariesByLevel);
     }
 
     @Override
-    public Map<Integer, List<DungeonCell>> relativeVerticesByLevel() {
+    public Map<Integer, List<Cell>> relativeVerticesByLevel() {
         return copyNestedLists(relativeVerticesByLevel);
     }
 
@@ -37,32 +37,32 @@ public record DungeonRoomCluster(
         return copyNestedLists(boundariesByLevel);
     }
 
-    RoomCluster toCore(Map<Integer, List<DungeonCell>> cellsByLevel) {
-        Map<Integer, List<Cell>> coreCellsByLevel = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<DungeonCell>> entry : cellsByLevel.entrySet()) {
-            coreCellsByLevel.put(entry.getKey(), toCoreCells(entry.getValue()));
+    RoomCluster toCore(Map<Integer, List<Cell>> cellsByLevel) {
+        Map<Integer, List<Cell>> copiedCellsByLevel = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
+            copiedCellsByLevel.put(entry.getKey(), copiedCells(entry.getValue()));
         }
-        return new RoomCluster(clusterId, mapId, center.geometry(), coreCellsByLevel);
+        return new RoomCluster(clusterId, mapId, center, copiedCellsByLevel);
     }
 
     static DungeonRoomCluster fromCore(
             RoomCluster cluster,
-            Map<Integer, List<DungeonCell>> relativeVerticesByLevel,
+            Map<Integer, List<Cell>> relativeVerticesByLevel,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
         return new DungeonRoomCluster(
                 cluster.clusterId(),
                 cluster.mapId(),
-                DungeonCell.fromGeometry(cluster.center()),
+                cluster.center(),
                 relativeVerticesByLevel,
                 boundariesByLevel);
     }
 
-    private static List<Cell> toCoreCells(List<DungeonCell> cells) {
+    private static List<Cell> copiedCells(List<Cell> cells) {
         List<Cell> result = new java.util.ArrayList<>();
-        for (DungeonCell cell : cells == null ? List.<DungeonCell>of() : cells) {
+        for (Cell cell : cells == null ? List.<Cell>of() : cells) {
             if (cell != null) {
-                result.add(cell.geometry());
+                result.add(cell);
             }
         }
         return List.copyOf(result);

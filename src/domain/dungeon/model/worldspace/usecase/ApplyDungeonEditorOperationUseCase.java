@@ -3,11 +3,11 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.core.structure.DungeonMapOperationFeedbackRules;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.DungeonMapOperationFeedbackRules;
+import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 
@@ -86,7 +86,7 @@ public final class ApplyDungeonEditorOperationUseCase {
 
     boolean canCreateStair(
             @Nullable DungeonMapIdentity mapId,
-            @Nullable DungeonCell anchor,
+            @Nullable Cell anchor,
             String shapeName
     ) {
         return anchor != null && currentMap(mapId).canCreateStair(anchor, shapeName);
@@ -94,7 +94,7 @@ public final class ApplyDungeonEditorOperationUseCase {
 
     boolean canCreateTransition(
             @Nullable DungeonMapIdentity mapId,
-            @Nullable DungeonCell anchor,
+            @Nullable Cell anchor,
             @Nullable DungeonTransitionDestination destination
     ) {
         return anchor != null

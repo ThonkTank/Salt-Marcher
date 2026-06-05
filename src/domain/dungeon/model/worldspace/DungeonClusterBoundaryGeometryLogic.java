@@ -6,18 +6,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryTouch;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 
 final class DungeonClusterBoundaryGeometryLogic {
 
-    private static final DungeonClusterBoundaryMaterializationAdapter BOUNDARY_MATERIALIZATION =
-            new DungeonClusterBoundaryMaterializationAdapter();
-
     Map<Integer, List<DungeonClusterBoundary>> filterBoundaries(
             Iterable<DungeonClusterBoundary> boundaries,
-            Map<Integer, List<DungeonCell>> cellsByLevel,
-            DungeonCell center
+            Map<Integer, List<Cell>> cellsByLevel,
+            Cell center
     ) {
         List<DungeonClusterBoundary> filtered = new ArrayList<>();
         for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
@@ -32,31 +34,34 @@ final class DungeonClusterBoundaryGeometryLogic {
     }
 
     @Nullable DungeonClusterBoundary boundaryForEdge(
-            Set<DungeonCell> clusterCells,
-            DungeonCell center,
+            Set<Cell> clusterCells,
+            Cell center,
             long clusterId,
-            DungeonEdge edge,
+            Edge edge,
             DungeonClusterBoundaryKind kind,
             @Nullable DungeonTopologyRef topologyRef
     ) {
-        DungeonClusterBoundaryMaterializationAdapter.ClusterBoundaryMaterialization materialization =
-                BOUNDARY_MATERIALIZATION.prepare(clusterCells, center, clusterId);
-        return materialization.materializeBoundary(
+        BoundaryRow materialized = RoomClusterBoundaryMaterialization.forEdge(
+                touchingClusterCells(clusterCells, edge),
+                center,
+                clusterId,
                 edge,
-                kind,
-                topologyRef);
+                boundaryKind(kind));
+        return boundary(materialized, topologyRef);
     }
 
     @Nullable DungeonClusterBoundary openBoundaryForEdge(
-            Set<DungeonCell> clusterCells,
-            DungeonCell center,
+            Set<Cell> clusterCells,
+            Cell center,
             long clusterId,
-            DungeonEdge edge
+            Edge edge
     ) {
-        DungeonClusterBoundaryMaterializationAdapter.ClusterBoundaryMaterialization materialization =
-                BOUNDARY_MATERIALIZATION.prepare(clusterCells, center, clusterId);
-        return materialization.materializeOpenBoundary(
+        BoundaryRow materialized = RoomClusterBoundaryMaterialization.openForEdge(
+                touchingClusterCells(clusterCells, edge),
+                center,
+                clusterId,
                 edge);
+        return boundary(materialized, DungeonTopologyRef.empty());
     }
 
     private boolean retainsBoundary(DungeonClusterBoundary boundary, DungeonBoundaryTouch touch) {
@@ -66,18 +71,62 @@ final class DungeonClusterBoundaryGeometryLogic {
         return touch.touchesCluster();
     }
 
-    private DungeonBoundaryTouch touch(DungeonEdge edge, Set<DungeonCell> clusterCells) {
-        List<DungeonCell> insideCells = insideCells(edge.touchingCells(), clusterCells);
+    private DungeonBoundaryTouch touch(Edge edge, Set<Cell> clusterCells) {
+        List<Cell> insideCells = insideCells(edge.touchingCells(), clusterCells);
         return new DungeonBoundaryTouch(insideCells);
     }
 
-    private static List<DungeonCell> insideCells(List<DungeonCell> touchingCells, Set<DungeonCell> clusterCells) {
-        List<DungeonCell> result = new ArrayList<>();
-        for (DungeonCell cell : touchingCells == null ? List.<DungeonCell>of() : touchingCells) {
+    private static List<Cell> insideCells(List<Cell> touchingCells, Set<Cell> clusterCells) {
+        List<Cell> result = new ArrayList<>();
+        for (Cell cell : touchingCells == null ? List.<Cell>of() : touchingCells) {
             if (clusterCells.contains(cell)) {
                 result.add(cell);
             }
         }
         return List.copyOf(result);
+    }
+
+    private static Set<Cell> touchingClusterCells(Set<Cell> clusterCells, @Nullable Edge edge) {
+        Set<Cell> result = new LinkedHashSet<>();
+        for (Cell cell : edge == null ? Set.<Cell>of() : edge.touchingCells()) {
+            if (cell != null && clusterCells != null && clusterCells.contains(cell)) {
+                result.add(cell);
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static BoundaryKind boundaryKind(@Nullable DungeonClusterBoundaryKind kind) {
+        if (kind == DungeonClusterBoundaryKind.DOOR) {
+            return BoundaryKind.DOOR;
+        }
+        if (kind == DungeonClusterBoundaryKind.OPEN) {
+            return BoundaryKind.OPEN;
+        }
+        return BoundaryKind.WALL;
+    }
+
+    private static @Nullable DungeonClusterBoundary boundary(
+            @Nullable BoundaryRow materialized,
+            @Nullable DungeonTopologyRef topologyRef
+    ) {
+        if (materialized == null) {
+            return null;
+        }
+        return new DungeonClusterBoundary(
+                materialized.clusterId(),
+                materialized.level(),
+                materialized.relativeCell(),
+                materialized.direction(),
+                worldspaceKind(materialized.kind()),
+                topologyRef == null ? DungeonTopologyRef.empty() : topologyRef);
+    }
+
+    private static DungeonClusterBoundaryKind worldspaceKind(BoundaryKind kind) {
+        return switch (kind) {
+            case DOOR -> DungeonClusterBoundaryKind.DOOR;
+            case OPEN -> DungeonClusterBoundaryKind.OPEN;
+            case WALL -> DungeonClusterBoundaryKind.WALL;
+        };
     }
 }

@@ -28,12 +28,12 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorRoomSet;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
 import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.Room;
+import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
-import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
 import src.domain.dungeon.model.core.structure.stair.Stair;
@@ -42,11 +42,9 @@ import src.domain.dungeon.model.core.structure.stair.StairShape;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 final class DungeonStructureInvariantHarness {
 
@@ -353,13 +351,13 @@ final class DungeonStructureInvariantHarness {
                 new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
                         3L,
                         12L,
-                        new DungeonCell(1, 1, 0),
+                        new Cell(1, 1, 0),
                         stableRef);
         src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding replacement =
                 new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
                         5L,
                         12L,
-                        new DungeonCell(2, 2, 0),
+                        new Cell(2, 2, 0),
                         stableRef);
         DungeonCorridorBindings bindings = new DungeonCorridorBindings(List.of(), List.of(), List.of(first), List.of());
 
@@ -380,7 +378,7 @@ final class DungeonStructureInvariantHarness {
                 new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
                         7L,
                         40L,
-                        new DungeonCell(1, 0, 0),
+                        new Cell(1, 0, 0),
                         splitAnchorRef);
         DungeonCorridorBindings splitBindings = DungeonCorridorBindings.empty().withInteriorRouteAnchors(
                 new CorridorRoutePlan(
@@ -412,7 +410,7 @@ final class DungeonStructureInvariantHarness {
         DungeonCorridorBindings bindings = new DungeonCorridorBindings(
                 List.of(),
                 List.of(new DungeonCorridorDoorBinding(
-                        4L, 10L, new DungeonCell(0, 1, 0), DungeonEdgeDirection.NORTH, null)),
+                        4L, 10L, new Cell(0, 1, 0), Direction.NORTH, null)),
                 List.of(),
                 List.of());
 
@@ -520,13 +518,13 @@ final class DungeonStructureInvariantHarness {
                 new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
                         7L,
                         10L,
-                        new DungeonCell(6, 5, 0),
+                        new Cell(6, 5, 0),
                         stableRef);
         src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding detachedAnchor =
                 new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
                         8L,
                         10L,
-                        new DungeonCell(6, 6, 0),
+                        new Cell(6, 6, 0),
                         detachedRef);
         DungeonCorridor owner = new DungeonCorridor(
                 10L,
@@ -732,11 +730,11 @@ final class DungeonStructureInvariantHarness {
         assertEquals(
                 northKey.stableId(),
                 DungeonBoundaryKey.from(
-                        src.domain.dungeon.model.worldspace.DungeonEdge.sideOf(
-                                new DungeonCell(5, 7, 0),
-                                DungeonEdgeDirection.NORTH))
+                        src.domain.dungeon.model.core.geometry.Edge.sideOf(
+                                new Cell(5, 7, 0),
+                                Direction.NORTH))
                         .stableId(),
-                "worldspace boundary key adapter delegates stable ids to core geometry");
+                "boundary key stable ids match core geometry");
     }
 
     private static void assertRoomBoundaryStretchPlanInvariants() {
@@ -887,7 +885,7 @@ final class DungeonStructureInvariantHarness {
                         1L,
                         4L,
                         " source ",
-                        new DungeonCell(0, 0, 0),
+                        new Cell(0, 0, 0),
                         src.domain.dungeon.model.worldspace.DungeonTransitionDestination.dungeonMapDestination(4L, 2L),
                         null);
         src.domain.dungeon.model.worldspace.DungeonTransition oldTarget =
@@ -895,7 +893,7 @@ final class DungeonStructureInvariantHarness {
                         2L,
                         4L,
                         "",
-                        new DungeonCell(1, 0, 0),
+                        new Cell(1, 0, 0),
                         src.domain.dungeon.model.worldspace.DungeonTransitionDestination.overworldTileDestination(5L, 9L),
                         1L);
         src.domain.dungeon.model.worldspace.DungeonTransition target =
@@ -903,7 +901,7 @@ final class DungeonStructureInvariantHarness {
                         3L,
                         4L,
                         "",
-                        new DungeonCell(1, 1, 0),
+                        new Cell(1, 1, 0),
                         src.domain.dungeon.model.worldspace.DungeonTransitionDestination.overworldTileDestination(5L, 9L),
                         null);
         src.domain.dungeon.model.worldspace.DungeonTransition remoteReference =
@@ -911,7 +909,7 @@ final class DungeonStructureInvariantHarness {
                         4L,
                         4L,
                         "",
-                        new DungeonCell(2, 0, 0),
+                        new Cell(2, 0, 0),
                         src.domain.dungeon.model.worldspace.DungeonTransitionDestination.dungeonMapDestination(14L, 3L),
                         null);
         src.domain.dungeon.model.worldspace.DungeonMap map = transitionMap(source, oldTarget, target, remoteReference);

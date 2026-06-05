@@ -1,7 +1,7 @@
 package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
-import src.domain.dungeon.model.worldspace.DungeonTopology;
+import src.domain.dungeon.model.core.geometry.DungeonTopology;
 
 public record DungeonMapFacts(
         DungeonTopology topology,

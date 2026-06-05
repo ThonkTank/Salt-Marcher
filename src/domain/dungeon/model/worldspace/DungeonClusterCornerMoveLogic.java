@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.ArrayList;
 import java.util.List;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
@@ -29,34 +30,34 @@ final class DungeonClusterCornerMoveLogic {
             return dungeonMap;
         }
         DungeonMap moved = dungeonMap;
-        DungeonCell corner = handle.cell();
+        Cell corner = handle.cell();
         if (deltaQ != 0) {
-            List<DungeonEdge> verticalEdges = sideEdges(moved, clusterId, corner, true);
+            List<Edge> verticalEdges = sideEdges(moved, clusterId, corner, true);
             moved = STRETCH_EDIT_SERVICE.moveBoundaryStretch(moved, clusterId, verticalEdges, deltaQ, 0, 0);
-            corner = new DungeonCell(corner.q() + deltaQ, corner.r(), corner.level());
+            corner = new Cell(corner.q() + deltaQ, corner.r(), corner.level());
         }
         if (deltaR != 0) {
-            List<DungeonEdge> horizontalEdges = sideEdges(moved, clusterId, corner, false);
+            List<Edge> horizontalEdges = sideEdges(moved, clusterId, corner, false);
             moved = STRETCH_EDIT_SERVICE.moveBoundaryStretch(moved, clusterId, horizontalEdges, 0, deltaR, 0);
         }
         return moved;
     }
 
-    private static List<DungeonEdge> sideEdges(
+    private static List<Edge> sideEdges(
             DungeonMap dungeonMap,
             long clusterId,
-            DungeonCell corner,
+            Cell corner,
             boolean vertical
     ) {
         DungeonRoomTopologyClusterWork target = targetCluster(dungeonMap, clusterId);
         if (target == null || corner == null) {
             return List.of();
         }
-        List<DungeonEdge> result = new ArrayList<>();
-        for (Edge edge : target.cluster().toCore(target.cellsByLevel()).boundingSideEdges(corner.geometry(), vertical)) {
-            result.add(new DungeonEdge(
-                    DungeonCell.fromGeometry(edge.from()),
-                    DungeonCell.fromGeometry(edge.to())));
+        List<Edge> result = new ArrayList<>();
+        for (Edge edge : target.cluster().toCore(target.cellsByLevel()).boundingSideEdges(corner, vertical)) {
+            result.add(new Edge(
+                    edge.from(),
+                    edge.to()));
         }
         return List.copyOf(result);
     }

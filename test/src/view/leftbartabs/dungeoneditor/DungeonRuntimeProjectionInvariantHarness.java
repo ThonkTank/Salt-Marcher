@@ -2,6 +2,16 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.DungeonTopology;
+import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
+import src.domain.dungeon.model.core.projection.DungeonAreaType;
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
+import src.domain.dungeon.model.core.projection.DungeonMapFacts;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionKind;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface;
@@ -11,19 +21,8 @@ import src.domain.dungeon.model.runtime.travel.projection.TravelPositionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceProjection;
 import src.domain.dungeon.model.runtime.travel.projection.TravelTransitionTarget;
-import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
-import src.domain.dungeon.model.core.projection.DungeonAreaType;
-import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.core.projection.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonEdge;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.core.projection.DungeonMapFacts;
-import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.DungeonTopology;
-import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 final class DungeonRuntimeProjectionInvariantHarness {
 
@@ -48,8 +47,8 @@ final class DungeonRuntimeProjectionInvariantHarness {
     }
 
     private static void assertRuntimeTraversalProjection() {
-        DungeonCell source = new DungeonCell(0, 0, 0);
-        DungeonCell target = new DungeonCell(1, 0, 0);
+        Cell source = new Cell(0, 0, 0);
+        Cell target = new Cell(1, 0, 0);
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(3L), "Runtime Paths");
         DungeonDerivedState derived = derivedState(List.of(
                         new DungeonAreaFacts(DungeonAreaType.ROOM, 10L, "Start", List.of(source)),
@@ -58,7 +57,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
                         "door",
                         30L,
                         "Tuer",
-                        DungeonEdge.sideOf(source, DungeonEdgeDirection.EAST),
+                        Edge.sideOf(source, Direction.EAST),
                         DungeonTopologyRef.empty())));
         TravelSurfaceFacts surface = project(map, derived, new Cell(0, 0, 0));
         TravelActionFacts traversal = firstActionOfKind(surface, TravelActionKind.TRAVERSAL);
@@ -73,7 +72,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
     }
 
     private static void assertRuntimeTransitionProjection() {
-        DungeonCell anchor = new DungeonCell(2, 0, 0);
+        Cell anchor = new Cell(2, 0, 0);
         DungeonMap map = DungeonMapAuthoring
                 .empty(new DungeonMapIdentity(4L), "Runtime Transitions")
                 .createTransition(40L, anchor, true, 9L, 0L, 12L);

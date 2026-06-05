@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository;
 
 public final class PublishDungeonEditorAuthoredInspectorUseCase {
@@ -117,7 +117,7 @@ public final class PublishDungeonEditorAuthoredInspectorUseCase {
     ) {
         List<DungeonEditorWorkspaceValues.RoomExitNarration> result = new ArrayList<>();
         for (LoadDungeonSnapshotUseCase.RoomExitNarrationData exit : exits) {
-            DungeonCell cell = exit.cell();
+            Cell cell = exit.cell();
             result.add(new DungeonEditorWorkspaceValues.RoomExitNarration(
                     exit.label(),
                     cell == null

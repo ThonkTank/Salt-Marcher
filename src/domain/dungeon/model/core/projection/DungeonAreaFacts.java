@@ -2,23 +2,23 @@ package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 
 public final class DungeonAreaFacts {
     private final DungeonAreaType kind;
     private final long id;
     private final long clusterId;
     private final String label;
-    private final List<DungeonCell> cells;
+    private final List<Cell> cells;
     private final DungeonTopologyRef topologyRef;
 
     public DungeonAreaFacts(
             DungeonAreaType kind,
             long id,
             String label,
-            List<DungeonCell> cells
+            List<Cell> cells
     ) {
         this(kind, id, 0L, label, cells);
     }
@@ -28,7 +28,7 @@ public final class DungeonAreaFacts {
             long id,
             long clusterId,
             String label,
-            List<DungeonCell> cells
+            List<Cell> cells
     ) {
         this(kind, id, clusterId, label, cells, defaultTopologyRef(kind, id));
     }
@@ -38,7 +38,7 @@ public final class DungeonAreaFacts {
             long id,
             long clusterId,
             String label,
-            List<DungeonCell> cells,
+            List<Cell> cells,
             DungeonTopologyRef topologyRef
     ) {
         this.kind = kind == null ? DungeonAreaType.ROOM : kind;
@@ -71,7 +71,7 @@ public final class DungeonAreaFacts {
         return label;
     }
 
-    public List<DungeonCell> cells() {
+    public List<Cell> cells() {
         return cells;
     }
 

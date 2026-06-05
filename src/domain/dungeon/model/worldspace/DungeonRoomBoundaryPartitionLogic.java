@@ -1,16 +1,17 @@
 package src.domain.dungeon.model.worldspace;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 
 final class DungeonRoomBoundaryPartitionLogic {
-
-    private static final DungeonRoomBoundaryPartitionAdapter PARTITION_ADAPTER =
-            new DungeonRoomBoundaryPartitionAdapter();
 
     List<DungeonRoom> roomsForBoundaryEdit(
             DungeonRoomTopologyClusterWork work,
@@ -19,9 +20,23 @@ final class DungeonRoomBoundaryPartitionLogic {
     ) {
         List<Room> coreRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
                 work.toCore(),
-                PARTITION_ADAPTER.closedBoundaryEdgesByLevel(boundariesByLevel, work.cluster().center()),
+                closedBoundaryEdgesByLevel(boundariesByLevel, work.cluster().center()),
                 ids.nextRoomId());
         return worldspaceRooms(coreRooms, work);
+    }
+
+    static Map<Integer, List<Edge>> closedBoundaryEdgesByLevel(
+            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
+            @Nullable Cell center
+    ) {
+        Map<Integer, List<Edge>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : sourceEntries(boundariesByLevel)) {
+            List<Edge> edges = closedBoundaryEdges(entry.getValue(), center);
+            if (!edges.isEmpty()) {
+                result.put(entry.getKey(), edges);
+            }
+        }
+        return Map.copyOf(result);
     }
 
     private static List<DungeonRoom> worldspaceRooms(
@@ -42,5 +57,37 @@ final class DungeonRoomBoundaryPartitionLogic {
             }
         }
         return DungeonRoomNarration.empty();
+    }
+
+    private static Iterable<Map.Entry<Integer, List<DungeonClusterBoundary>>> sourceEntries(
+            @Nullable Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+    ) {
+        return boundariesByLevel == null
+                ? List.<Map.Entry<Integer, List<DungeonClusterBoundary>>>of()
+                : boundariesByLevel.entrySet();
+    }
+
+    private static List<Edge> closedBoundaryEdges(
+            @Nullable List<DungeonClusterBoundary> boundaries,
+            @Nullable Cell center
+    ) {
+        List<Edge> result = new ArrayList<>();
+        for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
+            Edge edge = closedBoundaryEdge(boundary, center);
+            if (edge != null) {
+                result.add(edge);
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static @Nullable Edge closedBoundaryEdge(
+            @Nullable DungeonClusterBoundary boundary,
+            @Nullable Cell center
+    ) {
+        if (boundary == null || boundary.isOpen() || center == null) {
+            return null;
+        }
+        return boundary.absoluteEdge(center);
     }
 }

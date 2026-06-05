@@ -3,12 +3,12 @@ package src.domain.dungeon.model.runtime.editor.session;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.DungeonTopology;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.core.projection.DungeonFeatureType;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
-import src.domain.dungeon.model.worldspace.DungeonTopology;
 
 public final class DungeonEditorWorkspaceValues {
 

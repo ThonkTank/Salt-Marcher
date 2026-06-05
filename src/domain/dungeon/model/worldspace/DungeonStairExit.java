@@ -5,17 +5,17 @@ import src.domain.dungeon.model.core.geometry.Cell;
 
 public record DungeonStairExit(
         long exitId,
-        DungeonCell position,
+        Cell position,
         String label
 ) {
 
     public DungeonStairExit {
         StairExit component = new StairExit(
                 exitId,
-                position == null ? new Cell(0, 0, 0) : position.geometry(),
+                position == null ? new Cell(0, 0, 0) : position,
                 label);
         exitId = component.exitId();
-        position = DungeonCell.fromGeometry(component.position());
+        position = component.position();
         label = component.label();
     }
 }

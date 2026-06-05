@@ -1,21 +1,21 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundary;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
 import src.domain.dungeon.model.worldspace.DungeonCorridorEndpoint;
-import src.domain.dungeon.model.worldspace.DungeonEdge;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 import src.domain.dungeon.model.worldspace.DungeonTransition;
@@ -44,9 +44,9 @@ final class DungeonTopologyInvariantHarness {
 
     private static void assertDoorTopologyIdentity() {
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(70L), "Door Topology Identity");
-        map = map.paintRoomRectangle(new DungeonCell(1, 1, 0), new DungeonCell(3, 3, 0));
-        DungeonRoomCluster cluster = clusterContainingAnchor(map, new DungeonCell(1, 1, 0));
-        DungeonEdge doorEdge = DungeonEdge.sideOf(new DungeonCell(3, 2, 0), DungeonEdgeDirection.EAST);
+        map = map.paintRoomRectangle(new Cell(1, 1, 0), new Cell(3, 3, 0));
+        DungeonRoomCluster cluster = clusterContainingAnchor(map, new Cell(1, 1, 0));
+        Edge doorEdge = Edge.sideOf(new Cell(3, 2, 0), Direction.EAST);
         DungeonTopologyRef doorRef = DungeonTopologyRef.door(DungeonBoundaryKey.from(doorEdge).stableId());
 
         DungeonMap withDoor = map.editClusterBoundaries(
@@ -66,9 +66,9 @@ final class DungeonTopologyInvariantHarness {
         DungeonMap corridorBound = corridorBoundDoorMap();
         DoorFixture boundDoor = doorFixture(
                 corridorBound,
-                clusterContainingAnchor(corridorBound, new DungeonCell(1, 1, 0)).clusterId(),
-                new DungeonCell(3, 2, 0),
-                DungeonEdgeDirection.EAST);
+                clusterContainingAnchor(corridorBound, new Cell(1, 1, 0)).clusterId(),
+                new Cell(3, 2, 0),
+                Direction.EAST);
         DungeonMap rejectedDelete = corridorBound.editClusterBoundaries(
                 boundDoor.clusterId(),
                 List.of(boundDoor.edge()),
@@ -89,18 +89,18 @@ final class DungeonTopologyInvariantHarness {
 
     private static DungeonMap corridorBoundDoorMap() {
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(71L), "Corridor Bound Door Topology");
-        map = map.paintRoomRectangle(new DungeonCell(1, 1, 0), new DungeonCell(3, 3, 0));
-        map = map.paintRoomRectangle(new DungeonCell(8, 1, 0), new DungeonCell(10, 3, 0));
+        map = map.paintRoomRectangle(new Cell(1, 1, 0), new Cell(3, 3, 0));
+        map = map.paintRoomRectangle(new Cell(8, 1, 0), new Cell(10, 3, 0));
         DoorFixture leftDoor = doorFixture(
                 map,
-                clusterContainingAnchor(map, new DungeonCell(1, 1, 0)).clusterId(),
-                new DungeonCell(3, 2, 0),
-                DungeonEdgeDirection.EAST);
+                clusterContainingAnchor(map, new Cell(1, 1, 0)).clusterId(),
+                new Cell(3, 2, 0),
+                Direction.EAST);
         DoorFixture rightDoor = doorFixture(
                 map,
-                clusterContainingAnchor(map, new DungeonCell(8, 1, 0)).clusterId(),
-                new DungeonCell(8, 2, 0),
-                DungeonEdgeDirection.WEST);
+                clusterContainingAnchor(map, new Cell(8, 1, 0)).clusterId(),
+                new Cell(8, 2, 0),
+                Direction.WEST);
         DungeonRoom leftRoom = roomInCluster(map, leftDoor.clusterId());
         DungeonRoom rightRoom = roomInCluster(map, rightDoor.clusterId());
         return map.createCorridor(
@@ -122,10 +122,10 @@ final class DungeonTopologyInvariantHarness {
     private static DoorFixture doorFixture(
             DungeonMap map,
             long clusterId,
-            DungeonCell cell,
-            DungeonEdgeDirection direction
+            Cell cell,
+            Direction direction
     ) {
-        DungeonEdge edge = DungeonEdge.sideOf(cell, direction);
+        Edge edge = Edge.sideOf(cell, direction);
         DungeonTopologyRef ref = DungeonTopologyRef.door(DungeonBoundaryKey.from(edge).stableId());
         DungeonMap withDoor = map.editClusterBoundaries(
                 clusterId,
@@ -138,9 +138,9 @@ final class DungeonTopologyInvariantHarness {
 
     private static void assertTransitionTopologyIdentity() {
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(72L), "Transition Topology Identity")
-                .createTransition(40L, new DungeonCell(2, 0, 0), false, 500L, 9L, null)
-                .createTransition(41L, new DungeonCell(3, 0, 0), false, 500L, 10L, null)
-                .createTransition(42L, new DungeonCell(4, 0, 0), false, 500L, 11L, null);
+                .createTransition(40L, new Cell(2, 0, 0), false, 500L, 9L, null)
+                .createTransition(41L, new Cell(3, 0, 0), false, 500L, 10L, null)
+                .createTransition(42L, new Cell(4, 0, 0), false, 500L, 11L, null);
         DungeonTopologyRef firstRef = transitionRef(40L);
         DungeonTopologyRef linkedRef = transitionRef(41L);
         DungeonTopologyRef deletableRef = transitionRef(42L);
@@ -184,7 +184,7 @@ final class DungeonTopologyInvariantHarness {
         return new DungeonTopologyRef(DungeonTopologyElementKind.TRANSITION, transitionId);
     }
 
-    private static DungeonRoomCluster clusterContainingAnchor(DungeonMap map, DungeonCell cell) {
+    private static DungeonRoomCluster clusterContainingAnchor(DungeonMap map, Cell cell) {
         for (DungeonRoom room : map.rooms().rooms()) {
             if (room.primaryAnchor().equals(cell)) {
                 return clusterById(map, room.clusterId());
@@ -211,7 +211,7 @@ final class DungeonTopologyInvariantHarness {
         throw new IllegalStateException("No room found for clusterId=" + clusterId);
     }
 
-    private static boolean hasDoorBoundary(DungeonMap map, long clusterId, DungeonEdge edge) {
+    private static boolean hasDoorBoundary(DungeonMap map, long clusterId, Edge edge) {
         DungeonRoomCluster cluster = clusterById(map, clusterId);
         for (List<DungeonClusterBoundary> boundaries : cluster.boundariesByLevel().values()) {
             for (DungeonClusterBoundary boundary : boundaries) {
@@ -257,9 +257,9 @@ final class DungeonTopologyInvariantHarness {
 
     private record DoorFixture(
             long clusterId,
-            DungeonCell cell,
-            DungeonEdgeDirection direction,
-            DungeonEdge edge,
+            Cell cell,
+            Direction direction,
+            Edge edge,
             DungeonTopologyRef ref
     ) {
     }

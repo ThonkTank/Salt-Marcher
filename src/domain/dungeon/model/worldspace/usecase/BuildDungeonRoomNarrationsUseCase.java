@@ -5,16 +5,16 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.graph.DungeonTraversalEndpoint;
 import src.domain.dungeon.model.core.graph.DungeonTraversalLink;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 
@@ -73,7 +73,7 @@ final class BuildDungeonRoomNarrationsUseCase {
             DungeonRoom room
     ) {
         Optional<DungeonAreaFacts> area = areaForRoom(derived, room.roomId());
-        Set<DungeonCell> roomCells = area.isPresent() ? Set.copyOf(area.get().cells()) : Set.of();
+        Set<Cell> roomCells = area.isPresent() ? Set.copyOf(area.get().cells()) : Set.of();
         List<LoadDungeonSnapshotUseCase.RoomExitNarrationData> exits = new ArrayList<>();
         for (DungeonTraversalLink link : derived.traversalLinks()) {
             if (link.touches(roomCells)) {
@@ -95,10 +95,10 @@ final class BuildDungeonRoomNarrationsUseCase {
     private static Optional<LoadDungeonSnapshotUseCase.RoomExitNarrationData> exitNarration(
             DungeonRoom room,
             DungeonTraversalLink link,
-            Set<DungeonCell> roomCells
+            Set<Cell> roomCells
     ) {
         DungeonTraversalEndpoint endpoint = link.endpointFrom(roomCells);
-        DungeonEdgeDirection direction = endpoint == null ? null : link.directionFrom(endpoint.tile());
+        Direction direction = endpoint == null ? null : link.directionFrom(endpoint.tile());
         if (endpoint == null || direction == null) {
             return Optional.empty();
         }
@@ -111,8 +111,8 @@ final class BuildDungeonRoomNarrationsUseCase {
 
     private static String matchingExitDescription(
             DungeonRoom room,
-            DungeonCell roomCell,
-            DungeonEdgeDirection direction
+            Cell roomCell,
+            Direction direction
     ) {
         for (DungeonRoomExitDescription exit : room.narration().exitDescriptions()) {
             if (matchesExitDescription(exit, roomCell, direction)) {
@@ -124,8 +124,8 @@ final class BuildDungeonRoomNarrationsUseCase {
 
     private static boolean matchesExitDescription(
             DungeonRoomExitDescription exit,
-            DungeonCell roomCell,
-            DungeonEdgeDirection direction
+            Cell roomCell,
+            Direction direction
     ) {
         return exit.roomCell().equals(roomCell) && exit.direction() == direction;
     }

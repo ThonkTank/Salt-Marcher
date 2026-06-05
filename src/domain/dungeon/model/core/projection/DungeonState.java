@@ -1,12 +1,12 @@
 package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
-import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.core.geometry.Cell;
 
 /**
  * Identity-bearing authored dungeon area.
  */
-public record DungeonState(long id, DungeonAreaType kind, String label, List<DungeonCell> cells) {
+public record DungeonState(long id, DungeonAreaType kind, String label, List<Cell> cells) {
 
     public DungeonState {
         kind = kind == null ? DungeonAreaType.ROOM : kind;

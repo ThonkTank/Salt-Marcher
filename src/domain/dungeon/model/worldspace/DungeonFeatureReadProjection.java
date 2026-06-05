@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.ArrayList;
 import java.util.List;
+import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonFeatureType;
@@ -31,7 +32,7 @@ public final class DungeonFeatureReadProjection {
                     DungeonFeatureType.STAIR,
                     stair.stairId(),
                     stair.name(),
-                    DungeonCell.sortedByGeometry(stair.occupiedCells()),
+                    CellOrdering.sortedCells(stair.occupiedCells()),
                     stairDescription(stair),
                     stairDestinationLabel(stair),
                     stairFacts(stair)));

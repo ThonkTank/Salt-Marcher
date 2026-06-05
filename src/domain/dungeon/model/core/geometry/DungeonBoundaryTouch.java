@@ -1,9 +1,8 @@
 package src.domain.dungeon.model.core.geometry;
 
 import java.util.List;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 
-public record DungeonBoundaryTouch(List<DungeonCell> insideCells) {
+public record DungeonBoundaryTouch(List<Cell> insideCells) {
 
     public DungeonBoundaryTouch {
         insideCells = insideCells == null ? List.of() : List.copyOf(insideCells);

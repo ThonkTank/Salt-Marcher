@@ -1,5 +1,6 @@
 package src.domain.dungeon.model.worldspace;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -8,7 +9,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan;
 
 public final class DungeonBoundaryStretchValueTypes {
@@ -35,19 +39,19 @@ public final class DungeonBoundaryStretchValueTypes {
             return other != null && this != other;
         }
 
-        public DungeonEdge move(DungeonEdge edge, int movement) {
+        public Edge move(Edge edge, int movement) {
             if (this == VERTICAL) {
-                return new DungeonEdge(
-                        new DungeonCell(edge.from().q() + movement, edge.from().r(), edge.from().level()),
-                        new DungeonCell(edge.to().q() + movement, edge.to().r(), edge.to().level()));
+                return new Edge(
+                        new Cell(edge.from().q() + movement, edge.from().r(), edge.from().level()),
+                        new Cell(edge.to().q() + movement, edge.to().r(), edge.to().level()));
             }
-            return new DungeonEdge(
-                    new DungeonCell(edge.from().q(), edge.from().r() + movement, edge.from().level()),
-                    new DungeonCell(edge.to().q(), edge.to().r() + movement, edge.to().level()));
+            return new Edge(
+                    new Cell(edge.from().q(), edge.from().r() + movement, edge.from().level()),
+                    new Cell(edge.to().q(), edge.to().r() + movement, edge.to().level()));
         }
     }
 
-    public record ConnectorAction(boolean removesBoundaries, List<DungeonEdge> path) {
+    public record ConnectorAction(boolean removesBoundaries, List<Edge> path) {
 
         public ConnectorAction {
             path = path == null ? List.of() : List.copyOf(path);
@@ -55,7 +59,7 @@ public final class DungeonBoundaryStretchValueTypes {
     }
 
     public record StretchEdge(
-            DungeonEdge edge,
+            Edge edge,
             DungeonBoundaryKey key,
             @Nullable DungeonClusterBoundary existing
     ) {
@@ -107,32 +111,57 @@ public final class DungeonBoundaryStretchValueTypes {
 
         static StretchSelection fromCore(
                 RoomClusterBoundaryStretchPlan.Selection coreSelection,
-                List<StretchEdge> edges,
-                Set<DungeonBoundaryKey> sourceKeys
+                Map<EdgeKey, DungeonClusterBoundary> boundariesByKey
         ) {
             return new StretchSelection(
                     coreSelection.level(),
                     StretchOrientation.valueOf(coreSelection.orientation().name()),
                     coreSelection.outer(),
                     coreSelection.movement(),
-                    edges,
-                    sourceKeys,
+                    stretchEdges(coreSelection, boundariesByKey),
+                    sourceKeys(coreSelection),
                     coreSelection);
         }
 
         @Override
         public List<StretchEdge> edges() {
-            return Collections.unmodifiableList(new java.util.ArrayList<>(edges));
+            return Collections.unmodifiableList(new ArrayList<>(edges));
         }
 
         @Override
         public Set<DungeonBoundaryKey> sourceKeys() {
             return Collections.unmodifiableSet(new LinkedHashSet<>(sourceKeys));
         }
+
+        private static List<StretchEdge> stretchEdges(
+                RoomClusterBoundaryStretchPlan.Selection coreSelection,
+                Map<EdgeKey, DungeonClusterBoundary> boundariesByKey
+        ) {
+            List<StretchEdge> result = new ArrayList<>();
+            for (RoomClusterBoundaryStretchPlan.StretchEdge edge : coreSelection.edges()) {
+                result.add(new StretchEdge(
+                        edge.edge(),
+                        boundaryKey(edge.key()),
+                        boundariesByKey.get(edge.key())));
+            }
+            return List.copyOf(result);
+        }
+
+        private static Set<DungeonBoundaryKey> sourceKeys(RoomClusterBoundaryStretchPlan.Selection coreSelection) {
+            Set<DungeonBoundaryKey> result = new LinkedHashSet<>();
+            for (EdgeKey key : coreSelection.sourceKeys()) {
+                result.add(boundaryKey(key));
+            }
+            return result;
+        }
+
+        private static DungeonBoundaryKey boundaryKey(EdgeKey key) {
+            return new DungeonBoundaryKey(key.lower(), key.upper());
+        }
     }
 
     public record StretchMutationResult(
-            Map<Integer, List<DungeonCell>> cellsByLevel,
+            Map<Integer, List<Cell>> cellsByLevel,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
         public StretchMutationResult {
@@ -141,7 +170,7 @@ public final class DungeonBoundaryStretchValueTypes {
         }
 
         @Override
-        public Map<Integer, List<DungeonCell>> cellsByLevel() {
+        public Map<Integer, List<Cell>> cellsByLevel() {
             return copyListsByLevel(cellsByLevel);
         }
 

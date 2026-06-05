@@ -1,10 +1,10 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 
 public final class CreateDungeonEditorAuthoredStairUseCase {
 
@@ -22,7 +22,7 @@ public final class CreateDungeonEditorAuthoredStairUseCase {
         this.repository = Objects.requireNonNull(repository, "repository");
     }
 
-    public void execute(MapId mapId, DungeonCell anchor, String shapeName) {
+    public void execute(MapId mapId, Cell anchor, String shapeName) {
         Objects.requireNonNull(mapId, "mapId");
         Objects.requireNonNull(anchor, "anchor");
         long stairId = repository.nextStairId();
@@ -32,7 +32,7 @@ public final class CreateDungeonEditorAuthoredStairUseCase {
         publishMutationUseCase.execute(result);
     }
 
-    boolean canExecute(MapId mapId, DungeonCell anchor, String shapeName) {
+    boolean canExecute(MapId mapId, Cell anchor, String shapeName) {
         return mapId != null
                 && anchor != null
                 && mutationUseCase.canCreateStair(

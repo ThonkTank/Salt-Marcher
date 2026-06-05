@@ -14,7 +14,7 @@ final class DungeonCorridorRouteSplitLogic {
     DungeonCorridor bindInteriorRouteAnchors(
             DungeonMap dungeonMap,
             DungeonCorridor corridor,
-            List<DungeonCell> routeCells,
+            List<Cell> routeCells,
             DungeonCorridorEndpointResolutionLogic.ResolvedEndpointResult startResolved,
             DungeonCorridorEndpointResolutionLogic.ResolvedEndpointResult endResolved
     ) {
@@ -24,14 +24,14 @@ final class DungeonCorridorRouteSplitLogic {
         long waypointClusterId = waypointClusterId(
                 startResolved.endpoint().binding(),
                 endResolved.endpoint().binding());
-        DungeonCell clusterCenter = clusterCenter(dungeonMap, waypointClusterId);
+        Cell clusterCenter = clusterCenter(dungeonMap, waypointClusterId);
         if (clusterCenter == null) {
             return corridor;
         }
         CorridorRoutePlan routePlan = new CorridorRoutePlan(
-                coreRouteCells(routeCells),
+                nonNullRouteCells(routeCells),
                 waypointClusterId,
-                clusterCenter.geometry());
+                clusterCenter);
         return corridor.withBindings(corridor.bindings().withInteriorRouteAnchors(routePlan, routeAnchors(dungeonMap)));
     }
 
@@ -49,7 +49,7 @@ final class DungeonCorridorRouteSplitLogic {
     }
 
     @Nullable
-    private static DungeonCell clusterCenter(DungeonMap dungeonMap, long clusterId) {
+    private static Cell clusterCenter(DungeonMap dungeonMap, long clusterId) {
         if (clusterId <= MISSING_CLUSTER_ID) {
             return null;
         }
@@ -73,11 +73,11 @@ final class DungeonCorridorRouteSplitLogic {
         return List.copyOf(result);
     }
 
-    private static List<Cell> coreRouteCells(List<DungeonCell> routeCells) {
+    private static List<Cell> nonNullRouteCells(List<Cell> routeCells) {
         List<Cell> result = new ArrayList<>();
-        for (DungeonCell cell : routeCells) {
+        for (Cell cell : routeCells) {
             if (cell != null) {
-                result.add(cell.geometry());
+                result.add(cell);
             }
         }
         return List.copyOf(result);

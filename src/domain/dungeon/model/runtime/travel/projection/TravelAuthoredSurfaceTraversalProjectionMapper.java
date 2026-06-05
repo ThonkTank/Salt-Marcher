@@ -34,11 +34,11 @@ final class TravelAuthoredSurfaceTraversalProjectionMapper {
                         link.source().id(),
                         link.source().label()),
                 new TraversalEndpoint(
-                        TravelGeometryProjectionMapper.toCoreCell(link.firstEndpoint().tile()),
+                        TravelGeometryProjectionMapper.cellOrOrigin(link.firstEndpoint().tile()),
                         link.firstEndpoint().areaId(),
                         link.firstEndpoint().areaLabel()),
                 new TraversalEndpoint(
-                        TravelGeometryProjectionMapper.toCoreCell(link.secondEndpoint().tile()),
+                        TravelGeometryProjectionMapper.cellOrOrigin(link.secondEndpoint().tile()),
                         link.secondEndpoint().areaId(),
                         link.secondEndpoint().areaLabel()));
     }

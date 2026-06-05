@@ -3,9 +3,13 @@ package src.domain.dungeon.model.worldspace;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
-import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
 /**
@@ -65,7 +69,7 @@ public record DungeonMap(
 
     public DungeonMap moveBoundaryStretch(
             long clusterId,
-            List<DungeonEdge> sourceEdges,
+            List<Edge> sourceEdges,
             int deltaQ,
             int deltaR,
             int deltaLevel
@@ -102,8 +106,8 @@ public record DungeonMap(
         if (transitionId <= NO_TRANSITION_ID) {
             return this;
         }
-        ConnectionCatalog nextConnections = connections.transitionOperations()
-                .withTransitionDescription(transitionId, description);
+        ConnectionCatalog nextConnections = connections.withTransitions(
+                DungeonTransition.withDescription(connections.transitionCatalog(), transitionId, description));
         return nextConnections.equals(connections)
                 ? this
                 : new DungeonMap(
@@ -116,7 +120,7 @@ public record DungeonMap(
     }
 
     public boolean canDeleteTransition(long transitionId) {
-        return connections.transitionOperations().canDeleteTransition(transitionId);
+        return DungeonTransition.canDelete(connections.transitionCatalog(), transitionId);
     }
 
     public @Nullable DungeonTransition transitionById(long transitionId) {
@@ -128,27 +132,17 @@ public record DungeonMap(
         return null;
     }
 
-    public DungeonMap withTransitionConnections(ConnectionCatalog nextConnections) {
-        if (nextConnections == null
-                || nextConnections.equals(connections)
-                || !nextConnections.corridors().equals(connections.corridors())
-                || !nextConnections.stairs().equals(connections.stairs())) {
-            return this;
-        }
-        return new DungeonMap(
-                metadata,
-                topology,
-                null,
-                rooms,
-                nextConnections,
-                revision + 1L);
+    public DungeonMap withMapLocalAuthoredTransitionLink(AuthoredTransitionLink link) {
+        return withTransitionCatalogRevision(
+                DungeonTransition.withMapLocalAuthoredTransitionLink(connections.transitionCatalog(), link));
     }
 
     public DungeonMap deleteTransition(long transitionId) {
         if (!canDeleteTransition(transitionId)) {
             return this;
         }
-        ConnectionCatalog nextConnections = connections.transitionOperations().withoutTransition(transitionId);
+        ConnectionCatalog nextConnections = connections.withTransitions(
+                DungeonTransition.withoutTransition(connections.transitionCatalog(), transitionId));
         return new DungeonMap(
                 metadata,
                 topology,
@@ -159,7 +153,7 @@ public record DungeonMap(
     }
 
     public boolean canDeleteStair(long stairId) {
-        return stairId > NO_STAIR_ID && connections.stairOperations().canDeleteUnboundStair(stairId);
+        return stairId > NO_STAIR_ID && DungeonStair.canDeleteUnbound(connections.stairCollection(), stairId);
     }
 
     public DungeonMap deleteStair(long stairId) {
@@ -171,18 +165,19 @@ public record DungeonMap(
                 topology,
                 null,
                 rooms,
-                connections.stairOperations().withoutStair(stairId),
+                connections.withStairs(DungeonStair.withoutUnbound(connections.stairCollection(), stairId)),
                 revision + 1L);
     }
 
-    public DungeonMap createStair(long stairId, DungeonCell anchor, String shapeName) {
-        ConnectionCatalog nextConnections = connections.stairOperations().withStair(
+    public DungeonMap createStair(long stairId, Cell anchor, String shapeName) {
+        ConnectionCatalog nextConnections = connections.withStairs(DungeonStair.withCreated(
+                connections.stairCollection(),
                 stairId,
                 metadata.mapId().value(),
                 anchor,
                 shapeName,
                 topology,
-                rooms);
+                rooms));
         if (nextConnections.equals(connections)) {
             return this;
         }
@@ -195,26 +190,27 @@ public record DungeonMap(
                 revision + 1L);
     }
 
-    public boolean canCreateStair(DungeonCell anchor, String shapeName) {
-        return connections.stairOperations().canCreateStair(anchor, shapeName, topology, rooms);
+    public boolean canCreateStair(Cell anchor, String shapeName) {
+        return DungeonStair.canCreate(connections.stairCollection(), anchor, shapeName, topology, rooms);
     }
 
     public DungeonMap createTransition(
             long transitionId,
-            DungeonCell anchor,
+            Cell anchor,
             boolean dungeonMapDestination,
             long destinationMapId,
             long destinationTileId,
             @Nullable Long destinationTransitionId
     ) {
-        ConnectionCatalog nextConnections = connections.transitionOperations().withTransition(
+        ConnectionCatalog nextConnections = connections.withTransitions(DungeonTransition.withCreated(
+                connections.transitionCatalog(),
                 transitionId,
                 metadata.mapId().value(),
                 anchor,
                 dungeonMapDestination,
                 destinationMapId,
                 destinationTileId,
-                destinationTransitionId);
+                destinationTransitionId));
         if (nextConnections.equals(connections)) {
             return this;
         }
@@ -228,13 +224,14 @@ public record DungeonMap(
     }
 
     public boolean canCreateTransition(
-            DungeonCell anchor,
+            Cell anchor,
             boolean dungeonMapDestination,
             long destinationMapId,
             long destinationTileId,
             @Nullable Long destinationTransitionId
     ) {
-        return connections.transitionOperations().canCreateTransition(
+        return DungeonTransition.canCreate(
+                connections.transitionCatalog(),
                 anchor,
                 dungeonMapDestination,
                 destinationMapId,
@@ -249,7 +246,8 @@ public record DungeonMap(
             int dimension1,
             int dimension2
     ) {
-        return connections.stairOperations().canRecomputeStair(
+        return DungeonStair.canRecompute(
+                connections.stairCollection(),
                 stairId,
                 shapeName,
                 directionName,
@@ -269,14 +267,15 @@ public record DungeonMap(
         if (!canSaveStairGeometry(stairId, shapeName, directionName, dimension1, dimension2)) {
             return this;
         }
-        ConnectionCatalog nextConnections = connections.stairOperations().withRecomputedStair(
+        ConnectionCatalog nextConnections = connections.withStairs(DungeonStair.withRecomputed(
+                connections.stairCollection(),
                 stairId,
                 shapeName,
                 directionName,
                 dimension1,
                 dimension2,
                 topology,
-                rooms);
+                rooms));
         if (nextConnections.equals(connections)) {
             return this;
         }
@@ -289,17 +288,31 @@ public record DungeonMap(
                 revision + 1L);
     }
 
-    public DungeonMap paintRoomRectangle(DungeonCell start, DungeonCell end) {
+    private DungeonMap withTransitionCatalogRevision(TransitionCatalog nextTransitions) {
+        ConnectionCatalog nextConnections = connections.withTransitions(nextTransitions);
+        if (nextConnections.equals(connections)) {
+            return this;
+        }
+        return new DungeonMap(
+                metadata,
+                topology,
+                null,
+                rooms,
+                nextConnections,
+                revision + 1L);
+    }
+
+    public DungeonMap paintRoomRectangle(Cell start, Cell end) {
         return ROOM_TOPOLOGY_EDITOR.paintRectangle(this, start, end);
     }
 
-    public DungeonMap deleteRoomRectangle(DungeonCell start, DungeonCell end) {
+    public DungeonMap deleteRoomRectangle(Cell start, Cell end) {
         return ROOM_TOPOLOGY_EDITOR.deleteRectangle(this, start, end);
     }
 
     public DungeonMap editClusterBoundaries(
             long clusterId,
-            List<DungeonEdge> edges,
+            List<Edge> edges,
             DungeonClusterBoundaryKind kind,
             boolean deleteBoundary
     ) {

@@ -3,10 +3,10 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.Locale;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 
 public final class ApplyDungeonEditorCreateTransitionUseCase {
@@ -33,7 +33,7 @@ public final class ApplyDungeonEditorCreateTransitionUseCase {
             effectUseCase.publishCurrent();
             return;
         }
-        DungeonCell anchor = anchor(input);
+        Cell anchor = anchor(input);
         DungeonTransitionDestination destination = destination(input);
         if (!createTransitionUseCase.canExecute(workflow.session().selectedMapId(), anchor, destination)) {
             workflow.clearPreviewWithStatus(INVALID_TRANSITION_DESTINATION_STATUS);
@@ -45,8 +45,8 @@ public final class ApplyDungeonEditorCreateTransitionUseCase {
         effectUseCase.publishCurrent();
     }
 
-    private DungeonCell anchor(MainViewInput input) {
-        return new DungeonCell(
+    private Cell anchor(MainViewInput input) {
+        return new Cell(
                 (int) Math.floor(input.canvasX()),
                 (int) Math.floor(input.canvasY()),
                 workflow.session().projectionLevel());

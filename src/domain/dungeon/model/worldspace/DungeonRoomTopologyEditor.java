@@ -2,6 +2,8 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Edge;
 
 public final class DungeonRoomTopologyEditor {
 
@@ -12,18 +14,18 @@ public final class DungeonRoomTopologyEditor {
     private static final DungeonBoundaryStretchEditLogic STRETCH_EDIT_SERVICE =
             new DungeonBoundaryStretchEditLogic();
 
-    public DungeonMap paintRectangle(DungeonMap dungeonMap, DungeonCell start, DungeonCell end) {
+    public DungeonMap paintRectangle(DungeonMap dungeonMap, Cell start, Cell end) {
         return RECTANGLE_MUTATION_SERVICE.paintRectangle(requireDungeonMap(dungeonMap), start, end);
     }
 
-    public DungeonMap deleteRectangle(DungeonMap dungeonMap, DungeonCell start, DungeonCell end) {
+    public DungeonMap deleteRectangle(DungeonMap dungeonMap, Cell start, Cell end) {
         return RECTANGLE_MUTATION_SERVICE.deleteRectangle(requireDungeonMap(dungeonMap), start, end);
     }
 
     public DungeonMap editBoundaries(
             DungeonMap dungeonMap,
             long clusterId,
-            List<DungeonEdge> edges,
+            List<Edge> edges,
             DungeonClusterBoundaryKind kind,
             boolean deleteBoundary
     ) {
@@ -33,7 +35,7 @@ public final class DungeonRoomTopologyEditor {
     public DungeonMap moveBoundaryStretch(
             DungeonMap dungeonMap,
             long clusterId,
-            List<DungeonEdge> sourceEdges,
+            List<Edge> sourceEdges,
             int deltaQ,
             int deltaR,
             int deltaLevel

@@ -1,10 +1,10 @@
 package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonStairShape;
 
 public final class ApplyDungeonEditorCreateStairUseCase {
@@ -41,7 +41,7 @@ public final class ApplyDungeonEditorCreateStairUseCase {
             effectUseCase.publishCurrent();
             return;
         }
-        DungeonCell anchor = anchor(input);
+        Cell anchor = anchor(input);
         if (!createStairUseCase.canExecute(workflow.session().selectedMapId(), anchor, shape.name())) {
             workflow.clearPreviewWithStatus(INVALID_STAIR_GEOMETRY_STATUS);
             effectUseCase.publishCurrent();
@@ -52,8 +52,8 @@ public final class ApplyDungeonEditorCreateStairUseCase {
         effectUseCase.publishCurrent();
     }
 
-    private DungeonCell anchor(MainViewInput input) {
-        return new DungeonCell(
+    private Cell anchor(MainViewInput input) {
+        return new Cell(
                 (int) Math.floor(input.canvasX()),
                 (int) Math.floor(input.canvasY()),
                 workflow.session().projectionLevel());

@@ -8,26 +8,23 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.door.Door;
 import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.door.DoorIndex;
+import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan;
-import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
-import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
-import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonDerivedStateProjection;
-import src.domain.dungeon.model.worldspace.DungeonEdge;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 
 final class DungeonWallInvariantHarness {
@@ -270,9 +267,9 @@ final class DungeonWallInvariantHarness {
     private static void assertDungeonLevelWallProjection() {
         DungeonMap map = projectionMap();
         DungeonDerivedState derived = new DungeonDerivedStateProjection().project(map);
-        DungeonEdge firstNorthWall = DungeonEdge.sideOf(new DungeonCell(1, 1, 0), DungeonEdgeDirection.NORTH);
-        DungeonEdge secondNorthWall = DungeonEdge.sideOf(new DungeonCell(5, 1, 0), DungeonEdgeDirection.NORTH);
-        Set<DungeonEdge> projectedWalls = wallEdges(derived);
+        Edge firstNorthWall = Edge.sideOf(new Cell(1, 1, 0), Direction.NORTH);
+        Edge secondNorthWall = Edge.sideOf(new Cell(5, 1, 0), Direction.NORTH);
+        Set<Edge> projectedWalls = wallEdges(derived);
 
         assertTrue(projectedWalls.contains(firstNorthWall),
                 "wall projection includes first structure-owned wall boundary");
@@ -284,13 +281,13 @@ final class DungeonWallInvariantHarness {
         assertEquals(projectedWalls, wallEdges(derived),
                 "rejected projection mutation leaves derived wall facts unchanged");
 
-        long firstClusterId = clusterIdForAnchor(map, new DungeonCell(1, 1, 0));
+        long firstClusterId = clusterIdForAnchor(map, new Cell(1, 1, 0));
         DungeonMap opened = map.editClusterBoundaries(
                 firstClusterId,
                 List.of(firstNorthWall),
                 DungeonClusterBoundaryKind.OPEN,
                 false);
-        Set<DungeonEdge> openedWalls = wallEdges(new DungeonDerivedStateProjection().project(opened));
+        Set<Edge> openedWalls = wallEdges(new DungeonDerivedStateProjection().project(opened));
         assertFalse(openedWalls.contains(firstNorthWall),
                 "wall projection changes only after routing boundary mutation through DungeonMap structure ownership");
         assertEquals(projectedWalls, wallEdges(derived),
@@ -299,24 +296,24 @@ final class DungeonWallInvariantHarness {
 
     private static DungeonMap projectionMap() {
         DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(81L), "Wall Projection")
-                .paintRoomRectangle(new DungeonCell(1, 1, 0), new DungeonCell(2, 1, 0))
-                .paintRoomRectangle(new DungeonCell(5, 1, 0), new DungeonCell(6, 1, 0));
-        DungeonEdge firstNorthWall = DungeonEdge.sideOf(new DungeonCell(1, 1, 0), DungeonEdgeDirection.NORTH);
-        DungeonEdge secondNorthWall = DungeonEdge.sideOf(new DungeonCell(5, 1, 0), DungeonEdgeDirection.NORTH);
+                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 1, 0))
+                .paintRoomRectangle(new Cell(5, 1, 0), new Cell(6, 1, 0));
+        Edge firstNorthWall = Edge.sideOf(new Cell(1, 1, 0), Direction.NORTH);
+        Edge secondNorthWall = Edge.sideOf(new Cell(5, 1, 0), Direction.NORTH);
         map = map.editClusterBoundaries(
-                clusterIdForAnchor(map, new DungeonCell(1, 1, 0)),
+                clusterIdForAnchor(map, new Cell(1, 1, 0)),
                 List.of(firstNorthWall),
                 DungeonClusterBoundaryKind.WALL,
                 false);
         return map.editClusterBoundaries(
-                clusterIdForAnchor(map, new DungeonCell(5, 1, 0)),
+                clusterIdForAnchor(map, new Cell(5, 1, 0)),
                 List.of(secondNorthWall),
                 DungeonClusterBoundaryKind.WALL,
                 false);
     }
 
-    private static Set<DungeonEdge> wallEdges(DungeonDerivedState derived) {
-        java.util.LinkedHashSet<DungeonEdge> result = new java.util.LinkedHashSet<>();
+    private static Set<Edge> wallEdges(DungeonDerivedState derived) {
+        java.util.LinkedHashSet<Edge> result = new java.util.LinkedHashSet<>();
         for (DungeonBoundaryFacts boundary : derived.map().boundaries()) {
             if ("wall".equals(boundary.kind())) {
                 result.add(boundary.edge());
@@ -325,7 +322,7 @@ final class DungeonWallInvariantHarness {
         return Set.copyOf(result);
     }
 
-    private static long clusterIdForAnchor(DungeonMap map, DungeonCell anchor) {
+    private static long clusterIdForAnchor(DungeonMap map, Cell anchor) {
         for (DungeonRoom room : map.rooms().rooms()) {
             if (room.primaryAnchor().equals(anchor)) {
                 return room.clusterId();

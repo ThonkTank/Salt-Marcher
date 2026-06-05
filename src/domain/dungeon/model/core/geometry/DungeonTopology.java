@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.geometry;
 
 public final class DungeonTopology {
     public static final DungeonTopology SQUARE = new DungeonTopology("SQUARE");

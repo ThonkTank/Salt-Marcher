@@ -1,20 +1,23 @@
 package src.domain.dungeon.model.worldspace;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.door.Door;
+import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.door.DoorIndex;
+import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 
 final class DungeonClusterBoundaryDoorRules {
 
     private static final DungeonCorridorBindingLookupLogic CORRIDOR_BINDING_LOOKUP_SERVICE =
             new DungeonCorridorBindingLookupLogic();
-    private static final DungeonClusterBoundaryDoorDecisionAdapter DOOR_DECISION_ADAPTER =
-            new DungeonClusterBoundaryDoorDecisionAdapter();
 
     boolean removeBoundaryIfAllowed(
             DungeonMap dungeonMap,
@@ -47,10 +50,10 @@ final class DungeonClusterBoundaryDoorRules {
     }
 
     boolean upsertBoundaryIfAllowed(
-            Map<Long, List<DungeonCell>> roomCells,
+            Map<Long, List<Cell>> roomCells,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             DungeonClusterBoundaryKind resolvedKind,
-            DungeonEdge edge,
+            Edge edge,
             DungeonBoundaryKey key,
             @Nullable DungeonClusterBoundary existing,
             DungeonClusterBoundary candidate
@@ -75,17 +78,30 @@ final class DungeonClusterBoundaryDoorRules {
     }
 
     private boolean doorInsertionAllowed(
-            Map<Long, List<DungeonCell>> roomCells,
+            Map<Long, List<Cell>> roomCells,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
-            DungeonEdge edge,
+            Edge edge,
             @Nullable DungeonClusterBoundary existing,
             DungeonClusterBoundary candidate
     ) {
-        if (!DOOR_DECISION_ADAPTER.allowsDoorMaterialization(existing, edge, roomCells)) {
+        if (!RoomClusterDoorBoundaryMaterialization.forEdge(edge, roomCells, boundaryKind(existing))
+                .materializesDoor()) {
             return false;
         }
         DoorIndex currentDoors = DoorIndex.from(doors(boundaries.values()));
         return !currentDoors.withDoor(door(candidate)).equals(currentDoors);
+    }
+
+    private static DoorBoundaryMaterialization.ExistingBoundaryKind boundaryKind(
+            @Nullable DungeonClusterBoundary boundary
+    ) {
+        if (boundary == null) {
+            return DoorBoundaryMaterialization.ExistingBoundaryKind.NONE;
+        }
+        if (boundary.kind() == DungeonClusterBoundaryKind.DOOR) {
+            return DoorBoundaryMaterialization.ExistingBoundaryKind.DOOR;
+        }
+        return DoorBoundaryMaterialization.ExistingBoundaryKind.NON_DOOR;
     }
 
     private static List<Door> doors(Iterable<DungeonClusterBoundary> boundaries) {
@@ -93,7 +109,7 @@ final class DungeonClusterBoundaryDoorRules {
     }
 
     private static List<Door> doorsExcept(DungeonClusterBoundary removed, Iterable<DungeonClusterBoundary> boundaries) {
-        List<Door> result = new java.util.ArrayList<>();
+        List<Door> result = new ArrayList<>();
         for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
             if (boundary != null && boundary != removed && boundary.kind() == DungeonClusterBoundaryKind.DOOR) {
                 result.add(door(boundary));
@@ -107,8 +123,8 @@ final class DungeonClusterBoundaryDoorRules {
                 boundary.resolvedTopologyRef(null).id(),
                 0L,
                 boundary.clusterId(),
-                boundary.relativeCell().geometry(),
-                boundary.direction().geometry());
+                boundary.relativeCell(),
+                boundary.direction());
     }
 
     private static Door doorBoundaryProjection(DungeonClusterBoundary boundary) {
@@ -120,8 +136,8 @@ final class DungeonClusterBoundaryDoorRules {
         return new DungeonClusterBoundary(
                 state.clusterId(),
                 state.level(),
-                DungeonCell.fromGeometry(state.relativeCell()),
-                DungeonEdgeDirection.valueOf(state.direction().name()),
+                state.relativeCell(),
+                state.direction(),
                 DungeonClusterBoundaryKind.DOOR,
                 candidate.topologyRef());
     }
@@ -131,8 +147,8 @@ final class DungeonClusterBoundaryDoorRules {
         return new DungeonClusterBoundary(
                 state.clusterId(),
                 state.level(),
-                DungeonCell.fromGeometry(state.relativeCell()),
-                DungeonEdgeDirection.valueOf(state.direction().name()),
+                state.relativeCell(),
+                state.direction(),
                 DungeonClusterBoundaryKind.WALL,
                 DungeonTopologyRef.empty());
     }

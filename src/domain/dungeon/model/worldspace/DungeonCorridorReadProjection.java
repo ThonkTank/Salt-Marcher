@@ -4,6 +4,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonCorridorProjection;
@@ -17,13 +18,13 @@ public final class DungeonCorridorReadProjection {
             List<DungeonCorridor> corridors,
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
-            Map<Long, List<DungeonCell>> roomCellsByRoom,
+            Map<Long, List<Cell>> roomCellsByRoom,
             long boundaryIdCursor,
             Map<DungeonBoundaryKey, Long> existingDoorIdsByKey
     ) {
         DungeonCorridorProjectionAssembler result =
                 new DungeonCorridorProjectionAssembler(boundaryIdCursor, existingDoorIdsByKey);
-        Set<DungeonCell> allRoomCells = allRoomCells(roomCellsByRoom);
+        Set<Cell> allRoomCells = allRoomCells(roomCellsByRoom);
         Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef =
                 ENDPOINT_RESOLVER.anchorBindingsByRef(corridors);
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
@@ -41,9 +42,9 @@ public final class DungeonCorridorReadProjection {
         return result.toProjection();
     }
 
-    private static Set<DungeonCell> allRoomCells(Map<Long, List<DungeonCell>> roomCellsByRoom) {
-        Set<DungeonCell> result = new LinkedHashSet<>();
-        for (List<DungeonCell> roomCells : roomCellsByRoom.values()) {
+    private static Set<Cell> allRoomCells(Map<Long, List<Cell>> roomCellsByRoom) {
+        Set<Cell> result = new LinkedHashSet<>();
+        for (List<Cell> roomCells : roomCellsByRoom.values()) {
             result.addAll(roomCells);
         }
         return Set.copyOf(result);

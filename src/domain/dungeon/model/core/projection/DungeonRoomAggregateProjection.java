@@ -2,7 +2,7 @@ package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
 import java.util.Map;
-import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 
 public final class DungeonRoomAggregateProjection {
@@ -15,10 +15,10 @@ public final class DungeonRoomAggregateProjection {
             List<DungeonAreaFacts> areas,
             long clusterId,
             List<DungeonRoom> clusterRooms,
-            Map<Long, List<DungeonCell>> roomCells
+            Map<Long, List<Cell>> roomCells
     ) {
         for (DungeonRoom room : clusterRooms) {
-            List<DungeonCell> cells = roomCells.getOrDefault(room.roomId(), List.of(room.primaryAnchor()));
+            List<Cell> cells = roomCells.getOrDefault(room.roomId(), List.of(room.primaryAnchor()));
             DungeonState aggregate = new DungeonState(room.roomId(), DungeonAreaType.ROOM, room.name(), cells);
             aggregates.add(aggregate);
             areas.add(new DungeonAreaFacts(

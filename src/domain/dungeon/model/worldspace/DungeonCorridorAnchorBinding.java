@@ -7,7 +7,7 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 public record DungeonCorridorAnchorBinding(
         long anchorId,
         long hostCorridorId,
-        DungeonCell absoluteCell,
+        Cell absoluteCell,
         DungeonTopologyRef topologyRef
 ) {
 
@@ -15,20 +15,20 @@ public record DungeonCorridorAnchorBinding(
         CorridorAnchor anchor = new CorridorAnchor(
                 anchorId,
                 hostCorridorId,
-                absoluteCell == null ? new Cell(0, 0, 0) : absoluteCell.geometry());
+                absoluteCell == null ? new Cell(0, 0, 0) : absoluteCell);
         anchorId = anchor.anchorId();
         hostCorridorId = anchor.hostCorridorId();
-        absoluteCell = DungeonCell.fromGeometry(anchor.position());
+        absoluteCell = anchor.position();
         topologyRef = topologyRef == null || !topologyRef.present() ? DungeonTopologyRef.corridorAnchor(anchorId) : topologyRef;
     }
 
-    public DungeonCorridorAnchorBinding withAbsoluteCell(DungeonCell nextCell) {
-        CorridorAnchor moved = new CorridorAnchor(anchorId, hostCorridorId, absoluteCell.geometry())
-                .withPosition(nextCell == null ? new Cell(0, 0, 0) : nextCell.geometry());
+    public DungeonCorridorAnchorBinding withAbsoluteCell(Cell nextCell) {
+        CorridorAnchor moved = new CorridorAnchor(anchorId, hostCorridorId, absoluteCell)
+                .withPosition(nextCell == null ? new Cell(0, 0, 0) : nextCell);
         return new DungeonCorridorAnchorBinding(
                 moved.anchorId(),
                 moved.hostCorridorId(),
-                DungeonCell.fromGeometry(moved.position()),
+                moved.position(),
                 topologyRef);
     }
 
@@ -37,6 +37,6 @@ public record DungeonCorridorAnchorBinding(
     }
 
     public CorridorAnchor toCore() {
-        return new CorridorAnchor(anchorId, hostCorridorId, absoluteCell.geometry());
+        return new CorridorAnchor(anchorId, hostCorridorId, absoluteCell);
     }
 }

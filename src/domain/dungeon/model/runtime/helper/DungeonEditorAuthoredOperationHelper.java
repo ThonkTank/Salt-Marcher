@@ -3,6 +3,9 @@ package src.domain.dungeon.model.runtime.helper;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
@@ -11,13 +14,9 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMo
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
 import src.domain.dungeon.model.worldspace.DungeonCorridorEndpoint;
-import src.domain.dungeon.model.worldspace.DungeonEdge;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 import src.domain.dungeon.model.worldspace.DungeonEditorAuthoredOperation;
-
 
 public interface DungeonEditorAuthoredOperationHelper {
 
@@ -62,10 +61,7 @@ public interface DungeonEditorAuthoredOperationHelper {
                                     moveHandle.handleRef().roomId(),
                                     moveHandle.handleRef().index(),
                                     cell(moveHandle.handleRef().cell()),
-                                    moveHandle.handleRef().direction() == null
-                                            || moveHandle.handleRef().direction().isBlank()
-                                            ? DungeonEdgeDirection.NORTH
-                                            : DungeonEdgeDirection.parse(moveHandle.handleRef().direction())),
+                                    Direction.parse(moveHandle.handleRef().direction())),
                             moveHandle.deltaQ(),
                             moveHandle.deltaR(),
                             moveHandle.deltaLevel());
@@ -79,22 +75,22 @@ public interface DungeonEditorAuthoredOperationHelper {
         };
     }
 
-    static DungeonCell cell(DungeonEditorWorkspaceValues.Cell cell) {
+    static Cell cell(DungeonEditorWorkspaceValues.Cell cell) {
         DungeonEditorWorkspaceValues.Cell safeCell = cell == null
                 ? DungeonEditorWorkspaceValues.Cell.empty()
                 : cell;
-        return new DungeonCell(safeCell.q(), safeCell.r(), safeCell.level());
+        return new Cell(safeCell.q(), safeCell.r(), safeCell.level());
     }
 
-    static List<DungeonEdge> edges(List<DungeonEditorWorkspaceValues.Edge> edges) {
+    static List<Edge> edges(List<DungeonEditorWorkspaceValues.Edge> edges) {
         if (edges == null) {
             return List.of();
         }
-        List<DungeonEdge> result = new ArrayList<>();
+        List<Edge> result = new ArrayList<>();
         for (DungeonEditorWorkspaceValues.Edge edge : edges) {
             if (edge == null) {
-                DungeonCell origin = cell(null);
-                result.add(new DungeonEdge(origin, origin));
+                Cell origin = cell(null);
+                result.add(new Edge(origin, origin));
             } else {
                 result.addAll(unitEdges(cell(edge.from()), cell(edge.to())));
             }
@@ -102,20 +98,20 @@ public interface DungeonEditorAuthoredOperationHelper {
         return List.copyOf(result);
     }
 
-    private static List<DungeonEdge> unitEdges(DungeonCell from, DungeonCell to) {
+    private static List<Edge> unitEdges(Cell from, Cell to) {
         if (from.level() != to.level()) {
-            return List.of(new DungeonEdge(from, to));
+            return List.of(new Edge(from, to));
         }
         int deltaQ = Integer.compare(to.q(), from.q());
         int deltaR = Integer.compare(to.r(), from.r());
         if (deltaQ != 0 && deltaR != 0) {
-            return List.of(new DungeonEdge(from, to));
+            return List.of(new Edge(from, to));
         }
-        List<DungeonEdge> result = new ArrayList<>();
+        List<Edge> result = new ArrayList<>();
         for (int q = from.q(), r = from.r(); q != to.q() || r != to.r(); q += deltaQ, r += deltaR) {
-            result.add(new DungeonEdge(
-                    new DungeonCell(q, r, from.level()),
-                    new DungeonCell(q + deltaQ, r + deltaR, from.level())));
+            result.add(new Edge(
+                    new Cell(q, r, from.level()),
+                    new Cell(q + deltaQ, r + deltaR, from.level())));
         }
         return List.copyOf(result);
     }
@@ -136,9 +132,7 @@ public interface DungeonEditorAuthoredOperationHelper {
                     door.roomId(),
                     door.clusterId(),
                     cell(door.roomCell()),
-                    door.direction() == null || door.direction().isBlank()
-                            ? DungeonEdgeDirection.NORTH
-                            : DungeonEdgeDirection.parse(door.direction()),
+                    Direction.parse(door.direction()),
                     door.topologyRef());
             case DungeonEditorWorkspaceValues.CorridorAnchorEndpoint anchor -> DungeonCorridorEndpoint.anchor(
                     anchor.hostCorridorId(),
@@ -148,7 +142,7 @@ public interface DungeonEditorAuthoredOperationHelper {
                     0L,
                     0L,
                     cell(null),
-                    DungeonEdgeDirection.NORTH,
+                    Direction.NORTH,
                     DungeonTopologyRef.empty());
         };
     }
@@ -179,9 +173,7 @@ public interface DungeonEditorAuthoredOperationHelper {
                     : exit;
             result.add(new DungeonRoomExitDescription(
                     cell(safeExit.cell()),
-                    safeExit.direction() == null || safeExit.direction().isBlank()
-                            ? DungeonEdgeDirection.NORTH
-                            : DungeonEdgeDirection.parse(safeExit.direction()),
+                    Direction.parse(safeExit.direction()),
                     safeExit.description()));
         }
         return List.copyOf(result);

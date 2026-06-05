@@ -27,19 +27,19 @@ final class DungeonBoundaryStretchSelectionGeometry {
         return List.copyOf(result);
     }
 
-    static List<DungeonEdge> connectorPath(StretchSelection stretch, BoundaryVertex vertex) {
-        List<DungeonEdge> result = new ArrayList<>();
+    static List<Edge> connectorPath(StretchSelection stretch, BoundaryVertex vertex) {
+        List<Edge> result = new ArrayList<>();
         for (Edge edge : stretch.coreSelection().connectorPath(
                 new RoomClusterBoundaryStretchPlan.BoundaryVertex(vertex.q(), vertex.r(), vertex.level()))) {
-            result.add(new DungeonEdge(DungeonCell.fromGeometry(edge.from()), DungeonCell.fromGeometry(edge.to())));
+            result.add(edge);
         }
         return List.copyOf(result);
     }
 
-    static Set<DungeonCell> stripCells(StretchSelection stretch) {
-        Set<DungeonCell> result = new LinkedHashSet<>();
+    static Set<Cell> stripCells(StretchSelection stretch) {
+        Set<Cell> result = new LinkedHashSet<>();
         for (Cell cell : stretch.coreSelection().stripCells()) {
-            result.add(DungeonCell.fromGeometry(cell));
+            result.add(cell);
         }
         return Set.copyOf(result);
     }

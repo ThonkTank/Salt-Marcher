@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.BoundaryVertex;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.ConnectorAction;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
@@ -22,7 +24,7 @@ final class DungeonBoundaryStretchConnectorLogic {
             DungeonMap dungeonMap,
             DungeonRoomTopologyClusterWork target,
             StretchSelection stretch,
-            Set<DungeonCell> clusterCells,
+            Set<Cell> clusterCells,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             boolean requireTouch
     ) {
@@ -48,11 +50,11 @@ final class DungeonBoundaryStretchConnectorLogic {
             DungeonMap dungeonMap,
             DungeonRoomTopologyClusterWork target,
             StretchSelection stretch,
-            Set<DungeonCell> clusterCells,
+            Set<Cell> clusterCells,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             BoundaryVertex endpoint
     ) {
-        List<DungeonEdge> connectorPath = DungeonBoundaryStretchSelectionGeometry.connectorPath(stretch, endpoint);
+        List<Edge> connectorPath = DungeonBoundaryStretchSelectionGeometry.connectorPath(stretch, endpoint);
         if (connectorPath.isEmpty()) {
             return true;
         }
@@ -75,7 +77,7 @@ final class DungeonBoundaryStretchConnectorLogic {
     private Optional<ConnectorAction> connectorAction(
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             Set<DungeonBoundaryKey> sourceKeys,
-            List<DungeonEdge> path
+            List<Edge> path
     ) {
         if (path.isEmpty()) {
             return Optional.empty();
@@ -97,9 +99,9 @@ final class DungeonBoundaryStretchConnectorLogic {
         return Optional.of(new ConnectorAction(true, path));
     }
 
-    private List<DungeonBoundaryKey> boundaryKeys(List<DungeonEdge> path) {
+    private List<DungeonBoundaryKey> boundaryKeys(List<Edge> path) {
         List<DungeonBoundaryKey> keys = new java.util.ArrayList<>();
-        for (DungeonEdge edge : path) {
+        for (Edge edge : path) {
             keys.add(DungeonBoundaryKey.from(edge));
         }
         return keys;
@@ -122,17 +124,17 @@ final class DungeonBoundaryStretchConnectorLogic {
     private void applyConnectorAction(
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             ConnectorAction action,
-            DungeonCell center,
-            Set<DungeonCell> clusterCells,
+            Cell center,
+            Set<Cell> clusterCells,
             long clusterId
     ) {
         if (action.removesBoundaries()) {
-            for (DungeonEdge edge : action.path()) {
+            for (Edge edge : action.path()) {
                 boundaries.remove(DungeonBoundaryKey.from(edge));
             }
             return;
         }
-        for (DungeonEdge edge : action.path()) {
+        for (Edge edge : action.path()) {
             DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
             if (boundaries.containsKey(key)) {
                 continue;

@@ -1,15 +1,17 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public record DungeonCorridorEndpoint(
         DungeonCorridorEndpointKind kind,
         long roomId,
         long clusterId,
-        DungeonCell roomCell,
-        DungeonEdgeDirection direction,
+        Cell roomCell,
+        Direction direction,
         long hostCorridorId,
-        DungeonCell anchorCell,
+        Cell anchorCell,
         DungeonTopologyRef topologyRef
 ) {
 
@@ -17,18 +19,18 @@ public record DungeonCorridorEndpoint(
         kind = kind == null ? DungeonCorridorEndpointKind.EMPTY : kind;
         roomId = Math.max(0L, roomId);
         clusterId = Math.max(0L, clusterId);
-        roomCell = roomCell == null ? new DungeonCell(0, 0, 0) : roomCell;
-        direction = direction == null ? DungeonEdgeDirection.NORTH : direction;
+        roomCell = roomCell == null ? new Cell(0, 0, 0) : roomCell;
+        direction = direction == null ? Direction.NORTH : direction;
         hostCorridorId = Math.max(0L, hostCorridorId);
-        anchorCell = anchorCell == null ? new DungeonCell(0, 0, 0) : anchorCell;
+        anchorCell = anchorCell == null ? new Cell(0, 0, 0) : anchorCell;
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
     public static DungeonCorridorEndpoint door(
             long roomId,
             long clusterId,
-            DungeonCell roomCell,
-            DungeonEdgeDirection direction,
+            Cell roomCell,
+            Direction direction,
             DungeonTopologyRef topologyRef
     ) {
         return new DungeonCorridorEndpoint(
@@ -44,7 +46,7 @@ public record DungeonCorridorEndpoint(
 
     public static DungeonCorridorEndpoint anchor(
             long hostCorridorId,
-            DungeonCell anchorCell,
+            Cell anchorCell,
             DungeonTopologyRef topologyRef
     ) {
         return new DungeonCorridorEndpoint(
@@ -52,14 +54,14 @@ public record DungeonCorridorEndpoint(
                 0L,
                 0L,
                 emptyCell(),
-                DungeonEdgeDirection.NORTH,
+                Direction.NORTH,
                 hostCorridorId,
                 anchorCell,
                 topologyRef);
     }
 
-    private static DungeonCell emptyCell() {
-        return new DungeonCell(0, 0, 0);
+    private static Cell emptyCell() {
+        return new Cell(0, 0, 0);
     }
 
     public boolean present() {

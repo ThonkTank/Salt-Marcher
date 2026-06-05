@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
@@ -39,7 +41,7 @@ final class DungeonCorridorProjectionAssembler {
     void addCorridor(
             DungeonCorridor corridor,
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints,
-            List<DungeonCell> cells
+            List<Cell> cells
     ) {
         DungeonState aggregate = new DungeonState(
                 corridor.corridorId(),
@@ -63,7 +65,7 @@ final class DungeonCorridorProjectionAssembler {
             DungeonCorridor corridor,
             DungeonCorridorEndpointResolver.CorridorEndpoint endpoint
     ) {
-        DungeonEdge edge = Objects.requireNonNull(endpoint.edge());
+        Edge edge = Objects.requireNonNull(endpoint.edge());
         DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
         long roomId = Objects.requireNonNull(endpoint.roomId());
         long doorId = boundaryIdsByKey.getOrDefault(
@@ -80,7 +82,7 @@ final class DungeonCorridorProjectionAssembler {
     private void addNewDoor(
             DungeonCorridor corridor,
             DungeonCorridorEndpointResolver.CorridorEndpoint endpoint,
-            DungeonEdge edge,
+            Edge edge,
             DungeonBoundaryKey key,
             long doorId,
             long roomId

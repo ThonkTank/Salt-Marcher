@@ -3,8 +3,25 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import javafx.geometry.Bounds;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.published.DungeonEdgeRef;
+import src.domain.dungeon.published.DungeonEditorControlsModel;
+import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
+import src.domain.dungeon.published.DungeonEditorPreview;
+import src.domain.dungeon.published.DungeonEditorStateSnapshot;
+import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
+import src.domain.dungeon.published.DungeonEditorViewMode;
+import src.domain.dungeon.published.DungeonInspectorSnapshot;
+import src.domain.dungeon.published.DungeonMapSummary;
+import src.domain.dungeon.published.DungeonOverlaySettings;
+import src.domain.dungeon.published.DungeonTopologyElementRef;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
+import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import javafx.event.ActionEvent;
+import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Parent;
 import javafx.scene.control.ButtonBase;
@@ -21,24 +38,6 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.stage.Window;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
-import src.domain.dungeon.published.DungeonEditorControlsModel;
-import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
-import src.domain.dungeon.published.DungeonEditorPreview;
-import src.domain.dungeon.published.DungeonEditorStateSnapshot;
-import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
-import src.domain.dungeon.published.DungeonEditorViewMode;
-import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.domain.dungeon.published.DungeonMapSummary;
-import src.domain.dungeon.published.DungeonOverlaySettings;
-import src.domain.dungeon.published.DungeonTopologyElementRef;
-import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
-import src.view.slotcontent.main.dungeonmap.DungeonMapView;
-
 import static src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorHarnessSupport.*;
 
 final class DungeonEditorRoomWallDoorHarness {
@@ -593,8 +592,8 @@ final class DungeonEditorRoomWallDoorHarness {
         assertTrue(surfaceHasBoundaryKindAt(
                         runtime.mapSurfaceModel().current(),
                         "door",
-                        new DungeonCell(4, 2, 0),
-                        new DungeonCell(4, 3, 0)),
+                        new Cell(4, 2, 0),
+                        new Cell(4, 3, 0)),
                 "DE-DOOR-002 unbound fixture publishes the east door boundary");
         click(button(controls, "Tür"));
         assertEquals("DOOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
@@ -621,14 +620,14 @@ final class DungeonEditorRoomWallDoorHarness {
         assertTrue(!surfaceHasBoundaryKindAt(
                         deletedSurface,
                         "door",
-                        new DungeonCell(4, 2, 0),
-                        new DungeonCell(4, 3, 0)),
+                        new Cell(4, 2, 0),
+                        new Cell(4, 3, 0)),
                 "DE-DOOR-002 unbound delete removes the published door boundary");
         assertTrue(surfaceHasBoundaryKindAt(
                         deletedSurface,
                         "wall",
-                        new DungeonCell(4, 2, 0),
-                        new DungeonCell(4, 3, 0)),
+                        new Cell(4, 2, 0),
+                        new Cell(4, 3, 0)),
                 "DE-DOOR-002 unbound delete restores the published wall boundary");
         assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 2.5),
                 "DE-DOOR-002 unbound render removes the door marker");
@@ -658,8 +657,8 @@ final class DungeonEditorRoomWallDoorHarness {
         assertTrue(surfaceHasBoundaryKindAt(
                         runtime.mapSurfaceModel().current(),
                         "door",
-                        new DungeonCell(4, 2, 0),
-                        new DungeonCell(4, 3, 0)),
+                        new Cell(4, 2, 0),
+                        new Cell(4, 3, 0)),
                 "DE-DOOR-002 bound fixture publishes D1 door boundary");
         click(button(controls, "Tür"));
         Point2D doorMidpoint = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
@@ -686,8 +685,8 @@ final class DungeonEditorRoomWallDoorHarness {
         assertTrue(surfaceHasBoundaryKindAt(
                         rejectedSurface,
                         "door",
-                        new DungeonCell(4, 2, 0),
-                        new DungeonCell(4, 3, 0)),
+                        new Cell(4, 2, 0),
+                        new Cell(4, 3, 0)),
                 "DE-DOOR-002 corridor-bound delete keeps the published door boundary");
         assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 2.5),
                 "DE-DOOR-002 corridor-bound render keeps the door marker");
@@ -865,11 +864,11 @@ final class DungeonEditorRoomWallDoorHarness {
         var mergedArea = roomAreaByCells(committedSurface, expectedUnionCells, "DE-ROOM-002 committed merged room");
         assertEquals(initialIds.clusterId(), mergedArea.clusterId(),
                 "DE-ROOM-002 published merged area keeps original cluster id");
-        assertNoPublishedBoundaryBetween(committedSurface, 3, 2, 0, DungeonEdgeDirection.EAST,
+        assertNoPublishedBoundaryBetween(committedSurface, 3, 2, 0, Direction.EAST,
                 "DE-ROOM-002 omits old east wall inside merged union at y=2");
-        assertNoPublishedBoundaryBetween(committedSurface, 3, 3, 0, DungeonEdgeDirection.EAST,
+        assertNoPublishedBoundaryBetween(committedSurface, 3, 3, 0, Direction.EAST,
                 "DE-ROOM-002 omits old east wall inside merged union at y=3");
-        assertNoPublishedBoundaryBetween(committedSurface, 3, 3, 0, DungeonEdgeDirection.SOUTH,
+        assertNoPublishedBoundaryBetween(committedSurface, 3, 3, 0, Direction.SOUTH,
                 "DE-ROOM-002 omits old south wall inside merged union");
 
         Set<String> renderCells = renderSurfaceCellOriginsWithZ(binding.mapContentModel());
@@ -1097,8 +1096,8 @@ final class DungeonEditorRoomWallDoorHarness {
         assertTrue(!surfaceHasBoundaryKindAt(
                         startedSurface,
                         "wall",
-                        new DungeonCell(2, 1, 0),
-                        new DungeonCell(2, 2, 0)),
+                        new Cell(2, 1, 0),
+                        new Cell(2, 2, 0)),
                 "DE-WALL-001 published map has no internal wall before candidate movement");
         assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.0, 1.5),
                 "DE-WALL-001 render-facing state has no internal wall before candidate movement");
@@ -1341,20 +1340,20 @@ final class DungeonEditorRoomWallDoorHarness {
         assertTrue(!surfaceHasBoundaryKindAt(
                         committedSurface,
                         "wall",
-                        new DungeonCell(1, 1, 0),
-                        new DungeonCell(1, 0, 0)),
+                        new Cell(1, 1, 0),
+                        new Cell(1, 0, 0)),
                 "DE-WALL-004 published map omits first north wall edge");
         assertTrue(!surfaceHasBoundaryKindAt(
                         committedSurface,
                         "wall",
-                        new DungeonCell(2, 1, 0),
-                        new DungeonCell(2, 0, 0)),
+                        new Cell(2, 1, 0),
+                        new Cell(2, 0, 0)),
                 "DE-WALL-004 published map omits second north wall edge");
         assertTrue(!surfaceHasBoundaryKindAt(
                         committedSurface,
                         "wall",
-                        new DungeonCell(3, 1, 0),
-                        new DungeonCell(3, 0, 0)),
+                        new Cell(3, 1, 0),
+                        new Cell(3, 0, 0)),
                 "DE-WALL-004 published map omits third north wall edge");
         assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.5, 1.0),
                 "DE-WALL-004 render-facing state omits the west part of the north wall");
@@ -1443,21 +1442,21 @@ final class DungeonEditorRoomWallDoorHarness {
         assertTrue(surfaceHasBoundaryKindAt(
                         committedSurface,
                         "wall",
-                        new DungeonCell(1, 1, 0),
-                        new DungeonCell(2, 1, 0)),
+                        new Cell(1, 1, 0),
+                        new Cell(2, 1, 0)),
                 "DE-WALL-005 published map keeps the west north wall edge: "
                         + surfaceBoundarySummary(committedSurface));
         assertTrue(!surfaceHasBoundaryKindAt(
                         committedSurface,
                         "wall",
-                        new DungeonCell(2, 1, 0),
-                        new DungeonCell(3, 1, 0)),
+                        new Cell(2, 1, 0),
+                        new Cell(3, 1, 0)),
                 "DE-WALL-005 published map omits the deleted middle north wall edge");
         assertTrue(surfaceHasBoundaryKindAt(
                         committedSurface,
                         "wall",
-                        new DungeonCell(3, 1, 0),
-                        new DungeonCell(4, 1, 0)),
+                        new Cell(3, 1, 0),
+                        new Cell(4, 1, 0)),
                 "DE-WALL-005 published map keeps the east north wall edge");
         assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.5, 1.0),
                 "DE-WALL-005 render-facing state keeps the west part of the north wall");
@@ -1545,26 +1544,26 @@ final class DungeonEditorRoomWallDoorHarness {
         assertTrue(!surfaceHasBoundaryKindAt(
                         committedSurface,
                         "wall",
-                        new DungeonCell(1, 1, 0),
-                        new DungeonCell(2, 1, 0)),
+                        new Cell(1, 1, 0),
+                        new Cell(2, 1, 0)),
                 "DE-WALL-006 published map omits the north edge adjacent to the corner");
         assertTrue(!surfaceHasBoundaryKindAt(
                         committedSurface,
                         "wall",
-                        new DungeonCell(1, 1, 0),
-                        new DungeonCell(1, 2, 0)),
+                        new Cell(1, 1, 0),
+                        new Cell(1, 2, 0)),
                 "DE-WALL-006 published map omits the west edge adjacent to the corner");
         assertTrue(surfaceHasBoundaryKindAt(
                         committedSurface,
                         "wall",
-                        new DungeonCell(2, 1, 0),
-                        new DungeonCell(3, 1, 0)),
+                        new Cell(2, 1, 0),
+                        new Cell(3, 1, 0)),
                 "DE-WALL-006 published map keeps the next north wall edge");
         assertTrue(surfaceHasBoundaryKindAt(
                         committedSurface,
                         "wall",
-                        new DungeonCell(1, 2, 0),
-                        new DungeonCell(1, 3, 0)),
+                        new Cell(1, 2, 0),
+                        new Cell(1, 3, 0)),
                 "DE-WALL-006 published map keeps the next west wall edge");
         assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.5, 1.0),
                 "DE-WALL-006 render-facing state omits the north edge adjacent to the corner");

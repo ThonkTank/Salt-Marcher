@@ -11,7 +11,7 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 public final class DungeonCorridorConnectionNormalizationLogic {
 
     private static final DungeonCorridorAnchorPruningRules ANCHOR_PRUNING_POLICY = new DungeonCorridorAnchorPruningRules();
-    private static final DungeonCorridorHostCellsAdapter HOST_CELLS_ADAPTER = new DungeonCorridorHostCellsAdapter();
+    private static final DungeonDerivedStateProjection DERIVED_STATE_PROJECTION = new DungeonDerivedStateProjection();
 
     public ConnectionCatalog normalizeConnections(DungeonMap dungeonMap, ConnectionCatalog source) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
@@ -33,16 +33,16 @@ public final class DungeonCorridorConnectionNormalizationLogic {
     }
 
     private List<DungeonCorridor> snapOwnedAnchors(DungeonMap dungeonMap, List<DungeonCorridor> corridors) {
-        CorridorHostCells hostCells = HOST_CELLS_ADAPTER.hostCells(dungeonMap, corridors);
+        CorridorHostCells hostCells = new CorridorHostCells(
+                DERIVED_STATE_PROJECTION.corridorCellsByCorridor(dungeonMap, corridors));
         List<DungeonCorridor> result = new ArrayList<>();
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
             List<DungeonCorridorAnchorBinding> snapped = new ArrayList<>();
             for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
                 if (binding != null) {
-                    snapped.add(binding.withAbsoluteCell(
-                            DungeonCell.fromGeometry(hostCells.snapToHostCell(
-                                    binding.hostCorridorId(),
-                                    binding.absoluteCell().geometry()))));
+                    snapped.add(binding.withAbsoluteCell(hostCells.snapToHostCell(
+                            binding.hostCorridorId(),
+                            binding.absoluteCell())));
                 }
             }
             result.add(corridor.withBindings(corridor.bindings().replaceAnchorBindings(snapped)));

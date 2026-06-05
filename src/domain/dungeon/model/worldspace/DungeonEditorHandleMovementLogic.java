@@ -235,11 +235,6 @@ public final class DungeonEditorHandleMovementLogic {
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(dungeonMap, nextConnections);
     }
 
-    private static DungeonCell movedCell(DungeonCell cell, int deltaQ, int deltaR, int deltaLevel) {
-        DungeonCell safeCell = cell == null ? new DungeonCell(0, 0, 0) : cell;
-        return new DungeonCell(safeCell.q() + deltaQ, safeCell.r() + deltaR, safeCell.level() + deltaLevel);
-    }
-
     private static Cell movedCell(Cell cell, int deltaQ, int deltaR, int deltaLevel) {
         Cell safeCell = cell == null ? new Cell(0, 0, 0) : cell;
         return new Cell(safeCell.q() + deltaQ, safeCell.r() + deltaR, safeCell.level() + deltaLevel);

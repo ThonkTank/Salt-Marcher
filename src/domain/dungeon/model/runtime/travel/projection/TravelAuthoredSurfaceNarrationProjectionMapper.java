@@ -2,7 +2,6 @@ package src.domain.dungeon.model.runtime.travel.projection;
 
 import java.util.ArrayList;
 import java.util.List;
-import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 
@@ -37,20 +36,11 @@ final class TravelAuthoredSurfaceNarrationProjectionMapper {
                 : descriptions == null ? List.<DungeonRoomExitDescription>of() : descriptions) {
             if (description != null) {
                 result.add(new TravelAuthoredSurface.RoomExit(
-                        TravelGeometryProjectionMapper.toCoreCell(description.roomCell()),
-                        directionFromName(description.direction() == null ? "" : description.direction().name()),
+                        TravelGeometryProjectionMapper.cellOrOrigin(description.roomCell()),
+                        description.direction(),
                         description.description()));
             }
         }
         return List.copyOf(result);
-    }
-
-    private static Direction directionFromName(String name) {
-        return switch (name == null ? "" : name.trim()) {
-            case "EAST" -> Direction.EAST;
-            case "SOUTH" -> Direction.SOUTH;
-            case "WEST" -> Direction.WEST;
-            default -> Direction.NORTH;
-        };
     }
 }

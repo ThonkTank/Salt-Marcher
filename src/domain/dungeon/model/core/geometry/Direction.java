@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.core.geometry;
 
+import java.util.Locale;
+
 public enum Direction {
     NORTH(0, -1, 0, 0, 1, 0),
     EAST(1, 0, 1, 0, 1, 1),
@@ -30,6 +32,18 @@ public enum Direction {
 
     public Cell neighborOf(Cell cell) {
         return cell.translate(deltaQ, deltaR);
+    }
+
+    public static Direction parse(String value) {
+        if (value == null || value.isBlank()) {
+            return NORTH;
+        }
+        return switch (value.trim().toUpperCase(Locale.ROOT)) {
+            case "EAST" -> EAST;
+            case "SOUTH" -> SOUTH;
+            case "WEST" -> WEST;
+            default -> NORTH;
+        };
     }
 
     Edge sideOf(Cell cell) {

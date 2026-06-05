@@ -13,17 +13,17 @@ final class DungeonCorridorCellProjection {
     private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;
     private static final int FULL_ROUTE_TERMINUS_COUNT = 2;
 
-    List<DungeonCell> corridorCells(
+    List<Cell> corridorCells(
             DungeonCorridor corridor,
             Map<Long, DungeonRoomCluster> clustersById,
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints,
-            Set<DungeonCell> roomCells
+            Set<Cell> roomCells
     ) {
         boolean authoredBackbone = !corridor.bindings().waypoints().isEmpty();
-        List<DungeonCell> backbone = !authoredBackbone
+        List<Cell> backbone = !authoredBackbone
                 ? endpointCells(endpoints)
                 : authoredRouteCells(corridor.bindings().waypoints(), clustersById, endpoints);
-        Set<DungeonCell> cells = new LinkedHashSet<>();
+        Set<Cell> cells = new LinkedHashSet<>();
         addRouteCells(cells, backbone, roomCells, !authoredBackbone);
         if (cells.isEmpty()) {
             for (DungeonCorridorEndpointResolver.CorridorEndpoint endpoint : endpoints) {
@@ -32,13 +32,13 @@ final class DungeonCorridorCellProjection {
                 }
             }
         }
-        List<DungeonCell> result = new ArrayList<>(cells);
+        List<Cell> result = new ArrayList<>(cells);
         result.sort(DungeonCorridorCellProjection::compareCells);
         return List.copyOf(result);
     }
 
-    private static List<DungeonCell> endpointCells(List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints) {
-        List<DungeonCell> result = new ArrayList<>();
+    private static List<Cell> endpointCells(List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints) {
+        List<Cell> result = new ArrayList<>();
         for (DungeonCorridorEndpointResolver.CorridorEndpoint endpoint
                 : endpoints == null ? List.<DungeonCorridorEndpointResolver.CorridorEndpoint>of() : endpoints) {
             if (endpoint != null) {
@@ -48,17 +48,17 @@ final class DungeonCorridorCellProjection {
         return List.copyOf(result);
     }
 
-    private static List<DungeonCell> authoredRouteCells(
+    private static List<Cell> authoredRouteCells(
             List<CorridorWaypoint> waypoints,
             Map<Long, DungeonRoomCluster> clustersById,
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints
     ) {
-        List<DungeonCell> waypointCells = corridorWaypoints(waypoints, clustersById);
+        List<Cell> waypointCells = corridorWaypoints(waypoints, clustersById);
         List<DungeonCorridorEndpointResolver.CorridorEndpoint> termini = routeTermini(endpoints);
         if (termini.isEmpty()) {
             return waypointCells;
         }
-        List<DungeonCell> result = new ArrayList<>();
+        List<Cell> result = new ArrayList<>();
         result.add(termini.getFirst().corridorCell());
         result.addAll(waypointCells);
         if (termini.size() > SINGLE_ROUTE_TERMINUS_COUNT) {
@@ -90,25 +90,25 @@ final class DungeonCorridorCellProjection {
         return List.of(allEndpoints.getFirst(), allEndpoints.getLast());
     }
 
-    private static List<DungeonCell> corridorWaypoints(
+    private static List<Cell> corridorWaypoints(
             List<CorridorWaypoint> waypoints,
             Map<Long, DungeonRoomCluster> clustersById
     ) {
-        List<DungeonCell> result = new ArrayList<>();
+        List<Cell> result = new ArrayList<>();
         for (CorridorWaypoint waypoint : waypoints) {
             DungeonRoomCluster cluster = clustersById.get(waypoint.clusterId());
             Cell center = cluster == null
                     ? new Cell(0, 0, waypoint.level())
-                    : cluster.center().geometry();
-            result.add(DungeonCell.fromGeometry(waypoint.absoluteCell(center)));
+                    : cluster.center();
+            result.add(waypoint.absoluteCell(center));
         }
         return List.copyOf(result);
     }
 
     private static void addRouteCells(
-            Set<DungeonCell> cells,
-            List<DungeonCell> routeNodes,
-            Set<DungeonCell> roomCells,
+            Set<Cell> cells,
+            List<Cell> routeNodes,
+            Set<Cell> roomCells,
             boolean filterRoomCells
     ) {
         if (routeNodes == null || routeNodes.isEmpty()) {
@@ -119,7 +119,7 @@ final class DungeonCorridorCellProjection {
             return;
         }
         for (int index = 1; index < routeNodes.size(); index++) {
-            for (DungeonCell cell : routeCells(routeNodes.get(index - 1), routeNodes.get(index))) {
+            for (Cell cell : routeCells(routeNodes.get(index - 1), routeNodes.get(index))) {
                 if (!filterRoomCells || !roomCells.contains(cell)) {
                     cells.add(cell);
                 }
@@ -127,22 +127,22 @@ final class DungeonCorridorCellProjection {
         }
     }
 
-    private static List<DungeonCell> routeCells(DungeonCell start, DungeonCell end) {
+    private static List<Cell> routeCells(Cell start, Cell end) {
         if (start == null || end == null) {
             return List.of();
         }
-        return worldspaceCells(Route.horizontalFirst(start.geometry(), end.geometry()));
+        return copiedCells(Route.horizontalFirst(start, end));
     }
 
-    private static List<DungeonCell> worldspaceCells(List<Cell> cells) {
-        List<DungeonCell> result = new ArrayList<>();
+    private static List<Cell> copiedCells(List<Cell> cells) {
+        List<Cell> result = new ArrayList<>();
         for (Cell cell : cells) {
-            result.add(DungeonCell.fromGeometry(cell));
+            result.add(cell);
         }
         return List.copyOf(result);
     }
 
-    private static int compareCells(DungeonCell left, DungeonCell right) {
+    private static int compareCells(Cell left, Cell right) {
         int levelComparison = Integer.compare(left.level(), right.level());
         if (levelComparison != 0) {
             return levelComparison;

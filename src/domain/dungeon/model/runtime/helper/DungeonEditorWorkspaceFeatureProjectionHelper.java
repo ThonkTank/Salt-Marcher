@@ -3,7 +3,7 @@ package src.domain.dungeon.model.runtime.helper;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.DungeonCell;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
@@ -19,7 +19,7 @@ public final class DungeonEditorWorkspaceFeatureProjectionHelper {
 
     private static DungeonEditorWorkspaceValues.Feature feature(DungeonFeatureFacts feature) {
         List<DungeonEditorWorkspaceValues.Cell> cells = new ArrayList<>();
-        for (DungeonCell cell : feature.cells()) {
+        for (Cell cell : feature.cells()) {
             cells.add(cell(cell));
         }
         return new DungeonEditorWorkspaceValues.Feature(
@@ -32,7 +32,7 @@ public final class DungeonEditorWorkspaceFeatureProjectionHelper {
                 feature.topologyRef());
     }
 
-    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable DungeonCell cell) {
+    private static DungeonEditorWorkspaceValues.Cell cell(@Nullable Cell cell) {
         return cell == null
                 ? DungeonEditorWorkspaceValues.Cell.empty()
                 : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level());

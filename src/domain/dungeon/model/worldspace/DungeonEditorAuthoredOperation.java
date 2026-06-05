@@ -2,6 +2,8 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
@@ -28,17 +30,17 @@ public final class DungeonEditorAuthoredOperation {
             SaveRoomNarration {
     }
 
-    public static DungeonEditorAuthoredOperation paintRoomRectangle(DungeonCell start, DungeonCell end) {
+    public static DungeonEditorAuthoredOperation paintRoomRectangle(Cell start, Cell end) {
         return new DungeonEditorAuthoredOperation(new PaintRoomRectangle(start, end));
     }
 
-    public static DungeonEditorAuthoredOperation deleteRoomRectangle(DungeonCell start, DungeonCell end) {
+    public static DungeonEditorAuthoredOperation deleteRoomRectangle(Cell start, Cell end) {
         return new DungeonEditorAuthoredOperation(new DeleteRoomRectangle(start, end));
     }
 
     public static DungeonEditorAuthoredOperation editClusterBoundaries(
             long clusterId,
-            List<DungeonEdge> edges,
+            List<Edge> edges,
             DungeonClusterBoundaryKind boundaryKind,
             boolean deleteMode
     ) {
@@ -74,7 +76,7 @@ public final class DungeonEditorAuthoredOperation {
 
     public static DungeonEditorAuthoredOperation moveBoundaryStretch(
             long clusterId,
-            List<DungeonEdge> sourceEdges,
+            List<Edge> sourceEdges,
             int deltaQ,
             int deltaR,
             int deltaLevel
@@ -91,50 +93,50 @@ public final class DungeonEditorAuthoredOperation {
     }
 
     public static final class PaintRoomRectangle implements Variant {
-        private final DungeonCell start;
-        private final DungeonCell end;
+        private final Cell start;
+        private final Cell end;
 
-        private PaintRoomRectangle(DungeonCell start, DungeonCell end) {
+        private PaintRoomRectangle(Cell start, Cell end) {
             this.start = safeCell(start);
             this.end = safeCell(end);
         }
 
-        public DungeonCell start() {
+        public Cell start() {
             return start;
         }
 
-        public DungeonCell end() {
+        public Cell end() {
             return end;
         }
     }
 
     public static final class DeleteRoomRectangle implements Variant {
-        private final DungeonCell start;
-        private final DungeonCell end;
+        private final Cell start;
+        private final Cell end;
 
-        private DeleteRoomRectangle(DungeonCell start, DungeonCell end) {
+        private DeleteRoomRectangle(Cell start, Cell end) {
             this.start = safeCell(start);
             this.end = safeCell(end);
         }
 
-        public DungeonCell start() {
+        public Cell start() {
             return start;
         }
 
-        public DungeonCell end() {
+        public Cell end() {
             return end;
         }
     }
 
     public static final class EditClusterBoundaries implements Variant {
         private final long clusterId;
-        private final List<DungeonEdge> edges;
+        private final List<Edge> edges;
         private final DungeonClusterBoundaryKind boundaryKind;
         private final boolean deleteMode;
 
         private EditClusterBoundaries(
                 long clusterId,
-                List<DungeonEdge> edges,
+                List<Edge> edges,
                 DungeonClusterBoundaryKind boundaryKind,
                 boolean deleteMode
         ) {
@@ -148,7 +150,7 @@ public final class DungeonEditorAuthoredOperation {
             return clusterId;
         }
 
-        public List<DungeonEdge> edges() {
+        public List<Edge> edges() {
             return List.copyOf(edges);
         }
 
@@ -227,14 +229,14 @@ public final class DungeonEditorAuthoredOperation {
 
     public static final class MoveBoundaryStretch implements Variant {
         private final long clusterId;
-        private final List<DungeonEdge> sourceEdges;
+        private final List<Edge> sourceEdges;
         private final int deltaQ;
         private final int deltaR;
         private final int deltaLevel;
 
         private MoveBoundaryStretch(
                 long clusterId,
-                List<DungeonEdge> sourceEdges,
+                List<Edge> sourceEdges,
                 int deltaQ,
                 int deltaR,
                 int deltaLevel
@@ -250,7 +252,7 @@ public final class DungeonEditorAuthoredOperation {
             return clusterId;
         }
 
-        public List<DungeonEdge> sourceEdges() {
+        public List<Edge> sourceEdges() {
             return List.copyOf(sourceEdges);
         }
 
@@ -285,7 +287,7 @@ public final class DungeonEditorAuthoredOperation {
         }
     }
 
-    private static DungeonCell safeCell(DungeonCell cell) {
-        return cell == null ? new DungeonCell(0, 0, 0) : cell;
+    private static Cell safeCell(Cell cell) {
+        return cell == null ? new Cell(0, 0, 0) : cell;
     }
 }

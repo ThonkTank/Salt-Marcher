@@ -2,8 +2,8 @@ package src.domain.dungeon.model.core.graph;
 
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 
 public record DungeonTraversalLink(
         String key,
@@ -19,11 +19,11 @@ public record DungeonTraversalLink(
         secondEndpoint = secondEndpoint == null ? defaultEndpoint() : secondEndpoint;
     }
 
-    public boolean touches(Set<DungeonCell> cells) {
+    public boolean touches(Set<Cell> cells) {
         return endpointFrom(cells) != null;
     }
 
-    public @Nullable DungeonTraversalEndpoint endpointFrom(Set<DungeonCell> cells) {
+    public @Nullable DungeonTraversalEndpoint endpointFrom(Set<Cell> cells) {
         if (cells == null || cells.isEmpty()) {
             return null;
         }
@@ -32,15 +32,15 @@ public record DungeonTraversalLink(
         return first == second ? null : first ? firstEndpoint : secondEndpoint;
     }
 
-    public @Nullable DungeonEdgeDirection directionFrom(DungeonCell sourceTile) {
-        DungeonCell targetTile = targetTileFrom(sourceTile);
+    public @Nullable Direction directionFrom(Cell sourceTile) {
+        Cell targetTile = targetTileFrom(sourceTile);
         if (sourceTile == null || targetTile == null || sourceTile.level() != targetTile.level()) {
             return null;
         }
         return directionFor(targetTile.q() - sourceTile.q(), targetTile.r() - sourceTile.r());
     }
 
-    private @Nullable DungeonCell targetTileFrom(DungeonCell tile) {
+    private @Nullable Cell targetTileFrom(Cell tile) {
         if (tile == null) {
             return null;
         }
@@ -53,8 +53,8 @@ public record DungeonTraversalLink(
         return null;
     }
 
-    private static @Nullable DungeonEdgeDirection directionFor(int deltaQ, int deltaR) {
-        for (DungeonEdgeDirection direction : DungeonEdgeDirection.values()) {
+    private static @Nullable Direction directionFor(int deltaQ, int deltaR) {
+        for (Direction direction : Direction.values()) {
             if (direction.deltaQ() == deltaQ && direction.deltaR() == deltaR) {
                 return direction;
             }
@@ -63,6 +63,6 @@ public record DungeonTraversalLink(
     }
 
     private static DungeonTraversalEndpoint defaultEndpoint() {
-        return new DungeonTraversalEndpoint(new DungeonCell(0, 0, 0), 0L, "");
+        return new DungeonTraversalEndpoint(new Cell(0, 0, 0), 0L, "");
     }
 }

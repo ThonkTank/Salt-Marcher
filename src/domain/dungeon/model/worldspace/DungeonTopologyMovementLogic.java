@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 
 /**
@@ -46,7 +47,7 @@ public final class DungeonTopologyMovementLogic {
                 movedClusters.add(new DungeonRoomCluster(
                         cluster.clusterId(),
                         cluster.mapId(),
-                        new DungeonCell(
+                        new Cell(
                                 cluster.center().q() + deltaQ,
                                 cluster.center().r() + deltaR,
                                 cluster.center().level() + deltaLevel),
@@ -81,13 +82,13 @@ public final class DungeonTopologyMovementLogic {
     }
 
     private static DungeonRoom movedRoom(DungeonRoom room, int deltaQ, int deltaR, int deltaLevel) {
-        Map<Integer, DungeonCell> movedAnchors = new LinkedHashMap<>();
-        for (Map.Entry<Integer, DungeonCell> entry : room.floorAnchors().entrySet()) {
-            DungeonCell anchor = entry.getValue();
+        Map<Integer, Cell> movedAnchors = new LinkedHashMap<>();
+        for (Map.Entry<Integer, Cell> entry : room.floorAnchors().entrySet()) {
+            Cell anchor = entry.getValue();
             int nextLevel = entry.getKey() + deltaLevel;
             movedAnchors.put(
                     nextLevel,
-                    new DungeonCell(anchor.q() + deltaQ, anchor.r() + deltaR, anchor.level() + deltaLevel));
+                    new Cell(anchor.q() + deltaQ, anchor.r() + deltaR, anchor.level() + deltaLevel));
         }
         return new DungeonRoom(
                 room.roomId(),
@@ -98,19 +99,19 @@ public final class DungeonTopologyMovementLogic {
                 room.narration());
     }
 
-    private static Map<Integer, List<DungeonCell>> movedCellsByLevel(
-            Map<Integer, List<DungeonCell>> cellsByLevel,
+    private static Map<Integer, List<Cell>> movedCellsByLevel(
+            Map<Integer, List<Cell>> cellsByLevel,
             int deltaLevel
     ) {
         if (deltaLevel == 0 || cellsByLevel == null || cellsByLevel.isEmpty()) {
             return cellsByLevel;
         }
-        Map<Integer, List<DungeonCell>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<DungeonCell>> entry : cellsByLevel.entrySet()) {
-            List<DungeonCell> movedCells = new ArrayList<>();
-            for (DungeonCell cell : entry.getValue()) {
+        Map<Integer, List<Cell>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
+            List<Cell> movedCells = new ArrayList<>();
+            for (Cell cell : entry.getValue()) {
                 if (cell != null) {
-                    movedCells.add(new DungeonCell(cell.q(), cell.r(), cell.level() + deltaLevel));
+                    movedCells.add(new Cell(cell.q(), cell.r(), cell.level() + deltaLevel));
                 }
             }
             result.put(entry.getKey() + deltaLevel, movedCells);
@@ -133,7 +134,7 @@ public final class DungeonTopologyMovementLogic {
                     movedBoundaries.add(new DungeonClusterBoundary(
                             boundary.clusterId(),
                             boundary.level() + deltaLevel,
-                            new DungeonCell(
+                            new Cell(
                                     boundary.relativeCell().q(),
                                     boundary.relativeCell().r(),
                                     boundary.relativeCell().level() + deltaLevel),

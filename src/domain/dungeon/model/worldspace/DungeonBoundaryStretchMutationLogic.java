@@ -6,8 +6,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryTouch;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.BoundaryVertex;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchEdge;
@@ -31,7 +34,7 @@ final class DungeonBoundaryStretchMutationLogic {
             StretchSelection stretch,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap
     ) {
-        Set<DungeonCell> levelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
+        Set<Cell> levelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
         if (!sourceStaysInternal(stretch, levelCells)
                 || CORRIDOR_BINDING_LOOKUP_SERVICE.touchesCorridorBinding(
                 dungeonMap,
@@ -58,9 +61,9 @@ final class DungeonBoundaryStretchMutationLogic {
             StretchSelection stretch,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap
     ) {
-        Map<Integer, List<DungeonCell>> nextCellsByLevel = new LinkedHashMap<>(target.cellsByLevel());
-        Set<DungeonCell> currentLevelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
-        Set<DungeonCell> stripCells = DungeonBoundaryStretchSelectionGeometry.stripCells(stretch);
+        Map<Integer, List<Cell>> nextCellsByLevel = new LinkedHashMap<>(target.cellsByLevel());
+        Set<Cell> currentLevelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
+        Set<Cell> stripCells = DungeonBoundaryStretchSelectionGeometry.stripCells(stretch);
         if (stripCells.isEmpty()) {
             return Optional.empty();
         }
@@ -72,7 +75,7 @@ final class DungeonBoundaryStretchMutationLogic {
         if (currentLevelCells.isEmpty()) {
             return Optional.empty();
         }
-        nextCellsByLevel.put(stretch.level(), DungeonCell.sortedByGeometry(currentLevelCells));
+        nextCellsByLevel.put(stretch.level(), CellOrdering.sortedCells(currentLevelCells));
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(boundaryMap);
         for (BoundaryVertex vertex : DungeonBoundaryStretchSelectionGeometry.vertices(stretch)) {
             if (!BOUNDARY_LOOKUP_SERVICE.hasPerpendicularBoundary(
@@ -103,14 +106,14 @@ final class DungeonBoundaryStretchMutationLogic {
     private boolean replaceStretchEdges(
             DungeonRoomTopologyClusterWork target,
             StretchSelection stretch,
-            Set<DungeonCell> levelCells,
+            Set<Cell> levelCells,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries
     ) {
         for (StretchEdge edge : stretch.edges()) {
             boundaries.remove(edge.key());
         }
         for (StretchEdge edge : stretch.edges()) {
-            DungeonEdge movedEdge = stretch.orientation().move(edge.edge(), stretch.movement());
+            Edge movedEdge = stretch.orientation().move(edge.edge(), stretch.movement());
             DungeonBoundaryKey movedKey = DungeonBoundaryKey.from(movedEdge);
             if (boundaries.containsKey(movedKey)) {
                 return false;
@@ -130,7 +133,7 @@ final class DungeonBoundaryStretchMutationLogic {
         return true;
     }
 
-    private boolean sourceStaysInternal(StretchSelection stretch, Set<DungeonCell> clusterCells) {
+    private boolean sourceStaysInternal(StretchSelection stretch, Set<Cell> clusterCells) {
         for (StretchEdge edge : stretch.edges()) {
             DungeonBoundaryTouch movedTouch = new DungeonBoundaryTouch(
                     insideCells(stretch.orientation().move(edge.edge(), stretch.movement()).touchingCells(), clusterCells));
@@ -141,9 +144,9 @@ final class DungeonBoundaryStretchMutationLogic {
         return true;
     }
 
-    private List<DungeonCell> insideCells(List<DungeonCell> touchingCells, Set<DungeonCell> clusterCells) {
-        List<DungeonCell> result = new java.util.ArrayList<>();
-        for (DungeonCell cell : touchingCells == null ? List.<DungeonCell>of() : touchingCells) {
+    private List<Cell> insideCells(List<Cell> touchingCells, Set<Cell> clusterCells) {
+        List<Cell> result = new java.util.ArrayList<>();
+        for (Cell cell : touchingCells == null ? List.<Cell>of() : touchingCells) {
             if (clusterCells.contains(cell)) {
                 result.add(cell);
             }
@@ -153,7 +156,7 @@ final class DungeonBoundaryStretchMutationLogic {
 
     private Optional<DungeonTopologyRef> preserveTopologyRef(
             StretchEdge edge,
-            DungeonCell center
+            Cell center
     ) {
         if (edge.existing() == null) {
             return Optional.empty();

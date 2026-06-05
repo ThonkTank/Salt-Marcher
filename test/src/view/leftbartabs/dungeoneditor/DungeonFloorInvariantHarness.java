@@ -6,19 +6,18 @@ import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
+import src.domain.dungeon.model.core.projection.DungeonAreaType;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
-import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
-import src.domain.dungeon.model.core.projection.DungeonAreaType;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonDerivedStateProjection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 
 final class DungeonFloorInvariantHarness {
 
@@ -175,30 +174,30 @@ final class DungeonFloorInvariantHarness {
     private static void assertDungeonLevelFloorProjection() {
         DungeonMap map = projectionMap();
         DungeonDerivedState derived = new DungeonDerivedStateProjection().project(map);
-        Set<Set<DungeonCell>> projectedRooms = roomAreaCellSets(derived);
+        Set<Set<Cell>> projectedRooms = roomAreaCellSets(derived);
 
         assertTrue(projectedRooms.contains(Set.of(
-                        new DungeonCell(1, 1, 0),
-                        new DungeonCell(2, 1, 0))),
+                        new Cell(1, 1, 0),
+                        new Cell(2, 1, 0))),
                 "floor projection includes first structure-owned room floor cells");
         assertTrue(projectedRooms.contains(Set.of(
-                        new DungeonCell(5, 1, 0),
-                        new DungeonCell(6, 1, 0))),
+                        new Cell(5, 1, 0),
+                        new Cell(6, 1, 0))),
                 "floor projection includes second structure-owned room floor cells");
         assertEquals(2, projectedRooms.size(),
                 "floor projection builds one read-side room area per authored structure cluster");
 
         DungeonAreaFacts firstArea = firstRoomArea(derived);
         assertThrowsUnsupported(
-                () -> firstArea.cells().add(new DungeonCell(99, 99, 0)),
+                () -> firstArea.cells().add(new Cell(99, 99, 0)),
                 "floor projection exposes immutable read-side cell facts");
         assertEquals(projectedRooms, roomAreaCellSets(derived),
                 "rejected projection mutation leaves derived floor facts unchanged");
 
-        DungeonMap changed = map.paintRoomRectangle(new DungeonCell(10, 1, 0), new DungeonCell(10, 1, 0));
-        Set<Set<DungeonCell>> changedRooms =
+        DungeonMap changed = map.paintRoomRectangle(new Cell(10, 1, 0), new Cell(10, 1, 0));
+        Set<Set<Cell>> changedRooms =
                 roomAreaCellSets(new DungeonDerivedStateProjection().project(changed));
-        assertTrue(changedRooms.contains(Set.of(new DungeonCell(10, 1, 0))),
+        assertTrue(changedRooms.contains(Set.of(new Cell(10, 1, 0))),
                 "floor projection changes only after routing mutation through DungeonMap structure ownership");
         assertEquals(projectedRooms, roomAreaCellSets(derived),
                 "original floor projection remains a snapshot after authored structure mutation");
@@ -206,12 +205,12 @@ final class DungeonFloorInvariantHarness {
 
     private static DungeonMap projectionMap() {
         return DungeonMapAuthoring.empty(new DungeonMapIdentity(80L), "Floor Projection")
-                .paintRoomRectangle(new DungeonCell(1, 1, 0), new DungeonCell(2, 1, 0))
-                .paintRoomRectangle(new DungeonCell(5, 1, 0), new DungeonCell(6, 1, 0));
+                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 1, 0))
+                .paintRoomRectangle(new Cell(5, 1, 0), new Cell(6, 1, 0));
     }
 
-    private static Set<Set<DungeonCell>> roomAreaCellSets(DungeonDerivedState derived) {
-        java.util.LinkedHashSet<Set<DungeonCell>> result = new java.util.LinkedHashSet<>();
+    private static Set<Set<Cell>> roomAreaCellSets(DungeonDerivedState derived) {
+        java.util.LinkedHashSet<Set<Cell>> result = new java.util.LinkedHashSet<>();
         for (DungeonAreaFacts area : derived.map().areas()) {
             if (area.kind() == DungeonAreaType.ROOM) {
                 result.add(Set.copyOf(area.cells()));

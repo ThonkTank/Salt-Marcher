@@ -22,7 +22,7 @@ final class TravelAuthoredSurfaceTransitionProjectionMapper {
                         transition.description(),
                         transition.anchor() == null
                                 ? null
-                                : TravelGeometryProjectionMapper.toCoreCell(transition.anchor()),
+                                : TravelGeometryProjectionMapper.cellOrOrigin(transition.anchor()),
                         toDestination(transition.destination())));
             }
         }

@@ -21,13 +21,47 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import src.data.dungeon.model.DungeonPersistenceSchema;
+import src.data.dungeon.repository.SqliteDungeonMapRepository;
+import src.domain.dungeon.DungeonServiceContribution;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
+import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
+import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.published.DungeonEdgeRef;
+import src.domain.dungeon.published.DungeonEditorControlsModel;
+import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
+import src.domain.dungeon.published.DungeonEditorPreview;
+import src.domain.dungeon.published.DungeonEditorStateModel;
+import src.domain.dungeon.published.DungeonEditorStateSnapshot;
+import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
+import src.domain.dungeon.published.DungeonEditorViewMode;
+import src.domain.dungeon.published.DungeonInspectorSnapshot;
+import src.domain.dungeon.published.DungeonMapSummary;
+import src.domain.dungeon.published.DungeonOverlaySettings;
+import src.domain.dungeon.published.DungeonTopologyElementRef;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
+import src.view.slotcontent.main.dungeonmap.DungeonMapView;
+import bootstrap.AppBootstrap;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
-import javafx.scene.Scene;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBase;
@@ -52,48 +86,14 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import bootstrap.AppBootstrap;
-import shell.api.ShellLeftBarTabSpec;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
+import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import shell.host.AppShell;
-import src.data.dungeon.model.DungeonPersistenceSchema;
-import src.data.dungeon.repository.SqliteDungeonMapRepository;
-import src.domain.dungeon.DungeonServiceContribution;
-import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonEdge;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
-import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
-import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
-import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
-import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
-import src.domain.dungeon.published.DungeonEditorControlsModel;
-import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
-import src.domain.dungeon.published.DungeonEditorPreview;
-import src.domain.dungeon.published.DungeonEditorStateModel;
-import src.domain.dungeon.published.DungeonEditorStateSnapshot;
-import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
-import src.domain.dungeon.published.DungeonEditorViewMode;
-import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.domain.dungeon.published.DungeonMapSummary;
-import src.domain.dungeon.published.DungeonOverlaySettings;
-import src.domain.dungeon.published.DungeonTopologyElementRef;
-import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
-import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
 final class DungeonEditorBehaviorHarnessSupport {
 
@@ -253,12 +253,12 @@ final class DungeonEditorBehaviorHarnessSupport {
             int toR,
             int toLevel
     ) {
-        DungeonCell from = new DungeonCell(fromQ, fromR, fromLevel);
-        DungeonCell to = new DungeonCell(toQ, toR, toLevel);
+        Cell from = new Cell(fromQ, fromR, fromLevel);
+        Cell to = new Cell(toQ, toR, toLevel);
         return preview.edges().stream().anyMatch(edge -> samePreviewEdge(edge, from, to));
     }
 
-    static boolean samePreviewEdge(DungeonEdgeRef edge, DungeonCell from, DungeonCell to) {
+    static boolean samePreviewEdge(DungeonEdgeRef edge, Cell from, Cell to) {
         return sameCell(edge.from(), from) && sameCell(edge.to(), to)
                 || sameCell(edge.from(), to) && sameCell(edge.to(), from);
     }
@@ -271,20 +271,20 @@ final class DungeonEditorBehaviorHarnessSupport {
         assertTrue(surfaceHasBoundaryKindAt(
                         snapshot,
                         "wall",
-                        new DungeonCell(2, 1, 0),
-                        new DungeonCell(2, 2, 0)),
+                        new Cell(2, 1, 0),
+                        new Cell(2, 2, 0)),
                 message + " published map includes north internal wall edge");
         assertTrue(surfaceHasBoundaryKindAt(
                         snapshot,
                         "wall",
-                        new DungeonCell(2, 2, 0),
-                        new DungeonCell(2, 3, 0)),
+                        new Cell(2, 2, 0),
+                        new Cell(2, 3, 0)),
                 message + " published map includes center internal wall edge");
         assertTrue(surfaceHasBoundaryKindAt(
                         snapshot,
                         "wall",
-                        new DungeonCell(2, 3, 0),
-                        new DungeonCell(2, 4, 0)),
+                        new Cell(2, 3, 0),
+                        new Cell(2, 4, 0)),
                 message + " published map includes south internal wall edge");
         assertTrue(renderHasBoundaryNear(mapContentModel, "WALL", 2.0, 1.5),
                 message + " render-facing state includes north internal wall edge");
@@ -1398,7 +1398,7 @@ final class DungeonEditorBehaviorHarnessSupport {
         return cell.q() + "," + cell.r() + "," + cell.level();
     }
 
-    static String cellKey(DungeonCell cell) {
+    static String cellKey(Cell cell) {
         return cell.q() + "," + cell.r() + "," + cell.level();
     }
 
@@ -1422,11 +1422,11 @@ final class DungeonEditorBehaviorHarnessSupport {
             int q,
             int r,
             int level,
-            DungeonEdgeDirection direction,
+            Direction direction,
             String message
     ) {
-        DungeonCell from = new DungeonCell(q, r, level);
-        DungeonCell to = direction.neighborOf(from);
+        Cell from = new Cell(q, r, level);
+        Cell to = direction.neighborOf(from);
         boolean present = snapshot.surface().map().boundaries().stream()
                 .map(boundary -> boundary.edge())
                 .anyMatch(edge -> sameEdge(edge, from, to));
@@ -1436,8 +1436,8 @@ final class DungeonEditorBehaviorHarnessSupport {
     static boolean surfaceHasBoundaryKindAt(
             DungeonEditorMapSurfaceSnapshot snapshot,
             String kind,
-            DungeonCell from,
-            DungeonCell to
+            Cell from,
+            Cell to
     ) {
         return snapshot.surface().map().boundaries().stream()
                 .filter(boundary -> kind.equalsIgnoreCase(boundary.kind()))
@@ -1447,14 +1447,14 @@ final class DungeonEditorBehaviorHarnessSupport {
 
     static boolean sameEdge(
             src.domain.dungeon.published.DungeonEdgeRef edge,
-            DungeonCell from,
-            DungeonCell to
+            Cell from,
+            Cell to
     ) {
         return sameCell(edge.from(), from) && sameCell(edge.to(), to)
                 || sameCell(edge.from(), to) && sameCell(edge.to(), from);
     }
 
-    static boolean sameCell(src.domain.dungeon.published.DungeonCellRef left, DungeonCell right) {
+    static boolean sameCell(src.domain.dungeon.published.DungeonCellRef left, Cell right) {
         return left.q() == right.q() && left.r() == right.r() && left.level() == right.level();
     }
 
@@ -4150,8 +4150,8 @@ final class DungeonEditorBehaviorHarnessSupport {
                 int relativeY,
                 String direction
         ) {
-            DungeonCell absoluteCell = new DungeonCell(centerX + relativeX, centerY + relativeY, level);
-            DungeonEdge edge = DungeonEdge.sideOf(absoluteCell, DungeonEdgeDirection.parse(direction));
+            Cell absoluteCell = new Cell(centerX + relativeX, centerY + relativeY, level);
+            Edge edge = Edge.sideOf(absoluteCell, Direction.parse(direction));
             return DungeonBoundaryKey.from(edge).stableId();
         }
 

@@ -5,6 +5,7 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
@@ -18,19 +19,19 @@ final class DungeonStairGeometryValues {
         return shape == null ? null : DungeonStairShape.parse(shape.name());
     }
 
-    static @Nullable DungeonEdgeDirection supportedCardinalDirection(String value) {
+    static @Nullable Direction supportedCardinalDirection(String value) {
         String normalized = value == null ? "" : value.trim().toUpperCase(java.util.Locale.ROOT);
         return switch (normalized) {
-            case "NORTH" -> DungeonEdgeDirection.NORTH;
-            case "EAST" -> DungeonEdgeDirection.EAST;
-            case "SOUTH" -> DungeonEdgeDirection.SOUTH;
-            case "WEST" -> DungeonEdgeDirection.WEST;
+            case "NORTH" -> Direction.NORTH;
+            case "EAST" -> Direction.EAST;
+            case "SOUTH" -> Direction.SOUTH;
+            case "WEST" -> Direction.WEST;
             default -> null;
         };
     }
 
-    static List<DungeonCell> uniquePath(List<DungeonCell> source) {
-        return worldspaceCells(new Stair(
+    static List<Cell> uniquePath(List<Cell> source) {
+        return cells(new Stair(
                 0L,
                 0L,
                 "",
@@ -38,7 +39,7 @@ final class DungeonStairGeometryValues {
                 null,
                 0,
                 0,
-                coreCells(source),
+                cells(source),
                 List.of(),
                 null).path());
     }
@@ -59,8 +60,8 @@ final class DungeonStairGeometryValues {
 
     static @Nullable StairGeometrySpec geometrySpec(
             DungeonStairShape shape,
-            DungeonCell anchor,
-            DungeonEdgeDirection direction,
+            Cell anchor,
+            Direction direction,
             int dimension1,
             int dimension2
     ) {
@@ -69,41 +70,27 @@ final class DungeonStairGeometryValues {
         }
         return new StairGeometrySpec(
                 StairShape.parse(shape.name()),
-                anchor.geometry(),
-                direction.geometry(),
+                anchor,
+                direction,
                 dimension1,
                 dimension2);
     }
 
-    static List<Cell> coreCells(List<DungeonCell> source) {
+    static List<Cell> cells(List<Cell> source) {
         List<Cell> result = new ArrayList<>();
-        for (DungeonCell cell : source == null ? List.<DungeonCell>of() : source) {
-            if (cell != null) {
-                result.add(cell.geometry());
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    static List<DungeonCell> worldspaceCells(List<Cell> source) {
-        List<DungeonCell> result = new ArrayList<>();
         for (Cell cell : source == null ? List.<Cell>of() : source) {
             if (cell != null) {
-                result.add(DungeonCell.fromGeometry(cell));
+                result.add(cell);
             }
         }
         return List.copyOf(result);
-    }
-
-    static @Nullable DungeonCell worldspaceCell(@Nullable Cell cell) {
-        return cell == null ? null : DungeonCell.fromGeometry(cell);
     }
 
     static List<StairExit> coreExits(List<DungeonStairExit> source) {
         List<StairExit> result = new ArrayList<>();
         for (DungeonStairExit exit : source == null ? List.<DungeonStairExit>of() : source) {
             if (exit != null) {
-                result.add(new StairExit(exit.exitId(), exit.position().geometry(), exit.label()));
+                result.add(new StairExit(exit.exitId(), exit.position(), exit.label()));
             }
         }
         return List.copyOf(result);
@@ -115,7 +102,7 @@ final class DungeonStairGeometryValues {
             if (exit != null) {
                 result.add(new DungeonStairExit(
                         exit.exitId(),
-                        DungeonCell.fromGeometry(exit.position()),
+                        exit.position(),
                         exit.label()));
             }
         }

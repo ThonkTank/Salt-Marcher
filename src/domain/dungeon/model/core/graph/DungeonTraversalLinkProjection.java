@@ -8,12 +8,12 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
-import src.domain.dungeon.model.worldspace.DungeonCell;
-import src.domain.dungeon.model.worldspace.DungeonEdge;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonStair;
 import src.domain.dungeon.model.worldspace.DungeonStairExit;
@@ -41,13 +41,13 @@ public final class DungeonTraversalLinkProjection {
             if (boundary == null) {
                 continue;
             }
-            DungeonEdge edge = boundary.edge();
-            List<DungeonCell> touchingCells = edge == null ? List.of() : edge.touchingCells();
+            Edge edge = boundary.edge();
+            List<Cell> touchingCells = edge == null ? List.of() : edge.touchingCells();
             if (doorLinkUnavailable(boundary, touchingCells, index)) {
                 continue;
             }
-            DungeonCell first = touchingCells.get(0);
-            DungeonCell second = touchingCells.get(1);
+            Cell first = touchingCells.get(0);
+            Cell second = touchingCells.get(1);
             result.add(new DungeonTraversalLink(
                     traversalKey(DungeonTraversalSourceKind.DOOR, boundary.id(), first, second),
                     new DungeonTraversalSource(DungeonTraversalSourceKind.DOOR, boundary.id(), boundary.label()),
@@ -59,7 +59,7 @@ public final class DungeonTraversalLinkProjection {
 
     private static boolean doorLinkUnavailable(
             DungeonBoundaryFacts boundary,
-            List<DungeonCell> touchingCells,
+            List<Cell> touchingCells,
             CellAreaIndex index
     ) {
         return !DOOR_KIND.equalsIgnoreCase(boundary.kind())
@@ -91,7 +91,7 @@ public final class DungeonTraversalLinkProjection {
         }
     }
 
-    private static DungeonTraversalEndpoint traversalEndpoint(CellAreaIndex index, DungeonCell tile) {
+    private static DungeonTraversalEndpoint traversalEndpoint(CellAreaIndex index, Cell tile) {
         DungeonAreaFacts area = index.areaAt(tile);
         return new DungeonTraversalEndpoint(tile, area == null ? 0L : area.id(), area == null ? "" : area.label());
     }
@@ -104,8 +104,8 @@ public final class DungeonTraversalLinkProjection {
     private static String traversalKey(
             DungeonTraversalSourceKind sourceKind,
             long sourceId,
-            DungeonCell first,
-            DungeonCell second
+            Cell first,
+            Cell second
     ) {
         String left = cellKey(first);
         String right = cellKey(second);
@@ -113,18 +113,18 @@ public final class DungeonTraversalLinkProjection {
         return sourceKind.name().toLowerCase(Locale.ROOT) + ":" + sourceId + ":" + ordered;
     }
 
-    private static String cellKey(DungeonCell cell) {
-        DungeonCell safeCell = cell == null ? new DungeonCell(0, 0, 0) : cell;
+    private static String cellKey(Cell cell) {
+        Cell safeCell = cell == null ? new Cell(0, 0, 0) : cell;
         return safeCell.q() + "," + safeCell.r() + "," + safeCell.level();
     }
 
     private record CellAreaIndex(
-            Set<DungeonCell> traversableCells,
-            Map<DungeonCell, DungeonAreaFacts> areasByCell
+            Set<Cell> traversableCells,
+            Map<Cell, DungeonAreaFacts> areasByCell
     ) {
         static CellAreaIndex from(DungeonMapFacts map) {
-            Set<DungeonCell> cells = new LinkedHashSet<>();
-            Map<DungeonCell, DungeonAreaFacts> areas = new LinkedHashMap<>();
+            Set<Cell> cells = new LinkedHashSet<>();
+            Map<Cell, DungeonAreaFacts> areas = new LinkedHashMap<>();
             if (map != null) {
                 appendAreas(cells, areas, map.areas());
                 appendFeatureCells(cells, map.features());
@@ -132,24 +132,24 @@ public final class DungeonTraversalLinkProjection {
             return new CellAreaIndex(Set.copyOf(cells), Map.copyOf(areas));
         }
 
-        boolean contains(DungeonCell cell) {
+        boolean contains(Cell cell) {
             return traversableCells.contains(cell);
         }
 
-        @Nullable DungeonAreaFacts areaAt(DungeonCell cell) {
+        @Nullable DungeonAreaFacts areaAt(Cell cell) {
             return areasByCell.get(cell);
         }
 
         private static void appendAreas(
-                Set<DungeonCell> cells,
-                Map<DungeonCell, DungeonAreaFacts> areas,
+                Set<Cell> cells,
+                Map<Cell, DungeonAreaFacts> areas,
                 List<DungeonAreaFacts> areaFacts
         ) {
             for (DungeonAreaFacts area : areaFacts == null ? List.<DungeonAreaFacts>of() : areaFacts) {
                 if (area == null) {
                     continue;
                 }
-                for (DungeonCell cell : area.cells()) {
+                for (Cell cell : area.cells()) {
                     if (cell != null) {
                         cells.add(cell);
                         areas.putIfAbsent(cell, area);
@@ -158,12 +158,12 @@ public final class DungeonTraversalLinkProjection {
             }
         }
 
-        private static void appendFeatureCells(Set<DungeonCell> cells, List<DungeonFeatureFacts> features) {
+        private static void appendFeatureCells(Set<Cell> cells, List<DungeonFeatureFacts> features) {
             for (DungeonFeatureFacts feature : features == null ? List.<DungeonFeatureFacts>of() : features) {
                 if (feature == null) {
                     continue;
                 }
-                for (DungeonCell cell : feature.cells()) {
+                for (Cell cell : feature.cells()) {
                     if (cell != null) {
                         cells.add(cell);
                     }

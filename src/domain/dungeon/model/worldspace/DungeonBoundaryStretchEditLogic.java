@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchMutationResult;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
 
@@ -23,7 +24,7 @@ final class DungeonBoundaryStretchEditLogic {
     DungeonMap moveBoundaryStretch(
             DungeonMap dungeonMap,
             long clusterId,
-            List<DungeonEdge> sourceEdges,
+            List<Edge> sourceEdges,
             int deltaQ,
             int deltaR,
             int deltaLevel
@@ -105,7 +106,7 @@ final class DungeonBoundaryStretchEditLogic {
         return REBUILD_SERVICE.rebuiltPreservingRooms(dungeonMap, nextClusters);
     }
 
-    private boolean invalidStretchRequest(long clusterId, List<DungeonEdge> sourceEdges) {
+    private boolean invalidStretchRequest(long clusterId, List<Edge> sourceEdges) {
         return clusterId <= 0L || sourceEdges == null || sourceEdges.isEmpty();
     }
 }

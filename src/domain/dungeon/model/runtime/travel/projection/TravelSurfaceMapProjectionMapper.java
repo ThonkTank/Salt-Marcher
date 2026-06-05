@@ -3,12 +3,12 @@ package src.domain.dungeon.model.runtime.travel.projection;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
 
 final class TravelSurfaceMapProjectionMapper {
 
@@ -46,7 +46,7 @@ final class TravelSurfaceMapProjectionMapper {
                 TravelDungeonSessionValues.AreaKind.fromName(area.kind().name()),
                 area.id(),
                 area.label(),
-                area.cells().stream().map(TravelGeometryProjectionMapper::toCoreCell).toList());
+                area.cells().stream().map(TravelGeometryProjectionMapper::cellOrOrigin).toList());
     }
 
     private static List<TravelDungeonSessionSurface.BoundaryData> toRuntimeBoundaries(
@@ -69,7 +69,7 @@ final class TravelSurfaceMapProjectionMapper {
                 "door".equalsIgnoreCase(boundary.kind()),
                 boundary.id(),
                 boundary.label(),
-                TravelGeometryProjectionMapper.toCoreEdge(boundary.edge()));
+                TravelGeometryProjectionMapper.edgeOrOrigin(boundary.edge()));
     }
 
     private static List<TravelDungeonSessionSurface.FeatureData> toRuntimeFeatures(List<DungeonFeatureFacts> features) {
@@ -90,7 +90,7 @@ final class TravelSurfaceMapProjectionMapper {
                 TravelDungeonSessionValues.FeatureKind.fromName(feature.kind().name()),
                 feature.id(),
                 feature.label(),
-                feature.cells().stream().map(TravelGeometryProjectionMapper::toCoreCell).toList(),
+                feature.cells().stream().map(TravelGeometryProjectionMapper::cellOrOrigin).toList(),
                 feature.description(),
                 feature.destinationLabel());
     }

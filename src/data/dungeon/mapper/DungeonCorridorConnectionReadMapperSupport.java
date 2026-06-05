@@ -10,14 +10,13 @@ import src.data.dungeon.model.DungeonCorridorWaypointRecord;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonCell;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
 import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
-import src.domain.dungeon.model.worldspace.DungeonEdgeDirection;
 
 final class DungeonCorridorConnectionReadMapperSupport {
 
@@ -60,8 +59,8 @@ final class DungeonCorridorConnectionReadMapperSupport {
             result.add(new DungeonCorridorDoorBinding(
                     record.roomId(),
                     record.clusterId(),
-                    new DungeonCell(record.relativeCellX(), record.relativeCellY(), 0),
-                    DungeonEdgeDirection.parse(record.edgeDirection()),
+                    new Cell(record.relativeCellX(), record.relativeCellY(), 0),
+                    Direction.parse(record.edgeDirection()),
                     record.topologyElementId() == null
                             ? DungeonTopologyRef.empty()
                             : new DungeonTopologyRef(
@@ -78,7 +77,7 @@ final class DungeonCorridorConnectionReadMapperSupport {
             result.add(new DungeonCorridorAnchorBinding(
                     record.anchorId(),
                     record.hostCorridorId(),
-                    new DungeonCell(record.cellX(), record.cellY(), record.cellZ()),
+                    new Cell(record.cellX(), record.cellY(), record.cellZ()),
                     record.topologyElementId() == null
                             ? new DungeonTopologyRef(
                                     DungeonTopologyElementKind.CORRIDOR_ANCHOR,
