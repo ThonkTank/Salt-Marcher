@@ -1,10 +1,9 @@
 package src.domain.dungeon.model.worldspace;
 
-import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
-
-
 import java.util.List;
 import java.util.Map;
+import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
+import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 
 record DungeonBoundaryProjection(
         List<DungeonBoundaryFacts> boundaries,

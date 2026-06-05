@@ -3,7 +3,7 @@ package src.domain.dungeon.model.runtime.travel.projection;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.DungeonRelationGraph;
+import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 
 final class TravelAuthoredSurfaceRelationProjectionMapper {
 

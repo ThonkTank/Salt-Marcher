@@ -1,10 +1,9 @@
 package src.domain.dungeon.model.worldspace;
 
+import java.util.List;
+import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
-
-
-import java.util.List;
 
 record DungeonCorridorProjection(
         long nextBoundaryId,

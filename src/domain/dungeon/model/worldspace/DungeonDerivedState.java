@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
+import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTraversalLink;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 
