@@ -16,7 +16,7 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValue
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
-import src.domain.dungeon.model.worldspace.DungeonEditorAuthoredOperation;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 
 public interface DungeonEditorAuthoredOperationHelper {
 
