@@ -12,13 +12,11 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.door.Door;
 import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.door.DoorIndex;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDoorBindingGeometry;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 
 final class DungeonClusterBoundaryDoorRules {
-
-    private static final DungeonCorridorBindingLookupLogic CORRIDOR_BINDING_LOOKUP_SERVICE =
-            new DungeonCorridorBindingLookupLogic();
 
     boolean removeBoundaryIfAllowed(
             DungeonMap dungeonMap,
@@ -32,8 +30,8 @@ final class DungeonClusterBoundaryDoorRules {
             return false;
         }
         boolean corridorBound = resolvedKind == BoundaryKind.DOOR
-                && CORRIDOR_BINDING_LOOKUP_SERVICE.touchesCorridorBinding(
-                dungeonMap,
+                && DungeonCorridorDoorBindingGeometry.touchesDoorBindingKeys(
+                dungeonMap.connections().corridors(),
                 target.cluster().center(),
                 target.cluster().clusterId(),
                 existing.level(),

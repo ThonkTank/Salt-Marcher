@@ -7,6 +7,7 @@ import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDoorBindingGeometry;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.ConnectorAction;
@@ -14,8 +15,6 @@ import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.Stre
 
 final class DungeonBoundaryStretchConnectorLogic {
 
-    private static final DungeonCorridorBindingLookupLogic CORRIDOR_BINDING_LOOKUP_SERVICE =
-            new DungeonCorridorBindingLookupLogic();
     private static final DungeonClusterBoundaryGeometryLogic GEOMETRY_SERVICE =
             new DungeonClusterBoundaryGeometryLogic();
     private static final DungeonBoundaryStretchBoundaryLookupLogic BOUNDARY_LOOKUP_SERVICE =
@@ -59,8 +58,8 @@ final class DungeonBoundaryStretchConnectorLogic {
         if (connectorPath.isEmpty()) {
             return true;
         }
-        if (CORRIDOR_BINDING_LOOKUP_SERVICE.touchesCorridorBinding(
-                dungeonMap,
+        if (DungeonCorridorDoorBindingGeometry.touchesDoorBindingPath(
+                dungeonMap.connections().corridors(),
                 target.cluster().center(),
                 target.cluster().clusterId(),
                 stretch.level(),
