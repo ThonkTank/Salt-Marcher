@@ -1,9 +1,13 @@
 package src.domain.dungeon.model.worldspace;
 
+import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
+import src.domain.dungeon.model.core.structure.stair.StairCollection;
+import src.domain.dungeon.model.core.structure.transition.Transition;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 
 public final class DungeonMapAuthoring {
 
@@ -24,7 +28,9 @@ public final class DungeonMapAuthoring {
                 new DungeonMapMetadata(mapId, mapName),
                 topology,
                 RoomCatalog.empty(),
-                ConnectionCatalog.empty(),
+                List.of(),
+                new StairCollection(List.of()),
+                new TransitionCatalog(List.of()),
                 revision);
     }
 
@@ -34,7 +40,9 @@ public final class DungeonMapAuthoring {
             SpatialTopology topology,
             @Nullable DungeonMapTopology topologyIndex,
             RoomCatalog rooms,
-            ConnectionCatalog connections,
+            List<DungeonCorridor> corridors,
+            StairCollection stairs,
+            List<Transition> transitions,
             long revision
     ) {
         return new DungeonMap(
@@ -42,7 +50,9 @@ public final class DungeonMapAuthoring {
                 topology,
                 topologyIndex,
                 rooms,
-                connections,
+                corridors,
+                stairs,
+                new TransitionCatalog(transitions),
                 revision);
     }
 
@@ -52,7 +62,9 @@ public final class DungeonMapAuthoring {
                 dungeonMap.topology(),
                 dungeonMap.topologyIndex(),
                 dungeonMap.rooms(),
-                dungeonMap.connections(),
+                dungeonMap.corridors(),
+                dungeonMap.stairs(),
+                dungeonMap.transitionCatalog(),
                 dungeonMap.revision() + 1L);
     }
 }

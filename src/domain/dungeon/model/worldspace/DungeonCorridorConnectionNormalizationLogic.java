@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
+import src.domain.dungeon.model.core.structure.stair.StairCollection;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 
 /**
  * Owns normalized corridor-connection rebuilding for authored mutations.
@@ -12,12 +14,10 @@ public final class DungeonCorridorConnectionNormalizationLogic {
 
     private static final DungeonDerivedStateProjection DERIVED_STATE_PROJECTION = new DungeonDerivedStateProjection();
 
-    public ConnectionCatalog normalizeConnections(DungeonMap dungeonMap, ConnectionCatalog source) {
+    public List<DungeonCorridor> normalizeCorridors(DungeonMap dungeonMap, List<DungeonCorridor> source) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
-        ConnectionCatalog safeSource = source == null ? ConnectionCatalog.empty() : source;
-        List<DungeonCorridor> snappedCorridors = snapOwnedAnchors(dungeonMap, safeSource.corridors());
-        List<DungeonCorridor> prunedCorridors = pruneDetachedAnchors(snappedCorridors);
-        return new ConnectionCatalog(prunedCorridors, safeSource.stairs(), safeSource.transitions());
+        List<DungeonCorridor> snappedCorridors = snapOwnedAnchors(dungeonMap, source);
+        return pruneDetachedAnchors(snappedCorridors);
     }
 
     public List<DungeonCorridor> pruneDetachedAnchors(List<DungeonCorridor> corridors) {
@@ -26,14 +26,21 @@ public final class DungeonCorridorConnectionNormalizationLogic {
                 DungeonCorridor.coreNetwork(corridors).withoutDetachedAnchors());
     }
 
-    public DungeonMap copyWithConnections(DungeonMap dungeonMap, ConnectionCatalog nextConnections) {
-        ConnectionCatalog normalized = normalizeConnections(dungeonMap, nextConnections);
+    public DungeonMap copyWithConnections(
+            DungeonMap dungeonMap,
+            List<DungeonCorridor> nextCorridors,
+            StairCollection nextStairs,
+            TransitionCatalog nextTransitions
+    ) {
+        List<DungeonCorridor> normalizedCorridors = normalizeCorridors(dungeonMap, nextCorridors);
         return new DungeonMap(
                 dungeonMap.metadata(),
                 dungeonMap.topology(),
                 dungeonMap.topologyIndex(),
                 dungeonMap.rooms(),
-                normalized,
+                normalizedCorridors,
+                nextStairs,
+                nextTransitions,
                 dungeonMap.revision() + 1L);
     }
 

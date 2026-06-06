@@ -1,20 +1,26 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase;
+import src.domain.dungeon.model.worldspace.usecase.LoadDungeonMapUseCase;
+import src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredMutationUseCase;
 
 public final class SaveDungeonEditorAuthoredStairGeometryUseCase {
     private static final long NO_STAIR_ID = 0L;
 
-    private final ApplyDungeonAuthoredMutationUseCase mutationUseCase;
+    private final ApplyDungeonEditorOperationUseCase operationUseCase;
+    private final LoadDungeonMapUseCase loadDungeonMapUseCase;
     private final PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase;
 
     public SaveDungeonEditorAuthoredStairGeometryUseCase(
-            ApplyDungeonAuthoredMutationUseCase mutationUseCase,
+            ApplyDungeonEditorOperationUseCase operationUseCase,
+            LoadDungeonMapUseCase loadDungeonMapUseCase,
             PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase
     ) {
-        this.mutationUseCase = Objects.requireNonNull(mutationUseCase, "mutationUseCase");
+        this.operationUseCase = Objects.requireNonNull(operationUseCase, "operationUseCase");
+        this.loadDungeonMapUseCase = Objects.requireNonNull(loadDungeonMapUseCase, "loadDungeonMapUseCase");
         this.publishMutationUseCase = Objects.requireNonNull(publishMutationUseCase, "publishMutationUseCase");
     }
 
@@ -31,7 +37,7 @@ public final class SaveDungeonEditorAuthoredStairGeometryUseCase {
                 || dimension1 <= 0 || dimension2 <= 0) {
             return;
         }
-        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.apply(
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = operationUseCase.execute(
                 domainMapId(mapId),
                 current -> current.saveStairGeometry(stairId, shapeName, directionName, dimension1, dimension2));
         publishMutationUseCase.execute(result);
@@ -50,8 +56,7 @@ public final class SaveDungeonEditorAuthoredStairGeometryUseCase {
                 || dimension1 <= 0 || dimension2 <= 0) {
             return false;
         }
-        return mutationUseCase.canSaveStairGeometry(
-                domainMapId(mapId),
+        return loadDungeonMapUseCase.execute(domainMapId(mapId)).canSaveStairGeometry(
                 stairId,
                 shapeName,
                 directionName,

@@ -69,7 +69,7 @@ public final class DungeonEditorHandleMovementLogic {
         }
         long clusterId = handle.clusterId() > 0L
                 ? handle.clusterId()
-                : dungeonMap.topologyIndex().clusterIdFor(handle.topologyRef()).orElse(0L);
+                : dungeonMap.topologyIndex().clusterIdOrZero(handle.topologyRef());
         return TOPOLOGY_MOVEMENT_SERVICE.moveCluster(dungeonMap, clusterId, deltaQ, deltaR, deltaLevel);
     }
 
@@ -82,7 +82,7 @@ public final class DungeonEditorHandleMovementLogic {
     ) {
         List<DungeonCorridor> movedCorridors = new ArrayList<>();
         boolean changed = false;
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+        for (DungeonCorridor corridor : dungeonMap.corridors()) {
             if (corridor.corridorId() != handle.corridorId()) {
                 movedCorridors.add(corridor);
                 continue;
@@ -115,11 +115,9 @@ public final class DungeonEditorHandleMovementLogic {
         }
         return changed
                 ? copyWithConnections(
-                dungeonMap,
-                new ConnectionCatalog(
+                        dungeonMap,
                         movedCorridors,
-                        dungeonMap.connections().stairs(),
-                        dungeonMap.connections().transitions()))
+                        dungeonMap.stairs())
                 : dungeonMap;
     }
 
@@ -132,7 +130,7 @@ public final class DungeonEditorHandleMovementLogic {
     ) {
         List<DungeonCorridor> movedCorridors = new ArrayList<>();
         boolean changed = false;
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+        for (DungeonCorridor corridor : dungeonMap.corridors()) {
             if (corridor.corridorId() != handle.corridorId()) {
                 movedCorridors.add(corridor);
                 continue;
@@ -151,11 +149,9 @@ public final class DungeonEditorHandleMovementLogic {
         }
         return changed
                 ? copyWithConnections(
-                dungeonMap,
-                new ConnectionCatalog(
+                        dungeonMap,
                         movedCorridors,
-                        dungeonMap.connections().stairs(),
-                        dungeonMap.connections().transitions()))
+                        dungeonMap.stairs())
                 : dungeonMap;
     }
 
@@ -168,7 +164,7 @@ public final class DungeonEditorHandleMovementLogic {
     ) {
         List<DungeonCorridor> movedCorridors = new ArrayList<>();
         boolean changed = false;
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+        for (DungeonCorridor corridor : dungeonMap.corridors()) {
             if (corridor.corridorId() != handle.corridorId()) {
                 movedCorridors.add(corridor);
                 continue;
@@ -197,11 +193,9 @@ public final class DungeonEditorHandleMovementLogic {
         }
         return changed
                 ? copyWithConnections(
-                dungeonMap,
-                new ConnectionCatalog(
+                        dungeonMap,
                         movedCorridors,
-                        dungeonMap.connections().stairs(),
-                        dungeonMap.connections().transitions()))
+                        dungeonMap.stairs())
                 : dungeonMap;
     }
 
@@ -214,7 +208,7 @@ public final class DungeonEditorHandleMovementLogic {
     ) {
         List<Stair> movedStairs = new ArrayList<>();
         boolean changed = false;
-        for (Stair stair : dungeonMap.connections().stairs().stairs()) {
+        for (Stair stair : dungeonMap.stairs().stairs()) {
             if (stair.stairId() != handle.ownerId()) {
                 movedStairs.add(stair);
                 continue;
@@ -225,16 +219,22 @@ public final class DungeonEditorHandleMovementLogic {
         }
         return changed
                 ? copyWithConnections(
-                dungeonMap,
-                new ConnectionCatalog(
-                        dungeonMap.connections().corridors(),
-                        new StairCollection(movedStairs),
-                        dungeonMap.connections().transitions()))
+                        dungeonMap,
+                        dungeonMap.corridors(),
+                        new StairCollection(movedStairs))
                 : dungeonMap;
     }
 
-    private static DungeonMap copyWithConnections(DungeonMap dungeonMap, ConnectionCatalog nextConnections) {
-        return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(dungeonMap, nextConnections);
+    private static DungeonMap copyWithConnections(
+            DungeonMap dungeonMap,
+            List<DungeonCorridor> nextCorridors,
+            StairCollection nextStairs
+    ) {
+        return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
+                dungeonMap,
+                nextCorridors,
+                nextStairs,
+                dungeonMap.transitionCatalog());
     }
 
     private static Cell movedCell(Cell cell, int deltaQ, int deltaR, int deltaLevel) {

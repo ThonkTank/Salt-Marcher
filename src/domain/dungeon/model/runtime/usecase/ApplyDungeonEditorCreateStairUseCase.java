@@ -5,7 +5,6 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
-import src.domain.dungeon.model.worldspace.usecase.CreateDungeonEditorAuthoredStairUseCase;
 
 public final class ApplyDungeonEditorCreateStairUseCase {
     private static final String INVALID_STAIR_GEOMETRY_STATUS = "Treppengeometrie ungueltig.";

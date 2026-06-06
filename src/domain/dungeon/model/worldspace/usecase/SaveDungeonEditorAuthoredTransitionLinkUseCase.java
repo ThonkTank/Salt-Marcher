@@ -98,8 +98,9 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
         if (sourceMap == null || targetMap == null) {
             return null;
         }
-        TransitionDestination sourceDestination = sourceMap.transitionDestinationById(sourceTransitionId);
-        if (sourceDestination == null || !targetMap.containsTransition(targetTransitionId)) {
+        TransitionDestination sourceDestination =
+                sourceMap.transitionCatalog().destinationByTransitionId(sourceTransitionId);
+        if (sourceDestination == null || !targetMap.transitionCatalog().containsTransition(targetTransitionId)) {
             return null;
         }
         return new LoadedTransitionLink(sourceIdentity, targetIdentity, sourceMap, targetMap, sourceDestination);
@@ -135,7 +136,7 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
     ) {
         for (Map.Entry<Long, DungeonMap> entry : pendingMaps.entrySet()) {
             DungeonMap map = entry.getValue();
-            entry.setValue(map.withMapLocalAuthoredTransitionLink(link));
+            entry.setValue(map.withTransitionCatalog(map.transitionCatalog().withMapLocalAuthoredTransitionLink(link)));
         }
     }
 

@@ -1714,6 +1714,30 @@ final class DungeonEditorBehaviorHarnessSupport {
         return Path.of(resultsDir, "summary.txt");
     }
 
+    static void runPublishedHarness(
+            String harnessName,
+            HarnessConcern concern
+    ) throws Exception {
+        try (ResultPublicationLock ignored = lockResults()) {
+            try {
+                clearResults();
+                List<String> results = new ArrayList<>();
+                concern.run(results);
+                writeResults(results);
+                System.out.println(harnessName + " passed: " + results.size() + " proof item(s).");
+                for (String result : results) {
+                    System.out.println(result);
+                }
+                shutdownFx();
+                System.exit(0);
+            } catch (Throwable throwable) {
+                clearResults();
+                throwable.printStackTrace(System.err);
+                System.exit(1);
+            }
+        }
+    }
+
     static final class ResultPublicationLock implements AutoCloseable {
         private final FileChannel channel;
         private final FileLock lock;
@@ -2156,6 +2180,11 @@ final class DungeonEditorBehaviorHarnessSupport {
     @FunctionalInterface
     interface ThrowingRunnable {
         void run() throws Exception;
+    }
+
+    @FunctionalInterface
+    interface HarnessConcern {
+        void run(List<String> results) throws Exception;
     }
 
     record HarnessBinding(

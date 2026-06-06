@@ -48,20 +48,19 @@ final class DungeonCorridorMergeDeleteLogic {
                     roomId,
                     waypointIndex);
         }
-        CorridorNetwork network = DungeonCorridor.coreNetwork(dungeonMap.connections().corridors());
+        CorridorNetwork network = DungeonCorridor.coreNetwork(dungeonMap.corridors());
         if (!network.canDeleteCorridor(corridorId)) {
             return dungeonMap;
         }
         StairCollection withoutCorridorStairs =
-                dungeonMap.connections().stairs().withoutCorridorBoundStairs(corridorId);
+                dungeonMap.stairs().withoutCorridorBoundStairs(corridorId);
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 dungeonMap,
-                new ConnectionCatalog(
-                        DungeonCorridor.fromCoreNetwork(
-                                dungeonMap.connections().corridors(),
-                                network.withoutCorridor(corridorId)),
-                        withoutCorridorStairs,
-                        dungeonMap.connections().transitionCatalog()));
+                DungeonCorridor.fromCoreNetwork(
+                        dungeonMap.corridors(),
+                        network.withoutCorridor(corridorId)),
+                withoutCorridorStairs,
+                dungeonMap.transitionCatalog());
     }
 
     private static boolean invalidCorridorId(long corridorId) {
@@ -92,15 +91,14 @@ final class DungeonCorridorMergeDeleteLogic {
         DungeonCorridor updated = DungeonCorridor.fromCore(existing, updatedCore, null);
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 dungeonMap,
-                new ConnectionCatalog(
-                        withUpdatedCorridor(dungeonMap, updated),
-                        dungeonMap.connections().stairs(),
-                        dungeonMap.connections().transitions()));
+                withUpdatedCorridor(dungeonMap, updated),
+                dungeonMap.stairs(),
+                dungeonMap.transitionCatalog());
     }
 
     private List<DungeonCorridor> withUpdatedCorridor(DungeonMap dungeonMap, DungeonCorridor updated) {
         List<DungeonCorridor> nextCorridors = new ArrayList<>();
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+        for (DungeonCorridor corridor : dungeonMap.corridors()) {
             nextCorridors.add(corridor.corridorId() == updated.corridorId() ? updated : corridor);
         }
         return List.copyOf(nextCorridors);

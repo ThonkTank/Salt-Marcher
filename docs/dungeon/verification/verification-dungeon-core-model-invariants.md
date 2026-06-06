@@ -30,11 +30,11 @@ new Gradle task or public verification gate.
 
 ## Proof Model
 
-Model invariant rows are published through the existing
-`dungeonEditorBehaviorHarness` aggregator until a separate core-model proof
-entrypoint is requested. This document does not introduce a new public Gradle
-gate; a dedicated core-model proof entrypoint is a future decision for when
-model-only proof grows enough to justify that surface. Each published harness
+Model invariant rows are grouped by the package-level
+`DungeonCoreModelInvariantHarness` entrypoint and are still published through
+the existing `dungeonEditorBehaviorHarness` public Gradle aggregator. This
+document does not introduce a new public Gradle gate; the focused entrypoint is
+an internal harness concern route used by the aggregator. Each published harness
 summary row must include:
 
 - `OwnerSuite`

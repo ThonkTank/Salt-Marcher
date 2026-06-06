@@ -59,7 +59,7 @@ final class DungeonBoundaryStretchConnectorLogic {
             return true;
         }
         if (DungeonCorridorDoorBindingGeometry.touchesDoorBindingPath(
-                dungeonMap.connections().corridors(),
+                dungeonMap.corridors(),
                 target.cluster().center(),
                 target.cluster().clusterId(),
                 stretch.level(),

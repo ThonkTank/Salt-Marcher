@@ -7,7 +7,6 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainView
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorMainViewPointerTarget;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
-import src.domain.dungeon.model.worldspace.usecase.DeleteDungeonEditorAuthoredStairUseCase;
 
 public final class ApplyDungeonEditorDeleteStairUseCase {
     private static final long NO_STAIR_ID = 0L;

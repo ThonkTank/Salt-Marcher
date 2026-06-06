@@ -41,6 +41,7 @@ import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
 import src.domain.dungeon.model.core.structure.transition.Transition;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
@@ -921,27 +922,28 @@ final class DungeonStructureInvariantHarness {
                 "core transition ownership preserves source reverse-link delete protection");
         assertFalse(map.canDeleteTransition(3L),
                 "core transition ownership preserves referenced-transition delete protection");
-        assertEquals(List.of(1L, 2L, 3L), transitionIds(map.deleteTransition(4L).connections().transitions()),
+        assertEquals(List.of(1L, 2L, 3L), transitionIds(map.deleteTransition(4L).transitionCatalog().transitions()),
                 "core transition ownership removes deletable transition through core catalog");
         src.domain.dungeon.model.worldspace.DungeonMap linkedMap =
-                map.withMapLocalAuthoredTransitionLink(bidirectionalLink(4L, 1L, 4L, 3L));
+                map.withTransitionCatalog(map.transitionCatalog().withMapLocalAuthoredTransitionLink(
+                        bidirectionalLink(4L, 1L, 4L, 3L)));
         assertEquals(TransitionDestination.dungeonMap(4L, 3L),
                 linkedMap
-                        .connections()
+                        .transitionCatalog()
                         .transitions()
                         .getFirst()
                         .destination(),
                 "core transition ownership updates source destination through core catalog");
         assertEquals(null,
                 linkedMap
-                        .connections()
+                        .transitionCatalog()
                         .transitions()
                         .get(1)
                         .linkedTransitionId(),
                 "core transition ownership clears previous reverse linked transition through core catalog");
         assertEquals(1L,
                 linkedMap
-                        .connections()
+                        .transitionCatalog()
                         .transitions()
                         .get(2)
                         .linkedTransitionId(),
@@ -979,10 +981,9 @@ final class DungeonStructureInvariantHarness {
                         "transition proof map"),
                 src.domain.dungeon.model.worldspace.SpatialTopology.empty(),
                 src.domain.dungeon.model.core.structure.room.RoomCatalog.empty(),
-                new src.domain.dungeon.model.worldspace.ConnectionCatalog(
-                        List.of(),
-                        new StairCollection(List.of()),
-                        List.of(transitions)),
+                List.of(),
+                new StairCollection(List.of()),
+                new TransitionCatalog(List.of(transitions)),
                 0L);
     }
 

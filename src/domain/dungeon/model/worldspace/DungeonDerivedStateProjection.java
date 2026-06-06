@@ -54,15 +54,15 @@ public final class DungeonDerivedStateProjection {
                 new DungeonRoomBoundaryReadProjection().project(dungeonMap, topology);
         DungeonCorridorReadProjection corridorReadProjector = new DungeonCorridorReadProjection();
         DungeonCorridorProjection corridorProjection = corridorReadProjector.project(
-                dungeonMap.connections().corridors(),
+                dungeonMap.corridors(),
                 roomProjection.clustersById(),
                 roomProjection.roomsById(),
                 roomProjection.allRoomCells(),
                 roomProjection.nextBoundaryId(),
                 roomProjection.boundaryIdsByKey());
         DungeonFeatureReadProjection.Result featureProjection = new DungeonFeatureReadProjection().project(
-                dungeonMap.connections().stairs(),
-                dungeonMap.connections().transitions());
+                dungeonMap.stairs(),
+                dungeonMap.transitionCatalog().transitions());
         features.addAll(featureProjection.features());
         featureRelations.addAll(featureProjection.relations());
 

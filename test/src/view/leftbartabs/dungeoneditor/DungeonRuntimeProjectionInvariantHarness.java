@@ -12,6 +12,7 @@ import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionKind;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface;
@@ -73,9 +74,12 @@ final class DungeonRuntimeProjectionInvariantHarness {
 
     private static void assertRuntimeTransitionProjection() {
         Cell anchor = new Cell(2, 0, 0);
-        DungeonMap map = DungeonMapAuthoring
-                .empty(new DungeonMapIdentity(4L), "Runtime Transitions")
-                .createTransition(40L, anchor, true, 9L, 0L, 12L);
+        DungeonMap emptyMap = DungeonMapAuthoring.empty(new DungeonMapIdentity(4L), "Runtime Transitions");
+        DungeonMap map = emptyMap.withTransitionCatalog(emptyMap.transitionCatalog().withCreated(
+                40L,
+                emptyMap.metadata().mapId().value(),
+                anchor,
+                TransitionDestination.dungeonMap(9L, 12L)));
         DungeonDerivedState derived = derivedState(
                 List.of(new DungeonAreaFacts(DungeonAreaType.ROOM, 11L, "Portalraum", List.of(anchor))),
                 List.of());

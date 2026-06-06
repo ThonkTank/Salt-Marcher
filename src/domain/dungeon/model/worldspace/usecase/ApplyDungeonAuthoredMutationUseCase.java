@@ -38,37 +38,12 @@ public final class ApplyDungeonAuthoredMutationUseCase {
         return applyDungeonEditorOperationUseCase.execute(mapId, mutation);
     }
 
-    boolean canCreateStair(
-            @Nullable DungeonMapIdentity mapId,
-            @Nullable Cell anchor,
-            String shapeName
-    ) {
-        return applyDungeonEditorOperationUseCase.canCreateStair(mapId, anchor, shapeName);
-    }
-
     boolean canCreateTransition(
             @Nullable DungeonMapIdentity mapId,
             @Nullable Cell anchor,
             @Nullable TransitionDestination destination
     ) {
         return applyDungeonEditorOperationUseCase.canCreateTransition(mapId, anchor, destination);
-    }
-
-    boolean canSaveStairGeometry(
-            @Nullable DungeonMapIdentity mapId,
-            long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
-    ) {
-        return applyDungeonEditorOperationUseCase.canSaveStairGeometry(
-                mapId,
-                stairId,
-                shapeName,
-                directionName,
-                dimension1,
-                dimension2);
     }
 
     public ApplyDungeonEditorOperationUseCase.OperationResultData preview(
@@ -139,7 +114,7 @@ public final class ApplyDungeonAuthoredMutationUseCase {
 
     private static long nextPreviewStairId(DungeonMap current) {
         long highestStairId = 0L;
-        for (Stair stair : current.connections().stairs().stairs()) {
+        for (Stair stair : current.stairs().stairs()) {
             highestStairId = Math.max(highestStairId, stair.stairId());
         }
         return highestStairId + 1L;

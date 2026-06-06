@@ -29,7 +29,9 @@ final class DungeonRoomClusterRebuildLogic {
                 dungeonMap.metadata(),
                 nextTopology,
                 new RoomCatalog(rooms),
-                dungeonMap.connections(),
+                dungeonMap.corridors(),
+                dungeonMap.stairs(),
+                dungeonMap.transitionCatalog(),
                 dungeonMap.revision() + 1L);
     }
 
@@ -48,7 +50,9 @@ final class DungeonRoomClusterRebuildLogic {
                 dungeonMap.metadata(),
                 nextTopology,
                 new RoomCatalog(rooms),
-                dungeonMap.connections(),
+                dungeonMap.corridors(),
+                dungeonMap.stairs(),
+                dungeonMap.transitionCatalog(),
                 dungeonMap.revision() + 1L);
     }
 

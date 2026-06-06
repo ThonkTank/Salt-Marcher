@@ -254,10 +254,18 @@ The focused view-driven Dungeon Editor behavior harness is:
 ```
 
 The harness is intentionally feature-scoped. Its public Gradle entry stays one
-aggregator, but internal suites own focused route groups. Route suites drive
-supported rows through the View boundary where implemented and use isolated
-SQLite data under `build/`. The map-catalog suite also owns the large persisted
-vertex-loop startup/input regression through the discovered app shell.
+aggregator, but package-level concern entrypoints split real-route behavior
+from core model invariants:
+
+- `DungeonEditorRouteBehaviorHarness` groups route suites that drive supported
+  rows through the View boundary where implemented.
+- `DungeonCoreModelInvariantHarness` groups model-only invariant suites
+  documented in
+  [Dungeon Core Model Invariants](verification-dungeon-core-model-invariants.md).
+
+The route suites use isolated SQLite data under `build/`. The map-catalog suite
+also owns the large persisted vertex-loop startup/input regression through the
+discovered app shell.
 
 The public aggregator serializes each whole invocation while publishing
 `build/dungeon-editor-behavior-results/summary.txt`; per-run SQLite data remains

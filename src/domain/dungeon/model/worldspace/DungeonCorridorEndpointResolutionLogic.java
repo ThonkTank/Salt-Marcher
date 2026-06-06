@@ -73,7 +73,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
             CorridorHostCells hostCells
     ) {
         DungeonCorridor.AnchorEndpointMaterialization resolved =
-                DungeonCorridor.materializeAnchorEndpoint(dungeonMap.connections().corridors(), endpoint, hostCells);
+                DungeonCorridor.materializeAnchorEndpoint(dungeonMap.corridors(), endpoint, hostCells);
         if (resolved == null) {
             return null;
         }
@@ -83,10 +83,9 @@ public final class DungeonCorridorEndpointResolutionLogic {
                         dungeonMap.topology(),
                         dungeonMap.topologyIndex(),
                         dungeonMap.rooms(),
-                        new ConnectionCatalog(
-                                resolved.corridors(),
-                                dungeonMap.connections().stairs(),
-                                dungeonMap.connections().transitions()),
+                        resolved.corridors(),
+                        dungeonMap.stairs(),
+                        dungeonMap.transitionCatalog(),
                         dungeonMap.revision() + 1L)
                 : dungeonMap;
         return new ResolvedEndpointResult(resolvedMap, resolvedAnchor(resolved.anchorBinding()), null);

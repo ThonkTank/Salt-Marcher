@@ -25,7 +25,7 @@ final class DungeonClusterCornerMoveLogic {
         }
         long clusterId = handle.clusterId() > 0L
                 ? handle.clusterId()
-                : dungeonMap.topologyIndex().clusterIdFor(handle.topologyRef()).orElse(0L);
+                : dungeonMap.topologyIndex().clusterIdOrZero(handle.topologyRef());
         if (clusterId <= NO_ID) {
             return dungeonMap;
         }

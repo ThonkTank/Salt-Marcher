@@ -14,6 +14,7 @@ import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundary;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
@@ -137,10 +138,10 @@ final class DungeonTopologyInvariantHarness {
     }
 
     private static void assertTransitionTopologyIdentity() {
-        DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(72L), "Transition Topology Identity")
-                .createTransition(40L, new Cell(2, 0, 0), false, 500L, 9L, null)
-                .createTransition(41L, new Cell(3, 0, 0), false, 500L, 10L, null)
-                .createTransition(42L, new Cell(4, 0, 0), false, 500L, 11L, null);
+        DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(72L), "Transition Topology Identity");
+        map = withAuthoredTransition(map, 40L, new Cell(2, 0, 0), TransitionDestination.overworldTile(500L, 9L));
+        map = withAuthoredTransition(map, 41L, new Cell(3, 0, 0), TransitionDestination.overworldTile(500L, 10L));
+        map = withAuthoredTransition(map, 42L, new Cell(4, 0, 0), TransitionDestination.overworldTile(500L, 11L));
         DungeonTopologyRef firstRef = transitionRef(40L);
         DungeonTopologyRef linkedRef = transitionRef(41L);
         DungeonTopologyRef deletableRef = transitionRef(42L);
@@ -156,10 +157,11 @@ final class DungeonTopologyInvariantHarness {
                 "transition description update applies to authored transition");
         assertPresent(described, firstRef, "transition topology identity survives description update");
 
-        DungeonMap linked = described.withMapLocalAuthoredTransitionLink(new AuthoredTransitionLink(
-                new TransitionEndpoint(72L, 40L),
-                new TransitionEndpoint(72L, 41L),
-                TransitionLinkDirectionality.BIDIRECTIONAL));
+        DungeonMap linked = described.withTransitionCatalog(described.transitionCatalog().withMapLocalAuthoredTransitionLink(
+                new AuthoredTransitionLink(
+                        new TransitionEndpoint(72L, 40L),
+                        new TransitionEndpoint(72L, 41L),
+                        TransitionLinkDirectionality.BIDIRECTIONAL)));
         assertEquals(
                 41L,
                 transitionById(linked, 40L).destination().transitionId(),
@@ -223,19 +225,32 @@ final class DungeonTopologyInvariantHarness {
     }
 
     private static void assertPresent(DungeonMap map, DungeonTopologyRef ref, String message) {
-        if (map.topologyIndex().find(ref).isEmpty()) {
+        if (map.topologyIndex().binding(ref) == null) {
             throw new IllegalStateException(message + " missing ref=" + ref);
         }
     }
 
     private static void assertAbsent(DungeonMap map, DungeonTopologyRef ref, String message) {
-        if (map.topologyIndex().find(ref).isPresent()) {
+        if (map.topologyIndex().binding(ref) != null) {
             throw new IllegalStateException(message + " unexpected ref=" + ref);
         }
     }
 
+    private static DungeonMap withAuthoredTransition(
+            DungeonMap map,
+            long transitionId,
+            Cell anchor,
+            TransitionDestination destination
+    ) {
+        return map.withTransitionCatalog(map.transitionCatalog().withCreated(
+                transitionId,
+                map.metadata().mapId().value(),
+                anchor,
+                destination));
+    }
+
     private static Transition transitionById(DungeonMap map, long transitionId) {
-        for (Transition transition : map.connections().transitions()) {
+        for (Transition transition : map.transitionCatalog().transitions()) {
             if (transition.transitionId() == transitionId) {
                 return transition;
             }

@@ -7,7 +7,9 @@ import src.data.dungeon.model.DungeonMapRecord;
 import src.domain.dungeon.model.core.geometry.DungeonTopology;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
-import src.domain.dungeon.model.worldspace.ConnectionCatalog;
+import src.domain.dungeon.model.core.structure.stair.StairCollection;
+import src.domain.dungeon.model.core.structure.transition.Transition;
+import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
 import src.domain.dungeon.model.worldspace.DungeonMapTopology;
@@ -28,7 +30,10 @@ public final class DungeonMapRecordMapper {
         DungeonGridBoundsRecord gridBounds = resolvedRecord.gridBounds();
         var clusters = DungeonClusterRecordMapperSupport.toClusters(resolvedRecord.roomClusters());
         RoomCatalog rooms = new RoomCatalog(DungeonRoomRecordMapperSupport.toRooms(resolvedRecord.rooms()));
-        ConnectionCatalog connections = DungeonConnectionRecordMapper.toConnectionCatalog(resolvedRecord);
+        List<DungeonCorridor> corridors =
+                DungeonCorridorConnectionReadMapperSupport.toCorridors(resolvedRecord.corridors());
+        StairCollection stairs = DungeonStairRecordMapperSupport.toStairs(resolvedRecord.stairs());
+        List<Transition> transitions = DungeonTransitionRecordMapperSupport.toTransitions(resolvedRecord.transitions());
         DungeonMapTopology topologyIndex =
                 DungeonTopologyElementRecordMapperSupport.toTopologyIndex(resolvedRecord.topologyElements());
         return DungeonMapAuthoring.authored(
@@ -43,14 +48,18 @@ public final class DungeonMapRecordMapper {
                         clusters),
                 topologyIndex,
                 rooms,
-                connections,
+                corridors,
+                stairs,
+                transitions,
                 resolvedRecord.revision());
     }
 
     public static DungeonMapRecord toRecord(DungeonMap dungeonMap) {
         SpatialTopology topology = resolvedTopology(dungeonMap);
         long mapId = resolvedMapId(dungeonMap);
-        ConnectionCatalog connections = resolvedConnections(dungeonMap);
+        List<DungeonCorridor> corridors = resolvedCorridors(dungeonMap);
+        StairCollection stairs = resolvedStairs(dungeonMap);
+        List<Transition> transitions = resolvedTransitions(dungeonMap);
         return new DungeonMapRecord(
                 mapId,
                 resolvedMapName(dungeonMap),
@@ -64,10 +73,11 @@ public final class DungeonMapRecordMapper {
                 DungeonRoomRecordMapperSupport.toRoomRecords(dungeonMap == null ? List.of() : dungeonMap.rooms().rooms()),
                 DungeonTopologyElementRecordMapperSupport.toTopologyElementRecords(
                         mapId,
-                        resolvedTopologyIndex(dungeonMap, topology, connections)),
-                DungeonConnectionRecordMapper.toCorridorRecords(connections),
-                DungeonConnectionRecordMapper.toStairRecords(connections),
-                DungeonConnectionRecordMapper.toTransitionRecords(connections));
+                        resolvedTopologyIndex(dungeonMap, topology, corridors, stairs, transitions)),
+                DungeonCorridorConnectionWriteMapperSupport.toCorridorRecords(corridors == null ? List.of() : corridors),
+                DungeonStairRecordMapperSupport.toStairRecords(stairs),
+                DungeonTransitionRecordMapperSupport.toTransitionRecords(
+                        transitions == null ? List.of() : transitions));
     }
 
     private static SpatialTopology resolvedTopology(@Nullable DungeonMap dungeonMap) {
@@ -86,17 +96,32 @@ public final class DungeonMapRecordMapper {
         return dungeonMap == null ? 1L : dungeonMap.revision();
     }
 
-    private static ConnectionCatalog resolvedConnections(@Nullable DungeonMap dungeonMap) {
-        return dungeonMap == null ? ConnectionCatalog.empty() : dungeonMap.connections();
+    private static List<DungeonCorridor> resolvedCorridors(@Nullable DungeonMap dungeonMap) {
+        return dungeonMap == null ? List.of() : dungeonMap.corridors();
+    }
+
+    private static StairCollection resolvedStairs(@Nullable DungeonMap dungeonMap) {
+        return dungeonMap == null ? new StairCollection(List.of()) : dungeonMap.stairs();
+    }
+
+    private static List<Transition> resolvedTransitions(@Nullable DungeonMap dungeonMap) {
+        return dungeonMap == null ? List.of() : dungeonMap.transitionCatalog().transitions();
     }
 
     private static DungeonMapTopology resolvedTopologyIndex(
             @Nullable DungeonMap dungeonMap,
             SpatialTopology topology,
-            ConnectionCatalog connections
+            List<DungeonCorridor> corridors,
+            StairCollection stairs,
+            List<Transition> transitions
     ) {
         if (dungeonMap == null) {
-            return DungeonMapTopology.from(topology, RoomCatalog.empty(), connections);
+            return DungeonMapTopology.from(
+                    topology,
+                    RoomCatalog.empty(),
+                    corridors,
+                    stairs.stairs(),
+                    transitions);
         }
         return dungeonMap.topologyIndex();
     }

@@ -7,6 +7,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.stair.StairCollection;
 
 final class DungeonCorridorCreationLogic {
 
@@ -31,7 +32,7 @@ final class DungeonCorridorCreationLogic {
         if (!validCreateEndpoints(start, end) || CORRIDOR_SEMANTICS_POLICY.sameClusterOnly(dungeonMap, start, end)) {
             return dungeonMap;
         }
-        CorridorHostCells initialHostCells = hostCells(dungeonMap, dungeonMap.connections().corridors());
+        CorridorHostCells initialHostCells = hostCells(dungeonMap, dungeonMap.corridors());
         DungeonCorridorRouteValidationLogic.CorridorRouteValidation routeValidation =
                 ROUTE_VALIDATION_SERVICE.validateRoute(dungeonMap, start, end, initialHostCells);
         if (!routeValidation.hasValidRoute()) {
@@ -61,28 +62,26 @@ final class DungeonCorridorCreationLogic {
                 routeCells,
                 startResolved,
                 endResolved);
-        List<DungeonCorridor> nextCorridors = new ArrayList<>(endResolved.map().connections().corridors());
+        List<DungeonCorridor> nextCorridors = new ArrayList<>(endResolved.map().corridors());
         nextCorridors.add(corridor);
-        ConnectionCatalog nextConnections = new ConnectionCatalog(
-                List.copyOf(nextCorridors),
-                endResolved.map().connections().stairs(),
-                endResolved.map().connections().transitions());
+        StairCollection nextStairs = endResolved.map().stairs();
         if (!start.sameLevelAs(end)) {
             Cell upperExit = new Cell(
                     routeCells.getLast().q(),
                     routeCells.getLast().r(),
                     end.level());
-            nextConnections = nextConnections.withStairs(
-                    nextConnections.stairs().withCorridorBoundStair(
-                            stairId,
-                            endResolved.map().metadata().mapId().value(),
-                            corridor.corridorId(),
-                            routeCells,
-                            upperExit));
+            nextStairs = nextStairs.withCorridorBoundStair(
+                    stairId,
+                    endResolved.map().metadata().mapId().value(),
+                    corridor.corridorId(),
+                    routeCells,
+                    upperExit);
         }
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 endResolved.map(),
-                nextConnections);
+                List.copyOf(nextCorridors),
+                nextStairs,
+                endResolved.map().transitionCatalog());
     }
 
     private static CorridorHostCells hostCells(DungeonMap dungeonMap, List<DungeonCorridor> corridors) {
@@ -96,7 +95,7 @@ final class DungeonCorridorCreationLogic {
     ) {
         return resolvedMap == sourceMap
                 ? sourceHostCells
-                : hostCells(resolvedMap, resolvedMap.connections().corridors());
+                : hostCells(resolvedMap, resolvedMap.corridors());
     }
 
     private boolean validCreateEndpoints(DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {
@@ -108,7 +107,7 @@ final class DungeonCorridorCreationLogic {
             DungeonCorridorEndpointResolutionLogic.ResolvedEndpointResult startResolved
     ) {
         return CORRIDOR_SEMANTICS_POLICY.matchingCorridorExists(
-                endResolved.map().connections().corridors(),
+                endResolved.map().corridors(),
                 startResolved.endpoint(),
                 endResolved.endpoint());
     }
@@ -150,7 +149,7 @@ final class DungeonCorridorCreationLogic {
 
     private static long nextCorridorId(DungeonMap dungeonMap) {
         long result = 0L;
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+        for (DungeonCorridor corridor : dungeonMap.corridors()) {
             if (corridor != null && corridor.corridorId() > result) {
                 result = corridor.corridorId();
             }

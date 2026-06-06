@@ -36,7 +36,7 @@ final class DungeonBoundaryStretchMutationLogic {
         Set<Cell> levelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
         if (!sourceStaysInternal(stretch, levelCells)
                 || DungeonCorridorDoorBindingGeometry.touchesDoorBindingKeys(
-                dungeonMap.connections().corridors(),
+                dungeonMap.corridors(),
                 target.cluster().center(),
                 target.cluster().clusterId(),
                 stretch.level(),

@@ -31,7 +31,7 @@ final class DungeonClusterBoundaryDoorRules {
         }
         boolean corridorBound = resolvedKind == BoundaryKind.DOOR
                 && DungeonCorridorDoorBindingGeometry.touchesDoorBindingKeys(
-                dungeonMap.connections().corridors(),
+                dungeonMap.corridors(),
                 target.cluster().center(),
                 target.cluster().clusterId(),
                 existing.level(),

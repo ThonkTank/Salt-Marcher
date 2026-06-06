@@ -30,13 +30,11 @@ public final class CreateDungeonEditorAuthoredTransitionUseCase {
         long transitionId = repository.nextTransitionId();
         ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.apply(
                 domainMapId(mapId),
-                current -> current.createTransition(
+                current -> current.withTransitionCatalog(current.transitionCatalog().withCreated(
                         transitionId,
+                        current.metadata().mapId().value(),
                         anchor,
-                        destination.isDungeonMap(),
-                        destination.mapId(),
-                        destination.tileId(),
-                        destination.transitionId()));
+                        destination)));
         publishMutationUseCase.execute(result);
     }
 

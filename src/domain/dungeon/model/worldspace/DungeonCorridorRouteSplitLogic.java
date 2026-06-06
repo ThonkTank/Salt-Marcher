@@ -63,7 +63,7 @@ final class DungeonCorridorRouteSplitLogic {
 
     private static List<DungeonCorridorAnchorBinding> routeAnchors(DungeonMap dungeonMap) {
         List<DungeonCorridorAnchorBinding> result = new ArrayList<>();
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+        for (DungeonCorridor corridor : dungeonMap.corridors()) {
             for (DungeonCorridorAnchorBinding anchor : corridor.bindings().anchorBindings()) {
                 if (anchor != null) {
                     result.add(anchor);

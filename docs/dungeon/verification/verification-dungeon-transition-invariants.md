@@ -27,8 +27,7 @@ This catalog is a target-model change derived from the Dungeon domain target
 state and this catalog's candidate source-obligation rows. Reviewers must
 evaluate whether the Transition owner is coherent, traceable, and safely
 migratable. Do not block a row merely because current code keeps transition
-behavior under `ConnectionCatalog`, `core/structure/transition`, or
-`worldspace` structure.
+behavior under `core/structure/transition` or `worldspace` structure.
 
 ## Proof Vocabulary
 

@@ -1,23 +1,26 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase;
+import src.domain.dungeon.model.worldspace.usecase.LoadDungeonMapUseCase;
+import src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredMutationUseCase;
 
 public final class DeleteDungeonEditorAuthoredStairUseCase {
     private static final long NO_STAIR_ID = 0L;
 
     private final LoadDungeonMapUseCase loadDungeonMapUseCase;
-    private final ApplyDungeonAuthoredMutationUseCase mutationUseCase;
+    private final ApplyDungeonEditorOperationUseCase operationUseCase;
     private final PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase;
 
     public DeleteDungeonEditorAuthoredStairUseCase(
             LoadDungeonMapUseCase loadDungeonMapUseCase,
-            ApplyDungeonAuthoredMutationUseCase mutationUseCase,
+            ApplyDungeonEditorOperationUseCase operationUseCase,
             PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase
     ) {
         this.loadDungeonMapUseCase = Objects.requireNonNull(loadDungeonMapUseCase, "loadDungeonMapUseCase");
-        this.mutationUseCase = Objects.requireNonNull(mutationUseCase, "mutationUseCase");
+        this.operationUseCase = Objects.requireNonNull(operationUseCase, "operationUseCase");
         this.publishMutationUseCase = Objects.requireNonNull(publishMutationUseCase, "publishMutationUseCase");
     }
 
@@ -29,7 +32,7 @@ public final class DeleteDungeonEditorAuthoredStairUseCase {
         if (!loadDungeonMapUseCase.execute(domainMapId).canDeleteStair(stairId)) {
             return false;
         }
-        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.apply(
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = operationUseCase.execute(
                 domainMapId,
                 current -> current.deleteStair(stairId));
         publishMutationUseCase.execute(result);

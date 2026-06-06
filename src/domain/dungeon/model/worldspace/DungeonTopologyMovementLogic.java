@@ -29,7 +29,9 @@ public final class DungeonTopologyMovementLogic {
                 nextTopology,
                 dungeonMap.topologyIndex(),
                 nextRooms,
-                dungeonMap.connections(),
+                dungeonMap.corridors(),
+                dungeonMap.stairs(),
+                dungeonMap.transitionCatalog(),
                 dungeonMap.revision() + 1L);
     }
 

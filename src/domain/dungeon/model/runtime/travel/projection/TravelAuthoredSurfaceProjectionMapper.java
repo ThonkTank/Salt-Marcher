@@ -28,7 +28,8 @@ public final class TravelAuthoredSurfaceProjectionMapper {
                         safeMap.revision()),
                 new TravelAuthoredSurface.Content(
                         TravelSurfaceMapProjectionMapper.toRuntimeMap(safeFacts),
-                        TravelAuthoredSurfaceTransitionProjectionMapper.toTransitions(safeMap.connections().transitions()),
+                        TravelAuthoredSurfaceTransitionProjectionMapper.toTransitions(
+                                safeMap.transitionCatalog().transitions()),
                         TravelAuthoredSurfaceTraversalProjectionMapper.toTraversalLinks(safeMap, safeFacts),
                         TravelAuthoredSurfaceRelationProjectionMapper.toConnections(
                                 derived == null ? null : derived.relations()),

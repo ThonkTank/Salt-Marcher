@@ -70,7 +70,7 @@ public final class DungeonTraversalLinkProjection {
 
     private static List<DungeonTraversalLink> stairTraversalLinks(DungeonMap dungeonMap, CellAreaIndex index) {
         List<DungeonTraversalLink> result = new ArrayList<>();
-        for (Stair stair : dungeonMap.connections().stairs().stairs()) {
+        for (Stair stair : dungeonMap.stairs().stairs()) {
             appendStairLinks(result, index, stair);
         }
         return List.copyOf(result);

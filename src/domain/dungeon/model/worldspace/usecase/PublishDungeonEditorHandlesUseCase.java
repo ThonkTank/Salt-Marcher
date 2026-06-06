@@ -37,7 +37,7 @@ public final class PublishDungeonEditorHandlesUseCase {
     }
 
     private static void appendDoorHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+        for (DungeonCorridor corridor : dungeonMap.corridors()) {
             for (int index = 0; index < corridor.bindings().doorBindings().size(); index++) {
                 var binding = corridor.bindings().doorBindings().get(index);
                 DungeonRoomCluster cluster = cluster(dungeonMap, binding.clusterId());
@@ -65,7 +65,7 @@ public final class PublishDungeonEditorHandlesUseCase {
     }
 
     private static void appendWaypointHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+        for (DungeonCorridor corridor : dungeonMap.corridors()) {
             for (int index = 0; index < corridor.bindings().waypoints().size(); index++) {
                 var waypoint = corridor.bindings().waypoints().get(index);
                 DungeonRoomCluster cluster = cluster(dungeonMap, waypoint.clusterId());
@@ -88,7 +88,7 @@ public final class PublishDungeonEditorHandlesUseCase {
     }
 
     private static void appendAnchorHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
-        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+        for (DungeonCorridor corridor : dungeonMap.corridors()) {
             for (int index = 0; index < corridor.bindings().anchorBindings().size(); index++) {
                 var anchor = corridor.bindings().anchorBindings().get(index);
                 result.add(new DungeonEditorHandleProjection(
@@ -107,7 +107,7 @@ public final class PublishDungeonEditorHandlesUseCase {
     }
 
     private static void appendStairHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
-        for (Stair stair : dungeonMap.connections().stairs().stairs()) {
+        for (Stair stair : dungeonMap.stairs().stairs()) {
             List<Cell> path = stair.path();
             List<StairExit> exits = stair.exits();
             for (int index = 0; index < path.size(); index++) {

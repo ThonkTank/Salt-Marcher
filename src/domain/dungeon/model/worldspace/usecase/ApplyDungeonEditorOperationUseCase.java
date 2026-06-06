@@ -84,14 +84,6 @@ public final class ApplyDungeonEditorOperationUseCase {
                 OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated));
     }
 
-    boolean canCreateStair(
-            @Nullable DungeonMapIdentity mapId,
-            @Nullable Cell anchor,
-            String shapeName
-    ) {
-        return anchor != null && currentMap(mapId).canCreateStair(anchor, shapeName);
-    }
-
     boolean canCreateTransition(
             @Nullable DungeonMapIdentity mapId,
             @Nullable Cell anchor,
@@ -99,23 +91,7 @@ public final class ApplyDungeonEditorOperationUseCase {
     ) {
         return anchor != null
                 && destination != null
-                && currentMap(mapId).canCreateTransition(
-                        anchor,
-                        destination.isDungeonMap(),
-                        destination.mapId(),
-                        destination.tileId(),
-                        destination.transitionId());
-    }
-
-    boolean canSaveStairGeometry(
-            @Nullable DungeonMapIdentity mapId,
-            long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
-    ) {
-        return currentMap(mapId).canSaveStairGeometry(stairId, shapeName, directionName, dimension1, dimension2);
+                && currentMap(mapId).transitionCatalog().canCreate(anchor, destination);
     }
 
     private LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot(DungeonMap dungeonMap, DungeonDerivedState derived) {

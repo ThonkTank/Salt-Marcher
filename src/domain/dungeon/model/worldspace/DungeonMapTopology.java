@@ -4,8 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalLong;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
@@ -27,13 +25,15 @@ public record DungeonMapTopology(
     public static DungeonMapTopology from(
             SpatialTopology topology,
             RoomCatalog rooms,
-            ConnectionCatalog connections
+            List<DungeonCorridor> corridors,
+            List<Stair> stairs,
+            List<Transition> transitions
     ) {
         List<DungeonTopologyBinding> result = new ArrayList<>();
         appendRoomBindings(result, rooms);
-        appendCorridorBindings(result, connections);
-        appendStairBindings(result, connections);
-        appendTransitionBindings(result, connections);
+        appendCorridorBindings(result, corridors);
+        appendStairBindings(result, stairs);
+        appendTransitionBindings(result, transitions);
         appendBoundaryBindings(result, topology);
         return new DungeonMapTopology(result);
     }
@@ -48,8 +48,8 @@ public record DungeonMapTopology(
         }
     }
 
-    private static void appendCorridorBindings(List<DungeonTopologyBinding> result, ConnectionCatalog connections) {
-        for (DungeonCorridor corridor : connections == null ? List.<DungeonCorridor>of() : connections.corridors()) {
+    private static void appendCorridorBindings(List<DungeonTopologyBinding> result, List<DungeonCorridor> corridors) {
+        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
             result.add(new DungeonTopologyBinding(
                     new DungeonTopologyRef(DungeonTopologyElementKind.CORRIDOR, corridor.corridorId()),
                     0L,
@@ -84,8 +84,8 @@ public record DungeonMapTopology(
         }
     }
 
-    private static void appendStairBindings(List<DungeonTopologyBinding> result, ConnectionCatalog connections) {
-        for (Stair stair : connections == null ? List.<Stair>of() : connections.stairs().stairs()) {
+    private static void appendStairBindings(List<DungeonTopologyBinding> result, List<Stair> stairs) {
+        for (Stair stair : stairs == null ? List.<Stair>of() : stairs) {
             result.add(new DungeonTopologyBinding(
                     new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId()),
                     0L,
@@ -94,8 +94,8 @@ public record DungeonMapTopology(
         }
     }
 
-    private static void appendTransitionBindings(List<DungeonTopologyBinding> result, ConnectionCatalog connections) {
-        for (Transition transition : connections == null ? List.<Transition>of() : connections.transitions()) {
+    private static void appendTransitionBindings(List<DungeonTopologyBinding> result, List<Transition> transitions) {
+        for (Transition transition : transitions == null ? List.<Transition>of() : transitions) {
             result.add(new DungeonTopologyBinding(
                     new DungeonTopologyRef(DungeonTopologyElementKind.TRANSITION, transition.transitionId()),
                     0L,
@@ -137,24 +137,21 @@ public record DungeonMapTopology(
         return new DungeonMapTopology(new ArrayList<>(result.values()));
     }
 
-    public Optional<DungeonTopologyBinding> find(DungeonTopologyRef ref) {
+    public @Nullable DungeonTopologyBinding binding(DungeonTopologyRef ref) {
         if (ref == null || !ref.present()) {
-            return Optional.empty();
+            return null;
         }
         for (DungeonTopologyBinding binding : bindings) {
             if (binding != null && binding.ref().equals(ref)) {
-                return Optional.of(binding);
+                return binding;
             }
         }
-        return Optional.empty();
+        return null;
     }
 
-    public OptionalLong clusterIdFor(DungeonTopologyRef ref) {
-        Optional<DungeonTopologyBinding> binding = find(ref);
-        if (binding.isEmpty() || binding.get().clusterId() <= 0L) {
-            return OptionalLong.empty();
-        }
-        return OptionalLong.of(binding.get().clusterId());
+    public long clusterIdOrZero(DungeonTopologyRef ref) {
+        DungeonTopologyBinding binding = binding(ref);
+        return binding == null || binding.clusterId() <= 0L ? 0L : binding.clusterId();
     }
 
     private static String labelFor(DungeonTopologyElementKind kind) {

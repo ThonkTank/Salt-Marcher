@@ -34,7 +34,7 @@ public final class DungeonMapLookupAdapter {
     }
 
     public @Nullable DungeonCorridor corridor(DungeonMap dungeonMap, long corridorId) {
-        for (DungeonCorridor candidate : dungeonMap.connections().corridors()) {
+        for (DungeonCorridor candidate : dungeonMap.corridors()) {
             if (candidate != null && candidate.corridorId() == corridorId) {
                 return candidate;
             }
