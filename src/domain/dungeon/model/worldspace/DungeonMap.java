@@ -9,6 +9,7 @@ import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
@@ -314,7 +315,7 @@ public record DungeonMap(
     public DungeonMap editClusterBoundaries(
             long clusterId,
             List<Edge> edges,
-            DungeonClusterBoundaryKind kind,
+            BoundaryKind kind,
             boolean deleteBoundary
     ) {
         return ROOM_TOPOLOGY_EDITOR.editBoundaries(this, clusterId, edges, kind, deleteBoundary);

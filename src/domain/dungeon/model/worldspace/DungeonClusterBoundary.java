@@ -5,13 +5,14 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 
 public record DungeonClusterBoundary(
         long clusterId,
         int level,
         Cell relativeCell,
         Direction direction,
-        DungeonClusterBoundaryKind kind,
+        BoundaryKind kind,
         DungeonTopologyRef topologyRef
 ) {
 
@@ -20,7 +21,7 @@ public record DungeonClusterBoundary(
             int level,
             Cell relativeCell,
             Direction direction,
-            DungeonClusterBoundaryKind kind
+            BoundaryKind kind
     ) {
         this(clusterId, level, relativeCell, direction, kind, DungeonTopologyRef.empty());
     }
@@ -28,7 +29,7 @@ public record DungeonClusterBoundary(
     public DungeonClusterBoundary {
         relativeCell = relativeCell == null ? new Cell(0, 0, level) : relativeCell;
         direction = direction == null ? Direction.NORTH : direction;
-        kind = kind == null ? DungeonClusterBoundaryKind.WALL : kind;
+        kind = kind == null ? BoundaryKind.WALL : kind;
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
@@ -45,11 +46,11 @@ public record DungeonClusterBoundary(
     }
 
     public boolean isDoor() {
-        return kind == DungeonClusterBoundaryKind.DOOR;
+        return kind == BoundaryKind.DOOR;
     }
 
     public boolean isOpen() {
-        return kind == DungeonClusterBoundaryKind.OPEN;
+        return kind == BoundaryKind.OPEN;
     }
 
     public boolean matchesAbsoluteEdge(Cell center, Edge edge) {

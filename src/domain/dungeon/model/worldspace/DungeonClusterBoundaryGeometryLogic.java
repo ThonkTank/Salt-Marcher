@@ -38,7 +38,7 @@ final class DungeonClusterBoundaryGeometryLogic {
             Cell center,
             long clusterId,
             Edge edge,
-            DungeonClusterBoundaryKind kind,
+            BoundaryKind kind,
             @Nullable DungeonTopologyRef topologyRef
     ) {
         BoundaryRow materialized = RoomClusterBoundaryMaterialization.forEdge(
@@ -46,7 +46,7 @@ final class DungeonClusterBoundaryGeometryLogic {
                 center,
                 clusterId,
                 edge,
-                boundaryKind(kind));
+                normalizedKind(kind));
         return boundary(materialized, topologyRef);
     }
 
@@ -96,14 +96,8 @@ final class DungeonClusterBoundaryGeometryLogic {
         return Set.copyOf(result);
     }
 
-    private static BoundaryKind boundaryKind(@Nullable DungeonClusterBoundaryKind kind) {
-        if (kind == DungeonClusterBoundaryKind.DOOR) {
-            return BoundaryKind.DOOR;
-        }
-        if (kind == DungeonClusterBoundaryKind.OPEN) {
-            return BoundaryKind.OPEN;
-        }
-        return BoundaryKind.WALL;
+    private static BoundaryKind normalizedKind(@Nullable BoundaryKind kind) {
+        return kind == null ? BoundaryKind.WALL : kind;
     }
 
     private static @Nullable DungeonClusterBoundary boundary(
@@ -118,15 +112,7 @@ final class DungeonClusterBoundaryGeometryLogic {
                 materialized.level(),
                 materialized.relativeCell(),
                 materialized.direction(),
-                worldspaceKind(materialized.kind()),
+                materialized.kind(),
                 topologyRef == null ? DungeonTopologyRef.empty() : topologyRef);
-    }
-
-    private static DungeonClusterBoundaryKind worldspaceKind(BoundaryKind kind) {
-        return switch (kind) {
-            case DOOR -> DungeonClusterBoundaryKind.DOOR;
-            case OPEN -> DungeonClusterBoundaryKind.OPEN;
-            case WALL -> DungeonClusterBoundaryKind.WALL;
-        };
     }
 }

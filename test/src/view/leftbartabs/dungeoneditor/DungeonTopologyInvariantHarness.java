@@ -12,7 +12,7 @@ import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.Auth
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundary;
-import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
@@ -52,14 +52,14 @@ final class DungeonTopologyInvariantHarness {
         DungeonMap withDoor = map.editClusterBoundaries(
                 cluster.clusterId(),
                 List.of(doorEdge),
-                DungeonClusterBoundaryKind.DOOR,
+                BoundaryKind.DOOR,
                 false);
         assertPresent(withDoor, doorRef, "door topology identity is published after create");
 
         DungeonMap updated = withDoor.editClusterBoundaries(
                 cluster.clusterId(),
                 List.of(doorEdge),
-                DungeonClusterBoundaryKind.DOOR,
+                BoundaryKind.DOOR,
                 false);
         assertPresent(updated, doorRef, "door topology identity survives idempotent update");
 
@@ -72,7 +72,7 @@ final class DungeonTopologyInvariantHarness {
         DungeonMap rejectedDelete = corridorBound.editClusterBoundaries(
                 boundDoor.clusterId(),
                 List.of(boundDoor.edge()),
-                DungeonClusterBoundaryKind.DOOR,
+                BoundaryKind.DOOR,
                 true);
         assertTrue(
                 hasDoorBoundary(rejectedDelete, boundDoor.clusterId(), boundDoor.edge()),
@@ -82,7 +82,7 @@ final class DungeonTopologyInvariantHarness {
         DungeonMap deleted = updated.editClusterBoundaries(
                 cluster.clusterId(),
                 List.of(doorEdge),
-                DungeonClusterBoundaryKind.DOOR,
+                BoundaryKind.DOOR,
                 true);
         assertAbsent(deleted, doorRef, "door topology identity is released after unbound delete");
     }
@@ -130,7 +130,7 @@ final class DungeonTopologyInvariantHarness {
         DungeonMap withDoor = map.editClusterBoundaries(
                 clusterId,
                 List.of(edge),
-                DungeonClusterBoundaryKind.DOOR,
+                BoundaryKind.DOOR,
                 false);
         assertPresent(withDoor, ref, "door fixture publishes topology identity");
         return new DoorFixture(clusterId, cell, direction, edge, ref);

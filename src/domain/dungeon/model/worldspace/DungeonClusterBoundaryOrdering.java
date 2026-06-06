@@ -7,7 +7,6 @@ import java.util.Map;
 import java.util.Queue;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
 
@@ -93,17 +92,7 @@ final class DungeonClusterBoundaryOrdering {
                 boundary.level(),
                 boundary.relativeCell(),
                 boundary.direction(),
-                coreKind(boundary.kind()));
-    }
-
-    private static BoundaryKind coreKind(DungeonClusterBoundaryKind kind) {
-        if (kind == DungeonClusterBoundaryKind.DOOR) {
-            return BoundaryKind.DOOR;
-        }
-        if (kind == DungeonClusterBoundaryKind.OPEN) {
-            return BoundaryKind.OPEN;
-        }
-        return BoundaryKind.WALL;
+                boundary.kind());
     }
 
     private static DungeonBoundaryKey boundaryKey(EdgeKey key) {

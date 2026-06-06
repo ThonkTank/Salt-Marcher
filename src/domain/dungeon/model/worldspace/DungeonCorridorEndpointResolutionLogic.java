@@ -9,6 +9,7 @@ import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 
 /**
  * Owns authored corridor endpoint resolution and materialization.
@@ -100,7 +101,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
                 dungeonMap,
                 clusterId,
                 List.of(edge),
-                DungeonClusterBoundaryKind.DOOR,
+                BoundaryKind.DOOR,
                 false);
     }
 

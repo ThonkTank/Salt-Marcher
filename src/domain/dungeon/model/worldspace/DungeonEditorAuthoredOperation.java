@@ -6,6 +6,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
 public final class DungeonEditorAuthoredOperation {
@@ -42,7 +43,7 @@ public final class DungeonEditorAuthoredOperation {
     public static DungeonEditorAuthoredOperation editClusterBoundaries(
             long clusterId,
             List<Edge> edges,
-            DungeonClusterBoundaryKind boundaryKind,
+            BoundaryKind boundaryKind,
             boolean deleteMode
     ) {
         return new DungeonEditorAuthoredOperation(new EditClusterBoundaries(clusterId, edges, boundaryKind, deleteMode));
@@ -132,18 +133,18 @@ public final class DungeonEditorAuthoredOperation {
     public static final class EditClusterBoundaries implements Variant {
         private final long clusterId;
         private final List<Edge> edges;
-        private final DungeonClusterBoundaryKind boundaryKind;
+        private final BoundaryKind boundaryKind;
         private final boolean deleteMode;
 
         private EditClusterBoundaries(
                 long clusterId,
                 List<Edge> edges,
-                DungeonClusterBoundaryKind boundaryKind,
+                BoundaryKind boundaryKind,
                 boolean deleteMode
         ) {
             this.clusterId = Math.max(0L, clusterId);
             this.edges = edges == null ? List.of() : List.copyOf(edges);
-            this.boundaryKind = boundaryKind == null ? DungeonClusterBoundaryKind.WALL : boundaryKind;
+            this.boundaryKind = boundaryKind == null ? BoundaryKind.WALL : boundaryKind;
             this.deleteMode = deleteMode;
         }
 
@@ -155,7 +156,7 @@ public final class DungeonEditorAuthoredOperation {
             return List.copyOf(edges);
         }
 
-        public DungeonClusterBoundaryKind boundaryKind() {
+        public BoundaryKind boundaryKind() {
             return boundaryKind;
         }
 

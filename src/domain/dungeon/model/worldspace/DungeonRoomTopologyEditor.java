@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 
 public final class DungeonRoomTopologyEditor {
 
@@ -26,7 +27,7 @@ public final class DungeonRoomTopologyEditor {
             DungeonMap dungeonMap,
             long clusterId,
             List<Edge> edges,
-            DungeonClusterBoundaryKind kind,
+            BoundaryKind kind,
             boolean deleteBoundary
     ) {
         return BOUNDARY_EDIT_SERVICE.editBoundaries(requireDungeonMap(dungeonMap), clusterId, edges, kind, deleteBoundary);

@@ -1,5 +1,6 @@
 package src.domain.dungeon.model.core.structure.room;
 
+import java.util.Locale;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
@@ -30,9 +31,37 @@ public final class RoomClusterBoundaryMaterialization {
     }
 
     public enum BoundaryKind {
-        WALL,
-        DOOR,
-        OPEN
+        WALL("wall"),
+        DOOR("door"),
+        OPEN("open");
+
+        private final String boundaryKind;
+
+        BoundaryKind(String boundaryKind) {
+            this.boundaryKind = boundaryKind;
+        }
+
+        public static BoundaryKind parse(String value) {
+            if (value == null || value.isBlank()) {
+                return WALL;
+            }
+            String normalized = value.trim().toUpperCase(Locale.ROOT);
+            if (DOOR.name().equals(normalized)) {
+                return DOOR;
+            }
+            if (OPEN.name().equals(normalized)) {
+                return OPEN;
+            }
+            return WALL;
+        }
+
+        public String boundaryKind() {
+            return boundaryKind;
+        }
+
+        public boolean renderable() {
+            return this != OPEN;
+        }
     }
 
     public record BoundaryRow(

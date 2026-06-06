@@ -9,7 +9,6 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
@@ -74,17 +73,7 @@ final class DungeonBoundaryStretchSelectionLogic {
                 boundary.level(),
                 boundary.relativeCell(),
                 boundary.direction(),
-                kind(boundary.kind()));
-    }
-
-    private static BoundaryKind kind(DungeonClusterBoundaryKind kind) {
-        if (kind == DungeonClusterBoundaryKind.DOOR) {
-            return BoundaryKind.DOOR;
-        }
-        if (kind == DungeonClusterBoundaryKind.OPEN) {
-            return BoundaryKind.OPEN;
-        }
-        return BoundaryKind.WALL;
+                boundary.kind());
     }
 
     private static Iterable<Cell> clusterCells(DungeonRoomTopologyClusterWork target, List<Edge> sourceEdges) {

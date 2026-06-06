@@ -14,7 +14,7 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMo
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.worldspace.DungeonEditorAuthoredOperation;
 
@@ -116,12 +116,12 @@ public interface DungeonEditorAuthoredOperationHelper {
         return List.copyOf(result);
     }
 
-    static DungeonClusterBoundaryKind boundaryKind(
+    static BoundaryKind boundaryKind(
             DungeonEditorWorkspaceValues.BoundaryKind boundaryKind
     ) {
         return boundaryKind != null && boundaryKind.isDoor()
-                ? DungeonClusterBoundaryKind.DOOR
-                : DungeonClusterBoundaryKind.WALL;
+                ? BoundaryKind.DOOR
+                : BoundaryKind.WALL;
     }
 
     static DungeonCorridorEndpoint corridorEndpoint(

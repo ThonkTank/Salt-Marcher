@@ -13,6 +13,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan;
 
 public final class DungeonBoundaryStretchValueTypes {
@@ -63,8 +64,8 @@ public final class DungeonBoundaryStretchValueTypes {
             DungeonBoundaryKey key,
             @Nullable DungeonClusterBoundary existing
     ) {
-        public DungeonClusterBoundaryKind kind() {
-            return existing == null ? DungeonClusterBoundaryKind.WALL : existing.kind();
+        public BoundaryKind kind() {
+            return existing == null ? BoundaryKind.WALL : existing.kind();
         }
     }
 

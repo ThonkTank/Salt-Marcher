@@ -12,6 +12,7 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.door.Door;
 import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.door.DoorIndex;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 
 final class DungeonClusterBoundaryDoorRules {
@@ -23,21 +24,21 @@ final class DungeonClusterBoundaryDoorRules {
             DungeonMap dungeonMap,
             DungeonRoomTopologyClusterWork target,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
-            DungeonClusterBoundaryKind resolvedKind,
+            BoundaryKind resolvedKind,
             DungeonBoundaryKey key,
             @Nullable DungeonClusterBoundary existing
     ) {
         if (existing == null || existing.kind() != resolvedKind) {
             return false;
         }
-        boolean corridorBound = resolvedKind == DungeonClusterBoundaryKind.DOOR
+        boolean corridorBound = resolvedKind == BoundaryKind.DOOR
                 && CORRIDOR_BINDING_LOOKUP_SERVICE.touchesCorridorBinding(
                 dungeonMap,
                 target.cluster().center(),
                 target.cluster().clusterId(),
                 existing.level(),
                 Set.of(key));
-        if (resolvedKind == DungeonClusterBoundaryKind.DOOR) {
+        if (resolvedKind == BoundaryKind.DOOR) {
             DoorIndex currentDoors = DoorIndex.from(doors(boundaries.values()));
             DoorIndex expectedAfterDelete = DoorIndex.from(doorsExcept(existing, boundaries.values()));
             DoorIndex actualAfterDelete = currentDoors.withoutDoor(door(existing), corridorBound);
@@ -52,22 +53,22 @@ final class DungeonClusterBoundaryDoorRules {
     boolean upsertBoundaryIfAllowed(
             Map<Long, List<Cell>> roomCells,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
-            DungeonClusterBoundaryKind resolvedKind,
+            BoundaryKind resolvedKind,
             Edge edge,
             DungeonBoundaryKey key,
             @Nullable DungeonClusterBoundary existing,
             DungeonClusterBoundary candidate
     ) {
         DungeonClusterBoundary resolvedCandidate = candidate;
-        if (resolvedKind == DungeonClusterBoundaryKind.DOOR) {
+        if (resolvedKind == BoundaryKind.DOOR) {
             resolvedCandidate = doorBoundary(candidate);
             if (!doorInsertionAllowed(roomCells, boundaries, edge, existing, resolvedCandidate)) {
                 return false;
             }
         }
-        if (resolvedKind == DungeonClusterBoundaryKind.WALL
+        if (resolvedKind == BoundaryKind.WALL
                 && existing != null
-                && existing.kind() == DungeonClusterBoundaryKind.DOOR) {
+                && existing.kind() == BoundaryKind.DOOR) {
             return false;
         }
         if (existing != null && existing.kind() == resolvedKind) {
@@ -98,7 +99,7 @@ final class DungeonClusterBoundaryDoorRules {
         if (boundary == null) {
             return DoorBoundaryMaterialization.ExistingBoundaryKind.NONE;
         }
-        if (boundary.kind() == DungeonClusterBoundaryKind.DOOR) {
+        if (boundary.kind() == BoundaryKind.DOOR) {
             return DoorBoundaryMaterialization.ExistingBoundaryKind.DOOR;
         }
         return DoorBoundaryMaterialization.ExistingBoundaryKind.NON_DOOR;
@@ -111,7 +112,7 @@ final class DungeonClusterBoundaryDoorRules {
     private static List<Door> doorsExcept(DungeonClusterBoundary removed, Iterable<DungeonClusterBoundary> boundaries) {
         List<Door> result = new ArrayList<>();
         for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
-            if (boundary != null && boundary != removed && boundary.kind() == DungeonClusterBoundaryKind.DOOR) {
+            if (boundary != null && boundary != removed && boundary.kind() == BoundaryKind.DOOR) {
                 result.add(door(boundary));
             }
         }
@@ -138,7 +139,7 @@ final class DungeonClusterBoundaryDoorRules {
                 state.level(),
                 state.relativeCell(),
                 state.direction(),
-                DungeonClusterBoundaryKind.DOOR,
+                BoundaryKind.DOOR,
                 candidate.topologyRef());
     }
 
@@ -149,7 +150,7 @@ final class DungeonClusterBoundaryDoorRules {
                 state.level(),
                 state.relativeCell(),
                 state.direction(),
-                DungeonClusterBoundaryKind.WALL,
+                BoundaryKind.WALL,
                 DungeonTopologyRef.empty());
     }
 }

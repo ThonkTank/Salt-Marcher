@@ -8,6 +8,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 
 final class DungeonClusterBoundaryEditLogic {
 
@@ -25,7 +26,7 @@ final class DungeonClusterBoundaryEditLogic {
             DungeonMap dungeonMap,
             long clusterId,
             List<Edge> edges,
-            DungeonClusterBoundaryKind kind,
+            BoundaryKind kind,
             boolean deleteBoundary
     ) {
         if (invalidBoundaryEditRequest(clusterId, edges)) {
@@ -64,10 +65,10 @@ final class DungeonClusterBoundaryEditLogic {
             DungeonMap dungeonMap,
             DungeonRoomTopologyClusterWork target,
             List<Edge> edges,
-            DungeonClusterBoundaryKind kind,
+            BoundaryKind kind,
             boolean deleteBoundary
     ) {
-        DungeonClusterBoundaryKind resolvedKind = kind == null ? DungeonClusterBoundaryKind.WALL : kind;
+        BoundaryKind resolvedKind = kind == null ? BoundaryKind.WALL : kind;
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries =
                 DungeonClusterBoundaryOrdering.boundaryMap(target.cluster());
         Map<Long, List<Cell>> roomCells = CELL_PROJECTOR.cellsByRoom(target.cluster(), target.rooms());
@@ -107,7 +108,7 @@ final class DungeonClusterBoundaryEditLogic {
             DungeonMap dungeonMap,
             DungeonRoomTopologyClusterWork target,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
-            DungeonClusterBoundaryKind resolvedKind,
+            BoundaryKind resolvedKind,
             Edge edge
     ) {
         if (!validBoundaryEdge(edge)) {
@@ -115,7 +116,7 @@ final class DungeonClusterBoundaryEditLogic {
         }
         DungeonBoundaryKey key = DungeonBoundaryKey.from(edge);
         DungeonClusterBoundary existing = boundaries.get(key);
-        return resolvedKind == DungeonClusterBoundaryKind.WALL
+        return resolvedKind == BoundaryKind.WALL
                 ? deleteWallBoundary(target, boundaries, edge, key, existing)
                 : deleteDoorBoundary(dungeonMap, target, boundaries, resolvedKind, key, existing);
     }
@@ -135,7 +136,7 @@ final class DungeonClusterBoundaryEditLogic {
             DungeonBoundaryKey key,
             DungeonClusterBoundary existing
     ) {
-        if (existing != null && existing.kind() == DungeonClusterBoundaryKind.DOOR) {
+        if (existing != null && existing.kind() == BoundaryKind.DOOR) {
             return false;
         }
         if (existing != null) {
@@ -148,7 +149,7 @@ final class DungeonClusterBoundaryEditLogic {
             DungeonMap dungeonMap,
             DungeonRoomTopologyClusterWork target,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
-            DungeonClusterBoundaryKind resolvedKind,
+            BoundaryKind resolvedKind,
             DungeonBoundaryKey key,
             DungeonClusterBoundary existing
     ) {

@@ -15,6 +15,7 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryProjection;
 import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryTouchSupport;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 
 final class DungeonRoomBoundaryProjectionState {
 
@@ -83,7 +84,7 @@ final class DungeonRoomBoundaryProjectionState {
                         cell.r() - cluster.center().r(),
                         cell.level()),
                 direction,
-                DungeonClusterBoundaryKind.WALL);
+                BoundaryKind.WALL);
     }
 
     private void addBoundary(
@@ -102,7 +103,7 @@ final class DungeonRoomBoundaryProjectionState {
         long boundaryId = key.stableId();
         nextBoundaryId = Math.max(nextBoundaryId, boundaryId + 1L);
         String kind = boundary.kind().boundaryKind();
-        String label = boundary.kind() == DungeonClusterBoundaryKind.DOOR ? "Door" : "Wall";
+        String label = boundary.kind() == BoundaryKind.DOOR ? "Door" : "Wall";
         DungeonTopologyRef topologyRef = boundary.resolvedTopologyRef(cluster.center());
         boundaries.add(new DungeonBoundaryFacts(kind, boundaryId, label, edge, topologyRef));
         boundaryIdsByKey.put(key, boundaryId);
@@ -111,7 +112,7 @@ final class DungeonRoomBoundaryProjectionState {
         for (Long roomId : touchingRoomIds) {
             containment.add(new DungeonRelationGraph.ContainmentRelation(roomId, boundaryId, kind));
         }
-        if (boundary.kind() == DungeonClusterBoundaryKind.DOOR && touchingRoomIds.size() >= 2) {
+        if (boundary.kind() == BoundaryKind.DOOR && touchingRoomIds.size() >= 2) {
             connections.add(new DungeonRelationGraph.ConnectionRelation(
                     touchingRoomIds.getFirst(),
                     touchingRoomIds.get(1),

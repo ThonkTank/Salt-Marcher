@@ -21,7 +21,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
-import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.worldspace.DungeonDerivedStateProjection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
@@ -285,7 +285,7 @@ final class DungeonWallInvariantHarness {
         DungeonMap opened = map.editClusterBoundaries(
                 firstClusterId,
                 List.of(firstNorthWall),
-                DungeonClusterBoundaryKind.OPEN,
+                BoundaryKind.OPEN,
                 false);
         Set<Edge> openedWalls = wallEdges(new DungeonDerivedStateProjection().project(opened));
         assertFalse(openedWalls.contains(firstNorthWall),
@@ -303,12 +303,12 @@ final class DungeonWallInvariantHarness {
         map = map.editClusterBoundaries(
                 clusterIdForAnchor(map, new Cell(1, 1, 0)),
                 List.of(firstNorthWall),
-                DungeonClusterBoundaryKind.WALL,
+                BoundaryKind.WALL,
                 false);
         return map.editClusterBoundaries(
                 clusterIdForAnchor(map, new Cell(5, 1, 0)),
                 List.of(secondNorthWall),
-                DungeonClusterBoundaryKind.WALL,
+                BoundaryKind.WALL,
                 false);
     }
 
