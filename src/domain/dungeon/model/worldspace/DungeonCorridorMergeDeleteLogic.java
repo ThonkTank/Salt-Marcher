@@ -9,8 +9,6 @@ final class DungeonCorridorMergeDeleteLogic {
 
     private static final DungeonCorridorConnectionNormalizationLogic CONNECTION_NORMALIZATION_SERVICE =
             new DungeonCorridorConnectionNormalizationLogic();
-    private static final DungeonCorridorMutationRules MUTATION_RULES =
-            new DungeonCorridorMutationRules();
     private static final DungeonMapLookupAdapter LOOKUP_ADAPTER = new DungeonMapLookupAdapter();
     private static final DungeonCorridorTargetDeleteLogic TARGET_DELETE_SERVICE =
             new DungeonCorridorTargetDeleteLogic();
@@ -24,7 +22,7 @@ final class DungeonCorridorMergeDeleteLogic {
             int waypointIndex
     ) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
-        if (MUTATION_RULES.invalidCorridorId(corridorId)) {
+        if (invalidCorridorId(corridorId)) {
             return dungeonMap;
         }
         DungeonCorridor existing = LOOKUP_ADAPTER.corridor(dungeonMap, corridorId);
@@ -55,5 +53,9 @@ final class DungeonCorridorMergeDeleteLogic {
                                 network.withoutCorridor(corridorId)),
                         withoutCorridorStairs,
                         dungeonMap.connections().transitionCatalog()));
+    }
+
+    private static boolean invalidCorridorId(long corridorId) {
+        return corridorId <= 0L;
     }
 }

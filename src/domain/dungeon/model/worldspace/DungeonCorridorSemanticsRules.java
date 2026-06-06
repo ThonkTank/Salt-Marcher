@@ -7,7 +7,9 @@ import java.util.Set;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointSemantics;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 
 /**
@@ -15,8 +17,19 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint
  */
 public final class DungeonCorridorSemanticsRules {
 
+    private static final DungeonMapLookupAdapter LOOKUP_ADAPTER = new DungeonMapLookupAdapter();
+
     public boolean sameEndpoint(CorridorResolvedEndpoint left, CorridorResolvedEndpoint right) {
         return semanticsOf(left).equals(semanticsOf(right));
+    }
+
+    public boolean sameClusterOnly(DungeonMap dungeonMap, DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {
+        if (start == null || end == null || !start.isDoorEndpoint() || !end.isDoorEndpoint()) {
+            return false;
+        }
+        DungeonRoom left = LOOKUP_ADAPTER.room(dungeonMap, start.roomId());
+        DungeonRoom right = LOOKUP_ADAPTER.room(dungeonMap, end.roomId());
+        return left != null && right != null && left.clusterId() == right.clusterId();
     }
 
     public boolean matchingCorridorExists(List<DungeonCorridor> corridors, CorridorResolvedEndpoint start, CorridorResolvedEndpoint end) {

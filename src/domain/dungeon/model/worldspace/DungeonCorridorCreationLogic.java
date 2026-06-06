@@ -16,7 +16,6 @@ final class DungeonCorridorCreationLogic {
             new DungeonCorridorEndpointResolutionLogic();
     private static final DungeonCorridorSemanticsRules CORRIDOR_SEMANTICS_POLICY =
             new DungeonCorridorSemanticsRules();
-    private static final DungeonCorridorMutationRules MUTATION_RULES = new DungeonCorridorMutationRules();
     private static final DungeonCorridorRouteValidationLogic ROUTE_VALIDATION_SERVICE =
             new DungeonCorridorRouteValidationLogic();
     private static final DungeonCorridorRouteSplitLogic ROUTE_SPLIT_SERVICE = new DungeonCorridorRouteSplitLogic();
@@ -29,7 +28,7 @@ final class DungeonCorridorCreationLogic {
             DungeonCorridorEndpoint end
     ) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
-        if (!validCreateEndpoints(start, end) || MUTATION_RULES.sameClusterOnly(dungeonMap, start, end)) {
+        if (!validCreateEndpoints(start, end) || CORRIDOR_SEMANTICS_POLICY.sameClusterOnly(dungeonMap, start, end)) {
             return dungeonMap;
         }
         CorridorHostCells initialHostCells = hostCells(dungeonMap, dungeonMap.connections().corridors());
@@ -121,7 +120,7 @@ final class DungeonCorridorCreationLogic {
             int level
     ) {
         DungeonCorridor corridor = new DungeonCorridor(
-                MUTATION_RULES.nextCorridorId(endResolved.map()),
+                nextCorridorId(endResolved.map()),
                 endResolved.map().metadata().mapId().value(),
                 level,
                 roomIds(startResolved, endResolved),
@@ -141,8 +140,22 @@ final class DungeonCorridorCreationLogic {
     }
 
     private void addRoomId(List<Long> roomIds, @Nullable Long roomId) {
-        if (roomId != null && MUTATION_RULES.hasPersistedRoomId(roomId) && !roomIds.contains(roomId)) {
+        if (persistedRoomId(roomId) && !roomIds.contains(roomId)) {
             roomIds.add(roomId);
         }
+    }
+
+    private static boolean persistedRoomId(@Nullable Long roomId) {
+        return roomId != null && roomId > 0L;
+    }
+
+    private static long nextCorridorId(DungeonMap dungeonMap) {
+        long result = 0L;
+        for (DungeonCorridor corridor : dungeonMap.connections().corridors()) {
+            if (corridor != null && corridor.corridorId() > result) {
+                result = corridor.corridorId();
+            }
+        }
+        return result + 1L;
     }
 }
