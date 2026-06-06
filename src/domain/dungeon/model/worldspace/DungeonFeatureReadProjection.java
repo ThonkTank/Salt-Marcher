@@ -7,6 +7,7 @@ import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonFeatureType;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 
 public final class DungeonFeatureReadProjection {
 
@@ -57,7 +58,7 @@ public final class DungeonFeatureReadProjection {
             if (transition == null || !transition.isPlaced()) {
                 continue;
             }
-            DungeonTransitionDestination destination = transition.destination();
+            TransitionDestination destination = transition.destination();
             features.add(new DungeonFeatureFacts(
                     DungeonFeatureType.TRANSITION,
                     transition.transitionId(),
@@ -117,15 +118,15 @@ public final class DungeonFeatureReadProjection {
         return transition == null ? "" : transition.description();
     }
 
-    private static String destinationLabel(DungeonTransitionDestination destination) {
-        return destination == null ? "" : destination.coreDestination().label();
+    private static String destinationLabel(TransitionDestination destination) {
+        return destination == null ? "" : destination.label();
     }
 
     private static DungeonRelationGraph.FeatureRelation transitionRelation(
             DungeonTransition transition,
-            DungeonTransitionDestination destination
+            TransitionDestination destination
     ) {
-        if (destination != null && destination.isOverworldTileDestination()) {
+        if (destination != null && destination.isOverworldTile()) {
             return new DungeonRelationGraph.FeatureRelation(
                     transition.transitionId(),
                     FEATURE_KIND_TRANSITION,
@@ -133,7 +134,7 @@ public final class DungeonFeatureReadProjection {
                     "overworld-tile",
                     "targets");
         }
-        if (destination != null && destination.isDungeonMapDestination()) {
+        if (destination != null && destination.isDungeonMap()) {
             long targetId = destination.transitionId() == null ? destination.mapId() : destination.transitionId();
             String targetKind = destination.transitionId() == null ? "dungeon-map" : FEATURE_KIND_TRANSITION;
             return new DungeonRelationGraph.FeatureRelation(

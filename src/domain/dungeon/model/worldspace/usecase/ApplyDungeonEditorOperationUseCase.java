@@ -7,8 +7,8 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.DungeonMapOperationFeedbackRules;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 
 /**
@@ -95,13 +95,13 @@ public final class ApplyDungeonEditorOperationUseCase {
     boolean canCreateTransition(
             @Nullable DungeonMapIdentity mapId,
             @Nullable Cell anchor,
-            @Nullable DungeonTransitionDestination destination
+            @Nullable TransitionDestination destination
     ) {
         return anchor != null
                 && destination != null
                 && currentMap(mapId).canCreateTransition(
                         anchor,
-                        destination.isDungeonMapDestination(),
+                        destination.isDungeonMap(),
                         destination.mapId(),
                         destination.tileId(),
                         destination.transitionId());

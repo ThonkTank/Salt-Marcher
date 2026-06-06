@@ -5,8 +5,8 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.data.dungeon.model.DungeonTransitionRecord;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.worldspace.DungeonTransition;
-import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 
 final class DungeonTransitionRecordMapperSupport {
 
@@ -49,13 +49,13 @@ final class DungeonTransitionRecordMapperSupport {
                 record.levelZ() == null ? 0 : record.levelZ());
     }
 
-    private static DungeonTransitionDestination transitionDestination(DungeonTransitionRecord record) {
+    private static TransitionDestination transitionDestination(DungeonTransitionRecord record) {
         if (DESTINATION_DUNGEON_MAP.equalsIgnoreCase(record.destinationType())) {
-            return DungeonTransitionDestination.dungeonMapDestination(
+            return TransitionDestination.dungeonMap(
                     record.targetDungeonMapId() == null ? 0L : record.targetDungeonMapId(),
                     record.targetTransitionId());
         }
-        return DungeonTransitionDestination.overworldTileDestination(
+        return TransitionDestination.overworldTile(
                 record.targetOverworldMapId() == null ? 0L : record.targetOverworldMapId(),
                 record.targetOverworldTileId() == null ? 0L : record.targetOverworldTileId());
     }
@@ -78,8 +78,8 @@ final class DungeonTransitionRecordMapperSupport {
                 transition.linkedTransitionId());
     }
 
-    private static DestinationRecord destinationRecord(DungeonTransitionDestination destination) {
-        if (destination != null && destination.isDungeonMapDestination()) {
+    private static DestinationRecord destinationRecord(TransitionDestination destination) {
+        if (destination != null && destination.isDungeonMap()) {
             return new DestinationRecord(
                     DESTINATION_DUNGEON_MAP,
                     null,
@@ -87,7 +87,7 @@ final class DungeonTransitionRecordMapperSupport {
                     destination.mapId(),
                     destination.transitionId());
         }
-        if (destination != null && destination.isOverworldTileDestination()) {
+        if (destination != null && destination.isOverworldTile()) {
             return new DestinationRecord(
                     DESTINATION_OVERWORLD_TILE,
                     destination.mapId(),

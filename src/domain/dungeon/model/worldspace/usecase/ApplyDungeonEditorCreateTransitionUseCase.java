@@ -4,10 +4,10 @@ import java.util.Locale;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
-import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 
 public final class ApplyDungeonEditorCreateTransitionUseCase {
     private static final String INVALID_TRANSITION_DESTINATION_STATUS = "Uebergangsziel ungueltig.";
@@ -34,7 +34,7 @@ public final class ApplyDungeonEditorCreateTransitionUseCase {
             return;
         }
         Cell anchor = anchor(input);
-        DungeonTransitionDestination destination = destination(input);
+        TransitionDestination destination = destination(input);
         if (!createTransitionUseCase.canExecute(workflow.session().selectedMapId(), anchor, destination)) {
             workflow.clearPreviewWithStatus(INVALID_TRANSITION_DESTINATION_STATUS);
             effectUseCase.publishCurrent();
@@ -52,15 +52,15 @@ public final class ApplyDungeonEditorCreateTransitionUseCase {
                 workflow.session().projectionLevel());
     }
 
-    private static @Nullable DungeonTransitionDestination destination(MainViewInput input) {
+    private static @Nullable TransitionDestination destination(MainViewInput input) {
         String type = destinationType(input.transitionDestinationTypeName());
         if (DESTINATION_DUNGEON_MAP.equals(type)) {
-            return DungeonTransitionDestination.dungeonMapDestination(
+            return TransitionDestination.dungeonMap(
                     input.transitionDestinationMapId(),
                     input.transitionDestinationTransitionId() <= 0L ? null : input.transitionDestinationTransitionId());
         }
         if (DESTINATION_OVERWORLD_TILE.equals(type)) {
-            return DungeonTransitionDestination.overworldTileDestination(
+            return TransitionDestination.overworldTile(
                     input.transitionDestinationMapId(),
                     input.transitionDestinationTileId());
         }

@@ -886,7 +886,7 @@ final class DungeonStructureInvariantHarness {
                         4L,
                         " source ",
                         new Cell(0, 0, 0),
-                        src.domain.dungeon.model.worldspace.DungeonTransitionDestination.dungeonMapDestination(4L, 2L),
+                        src.domain.dungeon.model.core.structure.transition.TransitionDestination.dungeonMap(4L, 2L),
                         null);
         src.domain.dungeon.model.worldspace.DungeonTransition oldTarget =
                 new src.domain.dungeon.model.worldspace.DungeonTransition(
@@ -894,7 +894,7 @@ final class DungeonStructureInvariantHarness {
                         4L,
                         "",
                         new Cell(1, 0, 0),
-                        src.domain.dungeon.model.worldspace.DungeonTransitionDestination.overworldTileDestination(5L, 9L),
+                        src.domain.dungeon.model.core.structure.transition.TransitionDestination.overworldTile(5L, 9L),
                         1L);
         src.domain.dungeon.model.worldspace.DungeonTransition target =
                 new src.domain.dungeon.model.worldspace.DungeonTransition(
@@ -902,7 +902,7 @@ final class DungeonStructureInvariantHarness {
                         4L,
                         "",
                         new Cell(1, 1, 0),
-                        src.domain.dungeon.model.worldspace.DungeonTransitionDestination.overworldTileDestination(5L, 9L),
+                        src.domain.dungeon.model.core.structure.transition.TransitionDestination.overworldTile(5L, 9L),
                         null);
         src.domain.dungeon.model.worldspace.DungeonTransition remoteReference =
                 new src.domain.dungeon.model.worldspace.DungeonTransition(
@@ -910,7 +910,7 @@ final class DungeonStructureInvariantHarness {
                         4L,
                         "",
                         new Cell(2, 0, 0),
-                        src.domain.dungeon.model.worldspace.DungeonTransitionDestination.dungeonMapDestination(14L, 3L),
+                        src.domain.dungeon.model.core.structure.transition.TransitionDestination.dungeonMap(14L, 3L),
                         null);
         src.domain.dungeon.model.worldspace.DungeonMap map = transitionMap(source, oldTarget, target, remoteReference);
 
@@ -923,7 +923,7 @@ final class DungeonStructureInvariantHarness {
         src.domain.dungeon.model.worldspace.DungeonMap linkedMap =
                 map.withTransitionConnections(map.connections().withMapLocalAuthoredTransitionLink(
                         bidirectionalLink(4L, 1L, 4L, 3L)));
-        assertEquals(src.domain.dungeon.model.worldspace.DungeonTransitionDestination.dungeonMapDestination(4L, 3L),
+        assertEquals(src.domain.dungeon.model.core.structure.transition.TransitionDestination.dungeonMap(4L, 3L),
                 linkedMap
                         .connections()
                         .transitions()

@@ -7,13 +7,14 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 
 public record DungeonTransition(
         long transitionId,
         long mapId,
         String description,
         @Nullable Cell anchor,
-        DungeonTransitionDestination destination,
+        TransitionDestination destination,
         @Nullable Long linkedTransitionId
 ) {
 
@@ -29,7 +30,7 @@ public record DungeonTransition(
         mapId = coreTransition.mapId();
         description = coreTransition.description();
         anchor = anchorFromCore(coreTransition);
-        destination = DungeonTransitionDestination.fromCore(coreTransition.destination());
+        destination = coreTransition.destination();
         linkedTransitionId = coreTransition.linkedTransitionId();
     }
 
@@ -51,7 +52,7 @@ public record DungeonTransition(
                 transition.mapId(),
                 transition.description(),
                 anchorFromCore(transition),
-                DungeonTransitionDestination.fromCore(transition.destination()),
+                transition.destination(),
                 transition.linkedTransitionId());
     }
 
@@ -81,14 +82,14 @@ public record DungeonTransition(
             long destinationTileId,
             @Nullable Long destinationTransitionId
     ) {
-        DungeonTransitionDestination destination = transitionDestination(
+        TransitionDestination destination = transitionDestination(
                 dungeonMapDestination,
                 destinationMapId,
                 destinationTileId,
                 destinationTransitionId);
         return normalizedCatalog(transitions).canCreate(
                 anchor == null ? null : anchor,
-                destination.coreDestination());
+                destination);
     }
 
     static TransitionCatalog withCreated(
@@ -118,7 +119,7 @@ public record DungeonTransition(
                         dungeonMapDestination,
                         destinationMapId,
                         destinationTileId,
-                        destinationTransitionId).coreDestination());
+                        destinationTransitionId));
     }
 
     static boolean canDelete(TransitionCatalog transitions, long transitionId) {
@@ -145,7 +146,7 @@ public record DungeonTransition(
             long mapId,
             String description,
             @Nullable Cell anchor,
-            DungeonTransitionDestination destination,
+            TransitionDestination destination,
             @Nullable Long linkedTransitionId
     ) {
         return new Transition(
@@ -154,21 +155,21 @@ public record DungeonTransition(
                 description,
                 anchor == null ? null : anchor,
                 destination == null
-                        ? DungeonTransitionDestination.overworldTileDestination(0L, 0L).coreDestination()
-                        : destination.coreDestination(),
+                        ? TransitionDestination.overworldTile(0L, 0L)
+                        : destination,
                 linkedTransitionId);
     }
 
-    private static DungeonTransitionDestination transitionDestination(
+    private static TransitionDestination transitionDestination(
             boolean dungeonMapDestination,
             long destinationMapId,
             long destinationTileId,
             @Nullable Long destinationTransitionId
     ) {
         if (dungeonMapDestination) {
-            return DungeonTransitionDestination.dungeonMapDestination(destinationMapId, destinationTransitionId);
+            return TransitionDestination.dungeonMap(destinationMapId, destinationTransitionId);
         }
-        return DungeonTransitionDestination.overworldTileDestination(destinationMapId, destinationTileId);
+        return TransitionDestination.overworldTile(destinationMapId, destinationTileId);
     }
 
     private static TransitionCatalog normalizedCatalog(TransitionCatalog transitions) {

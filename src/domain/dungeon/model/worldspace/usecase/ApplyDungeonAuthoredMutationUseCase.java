@@ -4,10 +4,10 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonStair;
-import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 
 public final class ApplyDungeonAuthoredMutationUseCase {
@@ -49,7 +49,7 @@ public final class ApplyDungeonAuthoredMutationUseCase {
     boolean canCreateTransition(
             @Nullable DungeonMapIdentity mapId,
             @Nullable Cell anchor,
-            @Nullable DungeonTransitionDestination destination
+            @Nullable TransitionDestination destination
     ) {
         return applyDungeonEditorOperationUseCase.canCreateTransition(mapId, anchor, destination);
     }

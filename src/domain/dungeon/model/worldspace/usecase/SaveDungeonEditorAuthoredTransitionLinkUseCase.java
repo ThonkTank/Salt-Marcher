@@ -9,11 +9,11 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonTransition;
-import src.domain.dungeon.model.worldspace.DungeonTransitionDestination;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 
@@ -125,8 +125,8 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
         return pendingMaps;
     }
 
-    private long previousLinkedMapId(DungeonTransitionDestination previousDestination) {
-        return previousDestination.isDungeonMapDestination() && previousDestination.transitionId() != null
+    private long previousLinkedMapId(TransitionDestination previousDestination) {
+        return previousDestination.isDungeonMap() && previousDestination.transitionId() != null
                 ? previousDestination.mapId()
                 : 0L;
     }
