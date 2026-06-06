@@ -25,7 +25,7 @@ import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
-import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
+import src.domain.dungeon.model.core.structure.room.RoomCellCoverage;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
@@ -1630,8 +1630,8 @@ class DungeonEditorHarnessPersistenceSupport {
                                 clusterId,
                                 0,
                                 vertexIndex++,
-                                DungeonRoomCellProjection.LOOP_SEPARATOR.q(),
-                                DungeonRoomCellProjection.LOOP_SEPARATOR.r());
+                                RoomCellCoverage.LOOP_SEPARATOR.q(),
+                                RoomCellCoverage.LOOP_SEPARATOR.r());
                     }
                 }
                 connection.commit();

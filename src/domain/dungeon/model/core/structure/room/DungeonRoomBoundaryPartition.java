@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -7,27 +7,22 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
-import src.domain.dungeon.model.core.structure.room.DungeonRoom;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
-import src.domain.dungeon.model.core.structure.room.Room;
-import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 
-final class DungeonRoomBoundaryPartitionLogic {
+public final class DungeonRoomBoundaryPartition {
 
-    List<DungeonRoom> roomsForBoundaryEdit(
+    public List<DungeonRoom> roomsForBoundaryEdit(
             DungeonRoomTopologyClusterWork work,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
-            DungeonRoomClusterWorkLogic.IdAllocation ids
+            RoomTopologyWorkCatalog.IdAllocation ids
     ) {
         List<Room> coreRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
                 work.toCore(),
                 closedBoundaryEdgesByLevel(boundariesByLevel, work.cluster().center()),
                 ids.nextRoomId());
-        return worldspaceRooms(coreRooms, work);
+        return authoredRooms(coreRooms, work);
     }
 
-    static Map<Integer, List<Edge>> closedBoundaryEdgesByLevel(
+    public static Map<Integer, List<Edge>> closedBoundaryEdgesByLevel(
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
             @Nullable Cell center
     ) {
@@ -41,7 +36,7 @@ final class DungeonRoomBoundaryPartitionLogic {
         return Map.copyOf(result);
     }
 
-    private static List<DungeonRoom> worldspaceRooms(
+    private static List<DungeonRoom> authoredRooms(
             List<Room> coreRooms,
             DungeonRoomTopologyClusterWork previous
     ) {

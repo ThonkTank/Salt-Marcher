@@ -10,7 +10,12 @@ import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomBoundaryPartition;
+import src.domain.dungeon.model.core.structure.room.RoomCellCoverage;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomTopologyClusterWork;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import src.domain.dungeon.model.core.structure.room.RoomTopologyRebuilder;
+import src.domain.dungeon.model.core.structure.room.RoomTopologyWorkCatalog;
 
 final class DungeonClusterBoundaryEditLogic {
 
@@ -18,11 +23,11 @@ final class DungeonClusterBoundaryEditLogic {
             new DungeonClusterBoundaryDoorRules();
     private static final DungeonClusterBoundaryGeometryLogic GEOMETRY_SERVICE =
             new DungeonClusterBoundaryGeometryLogic();
-    private static final DungeonRoomBoundaryPartitionLogic PARTITION_SERVICE =
-            new DungeonRoomBoundaryPartitionLogic();
-    private static final DungeonRoomClusterWorkLogic WORK_SERVICE = new DungeonRoomClusterWorkLogic();
-    private static final DungeonRoomClusterRebuildLogic REBUILD_SERVICE = new DungeonRoomClusterRebuildLogic();
-    private static final DungeonRoomCellProjection CELL_PROJECTOR = new DungeonRoomCellProjection();
+    private static final DungeonRoomBoundaryPartition BOUNDARY_PARTITION =
+            new DungeonRoomBoundaryPartition();
+    private static final RoomTopologyWorkCatalog WORK_CATALOG = new RoomTopologyWorkCatalog();
+    private static final RoomTopologyRebuilder REBUILDER = new RoomTopologyRebuilder();
+    private static final RoomCellCoverage CELL_COVERAGE = new RoomCellCoverage();
 
     DungeonMap editBoundaries(
             DungeonMap dungeonMap,
@@ -34,7 +39,7 @@ final class DungeonClusterBoundaryEditLogic {
         if (invalidBoundaryEditRequest(clusterId, edges)) {
             return dungeonMap;
         }
-        List<DungeonRoomTopologyClusterWork> clusters = WORK_SERVICE.workClusters(dungeonMap);
+        List<DungeonRoomTopologyClusterWork> clusters = WORK_CATALOG.workClusters(dungeonMap.topology(), dungeonMap.rooms());
         DungeonRoomTopologyClusterWork target = null;
         for (DungeonRoomTopologyClusterWork work : clusters) {
             if (work != null && work.cluster().clusterId() == clusterId) {
@@ -49,18 +54,20 @@ final class DungeonClusterBoundaryEditLogic {
         if (!edit.changed()) {
             return dungeonMap;
         }
-        DungeonRoomClusterWorkLogic.IdAllocation ids = WORK_SERVICE.newIdAllocation(dungeonMap);
-        List<DungeonRoom> rooms = PARTITION_SERVICE.roomsForBoundaryEdit(target, edit.boundariesByLevel(), ids);
+        RoomTopologyWorkCatalog.IdAllocation ids = WORK_CATALOG.newIdAllocation(dungeonMap.topology(), dungeonMap.rooms());
+        List<DungeonRoom> rooms = BOUNDARY_PARTITION.roomsForBoundaryEdit(target, edit.boundariesByLevel(), ids);
         List<DungeonRoomTopologyClusterWork> nextClusters = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : clusters) {
             nextClusters.add(work.cluster().clusterId() == clusterId
                     ? new DungeonRoomTopologyClusterWork(
-                    REBUILD_SERVICE.clusterWithBoundaries(target, edit.boundariesByLevel()),
+                    REBUILDER.clusterWithBoundaries(target, edit.boundariesByLevel()),
                     rooms,
                     target.cellsByLevel())
                     : work);
         }
-        return REBUILD_SERVICE.rebuiltPreservingRooms(dungeonMap, nextClusters);
+        return DungeonRoomTopologyEditor.withRoomTopology(
+                dungeonMap,
+                REBUILDER.rebuiltPreservingRooms(dungeonMap.topology(), nextClusters));
     }
 
     private BoundaryEditResult editBoundaries(
@@ -72,7 +79,7 @@ final class DungeonClusterBoundaryEditLogic {
     ) {
         BoundaryKind resolvedKind = kind == null ? BoundaryKind.WALL : kind;
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = target.cluster().boundaryMap();
-        Map<Long, List<Cell>> roomCells = CELL_PROJECTOR.cellsByRoom(target.cluster(), target.rooms());
+        Map<Long, List<Cell>> roomCells = CELL_COVERAGE.cellsByRoom(target.cluster(), target.rooms());
         boolean changed = false;
         for (Edge edge : edges) {
             if (deleteBoundary) {

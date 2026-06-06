@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -10,12 +10,8 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.CellLoopRasterizer;
 import src.domain.dungeon.model.core.geometry.CellLoopRasterizer.CellLoop;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
-import src.domain.dungeon.model.core.structure.room.DungeonRoom;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-import src.domain.dungeon.model.core.structure.room.Room;
-import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 
-public final class DungeonRoomCellProjection {
+public final class RoomCellCoverage {
 
     public static final Cell LOOP_SEPARATOR = new Cell(Integer.MIN_VALUE, Integer.MIN_VALUE, 0);
 
@@ -28,7 +24,7 @@ public final class DungeonRoomCellProjection {
         Map<Long, List<Cell>> partitionedCellsByRoom = RoomClusterRoomPartition.cellsByRoom(
                 cluster.toCore(cellsByLevel),
                 coreRooms(safeRooms),
-                DungeonRoomBoundaryPartitionLogic.closedBoundaryEdgesByLevel(
+                DungeonRoomBoundaryPartition.closedBoundaryEdgesByLevel(
                         cluster.boundariesByLevel(),
                         cluster.center()));
         Map<Long, List<Cell>> result = new LinkedHashMap<>();

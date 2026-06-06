@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -8,12 +8,6 @@ import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
-import src.domain.dungeon.model.core.structure.room.DungeonRoom;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
-import src.domain.dungeon.model.core.structure.room.Room;
-import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
 
 public record DungeonRoomTopologyClusterWork(
         DungeonRoomCluster cluster,
@@ -21,7 +15,7 @@ public record DungeonRoomTopologyClusterWork(
         Map<Integer, List<Cell>> cellsByLevel
 ) {
 
-    private static final DungeonRoomCellProjection CELL_PROJECTOR = new DungeonRoomCellProjection();
+    private static final RoomCellCoverage CELL_COVERAGE = new RoomCellCoverage();
 
     public DungeonRoomTopologyClusterWork {
         rooms = rooms == null ? List.of() : List.copyOf(rooms);
@@ -45,11 +39,11 @@ public record DungeonRoomTopologyClusterWork(
         return CellOrdering.sortedCells(result);
     }
 
-    DungeonRoomCluster rebuiltCluster() {
+    public DungeonRoomCluster rebuiltCluster() {
         return rebuiltClusterWithBoundaries(preservedBoundaries());
     }
 
-    DungeonRoomCluster rebuiltClusterWithBoundaries(Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel) {
+    public DungeonRoomCluster rebuiltClusterWithBoundaries(Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel) {
         return new DungeonRoomCluster(
                 cluster.clusterId(),
                 cluster.mapId(),
@@ -58,7 +52,7 @@ public record DungeonRoomTopologyClusterWork(
                 boundariesByLevel);
     }
 
-    RoomClusterWork toCore() {
+    public RoomClusterWork toCore() {
         List<Room> coreRooms = new ArrayList<>();
         for (DungeonRoom room : rooms) {
             if (room != null) {
@@ -68,7 +62,7 @@ public record DungeonRoomTopologyClusterWork(
         return new RoomClusterWork(cluster.toCore(cellsByLevel), coreRooms);
     }
 
-    static DungeonRoomTopologyClusterWork fromCore(
+    public static DungeonRoomTopologyClusterWork fromCore(
             RoomClusterWork coreWork,
             DungeonRoomTopologyClusterWork previous
     ) {
@@ -98,7 +92,7 @@ public record DungeonRoomTopologyClusterWork(
 
     private Map<Integer, List<DungeonClusterBoundary>> preservedBoundaries() {
         Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
-        Map<Integer, List<Cell>> oldCellsByLevel = CELL_PROJECTOR.cellsByLevel(cluster, rooms);
+        Map<Integer, List<Cell>> oldCellsByLevel = CELL_COVERAGE.cellsByLevel(cluster, rooms);
         for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : cluster.boundariesByLevel().entrySet()) {
             Set<Cell> oldCells = new LinkedHashSet<>(oldCellsByLevel.getOrDefault(entry.getKey(), List.of()));
             Set<Cell> newCells = new LinkedHashSet<>(cellsByLevel.getOrDefault(entry.getKey(), List.of()));
@@ -137,7 +131,7 @@ public record DungeonRoomTopologyClusterWork(
             if (!entry.getValue().isEmpty()) {
                 verticesByLevel.put(
                         entry.getKey(),
-                        CELL_PROJECTOR.relativeCellLoops(cluster.center(), entry.getValue()));
+                        CELL_COVERAGE.relativeCellLoops(cluster.center(), entry.getValue()));
             }
         }
         return Map.copyOf(verticesByLevel);

@@ -12,7 +12,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
+import src.domain.dungeon.model.core.structure.room.RoomCellCoverage;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
@@ -1084,7 +1084,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                 .filter(room -> room.clusterId() == clusterId)
                 .toList();
         Set<String> cells = new LinkedHashSet<>();
-        new DungeonRoomCellProjection().clusterCells(cluster, rooms, level).stream()
+        new RoomCellCoverage().clusterCells(cluster, rooms, level).stream()
                 .map(DungeonEditorBehaviorHarnessSupport::cellKey)
                 .forEach(cells::add);
         return cells;

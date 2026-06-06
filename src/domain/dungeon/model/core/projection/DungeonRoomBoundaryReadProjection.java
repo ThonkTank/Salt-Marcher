@@ -7,32 +7,26 @@ import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.RoomCellCoverage;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
 
-/**
- * Transitional projection boundary: remove the worldspace imports once
- * DungeonMap, SpatialTopology, DungeonRoom, DungeonRoomCluster, and
- * DungeonRoomCellProjection inputs have core structure owners and this reads
- * those owners directly.
- */
 public final class DungeonRoomBoundaryReadProjection {
 
-    private final DungeonRoomCellProjection roomCellProjector = new DungeonRoomCellProjection();
+    private final RoomCellCoverage roomCellCoverage = new RoomCellCoverage();
 
-    public DungeonRoomBoundaryProjection project(DungeonMap dungeonMap, SpatialTopology topology) {
-        List<DungeonRoom> authoredRooms = dungeonMap.rooms().rooms();
-        Map<Long, List<DungeonRoom>> roomsByCluster = roomsByCluster(authoredRooms);
-        Map<Long, DungeonRoom> roomsById = roomsById(authoredRooms);
-        Map<Long, DungeonRoomCluster> clustersById = clustersById(topology.roomClusters());
+    public DungeonRoomBoundaryProjection project(List<DungeonRoom> authoredRooms, SpatialTopology topology) {
+        List<DungeonRoom> safeRooms = authoredRooms == null ? List.of() : authoredRooms;
+        SpatialTopology safeTopology = topology == null ? SpatialTopology.empty() : topology;
+        Map<Long, DungeonRoom> roomsById = roomsById(safeRooms);
+        Map<Long, List<DungeonRoom>> roomsByCluster = indexRoomsByCluster(safeRooms);
+        Map<Long, DungeonRoomCluster> clustersById = clustersById(safeTopology.roomClusters());
         List<DungeonState> aggregates = new ArrayList<>();
         List<DungeonAreaFacts> areas = new ArrayList<>();
         Map<Long, List<Cell>> allRoomCells = new LinkedHashMap<>();
         DungeonRoomBoundaryProjectionState state = new DungeonRoomBoundaryProjectionState();
-        for (DungeonRoomCluster cluster : topology.roomClusters()) {
+        for (DungeonRoomCluster cluster : safeTopology.roomClusters()) {
             List<DungeonRoom> clusterRooms = roomsByCluster.getOrDefault(cluster.clusterId(), List.of());
-            Map<Long, List<Cell>> roomCells = roomCellProjector.cellsByRoom(cluster, clusterRooms);
+            Map<Long, List<Cell>> roomCells = roomCellCoverage.cellsByRoom(cluster, clusterRooms);
             allRoomCells.putAll(roomCells);
             DungeonRoomAggregateProjection.addRoomAggregates(aggregates, areas, cluster.clusterId(), clusterRooms, roomCells);
             state.addAuthoredBoundaries(cluster, roomCells);
@@ -52,15 +46,12 @@ public final class DungeonRoomBoundaryReadProjection {
                 boundaryProjection.nextBoundaryId());
     }
 
-    private static Map<Long, List<DungeonRoom>> roomsByCluster(List<DungeonRoom> rooms) {
+    private static Map<Long, List<DungeonRoom>> indexRoomsByCluster(List<DungeonRoom> rooms) {
         Map<Long, List<DungeonRoom>> result = new LinkedHashMap<>();
-        for (DungeonRoom room : rooms) {
-            List<DungeonRoom> clusterRooms = result.get(room.clusterId());
-            if (clusterRooms == null) {
-                clusterRooms = new ArrayList<>();
-                result.put(room.clusterId(), clusterRooms);
+        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+            if (room != null) {
+                result.computeIfAbsent(room.clusterId(), unused -> new ArrayList<>()).add(room);
             }
-            clusterRooms.add(room);
         }
         return Map.copyOf(result);
     }

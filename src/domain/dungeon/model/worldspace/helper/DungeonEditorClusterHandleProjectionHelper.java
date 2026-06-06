@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.worldspace.helper;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
@@ -9,38 +10,43 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.RoomCellCoverage;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjectionKind;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
 
 public final class DungeonEditorClusterHandleProjectionHelper {
 
-    private static final DungeonRoomCellProjection CELL_PROJECTOR = new DungeonRoomCellProjection();
+    private static final RoomCellCoverage CELL_COVERAGE = new RoomCellCoverage();
 
     public List<DungeonEditorHandleProjection> project(DungeonMap dungeonMap) {
         List<DungeonEditorHandleProjection> result = new ArrayList<>();
         if (dungeonMap == null) {
             return List.of();
         }
+        Map<Long, List<DungeonRoom>> roomsByCluster = roomsByCluster(dungeonMap.rooms().rooms());
         for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
-            appendClusterHandles(result, dungeonMap, cluster);
+            if (cluster != null) {
+                appendClusterHandles(
+                        result,
+                        cluster,
+                        roomsByCluster.getOrDefault(cluster.clusterId(), List.of()));
+            }
         }
         return List.copyOf(result);
     }
 
     private static void appendClusterHandles(
             List<DungeonEditorHandleProjection> result,
-            DungeonMap dungeonMap,
-            DungeonRoomCluster cluster
+            DungeonRoomCluster cluster,
+            List<DungeonRoom> rooms
     ) {
-        List<DungeonRoom> rooms = roomsForCluster(dungeonMap, cluster.clusterId());
         if (rooms.isEmpty()) {
             return;
         }
         DungeonRoom room = rooms.getFirst();
         result.add(clusterLabel(cluster, room));
-        for (Map.Entry<Integer, List<Cell>> entry : CELL_PROJECTOR.cellsByLevel(cluster, rooms).entrySet()) {
+        for (Map.Entry<Integer, List<Cell>> entry : CELL_COVERAGE.cellsByLevel(cluster, rooms).entrySet()) {
             appendClusterCornerHandles(result, cluster, room, entry.getKey(), entry.getValue());
         }
     }
@@ -59,15 +65,25 @@ public final class DungeonEditorClusterHandleProjectionHelper {
                 room.name());
     }
 
-    private static List<DungeonRoom> roomsForCluster(DungeonMap dungeonMap, long clusterId) {
-        List<DungeonRoom> rooms = new ArrayList<>();
-        for (DungeonRoom room : dungeonMap.rooms().rooms()) {
-            if (room.clusterId() == clusterId) {
-                rooms.add(room);
+    private static Map<Long, List<DungeonRoom>> roomsByCluster(List<DungeonRoom> rooms) {
+        Map<Long, List<DungeonRoom>> grouped = new LinkedHashMap<>();
+        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+            if (room != null) {
+                List<DungeonRoom> clusterRooms = grouped.get(room.clusterId());
+                if (clusterRooms == null) {
+                    clusterRooms = new ArrayList<>();
+                    grouped.put(room.clusterId(), clusterRooms);
+                }
+                clusterRooms.add(room);
             }
         }
-        rooms.sort(DungeonEditorClusterHandleProjectionHelper::compareByRoomId);
-        return List.copyOf(rooms);
+        Map<Long, List<DungeonRoom>> result = new LinkedHashMap<>();
+        for (Map.Entry<Long, List<DungeonRoom>> entry : grouped.entrySet()) {
+            List<DungeonRoom> clusterRooms = new ArrayList<>(entry.getValue());
+            clusterRooms.sort(DungeonEditorClusterHandleProjectionHelper::compareByRoomId);
+            result.put(entry.getKey(), List.copyOf(clusterRooms));
+        }
+        return Map.copyOf(result);
     }
 
     private static int compareByRoomId(DungeonRoom left, DungeonRoom right) {

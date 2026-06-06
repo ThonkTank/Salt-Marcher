@@ -11,6 +11,7 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.RoomCellCoverage;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 final class DungeonCorridorRouteValidationLogic {
@@ -62,11 +63,11 @@ final class DungeonCorridorRouteValidationLogic {
     }
 
     private static Set<Cell> roomCells(DungeonMap dungeonMap) {
-        DungeonRoomCellProjection projection = new DungeonRoomCellProjection();
+        RoomCellCoverage coverage = new RoomCellCoverage();
         Set<Cell> result = new LinkedHashSet<>();
         for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
             List<DungeonRoom> clusterRooms = clusterRooms(dungeonMap, cluster.clusterId());
-            for (List<Cell> cells : projection.cellsByRoom(cluster, clusterRooms).values()) {
+            for (List<Cell> cells : coverage.cellsByRoom(cluster, clusterRooms).values()) {
                 result.addAll(nonNullCells(cells));
             }
         }

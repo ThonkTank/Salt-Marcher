@@ -1,20 +1,15 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
-import src.domain.dungeon.model.core.structure.room.DungeonRoom;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
-import src.domain.dungeon.model.core.structure.room.Room;
-import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
-final class DungeonRoomClusterRebuildLogic {
+public final class RoomTopologyRebuilder {
 
-    DungeonMap rebuilt(DungeonMap dungeonMap, List<DungeonRoomTopologyClusterWork> workClusters) {
+    public RebuildResult rebuilt(SpatialTopology topology, List<DungeonRoomTopologyClusterWork> workClusters) {
         List<DungeonRoomCluster> clusters = new ArrayList<>();
         List<DungeonRoom> rooms = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : sortedByClusterId(workClusters)) {
@@ -28,18 +23,13 @@ final class DungeonRoomClusterRebuildLogic {
             clusters.add(work.rebuiltCluster());
             rooms.addAll(rebuiltRooms);
         }
-        SpatialTopology nextTopology = dungeonMap.topology().withRoomClusters(clusters);
-        return new DungeonMap(
-                dungeonMap.metadata(),
-                nextTopology,
-                new RoomCatalog(rooms),
-                dungeonMap.corridors(),
-                dungeonMap.stairs(),
-                dungeonMap.transitionCatalog(),
-                dungeonMap.revision() + 1L);
+        return new RebuildResult(safeTopology(topology).withRoomClusters(clusters), new RoomCatalog(rooms));
     }
 
-    DungeonMap rebuiltPreservingRooms(DungeonMap dungeonMap, List<DungeonRoomTopologyClusterWork> workClusters) {
+    public RebuildResult rebuiltPreservingRooms(
+            SpatialTopology topology,
+            List<DungeonRoomTopologyClusterWork> workClusters
+    ) {
         List<DungeonRoomCluster> clusters = new ArrayList<>();
         List<DungeonRoom> rooms = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : sortedByClusterId(workClusters)) {
@@ -49,34 +39,31 @@ final class DungeonRoomClusterRebuildLogic {
             clusters.add(work.cluster());
             rooms.addAll(work.rooms());
         }
-        SpatialTopology nextTopology = dungeonMap.topology().withRoomClusters(clusters);
-        return new DungeonMap(
-                dungeonMap.metadata(),
-                nextTopology,
-                new RoomCatalog(rooms),
-                dungeonMap.corridors(),
-                dungeonMap.stairs(),
-                dungeonMap.transitionCatalog(),
-                dungeonMap.revision() + 1L);
+        return new RebuildResult(safeTopology(topology).withRoomClusters(clusters), new RoomCatalog(rooms));
     }
 
-    DungeonRoomCluster clusterWithBoundaries(
+    public DungeonRoomCluster clusterWithBoundaries(
             DungeonRoomTopologyClusterWork work,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
+        DungeonRoomTopologyClusterWork safeWork = Objects.requireNonNull(work, "work");
         return new DungeonRoomCluster(
-                work.cluster().clusterId(),
-                work.cluster().mapId(),
-                work.cluster().center(),
-                work.cluster().relativeVerticesByLevel(),
+                safeWork.cluster().clusterId(),
+                safeWork.cluster().mapId(),
+                safeWork.cluster().center(),
+                safeWork.cluster().relativeVerticesByLevel(),
                 boundariesByLevel);
     }
 
-    DungeonRoomCluster clusterForStretch(
+    public DungeonRoomCluster clusterForStretch(
             DungeonRoomTopologyClusterWork work,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
-        return work.rebuiltClusterWithBoundaries(boundariesByLevel);
+        return Objects.requireNonNull(work, "work").rebuiltClusterWithBoundaries(boundariesByLevel);
+    }
+
+    private static SpatialTopology safeTopology(SpatialTopology topology) {
+        return topology == null ? SpatialTopology.empty() : topology;
     }
 
     private static List<DungeonRoom> roomsFor(DungeonRoomTopologyClusterWork work) {
@@ -100,9 +87,15 @@ final class DungeonRoomClusterRebuildLogic {
     private static List<DungeonRoomTopologyClusterWork> sortedByClusterId(
             List<DungeonRoomTopologyClusterWork> workClusters
     ) {
-        List<DungeonRoomTopologyClusterWork> result = new ArrayList<>(
-                workClusters == null ? List.of() : workClusters);
-        result.sort(DungeonRoomClusterRebuildLogic::compareClusterWork);
+        List<DungeonRoomTopologyClusterWork> result = new ArrayList<>();
+        for (DungeonRoomTopologyClusterWork work : workClusters == null
+                ? List.<DungeonRoomTopologyClusterWork>of()
+                : workClusters) {
+            if (work != null && work.cluster() != null) {
+                result.add(work);
+            }
+        }
+        result.sort(RoomTopologyRebuilder::compareClusterWork);
         return result;
     }
 
@@ -110,4 +103,13 @@ final class DungeonRoomClusterRebuildLogic {
         return Long.compare(left.cluster().clusterId(), right.cluster().clusterId());
     }
 
+    public record RebuildResult(
+            SpatialTopology topology,
+            RoomCatalog rooms
+    ) {
+        public RebuildResult {
+            topology = safeTopology(topology);
+            rooms = rooms == null ? RoomCatalog.empty() : rooms;
+        }
+    }
 }
