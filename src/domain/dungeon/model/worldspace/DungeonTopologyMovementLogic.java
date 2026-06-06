@@ -1,5 +1,11 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
+
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
+
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;

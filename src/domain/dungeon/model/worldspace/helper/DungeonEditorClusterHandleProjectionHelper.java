@@ -12,7 +12,7 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandlePr
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
-import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 public final class DungeonEditorClusterHandleProjectionHelper {
 

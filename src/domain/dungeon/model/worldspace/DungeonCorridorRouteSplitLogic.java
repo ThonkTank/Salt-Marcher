@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
+
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;

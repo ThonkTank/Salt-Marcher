@@ -9,7 +9,7 @@ import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Route;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
-import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 /**
  * Transitional projection boundary: remove the worldspace corridor and cluster

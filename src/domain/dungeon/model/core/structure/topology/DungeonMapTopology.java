@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.topology;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -10,7 +10,10 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog.RoomTopologyEntry;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.transition.Transition;
 
@@ -42,7 +45,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendRoomBindings(List<DungeonTopologyBinding> result, RoomCatalog rooms) {
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms.rooms()) {
+        for (RoomTopologyEntry room : rooms == null ? List.<RoomTopologyEntry>of() : rooms.topologyEntries()) {
             result.add(new DungeonTopologyBinding(
                     new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
                     room.clusterId(),

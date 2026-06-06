@@ -1,7 +1,8 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.topology;
 
 import java.util.List;
 import src.domain.dungeon.model.core.geometry.DungeonTopology;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 /**
  * Minimal authored spatial truth for the current dungeon parity foundation.

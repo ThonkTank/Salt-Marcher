@@ -17,7 +17,7 @@ import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
-import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 /**
  * Transitional projection boundary: remove the worldspace corridor endpoint

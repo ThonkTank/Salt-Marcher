@@ -12,8 +12,8 @@ import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.worldspace.DungeonMapTopology;
-import src.domain.dungeon.model.worldspace.SpatialTopology;
+import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology;
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
 /**
  * Maps source-local dungeon rows into the domain aggregate.

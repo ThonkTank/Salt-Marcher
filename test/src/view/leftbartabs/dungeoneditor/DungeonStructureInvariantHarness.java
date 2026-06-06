@@ -269,7 +269,7 @@ final class DungeonStructureInvariantHarness {
         assertEquals(new CorridorAnchor(1L, 9L, new Cell(2, 2, 0)), createdAnchor.anchor(),
                 "corridor anchor endpoint materialization snaps created anchor");
         assertEquals(List.of(new CorridorAnchor(1L, 9L, new Cell(2, 2, 0))),
-                createdAnchor.corridors().getFirst().stateBindings().anchorBindings(),
+                createdAnchor.corridors().getFirst().coreBindings().anchorBindings(),
                 "corridor anchor endpoint materialization updates host corridor");
         assertTrue(createdAnchor.changed(), "corridor anchor endpoint reports created anchor change");
         CorridorAnchorEndpointMaterialization reusedById =
@@ -419,7 +419,7 @@ final class DungeonStructureInvariantHarness {
 
         List<Long> adapterRoomIds = new java.util.ArrayList<>(List.of(4L, 4L, -1L));
         adapterRoomIds.add(1, null);
-        Corridor corridor = new Corridor(3L, 5L, 0, adapterRoomIds, bindings);
+        Corridor corridor = new Corridor(3L, 5L, 0, new CorridorRoomSet(adapterRoomIds), bindings);
         assertEquals(List.of(4L), corridor.roomIds(), "adapter corridor delegates room set normalization");
         Corridor coreCorridor = new Corridor(
                 corridor.corridorId(),
@@ -442,7 +442,7 @@ final class DungeonStructureInvariantHarness {
                 3L,
                 9L,
                 0,
-                List.of(4L, 6L),
+                new CorridorRoomSet(List.of(4L, 6L)),
                 new CorridorBindings(
                         List.of(firstWaypoint, secondWaypoint, thirdWaypoint),
                         List.of(firstDoor, secondDoor),
@@ -451,7 +451,7 @@ final class DungeonStructureInvariantHarness {
 
         Corridor withoutDoor = corridor.withoutDoorTarget(firstDoor, true, 0, 2);
         assertEquals(List.of(6L), withoutDoor.roomIds(), "core door target delete removes room");
-        assertEquals(List.of(secondDoor), withoutDoor.stateBindings().doorBindings(),
+        assertEquals(List.of(secondDoor), withoutDoor.coreBindings().doorBindings(),
                 "core door target delete removes door binding");
         assertEquals(List.of(secondWaypoint), withoutDoor.stateBindings().waypoints(),
                 "core door target delete prunes branch waypoints");
@@ -476,19 +476,19 @@ final class DungeonStructureInvariantHarness {
                 10L,
                 3L,
                 0,
-                List.of(),
+                new CorridorRoomSet(List.of()),
                 new CorridorBindings(List.of(), List.of(), List.of(ownedAnchor, detachedAnchor), List.of()));
         Corridor dependent = new Corridor(
                 20L,
                 3L,
                 0,
-                List.of(),
+                new CorridorRoomSet(List.of()),
                 new CorridorBindings(List.of(), List.of(), List.of(), List.of(new CorridorAnchorRef(10L, 70L))));
         Corridor orphanRef = new Corridor(
                 30L,
                 3L,
                 0,
-                List.of(),
+                new CorridorRoomSet(List.of()),
                 new CorridorBindings(List.of(), List.of(), List.of(), List.of(new CorridorAnchorRef(99L, 99L))));
         CorridorNetwork network = new CorridorNetwork(List.of(owner, dependent, orphanRef));
 
@@ -501,7 +501,7 @@ final class DungeonStructureInvariantHarness {
         CorridorNetwork prunedNetwork = network.withoutDetachedAnchors();
         Corridor prunedOwner = prunedNetwork.corridors().getFirst();
         Corridor prunedOrphanRef = prunedNetwork.corridors().get(2);
-        assertEquals(List.of(ownedAnchor), prunedOwner.stateBindings().anchorBindings(),
+        assertEquals(List.of(ownedAnchor), prunedOwner.coreBindings().anchorBindings(),
                 "core network prunes detached owned anchors");
         assertEquals(List.of(), prunedOrphanRef.stateBindings().anchorRefs(),
                 "core network prunes refs to missing hosted anchors");
@@ -983,7 +983,7 @@ final class DungeonStructureInvariantHarness {
                 new src.domain.dungeon.model.core.structure.DungeonMapMetadata(
                         new src.domain.dungeon.model.core.structure.DungeonMapIdentity(4L),
                         "transition proof map"),
-                src.domain.dungeon.model.worldspace.SpatialTopology.empty(),
+                src.domain.dungeon.model.core.structure.topology.SpatialTopology.empty(),
                 src.domain.dungeon.model.core.structure.room.RoomCatalog.empty(),
                 List.of(),
                 new StairCollection(List.of()),

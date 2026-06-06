@@ -28,4 +28,25 @@ public record RoomCatalog(
         return Optional.empty();
     }
 
+    public List<RoomTopologyEntry> topologyEntries() {
+        List<RoomTopologyEntry> result = new java.util.ArrayList<>();
+        for (DungeonRoom room : rooms) {
+            if (room != null) {
+                result.add(new RoomTopologyEntry(room.roomId(), room.clusterId(), room.name()));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    public record RoomTopologyEntry(
+            long roomId,
+            long clusterId,
+            String name
+    ) {
+        public RoomTopologyEntry {
+            roomId = Math.max(0L, roomId);
+            clusterId = Math.max(0L, clusterId);
+            name = name == null ? "" : name.trim();
+        }
+    }
 }

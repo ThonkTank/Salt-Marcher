@@ -1,5 +1,9 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
+
+import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology;
+
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;

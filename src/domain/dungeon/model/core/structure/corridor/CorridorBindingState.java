@@ -6,6 +6,7 @@ import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.component.CorridorDoorBinding;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public record CorridorBindingState(
         List<CorridorWaypoint> waypoints,
@@ -171,7 +172,15 @@ public record CorridorBindingState(
         if (replacementBinding != null && coreDoor.roomId() == replacementBinding.roomId()) {
             return replacementBinding;
         }
-        return matchingExistingDoorBinding(coreDoor, remaining);
+        CorridorDoorBindingState existing = matchingExistingDoorBinding(coreDoor, remaining);
+        return existing == null
+                ? new CorridorDoorBindingState(
+                        coreDoor.roomId(),
+                        coreDoor.clusterId(),
+                        coreDoor.relativeCell(),
+                        coreDoor.direction(),
+                        DungeonTopologyRef.empty())
+                : existing;
     }
 
     private static CorridorDoorBindingState matchingExistingDoorBinding(
@@ -308,7 +317,14 @@ public record CorridorBindingState(
         if (replacementBinding != null && replacementBinding.anchorId() == coreAnchor.anchorId()) {
             return replacementBinding;
         }
-        return matchingExistingAnchorBinding(coreAnchor, remaining);
+        CorridorAnchorBinding existing = matchingExistingAnchorBinding(coreAnchor, remaining);
+        return existing == null
+                ? new CorridorAnchorBinding(
+                        coreAnchor.anchorId(),
+                        coreAnchor.hostCorridorId(),
+                        coreAnchor.position(),
+                        DungeonTopologyRef.corridorAnchor(coreAnchor.anchorId()))
+                : existing;
     }
 
     private static CorridorAnchorRef matchingExistingRef(

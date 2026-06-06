@@ -15,11 +15,11 @@ import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.Auth
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
-import src.domain.dungeon.model.worldspace.DungeonClusterBoundary;
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
-import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 final class DungeonTopologyInvariantHarness {
 
@@ -67,9 +67,16 @@ final class DungeonTopologyInvariantHarness {
         DungeonMap corridorBound = corridorBoundDoorMap();
         DoorFixture boundDoor = doorFixture(
                 corridorBound,
-                clusterContainingAnchor(corridorBound, new Cell(1, 1, 0)).clusterId(),
-                new Cell(3, 2, 0),
-                Direction.EAST);
+                clusterContainingAnchor(corridorBound, new Cell(8, 1, 0)).clusterId(),
+                new Cell(8, 2, 0),
+                Direction.WEST);
+        assertTrue(
+                hasDoorBoundary(corridorBound, boundDoor.clusterId(), boundDoor.edge()),
+                "corridor-bound setup contains authored door boundary");
+        assertTrue(!corridorBound.corridors().isEmpty(), "corridor-bound setup contains authored corridor");
+        assertTrue(
+                !corridorBound.corridors().getFirst().stateBindings().doorBindings().isEmpty(),
+                "corridor-bound setup contains corridor door bindings");
         DungeonMap rejectedDelete = corridorBound.editClusterBoundaries(
                 boundDoor.clusterId(),
                 List.of(boundDoor.edge()),
@@ -97,11 +104,23 @@ final class DungeonTopologyInvariantHarness {
                 clusterContainingAnchor(map, new Cell(1, 1, 0)).clusterId(),
                 new Cell(3, 2, 0),
                 Direction.EAST);
+        map = withDoorBoundary(map, leftDoor);
+        leftDoor = doorFixture(
+                map,
+                clusterContainingAnchor(map, new Cell(1, 1, 0)).clusterId(),
+                leftDoor.cell(),
+                leftDoor.direction());
         DoorFixture rightDoor = doorFixture(
                 map,
                 clusterContainingAnchor(map, new Cell(8, 1, 0)).clusterId(),
                 new Cell(8, 2, 0),
                 Direction.WEST);
+        map = withDoorBoundary(map, rightDoor);
+        rightDoor = doorFixture(
+                map,
+                clusterContainingAnchor(map, new Cell(8, 1, 0)).clusterId(),
+                rightDoor.cell(),
+                rightDoor.direction());
         DungeonRoom leftRoom = roomInCluster(map, leftDoor.clusterId());
         DungeonRoom rightRoom = roomInCluster(map, rightDoor.clusterId());
         return map.createCorridor(
@@ -135,6 +154,14 @@ final class DungeonTopologyInvariantHarness {
                 false);
         assertPresent(withDoor, ref, "door fixture publishes topology identity");
         return new DoorFixture(clusterId, cell, direction, edge, ref);
+    }
+
+    private static DungeonMap withDoorBoundary(DungeonMap map, DoorFixture door) {
+        return map.editClusterBoundaries(
+                door.clusterId(),
+                List.of(door.edge()),
+                BoundaryKind.DOOR,
+                false);
     }
 
     private static void assertTransitionTopologyIdentity() {

@@ -13,7 +13,7 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
-import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;

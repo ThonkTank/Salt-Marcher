@@ -1,11 +1,10 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
-import src.domain.dungeon.model.core.structure.room.RoomCluster;
 
 public record DungeonRoomCluster(
         long clusterId,
@@ -38,11 +37,11 @@ public record DungeonRoomCluster(
         return copyNestedLists(boundariesByLevel);
     }
 
-    Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap() {
+    public Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap() {
         return DungeonClusterBoundary.boundaryMap(center, flattenBoundaries());
     }
 
-    RoomCluster toCore(Map<Integer, List<Cell>> cellsByLevel) {
+    public RoomCluster toCore(Map<Integer, List<Cell>> cellsByLevel) {
         Map<Integer, List<Cell>> copiedCellsByLevel = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
             copiedCellsByLevel.put(entry.getKey(), copiedCells(entry.getValue()));
@@ -50,7 +49,7 @@ public record DungeonRoomCluster(
         return new RoomCluster(clusterId, mapId, center, copiedCellsByLevel);
     }
 
-    static DungeonRoomCluster fromCore(
+    public static DungeonRoomCluster fromCore(
             RoomCluster cluster,
             Map<Integer, List<Cell>> relativeVerticesByLevel,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel

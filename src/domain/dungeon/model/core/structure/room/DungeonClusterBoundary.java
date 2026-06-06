@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -12,7 +12,6 @@ import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
 
 public record DungeonClusterBoundary(
         long clusterId,
@@ -75,7 +74,7 @@ public record DungeonClusterBoundary(
         return isDoor() ? DungeonTopologyRef.door(boundaryId) : DungeonTopologyRef.wall(boundaryId);
     }
 
-    static Map<Integer, List<DungeonClusterBoundary>> orderedByLevel(
+    public static Map<Integer, List<DungeonClusterBoundary>> orderedByLevel(
             Iterable<DungeonClusterBoundary> boundaries
     ) {
         Map<BoundaryRow, List<DungeonClusterBoundary>> boundariesByRow = boundariesByRow(boundaries);
@@ -88,7 +87,7 @@ public record DungeonClusterBoundary(
         return Collections.unmodifiableMap(result);
     }
 
-    static Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap(
+    public static Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap(
             Cell center,
             Iterable<DungeonClusterBoundary> boundaries
     ) {

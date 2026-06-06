@@ -39,7 +39,7 @@ public record CorridorAnchorEndpointMaterialization(
         }
         CorridorAnchor created = new CorridorAnchor(nextAnchorId(normalizedCorridors), normalizedHostId, anchorCell);
         return new CorridorAnchorEndpointMaterialization(
-                withHostAnchor(normalizedCorridors, host.withBindings(host.coreBindings().withAnchorBinding(created))),
+                withHostAnchor(normalizedCorridors, coreHostWithAnchor(host, created)),
                 created,
                 true);
     }
@@ -209,6 +209,15 @@ public record CorridorAnchorEndpointMaterialization(
             }
         }
         return List.copyOf(result);
+    }
+
+    private static Corridor coreHostWithAnchor(Corridor host, CorridorAnchor created) {
+        return new Corridor(
+                host.corridorId(),
+                host.mapId(),
+                host.level(),
+                new CorridorRoomSet(host.roomIds()),
+                host.coreBindings().withAnchorBinding(created));
     }
 
     public record AuthoredEndpointMaterialization(

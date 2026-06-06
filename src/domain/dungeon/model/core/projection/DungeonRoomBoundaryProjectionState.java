@@ -13,9 +13,9 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import src.domain.dungeon.model.worldspace.DungeonClusterBoundary;
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
-import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 /**
  * Transitional projection state: remove the worldspace imports once

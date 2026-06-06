@@ -4,7 +4,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
-import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 /**
  * Transitional adapter while authored map aggregate carriers still live in worldspace.

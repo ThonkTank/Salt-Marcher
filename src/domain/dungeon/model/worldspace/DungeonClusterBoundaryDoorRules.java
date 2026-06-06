@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -12,6 +14,8 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.door.Door;
 import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.door.DoorIndex;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingGeometry;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
@@ -30,12 +34,7 @@ final class DungeonClusterBoundaryDoorRules {
             return false;
         }
         boolean corridorBound = resolvedKind == BoundaryKind.DOOR
-                && CorridorDoorBindingGeometry.touchesDoorBindingKeys(
-                dungeonMap.corridors(),
-                target.cluster().center(),
-                target.cluster().clusterId(),
-                existing.level(),
-                Set.of(key));
+                && new CorridorDoorBoundaryProtection(dungeonMap, target, key, existing).corridorBound();
         if (resolvedKind == BoundaryKind.DOOR) {
             DoorIndex currentDoors = DoorIndex.from(doors(boundaries.values()));
             DoorIndex expectedAfterDelete = DoorIndex.from(doorsExcept(existing, boundaries.values()));
@@ -150,5 +149,57 @@ final class DungeonClusterBoundaryDoorRules {
                 state.direction(),
                 BoundaryKind.WALL,
                 DungeonTopologyRef.empty());
+    }
+
+    private record CorridorDoorBoundaryProtection(
+            DungeonMap dungeonMap,
+            DungeonRoomTopologyClusterWork target,
+            DungeonBoundaryKey key,
+            DungeonClusterBoundary existing
+    ) {
+        boolean corridorBound() {
+            return boundByGeometry() || boundByCurrentBoundaryKey() || boundByTopologyRef();
+        }
+
+        private boolean boundByGeometry() {
+            return CorridorDoorBindingGeometry.touchesDoorBindingKeys(
+                    dungeonMap.corridors(),
+                    target.cluster().center(),
+                    target.cluster().clusterId(),
+                    existing.level(),
+                    Set.of(key));
+        }
+
+        private boolean boundByTopologyRef() {
+            DungeonTopologyRef ref = existing.resolvedTopologyRef(target.cluster().center());
+            if (!ref.present()) {
+                return false;
+            }
+            for (Corridor corridor : dungeonMap.corridors()) {
+                for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
+                    if (ref.equals(binding.topologyRef())) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private boolean boundByCurrentBoundaryKey() {
+            for (Corridor corridor : dungeonMap.corridors()) {
+                for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
+                    if (binding.clusterId() != target.cluster().clusterId()
+                            || binding.relativeCell().level() != existing.level()) {
+                        continue;
+                    }
+                    if (key.equals(DungeonBoundaryKey.from(CorridorDoorBindingGeometry.absoluteDoorEdge(
+                            binding,
+                            target.cluster().center())))) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
     }
 }

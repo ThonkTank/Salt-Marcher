@@ -1,5 +1,9 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
+
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;

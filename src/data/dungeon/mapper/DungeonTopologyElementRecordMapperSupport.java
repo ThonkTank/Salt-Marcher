@@ -9,7 +9,7 @@ import org.jspecify.annotations.Nullable;
 import src.data.dungeon.model.DungeonTopologyElementRecord;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonMapTopology;
+import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology;
 
 final class DungeonTopologyElementRecordMapperSupport {
     private static final String DOOR_EDGE_TYPE = "DOOR";

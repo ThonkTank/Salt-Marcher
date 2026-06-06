@@ -9,9 +9,9 @@ import src.data.dungeon.model.DungeonRoomClusterRecord;
 import src.data.dungeon.model.DungeonRoomClusterVertexRecord;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
-import src.domain.dungeon.model.worldspace.DungeonClusterBoundary;
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 final class DungeonClusterRecordMapperSupport {
 
