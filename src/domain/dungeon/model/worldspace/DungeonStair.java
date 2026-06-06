@@ -83,7 +83,7 @@ public record DungeonStair(
                 direction(),
                 dimension1(),
                 dimension2(),
-                DungeonStairGeometryValues.cells(path()),
+                Stair.normalizedPath(path()),
                 exits(),
                 corridorId());
     }
@@ -98,7 +98,7 @@ public record DungeonStair(
                         direction(stair.direction()),
                         stair.dimension1(),
                         stair.dimension2(),
-                        DungeonStairGeometryValues.cells(stair.path()),
+                        Stair.normalizedPath(stair.path()),
                         stair.exits(),
                         stair.corridorId()));
     }
@@ -181,7 +181,7 @@ public record DungeonStair(
                 stairId,
                 mapId,
                 corridorId,
-                DungeonStairGeometryValues.cells(path),
+                Stair.normalizedPath(path),
                 upperExit == null ? null : upperExit);
     }
 
@@ -195,7 +195,7 @@ public record DungeonStair(
             SpatialTopology topology,
             RoomCatalog rooms
     ) {
-        Direction direction = DungeonStairGeometryValues.supportedCardinalDirection(directionName);
+        Direction direction = Direction.supportedCardinal(directionName);
         Cell anchor = normalizedCollection(stairs).anchorOf(stairId);
         StairGeometrySpec spec = geometrySpec(shapeName, direction, anchor, dimension1, dimension2, false);
         return stairId > NO_STAIR_ID
@@ -215,7 +215,7 @@ public record DungeonStair(
             SpatialTopology topology,
             RoomCatalog rooms
     ) {
-        Direction direction = DungeonStairGeometryValues.supportedCardinalDirection(directionName);
+        Direction direction = Direction.supportedCardinal(directionName);
         Cell anchor = normalizedCollection(stairs).anchorOf(stairId);
         StairGeometrySpec spec = geometrySpec(shapeName, direction, anchor, dimension1, dimension2, false);
         if (topology == null || rooms == null || spec == null) {
@@ -236,13 +236,16 @@ public record DungeonStair(
             int dimension2,
             boolean useEditorDefaults
     ) {
-        StairShape shape = DungeonStairGeometryValues.supportedShape(shapeName);
-        return DungeonStairGeometryValues.geometrySpec(
+        StairShape shape = StairShape.supportedEditorShape(shapeName);
+        if (shape == null || anchor == null || direction == null) {
+            return null;
+        }
+        return new StairGeometrySpec(
                 shape,
                 anchor,
                 direction,
-                useEditorDefaults && shape != null ? shape.defaultEditorDimension1() : dimension1,
-                useEditorDefaults && shape != null ? shape.defaultEditorDimension2() : dimension2);
+                useEditorDefaults ? shape.defaultEditorDimension1() : dimension1,
+                useEditorDefaults ? shape.defaultEditorDimension2() : dimension2);
     }
 
     private static Set<Cell> roomCells(SpatialTopology topology, RoomCatalog rooms) {
@@ -296,8 +299,8 @@ public record DungeonStair(
             direction = direction == null ? Direction.NORTH : direction;
             dimension1 = Math.max(0, dimension1);
             dimension2 = Math.max(0, dimension2);
-            path = DungeonStairGeometryValues.uniquePath(path);
-            exits = DungeonStairGeometryValues.sortedExits(exits);
+            path = Stair.normalizedPath(path);
+            exits = Stair.normalizedExits(exits);
             corridorId = positiveCorridorId(corridorId);
         }
 

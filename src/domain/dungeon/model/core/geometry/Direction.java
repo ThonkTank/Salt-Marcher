@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.core.geometry;
 
 import java.util.Locale;
+import org.jspecify.annotations.Nullable;
 
 public enum Direction {
     NORTH(0, -1, 0, 0, 1, 0),
@@ -43,6 +44,17 @@ public enum Direction {
             case "SOUTH" -> SOUTH;
             case "WEST" -> WEST;
             default -> NORTH;
+        };
+    }
+
+    public static @Nullable Direction supportedCardinal(String value) {
+        String normalized = value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
+        return switch (normalized) {
+            case "NORTH" -> NORTH;
+            case "EAST" -> EAST;
+            case "SOUTH" -> SOUTH;
+            case "WEST" -> WEST;
+            default -> null;
         };
     }
 

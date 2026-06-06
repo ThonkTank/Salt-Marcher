@@ -32,8 +32,8 @@ public record Stair(
         direction = direction == null ? Direction.NORTH : direction;
         dimension1 = Math.max(0, dimension1);
         dimension2 = Math.max(0, dimension2);
-        path = uniquePath(path);
-        exits = sortedExits(exits);
+        path = normalizedPath(path);
+        exits = normalizedExits(exits);
         corridorId = positiveCorridorId(corridorId);
     }
 
@@ -176,7 +176,7 @@ public record Stair(
         return levels.size();
     }
 
-    private static List<Cell> uniquePath(List<Cell> source) {
+    public static List<Cell> normalizedPath(List<Cell> source) {
         Set<Cell> cells = new LinkedHashSet<>();
         for (Cell cell : source == null ? List.<Cell>of() : source) {
             if (cell != null) {
@@ -186,7 +186,7 @@ public record Stair(
         return List.copyOf(cells);
     }
 
-    private static List<StairExit> sortedExits(List<StairExit> source) {
+    public static List<StairExit> normalizedExits(List<StairExit> source) {
         List<StairExit> result = new ArrayList<>();
         for (StairExit exit : source == null ? List.<StairExit>of() : source) {
             if (exit != null) {
