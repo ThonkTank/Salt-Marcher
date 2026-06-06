@@ -1,10 +1,8 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
-import src.domain.dungeon.model.core.structure.room.Room;
 
 public record DungeonRoom(
         long roomId,
@@ -51,7 +49,7 @@ public record DungeonRoom(
                 nextNarration);
     }
 
-    Room toCore() {
+    public Room toCore() {
         Map<Integer, Cell> coreAnchors = new LinkedHashMap<>();
         for (Map.Entry<Integer, Cell> entry : floorAnchors.entrySet()) {
             coreAnchors.put(entry.getKey(), entry.getValue());
@@ -59,7 +57,7 @@ public record DungeonRoom(
         return new Room(roomId, mapId, clusterId, name, coreAnchors);
     }
 
-    static DungeonRoom fromCore(Room room, DungeonRoomNarration narration) {
+    public static DungeonRoom fromCore(Room room, DungeonRoomNarration narration) {
         Map<Integer, Cell> anchors = new LinkedHashMap<>();
         for (Map.Entry<Integer, Cell> entry : room.floorAnchors().entrySet()) {
             anchors.put(entry.getKey(), entry.getValue());

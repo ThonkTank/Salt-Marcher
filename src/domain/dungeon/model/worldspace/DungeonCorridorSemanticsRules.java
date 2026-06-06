@@ -11,8 +11,9 @@ import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointSemantics;
-import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 
 /**
  * Owns corridor endpoint equivalence and deduplication semantics.

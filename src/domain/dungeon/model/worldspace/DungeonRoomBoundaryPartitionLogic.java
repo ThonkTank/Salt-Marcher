@@ -1,7 +1,5 @@
 package src.domain.dungeon.model.worldspace;
 
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -9,6 +7,8 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;

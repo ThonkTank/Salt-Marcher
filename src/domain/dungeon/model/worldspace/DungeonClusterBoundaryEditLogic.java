@@ -1,7 +1,5 @@
 package src.domain.dungeon.model.worldspace;
 
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -10,6 +8,8 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 
 final class DungeonClusterBoundaryEditLogic {

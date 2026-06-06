@@ -1,7 +1,5 @@
 package src.domain.dungeon.model.worldspace;
 
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -12,6 +10,8 @@ import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 final class DungeonCorridorRouteValidationLogic {
     private static final DungeonMapLookupAdapter LOOKUP_ADAPTER = new DungeonMapLookupAdapter();

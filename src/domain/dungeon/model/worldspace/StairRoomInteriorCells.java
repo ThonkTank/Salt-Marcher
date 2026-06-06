@@ -1,15 +1,14 @@
 package src.domain.dungeon.model.worldspace;
 
-import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
-
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
 /*
  * Transitional stair/core migration adapter: delete when room interior cells

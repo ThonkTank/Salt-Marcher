@@ -1,18 +1,16 @@
 package src.domain.dungeon.model.worldspace;
 
-import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
-
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
 /**
  * Owns authored topology movement while the aggregate stays the public mutation

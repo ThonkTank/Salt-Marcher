@@ -9,17 +9,17 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.worldspace.DungeonRoom;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 final class DungeonTopologyInvariantHarness {
 

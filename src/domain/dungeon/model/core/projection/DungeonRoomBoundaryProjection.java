@@ -5,7 +5,7 @@ import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
-import src.domain.dungeon.model.worldspace.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 public record DungeonRoomBoundaryProjection(

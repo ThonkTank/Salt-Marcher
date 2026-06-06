@@ -1,7 +1,5 @@
 package src.domain.dungeon.model.worldspace;
 
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -12,6 +10,8 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.CellLoopRasterizer;
 import src.domain.dungeon.model.core.geometry.CellLoopRasterizer.CellLoop;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 

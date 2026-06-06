@@ -2,9 +2,9 @@ package src.domain.dungeon.model.core.structure;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
+import src.domain.dungeon.model.worldspace.DungeonMap;
 
 /**
  * Transitional adapter while authored map aggregate carriers still live in worldspace.

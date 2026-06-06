@@ -7,12 +7,12 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjectionKind;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 public final class DungeonEditorClusterHandleProjectionHelper {
 

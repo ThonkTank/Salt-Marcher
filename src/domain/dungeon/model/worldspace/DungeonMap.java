@@ -1,9 +1,5 @@
 package src.domain.dungeon.model.worldspace;
 
-import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
-
-import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology;
-
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
@@ -12,10 +8,13 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
+import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology;
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 

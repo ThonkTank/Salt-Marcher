@@ -14,9 +14,9 @@ import src.domain.dungeon.model.core.graph.DungeonTraversalLink;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonRoom;
 
 final class BuildDungeonRoomNarrationsUseCase {
 

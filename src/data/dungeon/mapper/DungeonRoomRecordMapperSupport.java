@@ -10,9 +10,9 @@ import src.data.dungeon.model.DungeonRoomFloorRecord;
 import src.data.dungeon.model.DungeonRoomRecord;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
-import src.domain.dungeon.model.worldspace.DungeonRoom;
 
 final class DungeonRoomRecordMapperSupport {
 

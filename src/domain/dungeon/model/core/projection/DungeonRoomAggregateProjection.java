@@ -3,7 +3,7 @@ package src.domain.dungeon.model.core.projection;
 import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.worldspace.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 
 public final class DungeonRoomAggregateProjection {
 

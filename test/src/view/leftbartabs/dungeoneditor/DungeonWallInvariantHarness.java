@@ -16,16 +16,16 @@ import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.door.DoorIndex;
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonDerivedStateProjection;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.worldspace.DungeonRoom;
 
 final class DungeonWallInvariantHarness {
 
