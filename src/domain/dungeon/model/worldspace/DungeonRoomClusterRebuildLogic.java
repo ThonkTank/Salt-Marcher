@@ -3,13 +3,15 @@ package src.domain.dungeon.model.worldspace;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
+import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 
 final class DungeonRoomClusterRebuildLogic {
 
     private final DungeonRoomClusterTopologyRebuildLogic topologyLogic =
             new DungeonRoomClusterTopologyRebuildLogic();
-    private final DungeonRoomClusterRoomRebuildLogic roomLogic = new DungeonRoomClusterRoomRebuildLogic();
 
     DungeonMap rebuilt(DungeonMap dungeonMap, List<DungeonRoomTopologyClusterWork> workClusters) {
         List<DungeonRoomCluster> clusters = new ArrayList<>();
@@ -18,7 +20,7 @@ final class DungeonRoomClusterRebuildLogic {
             if (work.allCells().isEmpty()) {
                 continue;
             }
-            List<DungeonRoom> rebuiltRooms = roomLogic.roomsFor(work);
+            List<DungeonRoom> rebuiltRooms = roomsFor(work);
             if (rebuiltRooms.isEmpty()) {
                 continue;
             }
@@ -70,6 +72,24 @@ final class DungeonRoomClusterRebuildLogic {
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
         return topologyLogic.clusterForStretch(work, boundariesByLevel);
+    }
+
+    private static List<DungeonRoom> roomsFor(DungeonRoomTopologyClusterWork work) {
+        Optional<Room> rebuilt = work.toCore().rebuiltRoom();
+        if (rebuilt.isEmpty()) {
+            return List.of();
+        }
+        Room room = rebuilt.get();
+        return List.of(DungeonRoom.fromCore(room, narrationFor(work, room.roomId())));
+    }
+
+    private static DungeonRoomNarration narrationFor(DungeonRoomTopologyClusterWork work, long roomId) {
+        for (DungeonRoom room : work.rooms()) {
+            if (room != null && room.roomId() == roomId) {
+                return room.narration();
+            }
+        }
+        return DungeonRoomNarration.empty();
     }
 
     private static List<DungeonRoomTopologyClusterWork> sortedByClusterId(
