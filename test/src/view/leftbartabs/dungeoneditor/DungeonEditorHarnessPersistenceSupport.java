@@ -26,7 +26,7 @@ import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
 import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
-import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorStateModel;

@@ -11,7 +11,7 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjectionKind;
-import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorClusterHandleProjectionHelper;
@@ -37,9 +37,9 @@ public final class PublishDungeonEditorHandlesUseCase {
     }
 
     private static void appendDoorHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
-        for (DungeonCorridor corridor : dungeonMap.corridors()) {
-            for (int index = 0; index < corridor.bindings().doorBindings().size(); index++) {
-                var binding = corridor.bindings().doorBindings().get(index);
+        for (Corridor corridor : dungeonMap.corridors()) {
+            for (int index = 0; index < corridor.stateBindings().doorBindings().size(); index++) {
+                var binding = corridor.stateBindings().doorBindings().get(index);
                 DungeonRoomCluster cluster = cluster(dungeonMap, binding.clusterId());
                 Cell roomCell = binding.relativeCell();
                 Cell absoluteRoomCell = cluster == null
@@ -65,9 +65,9 @@ public final class PublishDungeonEditorHandlesUseCase {
     }
 
     private static void appendWaypointHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
-        for (DungeonCorridor corridor : dungeonMap.corridors()) {
-            for (int index = 0; index < corridor.bindings().waypoints().size(); index++) {
-                var waypoint = corridor.bindings().waypoints().get(index);
+        for (Corridor corridor : dungeonMap.corridors()) {
+            for (int index = 0; index < corridor.stateBindings().waypoints().size(); index++) {
+                var waypoint = corridor.stateBindings().waypoints().get(index);
                 DungeonRoomCluster cluster = cluster(dungeonMap, waypoint.clusterId());
                 Cell absolute = cluster == null
                         ? waypoint.relativeCell()
@@ -88,9 +88,9 @@ public final class PublishDungeonEditorHandlesUseCase {
     }
 
     private static void appendAnchorHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
-        for (DungeonCorridor corridor : dungeonMap.corridors()) {
-            for (int index = 0; index < corridor.bindings().anchorBindings().size(); index++) {
-                var anchor = corridor.bindings().anchorBindings().get(index);
+        for (Corridor corridor : dungeonMap.corridors()) {
+            for (int index = 0; index < corridor.stateBindings().anchorBindings().size(); index++) {
+                var anchor = corridor.stateBindings().anchorBindings().get(index);
                 result.add(new DungeonEditorHandleProjection(
                         DungeonEditorHandleProjectionKind.CORRIDOR_ANCHOR,
                         anchor.topologyRef(),

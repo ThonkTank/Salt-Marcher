@@ -46,7 +46,6 @@ import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.Auth
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
-import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 
@@ -257,7 +256,7 @@ final class DungeonStructureInvariantHarness {
                 "corridor host cells preserve host cell order");
         assertEquals(new Cell(2, 2, 0), hostCells.snapToHostCell(9L, new Cell(3, 2, 0)),
                 "corridor host cells snap by host corridor id");
-        Corridor hostCorridor = new Corridor(9L, 1L, 0, List.of(), CorridorBindings.empty());
+        Corridor hostCorridor = new Corridor(9L, 1L, 0, List.of(), CorridorBindingState.empty());
         CorridorAnchorEndpointMaterialization createdAnchor =
                 CorridorAnchorEndpointMaterialization.materialize(
                         List.of(hostCorridor),
@@ -270,7 +269,7 @@ final class DungeonStructureInvariantHarness {
         assertEquals(new CorridorAnchor(1L, 9L, new Cell(2, 2, 0)), createdAnchor.anchor(),
                 "corridor anchor endpoint materialization snaps created anchor");
         assertEquals(List.of(new CorridorAnchor(1L, 9L, new Cell(2, 2, 0))),
-                createdAnchor.corridors().getFirst().bindings().anchorBindings(),
+                createdAnchor.corridors().getFirst().stateBindings().anchorBindings(),
                 "corridor anchor endpoint materialization updates host corridor");
         assertTrue(createdAnchor.changed(), "corridor anchor endpoint reports created anchor change");
         CorridorAnchorEndpointMaterialization reusedById =
@@ -420,9 +419,14 @@ final class DungeonStructureInvariantHarness {
 
         List<Long> adapterRoomIds = new java.util.ArrayList<>(List.of(4L, 4L, -1L));
         adapterRoomIds.add(1, null);
-        DungeonCorridor corridor = new DungeonCorridor(3L, 5L, 0, adapterRoomIds, bindings);
+        Corridor corridor = new Corridor(3L, 5L, 0, adapterRoomIds, bindings);
         assertEquals(List.of(4L), corridor.roomIds(), "adapter corridor delegates room set normalization");
-        Corridor coreCorridor = new Corridor(corridor.corridorId(), corridor.mapId(), corridor.level(), corridor.roomIds(), CorridorBindings.empty());
+        Corridor coreCorridor = new Corridor(
+                corridor.corridorId(),
+                corridor.mapId(),
+                corridor.level(),
+                corridor.roomIds(),
+                CorridorBindingState.empty());
         assertEquals(List.of(4L, 6L), coreCorridor.withDoorBinding(secondDoor).roomIds(),
                 "core corridor adds door room through core room set");
     }
@@ -447,21 +451,21 @@ final class DungeonStructureInvariantHarness {
 
         Corridor withoutDoor = corridor.withoutDoorTarget(firstDoor, true, 0, 2);
         assertEquals(List.of(6L), withoutDoor.roomIds(), "core door target delete removes room");
-        assertEquals(List.of(secondDoor), withoutDoor.bindings().doorBindings(),
+        assertEquals(List.of(secondDoor), withoutDoor.stateBindings().doorBindings(),
                 "core door target delete removes door binding");
-        assertEquals(List.of(secondWaypoint), withoutDoor.bindings().waypoints(),
+        assertEquals(List.of(secondWaypoint), withoutDoor.stateBindings().waypoints(),
                 "core door target delete prunes branch waypoints");
 
         Corridor withoutDoorWithoutEndpointFacts = corridor.withoutDoorTarget(firstDoor, false, -1, -1);
         assertEquals(List.of(firstWaypoint, secondWaypoint, thirdWaypoint),
-                withoutDoorWithoutEndpointFacts.bindings().waypoints(),
+                withoutDoorWithoutEndpointFacts.stateBindings().waypoints(),
                 "core door target delete preserves waypoints when adapter lacks endpoint facts");
 
         Corridor withoutAnchor = corridor.withoutAnchorTarget(5L);
-        assertEquals(List.of(), withoutAnchor.bindings().anchorRefs(), "core anchor target delete removes anchor ref");
-        assertEquals(List.of(), withoutAnchor.bindings().waypoints(), "core anchor target delete clears route waypoints");
+        assertEquals(List.of(), withoutAnchor.stateBindings().anchorRefs(), "core anchor target delete removes anchor ref");
+        assertEquals(List.of(), withoutAnchor.stateBindings().waypoints(), "core anchor target delete clears route waypoints");
         assertEquals(List.of(firstWaypoint, thirdWaypoint),
-                corridor.withoutWaypointTarget(1).bindings().waypoints(),
+                corridor.withoutWaypointTarget(1).stateBindings().waypoints(),
                 "core waypoint target delete removes selected waypoint");
     }
 
@@ -497,9 +501,9 @@ final class DungeonStructureInvariantHarness {
         CorridorNetwork prunedNetwork = network.withoutDetachedAnchors();
         Corridor prunedOwner = prunedNetwork.corridors().getFirst();
         Corridor prunedOrphanRef = prunedNetwork.corridors().get(2);
-        assertEquals(List.of(ownedAnchor), prunedOwner.bindings().anchorBindings(),
+        assertEquals(List.of(ownedAnchor), prunedOwner.stateBindings().anchorBindings(),
                 "core network prunes detached owned anchors");
-        assertEquals(List.of(), prunedOrphanRef.bindings().anchorRefs(),
+        assertEquals(List.of(), prunedOrphanRef.stateBindings().anchorRefs(),
                 "core network prunes refs to missing hosted anchors");
 
         assertWorldspaceCorridorNetworkAdapterCompatibility();
@@ -530,13 +534,13 @@ final class DungeonStructureInvariantHarness {
                         10L,
                         new Cell(6, 6, 0),
                         detachedRef);
-        DungeonCorridor owner = new DungeonCorridor(
+        Corridor owner = new Corridor(
                 10L,
                 3L,
                 0,
                 List.of(),
                 new CorridorBindingState(List.of(), List.of(), List.of(referencedAnchor, detachedAnchor), List.of()));
-        DungeonCorridor dependent = new DungeonCorridor(
+        Corridor dependent = new Corridor(
                 20L,
                 3L,
                 0,
@@ -550,7 +554,7 @@ final class DungeonStructureInvariantHarness {
                 new src.domain.dungeon.model.worldspace.DungeonCorridorConnectionNormalizationLogic();
 
         assertEquals(List.of(referencedAnchor),
-                normalization.pruneDetachedAnchors(List.of(owner, dependent)).getFirst().bindings().anchorBindings(),
+                normalization.pruneDetachedAnchors(List.of(owner, dependent)).getFirst().stateBindings().anchorBindings(),
                 "adapter pruning preserves referenced anchor by topology ref");
     }
 

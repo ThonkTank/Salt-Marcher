@@ -7,7 +7,7 @@ import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
@@ -23,7 +23,7 @@ public final class DungeonCorridorReadProjection {
     private static final DungeonCorridorCellProjection CELL_PROJECTOR = new DungeonCorridorCellProjection();
 
     public DungeonCorridorProjection project(
-            List<DungeonCorridor> corridors,
+            List<Corridor> corridors,
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom,
@@ -35,7 +35,7 @@ public final class DungeonCorridorReadProjection {
         Set<Cell> allRoomCells = allRoomCells(roomCellsByRoom);
         Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef =
                 ENDPOINT_RESOLVER.anchorBindingsByRef(corridors);
-        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             if (corridor == null || !corridor.isReadable()) {
                 continue;
             }

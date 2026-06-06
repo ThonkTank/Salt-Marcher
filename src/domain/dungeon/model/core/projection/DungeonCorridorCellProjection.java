@@ -8,7 +8,7 @@ import java.util.Set;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Route;
-import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 
 /**
@@ -20,15 +20,15 @@ final class DungeonCorridorCellProjection {
     private static final int FULL_ROUTE_TERMINUS_COUNT = 2;
 
     List<Cell> corridorCells(
-            DungeonCorridor corridor,
+            Corridor corridor,
             Map<Long, DungeonRoomCluster> clustersById,
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints,
             Set<Cell> roomCells
     ) {
-        boolean authoredBackbone = !corridor.bindings().waypoints().isEmpty();
+        boolean authoredBackbone = !corridor.stateBindings().waypoints().isEmpty();
         List<Cell> backbone = !authoredBackbone
                 ? endpointCells(endpoints)
-                : authoredRouteCells(corridor.bindings().waypoints(), clustersById, endpoints);
+                : authoredRouteCells(corridor.stateBindings().waypoints(), clustersById, endpoints);
         Set<Cell> cells = new LinkedHashSet<>();
         addRouteCells(cells, backbone, roomCells, !authoredBackbone);
         if (cells.isEmpty()) {

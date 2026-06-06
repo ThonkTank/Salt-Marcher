@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace.repository;
+package src.domain.dungeon.model.runtime.repository;
 
 import java.util.List;
 import java.util.Objects;

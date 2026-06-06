@@ -6,7 +6,9 @@ import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorEndpointMaterialization;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
@@ -74,8 +76,8 @@ public final class DungeonCorridorEndpointResolutionLogic {
             DungeonCorridorEndpoint endpoint,
             CorridorHostCells hostCells
     ) {
-        DungeonCorridor.AnchorEndpointMaterialization resolved =
-                DungeonCorridor.materializeAnchorEndpoint(dungeonMap.corridors(), endpoint, hostCells);
+        CorridorAnchorEndpointMaterialization.AuthoredEndpointMaterialization resolved =
+                CorridorAnchorEndpointMaterialization.materializeAuthored(dungeonMap.corridors(), endpoint, hostCells);
         if (resolved == null) {
             return null;
         }
@@ -132,10 +134,8 @@ public final class DungeonCorridorEndpointResolutionLogic {
             CorridorResolvedEndpoint endpoint,
             @Nullable CorridorDoorBindingState replacementDoor
     ) {
-        public DungeonCorridor applyTo(DungeonCorridor corridor) {
-            src.domain.dungeon.model.core.structure.corridor.Corridor coreCorridor =
-                    endpoint.applyTo(corridor.toCore());
-            return DungeonCorridor.fromCore(corridor, coreCorridor, replacementDoor);
+        public Corridor applyTo(Corridor corridor) {
+            return corridor.withResolvedEndpoint(endpoint, replacementDoor);
         }
     }
 

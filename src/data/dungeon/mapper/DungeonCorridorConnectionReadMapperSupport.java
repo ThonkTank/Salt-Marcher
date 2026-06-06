@@ -13,7 +13,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
@@ -23,10 +23,10 @@ final class DungeonCorridorConnectionReadMapperSupport {
     private DungeonCorridorConnectionReadMapperSupport() {
     }
 
-    static List<DungeonCorridor> toCorridors(List<DungeonCorridorRecord> records) {
-        List<DungeonCorridor> result = new ArrayList<>();
+    static List<Corridor> toCorridors(List<DungeonCorridorRecord> records) {
+        List<Corridor> result = new ArrayList<>();
         for (DungeonCorridorRecord record : records == null ? List.<DungeonCorridorRecord>of() : records) {
-            result.add(new DungeonCorridor(
+            result.add(new Corridor(
                     record.corridorId(),
                     record.mapId(),
                     record.levelZ(),

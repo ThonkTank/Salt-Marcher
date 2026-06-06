@@ -14,8 +14,8 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
     ) {
         src.domain.dungeon.model.worldspace.usecase.ApplyDungeonMapCatalogUseCase catalogUseCase = mapCatalogUseCase(registry);
         src.domain.dungeon.model.worldspace.usecase.LoadDungeonSnapshotUseCase loadSnapshotUseCase = loadDungeonSnapshotUseCase(registry);
-        src.domain.dungeon.model.worldspace.repository.DungeonMapRepository repository =
-                registry.require(src.domain.dungeon.model.worldspace.repository.DungeonMapRepository.class);
+        src.domain.dungeon.model.core.repository.DungeonMapRepository repository =
+                registry.require(src.domain.dungeon.model.core.repository.DungeonMapRepository.class);
         DungeonEditorSnapshotPartsServiceAssembly snapshotParts = DungeonEditorSnapshotPartsServiceAssembly.create(registry);
         src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase operationUseCase =
                 authoredOperationUseCase(snapshotParts, repository);
@@ -47,7 +47,7 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
                         operationUseCase,
                         publishMutationUseCase),
                 new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredTransitionLinkUseCase(
-                        registry.require(src.domain.dungeon.model.worldspace.repository.DungeonMapRepository.class),
+                        registry.require(src.domain.dungeon.model.core.repository.DungeonMapRepository.class),
                         snapshotParts.derive(),
                         snapshotParts.assembleDungeonSnapshotUseCase(),
                         snapshotParts.publishDungeonEditorHandlesUseCase(),
@@ -77,8 +77,8 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
     }
 
     private static src.domain.dungeon.model.worldspace.usecase.ApplyDungeonMapCatalogUseCase mapCatalogUseCase(ServiceRegistry registry) {
-        src.domain.dungeon.model.worldspace.repository.DungeonMapRepository repository =
-                registry.require(src.domain.dungeon.model.worldspace.repository.DungeonMapRepository.class);
+        src.domain.dungeon.model.core.repository.DungeonMapRepository repository =
+                registry.require(src.domain.dungeon.model.core.repository.DungeonMapRepository.class);
         return new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonMapCatalogUseCase(
                 new src.domain.dungeon.model.worldspace.usecase.SearchDungeonMapsUseCase(repository),
                 new src.domain.dungeon.model.worldspace.usecase.CreateDungeonMapUseCase(repository),
@@ -99,7 +99,7 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
 
     private static src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase authoredOperationUseCase(
             DungeonEditorSnapshotPartsServiceAssembly parts,
-            src.domain.dungeon.model.worldspace.repository.DungeonMapRepository repository
+            src.domain.dungeon.model.core.repository.DungeonMapRepository repository
     ) {
         return new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase(
                 parts.loadDungeonMapUseCase(),

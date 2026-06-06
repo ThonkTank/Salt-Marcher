@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
@@ -22,7 +23,7 @@ public record DungeonMap(
         SpatialTopology topology,
         DungeonMapTopology topologyIndex,
         RoomCatalog rooms,
-        List<DungeonCorridor> corridors,
+        List<Corridor> corridors,
         StairCollection stairs,
         TransitionCatalog transitionCatalog,
         long revision
@@ -33,7 +34,7 @@ public record DungeonMap(
             DungeonMapMetadata metadata,
             SpatialTopology topology,
             RoomCatalog rooms,
-            List<DungeonCorridor> corridors,
+            List<Corridor> corridors,
             StairCollection stairs,
             TransitionCatalog transitionCatalog,
             long revision
@@ -46,7 +47,7 @@ public record DungeonMap(
             SpatialTopology topology,
             @Nullable DungeonMapTopology topologyIndex,
             RoomCatalog rooms,
-            List<DungeonCorridor> corridors,
+            List<Corridor> corridors,
             StairCollection stairs,
             TransitionCatalog transitionCatalog,
             long revision

@@ -5,7 +5,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
-import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.model.worldspace.usecase.LoadDungeonMapUseCase;
 import src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredMutationUseCase;

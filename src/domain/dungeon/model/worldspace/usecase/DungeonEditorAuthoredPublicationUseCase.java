@@ -12,7 +12,7 @@ import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceAreaProject
 import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceBoundaryProjectionHelper;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceFeatureProjectionHelper;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceHandleProjectionHelper;
-import src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository;
+import src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository;
 
 public final class DungeonEditorAuthoredPublicationUseCase {
     private final DungeonEditorWorkspaceAreaProjectionHelper areas = new DungeonEditorWorkspaceAreaProjectionHelper();

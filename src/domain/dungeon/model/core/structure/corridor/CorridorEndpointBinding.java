@@ -32,7 +32,7 @@ public record CorridorEndpointBinding(
             updated = updated.withDoorBinding(doorBinding);
         }
         if (anchorRef != null && anchorRef.present()) {
-            updated = updated.withBindings(updated.bindings().withAnchorRef(anchorRef));
+            updated = updated.withBindings(updated.coreBindings().withAnchorRef(anchorRef));
         }
         return updated;
     }

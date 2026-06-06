@@ -9,7 +9,7 @@ final class DungeonAuthoredCatalogProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonMapCatalogResponse mapList(
-            src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.CatalogPublication result
+            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.CatalogPublication result
     ) {
         return new src.domain.dungeon.published.DungeonMapCatalogResponse.MapList(summaries(result));
     }
@@ -22,12 +22,12 @@ final class DungeonAuthoredCatalogProjectionServiceAssembly {
     }
 
     private static List<src.domain.dungeon.published.DungeonMapSummary> summaries(
-            src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.CatalogPublication result
+            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.CatalogPublication result
     ) {
         List<src.domain.dungeon.published.DungeonMapSummary> summaries = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.MapSummaryPublication map :
+        for (src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.MapSummaryPublication map :
                 result == null
-                        ? List.<src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.MapSummaryPublication>of()
+                        ? List.<src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.MapSummaryPublication>of()
                         : result.maps()) {
             summaries.add(summary(map));
         }
@@ -35,7 +35,7 @@ final class DungeonAuthoredCatalogProjectionServiceAssembly {
     }
 
     private static src.domain.dungeon.published.DungeonMapSummary summary(
-            src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.MapSummaryPublication map
+            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.MapSummaryPublication map
     ) {
         return new src.domain.dungeon.published.DungeonMapSummary(
                 id(map.mapId()),

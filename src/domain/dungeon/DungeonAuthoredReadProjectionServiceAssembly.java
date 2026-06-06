@@ -15,7 +15,7 @@ final class DungeonAuthoredReadProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonSnapshot snapshot(
-            src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication snapshot
+            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication snapshot
     ) {
         if (snapshot == null) {
             return DungeonPublishedMapProjectionServiceAssembly.defaultSnapshot();
@@ -31,7 +31,7 @@ final class DungeonAuthoredReadProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonInspectorSnapshot inspector(
-            src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.InspectorPublication inspector
+            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.InspectorPublication inspector
     ) {
         return new src.domain.dungeon.published.DungeonInspectorSnapshot(
                 inspector.title(),
@@ -45,10 +45,10 @@ final class DungeonAuthoredReadProjectionServiceAssembly {
     }
 
     private static List<src.domain.dungeon.published.DungeonInspectorSnapshot.RoomNarrationCard> roomNarrations(
-            src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.InspectorPublication snapshot
+            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.InspectorPublication snapshot
     ) {
         List<src.domain.dungeon.published.DungeonInspectorSnapshot.RoomNarrationCard> roomNarrations = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.RoomNarrationPublication roomNarration :
+        for (src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.RoomNarrationPublication roomNarration :
                 snapshot.roomNarrations()) {
             roomNarrations.add(roomNarration(roomNarration));
         }
@@ -56,7 +56,7 @@ final class DungeonAuthoredReadProjectionServiceAssembly {
     }
 
     private static src.domain.dungeon.published.DungeonInspectorSnapshot.RoomNarrationCard roomNarration(
-            src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.RoomNarrationPublication roomNarration
+            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.RoomNarrationPublication roomNarration
     ) {
         return new src.domain.dungeon.published.DungeonInspectorSnapshot.RoomNarrationCard(
                 roomNarration.roomId(),
@@ -66,10 +66,10 @@ final class DungeonAuthoredReadProjectionServiceAssembly {
     }
 
     private static List<src.domain.dungeon.published.DungeonInspectorSnapshot.RoomExitNarration> recordRoomExits(
-            List<src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication> exits
+            List<src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication> exits
     ) {
         List<src.domain.dungeon.published.DungeonInspectorSnapshot.RoomExitNarration> result = new ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication exit : exits) {
+        for (src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication exit : exits) {
             result.add(new src.domain.dungeon.published.DungeonInspectorSnapshot.RoomExitNarration(
                     exit.label(),
                     DungeonPublishedMapProjectionServiceAssembly.cell(exit.cell()),

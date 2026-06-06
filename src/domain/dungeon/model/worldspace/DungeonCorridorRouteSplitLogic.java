@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
@@ -12,9 +13,9 @@ final class DungeonCorridorRouteSplitLogic {
     private static final int MINIMUM_INTERIOR_SPLIT_ROUTE_CELLS = 3;
     private static final long MISSING_CLUSTER_ID = 0L;
 
-    DungeonCorridor bindInteriorRouteAnchors(
+    Corridor bindInteriorRouteAnchors(
             DungeonMap dungeonMap,
-            DungeonCorridor corridor,
+            Corridor corridor,
             List<Cell> routeCells,
             DungeonCorridorEndpointResolutionLogic.ResolvedEndpointResult startResolved,
             DungeonCorridorEndpointResolutionLogic.ResolvedEndpointResult endResolved
@@ -33,7 +34,8 @@ final class DungeonCorridorRouteSplitLogic {
                 nonNullRouteCells(routeCells),
                 waypointClusterId,
                 clusterCenter);
-        return corridor.withBindings(corridor.bindings().withInteriorRouteAnchors(routePlan, routeAnchors(dungeonMap)));
+        return corridor.withStateBindings(
+                corridor.stateBindings().withInteriorRouteAnchors(routePlan, routeAnchors(dungeonMap)));
     }
 
     private static long waypointClusterId(
@@ -64,8 +66,8 @@ final class DungeonCorridorRouteSplitLogic {
 
     private static List<CorridorAnchorBinding> routeAnchors(DungeonMap dungeonMap) {
         List<CorridorAnchorBinding> result = new ArrayList<>();
-        for (DungeonCorridor corridor : dungeonMap.corridors()) {
-            for (CorridorAnchorBinding anchor : corridor.bindings().anchorBindings()) {
+        for (Corridor corridor : dungeonMap.corridors()) {
+            for (CorridorAnchorBinding anchor : corridor.stateBindings().anchorBindings()) {
                 if (anchor != null) {
                     result.add(anchor);
                 }

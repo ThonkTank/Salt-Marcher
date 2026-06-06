@@ -12,7 +12,7 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.door.Door;
 import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.door.DoorIndex;
-import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDoorBindingGeometry;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingGeometry;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 
@@ -30,7 +30,7 @@ final class DungeonClusterBoundaryDoorRules {
             return false;
         }
         boolean corridorBound = resolvedKind == BoundaryKind.DOOR
-                && DungeonCorridorDoorBindingGeometry.touchesDoorBindingKeys(
+                && CorridorDoorBindingGeometry.touchesDoorBindingKeys(
                 dungeonMap.corridors(),
                 target.cluster().center(),
                 target.cluster().clusterId(),

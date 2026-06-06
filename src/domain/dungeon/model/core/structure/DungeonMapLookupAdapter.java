@@ -1,7 +1,7 @@
 package src.domain.dungeon.model.core.structure;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
@@ -33,8 +33,8 @@ public final class DungeonMapLookupAdapter {
         return null;
     }
 
-    public @Nullable DungeonCorridor corridor(DungeonMap dungeonMap, long corridorId) {
-        for (DungeonCorridor candidate : dungeonMap.corridors()) {
+    public @Nullable Corridor corridor(DungeonMap dungeonMap, long corridorId) {
+        for (Corridor candidate : dungeonMap.corridors()) {
             if (candidate != null && candidate.corridorId() == corridorId) {
                 return candidate;
             }

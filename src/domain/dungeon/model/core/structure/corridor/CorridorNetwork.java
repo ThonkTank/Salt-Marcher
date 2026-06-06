@@ -19,6 +19,27 @@ public record CorridorNetwork(List<Corridor> corridors) {
         return List.copyOf(corridors);
     }
 
+    public static CorridorNetwork fromAuthored(List<Corridor> corridors) {
+        List<Corridor> result = new ArrayList<>();
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
+            if (corridor != null) {
+                result.add(topologyIdentity(corridor));
+            }
+        }
+        return new CorridorNetwork(result);
+    }
+
+    public List<Corridor> toAuthored(List<Corridor> sources) {
+        List<Corridor> result = new ArrayList<>();
+        for (Corridor coreCorridor : corridors) {
+            Corridor source = corridorById(sources, coreCorridor.corridorId());
+            if (source != null) {
+                result.add(fromTopologyIdentity(source, coreCorridor));
+            }
+        }
+        return List.copyOf(result);
+    }
+
     public boolean canDeleteCorridor(long corridorId) {
         Corridor corridor = corridorById(corridorId);
         return corridor != null && !ownedAnchorStillReferenced(corridor);
@@ -29,7 +50,7 @@ public record CorridorNetwork(List<Corridor> corridors) {
             return this;
         }
         List<Corridor> result = new ArrayList<>();
-        for (Corridor corridor : corridors) {
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             if (corridor.corridorId() != corridorId) {
                 result.add(corridor);
             }
@@ -42,7 +63,7 @@ public record CorridorNetwork(List<Corridor> corridors) {
         List<Corridor> result = new ArrayList<>();
         for (Corridor corridor : corridors) {
             result.add(corridor.withBindings(
-                    corridor.bindings()
+                    corridor.coreBindings()
                             .withAnchorBindings(keptBindings(corridor, usage))
                             .withAnchorRefs(keptRefs(corridor, usage))));
         }
@@ -50,6 +71,10 @@ public record CorridorNetwork(List<Corridor> corridors) {
     }
 
     private Corridor corridorById(long corridorId) {
+        return corridorById(corridors, corridorId);
+    }
+
+    private static Corridor corridorById(List<Corridor> corridors, long corridorId) {
         if (corridorId <= MISSING_CORRIDOR_ID) {
             return null;
         }
@@ -59,6 +84,24 @@ public record CorridorNetwork(List<Corridor> corridors) {
             }
         }
         return null;
+    }
+
+    private static Corridor topologyIdentity(Corridor corridor) {
+        return new Corridor(
+                corridor.corridorId(),
+                corridor.mapId(),
+                corridor.level(),
+                new CorridorRoomSet(corridor.roomIds()),
+                corridor.stateBindings().toTopologyIdentityCore());
+    }
+
+    private static Corridor fromTopologyIdentity(Corridor source, Corridor coreCorridor) {
+        return new Corridor(
+                coreCorridor.corridorId(),
+                coreCorridor.mapId(),
+                coreCorridor.level(),
+                coreCorridor.roomIds(),
+                CorridorBindingState.fromTopologyIdentityCore(source.stateBindings(), coreCorridor.coreBindings()));
     }
 
     private boolean ownedAnchorStillReferenced(Corridor owner) {
@@ -76,7 +119,7 @@ public record CorridorNetwork(List<Corridor> corridors) {
 
     private static List<CorridorAnchor> keptBindings(Corridor corridor, AnchorUsage usage) {
         List<CorridorAnchor> result = new ArrayList<>();
-        for (CorridorAnchor binding : corridor.bindings().anchorBindings()) {
+        for (CorridorAnchor binding : corridor.coreBindings().anchorBindings()) {
             if (binding != null && usage.referenced().contains(AnchorKey.from(binding))) {
                 result.add(binding);
             }
@@ -86,7 +129,7 @@ public record CorridorNetwork(List<Corridor> corridors) {
 
     private static List<CorridorAnchorRef> keptRefs(Corridor corridor, AnchorUsage usage) {
         List<CorridorAnchorRef> result = new ArrayList<>();
-        for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
+        for (CorridorAnchorRef ref : corridor.coreBindings().anchorRefs()) {
             if (ref != null && ref.present() && usage.hosted().contains(AnchorKey.from(ref))) {
                 result.add(ref);
             }
@@ -95,7 +138,7 @@ public record CorridorNetwork(List<Corridor> corridors) {
     }
 
     private static boolean referencesAny(Corridor corridor, Set<AnchorKey> anchors) {
-        for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
+        for (CorridorAnchorRef ref : corridor.coreBindings().anchorRefs()) {
             if (ref != null && anchors.contains(AnchorKey.from(ref))) {
                 return true;
             }
@@ -105,7 +148,7 @@ public record CorridorNetwork(List<Corridor> corridors) {
 
     private static Set<AnchorKey> ownedAnchorKeys(Corridor owner) {
         Set<AnchorKey> result = new LinkedHashSet<>();
-        for (CorridorAnchor binding : owner.bindings().anchorBindings()) {
+        for (CorridorAnchor binding : owner.coreBindings().anchorBindings()) {
             if (binding != null) {
                 result.add(AnchorKey.from(binding));
             }
@@ -133,12 +176,12 @@ public record CorridorNetwork(List<Corridor> corridors) {
             Set<AnchorKey> referenced = new LinkedHashSet<>();
             Set<AnchorKey> hosted = new LinkedHashSet<>();
             for (Corridor corridor : corridors) {
-                for (CorridorAnchor binding : corridor.bindings().anchorBindings()) {
+                for (CorridorAnchor binding : corridor.coreBindings().anchorBindings()) {
                     if (binding != null) {
                         hosted.add(AnchorKey.from(binding));
                     }
                 }
-                for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
+                for (CorridorAnchorRef ref : corridor.coreBindings().anchorRefs()) {
                     if (ref != null && ref.present()) {
                         referenced.add(AnchorKey.from(ref));
                     }

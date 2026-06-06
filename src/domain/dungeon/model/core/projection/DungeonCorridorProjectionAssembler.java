@@ -13,11 +13,12 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 
 /**
- * Transitional projection boundary: remove the worldspace corridor input once
- * corridor read facts are supplied directly by core structure owners.
+ * Transitional projection boundary: remove the remaining worldspace room and
+ * cluster inputs once corridor read facts are supplied directly by core
+ * structure owners.
  */
 final class DungeonCorridorProjectionAssembler {
 
@@ -39,7 +40,7 @@ final class DungeonCorridorProjectionAssembler {
     }
 
     void addCorridor(
-            DungeonCorridor corridor,
+            Corridor corridor,
             List<DungeonCorridorEndpointResolver.CorridorEndpoint> endpoints,
             List<Cell> cells
     ) {
@@ -62,7 +63,7 @@ final class DungeonCorridorProjectionAssembler {
     }
 
     private void addDoorEndpoint(
-            DungeonCorridor corridor,
+            Corridor corridor,
             DungeonCorridorEndpointResolver.CorridorEndpoint endpoint
     ) {
         Edge edge = Objects.requireNonNull(endpoint.edge());
@@ -80,7 +81,7 @@ final class DungeonCorridorProjectionAssembler {
     }
 
     private void addNewDoor(
-            DungeonCorridor corridor,
+            Corridor corridor,
             DungeonCorridorEndpointResolver.CorridorEndpoint endpoint,
             Edge edge,
             DungeonBoundaryKey key,

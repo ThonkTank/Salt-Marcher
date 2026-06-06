@@ -3,7 +3,7 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
-import src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository;
+import src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository;
 import src.domain.dungeon.model.worldspace.usecase.DungeonEditorAuthoredPublicationUseCase.Publication;
 
 public final class PublishDungeonEditorAuthoredSnapshotUseCase {

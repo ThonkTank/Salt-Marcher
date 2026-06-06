@@ -5,7 +5,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 
 /**
  * Searches authored dungeon map metadata.

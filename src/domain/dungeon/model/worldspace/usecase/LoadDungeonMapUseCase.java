@@ -5,7 +5,7 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 
 /**

@@ -12,8 +12,8 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDoorBindingGeometry;
-import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingGeometry;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
@@ -28,7 +28,7 @@ import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 final class DungeonCorridorEndpointResolver {
 
     List<CorridorEndpoint> corridorEndpoints(
-            DungeonCorridor corridor,
+            Corridor corridor,
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom,
@@ -38,7 +38,7 @@ final class DungeonCorridorEndpointResolver {
         appendRoomEndpoints(
                 endpoints,
                 corridor,
-                DungeonCorridorDoorBindingGeometry.bindingsByRoom(corridor.bindings().doorBindings()),
+                CorridorDoorBindingGeometry.bindingsByRoom(corridor.stateBindings().doorBindings()),
                 clustersById,
                 roomsById,
                 roomCellsByRoom);
@@ -46,10 +46,10 @@ final class DungeonCorridorEndpointResolver {
         return List.copyOf(endpoints);
     }
 
-    Map<DungeonTopologyRef, CorridorAnchorBinding> anchorBindingsByRef(List<DungeonCorridor> corridors) {
+    Map<DungeonTopologyRef, CorridorAnchorBinding> anchorBindingsByRef(List<Corridor> corridors) {
         Map<DungeonTopologyRef, CorridorAnchorBinding> result = new LinkedHashMap<>();
-        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            for (CorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
+            for (CorridorAnchorBinding binding : corridor.stateBindings().anchorBindings()) {
                 if (binding != null && binding.topologyRef().present()) {
                     result.put(binding.topologyRef(), binding);
                 }
@@ -60,7 +60,7 @@ final class DungeonCorridorEndpointResolver {
 
     private static void appendRoomEndpoints(
             List<CorridorEndpoint> endpoints,
-            DungeonCorridor corridor,
+            Corridor corridor,
             Map<Long, CorridorDoorBindingState> bindingsByRoom,
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
@@ -94,17 +94,17 @@ final class DungeonCorridorEndpointResolver {
                 CorridorEndpointKind.DOOR,
                 roomId,
                 null,
-                DungeonCorridorDoorBindingGeometry.absoluteCorridorCell(binding, cluster.center()),
-                DungeonCorridorDoorBindingGeometry.absoluteDoorEdge(binding, cluster.center()),
+                CorridorDoorBindingGeometry.absoluteCorridorCell(binding, cluster.center()),
+                CorridorDoorBindingGeometry.absoluteDoorEdge(binding, cluster.center()),
                 binding.topologyRef());
     }
 
     private static void appendAnchorEndpoints(
             List<CorridorEndpoint> endpoints,
-            DungeonCorridor corridor,
+            Corridor corridor,
             Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef
     ) {
-        for (CorridorAnchorRef anchorRef : corridor.bindings().anchorRefs()) {
+        for (CorridorAnchorRef anchorRef : corridor.stateBindings().anchorRefs()) {
             CorridorEndpoint endpoint = anchorEndpoint(anchorRef, anchorsByRef);
             if (endpoint != null) {
                 endpoints.add(endpoint);
@@ -133,7 +133,7 @@ final class DungeonCorridorEndpointResolver {
     }
 
     private static @Nullable CorridorEndpoint derivedEndpoint(
-            DungeonCorridor corridor,
+            Corridor corridor,
             Long roomId,
             Map<Long, DungeonRoom> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom

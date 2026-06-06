@@ -17,6 +17,7 @@ import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryProjection;
 import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryReadProjection;
 import src.domain.dungeon.model.core.projection.DungeonState;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 
 /**
  * Rebuilds read-side dungeon state from authored dungeon truth.
@@ -31,7 +32,7 @@ public final class DungeonDerivedStateProjection {
         return emptyState(topology);
     }
 
-    Map<Long, List<Cell>> corridorCellsByCorridor(DungeonMap dungeonMap, List<DungeonCorridor> corridors) {
+    Map<Long, List<Cell>> corridorCellsByCorridor(DungeonMap dungeonMap, List<Corridor> corridors) {
         if (dungeonMap == null) {
             return Map.of();
         }

@@ -6,7 +6,7 @@ import src.data.dungeon.repository.ApplicationTravelPartyStateRepository;
 import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
 import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
-import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.PartyMutationModel;

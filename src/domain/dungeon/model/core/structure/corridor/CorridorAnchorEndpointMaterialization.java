@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public record CorridorAnchorEndpointMaterialization(
         List<Corridor> corridors,
@@ -38,9 +39,39 @@ public record CorridorAnchorEndpointMaterialization(
         }
         CorridorAnchor created = new CorridorAnchor(nextAnchorId(normalizedCorridors), normalizedHostId, anchorCell);
         return new CorridorAnchorEndpointMaterialization(
-                withHostAnchor(normalizedCorridors, host.withBindings(host.bindings().withAnchorBinding(created))),
+                withHostAnchor(normalizedCorridors, host.withBindings(host.coreBindings().withAnchorBinding(created))),
                 created,
                 true);
+    }
+
+    public static @Nullable AuthoredEndpointMaterialization materializeAuthored(
+            List<Corridor> corridors,
+            DungeonCorridorEndpoint endpoint,
+            CorridorHostCells hostCells
+    ) {
+        Corridor host = hostCorridor(corridors, endpoint.hostCorridorId());
+        if (host == null) {
+            return null;
+        }
+        CorridorAnchorEndpointMaterialization materialized = materialize(
+                coreCorridors(corridors),
+                endpoint.hostCorridorId(),
+                endpoint.anchorCell(),
+                preferredAnchorId(host, endpoint.topologyRef()),
+                hostCells);
+        if (materialized == null) {
+            return null;
+        }
+        CorridorAnchorBinding anchorBinding = anchorBinding(
+                materialized.anchor(),
+                host,
+                endpoint.topologyRef());
+        return new AuthoredEndpointMaterialization(
+                materialized.changed()
+                        ? authoredCorridors(corridors, materialized.corridors(), anchorBinding)
+                        : corridors,
+                anchorBinding,
+                materialized.changed());
     }
 
     @Override
@@ -67,12 +98,87 @@ public record CorridorAnchorEndpointMaterialization(
         return null;
     }
 
+    private static List<Corridor> coreCorridors(List<Corridor> corridors) {
+        List<Corridor> result = new ArrayList<>();
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
+            if (corridor != null) {
+                result.add(new Corridor(
+                        corridor.corridorId(),
+                        corridor.mapId(),
+                        corridor.level(),
+                        new CorridorRoomSet(corridor.roomIds()),
+                        corridor.coreBindings()));
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static long preferredAnchorId(Corridor host, DungeonTopologyRef topologyRef) {
+        if (topologyRef == null || !topologyRef.present()) {
+            return 0L;
+        }
+        for (CorridorAnchorBinding binding : host.stateBindings().anchorBindings()) {
+            if (binding != null && binding.matchesTopologyRef(topologyRef)) {
+                return binding.anchorId();
+            }
+        }
+        return 0L;
+    }
+
+    private static CorridorAnchorBinding anchorBinding(
+            CorridorAnchor anchor,
+            Corridor host,
+            DungeonTopologyRef requestedTopologyRef
+    ) {
+        CorridorAnchorBinding existing = existingAnchorBinding(host, anchor.anchorId());
+        if (existing != null) {
+            return existing;
+        }
+        DungeonTopologyRef topologyRef = requestedTopologyRef != null && requestedTopologyRef.present()
+                ? requestedTopologyRef
+                : DungeonTopologyRef.corridorAnchor(anchor.anchorId());
+        return new CorridorAnchorBinding(
+                anchor.anchorId(),
+                anchor.hostCorridorId(),
+                anchor.position(),
+                topologyRef);
+    }
+
+    private static @Nullable CorridorAnchorBinding existingAnchorBinding(
+            Corridor host,
+            long anchorId
+    ) {
+        for (CorridorAnchorBinding binding : host.stateBindings().anchorBindings()) {
+            if (binding != null && binding.anchorId() == anchorId) {
+                return binding;
+            }
+        }
+        return null;
+    }
+
+    private static List<Corridor> authoredCorridors(
+            List<Corridor> sourceCorridors,
+            List<Corridor> coreCorridors,
+            CorridorAnchorBinding anchorBinding
+    ) {
+        List<Corridor> result = new ArrayList<>();
+        for (Corridor coreCorridor : coreCorridors == null ? List.<Corridor>of() : coreCorridors) {
+            Corridor source = hostCorridor(sourceCorridors, coreCorridor.corridorId());
+            if (source != null) {
+                CorridorAnchorBinding replacement =
+                        coreCorridor.corridorId() == anchorBinding.hostCorridorId() ? anchorBinding : null;
+                result.add(Corridor.fromCore(source, coreCorridor, null, replacement));
+            }
+        }
+        return List.copyOf(result);
+    }
+
     private static @Nullable CorridorAnchor existingAnchor(
             Corridor host,
             long preferredAnchorId,
             Cell anchorCell
     ) {
-        for (CorridorAnchor anchor : host.bindings().anchorBindings()) {
+        for (CorridorAnchor anchor : host.coreBindings().anchorBindings()) {
             if (preferredAnchorId > 0L && anchor.anchorId() == preferredAnchorId || anchor.matchesPosition(anchorCell)) {
                 return anchor;
             }
@@ -86,7 +192,7 @@ public record CorridorAnchorEndpointMaterialization(
             if (corridor == null) {
                 continue;
             }
-            for (CorridorAnchor anchor : corridor.bindings().anchorBindings()) {
+            for (CorridorAnchor anchor : corridor.coreBindings().anchorBindings()) {
                 if (anchor.anchorId() > result) {
                     result = anchor.anchorId();
                 }
@@ -103,5 +209,15 @@ public record CorridorAnchorEndpointMaterialization(
             }
         }
         return List.copyOf(result);
+    }
+
+    public record AuthoredEndpointMaterialization(
+            List<Corridor> corridors,
+            CorridorAnchorBinding anchorBinding,
+            boolean changed
+    ) {
+        public AuthoredEndpointMaterialization {
+            corridors = corridors == null ? List.of() : List.copyOf(corridors);
+        }
     }
 }

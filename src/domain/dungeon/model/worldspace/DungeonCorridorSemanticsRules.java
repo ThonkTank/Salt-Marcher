@@ -8,6 +8,7 @@ import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointSemantics;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
@@ -33,9 +34,9 @@ public final class DungeonCorridorSemanticsRules {
         return left != null && right != null && left.clusterId() == right.clusterId();
     }
 
-    public boolean matchingCorridorExists(List<DungeonCorridor> corridors, CorridorResolvedEndpoint start, CorridorResolvedEndpoint end) {
+    public boolean matchingCorridorExists(List<Corridor> corridors, CorridorResolvedEndpoint start, CorridorResolvedEndpoint end) {
         Set<CorridorEndpointSemantics> requested = Set.of(semanticsOf(start), semanticsOf(end));
-        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             if (corridor != null && explicitEndpointSemantics(corridor).equals(requested)) {
                 return true;
             }
@@ -43,12 +44,12 @@ public final class DungeonCorridorSemanticsRules {
         return false;
     }
 
-    private static Set<CorridorEndpointSemantics> explicitEndpointSemantics(DungeonCorridor corridor) {
+    private static Set<CorridorEndpointSemantics> explicitEndpointSemantics(Corridor corridor) {
         Set<CorridorEndpointSemantics> result = new LinkedHashSet<>();
-        for (CorridorDoorBindingState binding : corridor.bindings().doorBindings()) {
+        for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
             result.add(doorSemantics(binding));
         }
-        for (CorridorAnchorRef ref : corridor.bindings().anchorRefs()) {
+        for (CorridorAnchorRef ref : corridor.stateBindings().anchorRefs()) {
             if (ref != null && ref.present()) {
                 result.add(CorridorEndpointSemantics.forAnchor(ref));
             }

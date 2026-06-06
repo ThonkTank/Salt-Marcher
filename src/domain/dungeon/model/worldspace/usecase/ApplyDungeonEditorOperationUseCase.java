@@ -7,7 +7,7 @@ import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.DungeonMapOperationFeedbackRules;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 
 /**
  * Owns the fixed dungeon editor mutation pipeline.

@@ -4,7 +4,7 @@ import java.util.Objects;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 
 /**
  * Creates an empty authored dungeon map aggregate.

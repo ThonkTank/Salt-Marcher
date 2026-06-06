@@ -7,6 +7,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
@@ -27,7 +28,7 @@ public record DungeonMapTopology(
     public static DungeonMapTopology from(
             SpatialTopology topology,
             RoomCatalog rooms,
-            List<DungeonCorridor> corridors,
+            List<Corridor> corridors,
             List<Stair> stairs,
             List<Transition> transitions
     ) {
@@ -50,8 +51,8 @@ public record DungeonMapTopology(
         }
     }
 
-    private static void appendCorridorBindings(List<DungeonTopologyBinding> result, List<DungeonCorridor> corridors) {
-        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
+    private static void appendCorridorBindings(List<DungeonTopologyBinding> result, List<Corridor> corridors) {
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             result.add(new DungeonTopologyBinding(
                     new DungeonTopologyRef(DungeonTopologyElementKind.CORRIDOR, corridor.corridorId()),
                     0L,
@@ -62,8 +63,8 @@ public record DungeonMapTopology(
         }
     }
 
-    private static void appendDoorBindings(List<DungeonTopologyBinding> result, DungeonCorridor corridor) {
-        for (CorridorDoorBindingState doorBinding : corridor.bindings().doorBindings()) {
+    private static void appendDoorBindings(List<DungeonTopologyBinding> result, Corridor corridor) {
+        for (CorridorDoorBindingState doorBinding : corridor.stateBindings().doorBindings()) {
             if (doorBinding.topologyRef().present()) {
                 result.add(new DungeonTopologyBinding(
                         doorBinding.topologyRef(),
@@ -74,8 +75,8 @@ public record DungeonMapTopology(
         }
     }
 
-    private static void appendAnchorBindings(List<DungeonTopologyBinding> result, DungeonCorridor corridor) {
-        for (CorridorAnchorBinding anchorBinding : corridor.bindings().anchorBindings()) {
+    private static void appendAnchorBindings(List<DungeonTopologyBinding> result, Corridor corridor) {
+        for (CorridorAnchorBinding anchorBinding : corridor.stateBindings().anchorBindings()) {
             if (anchorBinding.topologyRef().present()) {
                 result.add(new DungeonTopologyBinding(
                         anchorBinding.topologyRef(),

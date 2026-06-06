@@ -7,7 +7,7 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSummary;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository;
+import src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository;
 
 public final class SearchDungeonEditorMapCatalogUseCase {
 

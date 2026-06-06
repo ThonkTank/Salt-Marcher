@@ -9,7 +9,7 @@ import src.data.dungeon.model.DungeonCorridorRecord;
 import src.data.dungeon.model.DungeonCorridorWaypointRecord;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
-import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 
@@ -18,18 +18,18 @@ final class DungeonCorridorConnectionWriteMapperSupport {
     private DungeonCorridorConnectionWriteMapperSupport() {
     }
 
-    static List<DungeonCorridorRecord> toCorridorRecords(List<DungeonCorridor> corridors) {
+    static List<DungeonCorridorRecord> toCorridorRecords(List<Corridor> corridors) {
         List<DungeonCorridorRecord> result = new ArrayList<>();
-        for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
+        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             result.add(new DungeonCorridorRecord(
                     corridor.corridorId(),
                     corridor.mapId(),
                     corridor.level(),
                     corridor.roomIds(),
-                    toWaypointRecords(corridor.corridorId(), corridor.bindings().waypoints()),
-                    toDoorBindingRecords(corridor.corridorId(), corridor.bindings().doorBindings()),
-                    toAnchorBindingRecords(corridor.corridorId(), corridor.bindings().anchorBindings()),
-                    toAnchorRefRecords(corridor.corridorId(), corridor.bindings().anchorRefs())));
+                    toWaypointRecords(corridor.corridorId(), corridor.stateBindings().waypoints()),
+                    toDoorBindingRecords(corridor.corridorId(), corridor.stateBindings().doorBindings()),
+                    toAnchorBindingRecords(corridor.corridorId(), corridor.stateBindings().anchorBindings()),
+                    toAnchorRefRecords(corridor.corridorId(), corridor.stateBindings().anchorRefs())));
         }
         return List.copyOf(result);
     }

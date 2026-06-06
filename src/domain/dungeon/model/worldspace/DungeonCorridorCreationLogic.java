@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
@@ -56,14 +57,14 @@ final class DungeonCorridorCreationLogic {
         if (corridorAlreadyExists(endResolved, startResolved)) {
             return dungeonMap;
         }
-        DungeonCorridor corridor = bindEndpoints(startResolved, endResolved, start.level());
+        Corridor corridor = bindEndpoints(startResolved, endResolved, start.level());
         corridor = ROUTE_SPLIT_SERVICE.bindInteriorRouteAnchors(
                 endResolved.map(),
                 corridor,
                 routeCells,
                 startResolved,
                 endResolved);
-        List<DungeonCorridor> nextCorridors = new ArrayList<>(endResolved.map().corridors());
+        List<Corridor> nextCorridors = new ArrayList<>(endResolved.map().corridors());
         nextCorridors.add(corridor);
         StairCollection nextStairs = endResolved.map().stairs();
         if (!start.sameLevelAs(end)) {
@@ -85,7 +86,7 @@ final class DungeonCorridorCreationLogic {
                 endResolved.map().transitionCatalog());
     }
 
-    private static CorridorHostCells hostCells(DungeonMap dungeonMap, List<DungeonCorridor> corridors) {
+    private static CorridorHostCells hostCells(DungeonMap dungeonMap, List<Corridor> corridors) {
         return new CorridorHostCells(DERIVED_STATE_PROJECTION.corridorCellsByCorridor(dungeonMap, corridors));
     }
 
@@ -113,12 +114,12 @@ final class DungeonCorridorCreationLogic {
                 endResolved.endpoint());
     }
 
-    private DungeonCorridor bindEndpoints(
+    private Corridor bindEndpoints(
             DungeonCorridorEndpointResolutionLogic.ResolvedEndpointResult startResolved,
             DungeonCorridorEndpointResolutionLogic.ResolvedEndpointResult endResolved,
             int level
     ) {
-        DungeonCorridor corridor = new DungeonCorridor(
+        Corridor corridor = new Corridor(
                 nextCorridorId(endResolved.map()),
                 endResolved.map().metadata().mapId().value(),
                 level,
@@ -150,7 +151,7 @@ final class DungeonCorridorCreationLogic {
 
     private static long nextCorridorId(DungeonMap dungeonMap) {
         long result = 0L;
-        for (DungeonCorridor corridor : dungeonMap.corridors()) {
+        for (Corridor corridor : dungeonMap.corridors()) {
             if (corridor != null && corridor.corridorId() > result) {
                 result = corridor.corridorId();
             }

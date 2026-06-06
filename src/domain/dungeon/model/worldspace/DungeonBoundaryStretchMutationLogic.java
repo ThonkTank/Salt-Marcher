@@ -12,7 +12,7 @@ import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryTouch;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDoorBindingGeometry;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingGeometry;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchEdge;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchMutationResult;
@@ -35,7 +35,7 @@ final class DungeonBoundaryStretchMutationLogic {
     ) {
         Set<Cell> levelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
         if (!sourceStaysInternal(stretch, levelCells)
-                || DungeonCorridorDoorBindingGeometry.touchesDoorBindingKeys(
+                || CorridorDoorBindingGeometry.touchesDoorBindingKeys(
                 dungeonMap.corridors(),
                 target.cluster().center(),
                 target.cluster().clusterId(),

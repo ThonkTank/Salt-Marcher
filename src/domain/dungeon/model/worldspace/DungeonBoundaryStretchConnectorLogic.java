@@ -7,7 +7,7 @@ import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDoorBindingGeometry;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingGeometry;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.ConnectorAction;
@@ -58,7 +58,7 @@ final class DungeonBoundaryStretchConnectorLogic {
         if (connectorPath.isEmpty()) {
             return true;
         }
-        if (DungeonCorridorDoorBindingGeometry.touchesDoorBindingPath(
+        if (CorridorDoorBindingGeometry.touchesDoorBindingPath(
                 dungeonMap.corridors(),
                 target.cluster().center(),
                 target.cluster().clusterId(),

@@ -9,11 +9,10 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.worldspace.DungeonCorridor;
 
-public final class DungeonCorridorDoorBindingGeometry {
+public final class CorridorDoorBindingGeometry {
 
-    private DungeonCorridorDoorBindingGeometry() {
+    private CorridorDoorBindingGeometry() {
     }
 
     public static Map<Long, CorridorDoorBindingState> bindingsByRoom(Iterable<CorridorDoorBindingState> bindings) {
@@ -51,7 +50,7 @@ public final class DungeonCorridorDoorBindingGeometry {
     }
 
     public static boolean touchesDoorBindingKeys(
-            Iterable<DungeonCorridor> corridors,
+            Iterable<Corridor> corridors,
             @Nullable Cell clusterCenter,
             long clusterId,
             int level,
@@ -70,7 +69,7 @@ public final class DungeonCorridorDoorBindingGeometry {
     }
 
     public static boolean touchesDoorBindingPath(
-            Iterable<DungeonCorridor> corridors,
+            Iterable<Corridor> corridors,
             @Nullable Cell clusterCenter,
             long clusterId,
             int level,
@@ -89,7 +88,7 @@ public final class DungeonCorridorDoorBindingGeometry {
     }
 
     private static Set<DungeonBoundaryKey> doorBindingKeys(
-            Iterable<DungeonCorridor> corridors,
+            Iterable<Corridor> corridors,
             @Nullable Cell clusterCenter,
             long clusterId,
             int level
@@ -98,8 +97,8 @@ public final class DungeonCorridorDoorBindingGeometry {
         if (invalidBindingLookup(corridors, clusterCenter, clusterId)) {
             return result;
         }
-        for (DungeonCorridor corridor : corridors) {
-            for (CorridorDoorBindingState binding : corridor.bindings().doorBindings()) {
+        for (Corridor corridor : corridors) {
+            for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
                 if (binding.clusterId() == clusterId && binding.relativeCell().level() == level) {
                     result.add(DungeonBoundaryKey.from(absoluteDoorEdgeAtBindingLevel(binding, clusterCenter)));
                 }
@@ -121,7 +120,7 @@ public final class DungeonCorridorDoorBindingGeometry {
     }
 
     private static boolean invalidBindingLookup(
-            Iterable<DungeonCorridor> corridors,
+            Iterable<Corridor> corridors,
             @Nullable Cell clusterCenter,
             long clusterId
     ) {

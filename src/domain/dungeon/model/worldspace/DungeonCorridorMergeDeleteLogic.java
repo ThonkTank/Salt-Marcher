@@ -36,7 +36,7 @@ final class DungeonCorridorMergeDeleteLogic {
         if (invalidCorridorId(corridorId)) {
             return dungeonMap;
         }
-        DungeonCorridor existing = LOOKUP_ADAPTER.corridor(dungeonMap, corridorId);
+        Corridor existing = LOOKUP_ADAPTER.corridor(dungeonMap, corridorId);
         if (existing == null) {
             return dungeonMap;
         }
@@ -50,7 +50,7 @@ final class DungeonCorridorMergeDeleteLogic {
                     roomId,
                     waypointIndex);
         }
-        CorridorNetwork network = DungeonCorridor.coreNetwork(dungeonMap.corridors());
+        CorridorNetwork network = CorridorNetwork.fromAuthored(dungeonMap.corridors());
         if (!network.canDeleteCorridor(corridorId)) {
             return dungeonMap;
         }
@@ -58,9 +58,7 @@ final class DungeonCorridorMergeDeleteLogic {
                 dungeonMap.stairs().withoutCorridorBoundStairs(corridorId);
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 dungeonMap,
-                DungeonCorridor.fromCoreNetwork(
-                        dungeonMap.corridors(),
-                        network.withoutCorridor(corridorId)),
+                network.withoutCorridor(corridorId).toAuthored(dungeonMap.corridors()),
                 withoutCorridorStairs,
                 dungeonMap.transitionCatalog());
     }
@@ -71,13 +69,13 @@ final class DungeonCorridorMergeDeleteLogic {
 
     private DungeonMap deleteTarget(
             DungeonMap dungeonMap,
-            DungeonCorridor existing,
+            Corridor existing,
             String targetKind,
             long topologyRefId,
             long roomId,
             int waypointIndex
     ) {
-        Corridor current = existing.toCore();
+        Corridor current = existing;
         Corridor updatedCore = TARGET_DELETION.deleteTarget(
                 current,
                 targetKind,
@@ -90,7 +88,7 @@ final class DungeonCorridorMergeDeleteLogic {
         if (updatedCore.equals(current)) {
             return dungeonMap;
         }
-        DungeonCorridor updated = DungeonCorridor.fromCore(existing, updatedCore, null);
+        Corridor updated = Corridor.fromCore(existing, updatedCore, null);
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 dungeonMap,
                 withUpdatedCorridor(dungeonMap, updated),
@@ -98,17 +96,17 @@ final class DungeonCorridorMergeDeleteLogic {
                 dungeonMap.transitionCatalog());
     }
 
-    private List<DungeonCorridor> withUpdatedCorridor(DungeonMap dungeonMap, DungeonCorridor updated) {
-        List<DungeonCorridor> nextCorridors = new ArrayList<>();
-        for (DungeonCorridor corridor : dungeonMap.corridors()) {
+    private List<Corridor> withUpdatedCorridor(DungeonMap dungeonMap, Corridor updated) {
+        List<Corridor> nextCorridors = new ArrayList<>();
+        for (Corridor corridor : dungeonMap.corridors()) {
             nextCorridors.add(corridor.corridorId() == updated.corridorId() ? updated : corridor);
         }
         return List.copyOf(nextCorridors);
     }
 
-    private List<DoorBindingTarget> doorTargets(DungeonMap dungeonMap, DungeonCorridor corridor) {
+    private List<DoorBindingTarget> doorTargets(DungeonMap dungeonMap, Corridor corridor) {
         List<DoorBindingTarget> result = new ArrayList<>();
-        for (CorridorDoorBindingState binding : corridor.bindings().doorBindings()) {
+        for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
             if (binding != null) {
                 result.add(new DoorBindingTarget(
                         binding.toCore(),
@@ -119,9 +117,9 @@ final class DungeonCorridorMergeDeleteLogic {
         return List.copyOf(result);
     }
 
-    private List<AnchorTarget> anchorTargets(DungeonCorridor corridor) {
+    private List<AnchorTarget> anchorTargets(Corridor corridor) {
         List<AnchorTarget> result = new ArrayList<>();
-        for (CorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
+        for (CorridorAnchorBinding binding : corridor.stateBindings().anchorBindings()) {
             if (binding != null) {
                 result.add(new AnchorTarget(binding.absoluteCell()));
             }
@@ -129,9 +127,9 @@ final class DungeonCorridorMergeDeleteLogic {
         return List.copyOf(result);
     }
 
-    private List<WaypointTarget> waypointTargets(DungeonMap dungeonMap, DungeonCorridor corridor) {
+    private List<WaypointTarget> waypointTargets(DungeonMap dungeonMap, Corridor corridor) {
         List<WaypointTarget> result = new ArrayList<>();
-        for (CorridorWaypoint waypoint : corridor.bindings().waypoints()) {
+        for (CorridorWaypoint waypoint : corridor.stateBindings().waypoints()) {
             DungeonRoomCluster cluster = LOOKUP_ADAPTER.cluster(dungeonMap, waypoint.clusterId());
             Cell center = cluster == null ? new Cell(0, 0, waypoint.relativeCell().level()) : cluster.center();
             result.add(WaypointTarget.from(waypoint, center));

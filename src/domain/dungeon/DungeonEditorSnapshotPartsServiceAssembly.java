@@ -14,7 +14,7 @@ record DungeonEditorSnapshotPartsServiceAssembly(
                 new src.domain.dungeon.model.worldspace.usecase.BuildDungeonDerivedStateUseCase();
         return new DungeonEditorSnapshotPartsServiceAssembly(
                 new src.domain.dungeon.model.worldspace.usecase.LoadDungeonMapUseCase(
-                        registry.require(src.domain.dungeon.model.worldspace.repository.DungeonMapRepository.class)),
+                        registry.require(src.domain.dungeon.model.core.repository.DungeonMapRepository.class)),
                 new src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorHandlesUseCase(),
                 derive,
                 new src.domain.dungeon.model.worldspace.usecase.AssembleDungeonSnapshotUseCase(derive));

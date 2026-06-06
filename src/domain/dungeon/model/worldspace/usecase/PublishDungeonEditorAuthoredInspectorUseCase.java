@@ -7,7 +7,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.repository.DungeonAuthoredPublishedStateRepository;
+import src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository;
 
 public final class PublishDungeonEditorAuthoredInspectorUseCase {
 

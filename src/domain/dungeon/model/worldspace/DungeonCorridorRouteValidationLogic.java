@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
@@ -49,7 +50,7 @@ final class DungeonCorridorRouteValidationLogic {
         if (!endpoint.isAnchorEndpoint()) {
             return null;
         }
-        DungeonCorridor host = LOOKUP_ADAPTER.corridor(dungeonMap, endpoint.hostCorridorId());
+        Corridor host = LOOKUP_ADAPTER.corridor(dungeonMap, endpoint.hostCorridorId());
         if (host == null) {
             return null;
         }
