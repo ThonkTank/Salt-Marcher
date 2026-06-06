@@ -1,9 +1,9 @@
 package src.domain.dungeon;
 
-import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorToolWorkflowUseCase.PairedToolUseCases;
-import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorToolWorkflowUseCase.PointerAction;
-import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorToolWorkflowUseCase.PointerToolUseCase;
-import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorToolWorkflowUseCase.ToolWorkflowUseCases;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.PairedToolUseCases;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.PointerAction;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.PointerToolUseCase;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.ToolWorkflowUseCases;
 
 final class DungeonEditorPointerApplicationServiceAssembly {
 
@@ -13,65 +13,65 @@ final class DungeonEditorPointerApplicationServiceAssembly {
     static DungeonEditorPointerApplicationService create(
             DungeonEditorRuntimeFoundationServiceAssembly.RuntimeFoundation runtime
     ) {
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorSelectionUseCase selection = selection(runtime);
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSelectionUseCase selection = selection(runtime);
         return new DungeonEditorPointerApplicationService(
                 toolWorkflow(runtime, selection),
                 selection,
-                new src.domain.dungeon.model.worldspace.usecase.MoveDungeonEditorHandleUseCase(
+                new src.domain.dungeon.model.runtime.usecase.MoveDungeonEditorHandleUseCase(
                         runtime.workflow(),
                         runtime.effectUseCase()));
     }
 
-    private static src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorSelectionUseCase selection(
+    private static src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSelectionUseCase selection(
             DungeonEditorRuntimeFoundationServiceAssembly.RuntimeFoundation runtime
     ) {
-        return new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorSelectionUseCase(
+        return new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSelectionUseCase(
                 runtime.workflow(),
                 runtime.mainViewInterpreter(),
                 runtime.effectUseCase());
     }
 
-    private static src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorToolWorkflowUseCase toolWorkflow(
+    private static src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase toolWorkflow(
             DungeonEditorRuntimeFoundationServiceAssembly.RuntimeFoundation runtime,
-            src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorSelectionUseCase selection
+            src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSelectionUseCase selection
     ) {
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorPaintRoomUseCase paintRoom =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorPaintRoomUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorPaintRoomUseCase paintRoom =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorPaintRoomUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.effectUseCase());
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteRoomUseCase deleteRoom =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteRoomUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteRoomUseCase deleteRoom =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteRoomUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.effectUseCase());
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorCreateWallUseCase createWall =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorCreateWallUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateWallUseCase createWall =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateWallUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.effectUseCase());
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteWallUseCase deleteWall =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteWallUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteWallUseCase deleteWall =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteWallUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.effectUseCase());
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorCreateDoorUseCase createDoor =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorCreateDoorUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateDoorUseCase createDoor =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateDoorUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.effectUseCase());
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteDoorUseCase deleteDoor =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteDoorUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteDoorUseCase deleteDoor =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteDoorUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.effectUseCase());
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorCreateCorridorUseCase createCorridor =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorCreateCorridorUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateCorridorUseCase createCorridor =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateCorridorUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.effectUseCase());
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteCorridorUseCase deleteCorridor =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteCorridorUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteCorridorUseCase deleteCorridor =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteCorridorUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.effectUseCase());
@@ -95,7 +95,7 @@ final class DungeonEditorPointerApplicationServiceAssembly {
                         runtime.workflow(),
                         runtime.authoredUseCases().deleteTransitionUseCase(),
                         runtime.effectUseCase());
-        return new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorToolWorkflowUseCase(
+        return new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase(
                 new ToolWorkflowUseCases(
                         pointer(selection::press, selection::drag, selection::release, selection::hover),
                         new PairedToolUseCases(

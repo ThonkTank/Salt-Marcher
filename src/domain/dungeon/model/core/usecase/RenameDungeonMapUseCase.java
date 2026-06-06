@@ -1,11 +1,11 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.core.usecase;
 
 import java.util.Objects;
 import java.util.Optional;
+import src.domain.dungeon.model.core.repository.DungeonMapRepository;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
-import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 
 /**
  * Renames one authored dungeon map aggregate.

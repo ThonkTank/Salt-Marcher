@@ -24,8 +24,8 @@ final class DungeonTravelRuntimeServiceAssembly {
         ServiceRegistry services = requireRegistry(registry);
         src.domain.dungeon.model.core.repository.DungeonMapRepository dungeonMapRepository =
                 services.require(src.domain.dungeon.model.core.repository.DungeonMapRepository.class);
-        src.domain.dungeon.model.worldspace.usecase.LoadDungeonMapUseCase loadDungeonMapUseCase =
-                new src.domain.dungeon.model.worldspace.usecase.LoadDungeonMapUseCase(dungeonMapRepository);
+        src.domain.dungeon.model.core.usecase.LoadDungeonMapUseCase loadDungeonMapUseCase =
+                new src.domain.dungeon.model.core.usecase.LoadDungeonMapUseCase(dungeonMapRepository);
         src.domain.dungeon.model.worldspace.usecase.BuildDungeonDerivedStateUseCase derive =
                 new src.domain.dungeon.model.worldspace.usecase.BuildDungeonDerivedStateUseCase();
         src.domain.dungeon.model.runtime.usecase.LoadDungeonTravelSurfaceUseCase loadSurfaceUseCase =

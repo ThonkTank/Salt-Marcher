@@ -1,20 +1,18 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase.PointerAction;
-import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase;
 
-public final class ApplyDungeonEditorDeleteRoomUseCase {
+public final class ApplyDungeonEditorPaintRoomUseCase {
     private final DungeonEditorSessionWorkflow workflow;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
     private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
 
-    public ApplyDungeonEditorDeleteRoomUseCase(
+    public ApplyDungeonEditorPaintRoomUseCase(
             DungeonEditorSessionWorkflow workflow,
             InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
             ApplyDungeonEditorSessionEffectUseCase effectUseCase
@@ -32,7 +30,7 @@ public final class ApplyDungeonEditorDeleteRoomUseCase {
         effectUseCase.applyEffect(mainViewInterpreter.room(
                 PointerAction.PRESS,
                 input,
-                DungeonEditorSessionValues.Tool.ROOM_DELETE,
+                DungeonEditorSessionValues.Tool.ROOM_PAINT,
                 workflow.session().projectionLevel()));
     }
 
@@ -44,7 +42,7 @@ public final class ApplyDungeonEditorDeleteRoomUseCase {
         effectUseCase.applyEffect(mainViewInterpreter.room(
                 PointerAction.DRAG,
                 input,
-                DungeonEditorSessionValues.Tool.ROOM_DELETE,
+                DungeonEditorSessionValues.Tool.ROOM_PAINT,
                 workflow.session().projectionLevel()));
     }
 
@@ -56,7 +54,7 @@ public final class ApplyDungeonEditorDeleteRoomUseCase {
         effectUseCase.applyEffect(mainViewInterpreter.room(
                 PointerAction.RELEASE,
                 input,
-                DungeonEditorSessionValues.Tool.ROOM_DELETE,
+                DungeonEditorSessionValues.Tool.ROOM_PAINT,
                 workflow.session().projectionLevel()));
     }
 }

@@ -1,15 +1,13 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
-import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase;
 
-public final class ApplyDungeonEditorCreateWallUseCase {
+public final class ApplyDungeonEditorDeleteWallUseCase {
     private final DungeonEditorApplyToolUseCase toolUseCase;
 
-    public ApplyDungeonEditorCreateWallUseCase(
+    public ApplyDungeonEditorDeleteWallUseCase(
             DungeonEditorSessionWorkflow workflow,
             InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
             ApplyDungeonEditorSessionEffectUseCase effectUseCase
@@ -18,18 +16,18 @@ public final class ApplyDungeonEditorCreateWallUseCase {
     }
 
     public void press(MainViewInput input) {
-        toolUseCase.pressBoundary(input, DungeonEditorSessionValues.Tool.WALL_CREATE);
+        toolUseCase.pressBoundary(input, DungeonEditorSessionValues.Tool.WALL_DELETE);
     }
 
     public void drag(MainViewInput input) {
-        toolUseCase.dragBoundary(input, DungeonEditorSessionValues.Tool.WALL_CREATE);
+        toolUseCase.dragBoundary(input, DungeonEditorSessionValues.Tool.WALL_DELETE);
     }
 
     public void release(MainViewInput input) {
-        toolUseCase.releaseBoundary(input, DungeonEditorSessionValues.Tool.WALL_CREATE);
+        toolUseCase.releaseBoundary(input, DungeonEditorSessionValues.Tool.WALL_DELETE);
     }
 
     public void hover(MainViewInput input) {
-        toolUseCase.hoverBoundary(input, DungeonEditorSessionValues.Tool.WALL_CREATE);
+        toolUseCase.hoverBoundary(input, DungeonEditorSessionValues.Tool.WALL_DELETE);
     }
 }

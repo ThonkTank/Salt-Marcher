@@ -1,20 +1,17 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase.PointerAction;
-import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase;
 
-public final class ApplyDungeonEditorPaintRoomUseCase {
+public final class ApplyDungeonEditorSelectionUseCase {
     private final DungeonEditorSessionWorkflow workflow;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
     private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
 
-    public ApplyDungeonEditorPaintRoomUseCase(
+    public ApplyDungeonEditorSelectionUseCase(
             DungeonEditorSessionWorkflow workflow,
             InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
             ApplyDungeonEditorSessionEffectUseCase effectUseCase
@@ -29,34 +26,50 @@ public final class ApplyDungeonEditorPaintRoomUseCase {
         if (committedSnapshot == null) {
             return;
         }
-        effectUseCase.applyEffect(mainViewInterpreter.room(
+        effectUseCase.applyEffect(mainViewInterpreter.selection(
                 PointerAction.PRESS,
                 input,
-                DungeonEditorSessionValues.Tool.ROOM_PAINT,
+                committedSnapshot,
+                workflow.session().selection(),
                 workflow.session().projectionLevel()));
     }
 
     public void drag(MainViewInput input) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
+        if (effectUseCase.committedGridOrPublishCurrent() != null) {
+            effectUseCase.applyEffect(mainViewInterpreter.selection(
+                    PointerAction.DRAG,
+                    input,
+                    null,
+                    workflow.session().selection(),
+                    workflow.session().projectionLevel()));
         }
-        effectUseCase.applyEffect(mainViewInterpreter.room(
-                PointerAction.DRAG,
-                input,
-                DungeonEditorSessionValues.Tool.ROOM_PAINT,
-                workflow.session().projectionLevel()));
     }
 
     public void release(MainViewInput input) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
-        if (committedSnapshot == null) {
-            return;
+        if (effectUseCase.committedGridOrPublishCurrent() != null) {
+            effectUseCase.applyEffect(mainViewInterpreter.selection(
+                    PointerAction.RELEASE,
+                    input,
+                    null,
+                    workflow.session().selection(),
+                    workflow.session().projectionLevel()));
         }
-        effectUseCase.applyEffect(mainViewInterpreter.room(
-                PointerAction.RELEASE,
+    }
+
+    public void hover(MainViewInput input) {
+        effectUseCase.applyEffect(mainViewInterpreter.selection(
+                PointerAction.HOVER,
                 input,
-                DungeonEditorSessionValues.Tool.ROOM_PAINT,
+                null,
+                workflow.session().selection(),
                 workflow.session().projectionLevel()));
     }
+
+    public void scroll(int projectionLevelDelta) {
+        effectUseCase.applyEffect(mainViewInterpreter.scrollSelection(
+                projectionLevelDelta,
+                workflow.session().projectionLevel(),
+                effectUseCase.loadCommittedSnapshot()));
+    }
+
 }

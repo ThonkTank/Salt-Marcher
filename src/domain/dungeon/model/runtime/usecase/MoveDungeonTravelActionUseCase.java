@@ -20,7 +20,7 @@ import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.worldspace.usecase.BuildDungeonDerivedStateUseCase;
-import src.domain.dungeon.model.worldspace.usecase.LoadDungeonMapUseCase;
+import src.domain.dungeon.model.core.usecase.LoadDungeonMapUseCase;
 
 public final class MoveDungeonTravelActionUseCase {
     private static final String TRAVEL_ACTION_COMPLETE = "Reiseaktion ausgefuehrt.";

@@ -1,8 +1,8 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.core.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 
 /**
  * Deletes an authored dungeon map aggregate.

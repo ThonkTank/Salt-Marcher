@@ -8,7 +8,7 @@ import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceFacts;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.worldspace.usecase.BuildDungeonDerivedStateUseCase;
-import src.domain.dungeon.model.worldspace.usecase.LoadDungeonMapUseCase;
+import src.domain.dungeon.model.core.usecase.LoadDungeonMapUseCase;
 
 public final class LoadDungeonTravelSurfaceUseCase {
 

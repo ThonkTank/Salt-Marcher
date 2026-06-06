@@ -1,10 +1,10 @@
 package src.domain.dungeon;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorSelectionUseCase;
-import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorToolWorkflowUseCase;
-import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorToolWorkflowUseCase.ToolInput;
-import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorToolWorkflowUseCase.WorkflowAction;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSelectionUseCase;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.ToolInput;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.WorkflowAction;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.BoundaryInput;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.BoundaryKindInput;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.CellInput;
@@ -15,7 +15,7 @@ import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputU
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.TargetKindInput;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.TopologyKindInput;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.TopologyRefInput;
-import src.domain.dungeon.model.worldspace.usecase.MoveDungeonEditorHandleUseCase;
+import src.domain.dungeon.model.runtime.usecase.MoveDungeonEditorHandleUseCase;
 import src.domain.dungeon.published.ApplyDungeonEditorPointerCommand;
 import src.domain.dungeon.published.DungeonEditorPointerCommand;
 import src.domain.dungeon.published.MoveDungeonEditorHandleCommand;

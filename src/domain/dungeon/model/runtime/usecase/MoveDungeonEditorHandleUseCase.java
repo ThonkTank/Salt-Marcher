@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import java.util.Optional;
@@ -9,7 +9,6 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainView
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 
 public final class MoveDungeonEditorHandleUseCase {
     private final DungeonEditorSessionWorkflow workflow;

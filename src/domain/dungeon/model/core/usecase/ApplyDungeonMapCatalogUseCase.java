@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.core.usecase;
 
 import java.util.List;
 import java.util.Objects;

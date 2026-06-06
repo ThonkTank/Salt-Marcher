@@ -1,15 +1,13 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
-import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase;
 
-public final class ApplyDungeonEditorDeleteDoorUseCase {
+public final class ApplyDungeonEditorCreateWallUseCase {
     private final DungeonEditorApplyToolUseCase toolUseCase;
 
-    public ApplyDungeonEditorDeleteDoorUseCase(
+    public ApplyDungeonEditorCreateWallUseCase(
             DungeonEditorSessionWorkflow workflow,
             InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
             ApplyDungeonEditorSessionEffectUseCase effectUseCase
@@ -18,18 +16,18 @@ public final class ApplyDungeonEditorDeleteDoorUseCase {
     }
 
     public void press(MainViewInput input) {
-        toolUseCase.pressBoundary(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
+        toolUseCase.pressBoundary(input, DungeonEditorSessionValues.Tool.WALL_CREATE);
     }
 
     public void drag(MainViewInput input) {
-        toolUseCase.dragBoundary(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
+        toolUseCase.dragBoundary(input, DungeonEditorSessionValues.Tool.WALL_CREATE);
     }
 
     public void release(MainViewInput input) {
-        toolUseCase.releaseBoundary(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
+        toolUseCase.releaseBoundary(input, DungeonEditorSessionValues.Tool.WALL_CREATE);
     }
 
     public void hover(MainViewInput input) {
-        toolUseCase.hoverBoundary(input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
+        toolUseCase.hoverBoundary(input, DungeonEditorSessionValues.Tool.WALL_CREATE);
     }
 }

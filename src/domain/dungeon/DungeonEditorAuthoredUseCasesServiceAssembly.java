@@ -12,7 +12,7 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
             DungeonAuthoredPublishedStateServiceAssembly publishedState,
             src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState dungeonState
     ) {
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonMapCatalogUseCase catalogUseCase = mapCatalogUseCase(registry);
+        src.domain.dungeon.model.core.usecase.ApplyDungeonMapCatalogUseCase catalogUseCase = mapCatalogUseCase(registry);
         src.domain.dungeon.model.worldspace.usecase.LoadDungeonSnapshotUseCase loadSnapshotUseCase = loadDungeonSnapshotUseCase(registry);
         src.domain.dungeon.model.core.repository.DungeonMapRepository repository =
                 registry.require(src.domain.dungeon.model.core.repository.DungeonMapRepository.class);
@@ -76,14 +76,14 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
                         publishMutationUseCase));
     }
 
-    private static src.domain.dungeon.model.worldspace.usecase.ApplyDungeonMapCatalogUseCase mapCatalogUseCase(ServiceRegistry registry) {
+    private static src.domain.dungeon.model.core.usecase.ApplyDungeonMapCatalogUseCase mapCatalogUseCase(ServiceRegistry registry) {
         src.domain.dungeon.model.core.repository.DungeonMapRepository repository =
                 registry.require(src.domain.dungeon.model.core.repository.DungeonMapRepository.class);
-        return new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonMapCatalogUseCase(
-                new src.domain.dungeon.model.worldspace.usecase.SearchDungeonMapsUseCase(repository),
-                new src.domain.dungeon.model.worldspace.usecase.CreateDungeonMapUseCase(repository),
-                new src.domain.dungeon.model.worldspace.usecase.RenameDungeonMapUseCase(repository),
-                new src.domain.dungeon.model.worldspace.usecase.DeleteDungeonMapUseCase(repository));
+        return new src.domain.dungeon.model.core.usecase.ApplyDungeonMapCatalogUseCase(
+                new src.domain.dungeon.model.core.usecase.SearchDungeonMapsUseCase(repository),
+                new src.domain.dungeon.model.core.usecase.CreateDungeonMapUseCase(repository),
+                new src.domain.dungeon.model.core.usecase.RenameDungeonMapUseCase(repository),
+                new src.domain.dungeon.model.core.usecase.DeleteDungeonMapUseCase(repository));
     }
 
     private static src.domain.dungeon.model.worldspace.usecase.LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase(ServiceRegistry registry) {
