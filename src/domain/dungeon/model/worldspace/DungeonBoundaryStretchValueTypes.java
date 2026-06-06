@@ -69,30 +69,6 @@ public final class DungeonBoundaryStretchValueTypes {
         }
     }
 
-    public static final class BoundaryVertex {
-        private final int q;
-        private final int r;
-        private final int level;
-
-        public BoundaryVertex(int q, int r, int level) {
-            this.q = q;
-            this.r = r;
-            this.level = level;
-        }
-
-        public int q() {
-            return q;
-        }
-
-        public int r() {
-            return r;
-        }
-
-        public int level() {
-            return level;
-        }
-    }
-
     record StretchSelection(
             int level,
             StretchOrientation orientation,
@@ -132,6 +108,22 @@ public final class DungeonBoundaryStretchValueTypes {
         @Override
         public Set<DungeonBoundaryKey> sourceKeys() {
             return Collections.unmodifiableSet(new LinkedHashSet<>(sourceKeys));
+        }
+
+        boolean movesOutward() {
+            return coreSelection.movesOutward();
+        }
+
+        List<RoomClusterBoundaryStretchPlan.BoundaryVertex> vertices() {
+            return coreSelection.vertices();
+        }
+
+        List<Edge> connectorPath(RoomClusterBoundaryStretchPlan.BoundaryVertex vertex) {
+            return coreSelection.connectorPath(vertex);
+        }
+
+        Set<Cell> stripCells() {
+            return coreSelection.stripCells();
         }
 
         private static List<StretchEdge> stretchEdges(

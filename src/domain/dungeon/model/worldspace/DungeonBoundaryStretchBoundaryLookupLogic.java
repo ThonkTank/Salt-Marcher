@@ -7,7 +7,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.BoundaryVertex;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchOrientation;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
 
@@ -17,7 +17,7 @@ final class DungeonBoundaryStretchBoundaryLookupLogic {
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             StretchSelection stretch
     ) {
-        List<BoundaryVertex> vertices = DungeonBoundaryStretchSelectionGeometry.vertices(stretch);
+        List<BoundaryVertex> vertices = stretch.vertices();
         for (int index = 1; index < vertices.size() - 1; index++) {
             if (hasPerpendicularBoundary(boundaries, stretch.sourceKeys(), vertices.get(index), stretch.orientation())) {
                 return false;

@@ -12,7 +12,7 @@ import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryTouch;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.BoundaryVertex;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchEdge;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchMutationResult;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
@@ -63,11 +63,11 @@ final class DungeonBoundaryStretchMutationLogic {
     ) {
         Map<Integer, List<Cell>> nextCellsByLevel = new LinkedHashMap<>(target.cellsByLevel());
         Set<Cell> currentLevelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
-        Set<Cell> stripCells = DungeonBoundaryStretchSelectionGeometry.stripCells(stretch);
+        Set<Cell> stripCells = stretch.stripCells();
         if (stripCells.isEmpty()) {
             return Optional.empty();
         }
-        if (DungeonBoundaryStretchSelectionGeometry.movesOutward(stretch)) {
+        if (stretch.movesOutward()) {
             currentLevelCells.addAll(stripCells);
         } else {
             currentLevelCells.removeAll(stripCells);
@@ -77,7 +77,7 @@ final class DungeonBoundaryStretchMutationLogic {
         }
         nextCellsByLevel.put(stretch.level(), CellOrdering.sortedCells(currentLevelCells));
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(boundaryMap);
-        for (BoundaryVertex vertex : DungeonBoundaryStretchSelectionGeometry.vertices(stretch)) {
+        for (BoundaryVertex vertex : stretch.vertices()) {
             if (!BOUNDARY_LOOKUP_SERVICE.hasPerpendicularBoundary(
                     boundaries,
                     stretch.sourceKeys(),

@@ -8,7 +8,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.BoundaryVertex;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.ConnectorAction;
 import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
 
@@ -29,7 +29,7 @@ final class DungeonBoundaryStretchConnectorLogic {
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             boolean requireTouch
     ) {
-        List<BoundaryVertex> vertices = DungeonBoundaryStretchSelectionGeometry.vertices(stretch);
+        List<BoundaryVertex> vertices = stretch.vertices();
         for (BoundaryVertex endpoint : List.of(vertices.getFirst(), vertices.getLast())) {
             boolean touchesOuter = BOUNDARY_LOOKUP_SERVICE.touchesOuterBoundary(clusterCells, endpoint);
             boolean hasAttachment = BOUNDARY_LOOKUP_SERVICE.hasPerpendicularBoundary(
@@ -55,7 +55,7 @@ final class DungeonBoundaryStretchConnectorLogic {
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             BoundaryVertex endpoint
     ) {
-        List<Edge> connectorPath = DungeonBoundaryStretchSelectionGeometry.connectorPath(stretch, endpoint);
+        List<Edge> connectorPath = stretch.connectorPath(endpoint);
         if (connectorPath.isEmpty()) {
             return true;
         }
