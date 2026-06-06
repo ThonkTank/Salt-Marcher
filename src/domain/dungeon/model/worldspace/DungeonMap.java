@@ -58,7 +58,8 @@ public record DungeonMap(
 
     private static final DungeonRoomTopologyEditor ROOM_TOPOLOGY_EDITOR = new DungeonRoomTopologyEditor();
     private static final DungeonEditorHandleMovementLogic HANDLE_MOVEMENT_SERVICE = new DungeonEditorHandleMovementLogic();
-    private static final DungeonCorridorMutationLogic CORRIDOR_MUTATION_SERVICE = new DungeonCorridorMutationLogic();
+    private static final DungeonCorridorCreationLogic CORRIDOR_CREATION = new DungeonCorridorCreationLogic();
+    private static final DungeonCorridorMergeDeleteLogic CORRIDOR_DELETION = new DungeonCorridorMergeDeleteLogic();
 
     public DungeonMap moveEditorHandle(
             DungeonEditorHandleMovement handle,
@@ -326,7 +327,7 @@ public record DungeonMap(
             DungeonCorridorEndpoint start,
             DungeonCorridorEndpoint end
     ) {
-        return CORRIDOR_MUTATION_SERVICE.createCorridor(this, stairId, start, end);
+        return CORRIDOR_CREATION.createCorridor(this, stairId, start, end);
     }
 
     public DungeonMap deleteCorridor(
@@ -336,7 +337,7 @@ public record DungeonMap(
             long roomId,
             int waypointIndex
     ) {
-        return CORRIDOR_MUTATION_SERVICE.deleteCorridor(
+        return CORRIDOR_DELETION.deleteCorridor(
                 this,
                 corridorId,
                 targetKind,
