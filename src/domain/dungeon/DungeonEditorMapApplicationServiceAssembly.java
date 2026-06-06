@@ -10,25 +10,25 @@ final class DungeonEditorMapApplicationServiceAssembly {
     ) {
         DungeonEditorAuthoredUseCasesServiceAssembly.AuthoredUseCases authored = runtime.authoredUseCases();
         return new DungeonEditorMapApplicationService(
-                new src.domain.dungeon.model.worldspace.usecase.SelectDungeonEditorMapUseCase(
+                new src.domain.dungeon.model.runtime.usecase.SelectDungeonEditorMapUseCase(
                         runtime.workflow(),
                         runtime.snapshotBuilder(),
                         runtime.mainViewInterpreter(),
                         runtime.snapshotPublicationUseCase()),
-                new src.domain.dungeon.model.worldspace.usecase.CreateDungeonEditorMapUseCase(
+                new src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorMapUseCase(
                         runtime.workflow(),
                         authored.createMapUseCase(),
                         runtime.dungeonState(),
                         runtime.snapshotBuilder(),
                         runtime.mainViewInterpreter(),
                         runtime.snapshotPublicationUseCase()),
-                new src.domain.dungeon.model.worldspace.usecase.RenameDungeonEditorMapUseCase(
+                new src.domain.dungeon.model.runtime.usecase.RenameDungeonEditorMapUseCase(
                         runtime.workflow(),
                         authored.renameMapUseCase(),
                         runtime.dungeonState(),
                         runtime.snapshotBuilder(),
                         runtime.snapshotPublicationUseCase()),
-                new src.domain.dungeon.model.worldspace.usecase.DeleteDungeonEditorMapUseCase(
+                new src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapUseCase(
                         runtime.workflow(),
                         authored.deleteMapUseCase(),
                         runtime.dungeonState(),

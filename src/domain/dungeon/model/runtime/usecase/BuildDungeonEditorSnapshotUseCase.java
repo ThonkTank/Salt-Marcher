@@ -16,7 +16,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceVal
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.worldspace.usecase.LoadDungeonEditorAuthoredMapUseCase;
 import src.domain.dungeon.model.worldspace.usecase.PreviewDungeonEditorAuthoredOperationUseCase;
-import src.domain.dungeon.model.worldspace.usecase.SearchDungeonEditorMapCatalogUseCase;
 
 public final class BuildDungeonEditorSnapshotUseCase {
     private final SearchDungeonEditorMapCatalogUseCase searchMapsUseCase;

@@ -1,6 +1,5 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
-import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -9,17 +8,9 @@ import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTraversalLinkProjection;
-import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
-import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
-import src.domain.dungeon.model.core.projection.DungeonCorridorReadProjection;
-import src.domain.dungeon.model.core.projection.DungeonCorridorProjection;
-import src.domain.dungeon.model.core.projection.DungeonDerivedState;
-import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
-import src.domain.dungeon.model.core.projection.DungeonMapFacts;
-import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryProjection;
-import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryReadProjection;
-import src.domain.dungeon.model.core.projection.DungeonState;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
+import src.domain.dungeon.model.worldspace.DungeonMap;
 
 /**
  * Rebuilds read-side dungeon state from authored dungeon truth.
@@ -34,7 +25,7 @@ public final class DungeonDerivedStateProjection {
         return emptyState(topology);
     }
 
-    Map<Long, List<Cell>> corridorCellsByCorridor(DungeonMap dungeonMap, List<Corridor> corridors) {
+    public Map<Long, List<Cell>> corridorCellsByCorridor(DungeonMap dungeonMap, List<Corridor> corridors) {
         if (dungeonMap == null) {
             return Map.of();
         }

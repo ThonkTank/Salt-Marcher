@@ -26,10 +26,10 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
         src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase =
                 new src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredMutationUseCase(publishedState, dungeonState);
         return new AuthoredUseCases(
-                new src.domain.dungeon.model.worldspace.usecase.SearchDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
-                new src.domain.dungeon.model.worldspace.usecase.CreateDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
-                new src.domain.dungeon.model.worldspace.usecase.RenameDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
-                new src.domain.dungeon.model.worldspace.usecase.DeleteDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
+                new src.domain.dungeon.model.runtime.usecase.SearchDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
+                new src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
+                new src.domain.dungeon.model.runtime.usecase.RenameDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
+                new src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
                 new src.domain.dungeon.model.worldspace.usecase.LoadDungeonEditorAuthoredMapUseCase(
                         loadSnapshotUseCase,
                         new src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredSnapshotUseCase(publishedState, dungeonState),
@@ -110,10 +110,10 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
     }
 
     record AuthoredUseCases(
-            src.domain.dungeon.model.worldspace.usecase.SearchDungeonEditorMapCatalogUseCase searchMapsUseCase,
-            src.domain.dungeon.model.worldspace.usecase.CreateDungeonEditorMapCatalogUseCase createMapUseCase,
-            src.domain.dungeon.model.worldspace.usecase.RenameDungeonEditorMapCatalogUseCase renameMapUseCase,
-            src.domain.dungeon.model.worldspace.usecase.DeleteDungeonEditorMapCatalogUseCase deleteMapUseCase,
+            src.domain.dungeon.model.runtime.usecase.SearchDungeonEditorMapCatalogUseCase searchMapsUseCase,
+            src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorMapCatalogUseCase createMapUseCase,
+            src.domain.dungeon.model.runtime.usecase.RenameDungeonEditorMapCatalogUseCase renameMapUseCase,
+            src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapCatalogUseCase deleteMapUseCase,
             src.domain.dungeon.model.worldspace.usecase.LoadDungeonEditorAuthoredMapUseCase loadMapUseCase,
             src.domain.dungeon.model.worldspace.usecase.PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase,
             src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase,

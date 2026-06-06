@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
@@ -7,13 +7,13 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository;
 
-public final class DeleteDungeonEditorMapCatalogUseCase {
+public final class CreateDungeonEditorMapCatalogUseCase {
 
     private final ApplyDungeonMapCatalogUseCase catalogUseCase;
     private final DungeonAuthoredPublishedStateRepository publishedStateRepository;
     private final DungeonEditorDungeonState state;
 
-    public DeleteDungeonEditorMapCatalogUseCase(
+    public CreateDungeonEditorMapCatalogUseCase(
             ApplyDungeonMapCatalogUseCase catalogUseCase,
             DungeonAuthoredPublishedStateRepository publishedStateRepository,
             DungeonEditorDungeonState state
@@ -24,14 +24,10 @@ public final class DeleteDungeonEditorMapCatalogUseCase {
         this.state = Objects.requireNonNull(state, "state");
     }
 
-    public void execute(MapId mapId) {
-        DungeonMapIdentity mutationMapId = catalogUseCase.deleteMap(domainMapId(mapId));
-        state.replaceMutationMapId(mapId(mutationMapId));
-        publishedStateRepository.publishDeleted(mapMutationPublication(mutationMapId));
-    }
-
-    private static DungeonMapIdentity domainMapId(MapId mapId) {
-        return new DungeonMapIdentity(mapId == null ? 1L : mapId.value());
+    public void execute(String mapName) {
+        DungeonMapIdentity mapId = catalogUseCase.createMap(mapName);
+        state.replaceMutationMapId(mapId(mapId));
+        publishedStateRepository.publishCreated(mapMutationPublication(mapId));
     }
 
     private static MapId mapId(DungeonMapIdentity mapId) {

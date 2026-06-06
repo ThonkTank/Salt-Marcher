@@ -1,10 +1,10 @@
 package src.domain.dungeon;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.usecase.CreateDungeonEditorMapUseCase;
-import src.domain.dungeon.model.worldspace.usecase.DeleteDungeonEditorMapUseCase;
-import src.domain.dungeon.model.worldspace.usecase.RenameDungeonEditorMapUseCase;
-import src.domain.dungeon.model.worldspace.usecase.SelectDungeonEditorMapUseCase;
+import src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorMapUseCase;
+import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapUseCase;
+import src.domain.dungeon.model.runtime.usecase.RenameDungeonEditorMapUseCase;
+import src.domain.dungeon.model.runtime.usecase.SelectDungeonEditorMapUseCase;
 import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DungeonMapCatalogCommand;
 import src.domain.dungeon.published.SelectDungeonEditorMapCommand;
