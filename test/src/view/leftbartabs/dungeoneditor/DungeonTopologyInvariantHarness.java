@@ -13,7 +13,7 @@ import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.Tran
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundary;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundaryKind;
-import src.domain.dungeon.model.worldspace.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
 import src.domain.dungeon.model.worldspace.DungeonRoom;

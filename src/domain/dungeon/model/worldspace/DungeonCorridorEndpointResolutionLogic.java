@@ -8,6 +8,7 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 
 /**
  * Owns authored corridor endpoint resolution and materialization.

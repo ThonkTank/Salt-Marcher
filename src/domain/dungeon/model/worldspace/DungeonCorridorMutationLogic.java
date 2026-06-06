@@ -1,5 +1,7 @@
 package src.domain.dungeon.model.worldspace;
 
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+
 /**
  * Owns corridor mutation mechanics while the aggregate remains the public
  * mutation boundary.

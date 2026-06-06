@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 

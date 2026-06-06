@@ -2,6 +2,7 @@ package src.domain.dungeon.model.worldspace;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 
 final class DungeonCorridorMutationRules {
 

@@ -6,6 +6,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 
 final class DungeonCorridorCreationLogic {
 
