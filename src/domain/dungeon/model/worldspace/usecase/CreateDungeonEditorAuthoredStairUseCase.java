@@ -32,7 +32,7 @@ public final class CreateDungeonEditorAuthoredStairUseCase {
         publishMutationUseCase.execute(result);
     }
 
-    boolean canExecute(MapId mapId, Cell anchor, String shapeName) {
+    public boolean canExecute(MapId mapId, Cell anchor, String shapeName) {
         return mapId != null
                 && anchor != null
                 && mutationUseCase.canCreateStair(

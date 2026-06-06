@@ -37,7 +37,7 @@ public final class SaveDungeonEditorAuthoredStairGeometryUseCase {
         publishMutationUseCase.execute(result);
     }
 
-    boolean canSave(
+    public boolean canSave(
             MapId mapId,
             long stairId,
             String shapeName,

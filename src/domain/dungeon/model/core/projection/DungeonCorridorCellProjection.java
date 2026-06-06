@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -8,7 +8,13 @@ import java.util.Set;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Route;
+import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 
+/**
+ * Transitional projection boundary: remove the worldspace corridor and cluster
+ * inputs once the authored route projection reads core structure facts directly.
+ */
 final class DungeonCorridorCellProjection {
     private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;
     private static final int FULL_ROUTE_TERMINUS_COUNT = 2;
@@ -131,15 +137,7 @@ final class DungeonCorridorCellProjection {
         if (start == null || end == null) {
             return List.of();
         }
-        return copiedCells(Route.horizontalFirst(start, end));
-    }
-
-    private static List<Cell> copiedCells(List<Cell> cells) {
-        List<Cell> result = new ArrayList<>();
-        for (Cell cell : cells) {
-            result.add(cell);
-        }
-        return List.copyOf(result);
+        return List.copyOf(Route.horizontalFirst(start, end));
     }
 
     private static int compareCells(Cell left, Cell right) {

@@ -8,17 +8,17 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.worldspace.DungeonClusterBoundary;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
-import src.domain.dungeon.model.worldspace.DungeonTransition;
 
 final class DungeonTopologyInvariantHarness {
 
@@ -234,12 +234,13 @@ final class DungeonTopologyInvariantHarness {
         }
     }
 
-    private static DungeonTransition transitionById(DungeonMap map, long transitionId) {
-        DungeonTransition transition = map.transitionById(transitionId);
-        if (transition == null) {
-            throw new IllegalStateException("Missing transition transitionId=" + transitionId);
+    private static Transition transitionById(DungeonMap map, long transitionId) {
+        for (Transition transition : map.connections().transitions()) {
+            if (transition.transitionId() == transitionId) {
+                return transition;
+            }
         }
-        return transition;
+        throw new IllegalStateException("Missing transition transitionId=" + transitionId);
     }
 
     private static void assertEquals(Object expected, Object actual, String message) {

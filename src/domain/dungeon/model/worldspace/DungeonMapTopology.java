@@ -11,6 +11,7 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.stair.Stair;
+import src.domain.dungeon.model.core.structure.transition.Transition;
 
 /**
  * Map-owned topology index for authored element refs and semantic bindings.
@@ -94,7 +95,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendTransitionBindings(List<DungeonTopologyBinding> result, ConnectionCatalog connections) {
-        for (DungeonTransition transition : connections == null ? List.<DungeonTransition>of() : connections.transitions()) {
+        for (Transition transition : connections == null ? List.<Transition>of() : connections.transitions()) {
             result.add(new DungeonTopologyBinding(
                     new DungeonTopologyRef(DungeonTopologyElementKind.TRANSITION, transition.transitionId()),
                     0L,

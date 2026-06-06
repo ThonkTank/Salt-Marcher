@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -13,12 +13,12 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
-import src.domain.dungeon.model.core.projection.DungeonAreaType;
-import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
-import src.domain.dungeon.model.core.projection.DungeonCorridorProjection;
-import src.domain.dungeon.model.core.projection.DungeonState;
+import src.domain.dungeon.model.worldspace.DungeonCorridor;
 
+/**
+ * Transitional projection boundary: remove the worldspace corridor input once
+ * corridor read facts are supplied directly by core structure owners.
+ */
 final class DungeonCorridorProjectionAssembler {
 
     private static final String DOOR_KIND = "door";

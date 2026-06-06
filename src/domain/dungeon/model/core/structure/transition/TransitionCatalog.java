@@ -39,6 +39,15 @@ public record TransitionCatalog(List<Transition> transitions) {
         return transitionById(transitionId) != null && !protectedTransition(transitionId);
     }
 
+    public boolean containsTransition(long transitionId) {
+        return transitionById(transitionId) != null;
+    }
+
+    public @Nullable TransitionDestination destinationByTransitionId(long transitionId) {
+        Transition transition = transitionById(transitionId);
+        return transition == null ? null : transition.destination();
+    }
+
     public TransitionCatalog withoutTransition(long transitionId) {
         if (!canDelete(transitionId)) {
             return this;

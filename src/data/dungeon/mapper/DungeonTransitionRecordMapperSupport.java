@@ -5,8 +5,8 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.data.dungeon.model.DungeonTransitionRecord;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
-import src.domain.dungeon.model.worldspace.DungeonTransition;
 
 final class DungeonTransitionRecordMapperSupport {
 
@@ -16,10 +16,10 @@ final class DungeonTransitionRecordMapperSupport {
     private DungeonTransitionRecordMapperSupport() {
     }
 
-    static List<DungeonTransition> toTransitions(List<DungeonTransitionRecord> records) {
-        List<DungeonTransition> result = new ArrayList<>();
+    static List<Transition> toTransitions(List<DungeonTransitionRecord> records) {
+        List<Transition> result = new ArrayList<>();
         for (DungeonTransitionRecord record : records == null ? List.<DungeonTransitionRecord>of() : records) {
-            result.add(new DungeonTransition(
+            result.add(new Transition(
                     record.transitionId(),
                     record.mapId(),
                     record.description(),
@@ -30,10 +30,10 @@ final class DungeonTransitionRecordMapperSupport {
         return List.copyOf(result);
     }
 
-    static List<DungeonTransitionRecord> toTransitionRecords(List<DungeonTransition> transitions) {
+    static List<DungeonTransitionRecord> toTransitionRecords(List<Transition> transitions) {
         List<DungeonTransitionRecord> result = new ArrayList<>();
-        for (DungeonTransition transition
-                : transitions == null ? List.<DungeonTransition>of() : transitions) {
+        for (Transition transition
+                : transitions == null ? List.<Transition>of() : transitions) {
             result.add(toTransitionRecord(transition));
         }
         return List.copyOf(result);
@@ -60,7 +60,7 @@ final class DungeonTransitionRecordMapperSupport {
                 record.targetOverworldTileId() == null ? 0L : record.targetOverworldTileId());
     }
 
-    private static DungeonTransitionRecord toTransitionRecord(DungeonTransition transition) {
+    private static DungeonTransitionRecord toTransitionRecord(Transition transition) {
         Cell anchor = transition.anchor();
         DestinationRecord destination = destinationRecord(transition.destination());
         return new DungeonTransitionRecord(

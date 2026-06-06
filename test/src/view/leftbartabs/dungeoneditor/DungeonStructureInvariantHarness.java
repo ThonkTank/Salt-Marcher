@@ -40,9 +40,11 @@ import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
+import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
 import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
@@ -877,73 +879,73 @@ final class DungeonStructureInvariantHarness {
     }
 
     private static void assertTransitionStructureInvariants() {
-        assertWorldspaceTransitionAdapterCompatibility();
+        assertCoreTransitionOwnershipIntegration();
     }
 
-    private static void assertWorldspaceTransitionAdapterCompatibility() {
-        src.domain.dungeon.model.worldspace.DungeonTransition source =
-                new src.domain.dungeon.model.worldspace.DungeonTransition(
+    private static void assertCoreTransitionOwnershipIntegration() {
+        Transition source =
+                new Transition(
                         1L,
                         4L,
                         " source ",
                         new Cell(0, 0, 0),
-                        src.domain.dungeon.model.core.structure.transition.TransitionDestination.dungeonMap(4L, 2L),
+                        TransitionDestination.dungeonMap(4L, 2L),
                         null);
-        src.domain.dungeon.model.worldspace.DungeonTransition oldTarget =
-                new src.domain.dungeon.model.worldspace.DungeonTransition(
+        Transition oldTarget =
+                new Transition(
                         2L,
                         4L,
                         "",
                         new Cell(1, 0, 0),
-                        src.domain.dungeon.model.core.structure.transition.TransitionDestination.overworldTile(5L, 9L),
+                        TransitionDestination.overworldTile(5L, 9L),
                         1L);
-        src.domain.dungeon.model.worldspace.DungeonTransition target =
-                new src.domain.dungeon.model.worldspace.DungeonTransition(
+        Transition target =
+                new Transition(
                         3L,
                         4L,
                         "",
                         new Cell(1, 1, 0),
-                        src.domain.dungeon.model.core.structure.transition.TransitionDestination.overworldTile(5L, 9L),
+                        TransitionDestination.overworldTile(5L, 9L),
                         null);
-        src.domain.dungeon.model.worldspace.DungeonTransition remoteReference =
-                new src.domain.dungeon.model.worldspace.DungeonTransition(
+        Transition remoteReference =
+                new Transition(
                         4L,
                         4L,
                         "",
                         new Cell(2, 0, 0),
-                        src.domain.dungeon.model.core.structure.transition.TransitionDestination.dungeonMap(14L, 3L),
+                        TransitionDestination.dungeonMap(14L, 3L),
                         null);
         src.domain.dungeon.model.worldspace.DungeonMap map = transitionMap(source, oldTarget, target, remoteReference);
 
         assertFalse(map.canDeleteTransition(1L),
-                "worldspace transition adapter preserves source reverse-link delete protection");
+                "core transition ownership preserves source reverse-link delete protection");
         assertFalse(map.canDeleteTransition(3L),
-                "worldspace transition adapter preserves referenced-transition delete protection");
-        assertEquals(List.of(1L, 2L, 3L), worldspaceTransitionIds(map.deleteTransition(4L).connections().transitions()),
-                "worldspace transition adapter removes deletable transition through core catalog");
+                "core transition ownership preserves referenced-transition delete protection");
+        assertEquals(List.of(1L, 2L, 3L), transitionIds(map.deleteTransition(4L).connections().transitions()),
+                "core transition ownership removes deletable transition through core catalog");
         src.domain.dungeon.model.worldspace.DungeonMap linkedMap =
                 map.withMapLocalAuthoredTransitionLink(bidirectionalLink(4L, 1L, 4L, 3L));
-        assertEquals(src.domain.dungeon.model.core.structure.transition.TransitionDestination.dungeonMap(4L, 3L),
+        assertEquals(TransitionDestination.dungeonMap(4L, 3L),
                 linkedMap
                         .connections()
                         .transitions()
                         .getFirst()
                         .destination(),
-                "worldspace transition adapter updates source destination through core catalog");
+                "core transition ownership updates source destination through core catalog");
         assertEquals(null,
                 linkedMap
                         .connections()
                         .transitions()
                         .get(1)
                         .linkedTransitionId(),
-                "worldspace transition adapter clears previous reverse linked transition through core catalog");
+                "core transition ownership clears previous reverse linked transition through core catalog");
         assertEquals(1L,
                 linkedMap
                         .connections()
                         .transitions()
                         .get(2)
                         .linkedTransitionId(),
-                "worldspace transition adapter applies new bidirectional target link through core catalog");
+                "core transition ownership applies new bidirectional target link through core catalog");
     }
 
     private static AuthoredTransitionLink bidirectionalLink(
@@ -958,18 +960,18 @@ final class DungeonStructureInvariantHarness {
                 TransitionLinkDirectionality.BIDIRECTIONAL);
     }
 
-    private static List<Long> worldspaceTransitionIds(
-            List<src.domain.dungeon.model.worldspace.DungeonTransition> transitions
+    private static List<Long> transitionIds(
+            List<Transition> transitions
     ) {
         List<Long> result = new java.util.ArrayList<>();
-        for (src.domain.dungeon.model.worldspace.DungeonTransition transition : transitions) {
+        for (Transition transition : transitions) {
             result.add(transition.transitionId());
         }
         return List.copyOf(result);
     }
 
     private static src.domain.dungeon.model.worldspace.DungeonMap transitionMap(
-            src.domain.dungeon.model.worldspace.DungeonTransition... transitions
+            Transition... transitions
     ) {
         return new src.domain.dungeon.model.worldspace.DungeonMap(
                 new src.domain.dungeon.model.core.structure.DungeonMapMetadata(

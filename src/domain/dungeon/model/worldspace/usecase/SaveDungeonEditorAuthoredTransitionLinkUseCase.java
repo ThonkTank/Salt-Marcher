@@ -6,16 +6,15 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
-import src.domain.dungeon.model.core.projection.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.DungeonTransition;
-import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 
 public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
 
@@ -56,12 +55,12 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
         if (loaded == null) {
             return false;
         }
-        Map<Long, DungeonMap> pendingMaps = loadedMaps(loaded.sourceMap(), loaded.targetMap(), loaded.sourceTransition());
+        Map<Long, DungeonMap> pendingMaps = loadedMaps(loaded.sourceMap(), loaded.targetMap(), loaded.sourceDestination());
         applyAuthoredTransitionLinkToLoadedMaps(
                 pendingMaps,
                 authoredTransitionLink(
                         loaded.sourceIdentity().value(),
-                        loaded.sourceTransition().transitionId(),
+                        sourceTransitionId,
                         loaded.targetIdentity().value(),
                         targetTransitionId,
                         bidirectional));
@@ -99,23 +98,22 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
         if (sourceMap == null || targetMap == null) {
             return null;
         }
-        DungeonTransition sourceTransition = sourceMap.transitionById(sourceTransitionId);
-        DungeonTransition targetTransition = targetMap.transitionById(targetTransitionId);
-        if (sourceTransition == null || targetTransition == null) {
+        TransitionDestination sourceDestination = sourceMap.transitionDestinationById(sourceTransitionId);
+        if (sourceDestination == null || !targetMap.containsTransition(targetTransitionId)) {
             return null;
         }
-        return new LoadedTransitionLink(sourceIdentity, targetIdentity, sourceMap, targetMap, sourceTransition);
+        return new LoadedTransitionLink(sourceIdentity, targetIdentity, sourceMap, targetMap, sourceDestination);
     }
 
     private Map<Long, DungeonMap> loadedMaps(
             DungeonMap sourceMap,
             DungeonMap targetMap,
-            DungeonTransition sourceTransition
+            TransitionDestination sourceDestination
     ) {
         Map<Long, DungeonMap> pendingMaps = new LinkedHashMap<>();
         pendingMaps.put(sourceMap.metadata().mapId().value(), sourceMap);
         pendingMaps.put(targetMap.metadata().mapId().value(), targetMap);
-        long previousMapId = previousLinkedMapId(sourceTransition.destination());
+        long previousMapId = previousLinkedMapId(sourceDestination);
         if (previousMapId > 0L && !pendingMaps.containsKey(previousMapId)) {
             Optional<DungeonMap> previousMap = repository.findById(new DungeonMapIdentity(previousMapId));
             if (previousMap.isPresent()) {
@@ -168,7 +166,7 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
             DungeonMapIdentity targetIdentity,
             DungeonMap sourceMap,
             DungeonMap targetMap,
-            DungeonTransition sourceTransition
+            TransitionDestination sourceDestination
     ) {
     }
 }

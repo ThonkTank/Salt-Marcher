@@ -11,6 +11,7 @@ import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
 /**
@@ -109,7 +110,7 @@ public record DungeonMap(
             return this;
         }
         ConnectionCatalog nextConnections = connections.withTransitions(
-                DungeonTransition.withDescription(connections.transitionCatalog(), transitionId, description));
+                connections.transitionCatalog().withDescription(transitionId, description));
         return nextConnections.equals(connections)
                 ? this
                 : new DungeonMap(
@@ -122,21 +123,20 @@ public record DungeonMap(
     }
 
     public boolean canDeleteTransition(long transitionId) {
-        return DungeonTransition.canDelete(connections.transitionCatalog(), transitionId);
+        return connections.transitionCatalog().canDelete(transitionId);
     }
 
-    public @Nullable DungeonTransition transitionById(long transitionId) {
-        for (DungeonTransition transition : connections.transitions()) {
-            if (transition.transitionId() == transitionId) {
-                return transition;
-            }
-        }
-        return null;
+    public boolean containsTransition(long transitionId) {
+        return connections.transitionCatalog().containsTransition(transitionId);
+    }
+
+    public @Nullable TransitionDestination transitionDestinationById(long transitionId) {
+        return connections.transitionCatalog().destinationByTransitionId(transitionId);
     }
 
     public DungeonMap withMapLocalAuthoredTransitionLink(AuthoredTransitionLink link) {
         ConnectionCatalog nextConnections = connections.withTransitions(
-                DungeonTransition.withMapLocalAuthoredTransitionLink(connections.transitionCatalog(), link));
+                connections.transitionCatalog().withMapLocalAuthoredTransitionLink(link));
         if (nextConnections.equals(connections)) {
             return this;
         }
@@ -154,7 +154,7 @@ public record DungeonMap(
             return this;
         }
         ConnectionCatalog nextConnections = connections.withTransitions(
-                DungeonTransition.withoutTransition(connections.transitionCatalog(), transitionId));
+                connections.transitionCatalog().withoutTransition(transitionId));
         return new DungeonMap(
                 metadata,
                 topology,
@@ -215,15 +215,15 @@ public record DungeonMap(
             long destinationTileId,
             @Nullable Long destinationTransitionId
     ) {
-        ConnectionCatalog nextConnections = connections.withTransitions(DungeonTransition.withCreated(
-                connections.transitionCatalog(),
+        ConnectionCatalog nextConnections = connections.withTransitions(connections.transitionCatalog().withCreated(
                 transitionId,
                 metadata.mapId().value(),
                 anchor,
-                dungeonMapDestination,
-                destinationMapId,
-                destinationTileId,
-                destinationTransitionId));
+                transitionDestination(
+                        dungeonMapDestination,
+                        destinationMapId,
+                        destinationTileId,
+                        destinationTransitionId)));
         if (nextConnections.equals(connections)) {
             return this;
         }
@@ -243,13 +243,24 @@ public record DungeonMap(
             long destinationTileId,
             @Nullable Long destinationTransitionId
     ) {
-        return DungeonTransition.canCreate(
-                connections.transitionCatalog(),
+        return connections.transitionCatalog().canCreate(
                 anchor,
-                dungeonMapDestination,
-                destinationMapId,
-                destinationTileId,
-                destinationTransitionId);
+                transitionDestination(
+                        dungeonMapDestination,
+                        destinationMapId,
+                        destinationTileId,
+                        destinationTransitionId));
+    }
+
+    private static TransitionDestination transitionDestination(
+            boolean dungeonMapDestination,
+            long destinationMapId,
+            long destinationTileId,
+            @Nullable Long destinationTransitionId
+    ) {
+        return dungeonMapDestination
+                ? TransitionDestination.dungeonMap(destinationMapId, destinationTransitionId)
+                : TransitionDestination.overworldTile(destinationMapId, destinationTileId);
     }
 
     public boolean canSaveStairGeometry(

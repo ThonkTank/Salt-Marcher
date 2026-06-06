@@ -3,17 +3,17 @@ package src.domain.dungeon.model.runtime.travel.projection;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface.TransitionDestination;
-import src.domain.dungeon.model.worldspace.DungeonTransition;
 
 final class TravelAuthoredSurfaceTransitionProjectionMapper {
 
     private TravelAuthoredSurfaceTransitionProjectionMapper() {
     }
 
-    static List<TravelAuthoredSurface.Transition> toTransitions(List<DungeonTransition> source) {
+    static List<TravelAuthoredSurface.Transition> toTransitions(List<Transition> source) {
         List<TravelAuthoredSurface.Transition> result = new ArrayList<>();
-        for (DungeonTransition transition : source == null ? List.<DungeonTransition>of() : source) {
+        for (Transition transition : source == null ? List.<Transition>of() : source) {
             if (transition != null) {
                 result.add(new TravelAuthoredSurface.Transition(
                         transition.transitionId(),

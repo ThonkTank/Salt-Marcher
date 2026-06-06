@@ -9,13 +9,14 @@ import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonFeatureType;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
+import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 
 public final class DungeonFeatureReadProjection {
 
     private static final String FEATURE_KIND_TRANSITION = "transition";
 
-    public Result project(StairCollection stairs, List<DungeonTransition> transitions) {
+    public Result project(StairCollection stairs, List<Transition> transitions) {
         List<DungeonFeatureFacts> features = new ArrayList<>();
         List<DungeonRelationGraph.FeatureRelation> relations = new ArrayList<>();
         appendStairFeatures(features, relations, stairs);
@@ -55,9 +56,9 @@ public final class DungeonFeatureReadProjection {
     private static void appendTransitionFeatures(
             List<DungeonFeatureFacts> features,
             List<DungeonRelationGraph.FeatureRelation> relations,
-            List<DungeonTransition> transitions
+            List<Transition> transitions
     ) {
-        for (DungeonTransition transition : transitions == null ? List.<DungeonTransition>of() : transitions) {
+        for (Transition transition : transitions == null ? List.<Transition>of() : transitions) {
             if (transition == null || !transition.isPlaced()) {
                 continue;
             }
@@ -117,7 +118,7 @@ public final class DungeonFeatureReadProjection {
                 "dimension2: " + stair.dimension2());
     }
 
-    private static String transitionDescription(DungeonTransition transition) {
+    private static String transitionDescription(Transition transition) {
         return transition == null ? "" : transition.description();
     }
 
@@ -126,7 +127,7 @@ public final class DungeonFeatureReadProjection {
     }
 
     private static DungeonRelationGraph.FeatureRelation transitionRelation(
-            DungeonTransition transition,
+            Transition transition,
             TransitionDestination destination
     ) {
         if (destination != null && destination.isOverworldTile()) {

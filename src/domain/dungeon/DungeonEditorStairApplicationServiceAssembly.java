@@ -9,7 +9,7 @@ final class DungeonEditorStairApplicationServiceAssembly {
             DungeonEditorRuntimeFoundationServiceAssembly.RuntimeFoundation runtime
     ) {
         return new DungeonEditorStairApplicationService(
-                new src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorStairGeometryUseCase(
+                new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorStairGeometryUseCase(
                         runtime.workflow(),
                         runtime.authoredUseCases().saveStairGeometryUseCase(),
                         runtime.effectUseCase()));

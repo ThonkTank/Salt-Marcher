@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -13,7 +13,18 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDoorBindingGeometry;
+import src.domain.dungeon.model.worldspace.DungeonCorridor;
+import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
+import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
+import src.domain.dungeon.model.worldspace.DungeonRoom;
+import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 
+/**
+ * Transitional projection boundary: remove the worldspace corridor endpoint
+ * inputs once corridor and door endpoint facts are supplied by core corridor
+ * structure owners. This resolver derives read facts only and must not own
+ * corridor mutation policy.
+ */
 final class DungeonCorridorEndpointResolver {
 
     List<CorridorEndpoint> corridorEndpoints(

@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace;
 import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
+import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 
 /**
@@ -16,11 +17,11 @@ public final class ConnectionCatalog {
     public ConnectionCatalog(
             List<DungeonCorridor> corridors,
             StairCollection stairs,
-            List<DungeonTransition> transitions
+            List<Transition> transitions
     ) {
         this(corridors,
                 stairs,
-                DungeonTransition.coreCatalog(transitions));
+                new TransitionCatalog(transitions));
     }
 
     ConnectionCatalog(
@@ -56,8 +57,8 @@ public final class ConnectionCatalog {
         return stairCollection;
     }
 
-    public List<DungeonTransition> transitions() {
-        return DungeonTransition.fromCoreCatalog(transitionCatalog);
+    public List<Transition> transitions() {
+        return transitionCatalog.transitions();
     }
 
     TransitionCatalog transitionCatalog() {

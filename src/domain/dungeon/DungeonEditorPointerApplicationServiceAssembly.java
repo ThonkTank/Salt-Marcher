@@ -75,13 +75,13 @@ final class DungeonEditorPointerApplicationServiceAssembly {
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.effectUseCase());
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorCreateStairUseCase createStair =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorCreateStairUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateStairUseCase createStair =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateStairUseCase(
                         runtime.workflow(),
                         runtime.authoredUseCases().createStairUseCase(),
                         runtime.effectUseCase());
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteStairUseCase deleteStair =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteStairUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteStairUseCase deleteStair =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteStairUseCase(
                         runtime.workflow(),
                         runtime.authoredUseCases().deleteStairUseCase(),
                         runtime.effectUseCase());

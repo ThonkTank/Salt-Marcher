@@ -1,7 +1,7 @@
 package src.domain.dungeon;
 
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorStairGeometryUseCase;
+import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorStairGeometryUseCase;
 import src.domain.dungeon.published.SaveDungeonEditorStairGeometryCommand;
 
 public final class DungeonEditorStairApplicationService {
