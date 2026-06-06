@@ -10,9 +10,6 @@ import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 
 final class DungeonRoomClusterRebuildLogic {
 
-    private final DungeonRoomClusterTopologyRebuildLogic topologyLogic =
-            new DungeonRoomClusterTopologyRebuildLogic();
-
     DungeonMap rebuilt(DungeonMap dungeonMap, List<DungeonRoomTopologyClusterWork> workClusters) {
         List<DungeonRoomCluster> clusters = new ArrayList<>();
         List<DungeonRoom> rooms = new ArrayList<>();
@@ -24,7 +21,7 @@ final class DungeonRoomClusterRebuildLogic {
             if (rebuiltRooms.isEmpty()) {
                 continue;
             }
-            clusters.add(topologyLogic.clusterFor(work));
+            clusters.add(work.rebuiltCluster());
             rooms.addAll(rebuiltRooms);
         }
         SpatialTopology nextTopology = dungeonMap.topology().withRoomClusters(clusters);
@@ -71,7 +68,7 @@ final class DungeonRoomClusterRebuildLogic {
             DungeonRoomTopologyClusterWork work,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
-        return topologyLogic.clusterForStretch(work, boundariesByLevel);
+        return work.rebuiltClusterWithBoundaries(boundariesByLevel);
     }
 
     private static List<DungeonRoom> roomsFor(DungeonRoomTopologyClusterWork work) {
