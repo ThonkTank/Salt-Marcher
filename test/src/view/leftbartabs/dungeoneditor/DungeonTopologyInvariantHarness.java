@@ -156,11 +156,10 @@ final class DungeonTopologyInvariantHarness {
                 "transition description update applies to authored transition");
         assertPresent(described, firstRef, "transition topology identity survives description update");
 
-        DungeonMap linked = described.withTransitionConnections(described.connections().withMapLocalAuthoredTransitionLink(
-                new AuthoredTransitionLink(
-                        new TransitionEndpoint(72L, 40L),
-                        new TransitionEndpoint(72L, 41L),
-                        TransitionLinkDirectionality.BIDIRECTIONAL)));
+        DungeonMap linked = described.withMapLocalAuthoredTransitionLink(new AuthoredTransitionLink(
+                new TransitionEndpoint(72L, 40L),
+                new TransitionEndpoint(72L, 41L),
+                TransitionLinkDirectionality.BIDIRECTIONAL));
         assertEquals(
                 41L,
                 transitionById(linked, 40L).destination().transitionId(),

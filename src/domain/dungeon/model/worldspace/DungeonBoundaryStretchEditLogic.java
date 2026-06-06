@@ -37,8 +37,7 @@ final class DungeonBoundaryStretchEditLogic {
         if (target == null) {
             return dungeonMap;
         }
-        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries =
-                DungeonClusterBoundaryOrdering.boundaryMap(target.cluster());
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = target.cluster().boundaryMap();
         Optional<StretchSelection> stretch = SELECTION_SERVICE.resolveStretch(
                 target,
                 sourceEdges,

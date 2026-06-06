@@ -8,12 +8,12 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjectionKind;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
-import src.domain.dungeon.model.worldspace.DungeonStair;
 import src.domain.dungeon.model.worldspace.helper.DungeonEditorClusterHandleProjectionHelper;
 
 /**
@@ -107,19 +107,21 @@ public final class PublishDungeonEditorHandlesUseCase {
     }
 
     private static void appendStairHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
-        for (DungeonStair stair : dungeonMap.connections().stairs()) {
-            for (int index = 0; index < stair.path().size(); index++) {
-                result.add(stairHandle(stair, stair.path().get(index), index, "Treppenanker " + (index + 1)));
+        for (Stair stair : dungeonMap.connections().stairs().stairs()) {
+            List<Cell> path = stair.path();
+            List<StairExit> exits = stair.exits();
+            for (int index = 0; index < path.size(); index++) {
+                result.add(stairHandle(stair, path.get(index), index, "Treppenanker " + (index + 1)));
             }
-            int offset = stair.path().size();
-            for (int index = 0; index < stair.exits().size(); index++) {
-                StairExit exit = stair.exits().get(index);
+            int offset = path.size();
+            for (int index = 0; index < exits.size(); index++) {
+                StairExit exit = exits.get(index);
                 result.add(stairHandle(stair, exit.position(), offset + index, exit.label()));
             }
         }
     }
 
-    private static DungeonEditorHandleProjection stairHandle(DungeonStair stair, Cell cell, int index, String label) {
+    private static DungeonEditorHandleProjection stairHandle(Stair stair, Cell cell, int index, String label) {
         return new DungeonEditorHandleProjection(
                 DungeonEditorHandleProjectionKind.STAIR_ANCHOR,
                 new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId()),

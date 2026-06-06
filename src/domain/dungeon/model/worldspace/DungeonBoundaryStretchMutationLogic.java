@@ -51,7 +51,7 @@ final class DungeonBoundaryStretchMutationLogic {
         }
         return Optional.of(new StretchMutationResult(
                 target.cellsByLevel(),
-                DungeonClusterBoundaryOrdering.boundariesByLevel(boundaries.values())));
+                DungeonClusterBoundary.orderedByLevel(boundaries.values())));
     }
 
     Optional<StretchMutationResult> applyOuterStretch(

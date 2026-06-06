@@ -37,6 +37,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMater
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
 import src.domain.dungeon.model.core.structure.stair.Stair;
+import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
@@ -921,8 +922,7 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(1L, 2L, 3L), worldspaceTransitionIds(map.deleteTransition(4L).connections().transitions()),
                 "worldspace transition adapter removes deletable transition through core catalog");
         src.domain.dungeon.model.worldspace.DungeonMap linkedMap =
-                map.withTransitionConnections(map.connections().withMapLocalAuthoredTransitionLink(
-                        bidirectionalLink(4L, 1L, 4L, 3L)));
+                map.withMapLocalAuthoredTransitionLink(bidirectionalLink(4L, 1L, 4L, 3L));
         assertEquals(src.domain.dungeon.model.core.structure.transition.TransitionDestination.dungeonMap(4L, 3L),
                 linkedMap
                         .connections()
@@ -979,7 +979,7 @@ final class DungeonStructureInvariantHarness {
                 src.domain.dungeon.model.core.structure.room.RoomCatalog.empty(),
                 new src.domain.dungeon.model.worldspace.ConnectionCatalog(
                         List.of(),
-                        List.of(),
+                        new StairCollection(List.of()),
                         List.of(transitions)),
                 0L);
     }

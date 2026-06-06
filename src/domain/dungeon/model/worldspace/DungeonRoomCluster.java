@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
 
 public record DungeonRoomCluster(
@@ -37,6 +38,10 @@ public record DungeonRoomCluster(
         return copyNestedLists(boundariesByLevel);
     }
 
+    Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap() {
+        return DungeonClusterBoundary.boundaryMap(center, flattenBoundaries());
+    }
+
     RoomCluster toCore(Map<Integer, List<Cell>> cellsByLevel) {
         Map<Integer, List<Cell>> copiedCellsByLevel = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
@@ -56,6 +61,14 @@ public record DungeonRoomCluster(
                 cluster.center(),
                 relativeVerticesByLevel,
                 boundariesByLevel);
+    }
+
+    private List<DungeonClusterBoundary> flattenBoundaries() {
+        List<DungeonClusterBoundary> result = new java.util.ArrayList<>();
+        for (List<DungeonClusterBoundary> boundaries : boundariesByLevel().values()) {
+            result.addAll(boundaries);
+        }
+        return List.copyOf(result);
     }
 
     private static List<Cell> copiedCells(List<Cell> cells) {

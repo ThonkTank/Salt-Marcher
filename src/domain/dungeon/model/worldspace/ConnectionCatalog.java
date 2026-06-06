@@ -15,11 +15,11 @@ public final class ConnectionCatalog {
 
     public ConnectionCatalog(
             List<DungeonCorridor> corridors,
-            List<DungeonStair> stairs,
+            StairCollection stairs,
             List<DungeonTransition> transitions
     ) {
         this(corridors,
-                DungeonStair.coreCollection(stairs),
+                stairs,
                 DungeonTransition.coreCatalog(transitions));
     }
 
@@ -45,23 +45,19 @@ public final class ConnectionCatalog {
     }
 
     public static ConnectionCatalog empty() {
-        return new ConnectionCatalog(List.of(), List.of(), List.of());
+        return new ConnectionCatalog(List.of(), new StairCollection(List.of()), List.of());
     }
 
     public List<DungeonCorridor> corridors() {
         return List.copyOf(corridorSources);
     }
 
-    public List<DungeonStair> stairs() {
-        return DungeonStair.fromCoreCollection(stairCollection);
+    public StairCollection stairs() {
+        return stairCollection;
     }
 
     public List<DungeonTransition> transitions() {
         return DungeonTransition.fromCoreCatalog(transitionCatalog);
-    }
-
-    StairCollection stairCollection() {
-        return stairCollection;
     }
 
     TransitionCatalog transitionCatalog() {

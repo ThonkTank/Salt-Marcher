@@ -10,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
+import src.domain.dungeon.model.core.structure.stair.Stair;
 
 /**
  * Map-owned topology index for authored element refs and semantic bindings.
@@ -83,7 +84,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendStairBindings(List<DungeonTopologyBinding> result, ConnectionCatalog connections) {
-        for (DungeonStair stair : connections == null ? List.<DungeonStair>of() : connections.stairs()) {
+        for (Stair stair : connections == null ? List.<Stair>of() : connections.stairs().stairs()) {
             result.add(new DungeonTopologyBinding(
                     new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId()),
                     0L,

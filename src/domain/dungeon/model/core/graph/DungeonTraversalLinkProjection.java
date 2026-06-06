@@ -15,8 +15,8 @@ import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
+import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonStair;
 
 public final class DungeonTraversalLinkProjection {
 
@@ -70,13 +70,13 @@ public final class DungeonTraversalLinkProjection {
 
     private static List<DungeonTraversalLink> stairTraversalLinks(DungeonMap dungeonMap, CellAreaIndex index) {
         List<DungeonTraversalLink> result = new ArrayList<>();
-        for (DungeonStair stair : dungeonMap.connections().stairs()) {
+        for (Stair stair : dungeonMap.connections().stairs().stairs()) {
             appendStairLinks(result, index, stair);
         }
         return List.copyOf(result);
     }
 
-    private static void appendStairLinks(List<DungeonTraversalLink> result, CellAreaIndex index, DungeonStair stair) {
+    private static void appendStairLinks(List<DungeonTraversalLink> result, CellAreaIndex index, Stair stair) {
         List<StairExit> exits = stair.exits();
         for (int leftIndex = 0; leftIndex < exits.size(); leftIndex++) {
             for (int rightIndex = leftIndex + 1; rightIndex < exits.size(); rightIndex++) {

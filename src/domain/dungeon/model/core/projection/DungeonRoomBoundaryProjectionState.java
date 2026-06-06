@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -12,11 +12,16 @@ import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
-import src.domain.dungeon.model.core.projection.DungeonBoundaryProjection;
-import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryTouchSupport;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import src.domain.dungeon.model.worldspace.DungeonClusterBoundary;
+import src.domain.dungeon.model.worldspace.DungeonRoom;
+import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 
+/**
+ * Transitional projection state: remove the worldspace imports once
+ * DungeonRoom, DungeonRoomCluster, and DungeonClusterBoundary owners move to
+ * core structure and this reads those owners directly.
+ */
 final class DungeonRoomBoundaryProjectionState {
 
     private static final String DOOR_KIND = "door";

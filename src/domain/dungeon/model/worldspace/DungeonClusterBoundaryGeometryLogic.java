@@ -30,7 +30,7 @@ final class DungeonClusterBoundaryGeometryLogic {
                 filtered.add(boundary);
             }
         }
-        return DungeonClusterBoundaryOrdering.boundariesByLevel(filtered);
+        return DungeonClusterBoundary.orderedByLevel(filtered);
     }
 
     @Nullable DungeonClusterBoundary boundaryForEdge(

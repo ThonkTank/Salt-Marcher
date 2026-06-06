@@ -1,21 +1,27 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.projection;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
-import src.domain.dungeon.model.core.projection.DungeonBoundaryProjection;
-import src.domain.dungeon.model.core.projection.DungeonRoomAggregateProjection;
-import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryProjection;
-import src.domain.dungeon.model.core.projection.DungeonState;
+import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.worldspace.DungeonRoom;
+import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
+import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
+import src.domain.dungeon.model.worldspace.SpatialTopology;
 
-final class DungeonRoomBoundaryReadProjection {
+/**
+ * Transitional projection boundary: remove the worldspace imports once
+ * DungeonMap, SpatialTopology, DungeonRoom, DungeonRoomCluster, and
+ * DungeonRoomCellProjection inputs have core structure owners and this reads
+ * those owners directly.
+ */
+public final class DungeonRoomBoundaryReadProjection {
 
     private final DungeonRoomCellProjection roomCellProjector = new DungeonRoomCellProjection();
 
-    DungeonRoomBoundaryProjection project(DungeonMap dungeonMap, SpatialTopology topology) {
+    public DungeonRoomBoundaryProjection project(DungeonMap dungeonMap, SpatialTopology topology) {
         List<DungeonRoom> authoredRooms = dungeonMap.rooms().rooms();
         Map<Long, List<DungeonRoom>> roomsByCluster = roomsByCluster(authoredRooms);
         Map<Long, DungeonRoom> roomsById = roomsById(authoredRooms);

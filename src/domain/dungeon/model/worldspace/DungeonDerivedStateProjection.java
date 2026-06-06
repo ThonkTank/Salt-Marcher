@@ -14,6 +14,7 @@ import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryProjection;
+import src.domain.dungeon.model.core.projection.DungeonRoomBoundaryReadProjection;
 import src.domain.dungeon.model.core.projection.DungeonState;
 
 /**

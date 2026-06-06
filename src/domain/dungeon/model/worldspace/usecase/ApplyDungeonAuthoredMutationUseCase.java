@@ -4,10 +4,10 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonStair;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 
 public final class ApplyDungeonAuthoredMutationUseCase {
@@ -139,7 +139,7 @@ public final class ApplyDungeonAuthoredMutationUseCase {
 
     private static long nextPreviewStairId(DungeonMap current) {
         long highestStairId = 0L;
-        for (DungeonStair stair : current.connections().stairs()) {
+        for (Stair stair : current.connections().stairs().stairs()) {
             highestStairId = Math.max(highestStairId, stair.stairId());
         }
         return highestStairId + 1L;

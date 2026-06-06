@@ -69,8 +69,7 @@ final class DungeonClusterBoundaryEditLogic {
             boolean deleteBoundary
     ) {
         BoundaryKind resolvedKind = kind == null ? BoundaryKind.WALL : kind;
-        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries =
-                DungeonClusterBoundaryOrdering.boundaryMap(target.cluster());
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = target.cluster().boundaryMap();
         Map<Long, List<Cell>> roomCells = CELL_PROJECTOR.cellsByRoom(target.cluster(), target.rooms());
         boolean changed = false;
         for (Edge edge : edges) {
@@ -101,7 +100,7 @@ final class DungeonClusterBoundaryEditLogic {
                     candidate)
                     || changed;
         }
-        return new BoundaryEditResult(DungeonClusterBoundaryOrdering.boundariesByLevel(boundaries.values()), changed);
+        return new BoundaryEditResult(DungeonClusterBoundary.orderedByLevel(boundaries.values()), changed);
     }
 
     private boolean removeExistingBoundaryIfAllowed(

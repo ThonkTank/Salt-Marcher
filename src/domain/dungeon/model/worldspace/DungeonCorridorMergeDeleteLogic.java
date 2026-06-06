@@ -53,7 +53,7 @@ final class DungeonCorridorMergeDeleteLogic {
             return dungeonMap;
         }
         StairCollection withoutCorridorStairs =
-                DungeonStair.withoutCorridorBound(dungeonMap.connections().stairCollection(), corridorId);
+                dungeonMap.connections().stairs().withoutCorridorBoundStairs(corridorId);
         return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
                 dungeonMap,
                 new ConnectionCatalog(

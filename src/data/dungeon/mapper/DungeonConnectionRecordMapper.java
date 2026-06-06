@@ -1,12 +1,11 @@
 package src.data.dungeon.mapper;
 
+import java.util.List;
 import src.data.dungeon.model.DungeonCorridorRecord;
 import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonStairRecord;
 import src.data.dungeon.model.DungeonTransitionRecord;
 import src.domain.dungeon.model.worldspace.ConnectionCatalog;
-
-import java.util.List;
 
 final class DungeonConnectionRecordMapper {
 
@@ -27,7 +26,7 @@ final class DungeonConnectionRecordMapper {
 
     static List<DungeonStairRecord> toStairRecords(ConnectionCatalog connections) {
         return DungeonStairRecordMapperSupport.toStairRecords(
-                connections == null ? List.of() : connections.stairs());
+                connections == null ? null : connections.stairs());
     }
 
     static List<DungeonTransitionRecord> toTransitionRecords(ConnectionCatalog connections) {

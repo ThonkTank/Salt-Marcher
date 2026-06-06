@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.stair.Stair;
+import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
 /**
@@ -210,14 +212,14 @@ public final class DungeonEditorHandleMovementLogic {
             int deltaR,
             int deltaLevel
     ) {
-        List<DungeonStair> movedStairs = new ArrayList<>();
+        List<Stair> movedStairs = new ArrayList<>();
         boolean changed = false;
-        for (DungeonStair stair : dungeonMap.connections().stairs()) {
+        for (Stair stair : dungeonMap.connections().stairs().stairs()) {
             if (stair.stairId() != handle.ownerId()) {
                 movedStairs.add(stair);
                 continue;
             }
-            DungeonStair movedStair = stair.withMovedHandle(handle.index(), deltaQ, deltaR, deltaLevel);
+            Stair movedStair = stair.withMovedHandle(handle.index(), deltaQ, deltaR, deltaLevel);
             changed = changed || !movedStair.equals(stair);
             movedStairs.add(movedStair);
         }
@@ -226,7 +228,7 @@ public final class DungeonEditorHandleMovementLogic {
                 dungeonMap,
                 new ConnectionCatalog(
                         dungeonMap.connections().corridors(),
-                        movedStairs,
+                        new StairCollection(movedStairs),
                         dungeonMap.connections().transitions()))
                 : dungeonMap;
     }

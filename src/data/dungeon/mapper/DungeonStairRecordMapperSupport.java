@@ -8,36 +8,36 @@ import src.data.dungeon.model.DungeonStairRecord;
 import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.structure.stair.Stair;
+import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
-import src.domain.dungeon.model.worldspace.DungeonStair;
 
 final class DungeonStairRecordMapperSupport {
 
     private DungeonStairRecordMapperSupport() {
     }
 
-    static List<DungeonStair> toStairs(List<DungeonStairRecord> records) {
-        List<DungeonStair> result = new ArrayList<>();
+    static StairCollection toStairs(List<DungeonStairRecord> records) {
+        List<Stair> result = new ArrayList<>();
         for (DungeonStairRecord record : records == null ? List.<DungeonStairRecord>of() : records) {
-            result.add(new DungeonStair(
+            result.add(new Stair(
                     record.stairId(),
                     record.mapId(),
                     record.name(),
-                    new DungeonStair.Geometry(
-                            StairShape.parse(record.shape()),
-                            directionFromCode(record.direction()),
-                            record.dimension1(),
-                            record.dimension2(),
-                            toStairPath(record.pathNodes()),
-                            toStairExits(record.exits()),
-                            record.corridorId())));
+                    StairShape.parse(record.shape()),
+                    directionFromCode(record.direction()),
+                    record.dimension1(),
+                    record.dimension2(),
+                    toStairPath(record.pathNodes()),
+                    toStairExits(record.exits()),
+                    record.corridorId()));
         }
-        return List.copyOf(result);
+        return new StairCollection(result);
     }
 
-    static List<DungeonStairRecord> toStairRecords(List<DungeonStair> stairs) {
+    static List<DungeonStairRecord> toStairRecords(StairCollection stairs) {
         List<DungeonStairRecord> result = new ArrayList<>();
-        for (DungeonStair stair : stairs == null ? List.<DungeonStair>of() : stairs) {
+        for (Stair stair : stairs == null ? List.<Stair>of() : stairs.stairs()) {
             result.add(new DungeonStairRecord(
                     stair.stairId(),
                     stair.mapId(),

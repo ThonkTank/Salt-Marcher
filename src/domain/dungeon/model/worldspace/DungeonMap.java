@@ -10,7 +10,6 @@ import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
@@ -26,7 +25,6 @@ public record DungeonMap(
         long revision
 ) {
     private static final long NO_TRANSITION_ID = 0L;
-    private static final long NO_STAIR_ID = 0L;
 
     public DungeonMap(
             DungeonMapMetadata metadata,
@@ -60,6 +58,7 @@ public record DungeonMap(
     private static final DungeonEditorHandleMovementLogic HANDLE_MOVEMENT_SERVICE = new DungeonEditorHandleMovementLogic();
     private static final DungeonCorridorCreationLogic CORRIDOR_CREATION = new DungeonCorridorCreationLogic();
     private static final DungeonCorridorMergeDeleteLogic CORRIDOR_DELETION = new DungeonCorridorMergeDeleteLogic();
+    private static final StairRoomInteriorCells STAIR_ROOM_INTERIOR_CELLS = new StairRoomInteriorCells();
 
     public DungeonMap moveEditorHandle(
             DungeonEditorHandleMovement handle,
@@ -136,8 +135,18 @@ public record DungeonMap(
     }
 
     public DungeonMap withMapLocalAuthoredTransitionLink(AuthoredTransitionLink link) {
-        return withTransitionCatalogRevision(
+        ConnectionCatalog nextConnections = connections.withTransitions(
                 DungeonTransition.withMapLocalAuthoredTransitionLink(connections.transitionCatalog(), link));
+        if (nextConnections.equals(connections)) {
+            return this;
+        }
+        return new DungeonMap(
+                metadata,
+                topology,
+                null,
+                rooms,
+                nextConnections,
+                revision + 1L);
     }
 
     public DungeonMap deleteTransition(long transitionId) {
@@ -156,7 +165,7 @@ public record DungeonMap(
     }
 
     public boolean canDeleteStair(long stairId) {
-        return stairId > NO_STAIR_ID && DungeonStair.canDeleteUnbound(connections.stairCollection(), stairId);
+        return stairId > 0L && connections.stairs().canDeleteUnboundStair(stairId);
     }
 
     public DungeonMap deleteStair(long stairId) {
@@ -168,19 +177,17 @@ public record DungeonMap(
                 topology,
                 null,
                 rooms,
-                connections.withStairs(DungeonStair.withoutUnbound(connections.stairCollection(), stairId)),
+                connections.withStairs(connections.stairs().withoutUnboundStair(stairId)),
                 revision + 1L);
     }
 
     public DungeonMap createStair(long stairId, Cell anchor, String shapeName) {
-        ConnectionCatalog nextConnections = connections.withStairs(DungeonStair.withCreated(
-                connections.stairCollection(),
+        ConnectionCatalog nextConnections = connections.withStairs(connections.stairs().withAuthoredStair(
                 stairId,
                 metadata.mapId().value(),
                 anchor,
                 shapeName,
-                topology,
-                rooms));
+                STAIR_ROOM_INTERIOR_CELLS.from(topology, rooms)));
         if (nextConnections.equals(connections)) {
             return this;
         }
@@ -194,7 +201,10 @@ public record DungeonMap(
     }
 
     public boolean canCreateStair(Cell anchor, String shapeName) {
-        return DungeonStair.canCreate(connections.stairCollection(), anchor, shapeName, topology, rooms);
+        return connections.stairs().canCreateAuthoredStairGeometry(
+                anchor,
+                shapeName,
+                STAIR_ROOM_INTERIOR_CELLS.from(topology, rooms));
     }
 
     public DungeonMap createTransition(
@@ -249,15 +259,13 @@ public record DungeonMap(
             int dimension1,
             int dimension2
     ) {
-        return DungeonStair.canRecompute(
-                connections.stairCollection(),
+        return connections.stairs().canRecomputeAuthoredStair(
                 stairId,
                 shapeName,
                 directionName,
                 dimension1,
                 dimension2,
-                topology,
-                rooms);
+                STAIR_ROOM_INTERIOR_CELLS.from(topology, rooms));
     }
 
     public DungeonMap saveStairGeometry(
@@ -270,29 +278,13 @@ public record DungeonMap(
         if (!canSaveStairGeometry(stairId, shapeName, directionName, dimension1, dimension2)) {
             return this;
         }
-        ConnectionCatalog nextConnections = connections.withStairs(DungeonStair.withRecomputed(
-                connections.stairCollection(),
+        ConnectionCatalog nextConnections = connections.withStairs(connections.stairs().withRecomputedAuthoredStair(
                 stairId,
                 shapeName,
                 directionName,
                 dimension1,
                 dimension2,
-                topology,
-                rooms));
-        if (nextConnections.equals(connections)) {
-            return this;
-        }
-        return new DungeonMap(
-                metadata,
-                topology,
-                null,
-                rooms,
-                nextConnections,
-                revision + 1L);
-    }
-
-    private DungeonMap withTransitionCatalogRevision(TransitionCatalog nextTransitions) {
-        ConnectionCatalog nextConnections = connections.withTransitions(nextTransitions);
+                STAIR_ROOM_INTERIOR_CELLS.from(topology, rooms)));
         if (nextConnections.equals(connections)) {
             return this;
         }
