@@ -1,11 +1,11 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.corridor;
 
 import src.domain.dungeon.model.core.component.CorridorDoorBinding;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
-public record DungeonCorridorDoorBinding(
+public record CorridorDoorBindingState(
         long roomId,
         long clusterId,
         Cell relativeCell,
@@ -13,7 +13,7 @@ public record DungeonCorridorDoorBinding(
         DungeonTopologyRef topologyRef
 ) {
 
-    public DungeonCorridorDoorBinding {
+    public CorridorDoorBindingState {
         CorridorDoorBinding binding = new CorridorDoorBinding(
                 roomId,
                 clusterId,
@@ -26,7 +26,7 @@ public record DungeonCorridorDoorBinding(
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
-    CorridorDoorBinding toCore() {
+    public CorridorDoorBinding toCore() {
         return new CorridorDoorBinding(roomId, clusterId, relativeCell, direction);
     }
 }

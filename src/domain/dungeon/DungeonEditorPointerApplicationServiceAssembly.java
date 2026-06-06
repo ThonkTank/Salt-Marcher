@@ -85,13 +85,13 @@ final class DungeonEditorPointerApplicationServiceAssembly {
                         runtime.workflow(),
                         runtime.authoredUseCases().deleteStairUseCase(),
                         runtime.effectUseCase());
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorCreateTransitionUseCase createTransition =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorCreateTransitionUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateTransitionUseCase createTransition =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateTransitionUseCase(
                         runtime.workflow(),
                         runtime.authoredUseCases().createTransitionUseCase(),
                         runtime.effectUseCase());
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteTransitionUseCase deleteTransition =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorDeleteTransitionUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteTransitionUseCase deleteTransition =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteTransitionUseCase(
                         runtime.workflow(),
                         runtime.authoredUseCases().deleteTransitionUseCase(),
                         runtime.effectUseCase());

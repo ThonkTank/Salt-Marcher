@@ -1,17 +1,17 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.corridor;
 
 import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
-public record DungeonCorridorAnchorBinding(
+public record CorridorAnchorBinding(
         long anchorId,
         long hostCorridorId,
         Cell absoluteCell,
         DungeonTopologyRef topologyRef
 ) {
 
-    public DungeonCorridorAnchorBinding {
+    public CorridorAnchorBinding {
         CorridorAnchor anchor = new CorridorAnchor(
                 anchorId,
                 hostCorridorId,
@@ -22,10 +22,10 @@ public record DungeonCorridorAnchorBinding(
         topologyRef = topologyRef == null || !topologyRef.present() ? DungeonTopologyRef.corridorAnchor(anchorId) : topologyRef;
     }
 
-    public DungeonCorridorAnchorBinding withAbsoluteCell(Cell nextCell) {
+    public CorridorAnchorBinding withAbsoluteCell(Cell nextCell) {
         CorridorAnchor moved = new CorridorAnchor(anchorId, hostCorridorId, absoluteCell)
                 .withPosition(nextCell == null ? new Cell(0, 0, 0) : nextCell);
-        return new DungeonCorridorAnchorBinding(
+        return new CorridorAnchorBinding(
                 moved.anchorId(),
                 moved.hostCorridorId(),
                 moved.position(),

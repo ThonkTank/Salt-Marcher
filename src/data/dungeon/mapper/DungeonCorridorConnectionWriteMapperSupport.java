@@ -10,8 +10,8 @@ import src.data.dungeon.model.DungeonCorridorWaypointRecord;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
-import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 
 final class DungeonCorridorConnectionWriteMapperSupport {
 
@@ -53,11 +53,11 @@ final class DungeonCorridorConnectionWriteMapperSupport {
 
     private static List<DungeonCorridorDoorBindingRecord> toDoorBindingRecords(
             long corridorId,
-            List<DungeonCorridorDoorBinding> doorBindings
+            List<CorridorDoorBindingState> doorBindings
     ) {
         List<DungeonCorridorDoorBindingRecord> result = new ArrayList<>();
-        for (DungeonCorridorDoorBinding binding
-                : doorBindings == null ? List.<DungeonCorridorDoorBinding>of() : doorBindings) {
+        for (CorridorDoorBindingState binding
+                : doorBindings == null ? List.<CorridorDoorBindingState>of() : doorBindings) {
             result.add(new DungeonCorridorDoorBindingRecord(
                     corridorId,
                     binding.roomId(),
@@ -72,11 +72,11 @@ final class DungeonCorridorConnectionWriteMapperSupport {
 
     private static List<DungeonCorridorAnchorBindingRecord> toAnchorBindingRecords(
             long corridorId,
-            List<DungeonCorridorAnchorBinding> anchorBindings
+            List<CorridorAnchorBinding> anchorBindings
     ) {
         List<DungeonCorridorAnchorBindingRecord> result = new ArrayList<>();
-        for (DungeonCorridorAnchorBinding binding
-                : anchorBindings == null ? List.<DungeonCorridorAnchorBinding>of() : anchorBindings) {
+        for (CorridorAnchorBinding binding
+                : anchorBindings == null ? List.<CorridorAnchorBinding>of() : anchorBindings) {
             result.add(new DungeonCorridorAnchorBindingRecord(
                     corridorId,
                     binding.anchorId(),

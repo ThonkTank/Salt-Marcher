@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
@@ -6,19 +6,25 @@ import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase;
+import src.domain.dungeon.model.worldspace.usecase.LoadDungeonMapUseCase;
+import src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredMutationUseCase;
 
 public final class CreateDungeonEditorAuthoredTransitionUseCase {
 
-    private final ApplyDungeonAuthoredMutationUseCase mutationUseCase;
+    private final ApplyDungeonEditorOperationUseCase operationUseCase;
+    private final LoadDungeonMapUseCase loadDungeonMapUseCase;
     private final PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase;
     private final DungeonMapRepository repository;
 
     public CreateDungeonEditorAuthoredTransitionUseCase(
-            ApplyDungeonAuthoredMutationUseCase mutationUseCase,
+            ApplyDungeonEditorOperationUseCase operationUseCase,
+            LoadDungeonMapUseCase loadDungeonMapUseCase,
             PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase,
             DungeonMapRepository repository
     ) {
-        this.mutationUseCase = Objects.requireNonNull(mutationUseCase, "mutationUseCase");
+        this.operationUseCase = Objects.requireNonNull(operationUseCase, "operationUseCase");
+        this.loadDungeonMapUseCase = Objects.requireNonNull(loadDungeonMapUseCase, "loadDungeonMapUseCase");
         this.publishMutationUseCase = Objects.requireNonNull(publishMutationUseCase, "publishMutationUseCase");
         this.repository = Objects.requireNonNull(repository, "repository");
     }
@@ -28,7 +34,7 @@ public final class CreateDungeonEditorAuthoredTransitionUseCase {
         Objects.requireNonNull(anchor, "anchor");
         Objects.requireNonNull(destination, "destination");
         long transitionId = repository.nextTransitionId();
-        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.apply(
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = operationUseCase.execute(
                 domainMapId(mapId),
                 current -> current.withTransitionCatalog(current.transitionCatalog().withCreated(
                         transitionId,
@@ -42,7 +48,7 @@ public final class CreateDungeonEditorAuthoredTransitionUseCase {
         return mapId != null
                 && anchor != null
                 && destination != null
-                && mutationUseCase.canCreateTransition(domainMapId(mapId), anchor, destination);
+                && loadDungeonMapUseCase.execute(domainMapId(mapId)).transitionCatalog().canCreate(anchor, destination);
     }
 
     private static DungeonMapIdentity domainMapId(MapId mapId) {

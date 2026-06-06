@@ -2,10 +2,8 @@ package src.domain.dungeon.model.worldspace.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.stair.Stair;
-import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
@@ -29,21 +27,6 @@ public final class ApplyDungeonAuthoredMutationUseCase {
             @Nullable DungeonEditorAuthoredOperation operation
     ) {
         return applyDungeonEditorOperationUseCase.execute(mapId, mutation(operation, true));
-    }
-
-    ApplyDungeonEditorOperationUseCase.OperationResultData apply(
-            @Nullable DungeonMapIdentity mapId,
-            ApplyDungeonEditorOperationUseCase.Mutation mutation
-    ) {
-        return applyDungeonEditorOperationUseCase.execute(mapId, mutation);
-    }
-
-    boolean canCreateTransition(
-            @Nullable DungeonMapIdentity mapId,
-            @Nullable Cell anchor,
-            @Nullable TransitionDestination destination
-    ) {
-        return applyDungeonEditorOperationUseCase.canCreateTransition(mapId, anchor, destination);
     }
 
     public ApplyDungeonEditorOperationUseCase.OperationResultData preview(

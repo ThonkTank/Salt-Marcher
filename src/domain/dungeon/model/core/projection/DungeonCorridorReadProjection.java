@@ -8,7 +8,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
-import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 
@@ -33,7 +33,7 @@ public final class DungeonCorridorReadProjection {
         DungeonCorridorProjectionAssembler result =
                 new DungeonCorridorProjectionAssembler(boundaryIdCursor, existingDoorIdsByKey);
         Set<Cell> allRoomCells = allRoomCells(roomCellsByRoom);
-        Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef =
+        Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef =
                 ENDPOINT_RESOLVER.anchorBindingsByRef(corridors);
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
             if (corridor == null || !corridor.isReadable()) {

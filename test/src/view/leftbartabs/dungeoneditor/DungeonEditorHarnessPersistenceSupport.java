@@ -1,0 +1,2234 @@
+package src.view.leftbartabs.dungeoneditor;
+
+import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import src.data.dungeon.model.DungeonPersistenceSchema;
+import src.data.dungeon.repository.SqliteDungeonMapRepository;
+import src.domain.dungeon.DungeonServiceContribution;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
+import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
+import src.domain.dungeon.model.worldspace.DungeonRoomCellProjection;
+import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.published.DungeonEditorControlsModel;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
+import src.domain.dungeon.published.DungeonEditorStateModel;
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
+import shell.api.ServiceRegistry;
+import shell.api.ShellRuntimeContext;
+
+class DungeonEditorHarnessPersistenceSupport {
+
+    @FunctionalInterface
+    interface DatabaseFixtureSeeder {
+        void seed(DatabaseAssertions database);
+    }
+
+
+
+
+
+
+
+
+    record RoomClusterIds(long roomId, long clusterId) {
+    }
+
+    record HarnessRuntime(
+            ShellRuntimeContext context,
+            DungeonEditorControlsModel controlsModel,
+            DungeonEditorMapSurfaceModel mapSurfaceModel,
+            DungeonEditorStateModel stateModel,
+            DatabaseAssertions database
+    ) {
+        static HarnessRuntime create() {
+            DatabaseAssertions database = new DatabaseAssertions();
+            database.clearDungeonData();
+            ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
+            builder.register(DungeonMapRepository.class, new SqliteDungeonMapRepository());
+            builder.register(TravelPartyStateRepository.class, new EmptyTravelPartyStateRepository());
+            builder.register(TravelPartyPositionRepository.class, new EmptyTravelPartyPositionRepository());
+            new DungeonServiceContribution().register(builder);
+            ServiceRegistry registry = builder.build();
+            return new HarnessRuntime(
+                    new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, registry),
+                    registry.require(DungeonEditorControlsModel.class),
+                    registry.require(DungeonEditorMapSurfaceModel.class),
+                    registry.require(DungeonEditorStateModel.class),
+                    database);
+        }
+    }
+
+    enum EmptyInspectorSink implements InspectorSink {
+        INSTANCE;
+
+        @Override
+        public void push(InspectorEntrySpec entry) {
+        }
+
+        @Override
+        public void clear() {
+        }
+
+        @Override
+        public boolean isShowing(Object entryKey) {
+            return false;
+        }
+    }
+
+    static final class EmptyTravelPartyStateRepository implements TravelPartyStateRepository {
+        @Override
+        public TravelDungeonActiveState.ActiveTravelStateData loadActiveTravelState() {
+            return new TravelDungeonActiveState.ActiveTravelStateData(List.of(), null);
+        }
+    }
+
+    static final class EmptyTravelPartyPositionRepository implements TravelPartyPositionRepository {
+        @Override
+        public boolean saveDungeonPosition(
+                TravelDungeonSessionSurface.PositionData position,
+                List<Long> characterIds
+        ) {
+            return false;
+        }
+
+        @Override
+        public boolean saveOverworldPosition(
+                TravelDungeonSessionValues.OverworldTarget target,
+                List<Long> characterIds
+        ) {
+            return false;
+        }
+    }
+
+    static final class DatabaseAssertions {
+        final Path databasePath;
+
+        DatabaseAssertions() {
+            String xdgDataHome = System.getenv("XDG_DATA_HOME");
+            if (xdgDataHome == null || xdgDataHome.isBlank()) {
+                throw new IllegalStateException("XDG_DATA_HOME must isolate the Dungeon Editor behavior DB.");
+            }
+            databasePath = Path.of(xdgDataHome, "salt-marcher", DungeonPersistenceSchema.DATABASE_FILE_NAME);
+        }
+
+        long countMapsNamed(String mapName) {
+            return count("SELECT COUNT(*) FROM dungeon_maps WHERE name=?", mapName);
+        }
+
+        void clearDungeonData() {
+            try (Connection connection = open();
+                 Statement statement = connection.createStatement()) {
+                statement.execute("PRAGMA foreign_keys=ON");
+                for (String createTableSql : DungeonPersistenceSchema.CREATE_TABLE_SQL) {
+                    statement.execute(createTableSql);
+                }
+                statement.executeUpdate("DELETE FROM dungeon_maps");
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to reset Dungeon Editor behavior DB.", exception);
+            }
+        }
+
+        long createPersistedMap(String mapName) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long mapId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_maps(name) VALUES(?)",
+                        mapName);
+                connection.commit();
+                return mapId;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to create persisted dungeon map fixture.", exception);
+            }
+        }
+
+        long countMapIdWithName(long mapId, String mapName) {
+            return count("SELECT COUNT(*) FROM dungeon_maps WHERE dungeon_map_id=? AND name=?", mapId, mapName);
+        }
+
+        long countAuthoredGeometryRows(long mapId) {
+            long rows = 0L;
+            rows += count("SELECT COUNT(*) FROM dungeon_rooms WHERE dungeon_map_id=?", mapId);
+            rows += count("SELECT COUNT(*) FROM dungeon_room_clusters WHERE dungeon_map_id=?", mapId);
+            rows += count("SELECT COUNT(*) FROM dungeon_room_floors WHERE room_id IN ("
+                    + "SELECT room_id FROM dungeon_rooms WHERE dungeon_map_id=?)", mapId);
+            rows += count("SELECT COUNT(*) FROM dungeon_room_cluster_vertices WHERE cluster_id IN ("
+                    + "SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)", mapId);
+            rows += count("SELECT COUNT(*) FROM dungeon_room_cluster_edges WHERE cluster_id IN ("
+                    + "SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)", mapId);
+            rows += count("SELECT COUNT(*) FROM dungeon_corridors WHERE dungeon_map_id=?", mapId);
+            rows += count("SELECT COUNT(*) FROM dungeon_topology_elements WHERE dungeon_map_id=?", mapId);
+            rows += count("SELECT COUNT(*) FROM dungeon_stairs WHERE dungeon_map_id=?", mapId);
+            rows += count("SELECT COUNT(*) FROM dungeon_transitions WHERE dungeon_map_id=?", mapId);
+            return rows;
+        }
+
+        long countRoomsForMap(long mapId) {
+            return count("SELECT COUNT(*) FROM dungeon_rooms WHERE dungeon_map_id=?", mapId);
+        }
+
+        long countRoomClustersForMap(long mapId) {
+            return count("SELECT COUNT(*) FROM dungeon_room_clusters WHERE dungeon_map_id=?", mapId);
+        }
+
+        long countClusterVertexRows(long mapId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_vertices WHERE cluster_id IN ("
+                            + "SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)",
+                    mapId);
+        }
+
+        Set<Long> corridorIdsForMap(long mapId) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT corridor_id FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id")) {
+                bind(statement, mapId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    Set<Long> ids = new LinkedHashSet<>();
+                    while (resultSet.next()) {
+                        ids.add(resultSet.getLong("corridor_id"));
+                    }
+                    return ids;
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to read corridor ids.", exception);
+            }
+        }
+
+        long countClusterEdges(long clusterId) {
+            return count("SELECT COUNT(*) FROM dungeon_room_cluster_edges WHERE cluster_id=?", clusterId);
+        }
+
+        long countWallBoundariesForDirection(long mapId, String direction) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row"
+                            + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
+                            + " WHERE cluster_row.dungeon_map_id=?"
+                            + " AND edge_row.edge_direction=?"
+                            + " AND edge_row.edge_type='WALL'",
+                    mapId,
+                    direction);
+        }
+
+        long countWallBoundaryRows(long mapId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row"
+                            + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
+                            + " WHERE cluster_row.dungeon_map_id=?"
+                            + " AND edge_row.edge_type='WALL'",
+                    mapId);
+        }
+
+        long countDistinctWallBoundaryTopologyRefs(long mapId) {
+            return count(
+                    "SELECT COUNT(DISTINCT edge_row.topology_element_id)"
+                            + " FROM dungeon_room_cluster_edges edge_row"
+                            + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
+                            + " WHERE cluster_row.dungeon_map_id=?"
+                            + " AND edge_row.edge_type='WALL'"
+                            + " AND edge_row.topology_element_id IS NOT NULL",
+                    mapId);
+        }
+
+        long countUnreferencedWallTopologyElements(long mapId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_topology_elements topology_row"
+                            + " WHERE topology_row.dungeon_map_id=?"
+                            + " AND topology_row.element_kind='WALL'"
+                            + " AND NOT EXISTS ("
+                            + " SELECT 1 FROM dungeon_room_cluster_edges edge_row"
+                            + " JOIN dungeon_room_clusters cluster_row"
+                            + " ON cluster_row.cluster_id=edge_row.cluster_id"
+                            + " WHERE cluster_row.dungeon_map_id=topology_row.dungeon_map_id"
+                            + " AND edge_row.topology_element_id=topology_row.element_id"
+                            + " AND edge_row.edge_type='WALL')",
+                    mapId);
+        }
+
+        Set<String> wallBoundaryAbsoluteRowsForDirection(long mapId, String direction) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT cluster_row.center_x + edge_row.cell_x AS absolute_x,"
+                                 + " cluster_row.center_y + edge_row.cell_y AS absolute_y,"
+                                 + " edge_row.level_z, edge_row.edge_direction, edge_row.edge_type"
+                                 + " FROM dungeon_room_cluster_edges edge_row"
+                                 + " JOIN dungeon_room_clusters cluster_row"
+                                 + " ON cluster_row.cluster_id=edge_row.cluster_id"
+                                 + " WHERE cluster_row.dungeon_map_id=?"
+                                 + " AND edge_row.edge_direction=?"
+                                 + " AND edge_row.edge_type='WALL'"
+                                 + " ORDER BY edge_row.level_z, absolute_x, absolute_y")) {
+                bind(statement, mapId, direction);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    Set<String> rows = new LinkedHashSet<>();
+                    while (resultSet.next()) {
+                        rows.add("cell=" + resultSet.getInt("absolute_x")
+                                + ","
+                                + resultSet.getInt("absolute_y")
+                                + ","
+                                + resultSet.getInt("level_z")
+                                + ",direction=" + resultSet.getString("edge_direction")
+                                + ",type=" + resultSet.getString("edge_type"));
+                    }
+                    return rows;
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to read absolute wall boundary rows.", exception);
+            }
+        }
+
+        long countOpenBoundariesForDirection(long mapId, String direction) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row"
+                            + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
+                            + " WHERE cluster_row.dungeon_map_id=?"
+                            + " AND edge_row.edge_direction=?"
+                            + " AND edge_row.edge_type='OPEN'"
+                            + " AND edge_row.topology_element_id IS NULL",
+                    mapId,
+                    direction);
+        }
+
+        long countInternalWallBoundaries(long clusterId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges"
+                            + " WHERE cluster_id=?"
+                            + " AND cell_x=-1"
+                            + " AND cell_y IN (-1, 0, 1)"
+                            + " AND edge_direction='EAST'"
+                            + " AND edge_type='WALL'"
+                            + " AND topology_element_id IS NOT NULL",
+                    clusterId);
+        }
+
+        List<String> openBoundaryRowsForDirection(long clusterId, String direction) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT level_z, cell_x, cell_y, edge_direction, edge_type, topology_element_id"
+                                 + " FROM dungeon_room_cluster_edges"
+                                 + " WHERE cluster_id=? AND edge_direction=? AND edge_type='OPEN'"
+                                 + " ORDER BY level_z, cell_x, cell_y, edge_direction")) {
+                bind(statement, clusterId, direction);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    List<String> rows = new ArrayList<>();
+                    while (resultSet.next()) {
+                        rows.add("level_z=" + resultSet.getInt("level_z")
+                                + ",cell_x=" + resultSet.getInt("cell_x")
+                                + ",cell_y=" + resultSet.getInt("cell_y")
+                                + ",edge_direction=" + resultSet.getString("edge_direction")
+                                + ",edge_type=" + resultSet.getString("edge_type")
+                                + ",topology_element_id="
+                                + Objects.toString(resultSet.getObject("topology_element_id"), "<null>"));
+                    }
+                    return rows;
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to read open boundary rows.", exception);
+            }
+        }
+
+        long countWallTopologyElementsForDirection(long mapId, String direction) {
+            List<Long> topologyElementIds = wallTopologyElementIdsForDirection(direction);
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_topology_elements topology_row"
+                            + " WHERE topology_row.dungeon_map_id=?"
+                            + " AND topology_row.element_kind='WALL'"
+                            + " AND topology_row.element_id IN (?, ?, ?)",
+                    mapId,
+                    topologyElementIds.get(0),
+                    topologyElementIds.get(1),
+                    topologyElementIds.get(2));
+        }
+
+        long countInternalWallTopologyElements(long mapId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_topology_elements topology_row"
+                            + " WHERE topology_row.dungeon_map_id=?"
+                            + " AND topology_row.element_kind='WALL'"
+                            + " AND topology_row.element_id IN (?, ?, ?)",
+                    mapId,
+                    wallTopologyElementId(2, 2, 0, -1, -1, "EAST"),
+                    wallTopologyElementId(2, 2, 0, -1, 0, "EAST"),
+                    wallTopologyElementId(2, 2, 0, -1, 1, "EAST"));
+        }
+
+        static List<Long> wallTopologyElementIdsForDirection(String direction) {
+            if ("NORTH".equals(direction) || "SOUTH".equals(direction)) {
+                int relativeY = "NORTH".equals(direction) ? -1 : 1;
+                return List.of(
+                        wallTopologyElementId(2, 2, 0, -1, relativeY, direction),
+                        wallTopologyElementId(2, 2, 0, 0, relativeY, direction),
+                        wallTopologyElementId(2, 2, 0, 1, relativeY, direction));
+            }
+            if ("WEST".equals(direction) || "EAST".equals(direction)) {
+                int relativeX = "WEST".equals(direction) ? -1 : 1;
+                return List.of(
+                        wallTopologyElementId(2, 2, 0, relativeX, -1, direction),
+                        wallTopologyElementId(2, 2, 0, relativeX, 0, direction),
+                        wallTopologyElementId(2, 2, 0, relativeX, 1, direction));
+            }
+            throw new IllegalArgumentException("Unsupported wall direction: " + direction);
+        }
+
+        Set<String> roomFloorCells(long roomId) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT anchor_x, anchor_y, level_z"
+                                 + " FROM dungeon_room_floors WHERE room_id=?"
+                                 + " ORDER BY level_z, anchor_x, anchor_y")) {
+                statement.setLong(1, roomId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    Set<String> cells = new LinkedHashSet<>();
+                    while (resultSet.next()) {
+                        cells.add(resultSet.getInt("anchor_x")
+                                + ","
+                                + resultSet.getInt("anchor_y")
+                                + ","
+                                + resultSet.getInt("level_z"));
+                    }
+                    return cells;
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to read room floor cells.", exception);
+            }
+        }
+
+        long clusterIdByCenter(long mapId, int centerX, int centerY, int level) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT cluster_id FROM dungeon_room_clusters"
+                                 + " WHERE dungeon_map_id=? AND center_x=? AND center_y=? AND level_z=?")) {
+                bind(statement, mapId, centerX, centerY, level);
+                return scalar(statement);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to find room cluster by center.", exception);
+            }
+        }
+
+        long countClustersAtCenter(long mapId, int centerX, int centerY, int level) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_room_clusters"
+                            + " WHERE dungeon_map_id=? AND center_x=? AND center_y=? AND level_z=?",
+                    mapId,
+                    centerX,
+                    centerY,
+                    level);
+        }
+
+        RoomClusterIds roomByComponent(long mapId, int componentX, int componentY, int level) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT room_id, cluster_id FROM dungeon_rooms"
+                                 + " WHERE dungeon_map_id=? AND component_x=? AND component_y=? AND level_z=?")) {
+                bind(statement, mapId, componentX, componentY, level);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) {
+                        throw new SQLException("No room found by component cell.");
+                    }
+                    RoomClusterIds ids = new RoomClusterIds(resultSet.getLong("room_id"), resultSet.getLong("cluster_id"));
+                    if (resultSet.next()) {
+                        throw new SQLException("Multiple rooms found by component cell.");
+                    }
+                    return ids;
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to find room by component cell.", exception);
+            }
+        }
+
+        List<String> roomClusterState(long mapId, String roomName) {
+            RoomClusterIds ids = roomByName(mapId, roomName);
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_rooms",
+                        "SELECT room_id, dungeon_map_id, cluster_id, name, visual_description,"
+                                + " component_x, component_y, level_z"
+                                + " FROM dungeon_rooms WHERE room_id=? ORDER BY room_id",
+                        ids.roomId());
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_room_clusters",
+                        "SELECT cluster_id, dungeon_map_id, center_x, center_y, level_z"
+                                + " FROM dungeon_room_clusters WHERE cluster_id=? ORDER BY cluster_id",
+                        ids.clusterId());
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_room_floors",
+                        "SELECT room_id, level_z, anchor_x, anchor_y"
+                                + " FROM dungeon_room_floors WHERE room_id=? ORDER BY level_z",
+                        ids.roomId());
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_room_cluster_vertices",
+                        "SELECT cluster_id, level_z, vertex_index, relative_x, relative_y"
+                                + " FROM dungeon_room_cluster_vertices WHERE cluster_id=?"
+                                + " ORDER BY level_z, vertex_index",
+                        ids.clusterId());
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_room_cluster_edges",
+                        "SELECT cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type, topology_element_id"
+                                + " FROM dungeon_room_cluster_edges WHERE cluster_id=?"
+                                + " ORDER BY level_z, cell_x, cell_y, edge_direction",
+                        ids.clusterId());
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_topology_elements",
+                        "SELECT dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order"
+                                + " FROM dungeon_topology_elements"
+                                + " WHERE dungeon_map_id=? AND cluster_id=?"
+                                + " ORDER BY element_kind, element_id",
+                        mapId,
+                        ids.clusterId());
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot room/cluster state.", exception);
+            }
+        }
+
+        RoomClusterIds roomByName(long mapId, String roomName) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT room_id, cluster_id FROM dungeon_rooms WHERE dungeon_map_id=? AND name=?")) {
+                bind(statement, mapId, roomName);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) {
+                        throw new SQLException("No room found by name: " + roomName);
+                    }
+                    RoomClusterIds ids = new RoomClusterIds(resultSet.getLong("room_id"), resultSet.getLong("cluster_id"));
+                    if (resultSet.next()) {
+                        throw new SQLException("Multiple rooms found by name: " + roomName);
+                    }
+                    return ids;
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to find room by name.", exception);
+            }
+        }
+
+        Set<String> absoluteClusterVertices(long clusterId) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT cluster_row.center_x + vertex_row.relative_x AS absolute_x,"
+                                 + " cluster_row.center_y + vertex_row.relative_y AS absolute_y,"
+                                 + " vertex_row.level_z AS level_z"
+                                 + " FROM dungeon_room_cluster_vertices vertex_row"
+                                 + " JOIN dungeon_room_clusters cluster_row"
+                                 + " ON cluster_row.cluster_id=vertex_row.cluster_id"
+                                 + " WHERE vertex_row.cluster_id=?"
+                                 + " ORDER BY vertex_row.level_z, vertex_row.vertex_index")) {
+                statement.setLong(1, clusterId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    Set<String> vertices = new LinkedHashSet<>();
+                    while (resultSet.next()) {
+                        vertices.add(resultSet.getInt("absolute_x")
+                                + ","
+                                + resultSet.getInt("absolute_y")
+                                + ","
+                                + resultSet.getInt("level_z"));
+                    }
+                    return vertices;
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to read absolute cluster vertices.", exception);
+            }
+        }
+
+        long countRoomVisualDescription(long roomId, String visualDescription) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_rooms WHERE room_id=? AND visual_description=?",
+                    roomId,
+                    visualDescription);
+        }
+
+        long countRoomExitDescription(
+                long roomId,
+                int cellX,
+                int cellY,
+                String direction,
+                String description
+        ) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_room_exit_descriptions"
+                            + " WHERE room_id=? AND cell_x=? AND cell_y=? AND edge_direction=? AND description=?",
+                    roomId,
+                    cellX,
+                    cellY,
+                    direction,
+                    description);
+        }
+
+        long countDoorBoundariesAt(long mapId, int relativeCellX, int relativeCellY, String direction) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges edge_row"
+                            + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
+                            + " JOIN dungeon_topology_elements topology_row"
+                            + " ON topology_row.dungeon_map_id=cluster_row.dungeon_map_id"
+                            + " AND topology_row.element_kind='DOOR'"
+                            + " AND topology_row.element_id=edge_row.topology_element_id"
+                            + " WHERE cluster_row.dungeon_map_id=?"
+                            + " AND edge_row.cell_x=?"
+                            + " AND edge_row.cell_y=?"
+                            + " AND edge_row.edge_direction=?"
+                            + " AND edge_row.edge_type='DOOR'",
+                    mapId,
+                    relativeCellX,
+                    relativeCellY,
+                    direction);
+        }
+
+        List<String> authoredGeometryState(long mapId) {
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_rooms",
+                        "SELECT room_id, dungeon_map_id, cluster_id, name, visual_description,"
+                                + " component_x, component_y, level_z"
+                                + " FROM dungeon_rooms WHERE dungeon_map_id=? ORDER BY room_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_room_clusters",
+                        "SELECT cluster_id, dungeon_map_id, center_x, center_y, level_z"
+                                + " FROM dungeon_room_clusters WHERE dungeon_map_id=? ORDER BY cluster_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_room_floors",
+                        "SELECT room_floor.room_id, room_floor.level_z, room_floor.anchor_x, room_floor.anchor_y"
+                                + " FROM dungeon_room_floors room_floor"
+                                + " JOIN dungeon_rooms room ON room.room_id=room_floor.room_id"
+                                + " WHERE room.dungeon_map_id=?"
+                                + " ORDER BY room_floor.room_id, room_floor.level_z",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_room_cluster_vertices",
+                        "SELECT vertex_row.cluster_id, vertex_row.level_z, vertex_row.vertex_index,"
+                                + " vertex_row.relative_x, vertex_row.relative_y"
+                                + " FROM dungeon_room_cluster_vertices vertex_row"
+                                + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=vertex_row.cluster_id"
+                                + " WHERE cluster_row.dungeon_map_id=?"
+                                + " ORDER BY vertex_row.cluster_id, vertex_row.level_z, vertex_row.vertex_index",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_room_cluster_edges",
+                        "SELECT edge_row.cluster_id, edge_row.level_z, edge_row.cell_x, edge_row.cell_y,"
+                                + " edge_row.edge_direction, edge_row.edge_type, edge_row.topology_element_id"
+                                + " FROM dungeon_room_cluster_edges edge_row"
+                                + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
+                                + " WHERE cluster_row.dungeon_map_id=?"
+                                + " ORDER BY edge_row.cluster_id, edge_row.level_z, edge_row.cell_x,"
+                                + " edge_row.cell_y, edge_row.edge_direction",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridors",
+                        "SELECT corridor_id, dungeon_map_id, level_z"
+                                + " FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridor_members",
+                        "SELECT member_row.corridor_id, member_row.room_id, member_row.member_order"
+                                + " FROM dungeon_corridor_members member_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=member_row.corridor_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY member_row.corridor_id, member_row.member_order, member_row.room_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_topology_elements",
+                        "SELECT dungeon_map_id, element_kind, element_id, cluster_id,"
+                                + " corridor_id, label, sort_order"
+                                + " FROM dungeon_topology_elements WHERE dungeon_map_id=?"
+                                + " ORDER BY element_kind, element_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridor_door_overrides",
+                        "SELECT override_row.corridor_id, override_row.room_id, override_row.cluster_id,"
+                                + " override_row.relative_cell_x, override_row.relative_cell_y,"
+                                + " override_row.edge_direction, override_row.topology_element_id,"
+                                + " override_row.sort_order"
+                                + " FROM dungeon_corridor_door_overrides override_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=override_row.corridor_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY override_row.corridor_id, override_row.sort_order,"
+                                + " override_row.room_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridor_anchors",
+                        "SELECT anchor_row.corridor_id, anchor_row.anchor_id,"
+                                + " anchor_row.host_corridor_id, anchor_row.cell_x, anchor_row.cell_y,"
+                                + " anchor_row.cell_z, anchor_row.topology_element_id, anchor_row.sort_order"
+                                + " FROM dungeon_corridor_anchors anchor_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=anchor_row.corridor_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY anchor_row.corridor_id, anchor_row.sort_order, anchor_row.anchor_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridor_anchor_refs",
+                        "SELECT ref_row.corridor_id, ref_row.host_corridor_id,"
+                                + " ref_row.topology_element_id"
+                                + " FROM dungeon_corridor_anchor_refs ref_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=ref_row.corridor_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY ref_row.corridor_id,"
+                                + " ref_row.topology_element_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridor_waypoints",
+                        "SELECT waypoint_row.corridor_id, waypoint_row.sort_order,"
+                                + " waypoint_row.cluster_id, waypoint_row.relative_x,"
+                                + " waypoint_row.relative_y, waypoint_row.relative_z"
+                                + " FROM dungeon_corridor_waypoints waypoint_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=waypoint_row.corridor_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY waypoint_row.corridor_id, waypoint_row.sort_order",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_room_exit_descriptions",
+                        "SELECT exit_row.room_id, exit_row.cell_x, exit_row.cell_y,"
+                                + " exit_row.edge_direction, exit_row.description, exit_row.sort_order"
+                                + " FROM dungeon_room_exit_descriptions exit_row"
+                                + " JOIN dungeon_rooms room_row ON room_row.room_id=exit_row.room_id"
+                                + " WHERE room_row.dungeon_map_id=?"
+                                + " ORDER BY exit_row.room_id, exit_row.sort_order, exit_row.cell_x,"
+                                + " exit_row.cell_y, exit_row.edge_direction",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_stairs",
+                        "SELECT stair_id, dungeon_map_id, name, shape, direction,"
+                                + " dimension1, dimension2, corridor_id"
+                                + " FROM dungeon_stairs WHERE dungeon_map_id=? ORDER BY stair_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_stair_path_nodes",
+                        "SELECT path_node.stair_id, path_node.sort_order, path_node.cell_x,"
+                                + " path_node.cell_y, path_node.cell_z"
+                                + " FROM dungeon_stair_path_nodes path_node"
+                                + " JOIN dungeon_stairs stair_row ON stair_row.stair_id=path_node.stair_id"
+                                + " WHERE stair_row.dungeon_map_id=?"
+                                + " ORDER BY path_node.stair_id, path_node.sort_order",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_stair_exits",
+                        "SELECT stair_exit.stair_exit_id, stair_exit.stair_id,"
+                                + " stair_exit.cell_x, stair_exit.cell_y, stair_exit.cell_z, stair_exit.label"
+                                + " FROM dungeon_stair_exits stair_exit"
+                                + " JOIN dungeon_stairs stair_row ON stair_row.stair_id=stair_exit.stair_id"
+                                + " WHERE stair_row.dungeon_map_id=?"
+                                + " ORDER BY stair_exit.stair_id, stair_exit.stair_exit_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_transitions",
+                        "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y,"
+                                + " level_z, destination_type, target_overworld_map_id,"
+                                + " target_overworld_tile_id, target_dungeon_map_id,"
+                                + " target_transition_id, linked_transition_id"
+                                + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id",
+                        mapId);
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot authored geometry DB state.", exception);
+            }
+        }
+
+        List<String> doorBoundaryState(long mapId) {
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "door_edges",
+                        "SELECT edge_row.cluster_id, edge_row.level_z, edge_row.cell_x, edge_row.cell_y,"
+                                + " edge_row.edge_direction, edge_row.edge_type, edge_row.topology_element_id"
+                                + " FROM dungeon_room_cluster_edges edge_row"
+                                + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
+                                + " WHERE cluster_row.dungeon_map_id=? AND edge_row.edge_type='DOOR'"
+                                + " ORDER BY edge_row.cluster_id, edge_row.cell_x, edge_row.cell_y,"
+                                + " edge_row.edge_direction",
+                        mapId);
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot door boundary DB state.", exception);
+            }
+        }
+
+        List<String> roomBoundaryEdgeState(long mapId) {
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_room_cluster_edges",
+                        "SELECT edge_row.cluster_id, edge_row.level_z, edge_row.cell_x, edge_row.cell_y,"
+                                + " edge_row.edge_direction, edge_row.edge_type, edge_row.topology_element_id"
+                                + " FROM dungeon_room_cluster_edges edge_row"
+                                + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=edge_row.cluster_id"
+                                + " WHERE cluster_row.dungeon_map_id=?"
+                                + " ORDER BY edge_row.cluster_id, edge_row.level_z, edge_row.cell_x,"
+                                + " edge_row.cell_y, edge_row.edge_direction",
+                        mapId);
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot room boundary DB state.", exception);
+            }
+        }
+
+        List<String> corridorAnchorState(long mapId) {
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridor_anchors",
+                        "SELECT anchor_row.corridor_id, anchor_row.anchor_id,"
+                                + " anchor_row.host_corridor_id, anchor_row.cell_x, anchor_row.cell_y,"
+                                + " anchor_row.cell_z, anchor_row.topology_element_id, anchor_row.sort_order"
+                                + " FROM dungeon_corridor_anchors anchor_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=anchor_row.corridor_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY anchor_row.corridor_id, anchor_row.anchor_id",
+                        mapId);
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot corridor anchor DB state.", exception);
+            }
+        }
+
+        long countCorridorAnchorsAt(long mapId, int cellX, int cellY, int cellZ) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_corridor_anchors anchor_row"
+                            + " JOIN dungeon_corridors corridor_row"
+                            + " ON corridor_row.corridor_id=anchor_row.corridor_id"
+                            + " WHERE corridor_row.dungeon_map_id=?"
+                            + " AND anchor_row.cell_x=? AND anchor_row.cell_y=? AND anchor_row.cell_z=?",
+                    mapId,
+                    cellX,
+                    cellY,
+                    cellZ);
+        }
+
+        List<String> corridorWaypointAbsoluteState(long mapId) {
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridor_waypoints",
+                        "SELECT waypoint_row.corridor_id, waypoint_row.sort_order,"
+                                + " cluster_row.center_x + waypoint_row.relative_x AS cell_x,"
+                                + " cluster_row.center_y + waypoint_row.relative_y AS cell_y,"
+                                + " waypoint_row.relative_z AS cell_z"
+                                + " FROM dungeon_corridor_waypoints waypoint_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=waypoint_row.corridor_id"
+                                + " JOIN dungeon_room_clusters cluster_row"
+                                + " ON cluster_row.cluster_id=waypoint_row.cluster_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY waypoint_row.corridor_id, waypoint_row.sort_order",
+                        mapId);
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot corridor waypoint absolute state.", exception);
+            }
+        }
+
+        List<String> corridorStableConnectionState(long mapId) {
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridors",
+                        "SELECT corridor_id, dungeon_map_id, level_z"
+                                + " FROM dungeon_corridors WHERE dungeon_map_id=? ORDER BY corridor_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridor_members",
+                        "SELECT member_row.corridor_id, member_row.room_id, member_row.member_order"
+                                + " FROM dungeon_corridor_members member_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=member_row.corridor_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY member_row.corridor_id, member_row.member_order, member_row.room_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridor_door_overrides",
+                        "SELECT override_row.corridor_id, override_row.room_id, override_row.cluster_id,"
+                                + " override_row.relative_cell_x, override_row.relative_cell_y,"
+                                + " override_row.edge_direction, override_row.topology_element_id,"
+                                + " override_row.sort_order"
+                                + " FROM dungeon_corridor_door_overrides override_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=override_row.corridor_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY override_row.corridor_id, override_row.sort_order,"
+                                + " override_row.room_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridor_anchor_refs",
+                        "SELECT ref_row.corridor_id, ref_row.host_corridor_id,"
+                                + " ref_row.topology_element_id"
+                                + " FROM dungeon_corridor_anchor_refs ref_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=ref_row.corridor_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY ref_row.corridor_id,"
+                                + " ref_row.topology_element_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_corridor_waypoints",
+                        "SELECT waypoint_row.corridor_id, waypoint_row.sort_order,"
+                                + " waypoint_row.cluster_id, waypoint_row.relative_x,"
+                                + " waypoint_row.relative_y, waypoint_row.relative_z"
+                                + " FROM dungeon_corridor_waypoints waypoint_row"
+                                + " JOIN dungeon_corridors corridor_row"
+                                + " ON corridor_row.corridor_id=waypoint_row.corridor_id"
+                                + " WHERE corridor_row.dungeon_map_id=?"
+                                + " ORDER BY waypoint_row.corridor_id, waypoint_row.sort_order",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_topology_elements",
+                        "SELECT dungeon_map_id, element_kind, element_id, cluster_id,"
+                                + " corridor_id, label"
+                                + " FROM dungeon_topology_elements WHERE dungeon_map_id=?"
+                                + " AND element_kind IN ('CORRIDOR', 'CORRIDOR_ANCHOR')"
+                                + " ORDER BY element_kind, element_id",
+                        mapId);
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot stable corridor connection DB state.", exception);
+            }
+        }
+
+        List<String> stairStableState(long mapId) {
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_stairs",
+                        "SELECT stair_id, dungeon_map_id, name, shape, direction,"
+                                + " dimension1, dimension2, corridor_id"
+                                + " FROM dungeon_stairs WHERE dungeon_map_id=? ORDER BY stair_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_topology_elements",
+                        "SELECT dungeon_map_id, element_kind, element_id, label"
+                                + " FROM dungeon_topology_elements"
+                                + " WHERE dungeon_map_id=? AND element_kind='STAIR'"
+                                + " ORDER BY element_kind, element_id",
+                        mapId);
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot stair stable DB state.", exception);
+            }
+        }
+
+        List<String> stairPathState(long mapId) {
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_stair_path_nodes",
+                        "SELECT path_node.stair_id, path_node.sort_order, path_node.cell_x,"
+                                + " path_node.cell_y, path_node.cell_z"
+                                + " FROM dungeon_stair_path_nodes path_node"
+                                + " JOIN dungeon_stairs stair_row ON stair_row.stair_id=path_node.stair_id"
+                                + " WHERE stair_row.dungeon_map_id=?"
+                                + " ORDER BY path_node.stair_id, path_node.sort_order",
+                        mapId);
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot stair path DB state.", exception);
+            }
+        }
+
+        long countStairPathRowsByStairId(long stairId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_stair_path_nodes WHERE stair_id=?",
+                    stairId);
+        }
+
+        List<String> stairExitState(long mapId) {
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_stair_exits",
+                        "SELECT stair_exit.stair_exit_id, stair_exit.stair_id,"
+                                + " stair_exit.cell_x, stair_exit.cell_y, stair_exit.cell_z, stair_exit.label"
+                                + " FROM dungeon_stair_exits stair_exit"
+                                + " JOIN dungeon_stairs stair_row ON stair_row.stair_id=stair_exit.stair_id"
+                                + " WHERE stair_row.dungeon_map_id=?"
+                                + " ORDER BY stair_exit.stair_id, stair_exit.stair_exit_id",
+                        mapId);
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot stair exit DB state.", exception);
+            }
+        }
+
+        long countStairExitRowsByStairId(long stairId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_stair_exits WHERE stair_id=?",
+                    stairId);
+        }
+
+        List<String> transitionStableState(long mapId) {
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_transitions",
+                        "SELECT transition_id, dungeon_map_id, cell_x, cell_y,"
+                                + " level_z, destination_type, target_overworld_map_id,"
+                                + " target_overworld_tile_id, target_dungeon_map_id,"
+                                + " target_transition_id, linked_transition_id"
+                                + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id",
+                        mapId);
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot transition stable DB state.", exception);
+            }
+        }
+
+        long transitionIdByDescription(long mapId, String description) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT transition_id FROM dungeon_transitions"
+                                 + " WHERE dungeon_map_id=? AND description=?")) {
+                bind(statement, mapId, description);
+                return scalar(statement);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to find transition by description.", exception);
+            }
+        }
+
+        long transitionIdAt(long mapId, int cellX, int cellY, int level) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT transition_id FROM dungeon_transitions"
+                                 + " WHERE dungeon_map_id=? AND cell_x=? AND cell_y=? AND level_z=?")) {
+                bind(statement, mapId, cellX, cellY, level);
+                return scalar(statement);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to find transition by cell.", exception);
+            }
+        }
+
+        long maxStairId() {
+            return count("SELECT COALESCE(MAX(stair_id), 0) FROM dungeon_stairs");
+        }
+
+        long maxTransitionId() {
+            return count("SELECT COALESCE(MAX(transition_id), 0) FROM dungeon_transitions");
+        }
+
+        long countTransitionDescription(long mapId, long transitionId, String description) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_transitions"
+                            + " WHERE dungeon_map_id=? AND transition_id=? AND description=?",
+                    mapId,
+                    transitionId,
+                    description);
+        }
+
+        long countTransitionById(long mapId, long transitionId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_transitions WHERE dungeon_map_id=? AND transition_id=?",
+                    mapId,
+                    transitionId);
+        }
+
+        long countTransitionTopologyElementById(long mapId, long transitionId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_topology_elements"
+                            + " WHERE dungeon_map_id=? AND element_kind='TRANSITION' AND element_id=?",
+                    mapId,
+                    transitionId);
+        }
+
+        void seedF6MultiLevelFloors(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertRectangularRoom(connection, mapId, "R2", 1, 1, 1);
+                insertRectangularRoom(connection, mapId, "R3", 2, 1, 1);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed F6_MULTI_LEVEL_FLOORS fixture.", exception);
+            }
+        }
+
+        void seedTransitionDescriptionFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertRectangularRoom(connection, mapId, "R2", 1, 1, 1);
+                insertRectangularRoom(connection, mapId, "R3", 2, 1, 1);
+                insertTransition(connection, mapId, "Initial transition.", 5, 2, 0);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed transition description fixture.", exception);
+            }
+        }
+
+        void seedTransitionLinkFixture(long sourceMapId, long targetMapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, sourceMapId, "R1", 0, 1, 1);
+                insertRectangularRoom(connection, sourceMapId, "R2", 1, 1, 1);
+                insertRectangularRoom(connection, sourceMapId, "R3", 2, 1, 1);
+                insertTransition(connection, sourceMapId, "Source transition.", 5, 2, 0);
+                insertRectangularRoom(connection, targetMapId, "R1", 0, 1, 1);
+                insertTransition(connection, targetMapId, "Target transition.", 6, 2, 0);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed transition link fixture.", exception);
+            }
+        }
+
+        void seedSelectedLinkedTransitionFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                long selectedId = insertTransition(
+                        connection,
+                        mapId,
+                        "Selected linked transition.",
+                        5,
+                        2,
+                        0);
+                long linkedId = insertTransition(
+                        connection,
+                        mapId,
+                        "Selected linked target transition.",
+                        6,
+                        2,
+                        0);
+                updateLinkedTransition(connection, selectedId, linkedId);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed selected linked transition fixture.", exception);
+            }
+        }
+
+        void seedReverseLinkedTransitionFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                long selectedId = insertTransition(
+                        connection,
+                        mapId,
+                        "Reverse linked target transition.",
+                        5,
+                        2,
+                        0);
+                long sourceId = insertTransition(
+                        connection,
+                        mapId,
+                        "Reverse linked source transition.",
+                        6,
+                        2,
+                        0);
+                updateLinkedTransition(connection, sourceId, selectedId);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed reverse linked transition fixture.", exception);
+            }
+        }
+
+        void seedDestinationReferenceTransitionFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                long selectedId = insertTransition(
+                        connection,
+                        mapId,
+                        "Destination target transition.",
+                        5,
+                        2,
+                        0);
+                long sourceId = insertTransition(
+                        connection,
+                        mapId,
+                        "Destination source transition.",
+                        6,
+                        2,
+                        0);
+                updateDungeonMapDestination(connection, sourceId, mapId, selectedId);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed transition destination reference fixture.", exception);
+            }
+        }
+
+        void seedF1SingleRoom(long mapId, String roomName, int level, int anchorX, int anchorY) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, roomName, level, anchorX, anchorY);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed F1_SINGLE_ROOM fixture.", exception);
+            }
+        }
+
+        void seedNarrationRoomWithEastExitLink(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long roomId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertRectangularRoom(connection, mapId, "R2", 0, 4, 1);
+                markDoorEdge(connection, mapId, roomId, 0, 1, 0, "EAST", "Door east", 200);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed narration room with east exit link fixture.", exception);
+            }
+        }
+
+        void seedF4WalledRoomWithDoor(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long roomId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertRectangularRoom(connection, mapId, "R2", 0, 4, 1);
+                markDoorEdge(connection, mapId, roomId, 0, 1, 0, "EAST", "Door east", 200);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed F4_WALLED_ROOM_WITH_DOOR fixture.", exception);
+            }
+        }
+
+        void seedF7StairAnchor(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 8, 8);
+                long stairId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_stairs(dungeon_map_id, name, shape, direction, dimension1, dimension2)"
+                                + " VALUES(?, ?, ?, ?, ?, ?)",
+                        mapId,
+                        "S1",
+                        "STRAIGHT",
+                        0,
+                        3,
+                        1);
+                insertTopologyElement(connection, mapId, stairId, 0L, "STAIR", "S1", 400);
+                insertStairPathNode(connection, stairId, 0, 2, 2, 0);
+                insertStairPathNode(connection, stairId, 1, 2, 1, 0);
+                insertStairPathNode(connection, stairId, 2, 2, 0, 0);
+                insertStairExit(connection, stairId, 2, 2, 0, "Unterer Ausgang");
+                insertStairExit(connection, stairId, 2, 0, 1, "Oberer Ausgang");
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed F7_STAIR_ANCHOR fixture.", exception);
+            }
+        }
+
+        void seedF7StairAnchorWithBlockingRoom(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 3, 1);
+                long stairId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_stairs(dungeon_map_id, name, shape, direction, dimension1, dimension2)"
+                                + " VALUES(?, ?, ?, ?, ?, ?)",
+                        mapId,
+                        "S1",
+                        "STRAIGHT",
+                        0,
+                        3,
+                        1);
+                insertTopologyElement(connection, mapId, stairId, 0L, "STAIR", "S1", 400);
+                insertStairPathNode(connection, stairId, 0, 2, 2, 0);
+                insertStairPathNode(connection, stairId, 1, 2, 1, 0);
+                insertStairPathNode(connection, stairId, 2, 2, 0, 0);
+                insertStairExit(connection, stairId, 2, 2, 0, "Unterer Ausgang");
+                insertStairExit(connection, stairId, 2, 0, 1, "Oberer Ausgang");
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed invalid stair recompute fixture.", exception);
+            }
+        }
+
+        void seedCorridorBoundStairAnchor(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long roomId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                long clusterId = scalarLong(
+                        connection,
+                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
+                        roomId);
+                long corridorId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_corridors(dungeon_map_id, level_z) VALUES(?, ?)",
+                        mapId,
+                        0);
+                insertCorridorTopologyElement(connection, mapId, corridorId, corridorId, "CORRIDOR", "K1", 300);
+                insertCorridorWaypoint(connection, corridorId, clusterId, 0, 2, 0, 0);
+                long stairId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_stairs(dungeon_map_id, name, shape, direction, dimension1, dimension2, corridor_id)"
+                                + " VALUES(?, ?, ?, ?, ?, ?, ?)",
+                        mapId,
+                        "S1",
+                        "LADDER",
+                        0,
+                        1,
+                        1,
+                        corridorId);
+                insertCorridorTopologyElement(connection, mapId, stairId, corridorId, "STAIR", "S1", 400);
+                insertStairPathNode(connection, stairId, 0, 2, 2, 0);
+                insertStairPathNode(connection, stairId, 1, 2, 2, 1);
+                insertStairExit(connection, stairId, 2, 2, 0, "Unterer Ausgang");
+                insertStairExit(connection, stairId, 2, 2, 1, "Oberer Ausgang");
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed corridor-bound stair fixture.", exception);
+            }
+        }
+
+        void seedGlobalStairIdentitySentinel(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long stairId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_stairs(dungeon_map_id, name, shape, direction, dimension1, dimension2)"
+                                + " VALUES(?, ?, ?, ?, ?, ?)",
+                        mapId,
+                        "Global Stair Sentinel",
+                        "STRAIGHT",
+                        0,
+                        1,
+                        1);
+                insertTopologyElement(connection, mapId, stairId, 0L, "STAIR", "Global Stair Sentinel", 900);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed global stair identity sentinel.", exception);
+            }
+        }
+
+        void seedGlobalTransitionIdentitySentinel(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertTransition(connection, mapId, "Global transition sentinel.", 1, 1, 0);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed global transition identity sentinel.", exception);
+            }
+        }
+
+        void seedCorridorWithAnchor(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long roomOneId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 8, 1);
+                long roomOneClusterId = scalarLong(
+                        connection,
+                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
+                        roomOneId);
+                long roomTwoClusterId = scalarLong(
+                        connection,
+                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
+                        roomTwoId);
+                long doorOneId = markDoorEdge(connection, mapId, roomOneId, 0, 1, 0, "EAST", "D1", 200);
+                long doorTwoId = markDoorEdge(connection, mapId, roomTwoId, 0, -1, 0, "WEST", "D2", 201);
+                long corridorId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_corridors(dungeon_map_id, level_z) VALUES(?, ?)",
+                        mapId,
+                        0);
+                insertCorridorTopologyElement(connection, mapId, corridorId, corridorId, "CORRIDOR", "K1", 300);
+                insertCorridorMember(connection, corridorId, roomOneId, 0);
+                insertCorridorMember(connection, corridorId, roomTwoId, 1);
+                insertCorridorDoorOverride(connection, corridorId, roomOneId, roomOneClusterId, 1, 0, "EAST", doorOneId, 0);
+                insertCorridorDoorOverride(connection, corridorId, roomTwoId, roomTwoClusterId, -1, 0, "WEST", doorTwoId, 1);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 0, 2, 0, 0);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 2, 0, 0, 1);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 4, 0, 0, 2);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 4, 3, 0, 3);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 5, 3, 0, 4);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 5, 0, 0, 5);
+                long anchorTopologyId = 70_000L + corridorId;
+                insertCorridorTopologyElement(
+                        connection,
+                        mapId,
+                        anchorTopologyId,
+                        corridorId,
+                        "CORRIDOR_ANCHOR",
+                        "A1",
+                        301);
+                insertCorridorAnchor(connection, corridorId, 1, corridorId, 6, 5, 0, anchorTopologyId, 0);
+                insertCorridorAnchorRef(connection, corridorId, corridorId, anchorTopologyId, 2);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed F5_CORRIDOR_WITH_ANCHOR fixture.", exception);
+            }
+        }
+
+        void seedCorridorSplitRouteTarget(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long roomOneId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 8, 1);
+                long roomThreeId = insertRectangularRoom(connection, mapId, "R3", 0, 5, 9);
+                long roomOneClusterId = scalarLong(
+                        connection,
+                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
+                        roomOneId);
+                long roomTwoClusterId = scalarLong(
+                        connection,
+                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
+                        roomTwoId);
+                long doorOneId = markDoorEdge(connection, mapId, roomOneId, 0, 1, 0, "EAST", "D1", 200);
+                long doorTwoId = markDoorEdge(connection, mapId, roomTwoId, 0, -1, 0, "WEST", "D2", 201);
+                markDoorEdge(connection, mapId, roomThreeId, 0, 0, -1, "NORTH", "D3", 202);
+                long corridorId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_corridors(dungeon_map_id, level_z) VALUES(?, ?)",
+                        mapId,
+                        0);
+                insertCorridorTopologyElement(connection, mapId, corridorId, corridorId, "CORRIDOR", "K1", 300);
+                insertCorridorMember(connection, corridorId, roomOneId, 0);
+                insertCorridorMember(connection, corridorId, roomTwoId, 1);
+                insertCorridorDoorOverride(connection, corridorId, roomOneId, roomOneClusterId, 1, 0, "EAST", doorOneId, 0);
+                insertCorridorDoorOverride(connection, corridorId, roomTwoId, roomTwoClusterId, -1, 0, "WEST", doorTwoId, 1);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 0, 2, 0, 0);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 2, 0, 0, 1);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 4, 0, 0, 2);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 4, 3, 0, 3);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 5, 3, 0, 4);
+                insertCorridorWaypoint(connection, corridorId, roomOneClusterId, 5, 0, 0, 5);
+                long anchorTopologyId = 70_000L + corridorId;
+                insertCorridorTopologyElement(
+                        connection,
+                        mapId,
+                        anchorTopologyId,
+                        corridorId,
+                        "CORRIDOR_ANCHOR",
+                        "A1",
+                        301);
+                insertCorridorAnchor(connection, corridorId, 1, corridorId, 6, 5, 0, anchorTopologyId, 0);
+                insertCorridorAnchorRef(connection, corridorId, corridorId, anchorTopologyId, 2);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed DE-COR-004 crossing split fixture.", exception);
+            }
+        }
+
+        void seedTwoDoorRouteTarget(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long roomOneId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 8, 1);
+                markDoorEdge(connection, mapId, roomOneId, 0, 1, 0, "EAST", "D1", 200);
+                markDoorEdge(connection, mapId, roomTwoId, 0, -1, 0, "WEST", "D2", 201);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed F8_TWO_DOOR_ROUTE_TARGET fixture.", exception);
+            }
+        }
+
+        void seedRoomToDoorRouteTarget(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 8, 1);
+                markDoorEdge(connection, mapId, roomTwoId, 0, -1, 0, "WEST", "D2", 201);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed F12_ROOM_TO_DOOR_ROUTE_TARGET fixture.", exception);
+            }
+        }
+
+        void seedBlockedCorridorRouteTarget(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertRectangularRoom(connection, mapId, "R2", 0, -3, 1);
+                insertRectangularRoom(connection, mapId, "R3", 0, 5, 1);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed blocked corridor route fixture.", exception);
+            }
+        }
+
+        void seedTwoAnchorRouteTarget(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long roomOneId = insertRectangularRoom(connection, mapId, "R1", 0, -4, 4);
+                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 10, 4);
+                long roomOneClusterId = scalarLong(
+                        connection,
+                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
+                        roomOneId);
+                long roomTwoClusterId = scalarLong(
+                        connection,
+                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
+                        roomTwoId);
+                long corridorOneId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_corridors(dungeon_map_id, level_z) VALUES(?, ?)",
+                        mapId,
+                        0);
+                insertCorridorTopologyElement(connection, mapId, corridorOneId, corridorOneId, "CORRIDOR", "K1", 300);
+                insertCorridorWaypoint(connection, corridorOneId, roomOneClusterId, 5, 1, 0, 0);
+                long anchorOneTopologyId = 70_000L + corridorOneId;
+                insertCorridorTopologyElement(
+                        connection,
+                        mapId,
+                        anchorOneTopologyId,
+                        corridorOneId,
+                        "CORRIDOR_ANCHOR",
+                        "A1",
+                        301);
+                insertCorridorAnchor(connection, corridorOneId, 1, corridorOneId, 2, 6, 0, anchorOneTopologyId, 0);
+                insertCorridorAnchorRef(connection, corridorOneId, corridorOneId, anchorOneTopologyId, 0);
+                long corridorTwoId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_corridors(dungeon_map_id, level_z) VALUES(?, ?)",
+                        mapId,
+                        0);
+                insertCorridorTopologyElement(connection, mapId, corridorTwoId, corridorTwoId, "CORRIDOR", "K2", 302);
+                insertCorridorWaypoint(connection, corridorTwoId, roomTwoClusterId, -3, 1, 0, 0);
+                long anchorTwoTopologyId = 70_000L + corridorTwoId;
+                insertCorridorTopologyElement(
+                        connection,
+                        mapId,
+                        anchorTwoTopologyId,
+                        corridorTwoId,
+                        "CORRIDOR_ANCHOR",
+                        "A2",
+                        303);
+                insertCorridorAnchor(connection, corridorTwoId, 2, corridorTwoId, 8, 6, 0, anchorTwoTopologyId, 0);
+                insertCorridorAnchorRef(connection, corridorTwoId, corridorTwoId, anchorTwoTopologyId, 0);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed F10_TWO_ANCHOR_ROUTE_TARGET fixture.", exception);
+            }
+        }
+
+        void seedTwoByTwoRoom(long mapId, String roomName, int level, int anchorX, int anchorY) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertTwoByTwoRoom(connection, mapId, roomName, level, anchorX, anchorY);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed two-by-two dungeon room fixture.", exception);
+            }
+        }
+
+        void seedLargePerCellLoopRoom(long mapId, int width, int height) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long clusterId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z)"
+                                + " VALUES(?, ?, ?, ?)",
+                        mapId,
+                        0,
+                        0,
+                        0);
+                long roomId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, visual_description,"
+                                + " component_x, component_y, level_z) VALUES(?, ?, ?, ?, ?, ?, ?)",
+                        mapId,
+                        clusterId,
+                        "Large Per-Cell Room",
+                        "",
+                        0,
+                        0,
+                        0);
+                insertTopologyElement(connection, mapId, roomId, clusterId, "Large Per-Cell Room");
+                int vertexIndex = 0;
+                for (int q = 0; q < width; q++) {
+                    for (int r = 0; r < height; r++) {
+                        insertF6Vertex(connection, clusterId, 0, vertexIndex++, q, r);
+                        insertF6Vertex(connection, clusterId, 0, vertexIndex++, q + 1, r);
+                        insertF6Vertex(connection, clusterId, 0, vertexIndex++, q + 1, r + 1);
+                        insertF6Vertex(connection, clusterId, 0, vertexIndex++, q, r + 1);
+                        insertF6Vertex(
+                                connection,
+                                clusterId,
+                                0,
+                                vertexIndex++,
+                                DungeonRoomCellProjection.LOOP_SEPARATOR.q(),
+                                DungeonRoomCellProjection.LOOP_SEPARATOR.r());
+                    }
+                }
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed large per-cell loop room fixture.", exception);
+            }
+        }
+
+        static void insertTwoByTwoRoom(
+                Connection connection,
+                long mapId,
+                String roomName,
+                int level,
+                int anchorX,
+                int anchorY
+        ) throws SQLException {
+            long clusterId = insertAndReturnId(
+                    connection,
+                    "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z) VALUES(?, ?, ?, ?)",
+                    mapId,
+                    anchorX + 1,
+                    anchorY + 1,
+                    level);
+            long roomId = insertAndReturnId(
+                    connection,
+                    "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, visual_description,"
+                            + " component_x, component_y, level_z) VALUES(?, ?, ?, ?, ?, ?, ?)",
+                    mapId,
+                    clusterId,
+                    roomName,
+                    "",
+                    anchorX + 1,
+                    anchorY + 1,
+                    level);
+            insertTopologyElement(connection, mapId, roomId, clusterId, roomName);
+            insertF6Vertex(connection, clusterId, level, 0, -1, -1);
+            insertF6Vertex(connection, clusterId, level, 1, 1, -1);
+            insertF6Vertex(connection, clusterId, level, 2, 1, 1);
+            insertF6Vertex(connection, clusterId, level, 3, -1, 1);
+            insertTwoByTwoPerimeterWalls(connection, mapId, clusterId, level, anchorX + 1, anchorY + 1);
+        }
+
+        static long insertRectangularRoom(
+                Connection connection,
+                long mapId,
+                String roomName,
+                int level,
+                int anchorX,
+                int anchorY
+        ) throws SQLException {
+            long clusterId = insertAndReturnId(
+                    connection,
+                    "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z) VALUES(?, ?, ?, ?)",
+                    mapId,
+                    anchorX + 1,
+                    anchorY + 1,
+                    level);
+            long roomId = insertAndReturnId(
+                    connection,
+                    "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, visual_description,"
+                            + " component_x, component_y, level_z) VALUES(?, ?, ?, ?, ?, ?, ?)",
+                    mapId,
+                    clusterId,
+                    roomName,
+                    "",
+                    anchorX + 1,
+                    anchorY + 1,
+                    level);
+            insertTopologyElement(connection, mapId, roomId, clusterId, roomName);
+            insertF6Vertex(connection, clusterId, level, 0, -1, -1);
+            insertF6Vertex(connection, clusterId, level, 1, 2, -1);
+            insertF6Vertex(connection, clusterId, level, 2, 2, 2);
+            insertF6Vertex(connection, clusterId, level, 3, -1, 2);
+            insertPerimeterWalls(connection, mapId, clusterId, level, anchorX + 1, anchorY + 1);
+            return roomId;
+        }
+
+        static long markDoorEdge(
+                Connection connection,
+                long mapId,
+                long roomId,
+                int level,
+                int relativeCellX,
+                int relativeCellY,
+                String direction,
+                String label,
+                int sortOrder
+        ) throws SQLException {
+            long clusterId = scalarLong(
+                    connection,
+                    "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
+                    roomId);
+            long topologyElementId = scalarLong(
+                    connection,
+                    "SELECT topology_element_id FROM dungeon_room_cluster_edges"
+                            + " WHERE cluster_id=? AND level_z=? AND cell_x=? AND cell_y=? AND edge_direction=?",
+                    clusterId,
+                    level,
+                    relativeCellX,
+                    relativeCellY,
+                    direction);
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE dungeon_room_cluster_edges SET edge_type=?"
+                            + " WHERE cluster_id=? AND level_z=? AND cell_x=? AND cell_y=? AND edge_direction=?")) {
+                bind(statement, "DOOR", clusterId, level, relativeCellX, relativeCellY, direction);
+                statement.executeUpdate();
+            }
+            insertTopologyElement(connection, mapId, topologyElementId, clusterId, "DOOR", label, sortOrder);
+            return topologyElementId;
+        }
+
+        static void insertCorridorMember(
+                Connection connection,
+                long corridorId,
+                long roomId,
+                int sortOrder
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_corridor_members(corridor_id, room_id, member_order) VALUES(?, ?, ?)")) {
+                bind(statement, corridorId, roomId, sortOrder);
+                statement.executeUpdate();
+            }
+        }
+
+        static void insertCorridorDoorOverride(
+                Connection connection,
+                long corridorId,
+                long roomId,
+                long clusterId,
+                int relativeCellX,
+                int relativeCellY,
+                String direction,
+                long topologyElementId,
+                int sortOrder
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_corridor_door_overrides("
+                            + "corridor_id, room_id, cluster_id, relative_cell_x, relative_cell_y,"
+                            + " edge_direction, topology_element_id, sort_order"
+                            + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)")) {
+                bind(statement, corridorId, roomId, clusterId, relativeCellX, relativeCellY,
+                        direction, topologyElementId, sortOrder);
+                statement.executeUpdate();
+            }
+        }
+
+        static void insertCorridorWaypoint(
+                Connection connection,
+                long corridorId,
+                long clusterId,
+                int relativeX,
+                int relativeY,
+                int relativeZ,
+                int sortOrder
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_corridor_waypoints("
+                            + "corridor_id, sort_order, cluster_id, relative_x, relative_y, relative_z"
+                            + ") VALUES(?, ?, ?, ?, ?, ?)")) {
+                bind(statement, corridorId, sortOrder, clusterId, relativeX, relativeY, relativeZ);
+                statement.executeUpdate();
+            }
+        }
+
+        static void insertCorridorAnchor(
+                Connection connection,
+                long corridorId,
+                long anchorId,
+                long hostCorridorId,
+                int cellX,
+                int cellY,
+                int cellZ,
+                long topologyElementId,
+                int sortOrder
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_corridor_anchors("
+                            + "corridor_id, anchor_id, host_corridor_id, cell_x, cell_y, cell_z,"
+                            + " topology_element_id, sort_order"
+                            + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?)")) {
+                bind(statement, corridorId, anchorId, hostCorridorId, cellX, cellY, cellZ,
+                        topologyElementId, sortOrder);
+                statement.executeUpdate();
+            }
+        }
+
+        static void insertCorridorAnchorRef(
+                Connection connection,
+                long corridorId,
+                long hostCorridorId,
+                long topologyElementId,
+                int sortOrder
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_corridor_anchor_refs("
+                            + "corridor_id, host_corridor_id, topology_element_id, sort_order"
+                            + ") VALUES(?, ?, ?, ?)")) {
+                bind(statement, corridorId, hostCorridorId, topologyElementId, sortOrder);
+                statement.executeUpdate();
+            }
+        }
+
+        static void insertTwoByTwoPerimeterWalls(
+                Connection connection,
+                long mapId,
+                long clusterId,
+                int level,
+                int centerX,
+                int centerY
+        ) throws SQLException {
+            int sortOrder = 1;
+            for (int relativeX = -1; relativeX <= 0; relativeX++) {
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, -1, "NORTH",
+                        sortOrder);
+                sortOrder++;
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, 0, "SOUTH",
+                        sortOrder);
+                sortOrder++;
+            }
+            for (int relativeY = -1; relativeY <= 0; relativeY++) {
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, 0, relativeY, "EAST",
+                        sortOrder);
+                sortOrder++;
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, -1, relativeY, "WEST",
+                        sortOrder);
+                sortOrder++;
+            }
+        }
+
+        static void insertPerimeterWalls(
+                Connection connection,
+                long mapId,
+                long clusterId,
+                int level,
+                int centerX,
+                int centerY
+        ) throws SQLException {
+            int sortOrder = 1;
+            for (int relativeX = -1; relativeX <= 1; relativeX++) {
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, -1, "NORTH",
+                        sortOrder);
+                sortOrder++;
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, 1, "SOUTH",
+                        sortOrder);
+                sortOrder++;
+            }
+            for (int relativeY = -1; relativeY <= 1; relativeY++) {
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, 1, relativeY, "EAST",
+                        sortOrder);
+                sortOrder++;
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, -1, relativeY, "WEST",
+                        sortOrder);
+                sortOrder++;
+            }
+        }
+
+        static void insertClusterBoundary(
+                Connection connection,
+                long mapId,
+                long clusterId,
+                int level,
+                int centerX,
+                int centerY,
+                int relativeX,
+                int relativeY,
+                String direction,
+                int sortOrder
+        ) throws SQLException {
+            long topologyElementId = wallTopologyElementId(centerX, centerY, level, relativeX, relativeY, direction);
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_room_cluster_edges("
+                            + "cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type, topology_element_id"
+                            + ") VALUES(?, ?, ?, ?, ?, ?, ?)")) {
+                bind(statement, clusterId, level, relativeX, relativeY, direction, "WALL", topologyElementId);
+                statement.executeUpdate();
+            }
+            insertTopologyElement(connection, mapId, topologyElementId, clusterId, "WALL", "Wall", sortOrder);
+        }
+
+        static void insertStairPathNode(
+                Connection connection,
+                long stairId,
+                int sortOrder,
+                int cellX,
+                int cellY,
+                int cellZ
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_stair_path_nodes(stair_id, sort_order, cell_x, cell_y, cell_z)"
+                            + " VALUES(?, ?, ?, ?, ?)")) {
+                bind(statement, stairId, sortOrder, cellX, cellY, cellZ);
+                statement.executeUpdate();
+            }
+        }
+
+        static void insertStairExit(
+                Connection connection,
+                long stairId,
+                int cellX,
+                int cellY,
+                int cellZ,
+                String label
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_stair_exits(stair_id, cell_x, cell_y, cell_z, label)"
+                            + " VALUES(?, ?, ?, ?, ?)")) {
+                bind(statement, stairId, cellX, cellY, cellZ, label);
+                statement.executeUpdate();
+            }
+        }
+
+        static long insertTransition(
+                Connection connection,
+                long mapId,
+                String description,
+                int cellX,
+                int cellY,
+                int level
+        ) throws SQLException {
+            long transitionId;
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_transitions("
+                            + "dungeon_map_id, description, cell_x, cell_y, level_z,"
+                            + " destination_type, target_overworld_map_id, target_overworld_tile_id,"
+                            + " target_dungeon_map_id, target_transition_id, linked_transition_id"
+                            + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)",
+                    Statement.RETURN_GENERATED_KEYS)) {
+                bind(statement, mapId, description, cellX, cellY, level, "OVERWORLD_TILE", 77L, 88L);
+                statement.executeUpdate();
+                try (ResultSet resultSet = statement.getGeneratedKeys()) {
+                    if (!resultSet.next()) {
+                        throw new SQLException("No generated key for transition insert.");
+                    }
+                    transitionId = resultSet.getLong(1);
+                }
+            }
+            insertFeatureTopologyElement(connection, mapId, transitionId, "TRANSITION", "Übergang " + transitionId, 500);
+            return transitionId;
+        }
+
+        static void updateLinkedTransition(
+                Connection connection,
+                long transitionId,
+                long linkedTransitionId
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE dungeon_transitions SET linked_transition_id=? WHERE transition_id=?")) {
+                bind(statement, linkedTransitionId, transitionId);
+                statement.executeUpdate();
+            }
+        }
+
+        static void updateDungeonMapDestination(
+                Connection connection,
+                long transitionId,
+                long targetMapId,
+                long targetTransitionId
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "UPDATE dungeon_transitions SET destination_type='DUNGEON_MAP',"
+                            + " target_overworld_map_id=NULL, target_overworld_tile_id=NULL,"
+                            + " target_dungeon_map_id=?, target_transition_id=?"
+                            + " WHERE transition_id=?")) {
+                bind(statement, targetMapId, targetTransitionId, transitionId);
+                statement.executeUpdate();
+            }
+        }
+
+        static void insertFeatureTopologyElement(
+                Connection connection,
+                long mapId,
+                long elementId,
+                String elementKind,
+                String label,
+                int sortOrder
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT OR IGNORE INTO dungeon_topology_elements("
+                            + "dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order"
+                            + ") VALUES(?, ?, ?, NULL, NULL, ?, ?)")) {
+                bind(statement, mapId, elementKind, elementId, label, sortOrder);
+                statement.executeUpdate();
+            }
+        }
+
+        static long wallTopologyElementId(
+                int centerX,
+                int centerY,
+                int level,
+                int relativeX,
+                int relativeY,
+                String direction
+        ) {
+            Cell absoluteCell = new Cell(centerX + relativeX, centerY + relativeY, level);
+            Edge edge = Edge.sideOf(absoluteCell, Direction.parse(direction));
+            return DungeonBoundaryKey.from(edge).stableId();
+        }
+
+        static void insertTopologyElement(
+                Connection connection,
+                long mapId,
+                long roomId,
+                long clusterId,
+                String label
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_topology_elements("
+                            + "dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order"
+                            + ") VALUES(?, ?, ?, ?, NULL, ?, ?)")) {
+                bind(statement, mapId, "ROOM", roomId, clusterId, label, roomId);
+                statement.executeUpdate();
+            }
+        }
+
+        static void insertTopologyElement(
+                Connection connection,
+                long mapId,
+                long elementId,
+                long clusterId,
+                String elementKind,
+                String label,
+                int sortOrder
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT OR IGNORE INTO dungeon_topology_elements("
+                            + "dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order"
+                            + ") VALUES(?, ?, ?, ?, NULL, ?, ?)")) {
+                bind(statement, mapId, elementKind, elementId, clusterId, label, sortOrder);
+                statement.executeUpdate();
+            }
+        }
+
+        static void insertCorridorTopologyElement(
+                Connection connection,
+                long mapId,
+                long elementId,
+                long corridorId,
+                String elementKind,
+                String label,
+                int sortOrder
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT OR IGNORE INTO dungeon_topology_elements("
+                            + "dungeon_map_id, element_kind, element_id, cluster_id, corridor_id, label, sort_order"
+                            + ") VALUES(?, ?, ?, NULL, ?, ?, ?)")) {
+                bind(statement, mapId, elementKind, elementId, corridorId, label, sortOrder);
+                statement.executeUpdate();
+            }
+        }
+
+        long count(String sql, String value) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setString(1, value);
+                return scalar(statement);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed DB assertion: " + sql, exception);
+            }
+        }
+
+        long count(String sql, long firstValue, String secondValue) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setLong(1, firstValue);
+                statement.setString(2, secondValue);
+                return scalar(statement);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed DB assertion: " + sql, exception);
+            }
+        }
+
+        long count(String sql, long value, int cellX, int cellY, String direction, String description) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
+                bind(statement, value, cellX, cellY, direction, description);
+                return scalar(statement);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed DB assertion: " + sql, exception);
+            }
+        }
+
+        long count(String sql, Object... values) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
+                bind(statement, values);
+                return scalar(statement);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed DB assertion: " + sql, exception);
+            }
+        }
+
+        long count(String sql, long value) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.setLong(1, value);
+                return scalar(statement);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed DB assertion: " + sql, exception);
+            }
+        }
+
+        static void appendRows(
+                Connection connection,
+                List<String> state,
+                String tableName,
+                String sql,
+                long mapId
+        ) throws SQLException {
+            appendRows(connection, state, tableName, sql, new Object[] {Long.valueOf(mapId)});
+        }
+
+        static void appendRows(
+                Connection connection,
+                List<String> state,
+                String tableName,
+                String sql,
+                Object... values
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                bind(statement, values);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    ResultSetMetaData metaData = resultSet.getMetaData();
+                    int columnCount = metaData.getColumnCount();
+                    while (resultSet.next()) {
+                        StringBuilder row = new StringBuilder(tableName);
+                        for (int column = 1; column <= columnCount; column++) {
+                            row.append('|')
+                                    .append(metaData.getColumnName(column))
+                                    .append('=')
+                                    .append(Objects.toString(resultSet.getObject(column), "<null>"));
+                        }
+                        state.add(row.toString());
+                    }
+                }
+            }
+        }
+
+        static long insertAndReturnId(Connection connection, String sql, Object... values) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+                bind(statement, values);
+                statement.executeUpdate();
+                try (ResultSet resultSet = statement.getGeneratedKeys()) {
+                    if (!resultSet.next()) {
+                        throw new SQLException("No generated key for insert: " + sql);
+                    }
+                    return resultSet.getLong(1);
+                }
+            }
+        }
+
+        static void insertF6Vertex(
+                Connection connection,
+                long clusterId,
+                int level,
+                int vertexIndex,
+                int relativeX,
+                int relativeY
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_room_cluster_vertices("
+                            + "cluster_id, level_z, vertex_index, relative_x, relative_y) VALUES(?, ?, ?, ?, ?)")) {
+                bind(statement, clusterId, level, vertexIndex, relativeX, relativeY);
+                statement.executeUpdate();
+            }
+        }
+
+        static void bind(PreparedStatement statement, Object... values) throws SQLException {
+            for (int index = 0; index < values.length; index++) {
+                Object value = values[index];
+                if (value instanceof Long longValue) {
+                    statement.setLong(index + 1, longValue);
+                } else if (value instanceof Integer integerValue) {
+                    statement.setInt(index + 1, integerValue);
+                } else {
+                    statement.setString(index + 1, String.valueOf(value));
+                }
+            }
+        }
+
+        Connection open() throws SQLException {
+            return DriverManager.getConnection("jdbc:sqlite:" + databasePath);
+        }
+
+        static long scalar(PreparedStatement statement) throws SQLException {
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (!resultSet.next()) {
+                    throw new SQLException("No result row.");
+                }
+                return resultSet.getLong(1);
+            }
+        }
+
+        static long scalarLong(Connection connection, String sql, Object... values) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(sql)) {
+                bind(statement, values);
+                return scalar(statement);
+            }
+        }
+    }
+}

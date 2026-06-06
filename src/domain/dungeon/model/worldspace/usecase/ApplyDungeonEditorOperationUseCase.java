@@ -3,11 +3,9 @@ package src.domain.dungeon.model.worldspace.usecase;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.DungeonMapOperationFeedbackRules;
-import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
 
@@ -82,16 +80,6 @@ public final class ApplyDungeonEditorOperationUseCase {
                 snapshot(mutated, derived),
                 OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated),
                 OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated));
-    }
-
-    boolean canCreateTransition(
-            @Nullable DungeonMapIdentity mapId,
-            @Nullable Cell anchor,
-            @Nullable TransitionDestination destination
-    ) {
-        return anchor != null
-                && destination != null
-                && currentMap(mapId).transitionCatalog().canCreate(anchor, destination);
     }
 
     private LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot(DungeonMap dungeonMap, DungeonDerivedState derived) {

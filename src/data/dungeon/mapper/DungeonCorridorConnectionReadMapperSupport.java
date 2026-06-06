@@ -14,9 +14,9 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
-import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
-import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 
 final class DungeonCorridorConnectionReadMapperSupport {
 
@@ -31,7 +31,7 @@ final class DungeonCorridorConnectionReadMapperSupport {
                     record.mapId(),
                     record.levelZ(),
                     record.roomIds(),
-                    new DungeonCorridorBindings(
+                    new CorridorBindingState(
                             toWaypoints(record.waypoints()),
                             toDoorBindings(record.doorBindings()),
                             toAnchorBindings(record.anchorBindings()),
@@ -52,11 +52,11 @@ final class DungeonCorridorConnectionReadMapperSupport {
         return List.copyOf(result);
     }
 
-    private static List<DungeonCorridorDoorBinding> toDoorBindings(List<DungeonCorridorDoorBindingRecord> records) {
-        List<DungeonCorridorDoorBinding> result = new ArrayList<>();
+    private static List<CorridorDoorBindingState> toDoorBindings(List<DungeonCorridorDoorBindingRecord> records) {
+        List<CorridorDoorBindingState> result = new ArrayList<>();
         for (DungeonCorridorDoorBindingRecord record
                 : records == null ? List.<DungeonCorridorDoorBindingRecord>of() : records) {
-            result.add(new DungeonCorridorDoorBinding(
+            result.add(new CorridorDoorBindingState(
                     record.roomId(),
                     record.clusterId(),
                     new Cell(record.relativeCellX(), record.relativeCellY(), 0),
@@ -70,11 +70,11 @@ final class DungeonCorridorConnectionReadMapperSupport {
         return List.copyOf(result);
     }
 
-    private static List<DungeonCorridorAnchorBinding> toAnchorBindings(List<DungeonCorridorAnchorBindingRecord> records) {
-        List<DungeonCorridorAnchorBinding> result = new ArrayList<>();
+    private static List<CorridorAnchorBinding> toAnchorBindings(List<DungeonCorridorAnchorBindingRecord> records) {
+        List<CorridorAnchorBinding> result = new ArrayList<>();
         for (DungeonCorridorAnchorBindingRecord record
                 : records == null ? List.<DungeonCorridorAnchorBindingRecord>of() : records) {
-            result.add(new DungeonCorridorAnchorBinding(
+            result.add(new CorridorAnchorBinding(
                     record.anchorId(),
                     record.hostCorridorId(),
                     new Cell(record.cellX(), record.cellY(), record.cellZ()),

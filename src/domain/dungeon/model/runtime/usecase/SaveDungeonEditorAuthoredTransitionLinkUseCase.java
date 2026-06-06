@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -15,6 +15,12 @@ import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.worldspace.DungeonMap;
 import src.domain.dungeon.model.worldspace.repository.DungeonMapRepository;
+import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase;
+import src.domain.dungeon.model.worldspace.usecase.AssembleDungeonSnapshotUseCase;
+import src.domain.dungeon.model.worldspace.usecase.BuildDungeonDerivedStateUseCase;
+import src.domain.dungeon.model.worldspace.usecase.LoadDungeonSnapshotUseCase;
+import src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredMutationUseCase;
+import src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorHandlesUseCase;
 
 public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
 

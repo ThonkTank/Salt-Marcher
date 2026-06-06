@@ -14,8 +14,8 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDoorBindingGeometry;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
-import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.worldspace.DungeonRoom;
 import src.domain.dungeon.model.worldspace.DungeonRoomCluster;
 
@@ -32,7 +32,7 @@ final class DungeonCorridorEndpointResolver {
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom,
-            Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef
+            Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef
     ) {
         List<CorridorEndpoint> endpoints = new ArrayList<>();
         appendRoomEndpoints(
@@ -46,10 +46,10 @@ final class DungeonCorridorEndpointResolver {
         return List.copyOf(endpoints);
     }
 
-    Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorBindingsByRef(List<DungeonCorridor> corridors) {
-        Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> result = new LinkedHashMap<>();
+    Map<DungeonTopologyRef, CorridorAnchorBinding> anchorBindingsByRef(List<DungeonCorridor> corridors) {
+        Map<DungeonTopologyRef, CorridorAnchorBinding> result = new LinkedHashMap<>();
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
+            for (CorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
                 if (binding != null && binding.topologyRef().present()) {
                     result.put(binding.topologyRef(), binding);
                 }
@@ -61,7 +61,7 @@ final class DungeonCorridorEndpointResolver {
     private static void appendRoomEndpoints(
             List<CorridorEndpoint> endpoints,
             DungeonCorridor corridor,
-            Map<Long, DungeonCorridorDoorBinding> bindingsByRoom,
+            Map<Long, CorridorDoorBindingState> bindingsByRoom,
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom
@@ -79,10 +79,10 @@ final class DungeonCorridorEndpointResolver {
 
     private static @Nullable CorridorEndpoint boundEndpoint(
             Long roomId,
-            Map<Long, DungeonCorridorDoorBinding> bindingsByRoom,
+            Map<Long, CorridorDoorBindingState> bindingsByRoom,
             Map<Long, DungeonRoomCluster> clustersById
     ) {
-        DungeonCorridorDoorBinding binding = bindingsByRoom.get(roomId);
+        CorridorDoorBindingState binding = bindingsByRoom.get(roomId);
         if (binding == null) {
             return null;
         }
@@ -102,7 +102,7 @@ final class DungeonCorridorEndpointResolver {
     private static void appendAnchorEndpoints(
             List<CorridorEndpoint> endpoints,
             DungeonCorridor corridor,
-            Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef
+            Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef
     ) {
         for (CorridorAnchorRef anchorRef : corridor.bindings().anchorRefs()) {
             CorridorEndpoint endpoint = anchorEndpoint(anchorRef, anchorsByRef);
@@ -114,12 +114,12 @@ final class DungeonCorridorEndpointResolver {
 
     private static @Nullable CorridorEndpoint anchorEndpoint(
             @Nullable CorridorAnchorRef anchorRef,
-            Map<DungeonTopologyRef, DungeonCorridorAnchorBinding> anchorsByRef
+            Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef
     ) {
         if (anchorRef == null || !anchorRef.present()) {
             return null;
         }
-        DungeonCorridorAnchorBinding anchorBinding = anchorsByRef.get(DungeonTopologyRef.corridorAnchor(anchorRef.anchorId()));
+        CorridorAnchorBinding anchorBinding = anchorsByRef.get(DungeonTopologyRef.corridorAnchor(anchorRef.anchorId()));
         if (anchorBinding == null) {
             return null;
         }

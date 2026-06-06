@@ -6,6 +6,8 @@ import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
@@ -52,7 +54,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
         if (mappedCluster == null || boundary == null || !boundary.isDoor()) {
             return null;
         }
-        DungeonCorridorDoorBinding binding = new DungeonCorridorDoorBinding(
+        CorridorDoorBindingState binding = new CorridorDoorBindingState(
                 endpoint.roomId(),
                 endpoint.clusterId(),
                 new Cell(
@@ -120,7 +122,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
         return null;
     }
 
-    private static CorridorResolvedEndpoint resolvedAnchor(DungeonCorridorAnchorBinding binding) {
+    private static CorridorResolvedEndpoint resolvedAnchor(CorridorAnchorBinding binding) {
         CorridorAnchorRef ref = new CorridorAnchorRef(binding.hostCorridorId(), binding.topologyRef().id());
         return CorridorResolvedEndpoint.forAnchor(ref);
     }
@@ -128,7 +130,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
     public record ResolvedEndpointResult(
             DungeonMap map,
             CorridorResolvedEndpoint endpoint,
-            @Nullable DungeonCorridorDoorBinding replacementDoor
+            @Nullable CorridorDoorBindingState replacementDoor
     ) {
         public DungeonCorridor applyTo(DungeonCorridor corridor) {
             src.domain.dungeon.model.core.structure.corridor.Corridor coreCorridor =

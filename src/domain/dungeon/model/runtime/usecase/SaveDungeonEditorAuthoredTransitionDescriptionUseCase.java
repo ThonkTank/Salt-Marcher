@@ -1,20 +1,22 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase;
+import src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredMutationUseCase;
 
 public final class SaveDungeonEditorAuthoredTransitionDescriptionUseCase {
     private static final long NO_TRANSITION_ID = 0L;
 
-    private final ApplyDungeonAuthoredMutationUseCase mutationUseCase;
+    private final ApplyDungeonEditorOperationUseCase operationUseCase;
     private final PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase;
 
     public SaveDungeonEditorAuthoredTransitionDescriptionUseCase(
-            ApplyDungeonAuthoredMutationUseCase mutationUseCase,
+            ApplyDungeonEditorOperationUseCase operationUseCase,
             PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase
     ) {
-        this.mutationUseCase = Objects.requireNonNull(mutationUseCase, "mutationUseCase");
+        this.operationUseCase = Objects.requireNonNull(operationUseCase, "operationUseCase");
         this.publishMutationUseCase = Objects.requireNonNull(publishMutationUseCase, "publishMutationUseCase");
     }
 
@@ -22,7 +24,7 @@ public final class SaveDungeonEditorAuthoredTransitionDescriptionUseCase {
         if (mapId == null || transitionId <= NO_TRANSITION_ID) {
             return;
         }
-        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.apply(
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = operationUseCase.execute(
                 domainMapId(mapId),
                 current -> current.saveTransitionDescription(transitionId, description));
         publishMutationUseCase.execute(result);

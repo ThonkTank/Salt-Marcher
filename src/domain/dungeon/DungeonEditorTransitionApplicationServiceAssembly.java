@@ -9,11 +9,11 @@ final class DungeonEditorTransitionApplicationServiceAssembly {
             DungeonEditorRuntimeFoundationServiceAssembly.RuntimeFoundation runtime
     ) {
         return new DungeonEditorTransitionApplicationService(
-                new src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorTransitionDescriptionUseCase(
+                new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorTransitionDescriptionUseCase(
                         runtime.workflow(),
                         runtime.authoredUseCases().saveTransitionDescriptionUseCase(),
                         runtime.effectUseCase()),
-                new src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorTransitionLinkUseCase(
+                new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorTransitionLinkUseCase(
                         runtime.workflow(),
                         runtime.authoredUseCases().saveTransitionLinkUseCase(),
                         runtime.effectUseCase()));

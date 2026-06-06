@@ -7,6 +7,8 @@ import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorTargetDeletion;
 import src.domain.dungeon.model.core.structure.corridor.CorridorTargetDeletion.AnchorTarget;
 import src.domain.dungeon.model.core.structure.corridor.CorridorTargetDeletion.DoorBindingTarget;
@@ -106,7 +108,7 @@ final class DungeonCorridorMergeDeleteLogic {
 
     private List<DoorBindingTarget> doorTargets(DungeonMap dungeonMap, DungeonCorridor corridor) {
         List<DoorBindingTarget> result = new ArrayList<>();
-        for (DungeonCorridorDoorBinding binding : corridor.bindings().doorBindings()) {
+        for (CorridorDoorBindingState binding : corridor.bindings().doorBindings()) {
             if (binding != null) {
                 result.add(new DoorBindingTarget(
                         binding.toCore(),
@@ -119,7 +121,7 @@ final class DungeonCorridorMergeDeleteLogic {
 
     private List<AnchorTarget> anchorTargets(DungeonCorridor corridor) {
         List<AnchorTarget> result = new ArrayList<>();
-        for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
+        for (CorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
             if (binding != null) {
                 result.add(new AnchorTarget(binding.absoluteCell()));
             }
@@ -137,7 +139,7 @@ final class DungeonCorridorMergeDeleteLogic {
         return List.copyOf(result);
     }
 
-    private Cell absoluteDoorCorridorCell(DungeonMap dungeonMap, DungeonCorridorDoorBinding binding) {
+    private Cell absoluteDoorCorridorCell(DungeonMap dungeonMap, CorridorDoorBindingState binding) {
         DungeonRoomCluster cluster = LOOKUP_ADAPTER.cluster(dungeonMap, binding.clusterId());
         Cell center = cluster == null ? new Cell(0, 0, binding.relativeCell().level()) : cluster.center();
         return binding.direction().neighborOf(new Cell(

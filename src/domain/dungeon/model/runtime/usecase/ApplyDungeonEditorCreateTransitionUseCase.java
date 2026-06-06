@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace.usecase;
+package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Locale;
 import java.util.Objects;
@@ -6,7 +6,6 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorCreateTransitionUseCase {

@@ -3,6 +3,7 @@ package src.domain.dungeon.model.worldspace;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
@@ -49,8 +50,8 @@ public final class DungeonCorridorConnectionNormalizationLogic {
                 DERIVED_STATE_PROJECTION.corridorCellsByCorridor(dungeonMap, corridors));
         List<DungeonCorridor> result = new ArrayList<>();
         for (DungeonCorridor corridor : corridors == null ? List.<DungeonCorridor>of() : corridors) {
-            List<DungeonCorridorAnchorBinding> snapped = new ArrayList<>();
-            for (DungeonCorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
+            List<CorridorAnchorBinding> snapped = new ArrayList<>();
+            for (CorridorAnchorBinding binding : corridor.bindings().anchorBindings()) {
                 if (binding != null) {
                     snapped.add(binding.withAbsoluteCell(hostCells.snapToHostCell(
                             binding.hostCorridorId(),

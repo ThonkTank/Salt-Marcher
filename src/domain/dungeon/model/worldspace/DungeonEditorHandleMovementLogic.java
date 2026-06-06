@@ -5,6 +5,9 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
@@ -87,11 +90,11 @@ public final class DungeonEditorHandleMovementLogic {
                 movedCorridors.add(corridor);
                 continue;
             }
-            List<DungeonCorridorDoorBinding> bindings = new ArrayList<>();
+            List<CorridorDoorBindingState> bindings = new ArrayList<>();
             for (int index = 0; index < corridor.bindings().doorBindings().size(); index++) {
-                DungeonCorridorDoorBinding binding = corridor.bindings().doorBindings().get(index);
+                CorridorDoorBindingState binding = corridor.bindings().doorBindings().get(index);
                 if (index == handle.index() && binding.roomId() == handle.roomId()) {
-                    bindings.add(new DungeonCorridorDoorBinding(
+                    bindings.add(new CorridorDoorBindingState(
                             binding.roomId(),
                             binding.clusterId(),
                             movedCell(binding.relativeCell(), deltaQ, deltaR, deltaLevel),
@@ -107,7 +110,7 @@ public final class DungeonEditorHandleMovementLogic {
                     corridor.mapId(),
                     corridor.level(),
                     corridor.roomIds(),
-                    new DungeonCorridorBindings(
+                    new CorridorBindingState(
                             corridor.bindings().waypoints(),
                             bindings,
                             corridor.bindings().anchorBindings(),
@@ -135,9 +138,9 @@ public final class DungeonEditorHandleMovementLogic {
                 movedCorridors.add(corridor);
                 continue;
             }
-            List<DungeonCorridorAnchorBinding> anchors = new ArrayList<>();
+            List<CorridorAnchorBinding> anchors = new ArrayList<>();
             for (int index = 0; index < corridor.bindings().anchorBindings().size(); index++) {
-                DungeonCorridorAnchorBinding anchor = corridor.bindings().anchorBindings().get(index);
+                CorridorAnchorBinding anchor = corridor.bindings().anchorBindings().get(index);
                 if (index == handle.index() || anchor.topologyRef().equals(handle.topologyRef())) {
                     anchors.add(anchor.withAbsoluteCell(movedCell(anchor.absoluteCell(), deltaQ, deltaR, deltaLevel)));
                     changed = true;
@@ -185,7 +188,7 @@ public final class DungeonEditorHandleMovementLogic {
                     corridor.mapId(),
                     corridor.level(),
                     corridor.roomIds(),
-                    new DungeonCorridorBindings(
+                    new CorridorBindingState(
                             waypoints,
                             corridor.bindings().doorBindings(),
                             corridor.bindings().anchorBindings(),

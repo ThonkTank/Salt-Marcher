@@ -7,6 +7,8 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.transition.Transition;
@@ -61,7 +63,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendDoorBindings(List<DungeonTopologyBinding> result, DungeonCorridor corridor) {
-        for (DungeonCorridorDoorBinding doorBinding : corridor.bindings().doorBindings()) {
+        for (CorridorDoorBindingState doorBinding : corridor.bindings().doorBindings()) {
             if (doorBinding.topologyRef().present()) {
                 result.add(new DungeonTopologyBinding(
                         doorBinding.topologyRef(),
@@ -73,7 +75,7 @@ public record DungeonMapTopology(
     }
 
     private static void appendAnchorBindings(List<DungeonTopologyBinding> result, DungeonCorridor corridor) {
-        for (DungeonCorridorAnchorBinding anchorBinding : corridor.bindings().anchorBindings()) {
+        for (CorridorAnchorBinding anchorBinding : corridor.bindings().anchorBindings()) {
             if (anchorBinding.topologyRef().present()) {
                 result.add(new DungeonTopologyBinding(
                         anchorBinding.topologyRef(),

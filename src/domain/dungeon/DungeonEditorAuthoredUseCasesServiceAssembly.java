@@ -43,10 +43,10 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
                 new src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorAuthoredRoomNarrationUseCase(
                         mutationUseCase,
                         publishMutationUseCase),
-                new src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorAuthoredTransitionDescriptionUseCase(
-                        mutationUseCase,
+                new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredTransitionDescriptionUseCase(
+                        operationUseCase,
                         publishMutationUseCase),
-                new src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorAuthoredTransitionLinkUseCase(
+                new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredTransitionLinkUseCase(
                         registry.require(src.domain.dungeon.model.worldspace.repository.DungeonMapRepository.class),
                         snapshotParts.derive(),
                         snapshotParts.assembleDungeonSnapshotUseCase(),
@@ -61,17 +61,18 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
                         snapshotParts.loadDungeonMapUseCase(),
                         publishMutationUseCase,
                         repository),
-                new src.domain.dungeon.model.worldspace.usecase.CreateDungeonEditorAuthoredTransitionUseCase(
-                        mutationUseCase,
+                new src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorAuthoredTransitionUseCase(
+                        operationUseCase,
+                        snapshotParts.loadDungeonMapUseCase(),
                         publishMutationUseCase,
                         repository),
                 new src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorAuthoredStairUseCase(
                         snapshotParts.loadDungeonMapUseCase(),
                         operationUseCase,
                         publishMutationUseCase),
-                new src.domain.dungeon.model.worldspace.usecase.DeleteDungeonEditorAuthoredTransitionUseCase(
+                new src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorAuthoredTransitionUseCase(
                         DungeonEditorSnapshotPartsServiceAssembly.create(registry).loadDungeonMapUseCase(),
-                        mutationUseCase,
+                        operationUseCase,
                         publishMutationUseCase));
     }
 
@@ -117,13 +118,13 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
             src.domain.dungeon.model.worldspace.usecase.PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase,
             src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase,
             src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorAuthoredRoomNarrationUseCase saveRoomNarrationUseCase,
-            src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorAuthoredTransitionDescriptionUseCase saveTransitionDescriptionUseCase,
-            src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorAuthoredTransitionLinkUseCase saveTransitionLinkUseCase,
+            src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredTransitionDescriptionUseCase saveTransitionDescriptionUseCase,
+            src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredTransitionLinkUseCase saveTransitionLinkUseCase,
             src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredStairGeometryUseCase saveStairGeometryUseCase,
             src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorAuthoredStairUseCase createStairUseCase,
-            src.domain.dungeon.model.worldspace.usecase.CreateDungeonEditorAuthoredTransitionUseCase createTransitionUseCase,
+            src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorAuthoredTransitionUseCase createTransitionUseCase,
             src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorAuthoredStairUseCase deleteStairUseCase,
-            src.domain.dungeon.model.worldspace.usecase.DeleteDungeonEditorAuthoredTransitionUseCase deleteTransitionUseCase
+            src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorAuthoredTransitionUseCase deleteTransitionUseCase
     ) {
     }
 }

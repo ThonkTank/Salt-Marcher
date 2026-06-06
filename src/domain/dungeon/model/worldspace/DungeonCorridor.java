@@ -7,8 +7,11 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorEndpointMaterialization;
+import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
@@ -18,14 +21,14 @@ public record DungeonCorridor(
         long mapId,
         int level,
         List<Long> roomIds,
-        DungeonCorridorBindings bindings
+        CorridorBindingState bindings
 ) {
     public DungeonCorridor {
         Corridor coreCorridor = new Corridor(corridorId, mapId, level, roomIds, coreBindings(bindings));
         corridorId = coreCorridor.corridorId();
         mapId = coreCorridor.mapId();
         roomIds = coreCorridor.roomIds();
-        bindings = bindings == null ? DungeonCorridorBindings.empty() : bindings;
+        bindings = bindings == null ? CorridorBindingState.empty() : bindings;
     }
 
     @Override
@@ -37,7 +40,7 @@ public record DungeonCorridor(
         return toCore().isReadable();
     }
 
-    public DungeonCorridor withBindings(DungeonCorridorBindings nextBindings) {
+    public DungeonCorridor withBindings(CorridorBindingState nextBindings) {
         return new DungeonCorridor(corridorId, mapId, level, roomIds, nextBindings);
     }
 
@@ -84,7 +87,7 @@ public record DungeonCorridor(
         if (materialized == null) {
             return null;
         }
-        DungeonCorridorAnchorBinding anchorBinding =
+        CorridorAnchorBinding anchorBinding =
                 anchorBinding(materialized.anchor(), host, endpoint.topologyRef());
         return new AnchorEndpointMaterialization(
                 materialized.changed()
@@ -97,7 +100,7 @@ public record DungeonCorridor(
     static DungeonCorridor fromCore(
             DungeonCorridor source,
             Corridor coreCorridor,
-            DungeonCorridorDoorBinding replacementDoor
+            CorridorDoorBindingState replacementDoor
     ) {
         return fromCore(source, coreCorridor, replacementDoor, null);
     }
@@ -105,23 +108,23 @@ public record DungeonCorridor(
     static DungeonCorridor fromCore(
             DungeonCorridor source,
             Corridor coreCorridor,
-            DungeonCorridorDoorBinding replacementDoor,
-            DungeonCorridorAnchorBinding replacementAnchor
+            CorridorDoorBindingState replacementDoor,
+            CorridorAnchorBinding replacementAnchor
     ) {
         return new DungeonCorridor(
                 coreCorridor.corridorId(),
                 coreCorridor.mapId(),
                 coreCorridor.level(),
                 coreCorridor.roomIds(),
-                DungeonCorridorBindings.fromCore(
+                CorridorBindingState.fromCore(
                         source.bindings(),
                         coreCorridor.bindings(),
                         replacementDoor,
                         replacementAnchor));
     }
 
-    private static CorridorBindings coreBindings(DungeonCorridorBindings bindings) {
-        return (bindings == null ? DungeonCorridorBindings.empty() : bindings).toCore();
+    private static CorridorBindings coreBindings(CorridorBindingState bindings) {
+        return (bindings == null ? CorridorBindingState.empty() : bindings).toCore();
     }
 
     private Corridor toTopologyIdentityCore() {
@@ -139,7 +142,7 @@ public record DungeonCorridor(
                 coreCorridor.mapId(),
                 coreCorridor.level(),
                 coreCorridor.roomIds(),
-                DungeonCorridorBindings.fromTopologyIdentityCore(source.bindings(), coreCorridor.bindings()));
+                CorridorBindingState.fromTopologyIdentityCore(source.bindings(), coreCorridor.bindings()));
     }
 
     private static List<Corridor> coreCorridors(List<DungeonCorridor> corridors) {
@@ -156,7 +159,7 @@ public record DungeonCorridor(
         if (topologyRef == null || !topologyRef.present()) {
             return 0L;
         }
-        for (DungeonCorridorAnchorBinding binding : host.bindings().anchorBindings()) {
+        for (CorridorAnchorBinding binding : host.bindings().anchorBindings()) {
             if (binding != null && binding.matchesTopologyRef(topologyRef)) {
                 return binding.anchorId();
             }
@@ -164,30 +167,30 @@ public record DungeonCorridor(
         return 0L;
     }
 
-    private static DungeonCorridorAnchorBinding anchorBinding(
+    private static CorridorAnchorBinding anchorBinding(
             CorridorAnchor anchor,
             DungeonCorridor host,
             DungeonTopologyRef requestedTopologyRef
     ) {
-        DungeonCorridorAnchorBinding existing = existingAnchorBinding(host, anchor.anchorId());
+        CorridorAnchorBinding existing = existingAnchorBinding(host, anchor.anchorId());
         if (existing != null) {
             return existing;
         }
         DungeonTopologyRef topologyRef = requestedTopologyRef != null && requestedTopologyRef.present()
                 ? requestedTopologyRef
                 : DungeonTopologyRef.corridorAnchor(anchor.anchorId());
-        return new DungeonCorridorAnchorBinding(
+        return new CorridorAnchorBinding(
                 anchor.anchorId(),
                 anchor.hostCorridorId(),
                 anchor.position(),
                 topologyRef);
     }
 
-    private static @Nullable DungeonCorridorAnchorBinding existingAnchorBinding(
+    private static @Nullable CorridorAnchorBinding existingAnchorBinding(
             DungeonCorridor host,
             long anchorId
     ) {
-        for (DungeonCorridorAnchorBinding binding : host.bindings().anchorBindings()) {
+        for (CorridorAnchorBinding binding : host.bindings().anchorBindings()) {
             if (binding != null && binding.anchorId() == anchorId) {
                 return binding;
             }
@@ -198,13 +201,13 @@ public record DungeonCorridor(
     private static List<DungeonCorridor> worldspaceCorridors(
             List<DungeonCorridor> sourceCorridors,
             List<Corridor> coreCorridors,
-            DungeonCorridorAnchorBinding anchorBinding
+            CorridorAnchorBinding anchorBinding
     ) {
         List<DungeonCorridor> result = new ArrayList<>();
         for (Corridor coreCorridor : coreCorridors == null ? List.<Corridor>of() : coreCorridors) {
             DungeonCorridor source = sourceById(sourceCorridors, coreCorridor.corridorId());
             if (source != null) {
-                DungeonCorridorAnchorBinding replacement =
+                CorridorAnchorBinding replacement =
                         coreCorridor.corridorId() == anchorBinding.hostCorridorId() ? anchorBinding : null;
                 result.add(fromCore(source, coreCorridor, null, replacement));
             }
@@ -223,7 +226,7 @@ public record DungeonCorridor(
 
     record AnchorEndpointMaterialization(
             List<DungeonCorridor> corridors,
-            DungeonCorridorAnchorBinding anchorBinding,
+            CorridorAnchorBinding anchorBinding,
             boolean changed
     ) {
         AnchorEndpointMaterialization {

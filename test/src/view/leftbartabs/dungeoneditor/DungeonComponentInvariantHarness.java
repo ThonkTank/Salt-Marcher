@@ -9,8 +9,8 @@ import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding;
-import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 
 final class DungeonComponentInvariantHarness {
 
@@ -93,13 +93,13 @@ final class DungeonComponentInvariantHarness {
     }
 
     private static void assertWorldspaceAnchorAdapterCompatibility() {
-        DungeonCorridorAnchorBinding defaulted = new DungeonCorridorAnchorBinding(-4L, -6L, null, null);
+        CorridorAnchorBinding defaulted = new CorridorAnchorBinding(-4L, -6L, null, null);
         assertEquals(0L, defaulted.anchorId(), "adapter anchor id lower bound");
         assertEquals(0L, defaulted.hostCorridorId(), "adapter host id lower bound");
         assertEquals(new Cell(0, 0, 0), defaulted.absoluteCell(), "adapter null anchor cell default");
         assertEquals(DungeonTopologyRef.corridorAnchor(0L), defaulted.topologyRef(), "adapter default topology ref");
 
-        DungeonCorridorAnchorBinding retained = new DungeonCorridorAnchorBinding(
+        CorridorAnchorBinding retained = new CorridorAnchorBinding(
                 8L,
                 13L,
                 new Cell(2, 3, 0),
@@ -107,7 +107,7 @@ final class DungeonComponentInvariantHarness {
         assertEquals(8L, retained.anchorId(), "adapter anchor id preservation");
         assertEquals(13L, retained.hostCorridorId(), "adapter host id preservation");
 
-        DungeonCorridorAnchorBinding moved = retained.withAbsoluteCell(new Cell(4, 5, 1));
+        CorridorAnchorBinding moved = retained.withAbsoluteCell(new Cell(4, 5, 1));
         assertEquals(8L, moved.anchorId(), "moved adapter anchor id preservation");
         assertEquals(13L, moved.hostCorridorId(), "moved adapter host id preservation");
         assertEquals(
@@ -161,14 +161,14 @@ final class DungeonComponentInvariantHarness {
     }
 
     private static void assertWorldspaceCorridorBindingAdapterCompatibility() {
-        DungeonCorridorDoorBinding defaultedDoor = new DungeonCorridorDoorBinding(-1L, -2L, null, null, null);
+        CorridorDoorBindingState defaultedDoor = new CorridorDoorBindingState(-1L, -2L, null, null, null);
         assertEquals(0L, defaultedDoor.roomId(), "adapter door room lower bound");
         assertEquals(0L, defaultedDoor.clusterId(), "adapter door cluster lower bound");
         assertEquals(new Cell(0, 0, 0), defaultedDoor.relativeCell(), "adapter door null cell default");
         assertEquals(Direction.NORTH, defaultedDoor.direction(), "adapter door null direction default");
         assertEquals(DungeonTopologyRef.empty(), defaultedDoor.topologyRef(), "adapter door null topology ref");
 
-        DungeonCorridorDoorBinding retainedDoor = new DungeonCorridorDoorBinding(
+        CorridorDoorBindingState retainedDoor = new CorridorDoorBindingState(
                 12L,
                 14L,
                 new Cell(2, 3, 1),

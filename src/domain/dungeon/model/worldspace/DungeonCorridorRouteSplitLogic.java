@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
 
@@ -61,10 +62,10 @@ final class DungeonCorridorRouteSplitLogic {
         return null;
     }
 
-    private static List<DungeonCorridorAnchorBinding> routeAnchors(DungeonMap dungeonMap) {
-        List<DungeonCorridorAnchorBinding> result = new ArrayList<>();
+    private static List<CorridorAnchorBinding> routeAnchors(DungeonMap dungeonMap) {
+        List<CorridorAnchorBinding> result = new ArrayList<>();
         for (DungeonCorridor corridor : dungeonMap.corridors()) {
-            for (DungeonCorridorAnchorBinding anchor : corridor.bindings().anchorBindings()) {
+            for (CorridorAnchorBinding anchor : corridor.bindings().anchorBindings()) {
                 if (anchor != null) {
                     result.add(anchor);
                 }

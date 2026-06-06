@@ -47,8 +47,8 @@ import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.Tran
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.worldspace.DungeonCorridor;
-import src.domain.dungeon.model.worldspace.DungeonCorridorBindings;
-import src.domain.dungeon.model.worldspace.DungeonCorridorDoorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 
 final class DungeonStructureInvariantHarness {
 
@@ -351,21 +351,21 @@ final class DungeonStructureInvariantHarness {
     private static void assertWorldspaceAdapterPreservesTopologyRefIdentity() {
         src.domain.dungeon.model.core.graph.DungeonTopologyRef stableRef =
                 src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(30L);
-        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding first =
-                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
+        src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding first =
+                new src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding(
                         3L,
                         12L,
                         new Cell(1, 1, 0),
                         stableRef);
-        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding replacement =
-                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
+        src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding replacement =
+                new src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding(
                         5L,
                         12L,
                         new Cell(2, 2, 0),
                         stableRef);
-        DungeonCorridorBindings bindings = new DungeonCorridorBindings(List.of(), List.of(), List.of(first), List.of());
+        CorridorBindingState bindings = new CorridorBindingState(List.of(), List.of(), List.of(first), List.of());
 
-        DungeonCorridorBindings replaced = bindings.replaceAnchorBindings(List.of(replacement));
+        CorridorBindingState replaced = bindings.replaceAnchorBindings(List.of(replacement));
         assertEquals(List.of(replacement), replaced.anchorBindings(),
                 "adapter anchor replacement follows topology ref when anchor id differs");
 
@@ -378,13 +378,13 @@ final class DungeonStructureInvariantHarness {
 
         src.domain.dungeon.model.core.graph.DungeonTopologyRef splitAnchorRef =
                 src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(70L);
-        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding splitAnchor =
-                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
+        src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding splitAnchor =
+                new src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding(
                         7L,
                         40L,
                         new Cell(1, 0, 0),
                         splitAnchorRef);
-        DungeonCorridorBindings splitBindings = DungeonCorridorBindings.empty().withInteriorRouteAnchors(
+        CorridorBindingState splitBindings = CorridorBindingState.empty().withInteriorRouteAnchors(
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
                         10L,
@@ -393,12 +393,12 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(new CorridorAnchorRef(40L, splitAnchorRef.id())),
                 splitBindings.anchorRefs(),
                 "adapter route split preserves selected anchor topology ref");
-        DungeonCorridorBindings existingCustomRef = new DungeonCorridorBindings(
+        CorridorBindingState existingCustomRef = new CorridorBindingState(
                 List.of(),
                 List.of(),
                 List.of(),
                 List.of(new CorridorAnchorRef(40L, splitAnchorRef.id())));
-        DungeonCorridorBindings deduplicatedSplitBindings = existingCustomRef.withInteriorRouteAnchors(
+        CorridorBindingState deduplicatedSplitBindings = existingCustomRef.withInteriorRouteAnchors(
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
                         10L,
@@ -411,9 +411,9 @@ final class DungeonStructureInvariantHarness {
 
     private static void assertWorldspaceCorridorRoomSetAdapterCompatibility() {
         CorridorDoorBinding secondDoor = new CorridorDoorBinding(6L, 11L, new Cell(2, 3, 0), Direction.EAST);
-        DungeonCorridorBindings bindings = new DungeonCorridorBindings(
+        CorridorBindingState bindings = new CorridorBindingState(
                 List.of(),
-                List.of(new DungeonCorridorDoorBinding(
+                List.of(new CorridorDoorBindingState(
                         4L, 10L, new Cell(0, 1, 0), Direction.NORTH, null)),
                 List.of(),
                 List.of());
@@ -518,14 +518,14 @@ final class DungeonStructureInvariantHarness {
                 src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(70L);
         src.domain.dungeon.model.core.graph.DungeonTopologyRef detachedRef =
                 src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(71L);
-        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding referencedAnchor =
-                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
+        src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding referencedAnchor =
+                new src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding(
                         7L,
                         10L,
                         new Cell(6, 5, 0),
                         stableRef);
-        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding detachedAnchor =
-                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorBinding(
+        src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding detachedAnchor =
+                new src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding(
                         8L,
                         10L,
                         new Cell(6, 6, 0),
@@ -535,13 +535,13 @@ final class DungeonStructureInvariantHarness {
                 3L,
                 0,
                 List.of(),
-                new DungeonCorridorBindings(List.of(), List.of(), List.of(referencedAnchor, detachedAnchor), List.of()));
+                new CorridorBindingState(List.of(), List.of(), List.of(referencedAnchor, detachedAnchor), List.of()));
         DungeonCorridor dependent = new DungeonCorridor(
                 20L,
                 3L,
                 0,
                 List.of(),
-                new DungeonCorridorBindings(
+                new CorridorBindingState(
                         List.of(),
                         List.of(),
                         List.of(),

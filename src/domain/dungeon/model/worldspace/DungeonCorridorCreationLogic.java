@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
@@ -122,7 +123,7 @@ final class DungeonCorridorCreationLogic {
                 endResolved.map().metadata().mapId().value(),
                 level,
                 roomIds(startResolved, endResolved),
-                DungeonCorridorBindings.empty());
+                CorridorBindingState.empty());
         corridor = startResolved.applyTo(corridor);
         return endResolved.applyTo(corridor);
     }
