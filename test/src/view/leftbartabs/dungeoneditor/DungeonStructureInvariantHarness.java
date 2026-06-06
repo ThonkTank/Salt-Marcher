@@ -542,11 +542,11 @@ final class DungeonStructureInvariantHarness {
                         List.of(),
                         List.of(),
                         List.of(new CorridorAnchorRef(10L, stableRef.id()))));
-        src.domain.dungeon.model.worldspace.DungeonCorridorAnchorPruningRules pruningRules =
-                new src.domain.dungeon.model.worldspace.DungeonCorridorAnchorPruningRules();
+        src.domain.dungeon.model.worldspace.DungeonCorridorConnectionNormalizationLogic normalization =
+                new src.domain.dungeon.model.worldspace.DungeonCorridorConnectionNormalizationLogic();
 
         assertEquals(List.of(referencedAnchor),
-                pruningRules.pruneDetachedAnchors(List.of(owner, dependent)).getFirst().bindings().anchorBindings(),
+                normalization.pruneDetachedAnchors(List.of(owner, dependent)).getFirst().bindings().anchorBindings(),
                 "adapter pruning preserves referenced anchor by topology ref");
     }
 

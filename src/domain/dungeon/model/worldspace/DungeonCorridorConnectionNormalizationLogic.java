@@ -10,15 +10,20 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
  */
 public final class DungeonCorridorConnectionNormalizationLogic {
 
-    private static final DungeonCorridorAnchorPruningRules ANCHOR_PRUNING_POLICY = new DungeonCorridorAnchorPruningRules();
     private static final DungeonDerivedStateProjection DERIVED_STATE_PROJECTION = new DungeonDerivedStateProjection();
 
     public ConnectionCatalog normalizeConnections(DungeonMap dungeonMap, ConnectionCatalog source) {
         Objects.requireNonNull(dungeonMap, "dungeonMap");
         ConnectionCatalog safeSource = source == null ? ConnectionCatalog.empty() : source;
         List<DungeonCorridor> snappedCorridors = snapOwnedAnchors(dungeonMap, safeSource.corridors());
-        List<DungeonCorridor> prunedCorridors = ANCHOR_PRUNING_POLICY.pruneDetachedAnchors(snappedCorridors);
+        List<DungeonCorridor> prunedCorridors = pruneDetachedAnchors(snappedCorridors);
         return new ConnectionCatalog(prunedCorridors, safeSource.stairs(), safeSource.transitions());
+    }
+
+    public List<DungeonCorridor> pruneDetachedAnchors(List<DungeonCorridor> corridors) {
+        return DungeonCorridor.fromCoreNetwork(
+                corridors,
+                DungeonCorridor.coreNetwork(corridors).withoutDetachedAnchors());
     }
 
     public DungeonMap copyWithConnections(DungeonMap dungeonMap, ConnectionCatalog nextConnections) {
