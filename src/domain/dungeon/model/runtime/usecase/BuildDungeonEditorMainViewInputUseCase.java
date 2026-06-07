@@ -300,6 +300,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
     public static final class HandleKindInput implements NamedInput {
         public static final HandleKindInput CLUSTER_LABEL = new HandleKindInput("CLUSTER_LABEL");
         public static final HandleKindInput CLUSTER_CORNER = new HandleKindInput("CLUSTER_CORNER");
+        public static final HandleKindInput CLUSTER_WALL_RUN = new HandleKindInput("CLUSTER_WALL_RUN");
         public static final HandleKindInput DOOR = new HandleKindInput("DOOR");
         public static final HandleKindInput CORRIDOR_ANCHOR = new HandleKindInput("CORRIDOR_ANCHOR");
         public static final HandleKindInput CORRIDOR_WAYPOINT = new HandleKindInput("CORRIDOR_WAYPOINT");
@@ -307,6 +308,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
         private static final HandleKindInput[] VALUES = {
                 CLUSTER_LABEL,
                 CLUSTER_CORNER,
+                CLUSTER_WALL_RUN,
                 DOOR,
                 CORRIDOR_ANCHOR,
                 CORRIDOR_WAYPOINT,

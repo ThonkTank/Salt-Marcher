@@ -18,7 +18,6 @@ import src.domain.dungeon.published.DeleteDungeonMapCommand;
 import src.domain.dungeon.published.DungeonBoundaryKind;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEditorBoundaryTargetRef;
-import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorPointerSample;
 import src.domain.dungeon.published.DungeonEditorPointerTarget;
@@ -875,7 +874,7 @@ final class DungeonEditorIntentHandler {
                     ? DungeonMapContentModel.HandleTarget.empty()
                     : handle;
             return new DungeonEditorHandleRef(
-                    handleKind(safeHandle.kind()),
+                    safeHandle.kind(),
                     topologyRef(safeHandle.topologyKind(), safeHandle.topologyId()),
                     safeHandle.ownerId(),
                     safeHandle.clusterId(),
@@ -901,14 +900,6 @@ final class DungeonEditorIntentHandler {
 
         private static DungeonBoundaryKind boundaryKind(String value) {
             return "DOOR".equals(value) ? DungeonBoundaryKind.DOOR : DungeonBoundaryKind.WALL;
-        }
-
-        private static DungeonEditorHandleKind handleKind(String value) {
-            try {
-                return DungeonEditorHandleKind.valueOf(normalizedEnumName(value));
-            } catch (IllegalArgumentException ignored) {
-                return DungeonEditorHandleKind.CLUSTER_LABEL;
-            }
         }
 
         private static DungeonTopologyElementKind topologyElementKind(String value) {

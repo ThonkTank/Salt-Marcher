@@ -58,6 +58,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                         binding.roomId(),
                         index,
                         corridorCell,
+                        corridorCell.q(),
+                        corridorCell.r(),
                         binding.direction(),
                         "Tür " + corridor.corridorId() + "." + (index + 1)));
             }
@@ -81,6 +83,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                         0L,
                         index,
                         absolute,
+                        absolute.q(),
+                        absolute.r(),
                         Direction.NORTH,
                         "Wegpunkt " + (index + 1)));
             }
@@ -91,6 +95,7 @@ public final class PublishDungeonEditorHandlesUseCase {
         for (Corridor corridor : dungeonMap.corridors()) {
             for (int index = 0; index < corridor.stateBindings().anchorBindings().size(); index++) {
                 var anchor = corridor.stateBindings().anchorBindings().get(index);
+                Cell anchorCell = anchor.absoluteCell();
                 result.add(new DungeonEditorHandleProjection(
                         DungeonEditorHandleProjectionKind.CORRIDOR_ANCHOR,
                         anchor.topologyRef(),
@@ -99,7 +104,9 @@ public final class PublishDungeonEditorHandlesUseCase {
                         corridor.corridorId(),
                         0L,
                         index,
-                        anchor.absoluteCell(),
+                        anchorCell,
+                        anchorCell.q(),
+                        anchorCell.r(),
                         Direction.NORTH,
                         "Korridoranker " + (index + 1)));
             }
@@ -131,6 +138,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                 0L,
                 index,
                 cell,
+                cell.q(),
+                cell.r(),
                 stair.direction(),
                 label);
     }

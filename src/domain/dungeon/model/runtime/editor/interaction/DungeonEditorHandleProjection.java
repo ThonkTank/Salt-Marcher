@@ -13,6 +13,8 @@ public record DungeonEditorHandleProjection(
         long roomId,
         int index,
         Cell cell,
+        double markerQ,
+        double markerR,
         Direction direction,
         String label
 ) {
@@ -25,6 +27,8 @@ public record DungeonEditorHandleProjection(
         roomId = Math.max(0L, roomId);
         index = Math.max(0, index);
         cell = cell == null ? new Cell(0, 0, 0) : cell;
+        markerQ = Double.isFinite(markerQ) ? markerQ : cell.q();
+        markerR = Double.isFinite(markerR) ? markerR : cell.r();
         direction = direction == null ? Direction.NORTH : direction;
         label = label == null || label.isBlank() ? kind.name() : label.trim();
     }

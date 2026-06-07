@@ -854,7 +854,7 @@ final class DungeonEditorCorridorHarness {
         click(button(controls, "Korridor"));
         Point2D roomInterior = new Point2D(1.5, 2.5);
         Point2D doorTwo = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 8.0, 2.5);
-        assertPointerTarget(binding.mapContentModel(), roomInterior, "CELL", "DE-COR-009 generic room");
+        assertPointerTarget(binding.mapContentModel(), roomInterior, "LABEL", "DE-COR-009 generic room");
         assertEquals("ROOM", binding.mapContentModel()
                         .resolvePointerTarget(roomInterior.getX(), roomInterior.getY())
                         .elementKind(),

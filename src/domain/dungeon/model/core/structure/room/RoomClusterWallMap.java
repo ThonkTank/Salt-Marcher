@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
@@ -43,6 +44,18 @@ public final class RoomClusterWallMap {
                 deltaLevel);
     }
 
+    public List<Cell> authoredBoundaryVertices(
+            @Nullable Cell center,
+            int level,
+            Iterable<Cell> relativeVertices
+    ) {
+        return RoomClusterBoundaryVertices.authored(rowsByKey, center, level, relativeVertices);
+    }
+
+    public List<WallRun> authoredWallRuns(int level) {
+        return RoomClusterWallRuns.authoredWallRuns(rowsByKey, level);
+    }
+
     @Override
     public boolean equals(Object other) {
         return other instanceof RoomClusterWallMap that
@@ -70,5 +83,14 @@ public final class RoomClusterWallMap {
 
     static EdgeKey keyForRow(@Nullable Cell center, BoundaryRow row) {
         return RoomClusterWallRows.keyForRow(center, row);
+    }
+
+    public record WallRun(Cell anchorCell, double markerQ, double markerR, Direction direction) {
+        public WallRun {
+            anchorCell = anchorCell == null ? new Cell(0, 0, 0) : anchorCell;
+            markerQ = Double.isFinite(markerQ) ? markerQ : anchorCell.q();
+            markerR = Double.isFinite(markerR) ? markerR : anchorCell.r();
+            direction = direction == null ? Direction.NORTH : direction;
+        }
     }
 }

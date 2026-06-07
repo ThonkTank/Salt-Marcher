@@ -154,11 +154,12 @@ final class DungeonEditorSelectionHarness {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("DE-SEL-002 door boundary not loaded."));
         Point2D doorMidpoint = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
-        assertEquals("BOUNDARY", binding.mapContentModel()
-                        .resolvePointerTarget(doorMidpoint.getX(), doorMidpoint.getY())
-                        .targetKind()
-                        .name(),
-                "DE-SEL-002 render hit index resolves the door midpoint as a boundary");
+        var doorPointerTarget = binding.mapContentModel()
+                .resolvePointerTarget(doorMidpoint.getX(), doorMidpoint.getY());
+        assertEquals("BOUNDARY",
+                doorPointerTarget.targetKind().name(),
+                "DE-SEL-002 render hit index resolves the door midpoint as a boundary: "
+                        + doorPointerTarget);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         fireMapMousePressed(

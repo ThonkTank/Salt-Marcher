@@ -47,6 +47,19 @@ public final class RoomClusterFloorMap {
         return RoomClusterCells.sortedCells(result);
     }
 
+    public Cell preferredCentroidOr(int preferredLevel, Cell fallback) {
+        List<Cell> preferredCells = cellsByLevel.getOrDefault(preferredLevel, List.of());
+        if (!preferredCells.isEmpty()) {
+            return centroid(preferredCells, fallback);
+        }
+        for (List<Cell> cells : cellsByLevel.values()) {
+            if (!cells.isEmpty()) {
+                return centroid(cells, fallback);
+            }
+        }
+        return fallback == null ? new Cell(0, 0, 0) : fallback;
+    }
+
     public FloorMutation replaceCellsByLevel(Map<Integer, ? extends Iterable<Cell>> nextCellsByLevel) {
         RoomClusterFloorMap next = new RoomClusterFloorMap(nextCellsByLevel);
         return new FloorMutation(!cellsByLevel.equals(next.cellsByLevel), next);
@@ -82,6 +95,21 @@ public final class RoomClusterFloorMap {
             }
         }
         return Collections.unmodifiableMap(result);
+    }
+
+    private static Cell centroid(List<Cell> cells, Cell fallback) {
+        if (cells == null || cells.isEmpty()) {
+            return fallback == null ? new Cell(0, 0, 0) : fallback;
+        }
+        long qTotal = 0L;
+        long rTotal = 0L;
+        int level = cells.getFirst().level();
+        for (Cell cell : cells) {
+            qTotal += cell.q();
+            rTotal += cell.r();
+        }
+        int count = Math.max(1, cells.size());
+        return new Cell(Math.round((float) qTotal / count), Math.round((float) rTotal / count), level);
     }
 
     public record FloorMutation(boolean changed, RoomClusterFloorMap floorMap) {

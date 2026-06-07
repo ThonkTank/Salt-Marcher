@@ -16,8 +16,8 @@ stability. It does not own narration text or transition destination labels.
 
 | ID | Interaction | Route | Fixture | Expected proof | Status |
 | --- | --- | --- | --- | --- | --- |
-| `DE-LABEL-001` | Default cluster label | Load or create unnamed cluster | `F1_SINGLE_ROOM` | Map label text is `Cluster <clusterId>` and does not reuse the first room name. | Implementation Gap |
-| `DE-LABEL-002` | Cluster label centered in cluster | Render unnamed cluster | `F15_COMPLEX_CLUSTER` | Cluster label anchor is the authored cluster floor-cell centroid, not a bounding-box-only point. | Implementation Gap |
+| `DE-LABEL-001` | Default cluster label | Reload seeded persisted unnamed cluster | `F1_SINGLE_ROOM` | Loaded map label text is `Cluster <clusterId>` and does not reuse the first room name. | Ready |
+| `DE-LABEL-002` | Cluster label centered in cluster | Render unnamed cluster | `F15_COMPLEX_CLUSTER` | Cluster label anchor is the authored cluster floor-cell centroid, not a bounding-box-only point. | Ready |
 | `DE-LABEL-003` | Default room label | Load or create unnamed room | `F1_SINGLE_ROOM` | Room floor label text is `Raum <roomId>`. | Harness Gap |
 | `DE-LABEL-004` | Room label follows longest wall | Render room label | `F15_COMPLEX_CLUSTER` | Room label is subdued floor text parallel to the longest available room wall run. | Implementation Gap |
 | `DE-LABEL-005` | State-panel cluster label rename | Select cluster, edit name in state panel, save | `F1_SINGLE_ROOM` | Custom cluster name persists, reloads, updates the rendered label, and does not mutate room geometry. | Implementation Gap |

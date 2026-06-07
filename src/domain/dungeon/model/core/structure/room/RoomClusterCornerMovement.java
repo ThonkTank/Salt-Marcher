@@ -107,7 +107,10 @@ public final class RoomClusterCornerMovement {
         }
         List<Edge> result = new ArrayList<>();
         WORK_CATALOG.workCluster(topology, rooms, clusterId)
-                .map(target -> target.cluster().toCore(target.cellsByLevel()).boundingSideEdges(corner, vertical))
+                .map(target -> RoomClusterCornerSideEdges.adjacentWallRunEdges(
+                        target.cluster().boundaryMap(),
+                        corner,
+                        vertical))
                 .ifPresent(edges -> appendEdges(result, edges));
         return List.copyOf(result);
     }

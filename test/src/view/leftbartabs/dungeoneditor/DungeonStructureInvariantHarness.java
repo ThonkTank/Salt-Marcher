@@ -36,6 +36,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
+import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
@@ -140,6 +141,12 @@ final class DungeonStructureInvariantHarness {
                 OWNER,
                 "DGI-STR-012",
                 "Room structure keeps stretch-plan compatibility while Wall owner owns wall-map stretch behavior");
+        assertRoomWallRunInvariants();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-STR-013",
+                "Room wall owner keeps authored wall-run geometric markers separated by edge direction");
     }
 
     private static void assertCorridorStructureInvariants() {
@@ -744,6 +751,32 @@ final class DungeonStructureInvariantHarness {
                                 Direction.NORTH))
                         .stableId(),
                 "boundary key stable ids match core geometry");
+    }
+
+    private static void assertRoomWallRunInvariants() {
+        RoomClusterWallMap wallMap = new RoomClusterWallMap(
+                new Cell(0, 0, 0),
+                List.of(
+                        wallRow(0, 0, Direction.NORTH),
+                        wallRow(1, 0, Direction.NORTH),
+                        wallRow(2, -1, Direction.SOUTH),
+                        wallRow(3, -1, Direction.SOUTH)));
+
+        assertEquals(
+                List.of(
+                        new RoomClusterWallMap.WallRun(new Cell(1, 0, 0), 1.0, 0.0, Direction.NORTH),
+                        new RoomClusterWallMap.WallRun(new Cell(3, 0, 0), 3.0, 0.0, Direction.SOUTH)),
+                wallMap.authoredWallRuns(0),
+                "core room wall runs publish geometric midpoints and do not merge different directions");
+    }
+
+    private static BoundaryRow wallRow(int relativeQ, int relativeR, Direction direction) {
+        return new BoundaryRow(
+                42L,
+                0,
+                new Cell(relativeQ, relativeR, 0),
+                direction,
+                RoomClusterBoundaryMaterialization.BoundaryKind.WALL);
     }
 
     private static void assertRoomBoundaryStretchPlanInvariants() {

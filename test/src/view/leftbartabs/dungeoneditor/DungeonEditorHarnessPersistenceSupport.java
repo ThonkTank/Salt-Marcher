@@ -1252,6 +1252,34 @@ class DungeonEditorHarnessPersistenceSupport {
             }
         }
 
+        void seedF15ComplexCluster(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long clusterId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z)"
+                                + " VALUES(?, ?, ?, ?)",
+                        mapId,
+                        10,
+                        10,
+                        0);
+                long roomOneId = insertClusterRoom(connection, mapId, clusterId, "R1", 10, 10, 0);
+                long roomTwoId = insertClusterRoom(connection, mapId, clusterId, "R2", 11, 10, 0);
+                insertTopologyElement(connection, mapId, roomOneId, clusterId, "R1");
+                insertTopologyElement(connection, mapId, roomTwoId, clusterId, "R2");
+                insertF6Vertex(connection, clusterId, 0, 0, 0, 0);
+                insertF6Vertex(connection, clusterId, 0, 1, 3, 0);
+                insertF6Vertex(connection, clusterId, 0, 2, 3, 1);
+                insertF6Vertex(connection, clusterId, 0, 3, 1, 1);
+                insertF6Vertex(connection, clusterId, 0, 4, 1, 3);
+                insertF6Vertex(connection, clusterId, 0, 5, 0, 3);
+                insertComplexClusterWalls(connection, mapId, clusterId);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed F15_COMPLEX_CLUSTER fixture.", exception);
+            }
+        }
+
         void seedNarrationRoomWithEastExitLink(long mapId) {
             try (Connection connection = open()) {
                 connection.setAutoCommit(false);
@@ -1707,6 +1735,49 @@ class DungeonEditorHarnessPersistenceSupport {
             insertF6Vertex(connection, clusterId, level, 3, -1, 2);
             insertPerimeterWalls(connection, mapId, clusterId, level, anchorX + 1, anchorY + 1);
             return roomId;
+        }
+
+        static long insertClusterRoom(
+                Connection connection,
+                long mapId,
+                long clusterId,
+                String roomName,
+                int componentX,
+                int componentY,
+                int level
+        ) throws SQLException {
+            return insertAndReturnId(
+                    connection,
+                    "INSERT INTO dungeon_rooms(dungeon_map_id, cluster_id, name, visual_description,"
+                            + " component_x, component_y, level_z) VALUES(?, ?, ?, ?, ?, ?, ?)",
+                    mapId,
+                    clusterId,
+                    roomName,
+                    "",
+                    componentX,
+                    componentY,
+                    level);
+        }
+
+        static void insertComplexClusterWalls(
+                Connection connection,
+                long mapId,
+                long clusterId
+        ) throws SQLException {
+            int sortOrder = 1;
+            for (int relativeX = 0; relativeX <= 2; relativeX++) {
+                insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, relativeX, 0, "NORTH", sortOrder++);
+            }
+            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 2, 0, "EAST", sortOrder++);
+            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 1, 0, "SOUTH", sortOrder++);
+            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 2, 0, "SOUTH", sortOrder++);
+            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, 0, "EAST", sortOrder++);
+            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, 1, "EAST", sortOrder++);
+            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, 2, "EAST", sortOrder++);
+            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, 2, "SOUTH", sortOrder++);
+            for (int relativeY = 0; relativeY <= 2; relativeY++) {
+                insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, relativeY, "WEST", sortOrder++);
+            }
         }
 
         static long markDoorEdge(

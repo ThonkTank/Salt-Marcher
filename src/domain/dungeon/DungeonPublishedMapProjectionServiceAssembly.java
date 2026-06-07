@@ -92,7 +92,9 @@ final class DungeonPublishedMapProjectionServiceAssembly {
         return new src.domain.dungeon.published.DungeonEditorHandleSnapshot(
                 handleRef(handle),
                 handle.label(),
-                cell(handle.cell()));
+                cell(handle.cell()),
+                handle.markerQ(),
+                handle.markerR());
     }
 
     private static src.domain.dungeon.published.DungeonEditorHandleRef handleRef(DungeonEditorHandleProjection handle) {

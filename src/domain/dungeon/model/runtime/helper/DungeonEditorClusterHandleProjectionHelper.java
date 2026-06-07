@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
@@ -11,9 +12,10 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomCellCoverage;
+import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
+import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjectionKind;
-import src.domain.dungeon.model.core.structure.DungeonMap;
 
 public final class DungeonEditorClusterHandleProjectionHelper {
 
@@ -45,24 +47,25 @@ public final class DungeonEditorClusterHandleProjectionHelper {
             return;
         }
         DungeonRoom room = rooms.getFirst();
-        result.add(clusterLabel(cluster, room));
-        for (Map.Entry<Integer, List<Cell>> entry : CELL_COVERAGE.cellsByLevel(cluster, rooms).entrySet()) {
-            appendClusterCornerHandles(result, cluster, room, entry.getKey(), entry.getValue());
-        }
-    }
-
-    private static DungeonEditorHandleProjection clusterLabel(DungeonRoomCluster cluster, DungeonRoom room) {
-        return new DungeonEditorHandleProjection(
+        Map<Integer, List<Cell>> cellsByLevel = CELL_COVERAGE.cellsByLevel(cluster, rooms);
+        Cell labelCell = primaryLabelCell(cluster, cellsByLevel);
+        result.add(new DungeonEditorHandleProjection(
                 DungeonEditorHandleProjectionKind.CLUSTER_LABEL,
                 new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
-                room.roomId(),
+                cluster.clusterId(),
                 cluster.clusterId(),
                 0L,
                 room.roomId(),
                 0,
-                cluster.center(),
+                labelCell,
+                labelCell.q(),
+                labelCell.r(),
                 Direction.NORTH,
-                room.name());
+                "Cluster " + cluster.clusterId()));
+        for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
+            appendClusterCornerHandles(result, cluster, room, entry.getKey());
+            appendWallRunHandles(result, cluster, room, entry.getKey());
+        }
     }
 
     private static Map<Long, List<DungeonRoom>> roomsByCluster(List<DungeonRoom> rooms) {
@@ -80,66 +83,63 @@ public final class DungeonEditorClusterHandleProjectionHelper {
         Map<Long, List<DungeonRoom>> result = new LinkedHashMap<>();
         for (Map.Entry<Long, List<DungeonRoom>> entry : grouped.entrySet()) {
             List<DungeonRoom> clusterRooms = new ArrayList<>(entry.getValue());
-            clusterRooms.sort(DungeonEditorClusterHandleProjectionHelper::compareByRoomId);
+            clusterRooms.sort((left, right) -> Long.compare(left.roomId(), right.roomId()));
             result.put(entry.getKey(), List.copyOf(clusterRooms));
         }
         return Map.copyOf(result);
-    }
-
-    private static int compareByRoomId(DungeonRoom left, DungeonRoom right) {
-        return Long.compare(left.roomId(), right.roomId());
     }
 
     private static void appendClusterCornerHandles(
             List<DungeonEditorHandleProjection> result,
             DungeonRoomCluster cluster,
             DungeonRoom room,
-            int level,
-            List<Cell> cells
+            int level
     ) {
-        List<Cell> corners = boundingCorners(cells, level);
+        List<Cell> corners = cluster.authoredBoundaryVertices(level);
         for (int index = 0; index < corners.size(); index++) {
-            result.add(clusterCorner(cluster, room, corners.get(index), index));
+            Cell corner = corners.get(index);
+            result.add(new DungeonEditorHandleProjection(
+                    DungeonEditorHandleProjectionKind.CLUSTER_CORNER,
+                    new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
+                    room.roomId(),
+                    cluster.clusterId(),
+                    0L,
+                    room.roomId(),
+                    index,
+                    corner,
+                    corner.q(),
+                    corner.r(),
+                    Direction.NORTH,
+                    "Ecke " + (index + 1)));
         }
     }
 
-    private static DungeonEditorHandleProjection clusterCorner(
+    private static Cell primaryLabelCell(DungeonRoomCluster cluster, Map<Integer, List<Cell>> cellsByLevel) {
+        return new RoomClusterFloorMap(cellsByLevel).preferredCentroidOr(cluster.center().level(), cluster.center());
+    }
+
+    private static void appendWallRunHandles(
+            List<DungeonEditorHandleProjection> result,
             DungeonRoomCluster cluster,
             DungeonRoom room,
-            Cell corner,
-            int index
+            int level
     ) {
-        return new DungeonEditorHandleProjection(
-                DungeonEditorHandleProjectionKind.CLUSTER_CORNER,
-                new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
-                room.roomId(),
-                cluster.clusterId(),
-                0L,
-                room.roomId(),
-                index,
-                corner,
-                Direction.NORTH,
-                "Ecke " + (index + 1));
-    }
-
-    private static List<Cell> boundingCorners(List<Cell> cells, int level) {
-        if (cells == null || cells.isEmpty()) {
-            return List.of();
+        List<WallRun> wallRuns = cluster.authoredWallRuns(level);
+        for (int index = 0; index < wallRuns.size(); index++) {
+            WallRun wallRun = wallRuns.get(index);
+            result.add(new DungeonEditorHandleProjection(
+                    DungeonEditorHandleProjectionKind.CLUSTER_WALL_RUN,
+                    new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
+                    cluster.clusterId(),
+                    cluster.clusterId(),
+                    0L,
+                    room.roomId(),
+                    index,
+                    wallRun.anchorCell(),
+                    wallRun.markerQ(),
+                    wallRun.markerR(),
+                    wallRun.direction(),
+                    "Wandlauf " + (index + 1)));
         }
-        int minQ = cells.getFirst().q();
-        int maxQ = minQ;
-        int minR = cells.getFirst().r();
-        int maxR = minR;
-        for (Cell cell : cells) {
-            minQ = Math.min(minQ, cell.q());
-            maxQ = Math.max(maxQ, cell.q());
-            minR = Math.min(minR, cell.r());
-            maxR = Math.max(maxR, cell.r());
-        }
-        return List.of(
-                new Cell(minQ, minR, level),
-                new Cell(maxQ + 1, minR, level),
-                new Cell(maxQ + 1, maxR + 1, level),
-                new Cell(minQ, maxR + 1, level));
     }
 }

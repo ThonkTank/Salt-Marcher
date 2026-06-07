@@ -29,6 +29,7 @@ public final class DungeonEditorRouteBehaviorHarness {
         DungeonEditorStairHarness.run(results);
         DungeonEditorTransitionHarness.run(results);
         DungeonEditorCorridorHarness.run(results);
+        DungeonEditorClusterLabelHandleHarness.run(results);
         DungeonEditorRoomWallDoorHarness.run(results);
     }
 }

@@ -1,11 +1,9 @@
 package src.domain.dungeon.model.core.structure.room;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.door.DoorIndex;
 
 public record RoomCluster(
@@ -81,56 +79,4 @@ public record RoomCluster(
                 doorIndex);
     }
 
-    public List<Edge> boundingSideEdges(Cell corner, boolean vertical) {
-        if (corner == null) {
-            return List.of();
-        }
-        List<Cell> cells = cellsAt(corner.level());
-        if (cells.isEmpty()) {
-            return List.of();
-        }
-        Bounds bounds = Bounds.from(cells);
-        return vertical
-                ? bounds.verticalEdges(corner.q(), corner.level())
-                : bounds.horizontalEdges(corner.r(), corner.level());
-    }
-
-    private record Bounds(int minQ, int maxQ, int minR, int maxR) {
-        private static Bounds from(List<Cell> cells) {
-            Cell first = cells.getFirst();
-            int minQ = first.q();
-            int maxQ = first.q();
-            int minR = first.r();
-            int maxR = first.r();
-            for (Cell cell : cells) {
-                minQ = Math.min(minQ, cell.q());
-                maxQ = Math.max(maxQ, cell.q());
-                minR = Math.min(minR, cell.r());
-                maxR = Math.max(maxR, cell.r());
-            }
-            return new Bounds(minQ, maxQ, minR, maxR);
-        }
-
-        private List<Edge> verticalEdges(int fixedQ, int level) {
-            if (fixedQ != minQ && fixedQ != maxQ + 1) {
-                return List.of();
-            }
-            Set<Edge> result = new LinkedHashSet<>();
-            for (int r = minR; r <= maxR; r++) {
-                result.add(new Edge(new Cell(fixedQ, r, level), new Cell(fixedQ, r + 1, level)));
-            }
-            return List.copyOf(result);
-        }
-
-        private List<Edge> horizontalEdges(int fixedR, int level) {
-            if (fixedR != minR && fixedR != maxR + 1) {
-                return List.of();
-            }
-            Set<Edge> result = new LinkedHashSet<>();
-            for (int q = minQ; q <= maxQ; q++) {
-                result.add(new Edge(new Cell(q, fixedR, level), new Cell(q + 1, fixedR, level)));
-            }
-            return List.copyOf(result);
-        }
-    }
 }
