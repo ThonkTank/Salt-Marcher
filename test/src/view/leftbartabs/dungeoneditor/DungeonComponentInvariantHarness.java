@@ -80,7 +80,7 @@ final class DungeonComponentInvariantHarness {
         assertEquals(new Cell(9, 10, 3), moved.position(), "moved anchor position");
 
         assertThrowsNullAnchorPosition();
-        assertWorldspaceAnchorAdapterCompatibility();
+        assertRetainedAnchorAdapterCompatibility();
     }
 
     private static void assertThrowsNullAnchorPosition() {
@@ -92,7 +92,7 @@ final class DungeonComponentInvariantHarness {
         throw new IllegalStateException("CorridorAnchor must reject null position");
     }
 
-    private static void assertWorldspaceAnchorAdapterCompatibility() {
+    private static void assertRetainedAnchorAdapterCompatibility() {
         CorridorAnchorBinding defaulted = new CorridorAnchorBinding(-4L, -6L, null, null);
         assertEquals(0L, defaulted.anchorId(), "adapter anchor id lower bound");
         assertEquals(0L, defaulted.hostCorridorId(), "adapter host id lower bound");
@@ -145,7 +145,7 @@ final class DungeonComponentInvariantHarness {
         assertTrue(presentRef.present(), "anchor ref present");
 
         assertThrowsNullCorridorBindingComponentValues();
-        assertWorldspaceCorridorBindingAdapterCompatibility();
+        assertRetainedCorridorBindingAdapterCompatibility();
     }
 
     private static void assertThrowsNullCorridorBindingComponentValues() {
@@ -160,7 +160,7 @@ final class DungeonComponentInvariantHarness {
                 "corridor waypoint null relative cell");
     }
 
-    private static void assertWorldspaceCorridorBindingAdapterCompatibility() {
+    private static void assertRetainedCorridorBindingAdapterCompatibility() {
         CorridorDoorBindingState defaultedDoor = new CorridorDoorBindingState(-1L, -2L, null, null, null);
         assertEquals(0L, defaultedDoor.roomId(), "adapter door room lower bound");
         assertEquals(0L, defaultedDoor.clusterId(), "adapter door cluster lower bound");

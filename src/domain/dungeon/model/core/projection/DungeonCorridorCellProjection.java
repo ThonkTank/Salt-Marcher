@@ -12,8 +12,8 @@ import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 /**
- * Transitional projection boundary: remove the worldspace corridor and cluster
- * inputs once the authored route projection reads core structure facts directly.
+ * Projection boundary for authored corridor route facts supplied by core
+ * structure owners.
  */
 final class DungeonCorridorCellProjection {
     private static final int SINGLE_ROUTE_TERMINUS_COUNT = 1;

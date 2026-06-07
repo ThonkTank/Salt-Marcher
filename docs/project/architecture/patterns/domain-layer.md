@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-25
+Last Reviewed: 2026-06-07
 Source of Truth: Binding domain-layer pattern, role ownership, communication seams, context map, and topology for `src/domain/**`.
 
 # Domain Layer Standard
@@ -292,8 +292,8 @@ Rules:
   technical buckets such as `published`, `application`, `usecase`, `helper`,
   `constants`, `port`, `repository`, and rejected legacy role names are
   illegal there
-- `model/worldspace/session/model/` is semantic; `model/worldspace/model/` is
-  the obsolete direct model role marker and is illegal
+- `model/<family>/session/` is semantic; `model/<family>/model/` is the
+  obsolete direct model role marker and is illegal
 - non-model subordinate role buckets are `usecase/`, `helper/`, `constants/`,
   `port/`, and `repository/`
 - non-model role buckets stay direct-file only
@@ -316,7 +316,7 @@ Rules:
 - `creatures`: Reference Catalog Context.
 - `encounter`: Roster Truth Context.
 - `encountertable`: Reference Catalog Context.
-- `dungeon`: Authored World-Space Context with `core` truth and runtime.
+- `dungeon`: Authored Dungeon Map Context with `core` truth and runtime.
 - `sessionplanner`: Roster Truth Context.
 
 ## Context Relationships <!-- mechanical-domain-dependencies: dungeon=party; encounter=creatures,encountertable,party; sessionplanner=encounter,party -->
@@ -333,7 +333,7 @@ Rules:
 - `encountertable`: `Reference Catalog Context`; consumes creature persistence
   snapshots through layered data access and publishes table summaries and
   weighted candidate rows.
-- `dungeon`: `Authored World-Space Context`; owns authored world-space truth
+- `dungeon`: `Authored Dungeon Map Context`; owns authored dungeon map truth
   independently of party, creatures, and encounter. Authored truth lives in
   `core`; editor and travel runtime composition live in `runtime` over the same
   authored map facts.

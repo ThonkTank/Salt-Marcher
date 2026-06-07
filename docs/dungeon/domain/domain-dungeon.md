@@ -1,14 +1,19 @@
-Status: Draft
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-04
+Last Reviewed: 2026-06-07
 Source of Truth: Dungeon write model, ownership boundaries, and domain
 invariants.
 
 # Dungeon Domain Model
 
+Architecture note: Dungeon-specific domain architecture, model-family
+placement, and dependency direction live in
+[Dungeon Domain Architecture](../architecture/architecture-dungeon-domain.md).
+This document owns domain truth only.
+
 ## Context Role
 
-Context Role: Authored World-Space Context
+Context Role: Authored Dungeon Map Context
 Context Name: Dungeon
 
 - `dungeon` owns authored dungeon map truth in the `core` model family plus
@@ -31,41 +36,6 @@ Published dungeon carriers must not own:
 - canvas geometry
 - passive-view hit payloads
 - display styling
-
-## Current Architecture Status
-
-Current state:
-
-- `DungeonMap` is the aggregate root and mutation boundary for one authored map
-- stable topology refs are map-owned and reused by rooms, corridors, doors,
-  corridor anchors, stairs, and transitions
-- authored room narration persists through the dungeon write model
-- editor preview and apply share the same operation vocabulary
-- corridor bindings own explicit endpoint truth:
-  doors pin room-side endpoints by stable topology ref and corridor anchors pin
-  corridor-side endpoints by stable topology ref
-- generic corridor-tool clicks are resolved into authored doors or authored
-  corridor anchors before the aggregate commits a corridor mutation
-- the current implementation still uses `dungeon/model/worldspace/**` for
-  much authored model work and editor-runtime migration debt, while the active
-  travel session/runtime flow has moved under `dungeon/model/runtime/**`
-- search and write-model persistence are separate outbound contracts
-
-Target state:
-
-- `worldspace` is no longer the target model family
-- authored dungeon truth lives under `dungeon/model/core/**`
-- editor and travel runtime state live under `dungeon/model/runtime/**`
-- authored floor, wall, path, door, and transition behavior lives in
-  self-managed core owners inside the `DungeonMap` aggregate boundary instead
-  of being temporary projections from broad structure or runtime managers
-- topology repair, split or merge behavior, identity preservation, and derived
-  rebuild rules remain in the dungeon domain and move to the deepest owning
-  core object instead of staying in broad operation or helper classes
-- editor and travel runtime consume core dungeon truth while keeping authored
-  persistence in `DungeonMap` only
-- map-owned topology remains the behavioral owner instead of leaking into view,
-  data, runtime session, or projection layers
 
 ## Write Model
 
@@ -110,126 +80,6 @@ doors, and transitions compose durable core owners for those concepts inside
 the aggregate boundary; those owners keep their own local and collection-wide
 invariants while `DungeonMap` coordinates cross-owner consistency and
 publication.
-
-## Core And Runtime Model Families
-
-Initial Target Family: `core`
-
-`core` owns authored dungeon truth. Create these semantic model subpackages
-only as productive migration paths need them:
-
-- `model/core/geometry` for pure immutable geometry, topology values,
-  and spatial rules
-- `model/core/component` for smallest authored parts with local
-  invariants, local mutation, and binding or deletion rules
-- `model/core/structure` for composed authored structures and
-  cross-component behavior
-- `model/core/graph` for read-only relationship queries and derivations
-  between authored structures; no mutations
-- `model/core/projection` for render-neutral derived read facts only
-
-Initial Target Family: `runtime`
-
-`runtime` owns transient editor and travel state over core truth. Create these
-semantic model subpackages only as productive migration paths need them:
-
-- `model/runtime/editor/session` for editor session state such as tool,
-  view mode, overlay, drafts, and preview state
-- `model/runtime/editor/interaction` for transient on-map interaction
-  objects such as selection targets, handles, labels, hit targets, and drag
-  intents
-- `model/runtime/travel/session` for travel-session state over core truth and
-  party-owned position facts
-- `model/runtime/travel/projection` for derived travel read facts
-
-`runtime` must never own authored dungeon truth. `projection` must remain
-read-only and derived; it must not become persisted truth, render-owned truth,
-or a second source of authored dungeon meaning.
-
-## Remaining Worldspace Migration Allocation
-
-`model/worldspace/**` is current-state migration debt, not a target family.
-Remaining classes under that package must be migrated by ownership, not by
-mechanical renaming. A migration slice is valid only when it moves one of these
-real ownership boundaries and keeps authored mutation ownership singular.
-
-Target allocation for the remaining `model/worldspace/**` surface:
-
-- aggregate shell: `DungeonMap`, `DungeonMapAuthoring`, `DungeonState`,
-  `DungeonMapIdentity`, `DungeonMapMetadata`, and map revision or feedback
-  values move to `model/core/structure` only where they express authored
-  aggregate state or aggregate transaction feedback. `DungeonMap` remains the
-  aggregate root and transaction boundary, but authored behavior that belongs
-  to Room, Cluster, Corridor, Stair, or Transition structures must be delegated
-  to those core structures.
-- pure spatial values: cell, edge, direction, ordering, route, traversal, and
-  boundary-key values converge into `model/core/geometry`. Existing
-  `model/core/geometry` types are the target vocabulary; duplicate worldspace
-  geometry carriers should be replaced or adapted only until their callers move.
-- local authored components: corridor anchors, anchor refs, door bindings,
-  waypoints, stair exits, and comparable smallest invariant-owning parts move
-  to `model/core/component` when they own local authored identity or local
-  mutation rules.
-- room and cluster structures: rooms, clusters, cluster boundaries, room
-  boundary partitioning, room rectangle mutation, room-cell assignment,
-  narration identity, and room/cluster rebuild behavior move to
-  `model/core/structure/room`. Runtime label placement or transient drag state
-  stays in `model/runtime/editor/**`.
-- corridor structures: corridors, corridor bindings, endpoint resolution,
-  route split or validation, corridor merge/delete, corridor target delete,
-  anchor pruning, door target delete, and corridor connection normalization
-  move to `model/core/structure/corridor`.
-- stair structures: stairs, stair shape or geometry values, generated path and
-  exit rules, room-interior validation, corridor-bound stair behavior, and
-  stair delete policy move to `model/core/structure/stair`.
-- transition structures: transitions, transition destinations, labels,
-  transition catalogs, link replacement, reverse-link cleanup, and transition
-  delete policy move to `model/core/structure/transition`.
-- graph and topology queries: topology refs, topology element kinds,
-  relation-graph facts, traversal links, traversal sources, and map topology
-  relationship queries move to `model/core/graph` only when they are read-only
-  relationship facts. A graph type must not become the owner of authored
-  mutation.
-- authored read projections: area, boundary, feature, corridor, room,
-  derived-state, selection, and snapshot facts move to `model/core/projection`
-  only when they are render-neutral derived read facts over authored core truth.
-  Projections may describe authored structures but must not persist or mutate
-  them.
-- authored catalogs and primitive placeholders: feature, room, space, and
-  connection catalogs move only when they become concrete read-only
-  `model/core/projection` or `model/core/graph` queries over authored core
-  structures. Empty placeholders or generic primitive markers such as
-  `DungeonPrimitive` must be deleted instead of receiving a target package.
-- editor runtime: editor tool workflow state, pointer interpretation,
-  selection targets, drag sessions, boundary drafts, transient effects,
-  handles-as-editor-targets, preview state, overlay state, projection level,
-  map selector state, and workspace surface values belong under
-  `model/runtime/editor/session` or `model/runtime/editor/interaction`.
-  `DungeonEditorWorkspaceValues` is currently session-owned runtime composition
-  until a productive split creates at least two target types and a real
-  responsibility gain.
-- travel runtime: active travel session state, travel action facts, travel
-  position facts, transition targets, traversal action catalogs, and travel
-  surface facts belong under `model/runtime/travel/session` or
-  `model/runtime/travel/projection`. Runtime travel may load authored core
-  facts, but it must not persist dungeon structure or own authored transitions,
-  rooms, corridors, or stairs.
-- repositories and publication sinks: `DungeonMapRepository` remains the
-  authored map repository contract until persistence mapping moves to core
-  carriers. Same-context published-state sinks remain repository role files and
-  accept typed core/runtime snapshots rather than raw worldspace objects.
-- use cases: editor and travel use cases must end as orchestration only. They
-  may load or save through repositories, open the aggregate transaction, call
-  the owning core structure or runtime state object, publish typed results, and
-  report status or errors. They must not remain the long-term owner of room,
-  corridor, stair, transition, topology repair, or derived rebuild policy.
-
-Transition adapters are allowed only when a slice still crosses old and target
-types. Each adapter must have a deletion condition: it disappears when all
-productive callers on one side use the target core/runtime owner directly.
-Do not introduce new `*Logic`, `*Service`, `*Manager`, interface, or base-class
-names to preserve the old shape; move behavior to the owning core structure,
-component, runtime state, repository, or use case instead.
 
 ## Stair Geometry Domain Truth
 
@@ -344,7 +194,12 @@ Active root boundaries:
 
 ## References
 
+- [Dungeon Feature Docs](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/README.md:1)
+- [Dungeon Domain Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/architecture/architecture-dungeon-domain.md:1)
 - [Dungeon Feature Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/requirements/requirements-dungeon.md:1)
+- [Dungeon Editor Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/requirements/requirements-dungeon-editor.md:1)
 - [Dungeon Map Adoption Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
 - [Dungeon Map Surface Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-dungeon-surface.md:1)
 - [Dungeon Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/contract/contract-dungeon-persistence.md:1)
+- [Dungeon Core Model Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-core-model-invariants.md:1)
+- [Dungeon Editor-Wide Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md:1)

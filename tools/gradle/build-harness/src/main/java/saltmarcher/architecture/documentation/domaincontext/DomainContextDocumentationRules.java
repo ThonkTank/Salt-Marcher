@@ -36,12 +36,12 @@ public final class DomainContextDocumentationRules implements ArchitectureRule {
                     "Party Character State Context",
                     "Reference Catalog Context",
                     "Generation Policy Context",
-                    "Authored World-Space Context");
+                    "Authored Dungeon Map Context");
     private static final Set<String> AUTHORED_CONTEXT_ROLES =
             Set.of(
                     "Roster Truth Context",
                     "Party Character State Context",
-                    "Authored World-Space Context");
+                    "Authored Dungeon Map Context");
     private static final List<String> BASE_CONTEXT_REQUIRED_SECTIONS = List.of(
             "## Context Role",
             "## Published Language",

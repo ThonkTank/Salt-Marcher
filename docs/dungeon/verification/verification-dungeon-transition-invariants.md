@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-04
+Last Reviewed: 2026-06-07
 Source of Truth: Target invariant catalog for Dungeon Transition ownership proof.
 
 # Dungeon Transition Invariants
@@ -27,7 +27,7 @@ This catalog is a target-model change derived from the Dungeon domain target
 state and this catalog's candidate source-obligation rows. Reviewers must
 evaluate whether the Transition owner is coherent, traceable, and safely
 migratable. Do not block a row merely because current code keeps transition
-behavior under `core/structure/transition` or `worldspace` structure.
+behavior under `core/structure/transition` or aggregate structure.
 
 ## Proof Vocabulary
 
@@ -60,6 +60,6 @@ the `DGI-TRANSITION-*` id prefix to match the spelled family-name convention.
 
 ## References
 
+- [Dungeon Domain Architecture](../architecture/architecture-dungeon-domain.md)
 - [Dungeon Domain](../domain/domain-dungeon.md)
 - [Core Model Invariants](verification-dungeon-core-model-invariants.md)
-- [Dungeon Editor Stairs And Transitions Matrix](verification-dungeon-editor-stairs-transitions.md)

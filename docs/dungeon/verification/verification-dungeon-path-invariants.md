@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-04
+Last Reviewed: 2026-06-07
 Source of Truth: Target invariant catalog for Dungeon Path ownership proof.
 
 # Dungeon Path Invariants
@@ -26,7 +26,7 @@ This catalog is a target-model change derived from the Dungeon domain target
 state and this catalog's candidate source-obligation rows. Reviewers must
 evaluate whether the Path owners are coherent, traceable, and safely
 migratable. Do not block a row merely because current code keeps route behavior
-under corridor, stair, runtime, or `worldspace` structure.
+under corridor, stair, runtime, or aggregate structure.
 
 ## Proof Vocabulary
 
@@ -52,9 +52,12 @@ mechanics, while the target family owner remains unqualified.
 | `DGI-PATH-003` | Stair path owner | Stair generated paths are authored path behavior. | Stair path cells, generated exits, dimension-derived path shape, and readable path invariants are owned by stair structure through shared path primitives. | Harness proves generated path cells, exit placement, readability, occupancy, and room-interior crossing rejection. | Qualified by `OwnerSuite=PathInvariantHarness`. | State-panel real-route proof. |
 | `DGI-PATH-004` | Boundary or wall path owner | Boundary drawing/deletion paths are authored wall-path behavior. | Boundary pathfinding uses wall/floor facts and shared primitives, while wall-specific commit/delete policy stays with the wall owner. | Harness proves wall-owned connector-path derivation from floor and wall facts without runtime-only ownership of authored path policy. | Qualified by `OwnerSuite=PathInvariantHarness`. | UI pointer route mechanics. |
 | `DGI-PATH-005` | Runtime travel projection over core path/graph facts | Runtime may project path facts but must not own authored path truth. | Travel traversal planning consumes core path/graph/transition facts and owns only transient travel session or projection state. | Harness proves traversal actions can be recomputed from core-authored area and boundary facts without persisting runtime path truth. | Qualified by `OwnerSuite=RuntimeProjectionInvariantHarness`. | Full travel UI behavior. |
+| `DGI-PATH-006` | Wall path owner | Wall-create drafts can include intermediate points before final commit. | Path primitives expose deterministic segment accumulation without committing authored wall policy themselves. | Harness proves start, intermediate point, completion candidate, and cancel path facts. | Candidate. | Wall owner owns final wall/open mutation. |
+| `DGI-PATH-007` | Wall run path owner | Wall-delete targets expand to contiguous straight runs. | Path primitives identify maximal collinear runs to the next corner and all corner-touching runs for corner targets. | Harness proves segment-target and corner-target run expansion over interior and exterior candidates. | Candidate. | Exterior protection remains Wall/Cluster policy. |
 
 ## References
 
+- [Dungeon Domain Architecture](../architecture/architecture-dungeon-domain.md)
 - [Dungeon Domain](../domain/domain-dungeon.md)
 - [Core Model Invariants](verification-dungeon-core-model-invariants.md)
 - [Dungeon Travel Requirements](../requirements/requirements-dungeon-travel.md)

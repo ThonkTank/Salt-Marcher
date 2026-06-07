@@ -1,40 +1,41 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-08
-Source of Truth: Compatibility mirror for canonical documentation at `docs/dungeon/domain/domain-dungeon.md`.
+Last Reviewed: 2026-06-07
+Source of Truth: Compatibility context contract and routing mirror for
+canonical Dungeon documentation under `docs/dungeon/`.
 
-# Dungeon Domain Model Compatibility Mirror
+# Dungeon Domain Context Mirror
 
-This legacy path remains build-visible during the documentation-taxonomy
-migration. Canonical feature-owned documentation lives at:
+This path remains build-visible for domain-context enforcement. It is not the
+canonical long-form Dungeon documentation.
 
+Canonical documents:
+
+- [Dungeon Feature Docs](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/README.md:1)
+- [Dungeon Domain Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/architecture/architecture-dungeon-domain.md:1)
 - [Dungeon Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/domain/domain-dungeon.md:1)
+- [Dungeon Core Model Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-core-model-invariants.md:1)
+- [Dungeon Editor-Wide Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md:1)
 
 ## Context Role
 
-Context Role: Authored World-Space Context
+Context Role: Authored Dungeon Map Context
 Context Name: Dungeon
 
-- `dungeon` owns authored dungeon map truth; canonical target-family placement
-  is defined by `docs/dungeon/domain/domain-dungeon.md`
-- `DungeonMap` is the aggregate root for one authored map
-- authored committed snapshots, authored operation results, authored selection
-  inspectors, and runtime travel session surfaces are projections over the same
-  authored dungeon write model
-- render-oriented display models and runtime editor-session policy are not
-  dungeon-owned output
+- `dungeon` owns authored dungeon map truth for one authored dungeon map.
+- `DungeonMap` is the aggregate root.
+- Detailed model-family placement lives in the Dungeon architecture document.
+- Detailed write-model ownership and invariants live in the Dungeon domain
+  document.
 
 ## Published Language
 
 `published/` owns public dungeon commands, queries, results, IDs, statuses,
-authored map facts, authored operation results, and runtime travel facts.
+authored map facts, authored operation results, editor snapshots, and travel
+runtime facts.
 
-Published dungeon carriers must not own:
-
-- render layers
-- canvas geometry
-- passive-view hit payloads
-- display styling
+Published dungeon carriers must not own render layers, canvas geometry,
+passive-view hit payloads, display styling, SQL rows, or adapter mechanics.
 
 ## Application Boundary
 
@@ -46,24 +47,16 @@ Application Service: DungeonEditorStairApplicationService
 Application Service: DungeonEditorTransitionApplicationService
 Application Service: DungeonTravelRuntimeApplicationService
 
-`application/` coordinates authored dungeon load, mutate, save, search, and
-runtime travel-session publication through domain-owned repositories and
-searches. Travel runtime reads party travel state through the dungeon-owned
-`TravelPartyStateRepository` and writes party travel position through the
-dungeon-owned `TravelPartyPositionRepository`; party roster truth and persisted
-party travel position remain party-owned. The root application-service family
-maps authored dungeon truth and derived results into `published/` carriers
-while editor runtime and travel runtime remain same-context dungeon runtime
-state as defined by the canonical dungeon domain document. Render ownership
-stays in the view layer.
+Application services coordinate load, mutate, save, search, editor-session,
+and travel-runtime work through the canonical Dungeon domain and architecture
+owners. They do not define model-family placement in this mirror.
 
 ## Aggregate Model
 
 Aggregate Root: DungeonMap
 
-`DungeonMap` is the transaction boundary and behavioral owner of mutable
-topology, authored geometry, semantic bindings, and room or connection facts
-for one dungeon map.
+`DungeonMap` is the transaction boundary for authored dungeon map mutations.
+Canonical aggregate details live in the Dungeon domain model document.
 
 ## Commands And Invariants
 
@@ -86,29 +79,17 @@ Core invariants:
 
 ## Cross-Context Boundary
 
-- `dungeon` publishes authored `DungeonSnapshot`,
-  `DungeonOperationResult`, `DungeonInspectorSnapshot`, runtime travel session
-  surfaces, and travel-action results rooted in authored dungeon truth
-- dungeon runtime travel consumes party-owned travel-position facts only through
-  dungeon-owned external boundaries over party published state, currently
-  `TravelPartyStateRepository` and `TravelPartyPositionRepository`
-- canonical dungeon documentation owns target model-family placement for
-  authored truth, editor runtime composition, and travel runtime composition
-- `dungeon` does not own party roster truth or persisted party travel position
-- `dungeon` does not publish render-ready map-canvas primitives
+- `dungeon` publishes authored snapshots, operation results, editor runtime
+  snapshots, travel runtime session snapshots, and travel-action results rooted
+  in authored dungeon truth.
+- `dungeon` does not own party roster truth or persisted party travel position.
+- `dungeon` does not publish render-ready map-canvas primitives.
 
 ## Consistency Model
 
-Only authored write-model state and stable identities may persist.
-
-Derived state must not become a second source of truth. This includes:
-
-- inspector text
-- adjacency lists
-- travel exits
-- preview state
-- render overlays
-- runtime party position
+Only authored write-model state and stable identities may persist as dungeon
+truth. Derived editor, travel, inspector, graph, preview, render, and adapter
+state must be recomputed or routed through the canonical owner documents.
 
 ## Ubiquitous Language
 
@@ -116,11 +97,14 @@ Derived state must not become a second source of truth. This includes:
 - `DungeonMapId`: stable authored map identity.
 - `Topology Ref`: stable identity for a selectable and mutable map element.
 - `Authored Geometry`: topology-backed map shape owned by the aggregate.
-- `Core Model`: canonical authored-truth family defined by the dungeon domain
-  document.
-- `Runtime Model`: canonical transient editor and travel family defined by the
-  dungeon domain document.
+- `Core Model`: authored-truth family described by Dungeon architecture.
+- `Runtime Model`: transient editor and travel family described by Dungeon
+  architecture.
 
 ## References
 
+- [Dungeon Feature Docs](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/README.md:1)
+- [Dungeon Domain Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/architecture/architecture-dungeon-domain.md:1)
 - [Dungeon Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/domain/domain-dungeon.md:1)
+- [Dungeon Core Model Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-core-model-invariants.md:1)
+- [Dungeon Editor-Wide Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md:1)

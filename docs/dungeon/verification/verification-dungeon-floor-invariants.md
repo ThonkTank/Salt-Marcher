@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-04
+Last Reviewed: 2026-06-07
 Source of Truth: Target invariant catalog for Dungeon Floor ownership proof.
 
 # Dungeon Floor Invariants
@@ -25,8 +25,8 @@ model or editor harness surface.
 This catalog is a target-model change derived from the Dungeon domain target
 state and this catalog's candidate source-obligation rows. Reviewers must
 evaluate whether the Floor owner is coherent, traceable, and safely migratable.
-Do not block a row merely because current code keeps the behavior under room
-structure or `worldspace`.
+Do not block a row merely because current code keeps the behavior under a
+broader room or aggregate structure while the floor owner is being sharpened.
 
 ## Proof Vocabulary
 
@@ -53,5 +53,6 @@ domain truth.
 
 ## References
 
+- [Dungeon Domain Architecture](../architecture/architecture-dungeon-domain.md)
 - [Dungeon Domain](../domain/domain-dungeon.md)
 - [Core Model Invariants](verification-dungeon-core-model-invariants.md)

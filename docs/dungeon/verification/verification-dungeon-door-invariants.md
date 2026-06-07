@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-04
+Last Reviewed: 2026-06-07
 Source of Truth: Target invariant catalog for Dungeon Door ownership proof.
 
 # Dungeon Door Invariants
@@ -27,7 +27,7 @@ This catalog is a target-model change derived from the Dungeon domain target
 state and this catalog's candidate source-obligation rows. Reviewers must
 evaluate whether the Door owner is coherent, traceable, and safely migratable.
 Do not block a row merely because current code keeps behavior split across
-boundary, corridor, topology, or `worldspace` structure.
+boundary, corridor, topology, or aggregate structure.
 
 ## Proof Vocabulary
 
@@ -56,6 +56,6 @@ mechanics, while the target family owner remains unqualified.
 
 ## References
 
+- [Dungeon Domain Architecture](../architecture/architecture-dungeon-domain.md)
 - [Dungeon Domain](../domain/domain-dungeon.md)
 - [Core Model Invariants](verification-dungeon-core-model-invariants.md)
-- [Dungeon Editor Selection, Room, Wall, And Door Matrix](verification-dungeon-editor-selection-room-wall-door.md)

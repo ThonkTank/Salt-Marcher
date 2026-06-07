@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-04
+Last Reviewed: 2026-06-07
 Source of Truth: Target invariant catalog for Dungeon Wall ownership proof.
 
 # Dungeon Wall Invariants
@@ -25,8 +25,8 @@ model or editor harness surface.
 This catalog is a target-model change derived from the Dungeon domain target
 state and this catalog's candidate source-obligation rows. Reviewers must
 evaluate whether the Wall owner is coherent, traceable, and safely migratable.
-Do not block a row merely because current code keeps the behavior under room
-structure or `worldspace`.
+Do not block a row merely because current code keeps the behavior under a
+broader room or aggregate structure while the wall owner is being sharpened.
 
 ## Proof Vocabulary
 
@@ -51,9 +51,12 @@ mechanics, while the target family owner remains unqualified.
 | `DGI-WALL-004` | Wall owner | Wall stretch edits are wall-map behavior. | Stretch orientation, contiguous source-edge selection, connector paths, moved strip cells, and outward-side rules are computed by the wall owner. | Harness proves stretch selection and connector path derivation from wall map state. | Qualified by `OwnerSuite=WallInvariantHarness`. | Map-level publication. |
 | `DGI-WALL-005` | Wall owner with Door owner collaboration | Walls and doors share one boundary surface without duplicate owners. | A boundary location cannot simultaneously be a wall and a door; door insertion/reversion changes the wall map through a bounded door operation. | Harness proves door creation replaces wall state and unbound door deletion restores wall state. | Qualified by `OwnerSuite=WallInvariantHarness`. | Corridor-bound door protection. |
 | `DGI-WALL-006` | Dungeon-level wall projection | Later level-wide wall maps are projections, not write owners. | A `DungeonLevel` wall map, if introduced, is derived from structure-owned wall maps and cannot mutate authored wall truth directly. | Harness or projection proof builds a level wall map from multiple clusters and proves mutation attempts route back through owning structures. | Qualified by `OwnerSuite=WallInvariantHarness`. | Runtime render caches. |
+| `DGI-WALL-007` | Wall owner with Path owner collaboration | Wall creation is path-based by default. | Wall drafts accumulate intermediate path segments and commit atomically only when the process is completed by the tool-specific completion rule. | Harness proves intermediate point accumulation, completion, duplicate-row avoidance, and cancel/no-op behavior. | Candidate. | UI gesture routing remains `DE-WALL-*`. |
+| `DGI-WALL-008` | Wall owner | Wall deletion removes authored straight runs, not isolated presentation segments. | Deleting a wall target selects the whole contiguous straight run until the next corner; deleting a corner selects all touching straight runs until their next corners. | Harness proves run selection and resulting wall/open state for segment and corner targets. | Candidate. | Render hit precision. |
+| `DGI-WALL-009` | Wall owner with Cluster owner collaboration | Cluster exterior walls are protected from wall-delete mutation. | Exterior wall delete attempts are rejected before authored wall, topology, preview, or selection state changes. | Harness proves exterior rejection and interior-wall eligible deletion. | Candidate. | Door creation on exterior walls remains allowed. |
 
 ## References
 
+- [Dungeon Domain Architecture](../architecture/architecture-dungeon-domain.md)
 - [Dungeon Domain](../domain/domain-dungeon.md)
 - [Core Model Invariants](verification-dungeon-core-model-invariants.md)
-- [Dungeon Editor Selection, Room, Wall, And Door Matrix](verification-dungeon-editor-selection-room-wall-door.md)

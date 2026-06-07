@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-06
+Last Reviewed: 2026-06-07
 Source of Truth: Authored dungeon map boundary language between
 the authored dungeon root-boundary family and downstream runtime-workspace
 contexts for map read, preview, apply, inspector, travel, and catalog work.
@@ -30,8 +30,7 @@ Owners:
 - committed dungeon map read and selection inspection MUST enter through the
   owning editor or travel runtime boundary for that workspace
 - preview and apply MUST reuse the authored map operation vocabulary owned by
-  `dungeon/model/worldspace/DungeonEditorAuthoredOperation` and applied
-  through the authored dungeon mutation use case
+  the dungeon domain and applied through the authored dungeon mutation use case
 - map catalog work MUST use one catalog request and response family
 - runtime travel surface reads and travel moves MUST use one travel session
   command and snapshot family

@@ -322,7 +322,7 @@ public final class DocumentationCoverageCatalog {
                             row("domain-context-creatures-owned-reference-scope", "Review-Owned"),
                             row("domain-context-encounter-owned-roster-truth", "Review-Owned"),
                             row("domain-context-encountertable-owned-reference-scope", "Review-Owned"),
-                            row("domain-context-dungeon-owned-world-space-truth", "Review-Owned"),
+                            row("domain-context-dungeon-owned-authored-map-truth", "Review-Owned"),
                             row("domain-context-sessionplanner-owned-session-record-truth", "Review-Owned"),
                             row("domain-context-authored-truth-write-model-required", "Enforced",
                                     List.of("domain-context-enforcement", "DomainContextDocumentationRules"),

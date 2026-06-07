@@ -132,6 +132,12 @@ document exists.
   `tools/quality/skills/domain-layer/SKILL.md` is the sole operative agent
   guidance. Other docs may only route or summarize; they must not become a
   second source of domain-layer truth.
+- For Dungeon domain work under `src/domain/dungeon/**` or `docs/dungeon/**`,
+  start at `docs/dungeon/README.md`. Dungeon-specific architecture lives in
+  `docs/dungeon/architecture/architecture-dungeon-domain.md`, domain truth in
+  `docs/dungeon/domain/domain-dungeon.md`, behavior in
+  `docs/dungeon/requirements/`, and proof ownership in
+  `docs/dungeon/verification/`. Keep `AGENTS.md` routing-only for that feature.
 - For `src/view/**`, `docs/project/architecture/patterns/view-layer.md` is the
   sole architectural source of truth and
   `tools/quality/skills/view-layer-mvvm/SKILL.md` is the sole operative agent

@@ -18,9 +18,8 @@ import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 
 /**
- * Transitional projection state: remove the worldspace imports once
- * DungeonRoom, DungeonRoomCluster, and DungeonClusterBoundary owners move to
- * core structure and this reads those owners directly.
+ * Projection state for room boundary read facts supplied by core structure
+ * owners.
  */
 final class DungeonRoomBoundaryProjectionState {
 

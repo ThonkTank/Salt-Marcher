@@ -68,12 +68,12 @@ final class DungeonStructureInvariantHarness {
                         + "anchor snapping/materialization to the nearest host cell with level/row/column tie-breaks "
                         + "and fallback behavior, host-cell lookup by corridor id, "
                         + "plus target-local waypoint or anchor-ref removal rules");
-        assertWorldspaceAdapterPreservesTopologyRefIdentity();
+        assertRetainedAdapterPreservesTopologyRefIdentity();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
                 OWNER,
                 "DGI-STR-002",
-                "Transitional corridor bindings adapter preserves anchor topology-ref identity "
+                "Retained corridor bindings adapter preserves anchor topology-ref identity "
                         + "without moving topology ownership into core structure");
         assertCorridorRoutePlanInvariants();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
@@ -93,7 +93,7 @@ final class DungeonStructureInvariantHarness {
                 results,
                 OWNER,
                 "DGI-STR-005",
-                "Corridor network owns protected corridor delete and detached-anchor pruning while the transitional "
+                "Corridor network owns protected corridor delete and detached-anchor pruning while the retained "
                         + "adapter preserves topology-ref identity");
         assertStairStructureInvariants();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
@@ -315,7 +315,7 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(secondWaypoint), threeWaypointBindings.waypointsBetweenEndpointIndexes(0, 2),
                 "non-adjacent endpoint indexes prune interior waypoints");
 
-        assertWorldspaceCorridorRoomSetAdapterCompatibility();
+        assertRetainedCorridorRoomSetAdapterCompatibility();
     }
 
     private static void assertCorridorRoutePlanInvariants() {
@@ -348,7 +348,7 @@ final class DungeonStructureInvariantHarness {
                 "missing waypoint cluster leaves bindings unchanged");
     }
 
-    private static void assertWorldspaceAdapterPreservesTopologyRefIdentity() {
+    private static void assertRetainedAdapterPreservesTopologyRefIdentity() {
         src.domain.dungeon.model.core.graph.DungeonTopologyRef stableRef =
                 src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(30L);
         src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding first =
@@ -409,7 +409,7 @@ final class DungeonStructureInvariantHarness {
                 "adapter route split deduplicates existing custom topology ref");
     }
 
-    private static void assertWorldspaceCorridorRoomSetAdapterCompatibility() {
+    private static void assertRetainedCorridorRoomSetAdapterCompatibility() {
         CorridorDoorBinding secondDoor = new CorridorDoorBinding(6L, 11L, new Cell(2, 3, 0), Direction.EAST);
         CorridorBindingState bindings = new CorridorBindingState(
                 List.of(),
@@ -507,7 +507,7 @@ final class DungeonStructureInvariantHarness {
         assertEquals(List.of(), prunedOrphanRef.stateBindings().anchorRefs(),
                 "core network prunes refs to missing hosted anchors");
 
-        assertWorldspaceCorridorNetworkAdapterCompatibility();
+        assertRetainedCorridorNetworkAdapterCompatibility();
     }
 
     private static List<Long> corridorIds(CorridorNetwork network) {
@@ -518,7 +518,7 @@ final class DungeonStructureInvariantHarness {
         return List.copyOf(result);
     }
 
-    private static void assertWorldspaceCorridorNetworkAdapterCompatibility() {
+    private static void assertRetainedCorridorNetworkAdapterCompatibility() {
         src.domain.dungeon.model.core.graph.DungeonTopologyRef stableRef =
                 src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(70L);
         src.domain.dungeon.model.core.graph.DungeonTopologyRef detachedRef =

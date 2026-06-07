@@ -13,9 +13,8 @@ import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 /**
- * Transitional projection boundary: remove the worldspace inputs once
- * corridor, room, and cluster read facts are supplied directly by core
- * structure owners.
+ * Projection boundary for corridor, room, and cluster read facts supplied by
+ * core structure owners.
  */
 public final class DungeonCorridorReadProjection {
 

@@ -20,10 +20,8 @@ import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 /**
- * Transitional projection boundary: remove the worldspace corridor endpoint
- * inputs once corridor and door endpoint facts are supplied by core corridor
- * structure owners. This resolver derives read facts only and must not own
- * corridor mutation policy.
+ * Projection boundary for corridor endpoint read facts. This resolver derives
+ * read facts only and must not own corridor mutation policy.
  */
 final class DungeonCorridorEndpointResolver {
 

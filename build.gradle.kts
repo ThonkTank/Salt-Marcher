@@ -170,13 +170,8 @@ tasks.register<JavaExec>("dungeonEditorBehaviorHarness") {
     classpath = dungeonEditorBehaviorHarness.runtimeClasspath
     mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorToolBehaviorHarness")
     inputs.files(fileTree("docs/dungeon/verification") {
-        include("verification-dungeon-editor-tool-behavior.md")
-        include("verification-dungeon-core-model-invariants.md")
-        include("verification-dungeon-editor-fixtures.md")
-        include("verification-dungeon-editor-map-controls.md")
-        include("verification-dungeon-editor-selection-room-wall-door.md")
-        include("verification-dungeon-editor-corridors.md")
-        include("verification-dungeon-editor-stairs-transitions.md")
+        include("verification-dungeon-*-invariants.md")
+        include("verification-dungeon-editor-*.md")
     })
         .withPropertyName("dungeonEditorBehaviorCatalogs")
         .withPathSensitivity(PathSensitivity.RELATIVE)

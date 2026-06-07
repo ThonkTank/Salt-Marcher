@@ -1,13 +1,13 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-01
+Last Reviewed: 2026-06-07
 Source of Truth: Fixture definitions for Dungeon Editor behavior verification.
 
 # Dungeon Editor Fixture Catalog
 
 This document owns the named authored fixtures referenced by the Dungeon Editor
 behavior verification matrix. The shared proof model and route ownership remain
-in [Dungeon Editor Tool Behavior Verification Catalog](verification-dungeon-editor-tool-behavior.md).
+in [Dungeon Editor-Wide Invariants](verification-dungeon-editor-wide-invariants.md).
 
 ## Fixture Catalog
 
@@ -28,9 +28,13 @@ in [Dungeon Editor Tool Behavior Verification Catalog](verification-dungeon-edit
 | `F12_ROOM_TO_DOOR_ROUTE_TARGET` | Generic room endpoint door materialization | `R1` cells `(1..3,1..3,0)` with no pre-existing door on its east boundary; `R2` cells `(8..10,1..3,0)` with door `D2` on boundary `cell=(8,2,0)`, `edge_direction=WEST`, topology kind `DOOR`; no existing corridor between them. |
 | `F13_TRANSITION_DESCRIPTION` | Transition description editing and linking | `F6_MULTI_LEVEL_FLOORS` plus source transition `T1` at `(5,2,0)` with initial description `Initial transition.` and an overworld-tile destination, and target map `M2` containing transition `T2` at `(6,2,0)` with no existing link. |
 | `F14_LARGE_STORED_VERTEX_MAP` | Startup/input responsiveness for legacy or pathological persisted room loops | One persisted map containing one room whose cluster stores at least 56,000 per-cell loop vertex rows in `dungeon_room_cluster_vertices`; the fixture intentionally represents persisted DB state that is legal to keep in the catalog but must not be loaded synchronously just because the app shell starts. |
+| `F15_COMPLEX_CLUSTER` | True-corner, wall-run, and label placement behavior | One non-rectangular cluster `C1` at level `0` containing at least two rooms and an authored concave perimeter; the perimeter has at least six real wall corners, one interior wall run, one exterior wall run, and straight runs long enough to publish midpoint handles and longest-wall room labels. |
+| `F16_HANDLE_VARIETY` | Shared handle identity, hit route, preview, and visual style | One map combining `F15_COMPLEX_CLUSTER`, corridor `K1` with anchor `A1`, stair `S1`, and door `D1`, so cluster, wall-run, corridor, stair, and door handles can be published, rendered, hit-tested, and dragged through one common handle model. |
 
 ## References
 
-- [Dungeon Editor Tool Behavior Verification Catalog](verification-dungeon-editor-tool-behavior.md)
+- [Dungeon Editor-Wide Invariants](verification-dungeon-editor-wide-invariants.md)
 - [Dungeon Editor Requirements](../requirements/requirements-dungeon-editor.md)
 - [Dungeon Persistence Contract](../contract/contract-dungeon-persistence.md)
+- [Dungeon Domain Architecture](../architecture/architecture-dungeon-domain.md)
+- [Dungeon Domain](../domain/domain-dungeon.md)

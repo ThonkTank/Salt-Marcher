@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
+Last Reviewed: 2026-06-07
 Source of Truth: Temporary rollout notes, phasing, and open delivery questions
 for the dungeon feature.
 
@@ -56,6 +56,6 @@ runtime position path as action-driven movement.
 
 ## References
 
-- [Dungeon Feature Requirements](./requirements-dungeon.md)
-- [Dungeon Travel Requirements](./requirements-dungeon-travel.md)
-- [Dungeon Editor Requirements](./requirements-dungeon-editor.md)
+- [Dungeon Feature Requirements](../requirements/requirements-dungeon.md)
+- [Dungeon Travel Requirements](../requirements/requirements-dungeon-travel.md)
+- [Dungeon Editor Requirements](../requirements/requirements-dungeon-editor.md)

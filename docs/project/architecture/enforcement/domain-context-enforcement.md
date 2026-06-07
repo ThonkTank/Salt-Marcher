@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-08
+Last Reviewed: 2026-06-07
 Source of Truth: Complete architecture-enforcement catalog for domain context
 documents and the canonical context-role and context-relationship maps in the
 Domain Layer Standard.
@@ -51,7 +51,7 @@ type legality. Those live in the neighboring role-specific owner docs.
 | `domain-context-creatures-owned-reference-scope` | Review-Owned | the `creatures` bullet in `## Context Roles` and the matching `src/domain/creatures/DOMAIN.md` contract | none | none | The `creatures` reference-catalog contract explicitly scopes itself to imported creature catalog lookup language and encounter-candidate reference profiles. |
 | `domain-context-encounter-owned-roster-truth` | Review-Owned | the `encounter` bullet in `## Context Roles` and the matching `src/domain/encounter/DOMAIN.md` contract | none | none | The `encounter` roster-truth contract explicitly owns saved encounter-plan roster truth and keeps encounter-generation policy inside the encounter context. |
 | `domain-context-encountertable-owned-reference-scope` | Review-Owned | the `encountertable` bullet in `## Context Roles` and the matching `src/domain/encountertable/DOMAIN.md` contract | none | none | The `encountertable` reference-catalog contract explicitly scopes itself to authored encounter-table membership as read-only reference-catalog truth. |
-| `domain-context-dungeon-owned-world-space-truth` | Review-Owned | the `dungeon` bullet in `## Context Roles` and the matching `src/domain/dungeon/DOMAIN.md` contract | none | none | The `dungeon` authored world-space contract explicitly owns core dungeon truth, map topology, rooms or spaces, connections, stable identity, and map mutation rules while keeping editor and travel runtime state outside authored persistence. |
+| `domain-context-dungeon-owned-authored-map-truth` | Review-Owned | the `dungeon` bullet in `## Context Roles` and the matching `src/domain/dungeon/DOMAIN.md` contract | none | none | The `dungeon` authored map contract explicitly owns core dungeon truth, map topology, rooms or spaces, connections, stable identity, and map mutation rules while keeping editor and travel runtime state outside authored persistence. |
 | `domain-context-sessionplanner-owned-session-record-truth` | Review-Owned | the `sessionplanner` bullet in `## Context Roles` and the matching `src/domain/sessionplanner/DOMAIN.md` contract | none | none | The `sessionplanner` roster-truth contract explicitly owns one persisted session plan for participant references, encounter allocations, rest placement, placeholders, and selected-encounter state. |
 
 ### Must Not Contain
