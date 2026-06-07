@@ -1,14 +1,11 @@
 package src.domain.dungeon.model.worldspace;
 
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
-
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorEndpointMaterialization;
@@ -16,6 +13,8 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 
 /**
@@ -48,13 +47,12 @@ public final class DungeonCorridorEndpointResolutionLogic {
             DungeonMap dungeonMap,
             DungeonCorridorEndpoint endpoint
     ) {
-        DungeonRoomCluster cluster = LOOKUP_ADAPTER.cluster(dungeonMap, endpoint.clusterId());
-        if (cluster == null) {
+        if (LOOKUP_ADAPTER.cluster(dungeonMap, endpoint.clusterId()).isEmpty()) {
             return null;
         }
         Edge edge = Edge.sideOf(endpoint.roomCell(), endpoint.direction());
         DungeonMap mapped = ensureDoorBoundary(dungeonMap, endpoint.clusterId(), edge);
-        DungeonRoomCluster mappedCluster = LOOKUP_ADAPTER.cluster(mapped, endpoint.clusterId());
+        DungeonRoomCluster mappedCluster = LOOKUP_ADAPTER.cluster(mapped, endpoint.clusterId()).orElse(null);
         DungeonClusterBoundary boundary = boundaryAt(mapped, endpoint.clusterId(), edge);
         if (mappedCluster == null || boundary == null || !boundary.isDoor()) {
             return null;
@@ -113,7 +111,7 @@ public final class DungeonCorridorEndpointResolutionLogic {
 
     @Nullable
     private static DungeonClusterBoundary boundaryAt(DungeonMap dungeonMap, long clusterId, Edge edge) {
-        DungeonRoomCluster cluster = LOOKUP_ADAPTER.cluster(dungeonMap, clusterId);
+        DungeonRoomCluster cluster = LOOKUP_ADAPTER.cluster(dungeonMap, clusterId).orElse(null);
         if (cluster == null || edge == null) {
             return null;
         }

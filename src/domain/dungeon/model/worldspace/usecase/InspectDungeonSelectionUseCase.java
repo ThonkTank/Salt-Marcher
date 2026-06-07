@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
-import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 
 /**
  * Builds dungeon inspector snapshots from authored truth and selection context.

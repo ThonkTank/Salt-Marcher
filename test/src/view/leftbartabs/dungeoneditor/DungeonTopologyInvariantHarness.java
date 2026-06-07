@@ -18,8 +18,8 @@ import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.Auth
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
+import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMapAuthoring;
 
 final class DungeonTopologyInvariantHarness {
 

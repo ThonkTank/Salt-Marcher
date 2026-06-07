@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
-import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 
 public final class ApplyDungeonAuthoredMutationUseCase {

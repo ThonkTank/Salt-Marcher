@@ -25,8 +25,8 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPl
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
+import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMapAuthoring;
 
 final class DungeonWallInvariantHarness {
 

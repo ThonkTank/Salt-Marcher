@@ -3,7 +3,7 @@ package src.data.dungeon.repository;
 import src.data.dungeon.gateway.local.DungeonSqliteGateway;
 import src.data.dungeon.gateway.local.DungeonSqliteMapBatchGateway;
 import src.data.dungeon.mapper.DungeonMapRecordMapper;
-import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 

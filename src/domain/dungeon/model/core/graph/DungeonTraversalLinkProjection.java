@@ -16,7 +16,7 @@ import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.core.structure.stair.Stair;
-import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 
 public final class DungeonTraversalLinkProjection {
 

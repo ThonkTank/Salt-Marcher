@@ -10,7 +10,7 @@ import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTraversalLinkProjection;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
-import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 
 /**
  * Rebuilds read-side dungeon state from authored dungeon truth.

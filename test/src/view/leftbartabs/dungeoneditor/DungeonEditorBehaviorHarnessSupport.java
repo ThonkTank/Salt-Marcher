@@ -11,7 +11,7 @@ import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.room.RoomCellCoverage;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.published.DungeonEdgeRef;

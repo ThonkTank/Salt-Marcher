@@ -16,8 +16,8 @@ import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
+import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMapAuthoring;
 
 final class DungeonFloorInvariantHarness {
 

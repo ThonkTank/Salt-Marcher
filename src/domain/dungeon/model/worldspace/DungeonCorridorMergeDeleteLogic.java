@@ -1,12 +1,11 @@
 package src.domain.dungeon.model.worldspace;
 
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
@@ -15,6 +14,7 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorTargetDeletion.A
 import src.domain.dungeon.model.core.structure.corridor.CorridorTargetDeletion.DoorBindingTarget;
 import src.domain.dungeon.model.core.structure.corridor.CorridorTargetDeletion.WaypointTarget;
 import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 
 final class DungeonCorridorMergeDeleteLogic {
@@ -37,7 +37,7 @@ final class DungeonCorridorMergeDeleteLogic {
         if (invalidCorridorId(corridorId)) {
             return dungeonMap;
         }
-        Corridor existing = LOOKUP_ADAPTER.corridor(dungeonMap, corridorId);
+        Corridor existing = LOOKUP_ADAPTER.corridor(dungeonMap, corridorId).orElse(null);
         if (existing == null) {
             return dungeonMap;
         }
@@ -131,16 +131,18 @@ final class DungeonCorridorMergeDeleteLogic {
     private List<WaypointTarget> waypointTargets(DungeonMap dungeonMap, Corridor corridor) {
         List<WaypointTarget> result = new ArrayList<>();
         for (CorridorWaypoint waypoint : corridor.stateBindings().waypoints()) {
-            DungeonRoomCluster cluster = LOOKUP_ADAPTER.cluster(dungeonMap, waypoint.clusterId());
-            Cell center = cluster == null ? new Cell(0, 0, waypoint.relativeCell().level()) : cluster.center();
+            Cell center = LOOKUP_ADAPTER.cluster(dungeonMap, waypoint.clusterId())
+                    .map(DungeonRoomCluster::center)
+                    .orElseGet(() -> new Cell(0, 0, waypoint.relativeCell().level()));
             result.add(WaypointTarget.from(waypoint, center));
         }
         return List.copyOf(result);
     }
 
     private Cell absoluteDoorCorridorCell(DungeonMap dungeonMap, CorridorDoorBindingState binding) {
-        DungeonRoomCluster cluster = LOOKUP_ADAPTER.cluster(dungeonMap, binding.clusterId());
-        Cell center = cluster == null ? new Cell(0, 0, binding.relativeCell().level()) : cluster.center();
+        Cell center = LOOKUP_ADAPTER.cluster(dungeonMap, binding.clusterId())
+                .map(DungeonRoomCluster::center)
+                .orElseGet(() -> new Cell(0, 0, binding.relativeCell().level()));
         return binding.direction().neighborOf(new Cell(
                 binding.relativeCell().q() + center.q(),
                 binding.relativeCell().r() + center.r(),

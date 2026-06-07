@@ -921,7 +921,7 @@ final class DungeonStructureInvariantHarness {
                         new Cell(2, 0, 0),
                         TransitionDestination.dungeonMap(14L, 3L),
                         null);
-        src.domain.dungeon.model.worldspace.DungeonMap map = transitionMap(source, oldTarget, target, remoteReference);
+        src.domain.dungeon.model.core.structure.DungeonMap map = transitionMap(source, oldTarget, target, remoteReference);
 
         assertFalse(map.canDeleteTransition(1L),
                 "core transition ownership preserves source reverse-link delete protection");
@@ -929,7 +929,7 @@ final class DungeonStructureInvariantHarness {
                 "core transition ownership preserves referenced-transition delete protection");
         assertEquals(List.of(1L, 2L, 3L), transitionIds(map.deleteTransition(4L).transitionCatalog().transitions()),
                 "core transition ownership removes deletable transition through core catalog");
-        src.domain.dungeon.model.worldspace.DungeonMap linkedMap =
+        src.domain.dungeon.model.core.structure.DungeonMap linkedMap =
                 map.withTransitionCatalog(map.transitionCatalog().withMapLocalAuthoredTransitionLink(
                         bidirectionalLink(4L, 1L, 4L, 3L)));
         assertEquals(TransitionDestination.dungeonMap(4L, 3L),
@@ -977,10 +977,10 @@ final class DungeonStructureInvariantHarness {
         return List.copyOf(result);
     }
 
-    private static src.domain.dungeon.model.worldspace.DungeonMap transitionMap(
+    private static src.domain.dungeon.model.core.structure.DungeonMap transitionMap(
             Transition... transitions
     ) {
-        return new src.domain.dungeon.model.worldspace.DungeonMap(
+        return new src.domain.dungeon.model.core.structure.DungeonMap(
                 new src.domain.dungeon.model.core.structure.DungeonMapMetadata(
                         new src.domain.dungeon.model.core.structure.DungeonMapIdentity(4L),
                         "transition proof map"),

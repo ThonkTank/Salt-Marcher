@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.Optional;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomTopologyClusterWork;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMutation;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;

@@ -10,8 +10,8 @@ import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
+import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMapAuthoring;
 import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 

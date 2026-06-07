@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;
@@ -52,7 +53,7 @@ final class DungeonCorridorRouteValidationLogic {
         if (!endpoint.isAnchorEndpoint()) {
             return null;
         }
-        Corridor host = LOOKUP_ADAPTER.corridor(dungeonMap, endpoint.hostCorridorId());
+        Corridor host = LOOKUP_ADAPTER.corridor(dungeonMap, endpoint.hostCorridorId()).orElse(null);
         if (host == null) {
             return null;
         }

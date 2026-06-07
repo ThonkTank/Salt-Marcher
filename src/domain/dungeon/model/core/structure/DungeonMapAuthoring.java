@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure;
 
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
@@ -6,8 +6,6 @@ import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;

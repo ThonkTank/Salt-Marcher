@@ -5,7 +5,7 @@ import java.util.List;
 import src.domain.dungeon.model.core.graph.DungeonTraversalLink;
 import src.domain.dungeon.model.core.graph.DungeonTraversalLinkProjection;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
-import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 
 final class TravelAuthoredSurfaceTraversalProjectionMapper {
 

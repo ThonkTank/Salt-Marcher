@@ -2,7 +2,6 @@ package src.domain.dungeon.model.core.structure;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.worldspace.DungeonMap;
 
 /**
  * Owns authored operation feedback assembly for dungeon map mutations.

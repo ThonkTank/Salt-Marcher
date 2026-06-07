@@ -13,7 +13,7 @@ import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.Tran
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
-import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.model.worldspace.usecase.AssembleDungeonSnapshotUseCase;

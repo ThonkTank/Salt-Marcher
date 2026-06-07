@@ -22,8 +22,8 @@ import src.domain.dungeon.model.runtime.travel.projection.TravelPositionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceProjection;
 import src.domain.dungeon.model.runtime.travel.projection.TravelTransitionTarget;
-import src.domain.dungeon.model.worldspace.DungeonMap;
-import src.domain.dungeon.model.worldspace.DungeonMapAuthoring;
+import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMapAuthoring;
 
 final class DungeonRuntimeProjectionInvariantHarness {
 

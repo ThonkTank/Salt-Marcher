@@ -16,7 +16,7 @@ import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
-import src.domain.dungeon.model.worldspace.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 
 final class BuildDungeonRoomNarrationsUseCase {
 
