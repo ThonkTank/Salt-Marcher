@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.List;
 import java.util.Objects;
@@ -6,16 +6,13 @@ import java.util.Optional;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.DungeonMap;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomTopologyClusterWork;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMutation;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import src.domain.dungeon.model.core.structure.room.RoomClusterCollection;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchMutation;
-import src.domain.dungeon.model.core.structure.room.RoomTopologyRebuilder;
 import src.domain.dungeon.model.core.structure.room.RoomTopologyRebuilder.RebuildResult;
-import src.domain.dungeon.model.core.structure.room.RoomTopologyWorkCatalog;
 
-public final class DungeonRoomTopologyEditor {
+/**
+ * Owns aggregate-level room topology authoring inside the core room structure.
+ */
+public final class RoomTopologyAuthoring {
 
     private static final RoomTopologyWorkCatalog WORK_CATALOG = new RoomTopologyWorkCatalog();
     private static final RoomTopologyRebuilder REBUILDER = new RoomTopologyRebuilder();
@@ -23,6 +20,8 @@ public final class DungeonRoomTopologyEditor {
             new RoomClusterBoundaryMutation();
     private static final RoomClusterBoundaryStretchMutation STRETCH_MUTATION =
             new RoomClusterBoundaryStretchMutation();
+    private static final RoomClusterCornerMovement CLUSTER_CORNER_MOVEMENT =
+            new RoomClusterCornerMovement();
 
     public DungeonMap paintRectangle(DungeonMap dungeonMap, Cell start, Cell end) {
         DungeonMap target = requireDungeonMap(dungeonMap);
@@ -93,11 +92,32 @@ public final class DungeonRoomTopologyEditor {
         return rebuild.map(result -> withRoomTopology(target, result)).orElse(target);
     }
 
-    private DungeonMap requireDungeonMap(DungeonMap dungeonMap) {
+    public DungeonMap moveClusterCorner(
+            DungeonMap dungeonMap,
+            long clusterId,
+            Cell corner,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        DungeonMap target = requireDungeonMap(dungeonMap);
+        Optional<RebuildResult> rebuild = CLUSTER_CORNER_MOVEMENT.moveCorner(
+                target.topology(),
+                target.rooms(),
+                target.corridors(),
+                clusterId,
+                corner,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+        return rebuild.map(result -> withRoomTopology(target, result)).orElse(target);
+    }
+
+    private static DungeonMap requireDungeonMap(DungeonMap dungeonMap) {
         return Objects.requireNonNull(dungeonMap, "dungeonMap");
     }
 
-    static DungeonMap withRoomTopology(DungeonMap dungeonMap, RebuildResult rebuild) {
+    private static DungeonMap withRoomTopology(DungeonMap dungeonMap, RebuildResult rebuild) {
         return new DungeonMap(
                 dungeonMap.metadata(),
                 rebuild.topology(),

@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -7,37 +7,32 @@ import java.util.Map;
 import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMap;
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
-import src.domain.dungeon.model.core.structure.room.DungeonRoom;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
 /**
- * Owns authored topology movement while the aggregate stays the public mutation
- * boundary.
+ * Owns authored movement of a whole room cluster and its room anchors.
  */
-public final class DungeonTopologyMovementLogic {
+public final class RoomClusterMovement {
 
     public DungeonMap moveCluster(DungeonMap dungeonMap, long clusterId, int deltaQ, int deltaR, int deltaLevel) {
-        Objects.requireNonNull(dungeonMap, "dungeonMap");
+        DungeonMap target = Objects.requireNonNull(dungeonMap, "dungeonMap");
         if (clusterId <= 0L || (deltaQ == 0 && deltaR == 0 && deltaLevel == 0)) {
-            return dungeonMap;
+            return target;
         }
-        SpatialTopology nextTopology = moveTopologyCluster(dungeonMap.topology(), clusterId, deltaQ, deltaR, deltaLevel);
-        RoomCatalog nextRooms = moveRoomsForCluster(dungeonMap.rooms(), clusterId, deltaQ, deltaR, deltaLevel);
-        if (nextTopology.equals(dungeonMap.topology()) && nextRooms.equals(dungeonMap.rooms())) {
-            return dungeonMap;
+        SpatialTopology nextTopology = moveTopologyCluster(target.topology(), clusterId, deltaQ, deltaR, deltaLevel);
+        RoomCatalog nextRooms = moveRoomsForCluster(target.rooms(), clusterId, deltaQ, deltaR, deltaLevel);
+        if (nextTopology.equals(target.topology()) && nextRooms.equals(target.rooms())) {
+            return target;
         }
         return new DungeonMap(
-                dungeonMap.metadata(),
+                target.metadata(),
                 nextTopology,
-                dungeonMap.topologyIndex(),
+                target.topologyIndex(),
                 nextRooms,
-                dungeonMap.corridors(),
-                dungeonMap.stairs(),
-                dungeonMap.transitionCatalog(),
-                dungeonMap.revision() + 1L);
+                target.corridors(),
+                target.stairs(),
+                target.transitionCatalog(),
+                target.revision() + 1L);
     }
 
     private static SpatialTopology moveTopologyCluster(
@@ -154,5 +149,4 @@ public final class DungeonTopologyMovementLogic {
         }
         return Map.copyOf(result);
     }
-
 }

@@ -7,8 +7,11 @@ import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMutation;
 
 public final class ApplyDungeonAuthoredMutationUseCase {
+    private static final DungeonEditorHandleMutation HANDLE_MUTATION =
+            new DungeonEditorHandleMutation();
 
     private final ApplyDungeonEditorOperationUseCase applyDungeonEditorOperationUseCase;
     private final DungeonMapRepository repository;
@@ -67,7 +70,8 @@ public final class ApplyDungeonAuthoredMutationUseCase {
                             corridor.roomId(),
                             corridor.waypointIndex());
             case DungeonEditorAuthoredOperation.MoveEditorHandle move ->
-                    current -> current.moveEditorHandle(
+                    current -> HANDLE_MUTATION.apply(
+                            current,
                             move.handle(),
                             move.deltaQ(),
                             move.deltaR(),

@@ -194,6 +194,24 @@ public record StairCollection(List<Stair> stairs) {
                 roomCells);
     }
 
+    public StairCollection withMovedHandle(long stairId, int handleIndex, int deltaQ, int deltaR, int deltaLevel) {
+        if (stairId <= NO_STAIR_ID) {
+            return this;
+        }
+        List<Stair> movedStairs = new ArrayList<>();
+        boolean changed = false;
+        for (Stair stair : stairs) {
+            if (stair.stairId() != stairId) {
+                movedStairs.add(stair);
+                continue;
+            }
+            Stair movedStair = stair.withMovedHandle(handleIndex, deltaQ, deltaR, deltaLevel);
+            changed = changed || !movedStair.equals(stair);
+            movedStairs.add(movedStair);
+        }
+        return changed ? new StairCollection(movedStairs) : this;
+    }
+
     public @Nullable Cell anchorOf(long stairId) {
         return anchorOf(stairById(stairId));
     }

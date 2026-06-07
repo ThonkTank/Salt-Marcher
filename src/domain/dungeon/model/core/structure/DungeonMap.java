@@ -5,19 +5,22 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorBindingMovement;
 import src.domain.dungeon.model.core.structure.corridor.CorridorMapAuthoring;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
+import src.domain.dungeon.model.core.structure.room.RoomClusterMovement;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import src.domain.dungeon.model.core.structure.room.RoomTopologyAuthoring;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
+import src.domain.dungeon.model.core.structure.stair.StairMapAuthoring;
 import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
-import src.domain.dungeon.model.worldspace.WorldspaceAggregateOperationAdapter;
 
 /**
  * Canonical aggregate root state for one authored dungeon map.
@@ -73,18 +76,73 @@ public record DungeonMap(
         this.revision = Math.max(0L, revision);
     }
 
-    private static final WorldspaceAggregateOperationAdapter WORLDSPACE_OPERATIONS =
-            new WorldspaceAggregateOperationAdapter();
     private static final CorridorMapAuthoring CORRIDOR_AUTHORING =
             new CorridorMapAuthoring();
+    private static final CorridorBindingMovement CORRIDOR_BINDING_MOVEMENT =
+            new CorridorBindingMovement();
+    private static final RoomTopologyAuthoring ROOM_AUTHORING =
+            new RoomTopologyAuthoring();
+    private static final RoomClusterMovement ROOM_CLUSTER_MOVEMENT =
+            new RoomClusterMovement();
+    private static final StairMapAuthoring STAIR_AUTHORING =
+            new StairMapAuthoring();
 
-    public DungeonMap moveEditorHandle(
-            DungeonEditorHandleMovement handle,
+    public DungeonMap moveCluster(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
+        return ROOM_CLUSTER_MOVEMENT.moveCluster(this, clusterId, deltaQ, deltaR, deltaLevel);
+    }
+
+    public DungeonMap moveClusterCorner(long clusterId, Cell corner, int deltaQ, int deltaR, int deltaLevel) {
+        return ROOM_AUTHORING.moveClusterCorner(this, clusterId, corner, deltaQ, deltaR, deltaLevel);
+    }
+
+    public DungeonMap moveDoorBinding(
+            long corridorId,
+            int bindingIndex,
+            long roomId,
             int deltaQ,
             int deltaR,
             int deltaLevel
     ) {
-        return WORLDSPACE_OPERATIONS.moveEditorHandle(this, handle, deltaQ, deltaR, deltaLevel);
+        return CORRIDOR_BINDING_MOVEMENT.moveDoorBinding(
+                this,
+                corridorId,
+                bindingIndex,
+                roomId,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+    }
+
+    public DungeonMap moveCorridorAnchor(
+            long corridorId,
+            int bindingIndex,
+            DungeonTopologyRef topologyRef,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        return CORRIDOR_BINDING_MOVEMENT.moveAnchorBinding(
+                this,
+                corridorId,
+                bindingIndex,
+                topologyRef,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+    }
+
+    public DungeonMap moveCorridorWaypoint(
+            long corridorId,
+            int waypointIndex,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        return CORRIDOR_BINDING_MOVEMENT.moveWaypoint(this, corridorId, waypointIndex, deltaQ, deltaR, deltaLevel);
+    }
+
+    public DungeonMap moveStairAnchor(long stairId, int handleIndex, int deltaQ, int deltaR, int deltaLevel) {
+        return STAIR_AUTHORING.moveAnchor(this, stairId, handleIndex, deltaQ, deltaR, deltaLevel);
     }
 
     public DungeonMap moveBoundaryStretch(
@@ -94,7 +152,7 @@ public record DungeonMap(
             int deltaR,
             int deltaLevel
     ) {
-        return WORLDSPACE_OPERATIONS.moveBoundaryStretch(this, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel);
+        return ROOM_AUTHORING.moveBoundaryStretch(this, clusterId, sourceEdges, deltaQ, deltaR, deltaLevel);
     }
 
     public DungeonMap saveRoomNarration(long roomId, DungeonRoomNarration narration) {
@@ -162,7 +220,7 @@ public record DungeonMap(
                 metadata.mapId().value(),
                 anchor,
                 shapeName,
-                WORLDSPACE_OPERATIONS.stairRoomInteriorCells(topology, rooms));
+                STAIR_AUTHORING.roomInteriorCells(topology, rooms));
         if (nextStairs.equals(stairs)) {
             return this;
         }
@@ -173,7 +231,7 @@ public record DungeonMap(
         return stairs.canCreateAuthoredStairGeometry(
                 anchor,
                 shapeName,
-                WORLDSPACE_OPERATIONS.stairRoomInteriorCells(topology, rooms));
+                STAIR_AUTHORING.roomInteriorCells(topology, rooms));
     }
 
     public boolean canSaveStairGeometry(
@@ -189,7 +247,7 @@ public record DungeonMap(
                 directionName,
                 dimension1,
                 dimension2,
-                WORLDSPACE_OPERATIONS.stairRoomInteriorCells(topology, rooms));
+                STAIR_AUTHORING.roomInteriorCells(topology, rooms));
     }
 
     public DungeonMap saveStairGeometry(
@@ -208,7 +266,7 @@ public record DungeonMap(
                 directionName,
                 dimension1,
                 dimension2,
-                WORLDSPACE_OPERATIONS.stairRoomInteriorCells(topology, rooms));
+                STAIR_AUTHORING.roomInteriorCells(topology, rooms));
         if (nextStairs.equals(stairs)) {
             return this;
         }
@@ -216,11 +274,11 @@ public record DungeonMap(
     }
 
     public DungeonMap paintRoomRectangle(Cell start, Cell end) {
-        return WORLDSPACE_OPERATIONS.paintRoomRectangle(this, start, end);
+        return ROOM_AUTHORING.paintRectangle(this, start, end);
     }
 
     public DungeonMap deleteRoomRectangle(Cell start, Cell end) {
-        return WORLDSPACE_OPERATIONS.deleteRoomRectangle(this, start, end);
+        return ROOM_AUTHORING.deleteRectangle(this, start, end);
     }
 
     public DungeonMap editClusterBoundaries(
@@ -229,7 +287,7 @@ public record DungeonMap(
             BoundaryKind kind,
             boolean deleteBoundary
     ) {
-        return WORLDSPACE_OPERATIONS.editClusterBoundaries(this, clusterId, edges, kind, deleteBoundary);
+        return ROOM_AUTHORING.editBoundaries(this, clusterId, edges, kind, deleteBoundary);
     }
 
     public DungeonMap createCorridor(
