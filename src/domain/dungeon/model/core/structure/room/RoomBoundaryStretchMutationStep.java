@@ -1,6 +1,4 @@
-package src.domain.dungeon.model.worldspace;
-
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -15,23 +13,23 @@ import src.domain.dungeon.model.core.geometry.DungeonBoundaryTouch;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingGeometry;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomTopologyClusterWork;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchEdge;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchMutationResult;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
+import src.domain.dungeon.model.core.structure.room.RoomBoundaryStretchValues.StretchEdge;
+import src.domain.dungeon.model.core.structure.room.RoomBoundaryStretchValues.StretchMutationResult;
+import src.domain.dungeon.model.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
 
-final class DungeonBoundaryStretchMutationLogic {
+final class RoomBoundaryStretchMutationStep {
 
-    private static final DungeonClusterBoundaryGeometryLogic GEOMETRY_SERVICE =
-            new DungeonClusterBoundaryGeometryLogic();
-    private static final DungeonBoundaryStretchBoundaryLookupLogic BOUNDARY_LOOKUP_SERVICE =
-            new DungeonBoundaryStretchBoundaryLookupLogic();
-    private static final DungeonBoundaryStretchConnectorLogic CONNECTOR_SERVICE =
-            new DungeonBoundaryStretchConnectorLogic();
+    private static final RoomClusterBoundaryGeometry GEOMETRY =
+            new RoomClusterBoundaryGeometry();
+    private static final RoomBoundaryStretchBoundaryLookup BOUNDARY_LOOKUP =
+            new RoomBoundaryStretchBoundaryLookup();
+    private static final RoomBoundaryStretchConnectors CONNECTORS =
+            new RoomBoundaryStretchConnectors();
 
     Optional<StretchMutationResult> applyInnerStretch(
-            DungeonMap dungeonMap,
+            List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
             StretchSelection stretch,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap
@@ -39,7 +37,7 @@ final class DungeonBoundaryStretchMutationLogic {
         Set<Cell> levelCells = new LinkedHashSet<>(target.cellsAt(stretch.level()));
         if (!sourceStaysInternal(stretch, levelCells)
                 || CorridorDoorBindingGeometry.touchesDoorBindingKeys(
-                dungeonMap.corridors(),
+                corridors,
                 target.cluster().center(),
                 target.cluster().clusterId(),
                 stretch.level(),
@@ -47,8 +45,8 @@ final class DungeonBoundaryStretchMutationLogic {
             return Optional.empty();
         }
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(boundaryMap);
-        if (!BOUNDARY_LOOKUP_SERVICE.innerStretchCanMove(boundaries, stretch)
-                || !CONNECTOR_SERVICE.applyStretchConnectors(dungeonMap, target, stretch, levelCells, boundaries, true)
+        if (!BOUNDARY_LOOKUP.innerStretchCanMove(boundaries, stretch)
+                || !CONNECTORS.applyStretchConnectors(corridors, target, stretch, levelCells, boundaries, true)
                 || !replaceStretchEdges(target, stretch, levelCells, boundaries)) {
             return Optional.empty();
         }
@@ -58,7 +56,7 @@ final class DungeonBoundaryStretchMutationLogic {
     }
 
     Optional<StretchMutationResult> applyOuterStretch(
-            DungeonMap dungeonMap,
+            List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
             StretchSelection stretch,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap
@@ -80,15 +78,15 @@ final class DungeonBoundaryStretchMutationLogic {
         nextCellsByLevel.put(stretch.level(), CellOrdering.sortedCells(currentLevelCells));
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(boundaryMap);
         for (BoundaryVertex vertex : stretch.vertices()) {
-            if (!BOUNDARY_LOOKUP_SERVICE.hasPerpendicularBoundary(
+            if (!BOUNDARY_LOOKUP.hasPerpendicularBoundary(
                     boundaries,
                     stretch.sourceKeys(),
                     vertex,
                     stretch.orientation())) {
                 continue;
             }
-            if (!CONNECTOR_SERVICE.applyConnectorPath(
-                    dungeonMap,
+            if (!CONNECTORS.applyConnectorPath(
+                    corridors,
                     target,
                     stretch,
                     currentLevelCells,
@@ -102,7 +100,7 @@ final class DungeonBoundaryStretchMutationLogic {
         }
         return Optional.of(new StretchMutationResult(
                 nextCellsByLevel,
-                GEOMETRY_SERVICE.filterBoundaries(boundaries.values(), nextCellsByLevel, target.cluster().center())));
+                GEOMETRY.filterBoundaries(boundaries.values(), nextCellsByLevel, target.cluster().center())));
     }
 
     private boolean replaceStretchEdges(
@@ -120,7 +118,7 @@ final class DungeonBoundaryStretchMutationLogic {
             if (boundaries.containsKey(movedKey)) {
                 return false;
             }
-            DungeonClusterBoundary moved = GEOMETRY_SERVICE.boundaryForEdge(
+            DungeonClusterBoundary moved = GEOMETRY.boundaryForEdge(
                     levelCells,
                     target.cluster().center(),
                     target.cluster().clusterId(),

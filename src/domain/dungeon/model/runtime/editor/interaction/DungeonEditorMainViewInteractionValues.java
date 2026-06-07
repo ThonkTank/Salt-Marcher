@@ -11,7 +11,7 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteract
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.VertexTarget;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchOrientation;
+import src.domain.dungeon.model.core.structure.room.BoundaryStretchOrientation;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
@@ -395,7 +395,7 @@ public final class DungeonEditorMainViewInteractionValues {
             DungeonEditorSessionValues.Selection selection,
             long clusterId,
             List<DungeonEditorWorkspaceValues.Edge> sourceEdges,
-            StretchOrientation orientation,
+            BoundaryStretchOrientation orientation,
             int pressQ,
             int pressR,
             int pressLevel,
@@ -406,7 +406,7 @@ public final class DungeonEditorMainViewInteractionValues {
         public BoundaryStretchSession {
             selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
             sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
-            orientation = orientation == null ? StretchOrientation.VERTICAL : orientation;
+            orientation = orientation == null ? BoundaryStretchOrientation.VERTICAL : orientation;
         }
 
         public static BoundaryStretchSession none() {
@@ -414,7 +414,7 @@ public final class DungeonEditorMainViewInteractionValues {
                     DungeonEditorSessionValues.Selection.empty(),
                     0L,
                     List.of(),
-                    StretchOrientation.VERTICAL,
+                    BoundaryStretchOrientation.VERTICAL,
                     0,
                     0,
                     0,
@@ -438,11 +438,11 @@ public final class DungeonEditorMainViewInteractionValues {
         }
 
         public int deltaQ() {
-            return orientation == StretchOrientation.VERTICAL ? currentQ - pressQ : 0;
+            return orientation == BoundaryStretchOrientation.VERTICAL ? currentQ - pressQ : 0;
         }
 
         public int deltaR() {
-            return orientation == StretchOrientation.HORIZONTAL ? currentR - pressR : 0;
+            return orientation == BoundaryStretchOrientation.HORIZONTAL ? currentR - pressR : 0;
         }
 
         public int deltaLevel() {

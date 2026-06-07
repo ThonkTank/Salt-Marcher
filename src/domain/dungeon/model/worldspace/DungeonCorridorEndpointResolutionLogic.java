@@ -9,7 +9,6 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorEndpointMaterialization;

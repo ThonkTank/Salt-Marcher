@@ -1,6 +1,4 @@
-package src.domain.dungeon.model.worldspace;
-
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -12,11 +10,10 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryTouch;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 
-final class DungeonClusterBoundaryGeometryLogic {
+final class RoomClusterBoundaryGeometry {
 
     Map<Integer, List<DungeonClusterBoundary>> filterBoundaries(
             Iterable<DungeonClusterBoundary> boundaries,
@@ -28,7 +25,7 @@ final class DungeonClusterBoundaryGeometryLogic {
             DungeonBoundaryTouch touch = touch(
                     boundary.absoluteEdge(center),
                     new LinkedHashSet<>(cellsByLevel.getOrDefault(boundary.level(), List.of())));
-            if (retainsBoundary(boundary, touch)) {
+            if (touch.touchesCluster()) {
                 filtered.add(boundary);
             }
         }
@@ -64,13 +61,6 @@ final class DungeonClusterBoundaryGeometryLogic {
                 clusterId,
                 edge);
         return boundary(materialized, DungeonTopologyRef.empty());
-    }
-
-    private boolean retainsBoundary(DungeonClusterBoundary boundary, DungeonBoundaryTouch touch) {
-        if (boundary.isOpen()) {
-            return touch.touchesCluster();
-        }
-        return touch.touchesCluster();
     }
 
     private DungeonBoundaryTouch touch(Edge edge, Set<Cell> clusterCells) {

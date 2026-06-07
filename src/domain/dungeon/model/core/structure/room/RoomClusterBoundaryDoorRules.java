@@ -1,6 +1,4 @@
-package src.domain.dungeon.model.worldspace;
-
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,14 +15,12 @@ import src.domain.dungeon.model.core.structure.door.DoorIndex;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingGeometry;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomTopologyClusterWork;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
 
-final class DungeonClusterBoundaryDoorRules {
+final class RoomClusterBoundaryDoorRules {
 
     boolean removeBoundaryIfAllowed(
-            DungeonMap dungeonMap,
+            List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             BoundaryKind resolvedKind,
@@ -35,7 +31,7 @@ final class DungeonClusterBoundaryDoorRules {
             return false;
         }
         boolean corridorBound = resolvedKind == BoundaryKind.DOOR
-                && new CorridorDoorBoundaryProtection(dungeonMap, target, key, existing).corridorBound();
+                && new CorridorDoorBoundaryProtection(corridors, target, key, existing).corridorBound();
         if (resolvedKind == BoundaryKind.DOOR) {
             DoorIndex currentDoors = DoorIndex.from(doors(boundaries.values()));
             DoorIndex expectedAfterDelete = DoorIndex.from(doorsExcept(existing, boundaries.values()));
@@ -153,7 +149,7 @@ final class DungeonClusterBoundaryDoorRules {
     }
 
     private record CorridorDoorBoundaryProtection(
-            DungeonMap dungeonMap,
+            List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
             DungeonBoundaryKey key,
             DungeonClusterBoundary existing
@@ -164,7 +160,7 @@ final class DungeonClusterBoundaryDoorRules {
 
         private boolean boundByGeometry() {
             return CorridorDoorBindingGeometry.touchesDoorBindingKeys(
-                    dungeonMap.corridors(),
+                    corridors,
                     target.cluster().center(),
                     target.cluster().clusterId(),
                     existing.level(),
@@ -176,7 +172,7 @@ final class DungeonClusterBoundaryDoorRules {
             if (!ref.present()) {
                 return false;
             }
-            for (Corridor corridor : dungeonMap.corridors()) {
+            for (Corridor corridor : corridors) {
                 for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
                     if (ref.equals(binding.topologyRef())) {
                         return true;
@@ -187,7 +183,7 @@ final class DungeonClusterBoundaryDoorRules {
         }
 
         private boolean boundByCurrentBoundaryKey() {
-            for (Corridor corridor : dungeonMap.corridors()) {
+            for (Corridor corridor : corridors) {
                 for (CorridorDoorBindingState binding : corridor.stateBindings().doorBindings()) {
                     if (binding.clusterId() != target.cluster().clusterId()
                             || binding.relativeCell().level() != existing.level()) {

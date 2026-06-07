@@ -1,4 +1,4 @@
-package src.domain.dungeon.model.worldspace;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,28 +7,27 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
-import src.domain.dungeon.model.core.structure.room.DungeonRoom;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomBoundaryPartition;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomTopologyClusterWork;
-import src.domain.dungeon.model.core.structure.room.RoomTopologyRebuilder;
-import src.domain.dungeon.model.core.structure.room.RoomTopologyWorkCatalog;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchMutationResult;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.room.RoomBoundaryStretchValues.StretchMutationResult;
+import src.domain.dungeon.model.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
+import src.domain.dungeon.model.core.structure.room.RoomTopologyRebuilder.RebuildResult;
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
-final class DungeonBoundaryStretchEditLogic {
+public final class RoomClusterBoundaryStretchMutation {
 
     private static final DungeonRoomBoundaryPartition BOUNDARY_PARTITION =
             new DungeonRoomBoundaryPartition();
-    private static final DungeonBoundaryStretchSelectionLogic SELECTION_SERVICE =
-            new DungeonBoundaryStretchSelectionLogic();
-    private static final DungeonBoundaryStretchMutationLogic MUTATION_SERVICE =
-            new DungeonBoundaryStretchMutationLogic();
+    private static final RoomBoundaryStretchSelection SELECTION =
+            new RoomBoundaryStretchSelection();
+    private static final RoomBoundaryStretchMutationStep MUTATION =
+            new RoomBoundaryStretchMutationStep();
     private static final RoomTopologyWorkCatalog WORK_CATALOG = new RoomTopologyWorkCatalog();
     private static final RoomTopologyRebuilder REBUILDER = new RoomTopologyRebuilder();
 
-    DungeonMap moveBoundaryStretch(
-            DungeonMap dungeonMap,
+    public Optional<RebuildResult> moveBoundaryStretch(
+            SpatialTopology topology,
+            RoomCatalog rooms,
+            List<Corridor> corridors,
             long clusterId,
             List<Edge> sourceEdges,
             int deltaQ,
@@ -36,15 +35,15 @@ final class DungeonBoundaryStretchEditLogic {
             int deltaLevel
     ) {
         if (invalidStretchRequest(clusterId, sourceEdges)) {
-            return dungeonMap;
+            return Optional.empty();
         }
-        List<DungeonRoomTopologyClusterWork> clusters = WORK_CATALOG.workClusters(dungeonMap.topology(), dungeonMap.rooms());
+        List<DungeonRoomTopologyClusterWork> clusters = WORK_CATALOG.workClusters(topology, rooms);
         DungeonRoomTopologyClusterWork target = targetCluster(clusters, clusterId);
         if (target == null) {
-            return dungeonMap;
+            return Optional.empty();
         }
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = target.cluster().boundaryMap();
-        Optional<StretchSelection> stretch = SELECTION_SERVICE.resolveStretch(
+        Optional<StretchSelection> stretch = SELECTION.resolveStretch(
                 target,
                 sourceEdges,
                 deltaQ,
@@ -52,13 +51,13 @@ final class DungeonBoundaryStretchEditLogic {
                 deltaLevel,
                 boundaries);
         if (stretch.isEmpty() || stretch.get().movement() == 0) {
-            return dungeonMap;
+            return Optional.empty();
         }
-        Optional<StretchMutationResult> mutation = applyStretchMutation(dungeonMap, target, stretch.get(), boundaries);
+        Optional<StretchMutationResult> mutation = applyStretchMutation(corridors, target, stretch.get(), boundaries);
         if (mutation.isEmpty()) {
-            return dungeonMap;
+            return Optional.empty();
         }
-        return rebuiltStretch(dungeonMap, clusters, target, stretch.get(), mutation.get());
+        return Optional.of(rebuiltStretch(topology, rooms, clusters, target, stretch.get(), mutation.get()));
     }
 
     private @Nullable DungeonRoomTopologyClusterWork targetCluster(
@@ -74,24 +73,25 @@ final class DungeonBoundaryStretchEditLogic {
     }
 
     private Optional<StretchMutationResult> applyStretchMutation(
-            DungeonMap dungeonMap,
+            List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
             StretchSelection stretch,
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries
     ) {
         return stretch.outer()
-                ? MUTATION_SERVICE.applyOuterStretch(dungeonMap, target, stretch, boundaries)
-                : MUTATION_SERVICE.applyInnerStretch(dungeonMap, target, stretch, boundaries);
+                ? MUTATION.applyOuterStretch(corridors, target, stretch, boundaries)
+                : MUTATION.applyInnerStretch(corridors, target, stretch, boundaries);
     }
 
-    private DungeonMap rebuiltStretch(
-            DungeonMap dungeonMap,
+    private RebuildResult rebuiltStretch(
+            SpatialTopology topology,
+            RoomCatalog roomCatalog,
             List<DungeonRoomTopologyClusterWork> clusters,
             DungeonRoomTopologyClusterWork target,
             StretchSelection stretch,
             StretchMutationResult mutation
     ) {
-        RoomTopologyWorkCatalog.IdAllocation ids = WORK_CATALOG.newIdAllocation(dungeonMap.topology(), dungeonMap.rooms());
+        RoomTopologyWorkCatalog.IdAllocation ids = WORK_CATALOG.newIdAllocation(topology, roomCatalog);
         DungeonRoomTopologyClusterWork partitionWork =
                 new DungeonRoomTopologyClusterWork(target.cluster(), target.rooms(), mutation.cellsByLevel());
         List<DungeonRoom> rooms = BOUNDARY_PARTITION.roomsForBoundaryEdit(partitionWork, mutation.boundariesByLevel(), ids);
@@ -108,9 +108,7 @@ final class DungeonBoundaryStretchEditLogic {
         for (DungeonRoomTopologyClusterWork work : clusters) {
             nextClusters.add(work.cluster().clusterId() == target.cluster().clusterId() ? rebuiltWork : work);
         }
-        return DungeonRoomTopologyEditor.withRoomTopology(
-                dungeonMap,
-                REBUILDER.rebuiltPreservingRooms(dungeonMap.topology(), nextClusters));
+        return REBUILDER.rebuiltPreservingRooms(topology, nextClusters);
     }
 
     private boolean invalidStretchRequest(long clusterId, List<Edge> sourceEdges) {

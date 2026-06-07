@@ -27,6 +27,7 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorResolvedEndpoint
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoomSet;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
 import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
+import src.domain.dungeon.model.core.structure.room.BoundaryStretchOrientation;
 import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
@@ -775,7 +776,7 @@ final class DungeonStructureInvariantHarness {
                         -1,
                         0)
                         .orElseThrow(() -> new IllegalStateException("expected stretch selection"));
-        assertEquals(RoomClusterBoundaryStretchPlan.Orientation.HORIZONTAL, outward.orientation(),
+        assertEquals(BoundaryStretchOrientation.HORIZONTAL, outward.orientation(),
                 "core room stretch derives horizontal orientation");
         assertTrue(outward.outer(), "core room stretch marks perimeter row as outer");
         assertTrue(outward.movesOutward(), "core room stretch resolves outward movement");

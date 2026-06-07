@@ -70,7 +70,7 @@ public final class RoomClusterBoundaryStretchPlan {
             return Optional.empty();
         }
         Edge firstEdge = sourceEdges.getFirst();
-        Orientation orientation = Orientation.from(firstEdge);
+        BoundaryStretchOrientation orientation = BoundaryStretchOrientation.from(firstEdge);
         if (orientation == null) {
             return Optional.empty();
         }
@@ -86,7 +86,7 @@ public final class RoomClusterBoundaryStretchPlan {
             Edge edge,
             Set<Cell> clusterCells
     ) {
-        Orientation orientation = Orientation.from(edge);
+        BoundaryStretchOrientation orientation = BoundaryStretchOrientation.from(edge);
         if (orientation == null) {
             return Optional.empty();
         }
@@ -115,7 +115,7 @@ public final class RoomClusterBoundaryStretchPlan {
             Map<EdgeKey, BoundaryRow> boundaries,
             Edge edge
     ) {
-        Orientation orientation = Orientation.from(edge);
+        BoundaryStretchOrientation orientation = BoundaryStretchOrientation.from(edge);
         if (orientation == null || invalidEdgeForSeed(seed, edge, orientation)) {
             return Optional.empty();
         }
@@ -134,7 +134,7 @@ public final class RoomClusterBoundaryStretchPlan {
     private static boolean invalidEdgeForSeed(
             Seed seed,
             Edge edge,
-            Orientation orientation
+            BoundaryStretchOrientation orientation
     ) {
         return edge == null
                 || edge.from().level() != seed.level()
@@ -144,7 +144,7 @@ public final class RoomClusterBoundaryStretchPlan {
 
     private static boolean matchesSeedTouch(
             Seed seed,
-            Orientation orientation,
+            BoundaryStretchOrientation orientation,
             BoundaryTouch touch
     ) {
         return touch.valid()
@@ -203,42 +203,6 @@ public final class RoomClusterBoundaryStretchPlan {
         return Set.copyOf(result);
     }
 
-    public enum Orientation {
-        HORIZONTAL,
-        VERTICAL;
-
-        private static @Nullable Orientation from(@Nullable Edge edge) {
-            if (edge == null || edge.from() == null || edge.to() == null) {
-                return null;
-            }
-            if (edge.from().q() == edge.to().q()) {
-                return VERTICAL;
-            }
-            if (edge.from().r() == edge.to().r()) {
-                return HORIZONTAL;
-            }
-            return null;
-        }
-
-        public int fixedCoordinate(Edge edge) {
-            return this == VERTICAL ? edge.from().q() : edge.from().r();
-        }
-
-        public int variableCoordinate(Edge edge) {
-            return this == VERTICAL
-                    ? Math.min(edge.from().r(), edge.to().r())
-                    : Math.min(edge.from().q(), edge.to().q());
-        }
-
-        public int movementAlongNormal(int deltaQ, int deltaR) {
-            if (this == VERTICAL) {
-                return deltaR == 0 ? deltaQ : 0;
-            }
-            return deltaQ == 0 ? deltaR : 0;
-        }
-
-    }
-
     public enum BoundarySide {
         NORTH,
         SOUTH,
@@ -246,11 +210,11 @@ public final class RoomClusterBoundaryStretchPlan {
         WEST;
 
         private static BoundarySide resolve(
-                Orientation orientation,
+                BoundaryStretchOrientation orientation,
                 BoundaryTouch touch,
                 int fixedCoordinate
         ) {
-            if (orientation == Orientation.VERTICAL) {
+            if (orientation.vertical()) {
                 return hasInsideCellWithColumn(touch, fixedCoordinate - 1)
                         ? WEST
                         : EAST;
@@ -312,7 +276,7 @@ public final class RoomClusterBoundaryStretchPlan {
 
     public record Selection(
             int level,
-            Orientation orientation,
+            BoundaryStretchOrientation orientation,
             boolean outer,
             int fixedCoordinate,
             int startVariable,
@@ -345,7 +309,7 @@ public final class RoomClusterBoundaryStretchPlan {
 
         public List<BoundaryVertex> vertices() {
             List<BoundaryVertex> result = new ArrayList<>();
-            if (orientation == Orientation.VERTICAL) {
+            if (orientation.vertical()) {
                 for (int r = startVariable; r <= endVariable; r++) {
                     result.add(new BoundaryVertex(fixedCoordinate, r, level));
                 }
@@ -363,7 +327,7 @@ public final class RoomClusterBoundaryStretchPlan {
                 return List.of();
             }
             List<Edge> result = new ArrayList<>();
-            int step = orientation == Orientation.VERTICAL
+            int step = orientation.vertical()
                     ? Integer.compare(moved.q(), vertex.q())
                     : Integer.compare(moved.r(), vertex.r());
             for (int offset = 0; offset != movement; offset += step) {
@@ -383,7 +347,7 @@ public final class RoomClusterBoundaryStretchPlan {
         }
 
         private BoundaryVertex movedVertex(BoundaryVertex vertex) {
-            return orientation == Orientation.VERTICAL
+            return orientation.vertical()
                     ? new BoundaryVertex(vertex.q() + movement, vertex.r(), vertex.level())
                     : new BoundaryVertex(vertex.q(), vertex.r() + movement, vertex.level());
         }
@@ -395,7 +359,7 @@ public final class RoomClusterBoundaryStretchPlan {
         }
 
         private Edge connectorEdge(BoundaryVertex vertex, int offset, int step) {
-            return orientation == Orientation.VERTICAL
+            return orientation.vertical()
                     ? new Edge(
                     new Cell(vertex.q() + offset, vertex.r(), vertex.level()),
                     new Cell(vertex.q() + offset + step, vertex.r(), vertex.level()))
@@ -413,7 +377,7 @@ public final class RoomClusterBoundaryStretchPlan {
         }
 
         private Cell stripCell(int fixed, int variable) {
-            return orientation == Orientation.VERTICAL
+            return orientation.vertical()
                     ? new Cell(fixed, variable, level)
                     : new Cell(variable, fixed, level);
         }
@@ -421,7 +385,7 @@ public final class RoomClusterBoundaryStretchPlan {
 
     private record Seed(
             int level,
-            Orientation orientation,
+            BoundaryStretchOrientation orientation,
             int fixedCoordinate,
             boolean outer,
             BoundarySide side,

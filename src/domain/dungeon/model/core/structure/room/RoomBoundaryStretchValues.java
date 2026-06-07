@@ -1,6 +1,4 @@
-package src.domain.dungeon.model.worldspace;
-
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,64 +14,36 @@ import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan;
 
-public final class DungeonBoundaryStretchValueTypes {
+final class RoomBoundaryStretchValues {
 
-    private DungeonBoundaryStretchValueTypes() {
+    private RoomBoundaryStretchValues() {
     }
 
-    public static @Nullable StretchOrientation orientationOf(@Nullable DungeonBoundaryKey key) {
-        return StretchOrientation.from(key);
+    static @Nullable BoundaryStretchOrientation orientationOf(@Nullable DungeonBoundaryKey key) {
+        return BoundaryStretchOrientation.from(key);
     }
 
-    public enum StretchOrientation {
-        HORIZONTAL,
-        VERTICAL;
+    record ConnectorAction(boolean removesBoundaries, List<Edge> path) {
 
-        public static @Nullable StretchOrientation from(@Nullable DungeonBoundaryKey key) {
-            if (key == null) {
-                return null;
-            }
-            return key.lower().q() == key.upper().q() ? VERTICAL : HORIZONTAL;
-        }
-
-        public boolean perpendicularTo(@Nullable StretchOrientation other) {
-            return other != null && this != other;
-        }
-
-        public Edge move(Edge edge, int movement) {
-            if (this == VERTICAL) {
-                return new Edge(
-                        new Cell(edge.from().q() + movement, edge.from().r(), edge.from().level()),
-                        new Cell(edge.to().q() + movement, edge.to().r(), edge.to().level()));
-            }
-            return new Edge(
-                    new Cell(edge.from().q(), edge.from().r() + movement, edge.from().level()),
-                    new Cell(edge.to().q(), edge.to().r() + movement, edge.to().level()));
-        }
-    }
-
-    public record ConnectorAction(boolean removesBoundaries, List<Edge> path) {
-
-        public ConnectorAction {
+        ConnectorAction {
             path = path == null ? List.of() : List.copyOf(path);
         }
     }
 
-    public record StretchEdge(
+    record StretchEdge(
             Edge edge,
             DungeonBoundaryKey key,
             @Nullable DungeonClusterBoundary existing
     ) {
-        public BoundaryKind kind() {
+        BoundaryKind kind() {
             return existing == null ? BoundaryKind.WALL : existing.kind();
         }
     }
 
     record StretchSelection(
             int level,
-            StretchOrientation orientation,
+            BoundaryStretchOrientation orientation,
             boolean outer,
             int movement,
             List<StretchEdge> edges,
@@ -94,7 +64,7 @@ public final class DungeonBoundaryStretchValueTypes {
         ) {
             return new StretchSelection(
                     coreSelection.level(),
-                    StretchOrientation.valueOf(coreSelection.orientation().name()),
+                    coreSelection.orientation(),
                     coreSelection.outer(),
                     coreSelection.movement(),
                     stretchEdges(coreSelection, boundariesByKey),
@@ -155,11 +125,11 @@ public final class DungeonBoundaryStretchValueTypes {
         }
     }
 
-    public record StretchMutationResult(
+    record StretchMutationResult(
             Map<Integer, List<Cell>> cellsByLevel,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
-        public StretchMutationResult {
+        StretchMutationResult {
             cellsByLevel = copyListsByLevel(cellsByLevel);
             boundariesByLevel = copyListsByLevel(boundariesByLevel);
         }

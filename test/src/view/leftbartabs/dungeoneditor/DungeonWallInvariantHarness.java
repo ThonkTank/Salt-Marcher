@@ -15,6 +15,7 @@ import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.door.Door;
 import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.door.DoorIndex;
+import src.domain.dungeon.model.core.structure.room.BoundaryStretchOrientation;
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
@@ -211,7 +212,7 @@ final class DungeonWallInvariantHarness {
         assertEquals(List.of(EdgeKey.from(northLeft), EdgeKey.from(northRight)),
                 new ArrayList<>(selection.sourceKeys()),
                 "wall owner delegates stretch source key normalization to the wall map state");
-        assertEquals(RoomClusterBoundaryStretchPlan.Orientation.HORIZONTAL, selection.orientation(),
+        assertEquals(BoundaryStretchOrientation.HORIZONTAL, selection.orientation(),
                 "wall owner resolves stretch orientation");
         assertEquals(0, selection.startVariable(), "wall owner resolves contiguous stretch start");
         assertEquals(2, selection.endVariable(), "wall owner resolves contiguous stretch end");

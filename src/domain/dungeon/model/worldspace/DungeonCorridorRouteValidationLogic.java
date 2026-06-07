@@ -5,7 +5,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;

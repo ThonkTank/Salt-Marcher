@@ -1,6 +1,4 @@
-package src.domain.dungeon.model.worldspace;
-
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.List;
 import java.util.Map;
@@ -10,10 +8,9 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchOrientation;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
+import src.domain.dungeon.model.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
 
-final class DungeonBoundaryStretchBoundaryLookupLogic {
+final class RoomBoundaryStretchBoundaryLookup {
 
     boolean innerStretchCanMove(
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
@@ -32,13 +29,13 @@ final class DungeonBoundaryStretchBoundaryLookupLogic {
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             Set<DungeonBoundaryKey> sourceKeys,
             BoundaryVertex vertex,
-            StretchOrientation sourceOrientation
+            BoundaryStretchOrientation sourceOrientation
     ) {
         for (Map.Entry<DungeonBoundaryKey, DungeonClusterBoundary> entry : boundaries.entrySet()) {
             if (sourceKeys.contains(entry.getKey())) {
                 continue;
             }
-            if (sourceOrientation.perpendicularTo(DungeonBoundaryStretchValueTypes.orientationOf(entry.getKey()))
+            if (sourceOrientation.perpendicularTo(RoomBoundaryStretchValues.orientationOf(entry.getKey()))
                     && touches(entry.getKey(), vertex)) {
                 return true;
             }

@@ -1,6 +1,4 @@
-package src.domain.dungeon.model.worldspace;
-
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.List;
 import java.util.Map;
@@ -10,21 +8,21 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingGeometry;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomTopologyClusterWork;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.ConnectorAction;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
+import src.domain.dungeon.model.core.structure.room.RoomBoundaryStretchValues.ConnectorAction;
+import src.domain.dungeon.model.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
 
-final class DungeonBoundaryStretchConnectorLogic {
+final class RoomBoundaryStretchConnectors {
 
-    private static final DungeonClusterBoundaryGeometryLogic GEOMETRY_SERVICE =
-            new DungeonClusterBoundaryGeometryLogic();
-    private static final DungeonBoundaryStretchBoundaryLookupLogic BOUNDARY_LOOKUP_SERVICE =
-            new DungeonBoundaryStretchBoundaryLookupLogic();
+    private static final RoomClusterBoundaryGeometry GEOMETRY =
+            new RoomClusterBoundaryGeometry();
+    private static final RoomBoundaryStretchBoundaryLookup BOUNDARY_LOOKUP =
+            new RoomBoundaryStretchBoundaryLookup();
 
     boolean applyStretchConnectors(
-            DungeonMap dungeonMap,
+            List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
             StretchSelection stretch,
             Set<Cell> clusterCells,
@@ -33,8 +31,8 @@ final class DungeonBoundaryStretchConnectorLogic {
     ) {
         List<BoundaryVertex> vertices = stretch.vertices();
         for (BoundaryVertex endpoint : List.of(vertices.getFirst(), vertices.getLast())) {
-            boolean touchesOuter = BOUNDARY_LOOKUP_SERVICE.touchesOuterBoundary(clusterCells, endpoint);
-            boolean hasAttachment = BOUNDARY_LOOKUP_SERVICE.hasPerpendicularBoundary(
+            boolean touchesOuter = BOUNDARY_LOOKUP.touchesOuterBoundary(clusterCells, endpoint);
+            boolean hasAttachment = BOUNDARY_LOOKUP.hasPerpendicularBoundary(
                     boundaries,
                     stretch.sourceKeys(),
                     endpoint,
@@ -42,7 +40,7 @@ final class DungeonBoundaryStretchConnectorLogic {
             if (requireTouch && !touchesOuter && !hasAttachment) {
                 continue;
             }
-            if (!applyConnectorPath(dungeonMap, target, stretch, clusterCells, boundaries, endpoint)) {
+            if (!applyConnectorPath(corridors, target, stretch, clusterCells, boundaries, endpoint)) {
                 return false;
             }
         }
@@ -50,7 +48,7 @@ final class DungeonBoundaryStretchConnectorLogic {
     }
 
     boolean applyConnectorPath(
-            DungeonMap dungeonMap,
+            List<Corridor> corridors,
             DungeonRoomTopologyClusterWork target,
             StretchSelection stretch,
             Set<Cell> clusterCells,
@@ -62,7 +60,7 @@ final class DungeonBoundaryStretchConnectorLogic {
             return true;
         }
         if (CorridorDoorBindingGeometry.touchesDoorBindingPath(
-                dungeonMap.corridors(),
+                corridors,
                 target.cluster().center(),
                 target.cluster().clusterId(),
                 stretch.level(),
@@ -142,7 +140,7 @@ final class DungeonBoundaryStretchConnectorLogic {
             if (boundaries.containsKey(key)) {
                 continue;
             }
-            DungeonClusterBoundary connector = GEOMETRY_SERVICE.boundaryForEdge(
+            DungeonClusterBoundary connector = GEOMETRY.boundaryForEdge(
                     clusterCells,
                     center,
                     clusterId,

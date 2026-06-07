@@ -2,11 +2,14 @@ package src.domain.dungeon.model.worldspace;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomTopologyClusterWork;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMutation;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterCollection;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchMutation;
 import src.domain.dungeon.model.core.structure.room.RoomTopologyRebuilder;
 import src.domain.dungeon.model.core.structure.room.RoomTopologyRebuilder.RebuildResult;
 import src.domain.dungeon.model.core.structure.room.RoomTopologyWorkCatalog;
@@ -15,10 +18,10 @@ public final class DungeonRoomTopologyEditor {
 
     private static final RoomTopologyWorkCatalog WORK_CATALOG = new RoomTopologyWorkCatalog();
     private static final RoomTopologyRebuilder REBUILDER = new RoomTopologyRebuilder();
-    private static final DungeonClusterBoundaryEditLogic BOUNDARY_EDIT_SERVICE =
-            new DungeonClusterBoundaryEditLogic();
-    private static final DungeonBoundaryStretchEditLogic STRETCH_EDIT_SERVICE =
-            new DungeonBoundaryStretchEditLogic();
+    private static final RoomClusterBoundaryMutation BOUNDARY_MUTATION =
+            new RoomClusterBoundaryMutation();
+    private static final RoomClusterBoundaryStretchMutation STRETCH_MUTATION =
+            new RoomClusterBoundaryStretchMutation();
 
     public DungeonMap paintRectangle(DungeonMap dungeonMap, Cell start, Cell end) {
         DungeonMap target = requireDungeonMap(dungeonMap);
@@ -56,7 +59,16 @@ public final class DungeonRoomTopologyEditor {
             BoundaryKind kind,
             boolean deleteBoundary
     ) {
-        return BOUNDARY_EDIT_SERVICE.editBoundaries(requireDungeonMap(dungeonMap), clusterId, edges, kind, deleteBoundary);
+        DungeonMap target = requireDungeonMap(dungeonMap);
+        Optional<RebuildResult> rebuild = BOUNDARY_MUTATION.editBoundaries(
+                target.topology(),
+                target.rooms(),
+                target.corridors(),
+                clusterId,
+                edges,
+                kind,
+                deleteBoundary);
+        return rebuild.map(result -> withRoomTopology(target, result)).orElse(target);
     }
 
     public DungeonMap moveBoundaryStretch(
@@ -67,13 +79,17 @@ public final class DungeonRoomTopologyEditor {
             int deltaR,
             int deltaLevel
     ) {
-        return STRETCH_EDIT_SERVICE.moveBoundaryStretch(
-                requireDungeonMap(dungeonMap),
+        DungeonMap target = requireDungeonMap(dungeonMap);
+        Optional<RebuildResult> rebuild = STRETCH_MUTATION.moveBoundaryStretch(
+                target.topology(),
+                target.rooms(),
+                target.corridors(),
                 clusterId,
                 sourceEdges,
                 deltaQ,
                 deltaR,
                 deltaLevel);
+        return rebuild.map(result -> withRoomTopology(target, result)).orElse(target);
     }
 
     private DungeonMap requireDungeonMap(DungeonMap dungeonMap) {

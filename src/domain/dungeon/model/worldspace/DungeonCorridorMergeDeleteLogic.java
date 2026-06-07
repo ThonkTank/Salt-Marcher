@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.structure.DungeonMapLookupAdapter;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
@@ -20,7 +19,7 @@ import src.domain.dungeon.model.core.structure.stair.StairCollection;
 
 final class DungeonCorridorMergeDeleteLogic {
 
-    private static final DungeonCorridorConnectionNormalizationLogic CONNECTION_NORMALIZATION_SERVICE =
+    private static final DungeonCorridorConnectionNormalizationLogic CONNECTION_NORMALIZATION =
             new DungeonCorridorConnectionNormalizationLogic();
     private static final DungeonMapLookupAdapter LOOKUP_ADAPTER = new DungeonMapLookupAdapter();
     private static final CorridorTargetDeletion TARGET_DELETION =
@@ -58,7 +57,7 @@ final class DungeonCorridorMergeDeleteLogic {
         }
         StairCollection withoutCorridorStairs =
                 dungeonMap.stairs().withoutCorridorBoundStairs(corridorId);
-        return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
+        return CONNECTION_NORMALIZATION.copyWithConnections(
                 dungeonMap,
                 network.withoutCorridor(corridorId).toAuthored(dungeonMap.corridors()),
                 withoutCorridorStairs,
@@ -91,7 +90,7 @@ final class DungeonCorridorMergeDeleteLogic {
             return dungeonMap;
         }
         Corridor updated = Corridor.fromCore(existing, updatedCore, null);
-        return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
+        return CONNECTION_NORMALIZATION.copyWithConnections(
                 dungeonMap,
                 withUpdatedCorridor(dungeonMap, updated),
                 dungeonMap.stairs(),

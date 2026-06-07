@@ -1,6 +1,4 @@
-package src.domain.dungeon.model.worldspace;
-
-import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -11,13 +9,10 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomTopologyClusterWork;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
-import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
-import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
-import src.domain.dungeon.model.worldspace.DungeonBoundaryStretchValueTypes.StretchSelection;
+import src.domain.dungeon.model.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
 
-final class DungeonBoundaryStretchSelectionLogic {
+final class RoomBoundaryStretchSelection {
 
     // Remove this bridge when boundary-stretch callers use RoomClusterWallMap directly.
     Optional<StretchSelection> resolveStretch(

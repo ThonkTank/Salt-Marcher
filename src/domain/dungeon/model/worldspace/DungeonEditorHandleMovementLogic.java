@@ -3,12 +3,15 @@ package src.domain.dungeon.model.worldspace;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
+import src.domain.dungeon.model.core.structure.room.RoomClusterCornerMovement;
+import src.domain.dungeon.model.core.structure.room.RoomTopologyRebuilder.RebuildResult;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
@@ -18,11 +21,11 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMo
  */
 public final class DungeonEditorHandleMovementLogic {
 
-    private static final DungeonCorridorConnectionNormalizationLogic CONNECTION_NORMALIZATION_SERVICE =
+    private static final DungeonCorridorConnectionNormalizationLogic CONNECTION_NORMALIZATION =
             new DungeonCorridorConnectionNormalizationLogic();
-    private static final DungeonTopologyMovementLogic TOPOLOGY_MOVEMENT_SERVICE = new DungeonTopologyMovementLogic();
-    private static final DungeonClusterCornerMoveLogic CLUSTER_CORNER_MOVEMENT_SERVICE =
-            new DungeonClusterCornerMoveLogic();
+    private static final DungeonTopologyMovementLogic TOPOLOGY_MOVEMENT = new DungeonTopologyMovementLogic();
+    private static final RoomClusterCornerMovement CLUSTER_CORNER_MOVEMENT =
+            new RoomClusterCornerMovement();
 
     public DungeonMap moveEditorHandle(
             DungeonMap dungeonMap,
@@ -69,12 +72,27 @@ public final class DungeonEditorHandleMovementLogic {
             int deltaLevel
     ) {
         if (handle.kind().isClusterCorner()) {
-            return CLUSTER_CORNER_MOVEMENT_SERVICE.moveCorner(dungeonMap, handle, deltaQ, deltaR, deltaLevel);
+            Optional<RebuildResult> rebuild = CLUSTER_CORNER_MOVEMENT.moveCorner(
+                    dungeonMap.topology(),
+                    dungeonMap.rooms(),
+                    dungeonMap.corridors(),
+                    clusterId(dungeonMap, handle),
+                    handle.cell(),
+                    deltaQ,
+                    deltaR,
+                    deltaLevel);
+            return rebuild.map(result -> DungeonRoomTopologyEditor.withRoomTopology(dungeonMap, result)).orElse(dungeonMap);
         }
         long clusterId = handle.clusterId() > 0L
                 ? handle.clusterId()
                 : dungeonMap.topologyIndex().clusterIdOrZero(handle.topologyRef());
-        return TOPOLOGY_MOVEMENT_SERVICE.moveCluster(dungeonMap, clusterId, deltaQ, deltaR, deltaLevel);
+        return TOPOLOGY_MOVEMENT.moveCluster(dungeonMap, clusterId, deltaQ, deltaR, deltaLevel);
+    }
+
+    private static long clusterId(DungeonMap dungeonMap, DungeonEditorHandleMovement handle) {
+        return handle.clusterId() > 0L
+                ? handle.clusterId()
+                : dungeonMap.topologyIndex().clusterIdOrZero(handle.topologyRef());
     }
 
     private static DungeonMap moveDoorBinding(
@@ -234,7 +252,7 @@ public final class DungeonEditorHandleMovementLogic {
             List<Corridor> nextCorridors,
             StairCollection nextStairs
     ) {
-        return CONNECTION_NORMALIZATION_SERVICE.copyWithConnections(
+        return CONNECTION_NORMALIZATION.copyWithConnections(
                 dungeonMap,
                 nextCorridors,
                 nextStairs,

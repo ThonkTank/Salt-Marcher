@@ -1,10 +1,9 @@
-package src.domain.dungeon.model.core.structure;
+package src.domain.dungeon.model.worldspace;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-import src.domain.dungeon.model.worldspace.DungeonMap;
 
 /**
  * Transitional adapter while authored map aggregate carriers still live in worldspace.
@@ -13,9 +12,9 @@ import src.domain.dungeon.model.worldspace.DungeonMap;
  * aggregate owner directly or when `DungeonMap` and its contained authored
  * carriers have moved out of `worldspace`.
  */
-public final class DungeonMapLookupAdapter {
+final class DungeonMapLookupAdapter {
 
-    public @Nullable DungeonRoom room(DungeonMap dungeonMap, long roomId) {
+    @Nullable DungeonRoom room(DungeonMap dungeonMap, long roomId) {
         for (DungeonRoom room : dungeonMap.rooms().rooms()) {
             if (room != null && room.roomId() == roomId) {
                 return room;
@@ -24,7 +23,7 @@ public final class DungeonMapLookupAdapter {
         return null;
     }
 
-    public @Nullable DungeonRoomCluster cluster(DungeonMap dungeonMap, long clusterId) {
+    @Nullable DungeonRoomCluster cluster(DungeonMap dungeonMap, long clusterId) {
         for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
             if (cluster != null && cluster.clusterId() == clusterId) {
                 return cluster;
@@ -33,7 +32,7 @@ public final class DungeonMapLookupAdapter {
         return null;
     }
 
-    public @Nullable Corridor corridor(DungeonMap dungeonMap, long corridorId) {
+    @Nullable Corridor corridor(DungeonMap dungeonMap, long corridorId) {
         for (Corridor candidate : dungeonMap.corridors()) {
             if (candidate != null && candidate.corridorId() == corridorId) {
                 return candidate;
