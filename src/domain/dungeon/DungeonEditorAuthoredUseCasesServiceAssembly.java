@@ -13,34 +13,34 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
             src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState dungeonState
     ) {
         src.domain.dungeon.model.core.usecase.ApplyDungeonMapCatalogUseCase catalogUseCase = mapCatalogUseCase(registry);
-        src.domain.dungeon.model.worldspace.usecase.LoadDungeonSnapshotUseCase loadSnapshotUseCase = loadDungeonSnapshotUseCase(registry);
+        src.domain.dungeon.model.runtime.usecase.LoadDungeonSnapshotUseCase loadSnapshotUseCase = loadDungeonSnapshotUseCase(registry);
         src.domain.dungeon.model.core.repository.DungeonMapRepository repository =
                 registry.require(src.domain.dungeon.model.core.repository.DungeonMapRepository.class);
         DungeonEditorSnapshotPartsServiceAssembly snapshotParts = DungeonEditorSnapshotPartsServiceAssembly.create(registry);
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase operationUseCase =
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase operationUseCase =
                 authoredOperationUseCase(snapshotParts, repository);
-        src.domain.dungeon.model.worldspace.usecase.ApplyDungeonAuthoredMutationUseCase mutationUseCase =
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonAuthoredMutationUseCase(
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonAuthoredMutationUseCase mutationUseCase =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonAuthoredMutationUseCase(
                         operationUseCase,
                         repository);
-        src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase =
-                new src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredMutationUseCase(publishedState, dungeonState);
+        src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase =
+                new src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorAuthoredMutationUseCase(publishedState, dungeonState);
         return new AuthoredUseCases(
                 new src.domain.dungeon.model.runtime.usecase.SearchDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
                 new src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
                 new src.domain.dungeon.model.runtime.usecase.RenameDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
                 new src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
-                new src.domain.dungeon.model.worldspace.usecase.LoadDungeonEditorAuthoredMapUseCase(
+                new src.domain.dungeon.model.runtime.usecase.LoadDungeonEditorAuthoredMapUseCase(
                         loadSnapshotUseCase,
-                        new src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredSnapshotUseCase(publishedState, dungeonState),
-                        new src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredInspectorUseCase(publishedState, dungeonState)),
-                new src.domain.dungeon.model.worldspace.usecase.PreviewDungeonEditorAuthoredOperationUseCase(
+                        new src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorAuthoredSnapshotUseCase(publishedState, dungeonState),
+                        new src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorAuthoredInspectorUseCase(publishedState, dungeonState)),
+                new src.domain.dungeon.model.runtime.usecase.PreviewDungeonEditorAuthoredOperationUseCase(
                         mutationUseCase,
                         publishMutationUseCase),
-                new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorAuthoredOperationUseCase(
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase(
                         mutationUseCase,
                         publishMutationUseCase),
-                new src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorAuthoredRoomNarrationUseCase(
+                new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredRoomNarrationUseCase(
                         mutationUseCase,
                         publishMutationUseCase),
                 new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredTransitionDescriptionUseCase(
@@ -86,22 +86,22 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
                 new src.domain.dungeon.model.core.usecase.DeleteDungeonMapUseCase(repository));
     }
 
-    private static src.domain.dungeon.model.worldspace.usecase.LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase(ServiceRegistry registry) {
+    private static src.domain.dungeon.model.runtime.usecase.LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase(ServiceRegistry registry) {
         DungeonEditorSnapshotPartsServiceAssembly parts = DungeonEditorSnapshotPartsServiceAssembly.create(registry);
-        src.domain.dungeon.model.worldspace.usecase.InspectDungeonSelectionUseCase inspectDungeonSelectionUseCase =
-                new src.domain.dungeon.model.worldspace.usecase.InspectDungeonSelectionUseCase(parts.derive());
-        return new src.domain.dungeon.model.worldspace.usecase.LoadDungeonSnapshotUseCase(
+        src.domain.dungeon.model.runtime.usecase.InspectDungeonSelectionUseCase inspectDungeonSelectionUseCase =
+                new src.domain.dungeon.model.runtime.usecase.InspectDungeonSelectionUseCase(parts.derive());
+        return new src.domain.dungeon.model.runtime.usecase.LoadDungeonSnapshotUseCase(
                 parts.loadDungeonMapUseCase(),
                 parts.assembleDungeonSnapshotUseCase(),
                 parts.publishDungeonEditorHandlesUseCase(),
                 inspectDungeonSelectionUseCase);
     }
 
-    private static src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase authoredOperationUseCase(
+    private static src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase authoredOperationUseCase(
             DungeonEditorSnapshotPartsServiceAssembly parts,
             src.domain.dungeon.model.core.repository.DungeonMapRepository repository
     ) {
-        return new src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase(
+        return new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase(
                 parts.loadDungeonMapUseCase(),
                 repository,
                 parts.derive(),
@@ -114,10 +114,10 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
             src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorMapCatalogUseCase createMapUseCase,
             src.domain.dungeon.model.runtime.usecase.RenameDungeonEditorMapCatalogUseCase renameMapUseCase,
             src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapCatalogUseCase deleteMapUseCase,
-            src.domain.dungeon.model.worldspace.usecase.LoadDungeonEditorAuthoredMapUseCase loadMapUseCase,
-            src.domain.dungeon.model.worldspace.usecase.PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase,
-            src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase,
-            src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorAuthoredRoomNarrationUseCase saveRoomNarrationUseCase,
+            src.domain.dungeon.model.runtime.usecase.LoadDungeonEditorAuthoredMapUseCase loadMapUseCase,
+            src.domain.dungeon.model.runtime.usecase.PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase,
+            src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase,
+            src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredRoomNarrationUseCase saveRoomNarrationUseCase,
             src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredTransitionDescriptionUseCase saveTransitionDescriptionUseCase,
             src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredTransitionLinkUseCase saveTransitionLinkUseCase,
             src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredStairGeometryUseCase saveStairGeometryUseCase,

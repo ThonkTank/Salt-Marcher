@@ -88,10 +88,6 @@ public final class DungeonAreaFacts {
                 id);
     }
 
-    public boolean isCorridor() {
-        return kind == DungeonAreaType.CORRIDOR;
-    }
-
     @Override
     public boolean equals(Object other) {
         return other instanceof DungeonAreaFacts that

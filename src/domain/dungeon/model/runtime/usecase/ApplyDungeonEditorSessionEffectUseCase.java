@@ -9,7 +9,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnaps
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
 
 public final class ApplyDungeonEditorSessionEffectUseCase {
     private final DungeonEditorSessionWorkflow workflow;

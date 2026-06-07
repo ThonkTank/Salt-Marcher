@@ -551,8 +551,8 @@ final class DungeonStructureInvariantHarness {
                         List.of(),
                         List.of(),
                         List.of(new CorridorAnchorRef(10L, stableRef.id()))));
-        src.domain.dungeon.model.worldspace.DungeonCorridorConnectionNormalizationLogic normalization =
-                new src.domain.dungeon.model.worldspace.DungeonCorridorConnectionNormalizationLogic();
+        src.domain.dungeon.model.core.structure.corridor.CorridorConnectionNormalization normalization =
+                new src.domain.dungeon.model.core.structure.corridor.CorridorConnectionNormalization();
 
         assertEquals(List.of(referencedAnchor),
                 normalization.pruneDetachedAnchors(List.of(owner, dependent)).getFirst().stateBindings().anchorBindings(),

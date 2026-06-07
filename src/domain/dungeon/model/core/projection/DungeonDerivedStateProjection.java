@@ -2,13 +2,9 @@ package src.domain.dungeon.model.core.projection;
 
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
 import src.domain.dungeon.model.core.graph.DungeonTraversalLinkProjection;
-import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 
@@ -23,22 +19,6 @@ public final class DungeonDerivedStateProjection {
             return authoredState(dungeonMap, topology);
         }
         return emptyState(topology);
-    }
-
-    public Map<Long, List<Cell>> corridorCellsByCorridor(DungeonMap dungeonMap, List<Corridor> corridors) {
-        if (dungeonMap == null) {
-            return Map.of();
-        }
-        DungeonRoomBoundaryProjection roomProjection =
-                new DungeonRoomBoundaryReadProjection().project(dungeonMap.rooms().rooms(), dungeonMap.topology());
-        DungeonCorridorProjection corridorProjection = new DungeonCorridorReadProjection().project(
-                corridors,
-                roomProjection.clustersById(),
-                roomProjection.roomsById(),
-                roomProjection.allRoomCells(),
-                0L,
-                Map.of());
-        return corridorCellsByCorridor(corridorProjection);
     }
 
     private DungeonDerivedState authoredState(DungeonMap dungeonMap, SpatialTopology topology) {
@@ -100,23 +80,4 @@ public final class DungeonDerivedStateProjection {
                 List.of());
     }
 
-    private static Map<Long, List<Cell>> corridorCellsByCorridor(DungeonCorridorProjection projection) {
-        Map<Long, List<Cell>> result = new LinkedHashMap<>();
-        for (DungeonAreaFacts area : projection.areas()) {
-            if (area != null && area.isCorridor()) {
-                result.put(area.id(), nonNullCells(area.cells()));
-            }
-        }
-        return Map.copyOf(result);
-    }
-
-    private static List<Cell> nonNullCells(List<Cell> cells) {
-        List<Cell> result = new ArrayList<>();
-        for (Cell cell : cells == null ? List.<Cell>of() : cells) {
-            if (cell != null) {
-                result.add(cell);
-            }
-        }
-        return List.copyOf(result);
-    }
 }

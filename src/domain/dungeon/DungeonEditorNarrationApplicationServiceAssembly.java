@@ -9,7 +9,7 @@ final class DungeonEditorNarrationApplicationServiceAssembly {
             DungeonEditorRuntimeFoundationServiceAssembly.RuntimeFoundation runtime
     ) {
         return new DungeonEditorNarrationApplicationService(
-                new src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorRoomNarrationUseCase(
+                new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorRoomNarrationUseCase(
                         runtime.workflow(),
                         runtime.authoredUseCases().saveRoomNarrationUseCase(),
                         runtime.effectUseCase()));

@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorMapAuthoring;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
@@ -74,6 +75,8 @@ public record DungeonMap(
 
     private static final WorldspaceAggregateOperationAdapter WORLDSPACE_OPERATIONS =
             new WorldspaceAggregateOperationAdapter();
+    private static final CorridorMapAuthoring CORRIDOR_AUTHORING =
+            new CorridorMapAuthoring();
 
     public DungeonMap moveEditorHandle(
             DungeonEditorHandleMovement handle,
@@ -234,7 +237,7 @@ public record DungeonMap(
             DungeonCorridorEndpoint start,
             DungeonCorridorEndpoint end
     ) {
-        return WORLDSPACE_OPERATIONS.createCorridor(this, stairId, start, end);
+        return CORRIDOR_AUTHORING.createCorridor(this, stairId, start, end);
     }
 
     public DungeonMap deleteCorridor(
@@ -244,7 +247,7 @@ public record DungeonMap(
             long roomId,
             int waypointIndex
     ) {
-        return WORLDSPACE_OPERATIONS.deleteCorridor(
+        return CORRIDOR_AUTHORING.deleteCorridor(
                 this,
                 corridorId,
                 targetKind,

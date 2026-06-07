@@ -3,9 +3,7 @@ package src.domain.dungeon.model.runtime.usecase;
 import java.util.Objects;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
-import src.domain.dungeon.model.worldspace.usecase.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.model.core.usecase.LoadDungeonMapUseCase;
-import src.domain.dungeon.model.worldspace.usecase.PublishDungeonEditorAuthoredMutationUseCase;
 
 public final class DeleteDungeonEditorAuthoredStairUseCase {
     private static final long NO_STAIR_ID = 0L;

@@ -5,7 +5,6 @@ import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.DungeonMap;
-import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
@@ -15,7 +14,7 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMo
  * Transitional bridge from the core aggregate shell to residual worldspace
  * operation collaborators.
  *
- * <p>Delete this adapter when room, corridor, handle, and stair-interior
+ * <p>Delete this adapter when room, handle, and stair-interior
  * operations move to their core structure/runtime owners and the aggregate no
  * longer calls worldspace operation code.
  */
@@ -23,8 +22,6 @@ public final class WorldspaceAggregateOperationAdapter {
 
     private static final DungeonRoomTopologyEditor ROOM_TOPOLOGY_EDITOR = new DungeonRoomTopologyEditor();
     private static final DungeonEditorHandleMovementLogic HANDLE_MOVEMENT = new DungeonEditorHandleMovementLogic();
-    private static final DungeonCorridorCreationLogic CORRIDOR_CREATION = new DungeonCorridorCreationLogic();
-    private static final DungeonCorridorMergeDeleteLogic CORRIDOR_DELETION = new DungeonCorridorMergeDeleteLogic();
     private static final StairRoomInteriorCells STAIR_ROOM_INTERIOR_CELLS = new StairRoomInteriorCells();
 
     public DungeonMap moveEditorHandle(
@@ -70,23 +67,4 @@ public final class WorldspaceAggregateOperationAdapter {
         return ROOM_TOPOLOGY_EDITOR.editBoundaries(map, clusterId, edges, kind, deleteBoundary);
     }
 
-    public DungeonMap createCorridor(
-            DungeonMap map,
-            long stairId,
-            DungeonCorridorEndpoint start,
-            DungeonCorridorEndpoint end
-    ) {
-        return CORRIDOR_CREATION.createCorridor(map, stairId, start, end);
-    }
-
-    public DungeonMap deleteCorridor(
-            DungeonMap map,
-            long corridorId,
-            String targetKind,
-            long topologyRefId,
-            long roomId,
-            int waypointIndex
-    ) {
-        return CORRIDOR_DELETION.deleteCorridor(map, corridorId, targetKind, topologyRefId, roomId, waypointIndex);
-    }
 }

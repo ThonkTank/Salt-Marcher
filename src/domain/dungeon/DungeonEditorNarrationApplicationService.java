@@ -2,7 +2,7 @@ package src.domain.dungeon;
 
 import java.util.ArrayList;
 import java.util.Objects;
-import src.domain.dungeon.model.worldspace.usecase.SaveDungeonEditorRoomNarrationUseCase;
+import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorRoomNarrationUseCase;
 import src.domain.dungeon.published.SaveDungeonEditorRoomNarrationCommand;
 
 public final class DungeonEditorNarrationApplicationService {

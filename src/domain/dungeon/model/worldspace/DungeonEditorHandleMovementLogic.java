@@ -10,6 +10,7 @@ import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
+import src.domain.dungeon.model.core.structure.corridor.CorridorConnectionNormalization;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.room.RoomClusterCornerMovement;
 import src.domain.dungeon.model.core.structure.room.RoomTopologyRebuilder.RebuildResult;
@@ -22,8 +23,8 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMo
  */
 public final class DungeonEditorHandleMovementLogic {
 
-    private static final DungeonCorridorConnectionNormalizationLogic CONNECTION_NORMALIZATION =
-            new DungeonCorridorConnectionNormalizationLogic();
+    private static final CorridorConnectionNormalization CONNECTION_NORMALIZATION =
+            new CorridorConnectionNormalization();
     private static final DungeonTopologyMovementLogic TOPOLOGY_MOVEMENT = new DungeonTopologyMovementLogic();
     private static final RoomClusterCornerMovement CLUSTER_CORNER_MOVEMENT =
             new RoomClusterCornerMovement();
