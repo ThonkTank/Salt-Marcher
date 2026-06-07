@@ -353,6 +353,9 @@ final class DungeonEditorIntentHandler {
         if (shiftSecondary(event)) {
             return alternateTool(selectedTool);
         }
+        if (selectedTool == DungeonEditorTool.WALL_CREATE && deleteGesture(event)) {
+            return DungeonEditorTool.WALL_CREATE;
+        }
         return deleteGesture(event) ? deleteTool(selectedTool) : selectedTool;
     }
 
@@ -404,6 +407,7 @@ final class DungeonEditorIntentHandler {
                 tool,
                 input,
                 pointerSample,
+                wallSingleClickMode(event, tool),
                 stateContentModel.currentTransitionDestinationType(),
                 stateContentModel.currentTransitionDestinationMapId(),
                 stateContentModel.currentTransitionDestinationTileId(),
@@ -427,6 +431,7 @@ final class DungeonEditorIntentHandler {
             DungeonEditorTool tool,
             DungeonMapViewInputEvent.CanvasInput input,
             DungeonEditorPointerSample pointerSample,
+            boolean wallSingleClickMode,
             String transitionDestinationType,
             long transitionDestinationMapId,
             long transitionDestinationTileId,
@@ -437,23 +442,29 @@ final class DungeonEditorIntentHandler {
                 return ApplyDungeonEditorPointerCommand.pressedWithTransitionDestination(
                         tool,
                         pointerSample,
+                        wallSingleClickMode,
                         transitionDestinationType,
                         transitionDestinationMapId,
                         transitionDestinationTileId,
                         transitionDestinationTransitionId);
             }
-            return ApplyDungeonEditorPointerCommand.pressed(tool, pointerSample);
+            return ApplyDungeonEditorPointerCommand.pressed(tool, pointerSample, wallSingleClickMode);
         }
         if (input.mouseDragged()) {
-            return ApplyDungeonEditorPointerCommand.dragged(tool, pointerSample);
+            return ApplyDungeonEditorPointerCommand.dragged(tool, pointerSample, wallSingleClickMode);
         }
         if (input.mouseReleased()) {
-            return ApplyDungeonEditorPointerCommand.released(tool, pointerSample);
+            return ApplyDungeonEditorPointerCommand.released(tool, pointerSample, wallSingleClickMode);
         }
         if (input.mouseMoved()) {
-            return ApplyDungeonEditorPointerCommand.moved(tool, pointerSample);
+            return ApplyDungeonEditorPointerCommand.moved(tool, pointerSample, wallSingleClickMode);
         }
         return null;
+    }
+
+    private boolean wallSingleClickMode(DungeonMapViewInputEvent event, DungeonEditorTool tool) {
+        return tool == DungeonEditorTool.WALL_CREATE
+                && (event.modifiers().controlDown() || controlsContentModel.wallSingleClickModeSelected());
     }
 
     private DungeonEditorPointerSample pointerSample(

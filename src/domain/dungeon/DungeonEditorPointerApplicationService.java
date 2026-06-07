@@ -82,6 +82,7 @@ public final class DungeonEditorPointerApplicationService {
                     command.pointerCanvasY(),
                     command.pointerPrimaryButtonDown(),
                     command.pointerSecondaryButtonDown(),
+                    command.wallSingleClickMode(),
                     toPointerTargetInput(command),
                     command.transitionDestinationTypeName(),
                     command.transitionDestinationMapId(),

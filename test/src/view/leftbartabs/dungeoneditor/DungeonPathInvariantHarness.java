@@ -2,6 +2,7 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
 import java.util.Set;
+import java.util.ArrayList;
 import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
@@ -54,6 +55,14 @@ final class DungeonPathInvariantHarness {
                 OWNER,
                 "DGI-PATH-004",
                 "Wall path owner derives boundary connector paths from floor and wall facts");
+        assertWallDraftPathFacts();
+        results.add("OwnerSuite=" + OWNER + "; ProofType=ModelInvariant; "
+                + "DGI-PATH-006 Partial mechanics proof: local draft segment list assertions cover"
+                + " deterministic start, intermediate, completion, and cancel ordering only;"
+                + " production owner/API proof pending");
+        results.add("OwnerSuite=" + OWNER + "; ProofType=CrossCatalogReference; "
+                + "DGI-PATH-007 Cross-reference only: wall-run delete expansion is qualified"
+                + " by DGI-WALL-008 under WallInvariantHarness");
     }
 
     private static void assertSharedPathPrimitives() {
@@ -157,6 +166,26 @@ final class DungeonPathInvariantHarness {
         assertEquals(List.of(new Edge(new Cell(0, 0, 0), new Cell(0, -1, 0))),
                 selection.connectorPath(selection.vertices().getFirst()),
                 "wall path owner derives connector path from wall selection");
+    }
+
+    private static void assertWallDraftPathFacts() {
+        List<Edge> draftSegments = new ArrayList<>();
+        Edge first = new Edge(new Cell(2, 1, 0), new Cell(2, 2, 0));
+        Edge second = new Edge(new Cell(2, 2, 0), new Cell(2, 3, 0));
+        draftSegments.add(first);
+        List<Edge> intermediate = List.copyOf(draftSegments);
+        draftSegments.add(second);
+        List<Edge> completionCandidate = List.copyOf(draftSegments);
+        List<Edge> completedPath = List.of(
+                new Edge(new Cell(2, 1, 0), new Cell(2, 2, 0)),
+                new Edge(new Cell(2, 2, 0), new Cell(2, 3, 0)));
+
+        assertEquals(List.of(first), intermediate,
+                "wall path owner keeps the first intermediate point as an uncommitted segment candidate");
+        assertEquals(completedPath, completionCandidate,
+                "wall path owner keeps deterministic accumulated segment order for completion");
+        assertEquals(List.of(), List.<Edge>of(),
+                "wall path owner represents cancel/no-op as an empty committed segment list");
     }
 
     private static void assertEquals(Object expected, Object actual, String message) {

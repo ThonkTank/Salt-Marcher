@@ -18,6 +18,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
             double canvasY,
             boolean primaryButtonDown,
             boolean secondaryButtonDown,
+            boolean wallSingleClickMode,
             PointerTargetInput target,
             String transitionDestinationTypeName,
             long transitionDestinationMapId,
@@ -40,6 +41,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
                     canvasY,
                     primaryButtonDown,
                     secondaryButtonDown,
+                    wallSingleClickMode,
                     target.pointerTarget());
         }
     }

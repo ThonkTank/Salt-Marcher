@@ -51,6 +51,10 @@ public record DungeonEditorMainViewEffect(
         return new DungeonEditorMainViewEffect(null, false, null, clearPreview, null, 0, null);
     }
 
+    public static DungeonEditorMainViewEffect clearPreviewWithStatus(String statusText) {
+        return new DungeonEditorMainViewEffect(null, false, null, true, null, 0, statusText);
+    }
+
     public boolean isNoop() {
         return !clearSelection && selection == null && preview == null && !clearPreview
                 && applyPreview == null && projectionLevelDelta == 0 && statusText == null;

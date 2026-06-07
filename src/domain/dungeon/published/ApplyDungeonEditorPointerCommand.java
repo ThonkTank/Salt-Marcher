@@ -6,6 +6,7 @@ public record ApplyDungeonEditorPointerCommand(
         DungeonEditorTool tool,
         PointerAction action,
         DungeonEditorPointerSample pointer,
+        boolean wallSingleClickMode,
         String transitionDestinationType,
         long transitionDestinationMapId,
         long transitionDestinationTileId,
@@ -19,14 +20,6 @@ public record ApplyDungeonEditorPointerCommand(
         transitionDestinationMapId = Math.max(0L, transitionDestinationMapId);
         transitionDestinationTileId = Math.max(0L, transitionDestinationTileId);
         transitionDestinationTransitionId = Math.max(0L, transitionDestinationTransitionId);
-    }
-
-    public ApplyDungeonEditorPointerCommand(
-            DungeonEditorTool tool,
-            PointerAction action,
-            DungeonEditorPointerSample pointer
-    ) {
-        this(tool, action, pointer, "", 0L, 0L, 0L);
     }
 
     public String actionName() {
@@ -53,16 +46,31 @@ public record ApplyDungeonEditorPointerCommand(
         return transitionDestinationTransitionId;
     }
 
+    @Override
+    public boolean wallSingleClickMode() {
+        return wallSingleClickMode;
+    }
+
     public static ApplyDungeonEditorPointerCommand pressed(
             DungeonEditorTool tool,
-            DungeonEditorPointerSample pointer
+            DungeonEditorPointerSample pointer,
+            boolean wallSingleClickMode
     ) {
-        return new ApplyDungeonEditorPointerCommand(tool, PointerAction.PRESSED, pointer);
+        return new ApplyDungeonEditorPointerCommand(
+                tool,
+                PointerAction.PRESSED,
+                pointer,
+                wallSingleClickMode,
+                "",
+                0L,
+                0L,
+                0L);
     }
 
     public static ApplyDungeonEditorPointerCommand pressedWithTransitionDestination(
             DungeonEditorTool tool,
             DungeonEditorPointerSample pointer,
+            boolean wallSingleClickMode,
             String destinationType,
             long destinationMapId,
             long destinationTileId,
@@ -72,6 +80,7 @@ public record ApplyDungeonEditorPointerCommand(
                 tool,
                 PointerAction.PRESSED,
                 pointer,
+                wallSingleClickMode,
                 destinationType,
                 destinationMapId,
                 destinationTileId,
@@ -80,23 +89,50 @@ public record ApplyDungeonEditorPointerCommand(
 
     public static ApplyDungeonEditorPointerCommand dragged(
             DungeonEditorTool tool,
-            DungeonEditorPointerSample pointer
+            DungeonEditorPointerSample pointer,
+            boolean wallSingleClickMode
     ) {
-        return new ApplyDungeonEditorPointerCommand(tool, PointerAction.DRAGGED, pointer);
+        return new ApplyDungeonEditorPointerCommand(
+                tool,
+                PointerAction.DRAGGED,
+                pointer,
+                wallSingleClickMode,
+                "",
+                0L,
+                0L,
+                0L);
     }
 
     public static ApplyDungeonEditorPointerCommand released(
             DungeonEditorTool tool,
-            DungeonEditorPointerSample pointer
+            DungeonEditorPointerSample pointer,
+            boolean wallSingleClickMode
     ) {
-        return new ApplyDungeonEditorPointerCommand(tool, PointerAction.RELEASED, pointer);
+        return new ApplyDungeonEditorPointerCommand(
+                tool,
+                PointerAction.RELEASED,
+                pointer,
+                wallSingleClickMode,
+                "",
+                0L,
+                0L,
+                0L);
     }
 
     public static ApplyDungeonEditorPointerCommand moved(
             DungeonEditorTool tool,
-            DungeonEditorPointerSample pointer
+            DungeonEditorPointerSample pointer,
+            boolean wallSingleClickMode
     ) {
-        return new ApplyDungeonEditorPointerCommand(tool, PointerAction.MOVED, pointer);
+        return new ApplyDungeonEditorPointerCommand(
+                tool,
+                PointerAction.MOVED,
+                pointer,
+                wallSingleClickMode,
+                "",
+                0L,
+                0L,
+                0L);
     }
 
     public enum PointerAction {

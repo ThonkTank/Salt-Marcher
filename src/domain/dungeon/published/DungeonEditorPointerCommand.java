@@ -112,6 +112,10 @@ public sealed interface DungeonEditorPointerCommand permits ApplyDungeonEditorPo
         return 0L;
     }
 
+    default boolean wallSingleClickMode() {
+        return false;
+    }
+
     default String pointerBoundaryKey() {
         return boundaryOrEmpty().key();
     }

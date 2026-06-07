@@ -481,7 +481,20 @@ final class DungeonEditorControlsContentModel {
 
     enum ToolFamily {
         ROOM("ROOM", "Raum", DungeonEditorTool.ROOM_PAINT),
-        WALL("WALL", "Wand", DungeonEditorTool.WALL_CREATE),
+        WALL(
+                "WALL",
+                "Wand",
+                DungeonEditorTool.WALL_CREATE,
+                new ToolOptionSpec(
+                        wallPathModeOptionKey(),
+                        "Pfad",
+                        DungeonEditorTool.WALL_CREATE,
+                        true),
+                new ToolOptionSpec(
+                        wallSingleClickModeOptionKey(),
+                        "Einzeln",
+                        DungeonEditorTool.WALL_CREATE,
+                        true)),
         DOOR("DOOR", "Tür", DungeonEditorTool.DOOR_CREATE),
         CORRIDOR("CORRIDOR", "Korridor", DungeonEditorTool.CORRIDOR_CREATE),
         STAIR(
@@ -622,6 +635,18 @@ final class DungeonEditorControlsContentModel {
 
     static String graphViewLabel() {
         return "Graph";
+    }
+
+    static String wallPathModeOptionKey() {
+        return "WALL_PATH";
+    }
+
+    static String wallSingleClickModeOptionKey() {
+        return "WALL_SINGLE_CLICK";
+    }
+
+    boolean wallSingleClickModeSelected() {
+        return wallSingleClickModeOptionKey().equals(selectedFamilyOptionKeys.get(ToolFamily.WALL));
     }
 
     static String labelOf(@Nullable DungeonEditorTool tool) {

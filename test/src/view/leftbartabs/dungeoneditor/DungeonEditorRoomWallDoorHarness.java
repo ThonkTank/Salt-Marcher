@@ -61,11 +61,12 @@ final class DungeonEditorRoomWallDoorHarness {
         route(results, () -> verifyRoomDeleteThroughMapView(results));
         route(results, () -> verifyWallStartDraftThroughMapView(results));
         route(results, () -> verifyWallPreviewMoveThroughMapView(results));
-        route(results, () -> verifyWallFinalizeThroughMapView(results));
-        route(results, () -> verifyWallAlternateFinalizeThroughMapView(results));
-        route(results, () -> verifyWallDeletePathThroughMapView(results));
-        route(results, () -> verifyWallDeleteSegmentThroughMapView(results));
-        route(results, () -> verifyWallDeleteCornerThroughMapView(results));
+        route(results, () -> verifyWallPathSecondaryCompletionThroughMapView(results));
+        route(results, () -> verifyWallIntermediateAndExistingWallCompletionThroughMapView(results));
+        route(results, () -> verifyWallSingleClickModeThroughControls(results));
+        route(results, () -> verifyWallDeleteSegmentRunThroughMapView(results));
+        route(results, () -> verifyWallDeleteCornerRunsThroughMapView(results));
+        route(results, () -> verifyExteriorWallDeleteRejectedThroughMapView(results));
         route(results, () -> verifyCancelDraftThroughMapView(results));
     }
 
@@ -1176,25 +1177,113 @@ final class DungeonEditorRoomWallDoorHarness {
     }
 
 
-    private static void verifyWallFinalizeThroughMapView(List<String> results) {
+    private static void verifyWallPathSecondaryCompletionThroughMapView(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
         DungeonMapView mapView = binding.mapView();
 
-        long mapId = createWallFixture(controls, runtime, "Wall Finalize Map");
+        long mapId = createWallFixture(controls, runtime, "Wall Secondary Completion Map");
         RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
         List<String> boundaryStateBefore = runtime.database().roomBoundaryEdgeState(mapId);
         assertEquals(0L, runtime.database().countInternalWallBoundaries(roomIds.clusterId()),
-                "DE-WALL-002 fixture starts without the internal wall path");
+                "DE-WALL-009 fixture starts without the internal wall path");
 
         click(button(controls, "Wand"));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         startAndPreviewInternalWall(mapView, viewport);
-        assertWallPreview(runtime.mapSurfaceModel().current(), 3, false, "DE-WALL-002 preview before release");
+        assertWallPreview(runtime.mapSurfaceModel().current(), 3, false, "DE-WALL-009 preview before completion");
         assertEquals(boundaryStateBefore, runtime.database().roomBoundaryEdgeState(mapId),
-                "DE-WALL-002 preview does not persist internal wall rows before release");
+                "DE-WALL-009 preview does not persist internal wall rows before secondary completion");
 
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(4.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(4.0),
+                false);
+
+        assertEquals(3L, runtime.database().countInternalWallBoundaries(roomIds.clusterId()),
+                "DE-WALL-009 persists exactly three internal wall rows: "
+                        + runtime.database().roomBoundaryEdgeState(mapId));
+        assertEquals(3L, runtime.database().countInternalWallTopologyElements(mapId),
+                "DE-WALL-009 persists exactly three internal wall topology rows");
+        assertTrue(!boundaryStateBefore.equals(runtime.database().roomBoundaryEdgeState(mapId)),
+                "DE-WALL-009 changes persisted boundary rows on completion");
+        assertEquals(roomIds, runtime.database().roomByName(mapId, "R1"),
+                "DE-WALL-009 keeps room and cluster identity");
+        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
+                "DE-WALL-009 clears wall preview after completion");
+        assertInternalWallPublishedAndRendered(committedSurface, binding.mapContentModel(), "DE-WALL-009");
+
+        results.add("DE-WALL-009 Ready: active wall-create path + secondary input"
+                + " -> atomic SQLite wall path -> render readback");
+    }
+
+
+    private static void verifyWallIntermediateAndExistingWallCompletionThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createWallFixture(controls, runtime, "Wall Intermediate Completion Map");
+        RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
+        List<String> boundaryStateBefore = runtime.database().roomBoundaryEdgeState(mapId);
+
+        click(button(controls, "Wand"));
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(1.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(1.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(2.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(2.0),
+                false);
+        assertEquals(boundaryStateBefore, runtime.database().roomBoundaryEdgeState(mapId),
+                "DE-WALL-008 intermediate primary point does not persist authored rows");
+        DungeonEditorPreview.ClusterBoundariesPreview intermediatePreview =
+                assertWallPreview(runtime.mapSurfaceModel().current(), 1, false, "DE-WALL-008 intermediate point");
+        assertTrue(previewHasEdge(intermediatePreview, 2, 1, 0, 2, 2, 0),
+                "DE-WALL-008 intermediate preview contains the first draft segment");
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(4.0),
+                false);
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_RELEASED,
@@ -1204,198 +1293,75 @@ final class DungeonEditorRoomWallDoorHarness {
                 false);
 
         assertEquals(3L, runtime.database().countInternalWallBoundaries(roomIds.clusterId()),
-                "DE-WALL-002 persists exactly three internal wall rows: "
-                        + runtime.database().roomBoundaryEdgeState(mapId));
+                "DE-WALL-010 existing-wall click persists exactly three internal wall rows");
         assertEquals(3L, runtime.database().countInternalWallTopologyElements(mapId),
-                "DE-WALL-002 persists exactly three internal wall topology rows");
+                "DE-WALL-010 existing-wall click persists exactly three internal wall topology rows");
         assertTrue(!boundaryStateBefore.equals(runtime.database().roomBoundaryEdgeState(mapId)),
-                "DE-WALL-002 changes persisted boundary rows on finalize");
+                "DE-WALL-010 existing-wall click changes persisted boundary rows on completion");
         assertEquals(roomIds, runtime.database().roomByName(mapId, "R1"),
-                "DE-WALL-002 keeps room and cluster identity");
+                "DE-WALL-010 existing-wall click keeps room and cluster identity");
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
-                "DE-WALL-002 clears wall preview after release");
-        assertInternalWallPublishedAndRendered(committedSurface, binding.mapContentModel(), "DE-WALL-002");
+                "DE-WALL-010 existing-wall click clears wall preview after completion");
+        assertInternalWallPublishedAndRendered(committedSurface, binding.mapContentModel(), "DE-WALL-010");
 
-        results.add("DE-WALL-002 Ready: DungeonEditorControlsView Wand -> DungeonMapView release"
-                + " -> SQLite wall rows -> render readback");
+        results.add("DE-WALL-008 Ready: active wall-create path + primary intermediate point"
+                + " -> draft segment preview without persistence");
+        results.add("DE-WALL-010 Ready: active wall-create path + primary existing-wall hit"
+                + " -> atomic SQLite wall path -> render readback");
     }
 
 
-    private static void verifyWallAlternateFinalizeThroughMapView(List<String> results) {
+    private static void verifyWallSingleClickModeThroughControls(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
         DungeonMapView mapView = binding.mapView();
 
-        long mapId = createWallFixture(controls, runtime, "Wall Alternate Finalize Map");
+        long mapId = createWallFixture(controls, runtime, "Wall Single Click Mode Map");
         RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
         List<String> boundaryStateBefore = runtime.database().roomBoundaryEdgeState(mapId);
 
         click(button(controls, "Wand"));
+        assertEquals("WALL_CREATE", runtime.controlsModel().current().selectedTool().name(),
+                "DE-WALL-011 wall family keeps path mode as the default wall-create tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         startAndPreviewInternalWall(mapView, viewport);
-        assertWallPreview(runtime.mapSurfaceModel().current(), 3, false, "DE-WALL-007 preview before alternate edit");
-
-        fireMapMouse(
+        fireMapMouseWithControl(
                 mapView,
                 MouseEvent.MOUSE_RELEASED,
-                MouseButton.SECONDARY,
+                MouseButton.PRIMARY,
                 viewport.sceneToScreenX(2.0),
-                viewport.sceneToScreenY(4.0),
-                true);
+                viewport.sceneToScreenY(4.0));
 
         assertEquals(3L, runtime.database().countInternalWallBoundaries(roomIds.clusterId()),
-                "DE-WALL-007 alternate edit persists exactly three internal wall rows");
-        assertEquals(3L, runtime.database().countInternalWallTopologyElements(mapId),
-                "DE-WALL-007 alternate edit persists exactly three internal wall topology rows");
+                "DE-WALL-011 single-click mode lets primary release complete the wall path");
         assertTrue(!boundaryStateBefore.equals(runtime.database().roomBoundaryEdgeState(mapId)),
-                "DE-WALL-007 alternate edit changes persisted boundary rows on finalize");
-        assertEquals(roomIds, runtime.database().roomByName(mapId, "R1"),
-                "DE-WALL-007 alternate edit keeps room and cluster identity");
-        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
-        assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
-                "DE-WALL-007 alternate edit clears wall preview after finalization");
-        assertInternalWallPublishedAndRendered(committedSurface, binding.mapContentModel(), "DE-WALL-007");
+                "DE-WALL-011 single-click mode changes persisted boundary rows on primary release");
+        assertInternalWallPublishedAndRendered(runtime.mapSurfaceModel().current(), binding.mapContentModel(), "DE-WALL-011");
 
-        results.add("DE-WALL-007 Ready: DungeonEditorControlsView Wand -> DungeonMapView Shift+secondary release"
-                + " -> SQLite wall rows -> render readback");
+        results.add("DE-WALL-011 Ready: Ctrl-modified optional single-click mode completes on primary release"
+                + " while path mode remains the default");
     }
 
 
-    private static void verifyWallDeletePathThroughMapView(List<String> results) {
+    private static void verifyWallDeleteSegmentRunThroughMapView(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
         DungeonMapView mapView = binding.mapView();
 
-        long mapId = createMapThroughControls(controls, runtime, "Wall Delete Map");
-        runtime.database().seedF1SingleRoom(mapId, "R1", 0, 1, 1);
-        createMapThroughControls(controls, runtime, "Wall Delete Reload Hop");
-        selectMap(controls, "Wall Delete Map");
+        long mapId = createInteriorWallRun(controls, runtime, binding, "Wall Segment Run Delete Map");
         RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
         List<String> boundaryStateBefore = runtime.database().roomBoundaryEdgeState(mapId);
-        assertEquals(3L, runtime.database().countWallBoundariesForDirection(mapId, "NORTH"),
-                "DE-WALL-004 fixture starts with three north wall rows");
-        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.5, 1.0),
-                "DE-WALL-004 fixture renders the north wall before delete");
+        assertEquals(3L, runtime.database().countInternalWallBoundaries(roomIds.clusterId()),
+                "DE-WALL-012 fixture starts with one three-segment internal wall run");
 
         click(button(controls, "Wand"));
-        assertEquals("WALL_CREATE", runtime.controlsModel().current().selectedTool().name(),
-                "DE-WALL-004 wall family selects the wall family tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-        fireMapMouse(
-                mapView,
-                MouseEvent.MOUSE_PRESSED,
-                MouseButton.SECONDARY,
-                viewport.sceneToScreenX(1.0),
-                viewport.sceneToScreenY(1.0),
-                false);
-        fireMapMouse(
-                mapView,
-                MouseEvent.MOUSE_DRAGGED,
-                MouseButton.SECONDARY,
-                viewport.sceneToScreenX(4.0),
-                viewport.sceneToScreenY(1.0),
-                false);
-        DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
-        assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.ClusterBoundariesPreview,
-                "DE-WALL-004 secondary drag publishes a wall delete preview");
-        fireMapMouse(
-                mapView,
-                MouseEvent.MOUSE_RELEASED,
-                MouseButton.SECONDARY,
-                viewport.sceneToScreenX(4.0),
-                viewport.sceneToScreenY(1.0),
-                false);
-
-        List<String> boundaryStateAfter = runtime.database().roomBoundaryEdgeState(mapId);
-        assertTrue(!boundaryStateBefore.equals(boundaryStateAfter),
-                "DE-WALL-004 wall delete changes persisted boundary rows");
-        assertEquals(0L, runtime.database().countWallBoundariesForDirection(mapId, "NORTH"),
-                "DE-WALL-004 removes the persisted north wall rows");
-        assertEquals(3L, runtime.database().countOpenBoundariesForDirection(mapId, "NORTH"),
-                "DE-WALL-004 persists authored open rows for the north wall path");
-        assertEquals(
-                List.of(
-                        "level_z=0,cell_x=-1,cell_y=-1,edge_direction=NORTH,edge_type=OPEN,topology_element_id=<null>",
-                        "level_z=0,cell_x=0,cell_y=-1,edge_direction=NORTH,edge_type=OPEN,topology_element_id=<null>",
-                        "level_z=0,cell_x=1,cell_y=-1,edge_direction=NORTH,edge_type=OPEN,topology_element_id=<null>"),
-                runtime.database().openBoundaryRowsForDirection(roomIds.clusterId(), "NORTH"),
-                "DE-WALL-004 persists exact authored open coordinates for the north wall path");
-        assertEquals(0L, runtime.database().countWallTopologyElementsForDirection(mapId, "NORTH"),
-                "DE-WALL-004 removes old north wall topology rows");
-        assertEquals(3L, runtime.database().countWallBoundariesForDirection(mapId, "SOUTH"),
-                "DE-WALL-004 keeps the persisted south wall rows");
-        assertEquals(3L, runtime.database().countWallBoundariesForDirection(mapId, "WEST"),
-                "DE-WALL-004 keeps the persisted west wall rows");
-        assertEquals(3L, runtime.database().countWallBoundariesForDirection(mapId, "EAST"),
-                "DE-WALL-004 keeps the persisted east wall rows");
-        assertEquals(roomIds, runtime.database().roomByName(mapId, "R1"),
-                "DE-WALL-004 keeps the room and cluster identity");
-
-        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
-        assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
-                "DE-WALL-004 clears wall delete preview after release");
-        assertTrue(!surfaceHasBoundaryKindAt(
-                        committedSurface,
-                        "wall",
-                        new Cell(1, 1, 0),
-                        new Cell(1, 0, 0)),
-                "DE-WALL-004 published map omits first north wall edge");
-        assertTrue(!surfaceHasBoundaryKindAt(
-                        committedSurface,
-                        "wall",
-                        new Cell(2, 1, 0),
-                        new Cell(2, 0, 0)),
-                "DE-WALL-004 published map omits second north wall edge");
-        assertTrue(!surfaceHasBoundaryKindAt(
-                        committedSurface,
-                        "wall",
-                        new Cell(3, 1, 0),
-                        new Cell(3, 0, 0)),
-                "DE-WALL-004 published map omits third north wall edge");
-        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.5, 1.0),
-                "DE-WALL-004 render-facing state omits the west part of the north wall");
-        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.5, 1.0),
-                "DE-WALL-004 render-facing state omits the center part of the north wall");
-        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 3.5, 1.0),
-                "DE-WALL-004 render-facing state omits the east part of the north wall");
-        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.5, 4.0),
-                "DE-WALL-004 render-facing state keeps the south wall");
-        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.0, 2.5),
-                "DE-WALL-004 render-facing state keeps the west wall");
-        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 4.0, 2.5),
-                "DE-WALL-004 render-facing state keeps the east wall");
-
-        results.add("DE-WALL-004 Ready: DungeonEditorControlsView Wand -> DungeonMapView secondary boundary path"
-                + " -> SQLite wall delete -> render readback");
-    }
-
-
-    private static void verifyWallDeleteSegmentThroughMapView(List<String> results) {
-        HarnessRuntime runtime = HarnessRuntime.create();
-        HarnessBinding binding = bindHarness(runtime);
-        DungeonEditorControlsView controls = binding.controls();
-        DungeonMapView mapView = binding.mapView();
-
-        long mapId = createMapThroughControls(controls, runtime, "Wall Segment Delete Map");
-        runtime.database().seedF1SingleRoom(mapId, "R1", 0, 1, 1);
-        createMapThroughControls(controls, runtime, "Wall Segment Delete Reload Hop");
-        selectMap(controls, "Wall Segment Delete Map");
-        RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
-        List<String> boundaryStateBefore = runtime.database().roomBoundaryEdgeState(mapId);
-        assertEquals(3L, runtime.database().countWallBoundariesForDirection(mapId, "NORTH"),
-                "DE-WALL-005 fixture starts with three north wall rows");
-        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.5, 1.0),
-                "DE-WALL-005 fixture renders the middle north wall before delete");
-
-        click(button(controls, "Wand"));
-        assertEquals("WALL_CREATE", runtime.controlsModel().current().selectedTool().name(),
-                "DE-WALL-005 wall family selects the wall family tool");
-        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-        double segmentScreenX = viewport.sceneToScreenX(2.5);
-        double segmentScreenY = viewport.sceneToScreenY(1.0);
+        Point2D segmentMidpoint = boundaryMidpointNear(binding.mapContentModel(), "WALL", 2.0, 2.5);
+        double segmentScreenX = viewport.sceneToScreenX(segmentMidpoint.getX());
+        double segmentScreenY = viewport.sceneToScreenY(segmentMidpoint.getY());
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_PRESSED,
@@ -1403,9 +1369,7 @@ final class DungeonEditorRoomWallDoorHarness {
                 segmentScreenX,
                 segmentScreenY,
                 false);
-        DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
-        assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.ClusterBoundariesPreview,
-                "DE-WALL-005 secondary wall-segment press publishes a wall delete preview");
+        assertWallPreview(runtime.mapSurfaceModel().current(), 3, true, "DE-WALL-012 straight-run delete preview");
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_RELEASED,
@@ -1414,87 +1378,45 @@ final class DungeonEditorRoomWallDoorHarness {
                 segmentScreenY,
                 false);
 
-        List<String> boundaryStateAfter = runtime.database().roomBoundaryEdgeState(mapId);
-        assertTrue(!boundaryStateBefore.equals(boundaryStateAfter),
-                "DE-WALL-005 direct segment delete changes persisted boundary rows");
-        assertEquals(2L, runtime.database().countWallBoundariesForDirection(mapId, "NORTH"),
-                "DE-WALL-005 removes exactly one persisted north wall row");
-        assertEquals(1L, runtime.database().countOpenBoundariesForDirection(mapId, "NORTH"),
-                "DE-WALL-005 persists one authored open row for the deleted segment");
-        assertEquals(
-                List.of("level_z=0,cell_x=0,cell_y=-1,edge_direction=NORTH,edge_type=OPEN,topology_element_id=<null>"),
-                runtime.database().openBoundaryRowsForDirection(roomIds.clusterId(), "NORTH"),
-                "DE-WALL-005 persists the exact middle north open boundary coordinate");
-        assertEquals(2L, runtime.database().countWallTopologyElementsForDirection(mapId, "NORTH"),
-                "DE-WALL-005 removes only the deleted north wall topology row");
-        assertEquals(3L, runtime.database().countWallBoundariesForDirection(mapId, "SOUTH"),
-                "DE-WALL-005 keeps the persisted south wall rows");
-        assertEquals(3L, runtime.database().countWallBoundariesForDirection(mapId, "WEST"),
-                "DE-WALL-005 keeps the persisted west wall rows");
-        assertEquals(3L, runtime.database().countWallBoundariesForDirection(mapId, "EAST"),
-                "DE-WALL-005 keeps the persisted east wall rows");
+        assertTrue(!boundaryStateBefore.equals(runtime.database().roomBoundaryEdgeState(mapId)),
+                "DE-WALL-012 straight-run delete changes persisted boundary rows");
+        assertEquals(0L, runtime.database().countInternalWallBoundaries(roomIds.clusterId()),
+                "DE-WALL-012 removes the whole contiguous internal wall run");
         assertEquals(roomIds, runtime.database().roomByName(mapId, "R1"),
-                "DE-WALL-005 keeps the room and cluster identity");
+                "DE-WALL-012 keeps room and cluster identity");
 
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
-                "DE-WALL-005 clears wall delete preview after release");
-        assertTrue(surfaceHasBoundaryKindAt(
-                        committedSurface,
-                        "wall",
-                        new Cell(1, 1, 0),
-                        new Cell(2, 1, 0)),
-                "DE-WALL-005 published map keeps the west north wall edge: "
-                        + surfaceBoundarySummary(committedSurface));
-        assertTrue(!surfaceHasBoundaryKindAt(
-                        committedSurface,
-                        "wall",
-                        new Cell(2, 1, 0),
-                        new Cell(3, 1, 0)),
-                "DE-WALL-005 published map omits the deleted middle north wall edge");
-        assertTrue(surfaceHasBoundaryKindAt(
-                        committedSurface,
-                        "wall",
-                        new Cell(3, 1, 0),
-                        new Cell(4, 1, 0)),
-                "DE-WALL-005 published map keeps the east north wall edge");
-        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.5, 1.0),
-                "DE-WALL-005 render-facing state keeps the west part of the north wall");
-        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.5, 1.0),
-                "DE-WALL-005 render-facing state omits the deleted middle north wall");
-        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 3.5, 1.0),
-                "DE-WALL-005 render-facing state keeps the east part of the north wall");
+                "DE-WALL-012 clears wall delete preview after release");
+        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.0, 1.5),
+                "DE-WALL-012 render-facing state omits the north internal segment");
+        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.0, 2.5),
+                "DE-WALL-012 render-facing state omits the middle internal segment");
+        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.0, 3.5),
+                "DE-WALL-012 render-facing state omits the south internal segment");
 
-        results.add("DE-WALL-005 Ready: DungeonEditorControlsView Wand -> DungeonMapView secondary wall segment"
-                + " -> SQLite wall delete -> render readback");
+        results.add("DE-WALL-012 Ready: wall secondary segment delete expands to the whole straight run");
     }
 
 
-    private static void verifyWallDeleteCornerThroughMapView(List<String> results) {
+    private static void verifyWallDeleteCornerRunsThroughMapView(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
         DungeonMapView mapView = binding.mapView();
 
-        long mapId = createMapThroughControls(controls, runtime, "Wall Corner Delete Map");
-        runtime.database().seedF1SingleRoom(mapId, "R1", 0, 1, 1);
-        createMapThroughControls(controls, runtime, "Wall Corner Delete Reload Hop");
-        selectMap(controls, "Wall Corner Delete Map");
+        long mapId = createInteriorCornerWallRuns(controls, runtime, binding, "Wall Corner Runs Delete Map");
         RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
         List<String> boundaryStateBefore = runtime.database().roomBoundaryEdgeState(mapId);
-        assertEquals(3L, runtime.database().countWallBoundariesForDirection(mapId, "NORTH"),
-                "DE-WALL-006 fixture starts with three north wall rows");
-        assertEquals(3L, runtime.database().countWallBoundariesForDirection(mapId, "WEST"),
-                "DE-WALL-006 fixture starts with three west wall rows");
-        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.5, 1.0),
-                "DE-WALL-006 fixture renders the north edge adjacent to the corner");
-        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.0, 1.5),
-                "DE-WALL-006 fixture renders the west edge adjacent to the corner");
+        assertTrue(runtime.database().countInternalWallBoundaries(roomIds.clusterId()) >= 3L,
+                "DE-WALL-013 fixture starts with at least the vertical internal wall run; internalCount="
+                        + runtime.database().countInternalWallBoundaries(roomIds.clusterId())
+                        + " rows=" + runtime.database().roomBoundaryEdgeState(mapId));
 
         click(button(controls, "Wand"));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-        double cornerScreenX = viewport.sceneToScreenX(1.0);
-        double cornerScreenY = viewport.sceneToScreenY(1.0);
+        double cornerScreenX = viewport.sceneToScreenX(2.0);
+        double cornerScreenY = viewport.sceneToScreenY(2.0);
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_PRESSED,
@@ -1503,7 +1425,8 @@ final class DungeonEditorRoomWallDoorHarness {
                 cornerScreenY,
                 false);
         assertEquals(boundaryStateBefore, runtime.database().roomBoundaryEdgeState(mapId),
-                "DE-WALL-006 secondary corner press does not mutate persisted boundary rows");
+                "DE-WALL-013 secondary corner press does not mutate persisted boundary rows");
+        assertWallPreview(runtime.mapSurfaceModel().current(), 5, true, "DE-WALL-013 corner run delete preview");
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_RELEASED,
@@ -1514,68 +1437,149 @@ final class DungeonEditorRoomWallDoorHarness {
 
         List<String> boundaryStateAfter = runtime.database().roomBoundaryEdgeState(mapId);
         assertTrue(!boundaryStateBefore.equals(boundaryStateAfter),
-                "DE-WALL-006 direct corner delete changes persisted boundary rows");
-        assertEquals(2L, runtime.database().countWallBoundariesForDirection(mapId, "NORTH"),
-                "DE-WALL-006 removes the north wall row adjacent to the corner");
-        assertEquals(2L, runtime.database().countWallBoundariesForDirection(mapId, "WEST"),
-                "DE-WALL-006 removes the west wall row adjacent to the corner");
-        assertEquals(1L, runtime.database().countOpenBoundariesForDirection(mapId, "NORTH"),
-                "DE-WALL-006 persists one authored open north row for the corner delete");
-        assertEquals(1L, runtime.database().countOpenBoundariesForDirection(mapId, "WEST"),
-                "DE-WALL-006 persists one authored open west row for the corner delete");
-        assertEquals(
-                List.of("level_z=0,cell_x=-1,cell_y=-1,edge_direction=NORTH,edge_type=OPEN,topology_element_id=<null>"),
-                runtime.database().openBoundaryRowsForDirection(roomIds.clusterId(), "NORTH"),
-                "DE-WALL-006 persists the exact north open boundary coordinate");
-        assertEquals(
-                List.of("level_z=0,cell_x=-1,cell_y=-1,edge_direction=WEST,edge_type=OPEN,topology_element_id=<null>"),
-                runtime.database().openBoundaryRowsForDirection(roomIds.clusterId(), "WEST"),
-                "DE-WALL-006 persists the exact west open boundary coordinate");
-        assertEquals(2L, runtime.database().countWallTopologyElementsForDirection(mapId, "NORTH"),
-                "DE-WALL-006 removes only the corner-adjacent north wall topology row");
-        assertEquals(2L, runtime.database().countWallTopologyElementsForDirection(mapId, "WEST"),
-                "DE-WALL-006 removes only the corner-adjacent west wall topology row");
+                "DE-WALL-013 direct corner delete changes persisted boundary rows");
+        assertEquals(0L, runtime.database().countInternalWallBoundaries(roomIds.clusterId()),
+                "DE-WALL-013 removes every contiguous straight run meeting the corner");
         assertEquals(roomIds, runtime.database().roomByName(mapId, "R1"),
-                "DE-WALL-006 keeps the room and cluster identity");
+                "DE-WALL-013 keeps the room and cluster identity");
 
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
-                "DE-WALL-006 clears wall delete preview after release");
-        assertTrue(!surfaceHasBoundaryKindAt(
-                        committedSurface,
-                        "wall",
-                        new Cell(1, 1, 0),
-                        new Cell(2, 1, 0)),
-                "DE-WALL-006 published map omits the north edge adjacent to the corner");
-        assertTrue(!surfaceHasBoundaryKindAt(
-                        committedSurface,
-                        "wall",
-                        new Cell(1, 1, 0),
-                        new Cell(1, 2, 0)),
-                "DE-WALL-006 published map omits the west edge adjacent to the corner");
-        assertTrue(surfaceHasBoundaryKindAt(
-                        committedSurface,
-                        "wall",
-                        new Cell(2, 1, 0),
-                        new Cell(3, 1, 0)),
-                "DE-WALL-006 published map keeps the next north wall edge");
-        assertTrue(surfaceHasBoundaryKindAt(
-                        committedSurface,
-                        "wall",
-                        new Cell(1, 2, 0),
-                        new Cell(1, 3, 0)),
-                "DE-WALL-006 published map keeps the next west wall edge");
-        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.5, 1.0),
-                "DE-WALL-006 render-facing state omits the north edge adjacent to the corner");
-        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.0, 1.5),
-                "DE-WALL-006 render-facing state omits the west edge adjacent to the corner");
-        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.5, 1.0),
-                "DE-WALL-006 render-facing state keeps the next north wall edge");
-        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.0, 2.5),
-                "DE-WALL-006 render-facing state keeps the next west wall edge");
+                "DE-WALL-013 clears wall delete preview after release");
+        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.0, 1.5),
+                "DE-WALL-013 render-facing state omits vertical run segment north of corner");
+        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.0, 2.5),
+                "DE-WALL-013 render-facing state omits vertical run segment south of corner");
+        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "WALL", 3.0, 2.0),
+                "DE-WALL-013 render-facing state omits horizontal run segment east of corner");
 
-        results.add("DE-WALL-006 Ready: DungeonEditorControlsView Wand -> DungeonMapView secondary wall corner"
-                + " -> SQLite wall delete -> render readback");
+        results.add("DE-WALL-013 Ready: wall secondary corner delete expands to all touching straight runs");
+    }
+
+
+    private static void verifyExteriorWallDeleteRejectedThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createWallFixture(controls, runtime, "Exterior Wall Delete Reject Map");
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
+        DungeonEditorMapSurfaceSnapshot surfaceBefore = runtime.mapSurfaceModel().current();
+        Set<String> renderCellsBefore = renderSurfaceCellOriginsWithZ(binding.mapContentModel());
+
+        click(button(controls, "Wand"));
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(2.5),
+                viewport.sceneToScreenY(1.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(2.5),
+                viewport.sceneToScreenY(1.0),
+                false);
+
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-WALL-014 exterior delete rejection leaves authored DB state unchanged");
+        DungeonEditorMapSurfaceSnapshot surfaceAfter = runtime.mapSurfaceModel().current();
+        assertEquals(surfaceBefore.surface().map(), surfaceAfter.surface().map(),
+                "DE-WALL-014 exterior delete rejection leaves published map unchanged");
+        assertEquals(surfaceBefore.selection(), surfaceAfter.selection(),
+                "DE-WALL-014 exterior delete rejection leaves selection unchanged");
+        assertEquals(DungeonEditorPreview.none(), surfaceAfter.preview(),
+                "DE-WALL-014 exterior delete rejection leaves preview empty");
+        assertEquals(renderCellsBefore, renderSurfaceCellOriginsWithZ(binding.mapContentModel()),
+                "DE-WALL-014 exterior delete rejection leaves rendered geometry unchanged");
+        assertTrue(runtime.controlsModel().current().statusText().contains("Aussenwand"),
+                "DE-WALL-014 exterior delete rejection publishes a concrete status");
+
+        results.add("DE-WALL-014 Ready: wall secondary exterior delete rejects without geometry, preview, or selection mutation");
+        results.add("DE-CLUSTER-004 Ready: cluster exterior wall delete publishes rejection status"
+                + " and leaves authored geometry, topology, preview, and selection unchanged");
+    }
+
+
+    private static long createInteriorWallRun(
+            DungeonEditorControlsView controls,
+            HarnessRuntime runtime,
+            HarnessBinding binding,
+            String mapName
+    ) {
+        long mapId = createWallFixture(controls, runtime, mapName);
+        DungeonMapView mapView = binding.mapView();
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        click(button(controls, "Wand"));
+        startAndPreviewInternalWall(mapView, viewport);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(4.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(4.0),
+                false);
+        return mapId;
+    }
+
+
+    private static long createInteriorCornerWallRuns(
+            DungeonEditorControlsView controls,
+            HarnessRuntime runtime,
+            HarnessBinding binding,
+            String mapName
+    ) {
+        long mapId = createInteriorWallRun(controls, runtime, binding, mapName);
+        DungeonMapView mapView = binding.mapView();
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        click(button(controls, "Wand"));
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(2.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(2.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(4.0),
+                viewport.sceneToScreenY(2.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(4.0),
+                viewport.sceneToScreenY(2.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(4.0),
+                viewport.sceneToScreenY(2.0),
+                false);
+        return mapId;
     }
 
 

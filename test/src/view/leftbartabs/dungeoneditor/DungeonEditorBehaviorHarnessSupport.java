@@ -359,6 +359,28 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             double canvasY,
             boolean shiftDown
     ) {
+        fireMapMouse(view, eventType, button, canvasX, canvasY, shiftDown, false);
+    }
+
+    static void fireMapMouseWithControl(
+            DungeonMapView view,
+            javafx.event.EventType<MouseEvent> eventType,
+            MouseButton button,
+            double canvasX,
+            double canvasY
+    ) {
+        fireMapMouse(view, eventType, button, canvasX, canvasY, false, true);
+    }
+
+    private static void fireMapMouse(
+            DungeonMapView view,
+            javafx.event.EventType<MouseEvent> eventType,
+            MouseButton button,
+            double canvasX,
+            double canvasY,
+            boolean shiftDown,
+            boolean controlDown
+    ) {
         Pane canvasLayer = mapCanvasLayer(view);
         MouseEvent event = new MouseEvent(
                 eventType,
@@ -369,7 +391,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                 button,
                 1,
                 shiftDown,
-                false,
+                controlDown,
                 false,
                 false,
                 button == MouseButton.PRIMARY,

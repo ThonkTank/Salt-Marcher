@@ -160,6 +160,7 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
                 projectionLevel,
                 safeInput.primaryButtonDown(),
                 safeInput.secondaryButtonDown(),
+                safeInput.wallSingleClickMode(),
                 safeInput.target());
     }
 }

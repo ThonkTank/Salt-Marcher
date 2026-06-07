@@ -23,7 +23,7 @@ rename routes, placement, hit separation, and reload stability are owned by
 | `DE-CLUSTER-001` | Publish complex cluster corner handles and wall-run markers | Snapshot publication after loading a non-rectangular cluster | `F15_COMPLEX_CLUSTER` | Interactive handles appear on every authored wall corner; visual-only markers appear on every non-trivial straight wall-run midpoint, inside and outside, with blank hit refs and cluster-marker styling so the row does not claim wall-run drag readiness. | Ready |
 | `DE-CLUSTER-002` | Stretch selected true wall run | Select tool plus drag on a wall-midpoint handle | `F15_COMPLEX_CLUSTER` | The whole contiguous wall run moves one-to-one with the pointer; cluster identity survives; invalid geometry rejects atomically. | Implementation Gap |
 | `DE-CLUSTER-003` | Move selected true wall corner | Select tool plus drag on a true corner handle | `F15_COMPLEX_CLUSTER` | The dragged handle is a real authored wall corner, not a bounding-box corner; preview does not mutate SQLite; release persists the moved vertex, recomputes adjacent wall spans, keeps reload stable, and leaves no orphan or duplicate wall rows. | Ready |
-| `DE-CLUSTER-004` | Reject exterior wall deletion | Wall delete gesture on cluster exterior wall | `F1_SINGLE_ROOM` | Status reports rejection; authored geometry, topology, preview, and selection remain unchanged. | Implementation Gap |
+| `DE-CLUSTER-004` | Reject exterior wall deletion | Wall delete gesture on cluster exterior wall | `F1_SINGLE_ROOM` | Status reports rejection; authored geometry, topology, preview, and selection remain unchanged. | Ready |
 
 ## References
 

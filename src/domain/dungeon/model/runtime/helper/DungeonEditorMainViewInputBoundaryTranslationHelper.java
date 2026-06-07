@@ -19,6 +19,7 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
             int level,
             boolean primaryButtonDown,
             boolean secondaryButtonDown,
+            boolean wallSingleClickMode,
             DungeonEditorMainViewPointerTarget target
     ) {
         int q = (int) Math.floor(canvasX);
@@ -34,6 +35,7 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 level,
                 primaryButtonDown,
                 secondaryButtonDown,
+                wallSingleClickMode,
                 hitTarget,
                 toVertexTarget(canvasX, canvasY, level),
                 effectiveBoundaryTarget);

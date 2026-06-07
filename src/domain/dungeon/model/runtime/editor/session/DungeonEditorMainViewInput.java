@@ -5,6 +5,7 @@ public final class DungeonEditorMainViewInput {
     private final double canvasY;
     private final boolean primaryButtonDown;
     private final boolean secondaryButtonDown;
+    private final boolean wallSingleClickMode;
     private final DungeonEditorMainViewPointerTarget target;
 
     public DungeonEditorMainViewInput(
@@ -12,17 +13,19 @@ public final class DungeonEditorMainViewInput {
             double canvasY,
             boolean primaryButtonDown,
             boolean secondaryButtonDown,
+            boolean wallSingleClickMode,
             DungeonEditorMainViewPointerTarget target
     ) {
         this.canvasX = canvasX;
         this.canvasY = canvasY;
         this.primaryButtonDown = primaryButtonDown;
         this.secondaryButtonDown = secondaryButtonDown;
+        this.wallSingleClickMode = wallSingleClickMode;
         this.target = target == null ? DungeonEditorMainViewPointerTarget.empty() : target;
     }
 
     public static DungeonEditorMainViewInput empty() {
-        return new DungeonEditorMainViewInput(0.0, 0.0, false, false, DungeonEditorMainViewPointerTarget.empty());
+        return new DungeonEditorMainViewInput(0.0, 0.0, false, false, false, DungeonEditorMainViewPointerTarget.empty());
     }
 
     public double canvasX() {
@@ -39,6 +42,10 @@ public final class DungeonEditorMainViewInput {
 
     public boolean secondaryButtonDown() {
         return secondaryButtonDown;
+    }
+
+    public boolean wallSingleClickMode() {
+        return wallSingleClickMode;
     }
 
     public DungeonEditorMainViewPointerTarget target() {

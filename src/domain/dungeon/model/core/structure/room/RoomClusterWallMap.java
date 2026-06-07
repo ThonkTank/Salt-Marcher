@@ -56,6 +56,13 @@ public final class RoomClusterWallMap {
         return RoomClusterWallRuns.authoredWallRuns(rowsByKey, level);
     }
 
+    public static List<Edge> authoredWallDeleteEdges(
+            Iterable<Edge> authoredWallEdges,
+            Iterable<Edge> targetEdges
+    ) {
+        return RoomClusterWallRunDelete.authoredWallDeleteEdges(authoredWallEdges, targetEdges);
+    }
+
     @Override
     public boolean equals(Object other) {
         return other instanceof RoomClusterWallMap that

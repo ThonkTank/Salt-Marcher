@@ -276,6 +276,7 @@ public final class DungeonEditorMainViewInteractionValues {
             int level,
             boolean primaryButtonDown,
             boolean secondaryButtonDown,
+            boolean wallSingleClickMode,
             HitTarget hitTarget,
             VertexTarget vertexTarget,
             BoundaryTarget boundaryTarget

@@ -72,6 +72,25 @@ final class DungeonWallInvariantHarness {
                 OWNER,
                 "DGI-WALL-006",
                 "Dungeon-level wall facts are immutable projections derived from structure-owned wall maps");
+        assertWallPathAtomicCommitAndDelete();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-WALL-007",
+                "Wall owner atomically commits supplied wall path edges, avoids duplicate rows,"
+                        + " and leaves empty no-op/cancel stable");
+        assertWallRunDeleteAndCornerPolicy();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-WALL-008",
+                "Wall owner recomputes segment and corner targets into complete authored straight-run deletes");
+        assertExteriorWallDeleteProtection();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-WALL-009",
+                "Wall and cluster owner reject exterior delete and accept eligible interior wall delete");
     }
 
     private static void assertStructureLocalWallMap() {
@@ -311,6 +330,112 @@ final class DungeonWallInvariantHarness {
                 List.of(secondNorthWall),
                 BoundaryKind.WALL,
                 false);
+    }
+
+    private static void assertWallPathAtomicCommitAndDelete() {
+        DungeonMap map = roomMap();
+        long clusterId = clusterIdForAnchor(map, new Cell(1, 1, 0));
+        List<Edge> run = internalVerticalRun();
+        DungeonMap withRun = map.editClusterBoundaries(clusterId, run, BoundaryKind.WALL, false);
+        Set<Edge> walls = wallEdges(new DungeonDerivedStateProjection().project(withRun));
+        DungeonMap canceled = map.editClusterBoundaries(clusterId, List.of(), BoundaryKind.WALL, false);
+
+        assertTrue(walls.containsAll(run),
+                "wall owner commits every segment in one accumulated wall path");
+        assertEquals(walls, wallEdges(new DungeonDerivedStateProjection()
+                        .project(withRun.editClusterBoundaries(clusterId, run, BoundaryKind.WALL, false))),
+                "wall owner treats duplicate accumulated path commit as stable wall facts");
+        assertEquals(wallEdges(new DungeonDerivedStateProjection().project(map)),
+                wallEdges(new DungeonDerivedStateProjection().project(canceled)),
+                "wall owner leaves cancel/no-op path completion stable before commit");
+    }
+
+    private static void assertWallRunDeleteAndCornerPolicy() {
+        DungeonMap map = roomMap();
+        long clusterId = clusterIdForAnchor(map, new Cell(1, 1, 0));
+        List<Edge> wallShape = tJunctionWallShape();
+        Edge northTarget = new Edge(new Cell(2, 1, 0), new Cell(2, 2, 0));
+        Edge northSecond = new Edge(new Cell(2, 2, 0), new Cell(2, 3, 0));
+        Edge southTarget = new Edge(new Cell(2, 3, 0), new Cell(2, 4, 0));
+        Edge eastTarget = new Edge(new Cell(2, 3, 0), new Cell(3, 3, 0));
+        Edge eastSecond = new Edge(new Cell(3, 3, 0), new Cell(4, 3, 0));
+        DungeonMap withShape = map.editClusterBoundaries(clusterId, wallShape, BoundaryKind.WALL, false);
+        DungeonMap segmentDeleted = withShape.editClusterBoundaries(
+                clusterId,
+                List.of(northTarget),
+                BoundaryKind.WALL,
+                true);
+        Set<Edge> segmentDeletedWalls = wallEdges(new DungeonDerivedStateProjection().project(segmentDeleted));
+        DungeonMap cornerDeleted = withShape.editClusterBoundaries(
+                clusterId,
+                List.of(northTarget, eastTarget),
+                BoundaryKind.WALL,
+                true);
+        Set<Edge> cornerDeletedWalls = wallEdges(new DungeonDerivedStateProjection().project(cornerDeleted));
+
+        assertFalse(segmentDeletedWalls.contains(northTarget),
+                "wall owner removes the selected segment target");
+        assertFalse(segmentDeletedWalls.contains(northSecond),
+                "wall owner expands the segment target to its straight run before the corner");
+        assertTrue(segmentDeletedWalls.contains(southTarget),
+                "wall owner does not delete through a non-collinear corner");
+        assertTrue(segmentDeletedWalls.contains(eastTarget),
+                "wall owner leaves a different run untouched for segment deletion");
+        assertFalse(cornerDeletedWalls.contains(northTarget),
+                "wall owner removes a corner target's first straight run");
+        assertFalse(cornerDeletedWalls.contains(northSecond),
+                "wall owner expands the first corner run to the next corner");
+        assertFalse(cornerDeletedWalls.contains(eastTarget),
+                "wall owner removes a second straight run touching the same corner");
+        assertFalse(cornerDeletedWalls.contains(eastSecond),
+                "wall owner expands the second corner run to the next corner");
+        assertTrue(cornerDeletedWalls.contains(southTarget),
+                "wall owner keeps the opposite side of the corner unless supplied as a target");
+    }
+
+    private static void assertExteriorWallDeleteProtection() {
+        DungeonMap map = roomMap();
+        long clusterId = clusterIdForAnchor(map, new Cell(1, 1, 0));
+        Edge exteriorNorth = Edge.sideOf(new Cell(1, 1, 0), Direction.NORTH);
+        Edge interiorTarget = new Edge(new Cell(2, 1, 0), new Cell(2, 2, 0));
+        DungeonMap withInteriorWall = map.editClusterBoundaries(
+                clusterId,
+                List.of(interiorTarget),
+                BoundaryKind.WALL,
+                false);
+        Set<Edge> before = wallEdges(new DungeonDerivedStateProjection().project(map));
+        DungeonMap rejected = map.editClusterBoundaries(clusterId, List.of(exteriorNorth), BoundaryKind.WALL, true);
+        DungeonMap interiorDeleted = withInteriorWall.editClusterBoundaries(
+                clusterId,
+                List.of(interiorTarget),
+                BoundaryKind.WALL,
+                true);
+
+        assertEquals(before, wallEdges(new DungeonDerivedStateProjection().project(rejected)),
+                "wall owner rejects exterior wall delete without changing derived wall facts");
+        assertFalse(wallEdges(new DungeonDerivedStateProjection().project(interiorDeleted)).contains(interiorTarget),
+                "wall owner accepts eligible interior wall deletion");
+    }
+
+    private static DungeonMap roomMap() {
+        return DungeonMapAuthoring.empty(new DungeonMapIdentity(82L), "Wall Path")
+                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(3, 3, 0));
+    }
+
+    private static List<Edge> internalVerticalRun() {
+        return List.of(
+                new Edge(new Cell(2, 1, 0), new Cell(2, 2, 0)),
+                new Edge(new Cell(2, 2, 0), new Cell(2, 3, 0)),
+                new Edge(new Cell(2, 3, 0), new Cell(2, 4, 0)));
+    }
+
+    private static List<Edge> tJunctionWallShape() {
+        return List.of(
+                new Edge(new Cell(2, 1, 0), new Cell(2, 2, 0)),
+                new Edge(new Cell(2, 2, 0), new Cell(2, 3, 0)),
+                new Edge(new Cell(2, 3, 0), new Cell(2, 4, 0)),
+                new Edge(new Cell(2, 3, 0), new Cell(3, 3, 0)),
+                new Edge(new Cell(3, 3, 0), new Cell(4, 3, 0)));
     }
 
     private static Set<Edge> wallEdges(DungeonDerivedState derived) {

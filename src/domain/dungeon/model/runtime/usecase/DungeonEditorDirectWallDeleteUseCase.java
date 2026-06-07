@@ -1,17 +1,12 @@
 package src.domain.dungeon.model.runtime.usecase;
 
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.helper.DungeonEditorBoundaryDraftEffectHelper;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorBoundaryClusterResolutionHelper;
-import src.domain.dungeon.model.runtime.helper.DungeonEditorBoundaryEdgesHelper;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.VertexKey;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.VertexTarget;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.BoundaryDraft;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.EdgeKey;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.InteractionState;
@@ -19,12 +14,13 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainView
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInterpretation;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.usecase.DungeonEditorWallRunDeleteUseCase.WallDeleteTarget;
 
 final class DungeonEditorDirectWallDeleteUseCase {
     private final DungeonEditorBoundaryClusterResolutionHelper clusterResolver =
             new DungeonEditorBoundaryClusterResolutionHelper();
-    private final DungeonEditorBoundaryEdgesHelper boundaryEdges = new DungeonEditorBoundaryEdgesHelper();
-    private final DungeonEditorBoundaryVertexUseCase boundaryVertices = new DungeonEditorBoundaryVertexUseCase();
+    private final DungeonEditorWallRunDeleteUseCase wallRuns = new DungeonEditorWallRunDeleteUseCase();
+    private final DungeonEditorBoundaryDraftEffectHelper draftEffects = new DungeonEditorBoundaryDraftEffectHelper();
 
     @Nullable DungeonEditorMainViewInterpretation press(
             PointerState input,
@@ -32,13 +28,16 @@ final class DungeonEditorDirectWallDeleteUseCase {
             DungeonEditorSessionValues.Tool selectedTool,
             InteractionState state
     ) {
-        if (input == null || !selectedTool.deleteMode() || !input.secondaryButtonDown()) {
+        if (input == null || !wallDeleteGesture(selectedTool, input)) {
             return null;
         }
         if (!input.vertexTarget().present() && directWallBoundaryTarget(input.boundaryTarget())) {
             return armDirectWallSegmentDelete(input.boundaryTarget(), snapshot, state);
         }
-        return null;
+        if (input.vertexTarget().present()) {
+            return armDirectWallCornerDelete(input, snapshot, state);
+        }
+        return armDirectWallCellDelete(input, snapshot, state);
     }
 
     DungeonEditorMainViewInterpretation releaseCorner(
@@ -49,7 +48,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
     ) {
         return input != null && input.vertexTarget().present()
                 ? applyDirectWallCornerDelete(input, snapshot, currentState, nextState)
-                : clearDraft(nextState);
+                : draftEffects.clearBoundaryDraftPreview(nextState);
     }
 
     private DungeonEditorMainViewInterpretation armDirectWallSegmentDelete(
@@ -59,10 +58,34 @@ final class DungeonEditorDirectWallDeleteUseCase {
     ) {
         long clusterId = clusterResolver.resolveBoundaryClusterId(snapshot, boundary);
         if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
-            return clearDraft(state);
+            return draftEffects.clearBoundaryDraftPreview(state);
         }
-        EdgeKey edge = EdgeKey.from(boundary.edgeRef());
-        return previewEdges(clusterId, Set.of(edge), state);
+        return previewDelete(state, wallRuns.interiorRunForBoundary(snapshot, clusterId, boundary.edgeRef()));
+    }
+
+    private DungeonEditorMainViewInterpretation armDirectWallCornerDelete(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            InteractionState state
+    ) {
+        VertexTarget vertex = input.vertexTarget();
+        WallDeleteTarget target = wallRuns.cornerRunDelete(snapshot, new VertexKey(vertex.q(), vertex.r(), vertex.level()));
+        if (!DungeonEditorWorkspaceValues.hasId(target.clusterId())) {
+            return draftEffects.clearBoundaryDraftPreview(state);
+        }
+        return previewDelete(state, target);
+    }
+
+    private DungeonEditorMainViewInterpretation armDirectWallCellDelete(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            InteractionState state
+    ) {
+        WallDeleteTarget target = wallRuns.cellRunDelete(snapshot, new CellKey(input.q(), input.r(), input.level()));
+        if (!DungeonEditorWorkspaceValues.hasId(target.clusterId())) {
+            return null;
+        }
+        return previewDelete(state, target);
     }
 
     private DungeonEditorMainViewInterpretation applyDirectWallCornerDelete(
@@ -74,81 +97,32 @@ final class DungeonEditorDirectWallDeleteUseCase {
         VertexTarget vertex = input.vertexTarget();
         long clusterId = currentState.boundaryDraft().clusterId();
         if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
-            return clearDraft(nextState);
+            return draftEffects.clearBoundaryDraftPreview(nextState);
         }
-        Set<EdgeKey> edges = wallEdgesTouchingVertex(snapshot, clusterId, DungeonEditorInteractionValues.vertexKey(vertex));
-        return edges.isEmpty() ? clearDraft(nextState) : applyEdges(clusterId, edges, nextState);
-    }
-
-    private Set<EdgeKey> wallEdgesTouchingVertex(
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            long clusterId,
-            VertexKey vertex
-    ) {
-        Set<DungeonEditorInteractionValues.CellKey> cells = boundaryVertices.clusterCellsFor(snapshot, clusterId, vertex.level());
-        Set<EdgeKey> walls = boundaryEdges.existingAlongClusterBoundary(
+        Set<EdgeKey> edges = wallRuns.cornerRunsForCluster(
                 snapshot,
-                cells,
-                vertex.level(),
-                DungeonEditorWorkspaceValues.BoundaryKind.WALL);
-        Set<EdgeKey> result = new LinkedHashSet<>();
-        for (EdgeKey edge : walls) {
-            if (edge.touches(vertex)) {
-                result.add(edge);
-            }
-        }
-        return Set.copyOf(result);
-    }
-
-    private static DungeonEditorMainViewInterpretation previewEdges(
-            long clusterId,
-            Set<EdgeKey> edges,
-            InteractionState state
-    ) {
-        EdgeKey firstEdge = edges.iterator().next();
-        InteractionState nextState = state.withBoundaryDraft(new BoundaryDraft(
                 clusterId,
-                true,
-                firstEdge.start(),
-                firstEdge.end(),
-                edges,
-                true));
-        return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.preview(
-                new DungeonEditorSessionValues.ClusterBoundariesPreview(
-                        clusterId,
-                        edgeRefs(edges),
-                        DungeonEditorWorkspaceValues.BoundaryKind.WALL,
-                        true)));
+                new VertexKey(vertex.q(), vertex.r(), vertex.level()));
+        return edges.isEmpty()
+                ? draftEffects.clearBoundaryDraftPreview(nextState)
+                : draftEffects.applyBoundaryEdges(nextState, clusterId, edges, true);
     }
 
-    private static DungeonEditorMainViewInterpretation applyEdges(
-            long clusterId,
-            Set<EdgeKey> edges,
-            InteractionState state
-    ) {
-        return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.apply(
-                new DungeonEditorSessionValues.ClusterBoundariesPreview(
-                        clusterId,
-                        edgeRefs(edges),
-                        DungeonEditorWorkspaceValues.BoundaryKind.WALL,
-                        true)));
-    }
-
-    private static List<DungeonEditorWorkspaceValues.Edge> edgeRefs(Set<EdgeKey> edges) {
-        List<DungeonEditorWorkspaceValues.Edge> result = new ArrayList<>();
-        for (EdgeKey edge : edges) {
-            result.add(edge.toEdgeRef());
+    private DungeonEditorMainViewInterpretation previewDelete(InteractionState state, WallDeleteTarget target) {
+        if (target.protectedExterior()) {
+            return draftEffects.rejectExteriorWallDelete(state);
         }
-        return List.copyOf(result);
-    }
-
-    private static DungeonEditorMainViewInterpretation clearDraft(InteractionState state) {
-        return new DungeonEditorMainViewInterpretation(
-                state.withBoundaryDraft(BoundaryDraft.none()),
-                DungeonEditorMainViewEffect.clearPreviewIfNeeded(true));
+        return target.edges().isEmpty()
+                ? draftEffects.clearBoundaryDraftPreview(state)
+                : draftEffects.previewWallDelete(target.clusterId(), target.edges(), state);
     }
 
     private static boolean directWallBoundaryTarget(BoundaryTarget boundary) {
         return boundary != null && boundary.present() && !boundary.doorKind();
+    }
+
+    private static boolean wallDeleteGesture(DungeonEditorSessionValues.Tool selectedTool, PointerState input) {
+        return input.secondaryButtonDown()
+                && (selectedTool.deleteMode() || selectedTool == DungeonEditorSessionValues.Tool.WALL_CREATE);
     }
 }
