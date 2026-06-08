@@ -51,15 +51,14 @@ final class DungeonEditorCorridorHarness {
         route(results, () -> verifyCorridorAnchorMoveThroughMapView(results));
         route(results, () -> verifyCorridorPointEditThroughStateView(results));
         route(results, () -> verifyDoorToDoorCorridorCreateThroughMapView(results));
+        route(results, () -> verifyFirstCorridorClicksRemainDraftOnlyThroughMapView(results));
         route(results, () -> verifyDoorToAnchorCorridorCreateThroughMapView(results));
         route(results, () -> verifyAnchorToAnchorCorridorCreateThroughMapView(results));
         route(results, () -> verifyCorridorSplitAtCrossingThroughMapView(results));
         route(results, () -> verifyCorridorConnectionPointDeleteThroughMapView(results));
         route(results, () -> verifyCorridorDoorConnectionDeleteThroughMapView(results));
-        route(results, () -> verifyGenericCorridorHitCreatesAnchorEndpointThroughMapView(results));
-        route(results, () -> verifyGenericCorridorHitMaterializesAbsentAnchorEndpointThroughMapView(results));
         route(results, () -> verifyInvalidCorridorRouteRejectedThroughMapView(results));
-        route(results, () -> verifyGenericRoomHitMaterializesFacingDoorThroughMapView(results));
+        route(results, () -> verifyGenericEndpointMaterializesOnlyAtFullCommitThroughMapView(results));
     }
 
     private static void route(
@@ -333,6 +332,91 @@ final class DungeonEditorCorridorHarness {
                 "DE-COR-001 reload");
 
         results.add("DE-COR-001 Ready: DungeonEditorControlsView corridor tool + two door hits -> SQLite -> render");
+    }
+
+    private static void verifyFirstCorridorClicksRemainDraftOnlyThroughMapView(List<String> results) {
+        assertFirstExplicitDoorClickRemainsDraftOnly();
+        assertFirstGenericRoomClickRemainsDraftOnly();
+        assertFirstGenericCorridorClickRemainsDraftOnly();
+
+        results.add("DE-COR-012 Ready: DungeonMapView first corridor endpoint click -> session draft only"
+                + " for explicit door, generic room, and generic corridor starts");
+    }
+
+    private static void assertFirstExplicitDoorClickRemainsDraftOnly() {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Corridor First Door Draft Map");
+        runtime.database().seedTwoDoorRouteTarget(mapId);
+        createMapThroughControls(controls, runtime, "Corridor First Door Draft Reload Hop");
+        selectMap(controls, "Corridor First Door Draft Map");
+        click(button(controls, "Korridor"));
+        Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
+        assertPointerTarget(binding.mapContentModel(), doorOne, "BOUNDARY", "DE-COR-012 explicit door start");
+        AuthoredCorridorState before = AuthoredCorridorState.capture(runtime, binding, mapId);
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+
+        fireMapMousePressed(mapView, MouseButton.PRIMARY,
+                viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
+
+        assertFirstClickDraftOnly(before, runtime, binding, mapId, "DE-COR-012 explicit door first click");
+    }
+
+    private static void assertFirstGenericRoomClickRemainsDraftOnly() {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Corridor First Room Draft Map");
+        runtime.database().seedRoomToDoorRouteTarget(mapId);
+        createMapThroughControls(controls, runtime, "Corridor First Room Draft Reload Hop");
+        selectMap(controls, "Corridor First Room Draft Map");
+        click(button(controls, "Korridor"));
+        Point2D roomInterior = new Point2D(1.5, 2.5);
+        assertPointerTarget(binding.mapContentModel(), roomInterior, "LABEL", "DE-COR-012 generic room start");
+        assertEquals("ROOM", binding.mapContentModel()
+                        .resolvePointerTarget(roomInterior.getX(), roomInterior.getY())
+                        .elementKind(),
+                "DE-COR-012 generic room first click targets room semantics");
+        AuthoredCorridorState before = AuthoredCorridorState.capture(runtime, binding, mapId);
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+
+        fireMapMousePressed(mapView, MouseButton.PRIMARY,
+                viewport.sceneToScreenX(roomInterior.getX()), viewport.sceneToScreenY(roomInterior.getY()), false);
+
+        assertFirstClickDraftOnly(before, runtime, binding, mapId, "DE-COR-012 generic room first click");
+    }
+
+    private static void assertFirstGenericCorridorClickRemainsDraftOnly() {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Corridor First Body Draft Map");
+        runtime.database().seedCorridorWithAnchor(mapId);
+        createMapThroughControls(controls, runtime, "Corridor First Body Draft Reload Hop");
+        selectMap(controls, "Corridor First Body Draft Map");
+        click(button(controls, "Korridor"));
+        Point2D genericCorridorPoint = new Point2D(6.05, 4.05);
+        assertPointerTarget(binding.mapContentModel(), genericCorridorPoint, "CELL", "DE-COR-012 generic corridor start");
+        assertEquals("CORRIDOR", binding.mapContentModel()
+                        .resolvePointerTarget(genericCorridorPoint.getX(), genericCorridorPoint.getY())
+                        .elementKind(),
+                "DE-COR-012 generic corridor first click targets corridor semantics");
+        AuthoredCorridorState before = AuthoredCorridorState.capture(runtime, binding, mapId);
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+
+        fireMapMousePressed(mapView, MouseButton.PRIMARY,
+                viewport.sceneToScreenX(genericCorridorPoint.getX()),
+                viewport.sceneToScreenY(genericCorridorPoint.getY()),
+                false);
+
+        assertFirstClickDraftOnly(before, runtime, binding, mapId, "DE-COR-012 generic corridor first click");
     }
 
 
@@ -670,12 +754,19 @@ final class DungeonEditorCorridorHarness {
                         .resolvePointerTarget(genericCorridorPoint.getX(), genericCorridorPoint.getY())
                         .elementKind(),
                 "DE-COR-010 body hit resolves as a generic corridor cell instead of the anchor handle");
+        AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(genericCorridorPoint.getX()),
                 viewport.sceneToScreenY(genericCorridorPoint.getY()),
                 false);
+        assertFirstClickDraftOnly(
+                beforeFirstClick,
+                runtime,
+                binding,
+                mapId,
+                "DE-COR-013 generic corridor existing-anchor first click");
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
         assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
@@ -731,12 +822,19 @@ final class DungeonEditorCorridorHarness {
                         .resolvePointerTarget(genericCorridorPoint.getX(), genericCorridorPoint.getY())
                         .elementKind(),
                 "DE-COR-011 body hit resolves as a generic corridor cell instead of an anchor handle");
+        AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(genericCorridorPoint.getX()),
                 viewport.sceneToScreenY(genericCorridorPoint.getY()),
                 false);
+        assertFirstClickDraftOnly(
+                beforeFirstClick,
+                runtime,
+                binding,
+                mapId,
+                "DE-COR-013 generic corridor absent-anchor first click");
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
         assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
@@ -785,6 +883,13 @@ final class DungeonEditorCorridorHarness {
                 newCorridorId,
                 Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0"),
                 "DE-COR-011 reload");
+        assertTrue(runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
+                        .anyMatch(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name())
+                                && handle.ref().topologyRef().id() == materializedAnchorRef
+                                && handle.cell().q() == 6
+                                && handle.cell().r() == 4
+                                && handle.cell().level() == 0),
+                "DE-COR-011 reload published snapshot preserves the materialized anchor topology identity");
 
         results.add("DE-COR-011 Ready: DungeonMapView generic corridor body hit -> new anchor -> SQLite -> render");
     }
@@ -838,6 +943,15 @@ final class DungeonEditorCorridorHarness {
     }
 
 
+    private static void verifyGenericEndpointMaterializesOnlyAtFullCommitThroughMapView(List<String> results) {
+        verifyGenericRoomHitMaterializesFacingDoorThroughMapView(results);
+        assertGenericRoomRejectedCompletionDoesNotMaterialize();
+        verifyGenericCorridorHitCreatesAnchorEndpointThroughMapView(results);
+        verifyGenericCorridorHitMaterializesAbsentAnchorEndpointThroughMapView(results);
+        results.add("DE-COR-013 Ready: DungeonMapView generic room/corridor endpoints -> no first-click"
+                + " materialization, atomic successful commit, SQLite readback, topology identity, and render");
+    }
+
     private static void verifyGenericRoomHitMaterializesFacingDoorThroughMapView(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
@@ -860,14 +974,19 @@ final class DungeonEditorCorridorHarness {
                         .elementKind(),
                 "DE-COR-009 generic room cell hit is a room target rather than a door target");
         assertPointerTarget(binding.mapContentModel(), doorTwo, "BOUNDARY", "DE-COR-009 second door");
+        AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(roomInterior.getX()), viewport.sceneToScreenY(roomInterior.getY()), false);
         assertTrue(runtime.controlsModel().current().statusText().contains("Start:"),
                 "DE-COR-009 first generic room click arms a corridor draft");
-        assertEquals(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
-                "DE-COR-009 first generic room click does not persist a partial corridor");
+        assertFirstClickDraftOnly(
+                beforeFirstClick,
+                runtime,
+                binding,
+                mapId,
+                "DE-COR-013 generic room first click");
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
@@ -902,6 +1021,14 @@ final class DungeonEditorCorridorHarness {
                 newCorridorId,
                 cellRect(4, 2, 7, 2, 0),
                 "DE-COR-009");
+        DungeonEditorTopologyElementRef materializedDoor =
+                new DungeonEditorTopologyElementRef("DOOR", materializedDoorRef);
+        assertTrue(runtime.mapSurfaceModel().current().surface().map().boundaries().stream()
+                        .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
+                                && boundary.topologyRef().equals(materializedDoor)),
+                "DE-COR-009 published snapshot exposes the materialized door boundary");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 2.5),
+                "DE-COR-009 render scene shows the materialized door boundary");
         selectMap(controls, "Corridor Generic Room Door Reload Hop");
         selectMap(controls, "Corridor Generic Room Door Map");
         assertCorridorCreatedInSnapshot(
@@ -910,8 +1037,137 @@ final class DungeonEditorCorridorHarness {
                 newCorridorId,
                 cellRect(4, 2, 7, 2, 0),
                 "DE-COR-009 reload");
+        assertTrue(runtime.mapSurfaceModel().current().surface().map().boundaries().stream()
+                        .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
+                                && boundary.topologyRef().equals(materializedDoor)),
+                "DE-COR-009 reload published snapshot preserves the materialized door topology identity");
 
         results.add("DE-COR-009 Ready: DungeonMapView generic room hit -> facing door endpoint -> SQLite -> render");
+    }
+
+    private static void assertGenericRoomRejectedCompletionDoesNotMaterialize() {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Corridor Generic Room Blocked Map");
+        runtime.database().seedBlockedCorridorRouteTarget(mapId);
+        createMapThroughControls(controls, runtime, "Corridor Generic Room Blocked Reload Hop");
+        selectMap(controls, "Corridor Generic Room Blocked Map");
+        click(button(controls, "Korridor"));
+        Point2D roomInterior = new Point2D(1.5, 2.5);
+        Point2D eastWall = boundaryMidpointNear(binding.mapContentModel(), "WALL", 5.0, 2.5);
+        assertPointerTarget(binding.mapContentModel(), roomInterior, "LABEL", "DE-COR-013 rejected generic room start");
+        assertEquals("ROOM", binding.mapContentModel()
+                        .resolvePointerTarget(roomInterior.getX(), roomInterior.getY())
+                        .elementKind(),
+                "DE-COR-013 rejected generic room start targets room semantics");
+        assertPointerTarget(binding.mapContentModel(), eastWall, "BOUNDARY", "DE-COR-013 rejected completion target");
+        AuthoredCorridorState before = AuthoredCorridorState.capture(runtime, binding, mapId);
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+
+        fireMapMousePressed(mapView, MouseButton.PRIMARY,
+                viewport.sceneToScreenX(roomInterior.getX()), viewport.sceneToScreenY(roomInterior.getY()), false);
+        assertFirstClickDraftOnly(before, runtime, binding, mapId, "DE-COR-013 rejected generic room first click");
+        fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
+                viewport.sceneToScreenX(eastWall.getX()), viewport.sceneToScreenY(eastWall.getY()), false);
+        fireMapMousePressed(mapView, MouseButton.PRIMARY,
+                viewport.sceneToScreenX(eastWall.getX()), viewport.sceneToScreenY(eastWall.getY()), false);
+
+        assertRejectedCompletionLeavesAuthoredState(before, runtime, binding, mapId,
+                "DE-COR-013 rejected generic room completion");
+    }
+
+    private static void assertFirstClickDraftOnly(
+            AuthoredCorridorState before,
+            HarnessRuntime runtime,
+            HarnessBinding binding,
+            long mapId,
+            String message
+    ) {
+        assertTrue(runtime.controlsModel().current().statusText().contains("Start:"),
+                message + " arms a transient start-endpoint session");
+        assertEquals(before.corridorIds(), runtime.database().corridorIdsForMap(mapId),
+                message + " creates no new corridor id");
+        assertEquals(before.doorRows(), runtime.database().doorBoundaryState(mapId),
+                message + " creates no door binding or boundary row");
+        assertEquals(before.anchorRows(), runtime.database().corridorAnchorState(mapId),
+                message + " creates no corridor anchor row");
+        assertEquals(before.stableConnectionRows(), runtime.database().corridorStableConnectionState(mapId),
+                message + " creates no stable corridor connection, endpoint, or topology row");
+        assertEquals(before.waypointRows(), runtime.database().corridorWaypointAbsoluteState(mapId),
+                message + " creates no waypoint or route row");
+        assertEquals(before.authoredGeometryRows(), runtime.database().authoredGeometryState(mapId),
+                message + " leaves authored SQLite geometry state unchanged");
+        assertEquals(before.surfaceCorridorCount(), surfaceCorridorCount(runtime.mapSurfaceModel().current()),
+                message + " publishes no additional committed corridor surface");
+        assertEquals(before.renderCells(), renderSurfaceCellOriginsWithZ(binding.mapContentModel()),
+                message + " leaves rendered committed geometry unchanged");
+        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+                message + " keeps the published preview surface clear until a valid completion candidate exists");
+    }
+
+    private static void assertRejectedCompletionLeavesAuthoredState(
+            AuthoredCorridorState before,
+            HarnessRuntime runtime,
+            HarnessBinding binding,
+            long mapId,
+            String message
+    ) {
+        assertTrue(runtime.controlsModel().current().statusText().contains("blockiert"),
+                message + " reports blocked route rejection");
+        assertEquals(before.corridorIds(), runtime.database().corridorIdsForMap(mapId),
+                message + " creates no corridor id");
+        assertEquals(before.doorRows(), runtime.database().doorBoundaryState(mapId),
+                message + " materializes no generic room door");
+        assertEquals(before.anchorRows(), runtime.database().corridorAnchorState(mapId),
+                message + " materializes no corridor anchor");
+        assertEquals(before.stableConnectionRows(), runtime.database().corridorStableConnectionState(mapId),
+                message + " creates no endpoint binding, route, or topology row");
+        assertEquals(before.waypointRows(), runtime.database().corridorWaypointAbsoluteState(mapId),
+                message + " creates no waypoint row");
+        assertEquals(before.authoredGeometryRows(), runtime.database().authoredGeometryState(mapId),
+                message + " leaves authored SQLite geometry state unchanged");
+        assertEquals(before.surfaceCorridorCount(), surfaceCorridorCount(runtime.mapSurfaceModel().current()),
+                message + " publishes no committed corridor surface");
+        assertEquals(before.renderCells(), renderSurfaceCellOriginsWithZ(binding.mapContentModel()),
+                message + " leaves rendered committed geometry unchanged");
+        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+                message + " clears preview after rejection");
+    }
+
+    private static long surfaceCorridorCount(DungeonEditorMapSurfaceSnapshot snapshot) {
+        return snapshot.surface().map().areas().stream()
+                .filter(area -> "CORRIDOR".equalsIgnoreCase(area.kind()))
+                .count();
+    }
+
+    private record AuthoredCorridorState(
+            Set<Long> corridorIds,
+            List<String> anchorRows,
+            List<String> doorRows,
+            List<String> stableConnectionRows,
+            List<String> waypointRows,
+            List<String> authoredGeometryRows,
+            Set<String> renderCells,
+            long surfaceCorridorCount
+    ) {
+        private static AuthoredCorridorState capture(
+                HarnessRuntime runtime,
+                HarnessBinding binding,
+                long mapId
+        ) {
+            return new AuthoredCorridorState(
+                    runtime.database().corridorIdsForMap(mapId),
+                    runtime.database().corridorAnchorState(mapId),
+                    runtime.database().doorBoundaryState(mapId),
+                    runtime.database().corridorStableConnectionState(mapId),
+                    runtime.database().corridorWaypointAbsoluteState(mapId),
+                    runtime.database().authoredGeometryState(mapId),
+                    renderSurfaceCellOriginsWithZ(binding.mapContentModel()),
+                    DungeonEditorCorridorHarness.surfaceCorridorCount(runtime.mapSurfaceModel().current()));
+        }
     }
 
 }

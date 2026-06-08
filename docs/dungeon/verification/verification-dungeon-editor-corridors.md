@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-08
 Source of Truth: Corridor route, anchor, waypoint, deletion, and corridor
 state route expectations for Dungeon Editor behavior verification.
 
@@ -31,8 +31,8 @@ in [Dungeon Editor-Wide Invariants](verification-dungeon-editor-wide-invariants.
 | `DE-COR-009` | Generic room hit materializes endpoint | Corridor family plus generic room hit | `F12_ROOM_TO_DOOR_ROUTE_TARGET` | Generic room hit resolves to the facing door endpoint and persists the successful corridor route. | Ready |
 | `DE-COR-010` | Generic corridor hit reuses anchor | Corridor family plus generic corridor hit at existing anchor cell | `F5_CORRIDOR_WITH_ANCHOR` | Existing anchor is reused for the successful corridor route. | Ready |
 | `DE-COR-011` | Generic corridor hit creates anchor | Corridor family plus unanchored corridor cell | `F5_CORRIDOR_WITH_ANCHOR` | A new anchor is authored for the successful corridor route. | Ready |
-| `DE-COR-012` | First corridor click remains preview-only | Corridor family plus first primary endpoint hit | `F8_TWO_DOOR_ROUTE_TARGET` | The first click selects a pending endpoint and publishes preview/session state only; no door, anchor, corridor, route, or topology row persists. | Implementation Gap |
-| `DE-COR-013` | Generic endpoint materializes only at full commit | Pending corridor draft using generic room or corridor hit | `F12_ROOM_TO_DOOR_ROUTE_TARGET` | Facing door or anchor creation/reuse happens atomically with successful full corridor commit, never as a first-click side effect. | Implementation Gap |
+| `DE-COR-012` | First corridor click remains preview-only | Corridor family plus first primary endpoint hit | `F8_TWO_DOOR_ROUTE_TARGET`, `F12_ROOM_TO_DOOR_ROUTE_TARGET`, `F5_CORRIDOR_WITH_ANCHOR` | The first click selects a pending endpoint and publishes preview/session state only; explicit door, generic room, and generic corridor starts persist no door, anchor, corridor, route, topology, authored geometry, committed surface, or render delta. | Ready |
+| `DE-COR-013` | Generic endpoint materializes only at full commit | Pending corridor draft using generic room or corridor hit | `F12_ROOM_TO_DOOR_ROUTE_TARGET`, `F5_CORRIDOR_WITH_ANCHOR`, `F11_BLOCKED_CORRIDOR_ROUTE` | Facing door or anchor creation/reuse happens atomically with successful full corridor commit, never as a first-click side effect, and a blocked generic-room completion materializes no endpoint; success is proved through SQLite readback, topology identity, published snapshot, reload, and render. | Ready |
 
 ## References
 
