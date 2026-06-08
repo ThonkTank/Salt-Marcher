@@ -42,6 +42,13 @@ final class DungeonEditorRuntimeServiceAssembly {
         return component(registry, publishedState).narrationService();
     }
 
+    DungeonEditorLabelNameApplicationService labelNameService(
+            ServiceRegistry registry,
+            DungeonAuthoredPublishedStateServiceAssembly publishedState
+    ) {
+        return component(registry, publishedState).labelNameService();
+    }
+
     DungeonEditorTransitionApplicationService transitionService(
             ServiceRegistry registry,
             DungeonAuthoredPublishedStateServiceAssembly publishedState

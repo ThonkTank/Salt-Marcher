@@ -12,6 +12,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 public record DungeonRoomCluster(
         long clusterId,
         long mapId,
+        String name,
         Cell center,
         Map<Integer, List<Cell>> relativeVerticesByLevel,
         Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
@@ -19,12 +20,14 @@ public record DungeonRoomCluster(
     public DungeonRoomCluster(
             long clusterId,
             long mapId,
+            String name,
             Cell center,
             Map<Integer, List<Cell>> relativeVerticesByLevel,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
         this.clusterId = clusterId;
         this.mapId = mapId;
+        this.name = defaultName(clusterId, name);
         this.center = center == null ? new Cell(0, 0, 0) : center;
         this.relativeVerticesByLevel = copyNestedLists(relativeVerticesByLevel);
         this.boundariesByLevel = copyNestedLists(boundariesByLevel);
@@ -71,7 +74,18 @@ public record DungeonRoomCluster(
         return new DungeonRoomCluster(
                 cluster.clusterId(),
                 cluster.mapId(),
+                "",
                 cluster.center(),
+                relativeVerticesByLevel,
+                boundariesByLevel);
+    }
+
+    public DungeonRoomCluster withName(String nextName) {
+        return new DungeonRoomCluster(
+                clusterId,
+                mapId,
+                nextName,
+                center,
                 relativeVerticesByLevel,
                 boundariesByLevel);
     }
@@ -117,5 +131,9 @@ public record DungeonRoomCluster(
             }
         }
         return new RoomClusterWallMap(center, rows);
+    }
+
+    private static String defaultName(long clusterId, String name) {
+        return name == null || name.isBlank() ? "Cluster " + clusterId : name.trim();
     }
 }

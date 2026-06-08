@@ -20,6 +20,7 @@ public final class DungeonEditorStateView extends VBox {
     private static final String CONTENT_CARD_STYLE = "content-card";
     private static final String STATE_CARD_STACK_STYLE = "dungeon-state-card-stack";
     private static final String COORDINATE_ROW_STYLE = "coordinate-row";
+    private static final String SAVE_ACTION_SUFFIX = " speichern";
 
     private final Label body = new Label();
     private final VBox corridorPointCards = new VBox();
@@ -27,6 +28,7 @@ public final class DungeonEditorStateView extends VBox {
     private final VBox transitionCards = new VBox();
     private final VBox stairGeometryCards = new VBox();
     private final VBox narrationCards = new VBox();
+    private final VBox nameCards = new VBox();
     private Consumer<DungeonEditorStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonEditorStateView() {
@@ -36,8 +38,10 @@ public final class DungeonEditorStateView extends VBox {
         transitionCards.getStyleClass().add(STATE_CARD_STACK_STYLE);
         stairGeometryCards.getStyleClass().add(STATE_CARD_STACK_STYLE);
         narrationCards.getStyleClass().add(STATE_CARD_STACK_STYLE);
+        nameCards.getStyleClass().add(STATE_CARD_STACK_STYLE);
         getChildren().addAll(
                 new StateCard(body),
+                nameCards,
                 corridorPointCards,
                 transitionDestinationCards,
                 transitionCards,
@@ -76,6 +80,7 @@ public final class DungeonEditorStateView extends VBox {
         showTransitionDescription(projection.transitionDescription(), projection.busy(), projection.statusText());
         showStairGeometry(projection.stairGeometry(), projection.busy(), projection.statusText());
         showNarrationCards(projection.narrationCards(), projection.busy(), projection.statusText());
+        showName(projection.name(), projection.busy());
     }
 
     private void showCorridorPoint(
@@ -127,6 +132,16 @@ public final class DungeonEditorStateView extends VBox {
         }
     }
 
+    private void showName(
+            DungeonEditorStateContentModel.NameProjection name,
+            boolean busy
+    ) {
+        nameCards.getChildren().clear();
+        if (name != null) {
+            nameCards.getChildren().add(new NameCard(name, busy));
+        }
+    }
+
     private static Label muted(String text) {
         Label label = new MutedLabel(text);
         label.setWrapText(true);
@@ -144,6 +159,12 @@ public final class DungeonEditorStateView extends VBox {
         TextField field = new TextField(text == null ? "" : text);
         field.getStyleClass().add("coordinate-field");
         field.setTextFormatter(new TextFormatter<>(integerTextFilter()));
+        return field;
+    }
+
+    private static TextField textField(String text) {
+        TextField field = new TextField(text == null ? "" : text);
+        field.getStyleClass().add("coordinate-field");
         return field;
     }
 
@@ -203,6 +224,20 @@ public final class DungeonEditorStateView extends VBox {
                 qField.getText(),
                 rField.getText(),
                 submitRequested));
+    }
+
+    private void emitNameInput(
+            String targetKind,
+            long targetId,
+            TextField nameField,
+            boolean saveRequested
+    ) {
+        viewInputEventHandler.accept(new DungeonEditorStateViewInputEvent(
+                targetKind,
+                targetId,
+                nameField.getText(),
+                true,
+                saveRequested));
     }
 
     private void emitTransitionDescriptionInput(
@@ -296,6 +331,34 @@ public final class DungeonEditorStateView extends VBox {
         }
     }
 
+    private final class NameCard extends VBox {
+
+        private NameCard(DungeonEditorStateContentModel.NameProjection name, boolean busy) {
+            String targetKind = name.targetKind();
+            long targetId = name.targetId();
+            TextField nameField = textField(name.name());
+            nameField.setAccessibleText(name.label());
+            Label fieldLabel = labeled("Name", nameField);
+            Button save = new ToolbarActionButton("Speichern");
+            save.setAccessibleText(name.label() + SAVE_ACTION_SUFFIX);
+            Runnable updateDisabled = () -> save.setDisable(busy || nameField.getText().isBlank());
+            nameField.textProperty().addListener((ignored, before, after) -> {
+                emitNameInput(targetKind, targetId, nameField, false);
+                updateDisabled.run();
+            });
+            updateDisabled.run();
+            save.setOnAction(event -> emitNameInput(targetKind, targetId, nameField, true));
+            getChildren().addAll(new PanelTitle(name.label()), fieldLabel, nameField, save);
+            getStyleClass().addAll(CARD_SURFACE_STYLE, CONTENT_CARD_STYLE);
+        }
+
+        private Label labeled(String text, javafx.scene.Node field) {
+            Label label = muted(text);
+            label.setLabelFor(field);
+            return label;
+        }
+    }
+
     private final class TransitionDescriptionCard extends VBox {
 
         private TransitionDescriptionCard(
@@ -317,7 +380,7 @@ public final class DungeonEditorStateView extends VBox {
             status.setVisible(statusText != null && !statusText.isBlank());
             status.setManaged(status.isVisible());
             Button save = new ToolbarActionButton("Speichern");
-            save.setAccessibleText(transitionDescription.label() + " speichern");
+            save.setAccessibleText(transitionDescription.label() + SAVE_ACTION_SUFFIX);
             save.setDisable(busy);
             save.setOnAction(event -> emitTransitionDescriptionInput(
                     transitionDescription.transitionId(),
@@ -373,7 +436,7 @@ public final class DungeonEditorStateView extends VBox {
             status.setVisible(statusText != null && !statusText.isBlank());
             status.setManaged(status.isVisible());
             Button save = new ToolbarActionButton("Verknüpfen");
-            save.setAccessibleText(transitionDestination.label() + " speichern");
+            save.setAccessibleText(transitionDestination.label() + SAVE_ACTION_SUFFIX);
             Runnable updateDestinationMode = () -> {
                 boolean dungeonMapDestination = "DUNGEON_MAP".equals(destinationTypeBox.getValue());
                 boolean linkMode = transitionDestination.sourceTransitionId() > 0L;
@@ -495,7 +558,7 @@ public final class DungeonEditorStateView extends VBox {
             status.setVisible(statusText != null && !statusText.isBlank());
             status.setManaged(status.isVisible());
             Button save = new ToolbarActionButton("Treppe aktualisieren");
-            save.setAccessibleText(stairGeometry.label() + " Geometrie speichern");
+            save.setAccessibleText(stairGeometry.label() + " Geometrie" + SAVE_ACTION_SUFFIX);
             Runnable updateDisabled = () -> save.setDisable(
                     busy
                             || !completeIntegerText(dimension1Field.getText())
@@ -573,7 +636,7 @@ public final class DungeonEditorStateView extends VBox {
             status.setVisible(statusText != null && !statusText.isBlank());
             status.setManaged(status.isVisible());
             Button save = new ToolbarActionButton("Speichern");
-            save.setAccessibleText("Narration fuer " + card.roomName() + " speichern");
+            save.setAccessibleText("Narration fuer " + card.roomName() + SAVE_ACTION_SUFFIX);
             save.setDisable(busy);
             save.setOnAction(event -> emitNarrationInput(card.roomId(), visualArea, exitAreas, true));
             getChildren().addAll(status, save);

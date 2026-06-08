@@ -19,6 +19,7 @@ final class DungeonEditorRuntimeComponentServiceAssembly {
                 DungeonEditorProjectionApplicationServiceAssembly.create(runtime),
                 DungeonEditorPointerApplicationServiceAssembly.create(runtime),
                 DungeonEditorNarrationApplicationServiceAssembly.create(runtime),
+                DungeonEditorLabelNameApplicationServiceAssembly.create(runtime),
                 DungeonEditorTransitionApplicationServiceAssembly.create(runtime),
                 DungeonEditorStairApplicationServiceAssembly.create(runtime));
     }
@@ -28,6 +29,7 @@ final class DungeonEditorRuntimeComponentServiceAssembly {
             DungeonEditorProjectionApplicationService projectionService,
             DungeonEditorPointerApplicationService pointerService,
             DungeonEditorNarrationApplicationService narrationService,
+            DungeonEditorLabelNameApplicationService labelNameService,
             DungeonEditorTransitionApplicationService transitionService,
             DungeonEditorStairApplicationService stairService
     ) {

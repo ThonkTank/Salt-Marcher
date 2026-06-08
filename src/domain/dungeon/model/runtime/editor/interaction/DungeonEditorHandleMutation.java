@@ -1,5 +1,6 @@
 package src.domain.dungeon.model.runtime.editor.interaction;
 
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 
 /**
@@ -53,6 +54,14 @@ public final class DungeonEditorHandleMutation {
                     deltaR,
                     deltaLevel);
         }
+        if (handle.kind().isClusterWallRun()) {
+            return current.moveBoundaryStretch(
+                    clusterId(current, handle),
+                    java.util.List.of(handle.direction().edgeOf(safeCell(handle.cell()))),
+                    deltaQ,
+                    deltaR,
+                    deltaLevel);
+        }
         return handle.kind().isClusterLabel()
                 ? current.moveCluster(clusterId(current, handle), deltaQ, deltaR, deltaLevel)
                 : current;
@@ -89,7 +98,7 @@ public final class DungeonEditorHandleMutation {
     }
 
     private static boolean roomHandle(DungeonEditorHandleMovement handle) {
-        return handle.kind().isClusterCorner() || handle.kind().isClusterLabel();
+        return handle.kind().isClusterCorner() || handle.kind().isClusterWallRun() || handle.kind().isClusterLabel();
     }
 
     private static boolean corridorHandle(DungeonEditorHandleMovement handle) {
@@ -106,5 +115,9 @@ public final class DungeonEditorHandleMutation {
 
     private static boolean stationary(int deltaQ, int deltaR, int deltaLevel) {
         return deltaQ == 0 && deltaR == 0 && deltaLevel == 0;
+    }
+
+    private static Cell safeCell(Cell cell) {
+        return cell == null ? new Cell(0, 0, 0) : cell;
     }
 }

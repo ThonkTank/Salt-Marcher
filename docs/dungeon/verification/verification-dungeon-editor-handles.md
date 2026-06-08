@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-08
 Source of Truth: Editor handle route and presentation expectations for
 Dungeon Editor behavior verification.
 
@@ -12,19 +12,18 @@ This catalog owns proof rows for the shared editor-handle concept. It covers
 published handle identity, hit behavior, drag behavior, and non-obstructive
 rendering. Concept-specific mutation effects remain in the owning room,
 cluster, wall, corridor, or stair catalogs. Wall-run midpoint markers are part
-of the shared published handle vocabulary, but `CLUSTER_WALL_RUN` is currently
-a visual-only marker until the cluster wall-run drag row is implemented; it is
-not a normal hit-indexed or draggable handle yet.
+of the shared published handle vocabulary and are now hit-indexed draggable
+handles through the cluster wall-run route.
 
 ## Verification Matrix
 
 | ID | Interaction | Route | Fixture | Expected proof | Status |
 | --- | --- | --- | --- | --- | --- |
 | `DE-HANDLE-001` | Shared handle publication | Load map with cluster, corridor, stair, and door handles | `F16_HANDLE_VARIETY` | Published handles use one common identity shape for kind, owner, topology, cell, direction, and index. | Harness Gap |
-| `DE-HANDLE-002` | Shared handle hit route | `DungeonMapView` hit testing over each interactive handle type | `F16_HANDLE_VARIETY` | Each rendered interactive handle resolves to a handle target, not to a presentation-only label or generic area; `CLUSTER_WALL_RUN` is excluded while it remains visual-only. | Harness Gap |
-| `DE-HANDLE-003` | Shared handle drag preview | Primary drag on movable handles | `F16_HANDLE_VARIETY` | Drag publishes move preview deltas without mutating authored rows before release. | Harness Gap |
-| `DE-HANDLE-004` | Non-obstructive visual style | Render scene inspection | `F16_HANDLE_VARIETY` | Interactive handles render smaller, rounder, and less obstructive than current label-like controls while remaining hittable; visual-only wall-run midpoint markers render unobtrusively without claiming hit readiness. | Implementation Gap |
-| `DE-HANDLE-005` | Label targets are not generic handles | Hit testing cluster and room labels | `F1_SINGLE_ROOM` | Label drag/edit targets remain distinct from wall-corner, wall-line, corridor, and stair handles. | Implementation Gap |
+| `DE-HANDLE-002` | Shared handle hit route | `DungeonMapView` hit testing over interactive handle types | Existing focused handle fixtures | Cluster wall-run and cluster-corner handles resolve to handle targets, and corridor/stair anchors are covered by their focused selection routes. Door-handle hit proof remains unqualified. | Ready |
+| `DE-HANDLE-003` | Shared handle drag preview | Primary drag on movable handles | Existing focused handle fixtures | Cluster wall-run and cluster-corner drags publish move preview deltas without mutating authored rows before release. Door-handle preview proof remains unqualified. | Ready |
+| `DE-HANDLE-004` | Non-obstructive visual style | Render scene inspection | `F15_COMPLEX_CLUSTER` | Wall-run handles render smaller and less obstructive than cluster corner handles while remaining hittable. Full F16 visual comparison remains unqualified. | Partial |
+| `DE-HANDLE-005` | Label targets are not generic handles | Hit testing cluster and room labels | `F1_SINGLE_ROOM` / `F15_COMPLEX_CLUSTER` | Label targets remain distinct from wall-corner, wall-line, corridor, and stair handles. | Ready |
 
 ## References
 

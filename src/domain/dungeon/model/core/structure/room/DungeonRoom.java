@@ -49,6 +49,16 @@ public record DungeonRoom(
                 nextNarration);
     }
 
+    public DungeonRoom withName(String nextName) {
+        return new DungeonRoom(
+                roomId,
+                mapId,
+                clusterId,
+                nextName,
+                floorAnchors,
+                narration);
+    }
+
     public Room toCore() {
         Map<Integer, Cell> coreAnchors = new LinkedHashMap<>();
         for (Map.Entry<Integer, Cell> entry : floorAnchors.entrySet()) {

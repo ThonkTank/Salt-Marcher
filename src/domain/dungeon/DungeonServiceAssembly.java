@@ -29,6 +29,9 @@ final class DungeonServiceAssembly {
                 DungeonEditorNarrationApplicationService.class,
                 registry -> editorRuntime.narrationService(registry, authoredPublishedState));
         services.registerFactory(
+                DungeonEditorLabelNameApplicationService.class,
+                registry -> editorRuntime.labelNameService(registry, authoredPublishedState));
+        services.registerFactory(
                 DungeonEditorTransitionApplicationService.class,
                 registry -> editorRuntime.transitionService(registry, authoredPublishedState));
         services.registerFactory(

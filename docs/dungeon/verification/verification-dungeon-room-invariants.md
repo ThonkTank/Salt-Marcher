@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-08
 Source of Truth: Target invariant catalog for Dungeon Room ownership proof.
 
 # Dungeon Room Invariants
@@ -18,10 +18,10 @@ Required proof rows publish `OwnerSuite=RoomInvariantHarness`,
 
 | Invariant ID | Target Owner | Invariant | Required Proof | Current Status |
 | --- | --- | --- | --- | --- |
-| `DGI-ROOM-001` | `Room` | Room identity and narration survive cluster edits when the room remains represented. | Harness proves move, wall-run drag, corner drag, and repartition survival cases. | Candidate |
-| `DGI-ROOM-002` | Room collection or partition owner | Every floor-owned room cell is assigned to exactly one room after closed-boundary partitioning. | Harness proves no duplicate and no missing room-cell assignments after split and merge. | Candidate |
-| `DGI-ROOM-003` | Room name owner | Default room name is `Raum <roomId>` unless an authored custom name exists. | Harness proves default, custom-name replacement, trimming, and reload-safe publication facts. | Candidate |
-| `DGI-ROOM-004` | Room label facts | Room label placement is derived from room floor cells and the longest available wall run. | Harness proves deterministic placement for rectangular and non-rectangular room shapes. | Candidate |
+| `DGI-ROOM-001` | `Room` | Room identity and narration survive cluster edits when the room remains represented. | Current proof covers wall-run identity survival through `ProofType=RealRoute`; complete model-invariant coverage for all mutation families remains absent. | Partial |
+| `DGI-ROOM-002` | Room collection or partition owner | Every floor-owned room cell is assigned to exactly one room after closed-boundary partitioning. | Existing structure/floor invariant proof remains the owning evidence; this Wave 3 slice did not add a room invariant harness row. | Partial |
+| `DGI-ROOM-003` | Room name owner | Default room name is `Raum <roomId>` unless an authored custom name exists. | Current proof covers default and custom-name readback/render through the shared label-name use case; state-panel room selection remains unqualified. | Partial |
+| `DGI-ROOM-004` | Room label facts | Room label placement is derived from room floor cells; longest-wall orientation remains future work. | Current proof covers deterministic rendered room-label presence from room floor cells through `ProofType=RealRoute`; longest-wall model proof remains absent. | Partial |
 
 ## References
 

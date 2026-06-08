@@ -61,7 +61,7 @@ public final class DungeonEditorClusterHandleProjectionHelper {
                 labelCell.q(),
                 labelCell.r(),
                 Direction.NORTH,
-                "Cluster " + cluster.clusterId()));
+                cluster.name()));
         for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
             appendClusterCornerHandles(result, cluster, room, entry.getKey());
             appendWallRunHandles(result, cluster, room, entry.getKey());

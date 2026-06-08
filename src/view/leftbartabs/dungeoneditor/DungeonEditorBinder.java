@@ -6,6 +6,7 @@ import javafx.scene.Node;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.domain.dungeon.DungeonEditorLabelNameApplicationService;
 import src.domain.dungeon.DungeonEditorMapApplicationService;
 import src.domain.dungeon.DungeonEditorNarrationApplicationService;
 import src.domain.dungeon.DungeonEditorPointerApplicationService;
@@ -38,6 +39,8 @@ final class DungeonEditorBinder {
                 runtimeContext.services().require(DungeonEditorPointerApplicationService.class);
         DungeonEditorNarrationApplicationService narrationEditor =
                 runtimeContext.services().require(DungeonEditorNarrationApplicationService.class);
+        DungeonEditorLabelNameApplicationService labelNameEditor =
+                runtimeContext.services().require(DungeonEditorLabelNameApplicationService.class);
         DungeonEditorTransitionApplicationService transitionEditor =
                 runtimeContext.services().require(DungeonEditorTransitionApplicationService.class);
         DungeonEditorStairApplicationService stairEditor =
@@ -60,6 +63,7 @@ final class DungeonEditorBinder {
                                 projectionEditor,
                                 pointerEditor,
                                 narrationEditor,
+                                labelNameEditor,
                                 transitionEditor,
                                 stairEditor));
         DungeonEditorControlsView controls = new DungeonEditorControlsView();

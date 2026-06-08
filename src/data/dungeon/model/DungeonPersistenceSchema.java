@@ -37,6 +37,7 @@ public final class DungeonPersistenceSchema {
             "CREATE TABLE IF NOT EXISTS dungeon_room_clusters ("
                     + "cluster_id       INTEGER PRIMARY KEY AUTOINCREMENT,"
                     + "dungeon_map_id   INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "name             TEXT NOT NULL,"
                     + "center_x         INTEGER NOT NULL,"
                     + "center_y         INTEGER NOT NULL,"
                     + "level_z          INTEGER NOT NULL DEFAULT 0"
@@ -49,8 +50,8 @@ public final class DungeonPersistenceSchema {
             "ALTER TABLE dungeon_room_clusters RENAME TO dungeon_room_clusters_legacy_structure_object";
 
     public static final String COPY_LEGACY_STRUCTURE_OBJECT_CLUSTERS_TO_ROOM_CLUSTERS_SQL =
-            "INSERT INTO dungeon_room_clusters(cluster_id, dungeon_map_id, center_x, center_y, level_z)"
-                    + " SELECT cluster_id, dungeon_map_id, center_x, center_y, level_z"
+            "INSERT INTO dungeon_room_clusters(cluster_id, dungeon_map_id, name, center_x, center_y, level_z)"
+                    + " SELECT cluster_id, dungeon_map_id, 'Cluster ' || cluster_id, center_x, center_y, level_z"
                     + " FROM dungeon_room_clusters_legacy_structure_object";
 
     public static final String CREATE_DUNGEON_ROOMS_TABLE_SQL =
@@ -252,6 +253,9 @@ public final class DungeonPersistenceSchema {
     public static final String ADD_DUNGEON_ROOM_CLUSTERS_CENTER_X_COLUMN_SQL =
             ALTER_TABLE + ROOM_CLUSTERS_TABLE + " ADD COLUMN center_x INTEGER NOT NULL DEFAULT 0";
 
+    public static final String ADD_DUNGEON_ROOM_CLUSTERS_NAME_COLUMN_SQL =
+            ALTER_TABLE + ROOM_CLUSTERS_TABLE + " ADD COLUMN name TEXT NOT NULL DEFAULT ''";
+
     public static final String ADD_DUNGEON_ROOM_CLUSTERS_CENTER_Y_COLUMN_SQL =
             ALTER_TABLE + ROOM_CLUSTERS_TABLE + " ADD COLUMN center_y INTEGER NOT NULL DEFAULT 0";
 
@@ -297,6 +301,7 @@ public final class DungeonPersistenceSchema {
     public static final List<String> COMPATIBILITY_ALTER_TABLE_SQL = List.of(
             ADD_DUNGEON_ROOMS_VISUAL_DESCRIPTION_COLUMN_SQL,
             ADD_DUNGEON_ROOM_CLUSTERS_CENTER_X_COLUMN_SQL,
+            ADD_DUNGEON_ROOM_CLUSTERS_NAME_COLUMN_SQL,
             ADD_DUNGEON_ROOM_CLUSTERS_CENTER_Y_COLUMN_SQL,
             ADD_DUNGEON_ROOM_CLUSTERS_LEVEL_Z_COLUMN_SQL,
             ADD_DUNGEON_STAIRS_SHAPE_COLUMN_SQL,

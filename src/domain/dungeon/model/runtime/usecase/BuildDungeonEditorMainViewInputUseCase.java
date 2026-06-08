@@ -48,6 +48,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
 
     public record PointerTargetInput(
             TargetKindInput targetKind,
+            LabelKindInput labelKind,
             TopologyKindInput elementKind,
             long ownerId,
             long clusterId,
@@ -57,6 +58,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
     ) {
         public PointerTargetInput {
             targetKind = targetKind == null ? TargetKindInput.EMPTY : targetKind;
+            labelKind = labelKind == null ? LabelKindInput.EMPTY : labelKind;
             elementKind = elementKind == null ? TopologyKindInput.EMPTY : elementKind;
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
@@ -68,6 +70,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
         public static PointerTargetInput empty() {
             return new PointerTargetInput(
                     TargetKindInput.EMPTY,
+                    LabelKindInput.EMPTY,
                     TopologyKindInput.EMPTY,
                     0L,
                     0L,
@@ -88,7 +91,8 @@ public final class BuildDungeonEditorMainViewInputUseCase {
                 return DungeonEditorMainViewPointerTarget.label(
                         ownerId,
                         clusterId,
-                        topologyRef.topologyRef());
+                        topologyRef.topologyRef(),
+                        labelKind.name());
             }
             if (targetKind == TargetKindInput.GRAPH_NODE) {
                 return DungeonEditorMainViewPointerTarget.graphNode(
@@ -291,6 +295,32 @@ public final class BuildDungeonEditorMainViewInputUseCase {
 
         private DungeonTopologyElementKind topologyKind() {
             return DungeonTopologyElementKind.valueOf(name());
+        }
+
+        @Override
+        public String name() {
+            return name;
+        }
+    }
+
+    public static final class LabelKindInput implements NamedInput {
+        public static final LabelKindInput EMPTY = new LabelKindInput("EMPTY");
+        public static final LabelKindInput ROOM_LABEL = new LabelKindInput("ROOM_LABEL");
+        public static final LabelKindInput CLUSTER_LABEL = new LabelKindInput("CLUSTER_LABEL");
+        public static final LabelKindInput FEATURE_LABEL = new LabelKindInput("FEATURE_LABEL");
+        private static final LabelKindInput[] VALUES = {EMPTY, ROOM_LABEL, CLUSTER_LABEL, FEATURE_LABEL};
+
+        private final String name;
+
+        private LabelKindInput(String name) {
+            this.name = name;
+        }
+
+        public static LabelKindInput fromName(String name) {
+            if (name == null || name.isBlank()) {
+                return EMPTY;
+            }
+            return findByName(VALUES, name.trim(), "label kind");
         }
 
         @Override

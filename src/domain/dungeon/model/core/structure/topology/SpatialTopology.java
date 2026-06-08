@@ -19,6 +19,7 @@ public record SpatialTopology(
         int roomAnchorR,
         List<DungeonRoomCluster> roomClusters
 ) {
+    private static final long NO_CLUSTER_ID = 0L;
 
     public SpatialTopology(
             DungeonTopology topology,
@@ -49,6 +50,24 @@ public record SpatialTopology(
 
     public SpatialTopology withRoomClusters(List<DungeonRoomCluster> clusters) {
         return new SpatialTopology(topology, width, height, roomAnchorQ, roomAnchorR, clusters);
+    }
+
+    public SpatialTopology withRoomClusterName(long clusterId, String name) {
+        if (clusterId <= NO_CLUSTER_ID) {
+            return this;
+        }
+        List<DungeonRoomCluster> nextClusters = new java.util.ArrayList<>();
+        boolean changed = false;
+        for (DungeonRoomCluster cluster : roomClusters) {
+            if (cluster.clusterId() == clusterId) {
+                DungeonRoomCluster renamed = cluster.withName(name);
+                nextClusters.add(renamed);
+                changed = changed || !renamed.equals(cluster);
+            } else {
+                nextClusters.add(cluster);
+            }
+        }
+        return changed ? withRoomClusters(nextClusters) : this;
     }
 
     public boolean hasAuthoredRooms() {

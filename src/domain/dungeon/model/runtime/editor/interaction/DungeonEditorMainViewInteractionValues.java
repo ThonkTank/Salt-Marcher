@@ -18,6 +18,7 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 public final class DungeonEditorMainViewInteractionValues {
 
     public static final String CLUSTER_LABEL_KIND = "CLUSTER_LABEL";
+    public static final String ROOM_LABEL_KIND = "ROOM_LABEL";
     public static final String CLUSTER_CORNER_KIND = "CLUSTER_CORNER";
     public static final String CLUSTER_WALL_RUN_KIND = "CLUSTER_WALL_RUN";
     public static final String CORRIDOR_ANCHOR_KIND = "CORRIDOR_ANCHOR";
@@ -221,6 +222,7 @@ public final class DungeonEditorMainViewInteractionValues {
             long clusterId,
             String topologyRefKind,
             long topologyRefId,
+            String labelKind,
             HandleTarget handleRef,
             BoundaryTarget boundaryTarget
     ) {
@@ -230,6 +232,7 @@ public final class DungeonEditorMainViewInteractionValues {
             clusterId = Math.max(0L, clusterId);
             topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? EMPTY_KIND : topologyRefKind.trim();
             topologyRefId = Math.max(0L, topologyRefId);
+            labelKind = labelKind == null || labelKind.isBlank() ? EMPTY_KIND : labelKind.trim();
             handleRef = handleRef == null
                     ? HandleTarget.clusterLabel(topologyRefKind, topologyRefId, ownerId, clusterId)
                     : handleRef;
@@ -237,7 +240,15 @@ public final class DungeonEditorMainViewInteractionValues {
         }
 
         public static HitTarget empty() {
-            return new HitTarget(HitKind.EMPTY, 0L, 0L, EMPTY_KIND, 0L, HandleTarget.empty(), BoundaryTarget.empty());
+            return new HitTarget(
+                    HitKind.EMPTY,
+                    0L,
+                    0L,
+                    EMPTY_KIND,
+                    0L,
+                    EMPTY_KIND,
+                    HandleTarget.empty(),
+                    BoundaryTarget.empty());
         }
 
         public boolean selectable() {
@@ -245,20 +256,30 @@ public final class DungeonEditorMainViewInteractionValues {
         }
 
         public boolean draggable() {
-            return (kind == HitKind.HANDLE || kind == HitKind.LABEL)
-                    && !handleRef.clusterWallRun()
+            return (kind == HitKind.HANDLE || clusterLabelTarget())
                     && (clusterId > 0L || handleRef.ownerId() > 0L);
         }
 
         public boolean clusterSelection() {
-            return kind == HitKind.LABEL || handleRef.clusterLabel() || handleRef.clusterCorner();
+            return clusterLabelTarget()
+                    || (kind == HitKind.HANDLE
+                            && (handleRef.clusterLabel()
+                                    || handleRef.clusterCorner()
+                                    || handleRef.clusterWallRun()));
         }
 
         public DungeonEditorWorkspaceValues.HandleRef dragHandleRef() {
             if (kind == HitKind.HANDLE) {
                 return handleRef.toWorkspaceHandleRef();
             }
+            if (!clusterLabelTarget()) {
+                return DungeonEditorSessionValues.emptyHandleRef();
+            }
             return HandleTarget.clusterLabel(topologyRefKind, topologyRefId, ownerId, clusterId).toWorkspaceHandleRef();
+        }
+
+        private boolean clusterLabelTarget() {
+            return kind == HitKind.LABEL && CLUSTER_LABEL_KIND.equals(labelKind);
         }
 
         public DungeonEditorSessionValues.Selection toSelection() {

@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.runtime.helper;
 
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.VertexTarget;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.HandleTarget;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.HitTarget;
@@ -69,6 +70,7 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 target.clusterId(),
                 target.topologyRef().kind().name(),
                 target.topologyRef().id(),
+                target.labelKind(),
                 handleTarget,
                 BoundaryTarget.empty());
     }
@@ -93,6 +95,7 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 handleTarget.clusterId(),
                 handleTarget.topologyRefKind(),
                 handleTarget.topologyRefId(),
+                DungeonEditorMainViewInteractionValues.EMPTY_KIND,
                 handleTarget,
                 BoundaryTarget.empty());
     }
@@ -116,6 +119,7 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 boundaryTarget.clusterId(),
                 boundaryTarget.topologyRefKind(),
                 boundaryTarget.topologyRefId(),
+                DungeonEditorMainViewInteractionValues.EMPTY_KIND,
                 HandleTarget.clusterLabel(
                         boundaryTarget.topologyRefKind(),
                         boundaryTarget.topologyRefId(),

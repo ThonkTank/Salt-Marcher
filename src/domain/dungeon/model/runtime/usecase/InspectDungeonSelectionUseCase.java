@@ -5,6 +5,7 @@ import java.util.Objects;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.usecase.BuildDungeonDerivedStateUseCase;
 
 /**
@@ -48,6 +49,13 @@ public final class InspectDungeonSelectionUseCase {
                 clusterId,
                 clusterSelection);
         LoadDungeonSnapshotUseCase.InspectorSnapshotData factsSnapshot = selectionFacts.execute(derived, safeRef);
+        if (clusterSelection && clusterId > 0L) {
+            return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
+                    clusterName(dungeonMap, clusterId),
+                    narrationDescription(narrations),
+                    factsSnapshot.facts(),
+                    narrations);
+        }
         if (!narrations.isEmpty() && selectionFacts.isFallbackSelection(factsSnapshot)) {
             return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
                     narrationTitle(narrations),
@@ -70,5 +78,17 @@ public final class InspectDungeonSelectionUseCase {
         return narrations.size() == 1
                 ? "Raumbeschreibung"
                 : "Raumbeschreibungen im ausgewählten Cluster";
+    }
+
+    private static String clusterName(DungeonMap dungeonMap, long clusterId) {
+        if (dungeonMap == null) {
+            return "Cluster " + clusterId;
+        }
+        for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {
+            if (cluster.clusterId() == clusterId) {
+                return cluster.name();
+            }
+        }
+        return "Cluster " + clusterId;
     }
 }

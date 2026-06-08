@@ -533,6 +533,38 @@ class DungeonEditorHarnessPersistenceSupport {
             }
         }
 
+        String roomName(long roomId) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT name FROM dungeon_rooms WHERE room_id=?")) {
+                statement.setLong(1, roomId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) {
+                        throw new SQLException("No room found by id: " + roomId);
+                    }
+                    return resultSet.getString("name");
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to read room name.", exception);
+            }
+        }
+
+        String clusterName(long clusterId) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT name FROM dungeon_room_clusters WHERE cluster_id=?")) {
+                statement.setLong(1, clusterId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (!resultSet.next()) {
+                        throw new SQLException("No cluster found by id: " + clusterId);
+                    }
+                    return resultSet.getString("name");
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to read cluster name.", exception);
+            }
+        }
+
         Set<String> absoluteClusterVertices(long clusterId) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
@@ -1257,9 +1289,10 @@ class DungeonEditorHarnessPersistenceSupport {
                 connection.setAutoCommit(false);
                 long clusterId = insertAndReturnId(
                         connection,
-                        "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z)"
-                                + " VALUES(?, ?, ?, ?)",
+                        "INSERT INTO dungeon_room_clusters(dungeon_map_id, name, center_x, center_y, level_z)"
+                                + " VALUES(?, ?, ?, ?, ?)",
                         mapId,
+                        "",
                         10,
                         10,
                         0);
@@ -1628,9 +1661,10 @@ class DungeonEditorHarnessPersistenceSupport {
                 connection.setAutoCommit(false);
                 long clusterId = insertAndReturnId(
                         connection,
-                        "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z)"
-                                + " VALUES(?, ?, ?, ?)",
+                        "INSERT INTO dungeon_room_clusters(dungeon_map_id, name, center_x, center_y, level_z)"
+                                + " VALUES(?, ?, ?, ?, ?)",
                         mapId,
+                        "",
                         0,
                         0,
                         0);
@@ -1678,8 +1712,10 @@ class DungeonEditorHarnessPersistenceSupport {
         ) throws SQLException {
             long clusterId = insertAndReturnId(
                     connection,
-                    "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z) VALUES(?, ?, ?, ?)",
+                    "INSERT INTO dungeon_room_clusters(dungeon_map_id, name, center_x, center_y, level_z)"
+                            + " VALUES(?, ?, ?, ?, ?)",
                     mapId,
+                    "",
                     anchorX + 1,
                     anchorY + 1,
                     level);
@@ -1712,8 +1748,10 @@ class DungeonEditorHarnessPersistenceSupport {
         ) throws SQLException {
             long clusterId = insertAndReturnId(
                     connection,
-                    "INSERT INTO dungeon_room_clusters(dungeon_map_id, center_x, center_y, level_z) VALUES(?, ?, ?, ?)",
+                    "INSERT INTO dungeon_room_clusters(dungeon_map_id, name, center_x, center_y, level_z)"
+                            + " VALUES(?, ?, ?, ?, ?)",
                     mapId,
+                    "",
                     anchorX + 1,
                     anchorY + 1,
                     level);

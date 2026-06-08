@@ -5,6 +5,8 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSaveLabelNameOperation;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSaveRoomNarrationOperation;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMutation;
@@ -83,7 +85,13 @@ public final class ApplyDungeonAuthoredMutationUseCase {
                             stretch.deltaQ(),
                             stretch.deltaR(),
                             stretch.deltaLevel());
-            case DungeonEditorAuthoredOperation.SaveRoomNarration narration ->
+            case DungeonEditorSaveLabelNameOperation labelName ->
+                    current -> labelName.cluster()
+                            ? current.saveClusterName(labelName.targetId(), labelName.name())
+                            : labelName.room()
+                                    ? current.saveRoomName(labelName.targetId(), labelName.name())
+                                    : current;
+            case DungeonEditorSaveRoomNarrationOperation narration ->
                     current -> current.saveRoomNarration(narration.roomId(), narration.narration());
         };
     }

@@ -6,6 +6,8 @@ public final class DungeonEditorHandleMovementKind {
             new DungeonEditorHandleMovementKind("CLUSTER_LABEL");
     public static final DungeonEditorHandleMovementKind CLUSTER_CORNER =
             new DungeonEditorHandleMovementKind("CLUSTER_CORNER");
+    public static final DungeonEditorHandleMovementKind CLUSTER_WALL_RUN =
+            new DungeonEditorHandleMovementKind("CLUSTER_WALL_RUN");
     public static final DungeonEditorHandleMovementKind DOOR = new DungeonEditorHandleMovementKind("DOOR");
     public static final DungeonEditorHandleMovementKind CORRIDOR_ANCHOR =
             new DungeonEditorHandleMovementKind("CORRIDOR_ANCHOR");
@@ -24,6 +26,7 @@ public final class DungeonEditorHandleMovementKind {
         return switch (name) {
             case "CLUSTER_LABEL" -> CLUSTER_LABEL;
             case "CLUSTER_CORNER" -> CLUSTER_CORNER;
+            case "CLUSTER_WALL_RUN" -> CLUSTER_WALL_RUN;
             case "DOOR" -> DOOR;
             case "CORRIDOR_ANCHOR" -> CORRIDOR_ANCHOR;
             case "CORRIDOR_WAYPOINT" -> CORRIDOR_WAYPOINT;
@@ -46,6 +49,10 @@ public final class DungeonEditorHandleMovementKind {
 
     public boolean isClusterCorner() {
         return this == CLUSTER_CORNER;
+    }
+
+    public boolean isClusterWallRun() {
+        return this == CLUSTER_WALL_RUN;
     }
 
     public boolean isDoor() {

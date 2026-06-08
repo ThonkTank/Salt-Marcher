@@ -74,7 +74,7 @@ final class DungeonSqliteMapRecordLoader {
         Map<Long, List<DungeonRoomClusterVertexRecord>> verticesByCluster = loadClusterVertices(connection, mapId);
         Map<Long, List<DungeonClusterBoundaryRecord>> boundariesByCluster = loadClusterBoundaries(connection, mapId);
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT cluster_id, dungeon_map_id, center_x, center_y, level_z"
+                "SELECT cluster_id, dungeon_map_id, name, center_x, center_y, level_z"
                         + SQL_FROM + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
                         + WHERE_DUNGEON_MAP_ID + " ORDER BY cluster_id")) {
             statement.setLong(1, mapId);
@@ -85,6 +85,7 @@ final class DungeonSqliteMapRecordLoader {
                     records.add(new DungeonRoomClusterRecord(
                             clusterId,
                             resultSet.getLong(COLUMN_DUNGEON_MAP_ID),
+                            resultSet.getString("name"),
                             resultSet.getInt("center_x"),
                             resultSet.getInt("center_y"),
                             resultSet.getInt(COLUMN_LEVEL_Z),

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-08
 Source of Truth: Dungeon write model, ownership boundaries, and domain
 invariants.
 
@@ -154,6 +154,7 @@ Active root boundaries:
 - `DungeonEditorProjectionApplicationService`
 - `DungeonEditorPointerApplicationService`
 - `DungeonEditorNarrationApplicationService`
+- `DungeonEditorLabelNameApplicationService`
 - `DungeonEditorStairApplicationService`
 - `DungeonEditorTransitionApplicationService`
 - `DungeonTravelRuntimeApplicationService`

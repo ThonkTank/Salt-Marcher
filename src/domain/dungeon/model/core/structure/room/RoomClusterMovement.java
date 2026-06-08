@@ -49,6 +49,7 @@ public final class RoomClusterMovement {
                 movedClusters.add(new DungeonRoomCluster(
                         cluster.clusterId(),
                         cluster.mapId(),
+                        cluster.name(),
                         new Cell(
                                 cluster.center().q() + deltaQ,
                                 cluster.center().r() + deltaR,

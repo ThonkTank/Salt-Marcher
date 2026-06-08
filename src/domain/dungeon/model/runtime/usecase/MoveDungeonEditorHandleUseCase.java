@@ -100,6 +100,7 @@ public final class MoveDungeonEditorHandleUseCase {
             return switch (handleKindName) {
                 case "CLUSTER_LABEL" -> Optional.of(DungeonEditorHandleType.CLUSTER_LABEL);
                 case "CLUSTER_CORNER" -> Optional.of(DungeonEditorHandleType.CLUSTER_CORNER);
+                case "CLUSTER_WALL_RUN" -> Optional.of(DungeonEditorHandleType.CLUSTER_WALL_RUN);
                 case "DOOR" -> Optional.of(DungeonEditorHandleType.DOOR);
                 case "CORRIDOR_ANCHOR" -> Optional.of(DungeonEditorHandleType.CORRIDOR_ANCHOR);
                 case "CORRIDOR_WAYPOINT" -> Optional.of(DungeonEditorHandleType.CORRIDOR_WAYPOINT);

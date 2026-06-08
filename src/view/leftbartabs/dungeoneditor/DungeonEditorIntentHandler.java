@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.DungeonEditorLabelNameApplicationService;
 import src.domain.dungeon.DungeonEditorMapApplicationService;
 import src.domain.dungeon.DungeonEditorNarrationApplicationService;
 import src.domain.dungeon.DungeonEditorPointerApplicationService;
@@ -28,6 +29,7 @@ import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.domain.dungeon.published.MoveDungeonEditorHandleCommand;
+import src.domain.dungeon.published.SaveDungeonEditorLabelNameCommand;
 import src.domain.dungeon.published.SaveDungeonEditorRoomNarrationCommand;
 import src.domain.dungeon.published.SaveDungeonEditorStairGeometryCommand;
 import src.domain.dungeon.published.SaveDungeonEditorTransitionDescriptionCommand;
@@ -52,6 +54,7 @@ final class DungeonEditorIntentHandler {
     private final DungeonEditorProjectionApplicationService projectionEditor;
     private final DungeonEditorPointerApplicationService pointerEditor;
     private final DungeonEditorNarrationApplicationService narrationEditor;
+    private final DungeonEditorLabelNameApplicationService labelNameEditor;
     private final DungeonEditorTransitionApplicationService transitionEditor;
     private final DungeonEditorStairApplicationService stairEditor;
     private Optional<HoverSample> lastHoverSample = Optional.empty();
@@ -75,6 +78,7 @@ final class DungeonEditorIntentHandler {
         this.projectionEditor = safeApplicationServices.projectionEditor();
         this.pointerEditor = safeApplicationServices.pointerEditor();
         this.narrationEditor = safeApplicationServices.narrationEditor();
+        this.labelNameEditor = safeApplicationServices.labelNameEditor();
         this.transitionEditor = safeApplicationServices.transitionEditor();
         this.stairEditor = safeApplicationServices.stairEditor();
     }
@@ -129,6 +133,7 @@ final class DungeonEditorIntentHandler {
         if (event == null) {
             return;
         }
+        consumeLabelNameWhenPresent(event);
         consumeNarrationWhenPresent(event);
         consumeCorridorPointWhenPresent(event);
         consumeTransitionDestinationWhenPresent(event);
@@ -139,6 +144,12 @@ final class DungeonEditorIntentHandler {
     private void consumeNarrationWhenPresent(DungeonEditorStateViewInputEvent event) {
         if (event.roomId() > 0L || event.narrationSaveRequested()) {
             consumeNarrationInput(event);
+        }
+    }
+
+    private void consumeLabelNameWhenPresent(DungeonEditorStateViewInputEvent event) {
+        if (event.labelNameInputObserved() || event.labelNameSaveRequested()) {
+            consumeLabelNameInput(event);
         }
     }
 
@@ -199,6 +210,21 @@ final class DungeonEditorIntentHandler {
             stateContentModel.clearNarrationDraft(event.roomId());
             narrationEditor.saveRoomNarration(command);
         }
+    }
+
+    private void consumeLabelNameInput(DungeonEditorStateViewInputEvent event) {
+        stateContentModel.updateNameDraft(
+                event.nameTargetKind(),
+                event.nameTargetId(),
+                event.labelName());
+        if (!event.labelNameSaveRequested() || event.nameTargetId() <= 0L || event.labelName().isBlank()) {
+            return;
+        }
+        stateContentModel.clearNameDraft(event.nameTargetKind(), event.nameTargetId());
+        labelNameEditor.saveLabelName(new SaveDungeonEditorLabelNameCommand(
+                event.nameTargetKind(),
+                event.nameTargetId(),
+                event.labelName()));
     }
 
     private void consumeCorridorPointInput(DungeonEditorStateViewInputEvent event) {
@@ -739,6 +765,7 @@ final class DungeonEditorIntentHandler {
             DungeonEditorProjectionApplicationService projectionEditor,
             DungeonEditorPointerApplicationService pointerEditor,
             DungeonEditorNarrationApplicationService narrationEditor,
+            DungeonEditorLabelNameApplicationService labelNameEditor,
             DungeonEditorTransitionApplicationService transitionEditor,
             DungeonEditorStairApplicationService stairEditor
     ) {
@@ -747,6 +774,7 @@ final class DungeonEditorIntentHandler {
             Objects.requireNonNull(projectionEditor, "projectionEditor");
             Objects.requireNonNull(pointerEditor, "pointerEditor");
             Objects.requireNonNull(narrationEditor, "narrationEditor");
+            Objects.requireNonNull(labelNameEditor, "labelNameEditor");
             Objects.requireNonNull(transitionEditor, "transitionEditor");
             Objects.requireNonNull(stairEditor, "stairEditor");
         }
@@ -859,7 +887,8 @@ final class DungeonEditorIntentHandler {
                 case LABEL -> DungeonEditorPointerTarget.label(
                         safeTarget.ownerId(),
                         safeTarget.clusterId(),
-                        topologyRef(safeTarget.topologyKind(), safeTarget.topologyId()));
+                        topologyRef(safeTarget.topologyKind(), safeTarget.topologyId()),
+                        safeTarget.labelKind());
                 case GRAPH_NODE -> DungeonEditorPointerTarget.graphNode(
                         safeTarget.ownerId(),
                         safeTarget.clusterId(),

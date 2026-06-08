@@ -71,6 +71,11 @@ final class DungeonSqliteCompatibilityColumns {
         added |= ensureColumn(
                 connection,
                 DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE,
+                "name",
+                DungeonPersistenceSchema.ADD_DUNGEON_ROOM_CLUSTERS_NAME_COLUMN_SQL);
+        added |= ensureColumn(
+                connection,
+                DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE,
                 "center_y",
                 DungeonPersistenceSchema.ADD_DUNGEON_ROOM_CLUSTERS_CENTER_Y_COLUMN_SQL);
         added |= ensureColumn(

@@ -24,6 +24,10 @@ public sealed interface DungeonEditorPointerCommand permits ApplyDungeonEditorPo
         return targetOrEmpty().targetKind().name();
     }
 
+    default String pointerLabelKindName() {
+        return targetOrEmpty().labelKind().name();
+    }
+
     default String pointerElementKindName() {
         return targetOrEmpty().elementKind().name();
     }

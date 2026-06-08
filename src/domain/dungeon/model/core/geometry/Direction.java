@@ -59,6 +59,10 @@ public enum Direction {
     }
 
     Edge sideOf(Cell cell) {
+        return edgeOf(cell);
+    }
+
+    public Edge edgeOf(Cell cell) {
         return new Edge(
                 cell.translate(edgeFromDeltaQ, edgeFromDeltaR),
                 cell.translate(edgeToDeltaQ, edgeToDeltaR));

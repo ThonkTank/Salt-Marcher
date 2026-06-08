@@ -29,7 +29,8 @@ public final class DungeonEditorAuthoredOperation {
             DeleteCorridor,
             MoveEditorHandle,
             MoveBoundaryStretch,
-            SaveRoomNarration {
+            DungeonEditorSaveLabelNameOperation,
+            DungeonEditorSaveRoomNarrationOperation {
     }
 
     public static DungeonEditorAuthoredOperation paintRoomRectangle(Cell start, Cell end) {
@@ -91,7 +92,16 @@ public final class DungeonEditorAuthoredOperation {
             long roomId,
             DungeonRoomNarration narration
     ) {
-        return new DungeonEditorAuthoredOperation(new SaveRoomNarration(roomId, narration));
+        return new DungeonEditorAuthoredOperation(new DungeonEditorSaveRoomNarrationOperation(roomId, narration));
+    }
+
+    public static DungeonEditorAuthoredOperation saveLabelName(
+            String targetKind,
+            long targetId,
+            String name
+    ) {
+        return new DungeonEditorAuthoredOperation(
+                new DungeonEditorSaveLabelNameOperation(targetKind, targetId, name));
     }
 
     public static final class PaintRoomRectangle implements Variant {
@@ -99,8 +109,8 @@ public final class DungeonEditorAuthoredOperation {
         private final Cell end;
 
         private PaintRoomRectangle(Cell start, Cell end) {
-            this.start = safeCell(start);
-            this.end = safeCell(end);
+            this.start = start == null ? new Cell(0, 0, 0) : start;
+            this.end = end == null ? new Cell(0, 0, 0) : end;
         }
 
         public Cell start() {
@@ -117,8 +127,8 @@ public final class DungeonEditorAuthoredOperation {
         private final Cell end;
 
         private DeleteRoomRectangle(Cell start, Cell end) {
-            this.start = safeCell(start);
-            this.end = safeCell(end);
+            this.start = start == null ? new Cell(0, 0, 0) : start;
+            this.end = end == null ? new Cell(0, 0, 0) : end;
         }
 
         public Cell start() {
@@ -271,25 +281,4 @@ public final class DungeonEditorAuthoredOperation {
         }
     }
 
-    public static final class SaveRoomNarration implements Variant {
-        private final long roomId;
-        private final DungeonRoomNarration narration;
-
-        private SaveRoomNarration(long roomId, DungeonRoomNarration narration) {
-            this.roomId = Math.max(0L, roomId);
-            this.narration = narration;
-        }
-
-        public long roomId() {
-            return roomId;
-        }
-
-        public DungeonRoomNarration narration() {
-            return narration;
-        }
-    }
-
-    private static Cell safeCell(Cell cell) {
-        return cell == null ? new Cell(0, 0, 0) : cell;
-    }
 }

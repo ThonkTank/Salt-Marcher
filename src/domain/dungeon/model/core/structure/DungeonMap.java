@@ -36,6 +36,8 @@ public record DungeonMap(
         long revision
 ) {
     private static final long NO_TRANSITION_ID = 0L;
+    private static final long NO_ROOM_ID = 0L;
+    private static final long NO_CLUSTER_ID = 0L;
 
     public DungeonMap(
             DungeonMapMetadata metadata,
@@ -175,6 +177,52 @@ public record DungeonMap(
                         topology,
                         topologyIndex,
                         new RoomCatalog(nextRooms),
+                        corridors,
+                        stairs,
+                        transitionCatalog,
+                        revision + 1L)
+                : this;
+    }
+
+    public DungeonMap saveRoomName(long roomId, String name) {
+        if (roomId <= NO_ROOM_ID) {
+            return this;
+        }
+        List<DungeonRoom> nextRooms = new ArrayList<>();
+        boolean changed = false;
+        for (DungeonRoom room : rooms.rooms()) {
+            if (room.roomId() == roomId) {
+                DungeonRoom renamed = room.withName(name);
+                nextRooms.add(renamed);
+                changed = changed || !renamed.equals(room);
+            } else {
+                nextRooms.add(room);
+            }
+        }
+        return changed
+                ? new DungeonMap(
+                        metadata,
+                        topology,
+                        topologyIndex,
+                        new RoomCatalog(nextRooms),
+                        corridors,
+                        stairs,
+                        transitionCatalog,
+                        revision + 1L)
+                : this;
+    }
+
+    public DungeonMap saveClusterName(long clusterId, String name) {
+        if (clusterId <= NO_CLUSTER_ID) {
+            return this;
+        }
+        SpatialTopology renamedTopology = topology.withRoomClusterName(clusterId, name);
+        return !renamedTopology.equals(topology)
+                ? new DungeonMap(
+                        metadata,
+                        renamedTopology,
+                        topologyIndex,
+                        rooms,
                         corridors,
                         stairs,
                         transitionCatalog,

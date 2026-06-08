@@ -43,6 +43,9 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
                 new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredRoomNarrationUseCase(
                         mutationUseCase,
                         publishMutationUseCase),
+                new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredLabelNameUseCase(
+                        mutationUseCase,
+                        publishMutationUseCase),
                 new src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredTransitionDescriptionUseCase(
                         operationUseCase,
                         publishMutationUseCase),
@@ -118,6 +121,7 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
             src.domain.dungeon.model.runtime.usecase.PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase,
             src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase,
             src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredRoomNarrationUseCase saveRoomNarrationUseCase,
+            src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredLabelNameUseCase saveLabelNameUseCase,
             src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredTransitionDescriptionUseCase saveTransitionDescriptionUseCase,
             src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredTransitionLinkUseCase saveTransitionLinkUseCase,
             src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorAuthoredStairGeometryUseCase saveStairGeometryUseCase,

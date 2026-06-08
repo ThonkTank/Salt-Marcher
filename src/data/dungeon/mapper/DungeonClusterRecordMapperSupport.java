@@ -24,6 +24,7 @@ final class DungeonClusterRecordMapperSupport {
             result.add(new DungeonRoomCluster(
                     record.clusterId(),
                     record.mapId(),
+                    record.name(),
                     new Cell(record.centerX(), record.centerY(), record.levelZ()),
                     verticesByLevel(record.vertices()),
                     boundariesByLevel(record.boundaries())));
@@ -37,6 +38,7 @@ final class DungeonClusterRecordMapperSupport {
             result.add(new DungeonRoomClusterRecord(
                     cluster.clusterId(),
                     cluster.mapId(),
+                    cluster.name(),
                     cluster.center().q(),
                     cluster.center().r(),
                     cluster.center().level(),

@@ -78,26 +78,28 @@ final class DungeonSqliteMapRecordWriter {
     private static void upsertRoomCluster(Connection connection, DungeonRoomClusterRecord cluster) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement(
                 "UPDATE " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
-                        + " SET center_x=?, center_y=?, " + COLUMN_LEVEL_Z + "=? WHERE " + COLUMN_CLUSTER_ID
+                        + " SET name=?, center_x=?, center_y=?, " + COLUMN_LEVEL_Z + "=? WHERE " + COLUMN_CLUSTER_ID
                         + "=? AND dungeon_map_id=?")) {
-            update.setInt(1, cluster.centerX());
-            update.setInt(2, cluster.centerY());
-            update.setInt(3, cluster.levelZ());
-            update.setLong(4, cluster.clusterId());
-            update.setLong(5, cluster.mapId());
+            update.setString(1, cluster.name());
+            update.setInt(2, cluster.centerX());
+            update.setInt(3, cluster.centerY());
+            update.setInt(4, cluster.levelZ());
+            update.setLong(5, cluster.clusterId());
+            update.setLong(6, cluster.mapId());
             if (update.executeUpdate() > 0) {
                 return;
             }
         }
         try (PreparedStatement insert = connection.prepareStatement(
                 INSERT_INTO + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
-                        + "(" + COLUMN_CLUSTER_ID + ", dungeon_map_id, center_x, center_y, "
-                        + COLUMN_LEVEL_Z + ") VALUES(?,?,?,?,?)")) {
+                        + "(" + COLUMN_CLUSTER_ID + ", dungeon_map_id, name, center_x, center_y, "
+                        + COLUMN_LEVEL_Z + ") VALUES(?,?,?,?,?,?)")) {
             insert.setLong(1, cluster.clusterId());
             insert.setLong(2, cluster.mapId());
-            insert.setInt(3, cluster.centerX());
-            insert.setInt(4, cluster.centerY());
-            insert.setInt(5, cluster.levelZ());
+            insert.setString(3, cluster.name());
+            insert.setInt(4, cluster.centerX());
+            insert.setInt(5, cluster.centerY());
+            insert.setInt(6, cluster.levelZ());
             insert.executeUpdate();
         }
     }

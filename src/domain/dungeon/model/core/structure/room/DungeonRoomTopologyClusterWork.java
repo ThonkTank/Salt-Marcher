@@ -47,6 +47,7 @@ public record DungeonRoomTopologyClusterWork(
         return new DungeonRoomCluster(
                 cluster.clusterId(),
                 cluster.mapId(),
+                cluster.name(),
                 cluster.center(),
                 verticesByLevel(),
                 boundariesByLevel);

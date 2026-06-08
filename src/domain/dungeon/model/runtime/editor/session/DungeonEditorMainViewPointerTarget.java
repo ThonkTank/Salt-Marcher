@@ -9,12 +9,15 @@ public record DungeonEditorMainViewPointerTarget(
         long ownerId,
         long clusterId,
         DungeonTopologyRef topologyRef,
+        String labelKind,
         DungeonEditorWorkspaceValues.HandleRef handleRef,
         DungeonEditorWorkspaceValues.BoundaryKind boundaryKind,
         String boundaryKey,
         DungeonEditorWorkspaceValues.Cell boundaryStart,
         DungeonEditorWorkspaceValues.Cell boundaryEnd
 ) {
+    private static final String EMPTY_LABEL_KIND = "EMPTY";
+
     public static final int NO_TARGET = 0;
     public static final int CELL_TARGET = 1;
     public static final int LABEL_TARGET = 2;
@@ -28,6 +31,7 @@ public record DungeonEditorMainViewPointerTarget(
         ownerId = Math.max(0L, ownerId);
         clusterId = Math.max(0L, clusterId);
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
+        labelKind = labelKind == null || labelKind.isBlank() ? EMPTY_LABEL_KIND : labelKind.trim();
         handleRef = handleRef == null ? DungeonEditorWorkspaceValues.HandleRef.empty() : handleRef;
         boundaryKind = boundaryKind == null
                 ? DungeonEditorWorkspaceValues.BoundaryKind.defaultKind()
@@ -44,6 +48,7 @@ public record DungeonEditorMainViewPointerTarget(
                 0L,
                 0L,
                 DungeonTopologyRef.empty(),
+                EMPTY_LABEL_KIND,
                 DungeonEditorWorkspaceValues.HandleRef.empty(),
                 DungeonEditorWorkspaceValues.BoundaryKind.defaultKind(),
                 "",
@@ -63,6 +68,7 @@ public record DungeonEditorMainViewPointerTarget(
                 ownerId,
                 clusterId,
                 topologyRef,
+                EMPTY_LABEL_KIND,
                 DungeonEditorWorkspaceValues.HandleRef.empty(),
                 DungeonEditorWorkspaceValues.BoundaryKind.defaultKind(),
                 "",
@@ -73,7 +79,8 @@ public record DungeonEditorMainViewPointerTarget(
     public static DungeonEditorMainViewPointerTarget label(
             long ownerId,
             long clusterId,
-            DungeonTopologyRef topologyRef
+            DungeonTopologyRef topologyRef,
+            String labelKind
     ) {
         DungeonTopologyRef safeTopologyRef = topologyRef == null
                 ? DungeonTopologyRef.empty()
@@ -84,6 +91,7 @@ public record DungeonEditorMainViewPointerTarget(
                 ownerId,
                 clusterId,
                 safeTopologyRef,
+                labelKind,
                 DungeonEditorWorkspaceValues.HandleRef.empty(),
                 DungeonEditorWorkspaceValues.BoundaryKind.defaultKind(),
                 "",
@@ -105,6 +113,7 @@ public record DungeonEditorMainViewPointerTarget(
                 ownerId,
                 clusterId,
                 safeTopologyRef,
+                EMPTY_LABEL_KIND,
                 DungeonEditorWorkspaceValues.HandleRef.empty(),
                 DungeonEditorWorkspaceValues.BoundaryKind.defaultKind(),
                 "",
@@ -122,6 +131,7 @@ public record DungeonEditorMainViewPointerTarget(
                 safeHandle.ownerId(),
                 safeHandle.clusterId(),
                 safeHandle.topologyRef(),
+                EMPTY_LABEL_KIND,
                 safeHandle,
                 DungeonEditorWorkspaceValues.BoundaryKind.defaultKind(),
                 "",
@@ -146,6 +156,7 @@ public record DungeonEditorMainViewPointerTarget(
                 ownerId,
                 0L,
                 safeTopologyRef,
+                EMPTY_LABEL_KIND,
                 DungeonEditorWorkspaceValues.HandleRef.empty(),
                 boundaryKind,
                 key,

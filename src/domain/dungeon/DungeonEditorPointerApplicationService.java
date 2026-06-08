@@ -10,6 +10,7 @@ import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputU
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.CellInput;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.HandleInput;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.HandleKindInput;
+import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.LabelKindInput;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.PointerTargetInput;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.TargetKindInput;
@@ -107,6 +108,7 @@ public final class DungeonEditorPointerApplicationService {
         private static PointerTargetInput toPointerTargetInput(DungeonEditorPointerCommand command) {
             return new PointerTargetInput(
                     TargetKindInput.fromName(command.pointerTargetKindName()),
+                    LabelKindInput.fromName(command.pointerLabelKindName()),
                     TopologyKindInput.fromName(command.pointerElementKindName()),
                     command.pointerOwnerId(),
                     command.pointerClusterId(),

@@ -1,6 +1,6 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-08
 Source of Truth: Compatibility context contract and routing mirror for
 canonical Dungeon documentation under `docs/dungeon/`.
 
@@ -43,6 +43,7 @@ Application Service: DungeonEditorMapApplicationService
 Application Service: DungeonEditorProjectionApplicationService
 Application Service: DungeonEditorPointerApplicationService
 Application Service: DungeonEditorNarrationApplicationService
+Application Service: DungeonEditorLabelNameApplicationService
 Application Service: DungeonEditorStairApplicationService
 Application Service: DungeonEditorTransitionApplicationService
 Application Service: DungeonTravelRuntimeApplicationService

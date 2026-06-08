@@ -6,6 +6,7 @@ public record DungeonEditorPointerTarget(
         long ownerId,
         long clusterId,
         DungeonTopologyElementRef topologyRef,
+        LabelKind labelKind,
         DungeonEditorHandleRef handleRef,
         DungeonEditorBoundaryTargetRef boundaryRef
 ) {
@@ -15,6 +16,7 @@ public record DungeonEditorPointerTarget(
         ownerId = Math.max(0L, ownerId);
         clusterId = Math.max(0L, clusterId);
         topologyRef = topologyRef == null ? DungeonTopologyElementRef.empty() : topologyRef;
+        labelKind = labelKind == null ? LabelKind.EMPTY : labelKind;
         handleRef = handleRef == null ? DungeonEditorHandleRef.empty() : handleRef;
         boundaryRef = boundaryRef == null ? DungeonEditorBoundaryTargetRef.empty() : boundaryRef;
     }
@@ -26,6 +28,7 @@ public record DungeonEditorPointerTarget(
                 0L,
                 0L,
                 DungeonTopologyElementRef.empty(),
+                LabelKind.EMPTY,
                 DungeonEditorHandleRef.empty(),
                 DungeonEditorBoundaryTargetRef.empty());
     }
@@ -42,6 +45,7 @@ public record DungeonEditorPointerTarget(
                 ownerId,
                 clusterId,
                 topologyRef,
+                LabelKind.EMPTY,
                 DungeonEditorHandleRef.empty(),
                 DungeonEditorBoundaryTargetRef.empty());
     }
@@ -49,7 +53,8 @@ public record DungeonEditorPointerTarget(
     public static DungeonEditorPointerTarget label(
             long ownerId,
             long clusterId,
-            DungeonTopologyElementRef topologyRef
+            DungeonTopologyElementRef topologyRef,
+            String labelKindName
     ) {
         return new DungeonEditorPointerTarget(
                 TargetKind.LABEL,
@@ -57,6 +62,7 @@ public record DungeonEditorPointerTarget(
                 ownerId,
                 clusterId,
                 topologyRef,
+                LabelKind.fromName(labelKindName),
                 DungeonEditorHandleRef.empty(),
                 DungeonEditorBoundaryTargetRef.empty());
     }
@@ -72,6 +78,7 @@ public record DungeonEditorPointerTarget(
                 ownerId,
                 clusterId,
                 topologyRef,
+                LabelKind.EMPTY,
                 DungeonEditorHandleRef.empty(),
                 DungeonEditorBoundaryTargetRef.empty());
     }
@@ -84,6 +91,7 @@ public record DungeonEditorPointerTarget(
                 safeHandle.ownerId(),
                 safeHandle.clusterId(),
                 safeHandle.topologyRef(),
+                LabelKind.EMPTY,
                 safeHandle,
                 DungeonEditorBoundaryTargetRef.empty());
     }
@@ -97,6 +105,7 @@ public record DungeonEditorPointerTarget(
                 safeBoundary.ownerId(),
                 0L,
                 safeBoundary.topologyRef(),
+                LabelKind.EMPTY,
                 DungeonEditorHandleRef.empty(),
                 safeBoundary);
     }
@@ -108,5 +117,23 @@ public record DungeonEditorPointerTarget(
         GRAPH_NODE,
         HANDLE,
         BOUNDARY
+    }
+
+    public enum LabelKind {
+        EMPTY,
+        ROOM_LABEL,
+        CLUSTER_LABEL,
+        FEATURE_LABEL;
+
+        private static LabelKind fromName(String value) {
+            if (value == null || value.isBlank()) {
+                return EMPTY;
+            }
+            try {
+                return LabelKind.valueOf(value.trim().toUpperCase(java.util.Locale.ROOT).replace('-', '_'));
+            } catch (IllegalArgumentException ignored) {
+                return EMPTY;
+            }
+        }
     }
 }

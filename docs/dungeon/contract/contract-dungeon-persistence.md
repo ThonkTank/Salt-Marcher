@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-28
+Last Reviewed: 2026-06-08
 Source of Truth: Dungeon persistence boundary, stored truth, adapter mapping
 rules, and schema ownership.
 
@@ -28,7 +28,8 @@ Persisted authored truth includes:
 - authored map metadata
 - authored topology-backed geometry
 - stable topology identity and semantic bindings
-- authored room, connection, stair, and transition facts
+- authored room, room-cluster, connection, stair, and transition facts
+- authored room and room-cluster names
 - authored room narration
 
 ## Explicit Non-Persisted Truth
@@ -58,6 +59,22 @@ Persisted authored truth includes:
 - `dungeon_topology_elements` is authoritative for persisted topology identity
 - legacy-compatible detail tables remain source-local storage and correlation
   detail, not alternate semantic owners
+
+## Authored Name Storage Semantics
+
+`dungeon_rooms.name` stores the authored room display name. Blank or missing
+source values are compatibility inputs that the domain normalizes to
+`Raum <roomId>` on readback and publication.
+
+`dungeon_room_clusters.name` stores the authored cluster display name. Legacy
+databases that do not yet contain the column are migrated additively, and blank
+or missing source values are compatibility inputs that the domain normalizes to
+`Cluster <clusterId>` on readback and publication.
+
+SQLite adapters MUST persist the domain-provided room and room-cluster names
+with the corresponding authored record graph. Default display names are
+compatibility and publication semantics, not separate stored authored truth that
+adapters may infer from render state or preview state.
 
 ## Room Boundary Edge Semantics
 

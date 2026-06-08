@@ -50,6 +50,7 @@ public final class RoomTopologyRebuilder {
         return new DungeonRoomCluster(
                 safeWork.cluster().clusterId(),
                 safeWork.cluster().mapId(),
+                safeWork.cluster().name(),
                 safeWork.cluster().center(),
                 safeWork.cluster().relativeVerticesByLevel(),
                 boundariesByLevel);
