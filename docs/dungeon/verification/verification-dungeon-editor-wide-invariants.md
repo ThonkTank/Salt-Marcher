@@ -57,7 +57,6 @@ and the catalog `DE-*` row id. Model invariant rows must include `OwnerSuite`,
 | `Input Route Gap` | Domain/model surface exists, but the real View route is absent or not exposed. |
 | `Harness Gap` | The route exists, but focused behavior-harness proof is absent or incomplete. |
 | `Behavior Ambiguous` | Required behavior leaves an observable result unclear. |
-| `Re-scoped` | A formerly cataloged interaction is explicitly not required. |
 
 ## Requirement-Derived Shared Proof Mapping
 
