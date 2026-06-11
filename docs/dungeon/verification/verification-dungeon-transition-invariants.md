@@ -46,9 +46,9 @@ through the `DungeonMap` topology coordination surface.
 
 `Candidate Source Obligation` entries derive from the Dungeon domain target
 state and current proof index. They are migration obligations, not independent
-domain truth. `Partial mechanics proof` means an existing row proves related
-mechanics, while the target family owner remains unqualified. Transition uses
-the `DGI-TRANSITION-*` id prefix to match the spelled family-name convention.
+domain truth. All active rows below are qualified by the named OwnerSuite.
+Transition uses the `DGI-TRANSITION-*` id prefix to match the spelled
+family-name convention.
 
 | Invariant ID | Target Owner | Candidate Source Obligation | Invariant | Required Proof | Current Status | Deferred/Out Of Scope |
 | --- | --- | --- | --- | --- | --- | --- |

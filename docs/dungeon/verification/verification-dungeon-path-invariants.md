@@ -42,8 +42,8 @@ travel projection consumes authored Path facts without owning Path truth.
 
 `Candidate Source Obligation` entries derive from the Dungeon domain target
 state and current proof index. They are migration obligations, not independent
-domain truth. `Partial mechanics proof` means an existing row proves related
-mechanics, while the target family owner remains unqualified.
+domain truth. All active rows below are either qualified by the named
+OwnerSuite or explicitly marked as cross-catalog references.
 
 | Invariant ID | Target Owner | Candidate Source Obligation | Invariant | Required Proof | Current Status | Deferred/Out Of Scope |
 | --- | --- | --- | --- | --- | --- | --- |
