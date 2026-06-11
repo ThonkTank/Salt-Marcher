@@ -22,7 +22,7 @@ Required proof rows publish `OwnerSuite=StairInvariantHarness`,
 | `DGI-STAIR-001` | Stair structure | Supported editor shapes create deterministic path cells and generated exits from one `StairGeometrySpec`. | Harness proves straight, square, and circular supported shape construction. | Qualified by current structure/path proof; split OwnerSuite pending. |
 | `DGI-STAIR-002` | Stair structure | Full geometry recompute preserves stair id and topology ref while replacing path/exits atomically. | Harness proves shape, direction, dimension, and exit-span recompute cases. | Qualified by current structure/path proof; split OwnerSuite pending. |
 | `DGI-STAIR-003` | Stair validation owner | Invalid shape, direction, dimensions, duplicate path cells, and room-interior crossings reject without partial mutation. | Harness proves prior stair, path, exits, selection, and preview remain unchanged. | Qualified by current structure/path proof; split OwnerSuite pending. |
-| `DGI-STAIR-004` | Stair binding owner | Corridor-bound stairs cannot be deleted independently and must preserve owning corridor continuity. | Harness proves protected delete and valid corridor-owned removal path. | Candidate |
+| `DGI-STAIR-004` | Stair binding owner | Corridor-bound stairs cannot be deleted independently and must preserve owning corridor continuity. | `StairInvariantHarness` proves protected direct delete through `StairCollection`/`DungeonMap` and valid corridor-owned removal through the corridor owner path. | Qualified |
 
 ## References
 

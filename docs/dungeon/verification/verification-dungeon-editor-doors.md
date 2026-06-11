@@ -20,7 +20,7 @@ effects.
 | --- | --- | --- | --- | --- | --- |
 | `DE-DOOR-001` | Create door on wall | Door family plus primary wall click | `F1_SINGLE_ROOM` | One eligible wall boundary becomes a door with stable topology; duplicate door creation is rejected or no-op. | Ready |
 | `DE-DOOR-002` | Delete or reject door delete | Door family plus secondary click on a door | `F4_WALLED_ROOM_WITH_DOOR` variants | Unbound door delete removes the binding/topology and restores the boundary segment as wall; corridor-bound delete rejects and leaves authored state unchanged. | Ready |
-| `DE-DOOR-003` | Focused protected-door rejection row | Door family plus secondary click on corridor-bound door | `F4_WALLED_ROOM_WITH_DOOR` variant | Door, corridor, room boundary, topology, preview, and selection remain unchanged under a dedicated protected-delete proof. | Harness Gap |
+| `DE-DOOR-003` | Focused protected-door rejection row | Door family plus secondary click on corridor-bound door | `F4_WALLED_ROOM_WITH_DOOR` variant | Door, corridor, room boundary, topology, preview, selection, published map, and render remain unchanged under a dedicated protected-delete proof. | Ready |
 
 ## References
 

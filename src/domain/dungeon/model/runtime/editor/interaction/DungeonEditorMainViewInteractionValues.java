@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.runtime.editor.interaction;
 
 import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
@@ -502,11 +503,59 @@ public final class DungeonEditorMainViewInteractionValues {
         public BoundaryDraft {
             startVertex = startVertex == null ? new VertexKey(0, 0, 0) : startVertex;
             currentVertex = currentVertex == null ? new VertexKey(0, 0, 0) : currentVertex;
-            previewEdges = previewEdges == null ? Set.of() : Set.copyOf(previewEdges);
+            previewEdges = copyEdges(previewEdges);
         }
 
         public static BoundaryDraft none() {
             return new BoundaryDraft(0L, false, new VertexKey(0, 0, 0), new VertexKey(0, 0, 0), Set.of(), false);
+        }
+
+        public static BoundaryDraft start(
+                long clusterId,
+                boolean deleteMode,
+                VertexKey vertex
+        ) {
+            return new BoundaryDraft(clusterId, deleteMode, vertex, vertex, Set.of(), true);
+        }
+
+        public BoundaryDraft advancedTo(
+                VertexKey nextVertex,
+                Set<EdgeKey> committedEdges
+        ) {
+            Set<EdgeKey> nextEdges = withAdditionalEdges(committedEdges);
+            return new BoundaryDraft(clusterId, deleteMode, startVertex, nextVertex, nextEdges, true);
+        }
+
+        public BoundaryDraft completedAt(
+                VertexKey nextVertex,
+                Set<EdgeKey> committedEdges
+        ) {
+            Set<EdgeKey> nextEdges = withAdditionalEdges(committedEdges);
+            return new BoundaryDraft(clusterId, deleteMode, startVertex, nextVertex, nextEdges, true);
+        }
+
+        public Set<EdgeKey> completionCandidate(Set<EdgeKey> committedEdges) {
+            return withAdditionalEdges(committedEdges);
+        }
+
+        @Override
+        public Set<EdgeKey> previewEdges() {
+            return copyEdges(previewEdges);
+        }
+
+        private Set<EdgeKey> withAdditionalEdges(Set<EdgeKey> committedEdges) {
+            Set<EdgeKey> nextEdges = new LinkedHashSet<>(previewEdges);
+            if (committedEdges != null) {
+                nextEdges.addAll(committedEdges);
+            }
+            return copyEdges(nextEdges);
+        }
+
+        private static Set<EdgeKey> copyEdges(Set<EdgeKey> source) {
+            if (source == null || source.isEmpty()) {
+                return Set.of();
+            }
+            return java.util.Collections.unmodifiableSet(new LinkedHashSet<>(source));
         }
     }
 

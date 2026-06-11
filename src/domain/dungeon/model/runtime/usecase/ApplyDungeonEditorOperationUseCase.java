@@ -66,7 +66,7 @@ public final class ApplyDungeonEditorOperationUseCase {
         List<String> validationMessages = OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated);
         List<String> reactionMessages = OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated);
         DungeonDerivedState derived = deriveState.execute(mutated);
-        DungeonMap saved = repository.save(mutated);
+        DungeonMap saved = mutated.equals(current) ? current : repository.save(mutated);
         var snapshot = snapshot(saved, derived);
         return new OperationResultData(snapshot, validationMessages, reactionMessages);
     }

@@ -21,6 +21,8 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorRoomSet;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
 import src.domain.dungeon.model.core.structure.corridor.CorridorTargetDeletion;
+import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDeletionOwnerProbe;
+import src.domain.dungeon.model.runtime.usecase.DungeonEditorRuntimeDraftOwnerProbe;
 import static src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorHarnessSupport.*;
 
 final class DungeonCorridorInvariantHarness {
@@ -46,13 +48,19 @@ final class DungeonCorridorInvariantHarness {
                 "Corridor route owner derives deterministic straight and turned route cells, detects blocked cells,"
                         + " and binds crossing anchors into stable waypoint and anchor-ref facts");
         assertDeleteOwner();
-        results.add("OwnerSuite=" + OWNER + "; ProofType=ModelInvariant; "
-                + "DGI-CORRIDOR-004 Partial: CorridorTargetDeletion and CorridorNetwork prove point, door branch,"
-                + " protected whole-corridor delete, and detached-anchor pruning owner mechanics; invalid replacement"
-                + " route rejection remains covered only by real-route editor proof");
-        results.add("OwnerSuite=" + OWNER + "; ProofType=CrossCatalogReference; "
-                + "DGI-CORRIDOR-001 Partial: DE-COR-012 real-route proof covers first-click session-only drafting;"
-                + " no separate production corridor draft owner/API proof exists in this model-invariant harness");
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-CORRIDOR-004",
+                "Corridor deletion owner removes point and door branch targets, protects referenced whole"
+                        + " corridors, prunes detached anchors, and rejects invalid replacement routes before mutation");
+        DungeonEditorRuntimeDraftOwnerProbe.assertCorridorDraftSessionOwner();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-CORRIDOR-001",
+                "Production corridor draft/session owner stores first-click target state without create preview,"
+                        + " apply preview, or authored endpoint materialization");
     }
 
     private static void assertEndpointMaterializationOwner() {
@@ -209,6 +217,7 @@ final class DungeonCorridorInvariantHarness {
         assertTrue(network.canDeleteCorridor(11L), "corridor network allows deleting dependent branch corridor");
         assertEquals(List.of(10L), corridorIds(network.withoutCorridor(11L)),
                 "corridor network deletes the unreferenced branch corridor");
+        DungeonCorridorDeletionOwnerProbe.assertInvalidReplacementRouteRejectedBeforeMutation();
     }
 
     private static Corridor emptyCorridor(long corridorId) {

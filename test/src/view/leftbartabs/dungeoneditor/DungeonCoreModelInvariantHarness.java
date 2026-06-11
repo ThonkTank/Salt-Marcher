@@ -21,6 +21,7 @@ public final class DungeonCoreModelInvariantHarness {
         DungeonDoorInvariantHarness.run(results);
         DungeonPathInvariantHarness.run(results);
         DungeonCorridorInvariantHarness.run(results);
+        DungeonStairInvariantHarness.run(results);
         DungeonTransitionInvariantHarness.run(results);
         DungeonRuntimeProjectionInvariantHarness.run(results);
         DungeonTopologyInvariantHarness.run(results);

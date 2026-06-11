@@ -649,10 +649,13 @@ final class DungeonEditorRoomWallDoorHarness {
         runtime.database().seedCorridorWithAnchor(mapId);
         createMapThroughControls(controls, runtime, "Bound Door Delete Reload Hop");
         selectMap(controls, "Bound Door Delete Map");
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
         List<String> roomBoundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
         List<String> doorRowsBefore = runtime.database().doorBoundaryState(mapId);
         List<String> corridorRowsBefore = runtime.database().corridorStableConnectionState(mapId);
+        DungeonEditorMapSurfaceSnapshot surfaceBefore = runtime.mapSurfaceModel().current();
+        DungeonEditorStateSnapshot stateBefore = runtime.stateModel().current();
         assertEquals(1L, runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST"),
                 "DE-DOOR-002 bound fixture contains one east D1 door boundary");
         assertTrue(surfaceHasBoundaryKindAt(
@@ -672,6 +675,8 @@ final class DungeonEditorRoomWallDoorHarness {
                 viewport.sceneToScreenY(doorMidpoint.getY()),
                 false);
 
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-DOOR-003 corridor-bound protected delete keeps authored topology state unchanged");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-DOOR-002 corridor-bound delete leaves authored geometry row count unchanged");
         assertEquals(roomBoundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
@@ -683,6 +688,12 @@ final class DungeonEditorRoomWallDoorHarness {
         DungeonEditorMapSurfaceSnapshot rejectedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), rejectedSurface.preview(),
                 "DE-DOOR-002 corridor-bound delete leaves no preview");
+        assertEquals(surfaceBefore.surface().map(), rejectedSurface.surface().map(),
+                "DE-DOOR-003 corridor-bound protected delete keeps the published map unchanged");
+        assertEquals(surfaceBefore.selection(), rejectedSurface.selection(),
+                "DE-DOOR-003 corridor-bound protected delete keeps map selection unchanged");
+        assertEquals(stateBefore.selection(), runtime.stateModel().current().selection(),
+                "DE-DOOR-003 corridor-bound protected delete keeps state selection unchanged");
         assertTrue(surfaceHasBoundaryKindAt(
                         rejectedSurface,
                         "door",
@@ -694,6 +705,8 @@ final class DungeonEditorRoomWallDoorHarness {
 
         results.add("DE-DOOR-002 Ready: DungeonEditorControlsView Tür -> DungeonMapView secondary door delete"
                 + " -> SQLite delete/reject -> render readback");
+        results.add("DE-DOOR-003 Ready: DungeonMapView corridor-bound door secondary delete ->"
+                + " door, corridor, room boundary, topology, preview, selection, published map, and render unchanged");
     }
 
 

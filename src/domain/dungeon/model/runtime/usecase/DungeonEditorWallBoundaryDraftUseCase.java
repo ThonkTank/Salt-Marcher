@@ -112,9 +112,8 @@ final class DungeonEditorWallBoundaryDraftUseCase {
             if (!input.wallSingleClickMode()) {
                 return new DungeonEditorMainViewInterpretation(state, preview(input, snapshot, selectedTool, state));
             }
-            Set<EdgeKey> committedEdges = new LinkedHashSet<>(state.boundaryDraft().previewEdges());
             PathResult candidate = boundaryPaths.previewCandidate(input, snapshot, state.boundaryDraft(), false);
-            committedEdges.addAll(candidate.committedEdges());
+            Set<EdgeKey> committedEdges = state.boundaryDraft().completionCandidate(candidate.committedEdges());
             if (committedEdges.isEmpty()) {
                 return new DungeonEditorMainViewInterpretation(
                         state,
@@ -135,9 +134,8 @@ final class DungeonEditorWallBoundaryDraftUseCase {
         if (!state.boundaryDraft().present() || !state.boundaryDraft().deleteMode() || input == null) {
             return draftEffects.clearBoundaryDraftPreview(nextState);
         }
-        Set<EdgeKey> committedEdges = new LinkedHashSet<>(state.boundaryDraft().previewEdges());
         PathResult candidate = boundaryPaths.previewCandidate(input, snapshot, state.boundaryDraft(), true);
-        committedEdges.addAll(candidate.committedEdges());
+        Set<EdgeKey> committedEdges = state.boundaryDraft().completionCandidate(candidate.committedEdges());
         if (committedEdges.isEmpty()) {
             return directWallDelete.releaseCorner(input, snapshot, state, nextState);
         }
@@ -150,21 +148,15 @@ final class DungeonEditorWallBoundaryDraftUseCase {
             DungeonEditorSessionValues.Tool selectedTool,
             InteractionState state
     ) {
-        Set<EdgeKey> committedEdges = new LinkedHashSet<>(state.boundaryDraft().previewEdges());
         PathResult candidate = boundaryPaths.previewCandidate(input, snapshot, state.boundaryDraft(), false);
-        committedEdges.addAll(candidate.committedEdges());
+        Set<EdgeKey> committedEdges = state.boundaryDraft().completionCandidate(candidate.committedEdges());
         if (committedEdges.isEmpty()) {
             return new DungeonEditorMainViewInterpretation(
                     state,
                     DungeonEditorMainViewEffect.clearPreviewIfNeeded(true));
         }
-        InteractionState nextState = state.withBoundaryDraft(new BoundaryDraft(
-                state.boundaryDraft().clusterId(),
-                false,
-                state.boundaryDraft().startVertex(),
-                completionVertex(input, state),
-                committedEdges,
-                true));
+        InteractionState nextState = state.withBoundaryDraft(
+                state.boundaryDraft().completedAt(completionVertex(input, state), committedEdges));
         return applyBoundaryDraftOrPreview(input, snapshot, selectedTool, nextState.boundaryDraft().currentVertex(), nextState, true);
     }
 
@@ -185,8 +177,7 @@ final class DungeonEditorWallBoundaryDraftUseCase {
         if (!boundaryVertices.isEditableVertex(snapshot, clusterId, vertex, deleteMode)) {
             return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.none());
         }
-        InteractionState nextState = state.withBoundaryDraft(
-                new BoundaryDraft(clusterId, deleteMode, nextVertex, nextVertex, Set.of(), true));
+        InteractionState nextState = state.withBoundaryDraft(BoundaryDraft.start(clusterId, deleteMode, nextVertex));
         return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.clearPreviewIfNeeded(true));
     }
 
@@ -205,15 +196,9 @@ final class DungeonEditorWallBoundaryDraftUseCase {
         if (!path.hasRoute()) {
             return new DungeonEditorMainViewInterpretation(state, DungeonEditorMainViewEffect.clearPreviewIfNeeded(true));
         }
-        Set<EdgeKey> previewEdges = new LinkedHashSet<>(state.boundaryDraft().previewEdges());
-        previewEdges.addAll(path.committedEdges());
-        InteractionState nextState = state.withBoundaryDraft(new BoundaryDraft(
-                clusterId,
-                deleteMode,
-                state.boundaryDraft().startVertex(),
+        InteractionState nextState = state.withBoundaryDraft(state.boundaryDraft().advancedTo(
                 nextVertex,
-                previewEdges,
-                true));
+                path.committedEdges()));
         return applyBoundaryDraftOrPreview(input, snapshot, selectedTool, nextVertex, nextState, false);
     }
 
