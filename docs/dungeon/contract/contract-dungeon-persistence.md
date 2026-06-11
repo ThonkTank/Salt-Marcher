@@ -57,7 +57,7 @@ Persisted authored truth includes:
 - `src/data/dungeon/model/DungeonPersistenceSchema.java` is the in-code schema
   declaration
 - `dungeon_topology_elements` is authoritative for persisted topology identity
-- legacy-compatible detail tables remain source-local storage and correlation
+- compatibility detail tables remain source-local storage and correlation
   detail, not alternate semantic owners
 
 ## Authored Name Storage Semantics
@@ -66,7 +66,7 @@ Persisted authored truth includes:
 source values are compatibility inputs that the domain normalizes to
 `Raum <roomId>` on readback and publication.
 
-`dungeon_room_clusters.name` stores the authored cluster display name. Legacy
+`dungeon_room_clusters.name` stores the authored cluster display name. Older
 databases that do not yet contain the column are migrated additively, and blank
 or missing source values are compatibility inputs that the domain normalizes to
 `Cluster <clusterId>` on readback and publication.
@@ -117,9 +117,9 @@ write. Malformed stair rows, unsupported scalar combinations, missing generated
 path or exit rows for a readable stair, or dangling corridor bindings are
 boundary errors for the domain/repository result, not view-layer behavior.
 
-Legacy `LADDER` and `RECTANGULAR` shape rows remain readable compatibility
+Previously persisted `LADDER` and `RECTANGULAR` shape rows remain readable compatibility
 inputs. New editor-authored stair creation is governed by the requirements-owned
-visible shapes and must not require a schema change to avoid those legacy enum
+visible shapes and must not require a schema change to avoid those older enum
 values.
 
 ## Validation And Error Behavior
@@ -139,7 +139,7 @@ values.
 
 - new fields belong in source-local records first, then map into domain-owned
   values
-- additive compatibility migrations remain allowed where needed for legacy
+- additive compatibility migrations remain allowed where needed for older
   dungeon databases
 - direct runtime token movement does not justify new authored-position tables;
   runtime party position remains owned outside dungeon persistence

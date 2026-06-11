@@ -101,7 +101,7 @@ path node is a narrower mutation and does not imply a full geometry recompute.
 Stair invariants:
 
 - supported editor-authored shapes are `STRAIGHT`, `SQUARE`, and `CIRCULAR`
-- legacy or imported stored shapes may be loaded for compatibility, but new
+- older or imported stored shapes may be loaded for compatibility, but new
   editor-authored stair creation must use one of the supported shapes above
 - direction is a cardinal dungeon edge direction
 - dimensions must already satisfy the requirements-owned min/max bounds before
