@@ -39,8 +39,8 @@ final class CorridorReplacementRouteValidation {
             return false;
         }
         for (int index = 1; index < backbone.size(); index++) {
-            CorridorRoute segment = CorridorRoute.between(backbone.get(index - 1), backbone.get(index));
-            if (!segment.present() || segment.blockedBy(roomCells)) {
+            CorridorRoute segment = CorridorRoute.unblockedBetween(backbone.get(index - 1), backbone.get(index), roomCells);
+            if (!segment.present()) {
                 return false;
             }
         }

@@ -76,6 +76,10 @@ final class DungeonPathInvariantHarness {
                         new Cell(2, 1, 0)),
                 Route.horizontalFirstOnStartLevel(new Cell(0, 0, 0), new Cell(2, 1, 2)),
                 "shared path primitive can keep validation route on the start level");
+        assertEquals(List.of(new Cell(0, 0, 0), new Cell(0, 1, 0), new Cell(1, 1, 0),
+                        new Cell(2, 1, 0)),
+                Route.verticalFirstOnStartLevel(new Cell(0, 0, 0), new Cell(2, 1, 2)),
+                "shared path primitive can derive vertical-first validation route on the start level");
         assertEquals(List.of(), Route.horizontalFirst(null, new Cell(1, 1, 0)),
                 "shared path primitive treats missing endpoints as no path");
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0)),
@@ -84,7 +88,7 @@ final class DungeonPathInvariantHarness {
     }
 
     private static void assertCorridorPathOwner() {
-        CorridorRoute route = CorridorRoute.between(new Cell(0, 0, 0), new Cell(2, 1, 1));
+        CorridorRoute route = CorridorRoute.unblockedBetween(new Cell(0, 0, 0), new Cell(2, 1, 1), Set.of());
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0),
                         new Cell(2, 1, 0)),
                 route.cells(),
@@ -94,7 +98,21 @@ final class DungeonPathInvariantHarness {
                 "corridor path owner detects blocked route cells");
         assertFalse(route.blockedBy(Set.of(new Cell(8, 8, 0))),
                 "corridor path owner keeps unrelated room cells from blocking route");
-        assertFalse(CorridorRoute.between(null, new Cell(1, 0, 0)).present(),
+        assertEquals(List.of(new Cell(0, 0, 0), new Cell(0, 1, 0), new Cell(1, 1, 0),
+                        new Cell(2, 1, 0)),
+                CorridorRoute.unblockedBetween(
+                                new Cell(0, 0, 0),
+                                new Cell(2, 1, 1),
+                                Set.of(new Cell(1, 0, 0)))
+                        .cells(),
+                "corridor path owner falls back to vertical-first when horizontal-first is blocked");
+        assertFalse(CorridorRoute.unblockedBetween(
+                        new Cell(0, 0, 0),
+                        new Cell(2, 1, 1),
+                        Set.of(new Cell(1, 0, 0), new Cell(0, 1, 0)))
+                .present(),
+                "corridor path owner rejects when both orthogonal candidates are blocked");
+        assertFalse(CorridorRoute.unblockedBetween(null, new Cell(1, 0, 0), Set.of()).present(),
                 "corridor path owner reports missing endpoint route as no-op");
 
         CorridorRoutePlan plan = new CorridorRoutePlan(

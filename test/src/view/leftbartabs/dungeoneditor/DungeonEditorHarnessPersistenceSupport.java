@@ -1567,6 +1567,22 @@ class DungeonEditorHarnessPersistenceSupport {
             }
         }
 
+        void seedVerticalFallbackCorridorRouteTarget(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                long roomOneId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 10, 6);
+                insertRectangularRoom(connection, mapId, "R_BLOCK", 0, 5, 1);
+                markDoorEdge(connection, mapId, roomOneId, 0, 1, 0, "EAST", "D1", 200);
+                markDoorEdge(connection, mapId, roomTwoId, 0, -1, 0, "WEST", "D2", 201);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException(
+                        "Failed to seed horizontal-blocked vertical-fallback corridor fixture.",
+                        exception);
+            }
+        }
+
         void seedRoomToDoorRouteTarget(long mapId) {
             try (Connection connection = open()) {
                 connection.setAutoCommit(false);

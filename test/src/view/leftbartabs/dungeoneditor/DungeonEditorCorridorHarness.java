@@ -51,6 +51,7 @@ final class DungeonEditorCorridorHarness {
         route(results, () -> verifyCorridorAnchorMoveThroughMapView(results));
         route(results, () -> verifyCorridorPointEditThroughStateView(results));
         route(results, () -> verifyDoorToDoorCorridorCreateThroughMapView(results));
+        route(results, () -> verifyDoorToDoorVerticalFallbackCorridorCreateThroughMapView(results));
         route(results, () -> verifyFirstCorridorClicksRemainDraftOnlyThroughMapView(results));
         route(results, () -> verifyDoorToAnchorCorridorCreateThroughMapView(results));
         route(results, () -> verifyAnchorToAnchorCorridorCreateThroughMapView(results));
@@ -332,6 +333,79 @@ final class DungeonEditorCorridorHarness {
                 "DE-COR-001 reload");
 
         results.add("DE-COR-001 Ready: DungeonEditorControlsView corridor tool + two door hits -> SQLite -> render");
+    }
+
+    private static void verifyDoorToDoorVerticalFallbackCorridorCreateThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Corridor Vertical Fallback Map");
+        runtime.database().seedVerticalFallbackCorridorRouteTarget(mapId);
+        createMapThroughControls(controls, runtime, "Corridor Vertical Fallback Reload Hop");
+        selectMap(controls, "Corridor Vertical Fallback Map");
+        Set<Long> corridorIdsBefore = runtime.database().corridorIdsForMap(mapId);
+        click(button(controls, "Korridor"));
+        Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
+        Point2D doorTwo = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 10.0, 7.5);
+        assertPointerTarget(binding.mapContentModel(), doorOne, "BOUNDARY", "DE-COR-014 first door");
+        assertPointerTarget(binding.mapContentModel(), doorTwo, "BOUNDARY", "DE-COR-014 second door");
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+
+        clickMap(mapView, MouseButton.PRIMARY,
+                viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
+        assertEquals(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
+                "DE-COR-014 first endpoint click does not persist a partial corridor");
+        fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
+                viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
+        clickMap(mapView, MouseButton.PRIMARY,
+                viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
+
+        long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
+                "DE-COR-014");
+        Set<String> expectedCells = Set.of(
+                "4,2,0",
+                "4,3,0",
+                "4,4,0",
+                "4,5,0",
+                "4,6,0",
+                "4,7,0",
+                "5,7,0",
+                "6,7,0",
+                "7,7,0",
+                "8,7,0",
+                "9,7,0");
+        assertCorridorDoorBindingCount(runtime.database().corridorStableConnectionState(mapId), newCorridorId, 2,
+                "DE-COR-014");
+        assertCorridorCreatedInSnapshot(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                newCorridorId,
+                expectedCells,
+                "DE-COR-014");
+        Point2D fallbackCorridorBody = new Point2D(4.05, 5.05);
+        assertPointerTarget(binding.mapContentModel(), fallbackCorridorBody, "CELL", "DE-COR-014 fallback body");
+        assertEquals("CORRIDOR", binding.mapContentModel()
+                        .resolvePointerTarget(fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
+                        .elementKind(),
+                "DE-COR-014 fallback body remains a semantic corridor target");
+        selectMap(controls, "Corridor Vertical Fallback Reload Hop");
+        selectMap(controls, "Corridor Vertical Fallback Map");
+        assertCorridorCreatedInSnapshot(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                newCorridorId,
+                expectedCells,
+                "DE-COR-014 reload");
+        assertPointerTarget(binding.mapContentModel(), fallbackCorridorBody, "CELL",
+                "DE-COR-014 reload fallback body");
+        assertEquals("CORRIDOR", binding.mapContentModel()
+                        .resolvePointerTarget(fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
+                        .elementKind(),
+                "DE-COR-014 reload fallback body remains a semantic corridor target");
+
+        results.add("DE-COR-014 Ready: horizontal-blocked door corridor uses vertical fallback -> SQLite -> render");
     }
 
     private static void verifyFirstCorridorClicksRemainDraftOnlyThroughMapView(List<String> results) {

@@ -21,10 +21,11 @@ final class CorridorRouteValidation {
             DungeonCorridorEndpoint end,
             CorridorHostCells hostCells
     ) {
-        CorridorRoute route = route(dungeonMap, start, end, hostCells);
+        Set<Cell> roomCells = roomCells(dungeonMap);
+        CorridorRoute route = route(dungeonMap, start, end, hostCells, roomCells);
         return new RouteValidation(
                 copiedCells(route.cells()),
-                route.present() && !route.blockedBy(roomCells(dungeonMap)));
+                route.present());
     }
 
     static Map<Long, List<Cell>> corridorCellsByCorridor(DungeonMap dungeonMap, List<Corridor> corridors) {
@@ -35,7 +36,8 @@ final class CorridorRouteValidation {
             DungeonMap dungeonMap,
             DungeonCorridorEndpoint start,
             DungeonCorridorEndpoint end,
-            CorridorHostCells hostCells
+            CorridorHostCells hostCells,
+            Set<Cell> roomCells
     ) {
         if (dungeonMap == null || start == null || end == null) {
             return new CorridorRoute(List.of());
@@ -45,7 +47,7 @@ final class CorridorRouteValidation {
         if (startCell == null || endCell == null) {
             return new CorridorRoute(List.of());
         }
-        return CorridorRoute.between(startCell, endCell);
+        return CorridorRoute.unblockedBetween(startCell, endCell, roomCells);
     }
 
     private static @Nullable Cell corridorCell(
@@ -69,6 +71,9 @@ final class CorridorRouteValidation {
     }
 
     private static Set<Cell> roomCells(DungeonMap dungeonMap) {
+        if (dungeonMap == null) {
+            return Set.of();
+        }
         RoomCellCoverage coverage = new RoomCellCoverage();
         Set<Cell> result = new LinkedHashSet<>();
         for (DungeonRoomCluster cluster : dungeonMap.topology().roomClusters()) {

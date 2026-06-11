@@ -1,11 +1,10 @@
 package src.domain.dungeon.model.runtime.helper;
 
 import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.Route;
+import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.CellKey;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.TravelHeading;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.PendingCorridorTarget;
@@ -24,7 +23,7 @@ public final class DungeonEditorCorridorRoutePreviewValidationHelper {
             return true;
         }
         Set<CellKey> roomCells = roomCells(snapshot);
-        return !horizontalRouteBlocked(startCell, endCell, roomCells);
+        return CorridorRoute.unblockedBetween(toCoreCell(startCell), toCoreCell(endCell), coreCells(roomCells)).present();
     }
 
     DungeonEditorWorkspaceValues.@Nullable Cell corridorCell(
@@ -50,29 +49,16 @@ public final class DungeonEditorCorridorRoutePreviewValidationHelper {
         return Set.copyOf(result);
     }
 
-    private static boolean horizontalRouteBlocked(
-            DungeonEditorWorkspaceValues.Cell start,
-            DungeonEditorWorkspaceValues.Cell end,
-            Set<CellKey> roomCells
-    ) {
-        return routeContainsRoom(Route.horizontalFirstOnStartLevel(toCoreCell(start), toCoreCell(end)), roomCells);
-    }
-
-    private static boolean routeContainsRoom(List<Cell> route, Set<CellKey> roomCells) {
-        for (Cell cell : route) {
-            if (roomCells.contains(cellKey(cell))) {
-                return true;
-            }
+    private static Set<Cell> coreCells(Set<CellKey> cells) {
+        Set<Cell> result = new LinkedHashSet<>();
+        for (CellKey cell : cells == null ? Set.<CellKey>of() : cells) {
+            result.add(new Cell(cell.q(), cell.r(), cell.level()));
         }
-        return false;
+        return Set.copyOf(result);
     }
 
     private static Cell toCoreCell(DungeonEditorWorkspaceValues.Cell cell) {
         return new Cell(cell.q(), cell.r(), cell.level());
-    }
-
-    private static CellKey cellKey(Cell cell) {
-        return new CellKey(cell.q(), cell.r(), cell.level());
     }
 
     private static DungeonEditorWorkspaceValues.Cell neighbor(

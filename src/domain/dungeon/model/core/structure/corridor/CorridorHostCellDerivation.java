@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.Route;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 final class CorridorHostCellDerivation {
@@ -62,18 +61,18 @@ final class CorridorHostCellDerivation {
             boolean filterRoomCells
     ) {
         for (int index = SINGLE_ROUTE_TERMINUS_COUNT; index < routeNodes.size(); index++) {
-            for (Cell cell : segmentCells(routeNodes, index)) {
+            for (Cell cell : segmentCells(routeNodes, index, roomCells)) {
                 addIfKept(cells, cell, roomCells, filterRoomCells);
             }
         }
     }
 
-    private static List<Cell> segmentCells(List<Cell> routeNodes, int index) {
+    private static List<Cell> segmentCells(List<Cell> routeNodes, int index, Set<Cell> roomCells) {
         Cell previous = routeNodes.get(index - SINGLE_ROUTE_TERMINUS_COUNT);
         Cell current = routeNodes.get(index);
         return previous == null || current == null
                 ? List.of()
-                : Route.horizontalFirst(previous, current);
+                : CorridorRoute.unblockedBetweenWithLevelTransition(previous, current, roomCells).cells();
     }
 
     private static void addIfKept(

@@ -7,8 +7,8 @@ import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.Route;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 /**
@@ -125,7 +125,7 @@ final class DungeonCorridorCellProjection {
             return;
         }
         for (int index = 1; index < routeNodes.size(); index++) {
-            for (Cell cell : routeCells(routeNodes.get(index - 1), routeNodes.get(index))) {
+            for (Cell cell : routeCells(routeNodes.get(index - 1), routeNodes.get(index), roomCells)) {
                 if (!filterRoomCells || !roomCells.contains(cell)) {
                     cells.add(cell);
                 }
@@ -133,11 +133,12 @@ final class DungeonCorridorCellProjection {
         }
     }
 
-    private static List<Cell> routeCells(Cell start, Cell end) {
+    private static List<Cell> routeCells(Cell start, Cell end, Set<Cell> roomCells) {
         if (start == null || end == null) {
             return List.of();
         }
-        return List.copyOf(Route.horizontalFirst(start, end));
+        Set<Cell> blockedCells = roomCells == null ? Set.of() : roomCells;
+        return CorridorRoute.unblockedBetweenWithLevelTransition(start, end, blockedCells).cells();
     }
 
     private static int compareCells(Cell left, Cell right) {

@@ -114,11 +114,11 @@ final class DungeonCorridorInvariantHarness {
     }
 
     private static void assertRouteOwner() {
-        CorridorRoute straight = CorridorRoute.between(new Cell(0, 0, 0), new Cell(3, 0, 0));
+        CorridorRoute straight = CorridorRoute.unblockedBetween(new Cell(0, 0, 0), new Cell(3, 0, 0), Set.of());
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0), new Cell(3, 0, 0)),
                 straight.cells(),
                 "corridor route owner derives deterministic straight route");
-        CorridorRoute turned = CorridorRoute.between(new Cell(0, 0, 0), new Cell(2, 2, 1));
+        CorridorRoute turned = CorridorRoute.unblockedBetween(new Cell(0, 0, 0), new Cell(2, 2, 1), Set.of());
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0),
                         new Cell(2, 1, 0), new Cell(2, 2, 0)),
                 turned.cells(),
@@ -127,6 +127,20 @@ final class DungeonCorridorInvariantHarness {
                 "corridor route owner detects blocked route cell");
         assertTrue(!turned.blockedBy(Set.of(new Cell(9, 9, 0))),
                 "corridor route owner ignores unrelated blocked cells");
+        assertEquals(List.of(new Cell(0, 0, 0), new Cell(0, 1, 0), new Cell(0, 2, 0),
+                        new Cell(1, 2, 0), new Cell(2, 2, 0)),
+                CorridorRoute.unblockedBetween(
+                                new Cell(0, 0, 0),
+                                new Cell(2, 2, 1),
+                                Set.of(new Cell(1, 0, 0)))
+                        .cells(),
+                "corridor route owner uses vertical-first fallback when horizontal-first is blocked");
+        assertTrue(!CorridorRoute.unblockedBetween(
+                        new Cell(0, 0, 0),
+                        new Cell(2, 2, 1),
+                        Set.of(new Cell(1, 0, 0), new Cell(0, 1, 0)))
+                .present(),
+                "corridor route owner rejects when neither orthogonal route is valid");
 
         CorridorRoutePlan crossingPlan = new CorridorRoutePlan(
                 List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),

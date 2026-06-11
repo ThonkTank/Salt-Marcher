@@ -12,11 +12,34 @@ public record CorridorRoute(List<Cell> cells) {
         cells = cells == null ? List.of() : List.copyOf(cells);
     }
 
-    public static CorridorRoute between(Cell start, Cell end) {
+    public static CorridorRoute unblockedBetween(Cell start, Cell end, Set<Cell> blockedCells) {
+        return unblockedBetween(start, end, blockedCells, true);
+    }
+
+    public static CorridorRoute unblockedBetweenWithLevelTransition(Cell start, Cell end, Set<Cell> blockedCells) {
+        return unblockedBetween(start, end, blockedCells, false);
+    }
+
+    private static CorridorRoute unblockedBetween(
+            Cell start,
+            Cell end,
+            Set<Cell> blockedCells,
+            boolean keepStartLevel
+    ) {
         if (start == null || end == null) {
             return new CorridorRoute(List.of());
         }
-        return new CorridorRoute(Route.horizontalFirstOnStartLevel(start, end));
+        Set<Cell> blocked = blockedCells == null ? Set.of() : blockedCells;
+        CorridorRoute horizontalFirst = new CorridorRoute(keepStartLevel
+                ? Route.horizontalFirstOnStartLevel(start, end)
+                : Route.horizontalFirst(start, end));
+        if (!horizontalFirst.blockedBy(blocked)) {
+            return horizontalFirst;
+        }
+        CorridorRoute verticalFirst = new CorridorRoute(keepStartLevel
+                ? Route.verticalFirstOnStartLevel(start, end)
+                : Route.verticalFirst(start, end));
+        return verticalFirst.blockedBy(blocked) ? new CorridorRoute(List.of()) : verticalFirst;
     }
 
     @Override
