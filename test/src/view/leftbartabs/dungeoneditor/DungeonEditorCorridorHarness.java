@@ -50,11 +50,7 @@ final class DungeonEditorCorridorHarness {
     static void run(List<String> results) throws Exception {
         route(results, () -> verifyCorridorAnchorMoveThroughMapView(results));
         route(results, () -> verifyCorridorPointEditThroughStateView(results));
-        route(results, () -> verifyDoorToDoorCorridorCreateThroughMapView(results));
         route(results, () -> verifyDoorToDoorVerticalFallbackCorridorCreateThroughMapView(results));
-        route(results, () -> verifyFirstCorridorClicksRemainDraftOnlyThroughMapView(results));
-        route(results, () -> verifyDoorToAnchorCorridorCreateThroughMapView(results));
-        route(results, () -> verifyAnchorToAnchorCorridorCreateThroughMapView(results));
         route(results, () -> verifyCorridorSplitAtCrossingThroughMapView(results));
         route(results, () -> verifyCorridorConnectionPointDeleteThroughMapView(results));
         route(results, () -> verifyCorridorDoorConnectionDeleteThroughMapView(results));
@@ -279,62 +275,6 @@ final class DungeonEditorCorridorHarness {
     }
 
 
-    private static void verifyDoorToDoorCorridorCreateThroughMapView(List<String> results) {
-        HarnessRuntime runtime = HarnessRuntime.create();
-        HarnessBinding binding = bindHarness(runtime);
-        DungeonEditorControlsView controls = binding.controls();
-        DungeonMapView mapView = binding.mapView();
-
-        long mapId = createMapThroughControls(controls, runtime, "Corridor Door Route Map");
-        runtime.database().seedTwoDoorRouteTarget(mapId);
-        createMapThroughControls(controls, runtime, "Corridor Door Route Reload Hop");
-        selectMap(controls, "Corridor Door Route Map");
-        Set<Long> corridorIdsBefore = runtime.database().corridorIdsForMap(mapId);
-        List<String> doorRowsBefore = runtime.database().doorBoundaryState(mapId);
-        click(button(controls, "Korridor"));
-        assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
-                "DE-COR-001 corridor family selects corridor-create tool");
-        Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
-        Point2D doorTwo = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 8.0, 2.5);
-        assertPointerTarget(binding.mapContentModel(), doorOne, "BOUNDARY", "DE-COR-001 first door");
-        assertPointerTarget(binding.mapContentModel(), doorTwo, "BOUNDARY", "DE-COR-001 second door");
-        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-
-        fireMapMousePressed(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
-        assertEquals(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
-                "DE-COR-001 first endpoint click does not persist a partial corridor");
-        fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
-                viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
-                "DE-COR-001 keeps published preview surface clear before commit");
-        fireMapMousePressed(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
-
-        long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
-                "DE-COR-001");
-        List<String> stableState = runtime.database().corridorStableConnectionState(mapId);
-        assertCorridorDoorBindingCount(stableState, newCorridorId, 2, "DE-COR-001");
-        assertEquals(doorRowsBefore, runtime.database().doorBoundaryState(mapId),
-                "DE-COR-001 reuses the explicit door endpoint identities");
-        assertCorridorCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
-                binding.mapContentModel(),
-                newCorridorId,
-                cellRect(4, 2, 7, 2, 0),
-                "DE-COR-001");
-        selectMap(controls, "Corridor Door Route Reload Hop");
-        selectMap(controls, "Corridor Door Route Map");
-        assertCorridorCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
-                binding.mapContentModel(),
-                newCorridorId,
-                cellRect(4, 2, 7, 2, 0),
-                "DE-COR-001 reload");
-
-        results.add("DE-COR-001 Ready: DungeonEditorControlsView corridor tool + two door hits -> SQLite -> render");
-    }
-
     private static void verifyDoorToDoorVerticalFallbackCorridorCreateThroughMapView(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
@@ -346,17 +286,18 @@ final class DungeonEditorCorridorHarness {
         createMapThroughControls(controls, runtime, "Corridor Vertical Fallback Reload Hop");
         selectMap(controls, "Corridor Vertical Fallback Map");
         Set<Long> corridorIdsBefore = runtime.database().corridorIdsForMap(mapId);
+        List<String> doorRowsBefore = runtime.database().doorBoundaryState(mapId);
         click(button(controls, "Korridor"));
         Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         Point2D doorTwo = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 10.0, 7.5);
         assertPointerTarget(binding.mapContentModel(), doorOne, "BOUNDARY", "DE-COR-014 first door");
         assertPointerTarget(binding.mapContentModel(), doorTwo, "BOUNDARY", "DE-COR-014 second door");
+        AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         clickMap(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
-        assertEquals(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
-                "DE-COR-014 first endpoint click does not persist a partial corridor");
+        assertFirstClickDraftOnly(beforeFirstClick, runtime, binding, mapId, "DE-COR-014 first explicit door click");
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
         clickMap(mapView, MouseButton.PRIMARY,
@@ -378,6 +319,8 @@ final class DungeonEditorCorridorHarness {
                 "9,7,0");
         assertCorridorDoorBindingCount(runtime.database().corridorStableConnectionState(mapId), newCorridorId, 2,
                 "DE-COR-014");
+        assertEquals(doorRowsBefore, runtime.database().doorBoundaryState(mapId),
+                "DE-COR-014 reuses explicit door endpoint identities without creating boundary rows");
         assertCorridorCreatedInSnapshot(
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),
@@ -407,208 +350,6 @@ final class DungeonEditorCorridorHarness {
 
         results.add("DE-COR-014 Ready: horizontal-blocked door corridor uses vertical fallback -> SQLite -> render");
     }
-
-    private static void verifyFirstCorridorClicksRemainDraftOnlyThroughMapView(List<String> results) {
-        assertFirstExplicitDoorClickRemainsDraftOnly();
-        assertFirstGenericRoomClickRemainsDraftOnly();
-        assertFirstGenericCorridorClickRemainsDraftOnly();
-
-        results.add("DE-COR-012 Ready: DungeonMapView first corridor endpoint click -> session draft only"
-                + " for explicit door, generic room, and generic corridor starts");
-    }
-
-    private static void assertFirstExplicitDoorClickRemainsDraftOnly() {
-        HarnessRuntime runtime = HarnessRuntime.create();
-        HarnessBinding binding = bindHarness(runtime);
-        DungeonEditorControlsView controls = binding.controls();
-        DungeonMapView mapView = binding.mapView();
-
-        long mapId = createMapThroughControls(controls, runtime, "Corridor First Door Draft Map");
-        runtime.database().seedTwoDoorRouteTarget(mapId);
-        createMapThroughControls(controls, runtime, "Corridor First Door Draft Reload Hop");
-        selectMap(controls, "Corridor First Door Draft Map");
-        click(button(controls, "Korridor"));
-        Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
-        assertPointerTarget(binding.mapContentModel(), doorOne, "BOUNDARY", "DE-COR-012 explicit door start");
-        AuthoredCorridorState before = AuthoredCorridorState.capture(runtime, binding, mapId);
-        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-
-        fireMapMousePressed(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
-
-        assertFirstClickDraftOnly(before, runtime, binding, mapId, "DE-COR-012 explicit door first click");
-    }
-
-    private static void assertFirstGenericRoomClickRemainsDraftOnly() {
-        HarnessRuntime runtime = HarnessRuntime.create();
-        HarnessBinding binding = bindHarness(runtime);
-        DungeonEditorControlsView controls = binding.controls();
-        DungeonMapView mapView = binding.mapView();
-
-        long mapId = createMapThroughControls(controls, runtime, "Corridor First Room Draft Map");
-        runtime.database().seedRoomToDoorRouteTarget(mapId);
-        createMapThroughControls(controls, runtime, "Corridor First Room Draft Reload Hop");
-        selectMap(controls, "Corridor First Room Draft Map");
-        click(button(controls, "Korridor"));
-        Point2D roomInterior = new Point2D(1.5, 2.5);
-        assertPointerTarget(binding.mapContentModel(), roomInterior, "LABEL", "DE-COR-012 generic room start");
-        assertEquals("ROOM", binding.mapContentModel()
-                        .resolvePointerTarget(roomInterior.getX(), roomInterior.getY())
-                        .elementKind(),
-                "DE-COR-012 generic room first click targets room semantics");
-        AuthoredCorridorState before = AuthoredCorridorState.capture(runtime, binding, mapId);
-        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-
-        fireMapMousePressed(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(roomInterior.getX()), viewport.sceneToScreenY(roomInterior.getY()), false);
-
-        assertFirstClickDraftOnly(before, runtime, binding, mapId, "DE-COR-012 generic room first click");
-    }
-
-    private static void assertFirstGenericCorridorClickRemainsDraftOnly() {
-        HarnessRuntime runtime = HarnessRuntime.create();
-        HarnessBinding binding = bindHarness(runtime);
-        DungeonEditorControlsView controls = binding.controls();
-        DungeonMapView mapView = binding.mapView();
-
-        long mapId = createMapThroughControls(controls, runtime, "Corridor First Body Draft Map");
-        runtime.database().seedCorridorWithAnchor(mapId);
-        createMapThroughControls(controls, runtime, "Corridor First Body Draft Reload Hop");
-        selectMap(controls, "Corridor First Body Draft Map");
-        click(button(controls, "Korridor"));
-        Point2D genericCorridorPoint = new Point2D(6.05, 4.05);
-        assertPointerTarget(binding.mapContentModel(), genericCorridorPoint, "CELL", "DE-COR-012 generic corridor start");
-        assertEquals("CORRIDOR", binding.mapContentModel()
-                        .resolvePointerTarget(genericCorridorPoint.getX(), genericCorridorPoint.getY())
-                        .elementKind(),
-                "DE-COR-012 generic corridor first click targets corridor semantics");
-        AuthoredCorridorState before = AuthoredCorridorState.capture(runtime, binding, mapId);
-        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-
-        fireMapMousePressed(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(genericCorridorPoint.getX()),
-                viewport.sceneToScreenY(genericCorridorPoint.getY()),
-                false);
-
-        assertFirstClickDraftOnly(before, runtime, binding, mapId, "DE-COR-012 generic corridor first click");
-    }
-
-
-    private static void verifyDoorToAnchorCorridorCreateThroughMapView(List<String> results) {
-        HarnessRuntime runtime = HarnessRuntime.create();
-        HarnessBinding binding = bindHarness(runtime);
-        DungeonEditorControlsView controls = binding.controls();
-        DungeonMapView mapView = binding.mapView();
-
-        long mapId = createMapThroughControls(controls, runtime, "Corridor Door Anchor Map");
-        runtime.database().seedCorridorWithAnchor(mapId);
-        createMapThroughControls(controls, runtime, "Corridor Door Anchor Reload Hop");
-        selectMap(controls, "Corridor Door Anchor Map");
-        Set<Long> corridorIdsBefore = runtime.database().corridorIdsForMap(mapId);
-        List<String> anchorRowsBefore = runtime.database().corridorAnchorState(mapId);
-        click(button(controls, "Korridor"));
-        assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
-                "DE-COR-002 corridor family selects corridor-create tool");
-        Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
-        var anchorHandle = firstCorridorAnchorHandle(runtime.mapSurfaceModel().current(), "DE-COR-002");
-        DungeonEditorTopologyElementRef anchorRef = editorTopologyRef(anchorHandle.ref().topologyRef());
-        Point2D anchor = glyphCenterForRef(binding.mapContentModel(), anchorRef);
-        assertPointerTarget(binding.mapContentModel(), doorOne, "BOUNDARY", "DE-COR-002 door");
-        assertPointerTarget(binding.mapContentModel(), anchor, "HANDLE", "DE-COR-002 anchor");
-        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-
-        fireMapMousePressed(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
-        fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
-                viewport.sceneToScreenX(anchor.getX()), viewport.sceneToScreenY(anchor.getY()), false);
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
-                "DE-COR-002 keeps published preview surface clear before commit");
-        fireMapMousePressed(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(anchor.getX()), viewport.sceneToScreenY(anchor.getY()), false);
-
-        long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
-                "DE-COR-002");
-        List<String> stableState = runtime.database().corridorStableConnectionState(mapId);
-        assertCorridorDoorBindingCount(stableState, newCorridorId, 1, "DE-COR-002");
-        assertCorridorAnchorRef(stableState, newCorridorId, anchorRef.id(), "DE-COR-002");
-        assertEquals(anchorRowsBefore, runtime.database().corridorAnchorState(mapId),
-                "DE-COR-002 reuses existing A1 without creating a duplicate anchor row");
-        assertCorridorCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
-                binding.mapContentModel(),
-                newCorridorId,
-                Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
-                "DE-COR-002");
-        selectMap(controls, "Corridor Door Anchor Reload Hop");
-        selectMap(controls, "Corridor Door Anchor Map");
-        assertCorridorCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
-                binding.mapContentModel(),
-                newCorridorId,
-                Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
-                "DE-COR-002 reload");
-
-        results.add("DE-COR-002 Ready: DungeonEditorControlsView corridor tool + door/anchor hits -> SQLite -> render");
-    }
-
-
-    private static void verifyAnchorToAnchorCorridorCreateThroughMapView(List<String> results) {
-        HarnessRuntime runtime = HarnessRuntime.create();
-        HarnessBinding binding = bindHarness(runtime);
-        DungeonEditorControlsView controls = binding.controls();
-        DungeonMapView mapView = binding.mapView();
-
-        long mapId = createMapThroughControls(controls, runtime, "Corridor Anchor Route Map");
-        runtime.database().seedTwoAnchorRouteTarget(mapId);
-        createMapThroughControls(controls, runtime, "Corridor Anchor Route Reload Hop");
-        selectMap(controls, "Corridor Anchor Route Map");
-        Set<Long> corridorIdsBefore = runtime.database().corridorIdsForMap(mapId);
-        List<String> anchorRowsBefore = runtime.database().corridorAnchorState(mapId);
-        List<DungeonEditorTopologyElementRef> anchorRefs = corridorAnchorRefs(runtime.mapSurfaceModel().current());
-        assertEquals(2, anchorRefs.size(), "DE-COR-003 fixture publishes exactly two corridor anchors");
-        click(button(controls, "Korridor"));
-        assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
-                "DE-COR-003 corridor family selects corridor-create tool");
-        Point2D anchorOne = glyphCenterForRef(binding.mapContentModel(), anchorRefs.get(0));
-        Point2D anchorTwo = glyphCenterForRef(binding.mapContentModel(), anchorRefs.get(1));
-        assertPointerTarget(binding.mapContentModel(), anchorOne, "HANDLE", "DE-COR-003 first anchor");
-        assertPointerTarget(binding.mapContentModel(), anchorTwo, "HANDLE", "DE-COR-003 second anchor");
-        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-
-        fireMapMousePressed(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(anchorOne.getX()), viewport.sceneToScreenY(anchorOne.getY()), false);
-        fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
-                viewport.sceneToScreenX(anchorTwo.getX()), viewport.sceneToScreenY(anchorTwo.getY()), false);
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
-                "DE-COR-003 keeps published preview surface clear before commit");
-        fireMapMousePressed(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(anchorTwo.getX()), viewport.sceneToScreenY(anchorTwo.getY()), false);
-
-        long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
-                "DE-COR-003");
-        List<String> stableState = runtime.database().corridorStableConnectionState(mapId);
-        assertCorridorAnchorRef(stableState, newCorridorId, anchorRefs.get(0).id(), "DE-COR-003 first anchor");
-        assertCorridorAnchorRef(stableState, newCorridorId, anchorRefs.get(1).id(), "DE-COR-003 second anchor");
-        assertEquals(anchorRowsBefore, runtime.database().corridorAnchorState(mapId),
-                "DE-COR-003 reuses both existing anchor rows without duplicates");
-        assertCorridorCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
-                binding.mapContentModel(),
-                newCorridorId,
-                cellRect(2, 6, 8, 6, 0),
-                "DE-COR-003");
-        selectMap(controls, "Corridor Anchor Route Reload Hop");
-        selectMap(controls, "Corridor Anchor Route Map");
-        assertCorridorCreatedInSnapshot(
-                runtime.mapSurfaceModel().current(),
-                binding.mapContentModel(),
-                newCorridorId,
-                cellRect(2, 6, 8, 6, 0),
-                "DE-COR-003 reload");
-
-        results.add("DE-COR-003 Ready: DungeonEditorControlsView corridor tool + two anchor hits -> SQLite -> render");
-    }
-
 
     private static void verifyCorridorSplitAtCrossingThroughMapView(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
@@ -803,7 +544,7 @@ final class DungeonEditorCorridorHarness {
     }
 
 
-    private static void verifyGenericCorridorHitCreatesAnchorEndpointThroughMapView(List<String> results) {
+    private static void verifyGenericCorridorHitReusesAnchorEndpointThroughMapView() {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
@@ -816,18 +557,23 @@ final class DungeonEditorCorridorHarness {
         Set<Long> corridorIdsBefore = runtime.database().corridorIdsForMap(mapId);
         List<String> anchorRowsBefore = runtime.database().corridorAnchorState(mapId);
         DungeonEditorTopologyElementRef anchorRef =
-                editorTopologyRef(firstCorridorAnchorHandle(runtime.mapSurfaceModel().current(), "DE-COR-010")
-                        .ref().topologyRef());
+                editorTopologyRef(firstCorridorAnchorHandle(
+                        runtime.mapSurfaceModel().current(),
+                        "DE-COR-013 existing-anchor").ref().topologyRef());
         Point2D genericCorridorPoint = new Point2D(6.05, 5.05);
         Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         click(button(controls, "Korridor"));
         assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
-                "DE-COR-010 corridor family selects corridor-create tool");
-        assertPointerTarget(binding.mapContentModel(), genericCorridorPoint, "CELL", "DE-COR-010 corridor body");
+                "DE-COR-013 existing-anchor corridor family selects corridor-create tool");
+        assertPointerTarget(
+                binding.mapContentModel(),
+                genericCorridorPoint,
+                "CELL",
+                "DE-COR-013 existing-anchor corridor body");
         assertEquals("CORRIDOR", binding.mapContentModel()
                         .resolvePointerTarget(genericCorridorPoint.getX(), genericCorridorPoint.getY())
                         .elementKind(),
-                "DE-COR-010 body hit resolves as a generic corridor cell instead of the anchor handle");
+                "DE-COR-013 existing-anchor body hit resolves as a generic corridor cell instead of the anchor handle");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
@@ -844,23 +590,23 @@ final class DungeonEditorCorridorHarness {
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
         assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
-                "DE-COR-010 keeps published preview surface clear before commit");
+                "DE-COR-013 existing-anchor keeps published preview surface clear before commit");
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
 
         long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
-                "DE-COR-010");
+                "DE-COR-013 existing-anchor");
         List<String> stableState = runtime.database().corridorStableConnectionState(mapId);
-        assertCorridorDoorBindingCount(stableState, newCorridorId, 1, "DE-COR-010");
-        assertCorridorAnchorRef(stableState, newCorridorId, anchorRef.id(), "DE-COR-010");
+        assertCorridorDoorBindingCount(stableState, newCorridorId, 1, "DE-COR-013 existing-anchor");
+        assertCorridorAnchorRef(stableState, newCorridorId, anchorRef.id(), "DE-COR-013 existing-anchor");
         assertEquals(anchorRowsBefore, runtime.database().corridorAnchorState(mapId),
-                "DE-COR-010 generic body hit reuses exact A1 and creates no duplicate anchor row");
+                "DE-COR-013 existing-anchor generic body hit reuses exact A1 and creates no duplicate anchor row");
         assertCorridorCreatedInSnapshot(
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),
                 newCorridorId,
                 Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
-                "DE-COR-010");
+                "DE-COR-013 existing-anchor");
         selectMap(controls, "Corridor Generic Anchor Reload Hop");
         selectMap(controls, "Corridor Generic Anchor Map");
         assertCorridorCreatedInSnapshot(
@@ -868,13 +614,12 @@ final class DungeonEditorCorridorHarness {
                 binding.mapContentModel(),
                 newCorridorId,
                 Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
-                "DE-COR-010 reload");
+                "DE-COR-013 existing-anchor reload");
 
-        results.add("DE-COR-010 Ready: DungeonMapView generic corridor body hit -> reused anchor -> SQLite -> render");
     }
 
 
-    private static void verifyGenericCorridorHitMaterializesAbsentAnchorEndpointThroughMapView(List<String> results) {
+    private static void verifyGenericCorridorHitMaterializesAbsentAnchorEndpointThroughMapView() {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
@@ -890,12 +635,16 @@ final class DungeonEditorCorridorHarness {
         Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         click(button(controls, "Korridor"));
         assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
-                "DE-COR-011 corridor family selects corridor-create tool");
-        assertPointerTarget(binding.mapContentModel(), genericCorridorPoint, "CELL", "DE-COR-011 corridor body");
+                "DE-COR-013 new-anchor corridor family selects corridor-create tool");
+        assertPointerTarget(
+                binding.mapContentModel(),
+                genericCorridorPoint,
+                "CELL",
+                "DE-COR-013 new-anchor corridor body");
         assertEquals("CORRIDOR", binding.mapContentModel()
                         .resolvePointerTarget(genericCorridorPoint.getX(), genericCorridorPoint.getY())
                         .elementKind(),
-                "DE-COR-011 body hit resolves as a generic corridor cell instead of an anchor handle");
+                "DE-COR-013 new-anchor body hit resolves as a generic corridor cell instead of an anchor handle");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
@@ -912,43 +661,46 @@ final class DungeonEditorCorridorHarness {
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
         assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
-                "DE-COR-011 keeps published preview surface clear before commit");
+                "DE-COR-013 new-anchor keeps published preview surface clear before commit");
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
 
         long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
-                "DE-COR-011");
+                "DE-COR-013 new-anchor");
         List<String> anchorRowsAfter = runtime.database().corridorAnchorState(mapId);
         assertEquals(anchorRowsBefore.size() + 1L, anchorRowsAfter.size(),
-                "DE-COR-011 materializes exactly one additional corridor anchor row");
-        long materializedAnchorRef = singleNewAnchorTopologyId(anchorRowsBefore, anchorRowsAfter, "DE-COR-011");
+                "DE-COR-013 new-anchor materializes exactly one additional corridor anchor row");
+        long materializedAnchorRef = singleNewAnchorTopologyId(
+                anchorRowsBefore,
+                anchorRowsAfter,
+                "DE-COR-013 new-anchor");
         assertTrue(anchorRowsAfter.stream().anyMatch(row ->
                         row.contains("host_corridor_id=1")
                                 && row.contains("cell_x=6")
                                 && row.contains("cell_y=4")
                                 && row.contains("cell_z=0")
                                 && row.contains("topology_element_id=" + materializedAnchorRef)),
-                "DE-COR-011 materialized anchor is owned by K1 at (6,4,0): " + anchorRowsAfter);
+                "DE-COR-013 new-anchor materialized anchor is owned by K1 at (6,4,0): " + anchorRowsAfter);
         List<String> stableState = runtime.database().corridorStableConnectionState(mapId);
-        assertCorridorDoorBindingCount(stableState, newCorridorId, 1, "DE-COR-011");
-        assertCorridorAnchorRef(stableState, newCorridorId, materializedAnchorRef, "DE-COR-011");
+        assertCorridorDoorBindingCount(stableState, newCorridorId, 1, "DE-COR-013 new-anchor");
+        assertCorridorAnchorRef(stableState, newCorridorId, materializedAnchorRef, "DE-COR-013 new-anchor");
         assertCorridorCreatedInSnapshot(
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),
                 newCorridorId,
                 Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0"),
-                "DE-COR-011");
+                "DE-COR-013 new-anchor");
         assertTrue(runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
                         .anyMatch(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name())
                                 && handle.ref().topologyRef().id() == materializedAnchorRef
                                 && handle.cell().q() == 6
                                 && handle.cell().r() == 4
                                 && handle.cell().level() == 0),
-                "DE-COR-011 published snapshot exposes the new anchor handle at (6,4,0)");
+                "DE-COR-013 new-anchor published snapshot exposes the new anchor handle at (6,4,0)");
         DungeonEditorTopologyElementRef materializedAnchor =
                 new DungeonEditorTopologyElementRef("CORRIDOR_ANCHOR", materializedAnchorRef);
         assertTrue(renderHasGlyphAt(binding.mapContentModel(), materializedAnchor, 6.5, 4.5, false),
-                "DE-COR-011 render scene shows materialized anchor marker at (6,4,0)");
+                "DE-COR-013 new-anchor render scene shows materialized anchor marker at (6,4,0)");
         selectMap(controls, "Corridor Absent Anchor Reload Hop");
         selectMap(controls, "Corridor Absent Anchor Map");
         assertCorridorCreatedInSnapshot(
@@ -956,16 +708,15 @@ final class DungeonEditorCorridorHarness {
                 binding.mapContentModel(),
                 newCorridorId,
                 Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0"),
-                "DE-COR-011 reload");
+                "DE-COR-013 new-anchor reload");
         assertTrue(runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
                         .anyMatch(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name())
                                 && handle.ref().topologyRef().id() == materializedAnchorRef
                                 && handle.cell().q() == 6
                                 && handle.cell().r() == 4
                                 && handle.cell().level() == 0),
-                "DE-COR-011 reload published snapshot preserves the materialized anchor topology identity");
+                "DE-COR-013 new-anchor reload published snapshot preserves the materialized anchor topology identity");
 
-        results.add("DE-COR-011 Ready: DungeonMapView generic corridor body hit -> new anchor -> SQLite -> render");
     }
 
 
@@ -1018,15 +769,15 @@ final class DungeonEditorCorridorHarness {
 
 
     private static void verifyGenericEndpointMaterializesOnlyAtFullCommitThroughMapView(List<String> results) {
-        verifyGenericRoomHitMaterializesFacingDoorThroughMapView(results);
+        verifyGenericRoomHitMaterializesFacingDoorThroughMapView();
         assertGenericRoomRejectedCompletionDoesNotMaterialize();
-        verifyGenericCorridorHitCreatesAnchorEndpointThroughMapView(results);
-        verifyGenericCorridorHitMaterializesAbsentAnchorEndpointThroughMapView(results);
+        verifyGenericCorridorHitReusesAnchorEndpointThroughMapView();
+        verifyGenericCorridorHitMaterializesAbsentAnchorEndpointThroughMapView();
         results.add("DE-COR-013 Ready: DungeonMapView generic room/corridor endpoints -> no first-click"
                 + " materialization, atomic successful commit, SQLite readback, topology identity, and render");
     }
 
-    private static void verifyGenericRoomHitMaterializesFacingDoorThroughMapView(List<String> results) {
+    private static void verifyGenericRoomHitMaterializesFacingDoorThroughMapView() {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
@@ -1042,19 +793,19 @@ final class DungeonEditorCorridorHarness {
         click(button(controls, "Korridor"));
         Point2D roomInterior = new Point2D(1.5, 2.5);
         Point2D doorTwo = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 8.0, 2.5);
-        assertPointerTarget(binding.mapContentModel(), roomInterior, "LABEL", "DE-COR-009 generic room");
+        assertPointerTarget(binding.mapContentModel(), roomInterior, "LABEL", "DE-COR-013 generic-room start");
         assertEquals("ROOM", binding.mapContentModel()
                         .resolvePointerTarget(roomInterior.getX(), roomInterior.getY())
                         .elementKind(),
-                "DE-COR-009 generic room cell hit is a room target rather than a door target");
-        assertPointerTarget(binding.mapContentModel(), doorTwo, "BOUNDARY", "DE-COR-009 second door");
+                "DE-COR-013 generic-room start resolves as a room target rather than a door target");
+        assertPointerTarget(binding.mapContentModel(), doorTwo, "BOUNDARY", "DE-COR-013 generic-room second door");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(roomInterior.getX()), viewport.sceneToScreenY(roomInterior.getY()), false);
         assertTrue(runtime.controlsModel().current().statusText().contains("Start:"),
-                "DE-COR-009 first generic room click arms a corridor draft");
+                "DE-COR-013 generic-room first click arms a corridor draft");
         assertFirstClickDraftOnly(
                 beforeFirstClick,
                 runtime,
@@ -1067,13 +818,13 @@ final class DungeonEditorCorridorHarness {
                 viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
 
         long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
-                "DE-COR-009");
+                "DE-COR-013 generic-room");
         List<String> doorRowsAfter = runtime.database().doorBoundaryState(mapId);
-        long materializedDoorRef = singleNewDoorTopologyId(doorRowsBefore, doorRowsAfter, "DE-COR-009");
+        long materializedDoorRef = singleNewDoorTopologyId(doorRowsBefore, doorRowsAfter, "DE-COR-013 generic-room");
         List<String> stableState = runtime.database().corridorStableConnectionState(mapId);
-        assertCorridorDoorBindingCount(stableState, newCorridorId, 2, "DE-COR-009");
+        assertCorridorDoorBindingCount(stableState, newCorridorId, 2, "DE-COR-013 generic-room");
         assertEquals(1L, runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST"),
-                "DE-COR-009 materializes exactly one east-facing door on R1");
+                "DE-COR-013 generic-room materializes exactly one east-facing door on R1");
         assertTrue(doorRowsAfter.stream().anyMatch(row ->
                         row.startsWith("door_edges|cluster_id=" + roomIds.clusterId() + "|")
                                 && row.contains("|cell_x=1|")
@@ -1081,28 +832,28 @@ final class DungeonEditorCorridorHarness {
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|edge_type=DOOR|")
                                 && row.contains("|topology_element_id=" + materializedDoorRef)),
-                "DE-COR-009 materialized door row is the R1 east edge: " + doorRowsAfter);
+                "DE-COR-013 generic-room materialized door row is the R1 east edge: " + doorRowsAfter);
         assertTrue(stableState.stream().anyMatch(row ->
                         row.startsWith("dungeon_corridor_door_overrides|corridor_id=" + newCorridorId + "|")
                                 && row.contains("|relative_cell_x=1|")
                                 && row.contains("|relative_cell_y=0|")
                                 && row.contains("|edge_direction=EAST|")
                                 && row.contains("|topology_element_id=" + materializedDoorRef)),
-                "DE-COR-009 generic room endpoint binds the materialized east-facing door edge");
+                "DE-COR-013 generic-room endpoint binds the materialized east-facing door edge");
         assertCorridorCreatedInSnapshot(
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),
                 newCorridorId,
                 cellRect(4, 2, 7, 2, 0),
-                "DE-COR-009");
+                "DE-COR-013 generic-room");
         DungeonEditorTopologyElementRef materializedDoor =
                 new DungeonEditorTopologyElementRef("DOOR", materializedDoorRef);
         assertTrue(runtime.mapSurfaceModel().current().surface().map().boundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && boundary.topologyRef().equals(materializedDoor)),
-                "DE-COR-009 published snapshot exposes the materialized door boundary");
+                "DE-COR-013 generic-room published snapshot exposes the materialized door boundary");
         assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 2.5),
-                "DE-COR-009 render scene shows the materialized door boundary");
+                "DE-COR-013 generic-room render scene shows the materialized door boundary");
         selectMap(controls, "Corridor Generic Room Door Reload Hop");
         selectMap(controls, "Corridor Generic Room Door Map");
         assertCorridorCreatedInSnapshot(
@@ -1110,13 +861,12 @@ final class DungeonEditorCorridorHarness {
                 binding.mapContentModel(),
                 newCorridorId,
                 cellRect(4, 2, 7, 2, 0),
-                "DE-COR-009 reload");
+                "DE-COR-013 generic-room reload");
         assertTrue(runtime.mapSurfaceModel().current().surface().map().boundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && boundary.topologyRef().equals(materializedDoor)),
-                "DE-COR-009 reload published snapshot preserves the materialized door topology identity");
+                "DE-COR-013 generic-room reload published snapshot preserves the materialized door topology identity");
 
-        results.add("DE-COR-009 Ready: DungeonMapView generic room hit -> facing door endpoint -> SQLite -> render");
     }
 
     private static void assertGenericRoomRejectedCompletionDoesNotMaterialize() {

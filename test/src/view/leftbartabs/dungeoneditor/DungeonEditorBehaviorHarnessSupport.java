@@ -1097,14 +1097,6 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         firstClusterCornerHandleAt(snapshot, cellX, cellY, cellZ, message);
     }
 
-    static List<DungeonEditorTopologyElementRef> corridorAnchorRefs(DungeonEditorMapSurfaceSnapshot snapshot) {
-        return snapshot.surface().map().editorHandles().stream()
-                .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
-                .map(handle -> editorTopologyRef(handle.ref().topologyRef()))
-                .sorted((left, right) -> Long.compare(left.id(), right.id()))
-                .toList();
-    }
-
     static void assertPointerTarget(
             DungeonMapContentModel mapContentModel,
             Point2D scenePoint,

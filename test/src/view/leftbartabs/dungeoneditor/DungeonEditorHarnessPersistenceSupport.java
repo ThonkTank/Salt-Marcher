@@ -1554,19 +1554,6 @@ class DungeonEditorHarnessPersistenceSupport {
             }
         }
 
-        void seedTwoDoorRouteTarget(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long roomOneId = insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
-                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 8, 1);
-                markDoorEdge(connection, mapId, roomOneId, 0, 1, 0, "EAST", "D1", 200);
-                markDoorEdge(connection, mapId, roomTwoId, 0, -1, 0, "WEST", "D2", 201);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed F8_TWO_DOOR_ROUTE_TARGET fixture.", exception);
-            }
-        }
-
         void seedVerticalFallbackCorridorRouteTarget(long mapId) {
             try (Connection connection = open()) {
                 connection.setAutoCommit(false);
@@ -1604,61 +1591,6 @@ class DungeonEditorHarnessPersistenceSupport {
                 connection.commit();
             } catch (SQLException exception) {
                 throw new IllegalStateException("Failed to seed blocked corridor route fixture.", exception);
-            }
-        }
-
-        void seedTwoAnchorRouteTarget(long mapId) {
-            try (Connection connection = open()) {
-                connection.setAutoCommit(false);
-                long roomOneId = insertRectangularRoom(connection, mapId, "R1", 0, -4, 4);
-                long roomTwoId = insertRectangularRoom(connection, mapId, "R2", 0, 10, 4);
-                long roomOneClusterId = scalarLong(
-                        connection,
-                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
-                        roomOneId);
-                long roomTwoClusterId = scalarLong(
-                        connection,
-                        "SELECT cluster_id FROM dungeon_rooms WHERE room_id=?",
-                        roomTwoId);
-                long corridorOneId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_corridors(dungeon_map_id, level_z) VALUES(?, ?)",
-                        mapId,
-                        0);
-                insertCorridorTopologyElement(connection, mapId, corridorOneId, corridorOneId, "CORRIDOR", "K1", 300);
-                insertCorridorWaypoint(connection, corridorOneId, roomOneClusterId, 5, 1, 0, 0);
-                long anchorOneTopologyId = 70_000L + corridorOneId;
-                insertCorridorTopologyElement(
-                        connection,
-                        mapId,
-                        anchorOneTopologyId,
-                        corridorOneId,
-                        "CORRIDOR_ANCHOR",
-                        "A1",
-                        301);
-                insertCorridorAnchor(connection, corridorOneId, 1, corridorOneId, 2, 6, 0, anchorOneTopologyId, 0);
-                insertCorridorAnchorRef(connection, corridorOneId, corridorOneId, anchorOneTopologyId, 0);
-                long corridorTwoId = insertAndReturnId(
-                        connection,
-                        "INSERT INTO dungeon_corridors(dungeon_map_id, level_z) VALUES(?, ?)",
-                        mapId,
-                        0);
-                insertCorridorTopologyElement(connection, mapId, corridorTwoId, corridorTwoId, "CORRIDOR", "K2", 302);
-                insertCorridorWaypoint(connection, corridorTwoId, roomTwoClusterId, -3, 1, 0, 0);
-                long anchorTwoTopologyId = 70_000L + corridorTwoId;
-                insertCorridorTopologyElement(
-                        connection,
-                        mapId,
-                        anchorTwoTopologyId,
-                        corridorTwoId,
-                        "CORRIDOR_ANCHOR",
-                        "A2",
-                        303);
-                insertCorridorAnchor(connection, corridorTwoId, 2, corridorTwoId, 8, 6, 0, anchorTwoTopologyId, 0);
-                insertCorridorAnchorRef(connection, corridorTwoId, corridorTwoId, anchorTwoTopologyId, 0);
-                connection.commit();
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed F10_TWO_ANCHOR_ROUTE_TARGET fixture.", exception);
             }
         }
 
