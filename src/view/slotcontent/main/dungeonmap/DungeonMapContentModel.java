@@ -1464,6 +1464,9 @@ public final class DungeonMapContentModel {
         }
 
         private static String cellHitRef(DungeonMapRenderState.Cell cell) {
+            if (cell.preview()) {
+                return "";
+            }
             return "cell:" + cell.kind().name()
                     + ":" + cell.ownerId()
                     + ":" + cell.clusterId()
@@ -1472,6 +1475,9 @@ public final class DungeonMapContentModel {
         }
 
         private static String edgeHitRef(DungeonMapRenderState.Edge edge) {
+            if (edge.preview()) {
+                return "";
+            }
             return "edge:" + edge.kind().name()
                     + ":" + edge.ownerId()
                     + ":" + edge.topologyRef().kind()
@@ -1484,6 +1490,9 @@ public final class DungeonMapContentModel {
         }
 
         private static String labelHitRef(DungeonMapRenderState.Label label) {
+            if (label.preview()) {
+                return "";
+            }
             return "label:" + label.ownerId()
                     + ":" + label.clusterId()
                     + ":" + label.topologyRef().kind()
@@ -1492,6 +1501,9 @@ public final class DungeonMapContentModel {
         }
 
         private static String markerHitRef(DungeonMapRenderState.Marker marker) {
+            if (marker.preview()) {
+                return "";
+            }
             DungeonMapRenderState.MarkerHandle handle = marker.handle();
             if (!HandleMarkerPresentation.hitIndexed(handle.kind())) {
                 return "";

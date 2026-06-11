@@ -21,6 +21,7 @@ public final class ApplyDungeonEditorOperationUseCase {
 
     public record OperationResultData(
             LoadDungeonSnapshotUseCase.DungeonSnapshotData snapshot,
+            boolean changed,
             List<String> validationMessages,
             List<String> reactionMessages
     ) {
@@ -63,12 +64,12 @@ public final class ApplyDungeonEditorOperationUseCase {
     ) {
         DungeonMap current = currentMap(mapId);
         DungeonMap mutated = applyOperation(current, operation);
+        boolean changed = !mutated.equals(current);
         List<String> validationMessages = OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated);
         List<String> reactionMessages = OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated);
         DungeonDerivedState derived = deriveState.execute(mutated);
         DungeonMap saved = mutated.equals(current) ? current : repository.save(mutated);
-        var snapshot = snapshot(saved, derived);
-        return new OperationResultData(snapshot, validationMessages, reactionMessages);
+        return new OperationResultData(snapshot(saved, derived), changed, validationMessages, reactionMessages);
     }
 
     public OperationResultData preview(
@@ -80,6 +81,7 @@ public final class ApplyDungeonEditorOperationUseCase {
         DungeonDerivedState derived = deriveState.execute(mutated);
         return new OperationResultData(
                 snapshot(mutated, derived),
+                !mutated.equals(current),
                 OPERATION_FEEDBACK_POLICY.validationMessages(current, mutated),
                 OPERATION_FEEDBACK_POLICY.reactionMessages(current, mutated));
     }

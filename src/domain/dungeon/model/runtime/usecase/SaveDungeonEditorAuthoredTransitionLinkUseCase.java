@@ -79,6 +79,7 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
                 publishDungeonEditorHandles.execute(sourceMap));
         publishMutationUseCase.execute(new ApplyDungeonEditorOperationUseCase.OperationResultData(
                 snapshot,
+                true,
                 List.of(),
                 List.of("transition link saved")));
     }

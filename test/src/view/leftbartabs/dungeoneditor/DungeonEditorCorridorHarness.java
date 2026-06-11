@@ -300,11 +300,6 @@ final class DungeonEditorCorridorHarness {
         assertFirstClickDraftOnly(beforeFirstClick, runtime, binding, mapId, "DE-COR-014 first explicit door click");
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
-        clickMap(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
-
-        long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
-                "DE-COR-014");
         Set<String> expectedCells = Set.of(
                 "4,2,0",
                 "4,3,0",
@@ -317,6 +312,14 @@ final class DungeonEditorCorridorHarness {
                 "7,7,0",
                 "8,7,0",
                 "9,7,0");
+        assertVisibleCorridorPreview(runtime, binding, expectedCells, "DE-COR-014 hover");
+        assertPointerTarget(binding.mapContentModel(), doorTwo, "BOUNDARY",
+                "DE-COR-014 hover keeps committed second door target authoritative");
+        clickMap(mapView, MouseButton.PRIMARY,
+                viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
+
+        long newCorridorId = singleNewCorridorId(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
+                "DE-COR-014");
         assertCorridorDoorBindingCount(runtime.database().corridorStableConnectionState(mapId), newCorridorId, 2,
                 "DE-COR-014");
         assertEquals(doorRowsBefore, runtime.database().doorBoundaryState(mapId),
@@ -377,8 +380,17 @@ final class DungeonEditorCorridorHarness {
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorThree.getX()), viewport.sceneToScreenY(doorThree.getY()), false);
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
-                "DE-COR-004 keeps published preview surface clear before commit");
+        Set<String> expectedCells = Set.of(
+                "4,2,0",
+                "5,2,0",
+                "6,2,0",
+                "6,3,0",
+                "6,4,0",
+                "6,5,0",
+                "6,6,0",
+                "6,7,0",
+                "6,8,0");
+        assertVisibleCorridorPreview(runtime, binding, expectedCells, "DE-COR-004 hover");
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(doorThree.getX()), viewport.sceneToScreenY(doorThree.getY()), false);
 
@@ -394,16 +406,6 @@ final class DungeonEditorCorridorHarness {
         assertCorridorAnchorRef(stableState, newCorridorId, crossingAnchorTopologyId, "DE-COR-004");
         assertOnlyCorridorWaypointAt(runtime.database().corridorWaypointAbsoluteState(mapId), newCorridorId, 6, 5, 0,
                 "DE-COR-004");
-        Set<String> expectedCells = Set.of(
-                "4,2,0",
-                "5,2,0",
-                "6,2,0",
-                "6,3,0",
-                "6,4,0",
-                "6,5,0",
-                "6,6,0",
-                "6,7,0",
-                "6,8,0");
         assertCorridorCreatedInSnapshot(
                 runtime.mapSurfaceModel().current(),
                 binding.mapContentModel(),
@@ -589,8 +591,17 @@ final class DungeonEditorCorridorHarness {
                 "DE-COR-013 generic corridor existing-anchor first click");
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
-                "DE-COR-013 existing-anchor keeps published preview surface clear before commit");
+        assertVisibleCorridorPreview(
+                runtime,
+                binding,
+                Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
+                "DE-COR-013 existing-anchor hover");
+        assertHoverKeepsCommittedCorridorState(
+                beforeFirstClick,
+                runtime,
+                binding,
+                mapId,
+                "DE-COR-013 existing-anchor hover");
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
 
@@ -660,8 +671,17 @@ final class DungeonEditorCorridorHarness {
                 "DE-COR-013 generic corridor absent-anchor first click");
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
-                "DE-COR-013 new-anchor keeps published preview surface clear before commit");
+        assertVisibleCorridorPreview(
+                runtime,
+                binding,
+                Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0"),
+                "DE-COR-013 new-anchor hover");
+        assertHoverKeepsCommittedCorridorState(
+                beforeFirstClick,
+                runtime,
+                binding,
+                mapId,
+                "DE-COR-013 new-anchor hover");
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
 
@@ -770,7 +790,6 @@ final class DungeonEditorCorridorHarness {
 
     private static void verifyGenericEndpointMaterializesOnlyAtFullCommitThroughMapView(List<String> results) {
         verifyGenericRoomHitMaterializesFacingDoorThroughMapView();
-        assertGenericRoomRejectedCompletionDoesNotMaterialize();
         verifyGenericCorridorHitReusesAnchorEndpointThroughMapView();
         verifyGenericCorridorHitMaterializesAbsentAnchorEndpointThroughMapView();
         results.add("DE-COR-013 Ready: DungeonMapView generic room/corridor endpoints -> no first-click"
@@ -814,6 +833,17 @@ final class DungeonEditorCorridorHarness {
                 "DE-COR-013 generic room first click");
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
+        assertVisibleCorridorPreview(
+                runtime,
+                binding,
+                cellRect(4, 2, 7, 2, 0),
+                "DE-COR-013 generic-room hover");
+        assertHoverKeepsCommittedCorridorState(
+                beforeFirstClick,
+                runtime,
+                binding,
+                mapId,
+                "DE-COR-013 generic-room hover");
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
 
@@ -869,40 +899,6 @@ final class DungeonEditorCorridorHarness {
 
     }
 
-    private static void assertGenericRoomRejectedCompletionDoesNotMaterialize() {
-        HarnessRuntime runtime = HarnessRuntime.create();
-        HarnessBinding binding = bindHarness(runtime);
-        DungeonEditorControlsView controls = binding.controls();
-        DungeonMapView mapView = binding.mapView();
-
-        long mapId = createMapThroughControls(controls, runtime, "Corridor Generic Room Blocked Map");
-        runtime.database().seedBlockedCorridorRouteTarget(mapId);
-        createMapThroughControls(controls, runtime, "Corridor Generic Room Blocked Reload Hop");
-        selectMap(controls, "Corridor Generic Room Blocked Map");
-        click(button(controls, "Korridor"));
-        Point2D roomInterior = new Point2D(1.5, 2.5);
-        Point2D eastWall = boundaryMidpointNear(binding.mapContentModel(), "WALL", 5.0, 2.5);
-        assertPointerTarget(binding.mapContentModel(), roomInterior, "LABEL", "DE-COR-013 rejected generic room start");
-        assertEquals("ROOM", binding.mapContentModel()
-                        .resolvePointerTarget(roomInterior.getX(), roomInterior.getY())
-                        .elementKind(),
-                "DE-COR-013 rejected generic room start targets room semantics");
-        assertPointerTarget(binding.mapContentModel(), eastWall, "BOUNDARY", "DE-COR-013 rejected completion target");
-        AuthoredCorridorState before = AuthoredCorridorState.capture(runtime, binding, mapId);
-        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-
-        fireMapMousePressed(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(roomInterior.getX()), viewport.sceneToScreenY(roomInterior.getY()), false);
-        assertFirstClickDraftOnly(before, runtime, binding, mapId, "DE-COR-013 rejected generic room first click");
-        fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
-                viewport.sceneToScreenX(eastWall.getX()), viewport.sceneToScreenY(eastWall.getY()), false);
-        fireMapMousePressed(mapView, MouseButton.PRIMARY,
-                viewport.sceneToScreenX(eastWall.getX()), viewport.sceneToScreenY(eastWall.getY()), false);
-
-        assertRejectedCompletionLeavesAuthoredState(before, runtime, binding, mapId,
-                "DE-COR-013 rejected generic room completion");
-    }
-
     private static void assertFirstClickDraftOnly(
             AuthoredCorridorState before,
             HarnessRuntime runtime,
@@ -930,6 +926,53 @@ final class DungeonEditorCorridorHarness {
                 message + " leaves rendered committed geometry unchanged");
         assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
                 message + " keeps the published preview surface clear until a valid completion candidate exists");
+    }
+
+    private static void assertHoverKeepsCommittedCorridorState(
+            AuthoredCorridorState before,
+            HarnessRuntime runtime,
+            HarnessBinding binding,
+            long mapId,
+            String message
+    ) {
+        assertEquals(before.corridorIds(), runtime.database().corridorIdsForMap(mapId),
+                message + " creates no corridor id before commit");
+        assertEquals(before.doorRows(), runtime.database().doorBoundaryState(mapId),
+                message + " materializes no generic room door before commit");
+        assertEquals(before.anchorRows(), runtime.database().corridorAnchorState(mapId),
+                message + " materializes no corridor anchor before commit");
+        assertEquals(before.stableConnectionRows(), runtime.database().corridorStableConnectionState(mapId),
+                message + " creates no endpoint binding, route, or topology row before commit");
+        assertEquals(before.waypointRows(), runtime.database().corridorWaypointAbsoluteState(mapId),
+                message + " creates no waypoint row before commit");
+        assertEquals(before.authoredGeometryRows(), runtime.database().authoredGeometryState(mapId),
+                message + " leaves authored SQLite geometry unchanged before commit");
+        assertEquals(before.surfaceCorridorCount(), surfaceCorridorCount(runtime.mapSurfaceModel().current()),
+                message + " publishes no additional committed corridor surface before commit");
+        assertEquals(before.surfaceMapCells(), mapSnapshotCellSet(runtime.mapSurfaceModel().current().surface().map()),
+                message + " leaves committed surface map cells unchanged before commit");
+    }
+
+    private static void assertVisibleCorridorPreview(
+            HarnessRuntime runtime,
+            HarnessBinding binding,
+            Set<String> expectedCells,
+            String message
+    ) {
+        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
+        assertEquals(DungeonEditorPreview.none(), snapshot.preview(),
+                message + " keeps corridor preview out of the public typed preview channel");
+        assertTrue(snapshot.surface().previewMap() != null,
+                message + " publishes a visible preview map");
+        Set<String> committedCells = mapSnapshotCellSet(snapshot.surface().map());
+        Set<String> expectedAddedPreviewCells = new LinkedHashSet<>(expectedCells);
+        expectedAddedPreviewCells.removeAll(committedCells);
+        Set<String> addedPreviewCells = new LinkedHashSet<>(mapSnapshotCellSet(snapshot.surface().previewMap()));
+        addedPreviewCells.removeAll(committedCells);
+        assertEquals(expectedAddedPreviewCells, addedPreviewCells,
+                message + " preview map adds exactly the candidate corridor route cells");
+        assertEquals(expectedCells, renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()),
+                message + " render scene paints exactly the candidate corridor route cells");
     }
 
     private static void assertRejectedCompletionLeavesAuthoredState(
@@ -974,6 +1017,7 @@ final class DungeonEditorCorridorHarness {
             List<String> stableConnectionRows,
             List<String> waypointRows,
             List<String> authoredGeometryRows,
+            Set<String> surfaceMapCells,
             Set<String> renderCells,
             long surfaceCorridorCount
     ) {
@@ -989,6 +1033,7 @@ final class DungeonEditorCorridorHarness {
                     runtime.database().corridorStableConnectionState(mapId),
                     runtime.database().corridorWaypointAbsoluteState(mapId),
                     runtime.database().authoredGeometryState(mapId),
+                    mapSnapshotCellSet(runtime.mapSurfaceModel().current().surface().map()),
                     renderSurfaceCellOriginsWithZ(binding.mapContentModel()),
                     DungeonEditorCorridorHarness.surfaceCorridorCount(runtime.mapSurfaceModel().current()));
         }

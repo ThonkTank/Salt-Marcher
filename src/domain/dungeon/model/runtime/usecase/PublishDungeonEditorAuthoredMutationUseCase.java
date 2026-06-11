@@ -69,6 +69,9 @@ public final class PublishDungeonEditorAuthoredMutationUseCase {
         if (mutation == null) {
             return "";
         }
+        if (!mutation.changed()) {
+            return "Keine Änderung angewendet.";
+        }
         if (!mutation.reactionMessages().isEmpty()) {
             return mutation.reactionMessages().getFirst();
         }

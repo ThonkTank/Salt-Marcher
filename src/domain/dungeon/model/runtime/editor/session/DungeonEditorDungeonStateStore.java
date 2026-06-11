@@ -14,6 +14,7 @@ final class DungeonEditorDungeonStateStore {
     private DungeonEditorDungeonState.@Nullable SnapshotFacts snapshot;
     private @Nullable Inspector inspector;
     private DungeonEditorDungeonState.@Nullable MutationFacts mutation;
+    private DungeonEditorDungeonState.@Nullable PreviewFacts preview;
 
     void replaceCatalog(List<MapSummary> nextCatalog) {
         catalog = nextCatalog == null ? List.of() : List.copyOf(nextCatalog);
@@ -35,6 +36,10 @@ final class DungeonEditorDungeonStateStore {
         mutation = nextMutation;
     }
 
+    void replacePreview(DungeonEditorDungeonState.@Nullable PreviewFacts nextPreview) {
+        preview = nextPreview;
+    }
+
     DungeonEditorDungeonFacts facts(
             @Nullable MapId mapId,
             DungeonEditorSessionValues.Selection selection,
@@ -45,8 +50,10 @@ final class DungeonEditorDungeonStateStore {
                 mutationMapId,
                 snapshot == null ? null : snapshot.map(),
                 currentSurface(mapId, selection, preview),
-                statusText(mutation),
-                preview == DungeonEditorSessionValues.Preview.none() ? "" : statusText(mutation));
+                mutation == null ? "" : mutation.statusText(),
+                preview == DungeonEditorSessionValues.Preview.none() || this.preview == null
+                        ? ""
+                        : this.preview.statusText());
     }
 
     private DungeonEditorSessionSnapshot.@Nullable SurfaceData currentSurface(
@@ -61,18 +68,18 @@ final class DungeonEditorDungeonStateStore {
                 snapshot.mapName(),
                 snapshot.revision(),
                 snapshot.map(),
-                previewMap(preview, snapshot.map(), mutation),
+                previewMap(preview, snapshot.map(), this.preview),
                 selectedInspector(selection, inspector));
     }
 
     private static @Nullable MapSnapshot previewMap(
             DungeonEditorSessionValues.Preview preview,
             MapSnapshot committedMap,
-            DungeonEditorDungeonState.@Nullable MutationFacts mutation
+            DungeonEditorDungeonState.@Nullable PreviewFacts previewFacts
     ) {
-        MapSnapshot candidate = preview == DungeonEditorSessionValues.Preview.none() || mutation == null
+        MapSnapshot candidate = preview == DungeonEditorSessionValues.Preview.none() || previewFacts == null
                 ? null
-                : mutation.snapshot().map();
+                : previewFacts.snapshot().map();
         return candidate != null && candidate.equals(committedMap) ? null : candidate;
     }
 
@@ -87,9 +94,5 @@ final class DungeonEditorDungeonStateStore {
             return null;
         }
         return inspector;
-    }
-
-    private static String statusText(DungeonEditorDungeonState.@Nullable MutationFacts mutation) {
-        return mutation == null ? "" : mutation.statusText();
     }
 }

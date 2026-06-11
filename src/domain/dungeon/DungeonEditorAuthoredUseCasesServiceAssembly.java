@@ -36,7 +36,7 @@ final class DungeonEditorAuthoredUseCasesServiceAssembly {
                         new src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorAuthoredInspectorUseCase(publishedState, dungeonState)),
                 new src.domain.dungeon.model.runtime.usecase.PreviewDungeonEditorAuthoredOperationUseCase(
                         mutationUseCase,
-                        publishMutationUseCase),
+                        dungeonState),
                 new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase(
                         mutationUseCase,
                         publishMutationUseCase),

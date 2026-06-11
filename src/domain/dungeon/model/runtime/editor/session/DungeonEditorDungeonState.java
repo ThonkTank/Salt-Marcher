@@ -43,6 +43,10 @@ public final class DungeonEditorDungeonState {
         mutable.replaceMutation(mutation);
     }
 
+    public void replacePreview(@Nullable PreviewFacts preview) {
+        mutable.replacePreview(preview);
+    }
+
     private DungeonEditorDungeonFacts facts(
             @Nullable MapId mapId,
             DungeonEditorSessionValues.Selection selection,
@@ -61,6 +65,15 @@ public final class DungeonEditorDungeonState {
 
     public record MutationFacts(SnapshotFacts snapshot, String statusText) {
         public MutationFacts {
+            snapshot = snapshot == null
+                    ? new SnapshotFacts("Dungeon Map", 0, DungeonEditorWorkspaceValues.MapSnapshot.empty())
+                    : snapshot;
+            statusText = statusText == null ? "" : statusText;
+        }
+    }
+
+    public record PreviewFacts(SnapshotFacts snapshot, String statusText) {
+        public PreviewFacts {
             snapshot = snapshot == null
                     ? new SnapshotFacts("Dungeon Map", 0, DungeonEditorWorkspaceValues.MapSnapshot.empty())
                     : snapshot;
