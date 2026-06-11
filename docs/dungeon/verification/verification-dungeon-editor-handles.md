@@ -19,10 +19,10 @@ handles through the cluster wall-run route.
 
 | ID | Interaction | Route | Fixture | Expected proof | Status |
 | --- | --- | --- | --- | --- | --- |
-| `DE-HANDLE-001` | Shared handle publication | Load map with cluster, corridor, stair, and door handles | `F16_HANDLE_VARIETY` | Published handles use one common identity shape for kind, owner, topology, cell, direction, and index. | Harness Gap |
+| `DE-HANDLE-001` | Shared handle publication | Load map with cluster, corridor, stair, and door handles | `F16_HANDLE_VARIETY` | Published handles use one common identity shape for cluster, door, corridor, and stair handles; rendered door hit remains boundary-owned. | Ready |
 | `DE-HANDLE-002` | Shared handle hit route | `DungeonMapView` hit testing over interactive handle types | Existing focused handle fixtures | Cluster wall-run and cluster-corner handles resolve to handle targets, and corridor/stair anchors are covered by their focused selection routes. Door-handle hit proof remains unqualified. | Ready |
 | `DE-HANDLE-003` | Shared handle drag preview | Primary drag on movable handles | Existing focused handle fixtures | Cluster wall-run and cluster-corner drags publish move preview deltas without mutating authored rows before release. Door-handle preview proof remains unqualified. | Ready |
-| `DE-HANDLE-004` | Non-obstructive visual style | Render scene inspection | `F15_COMPLEX_CLUSTER` | Wall-run handles render smaller and less obstructive than cluster corner handles while remaining hittable. Full F16 visual comparison remains unqualified. | Partial |
+| `DE-HANDLE-004` | Non-obstructive visual style | Render scene inspection | `F16_HANDLE_VARIETY` | Wall-run handle style stays smaller and less obstructive than cluster corner handles while remaining hittable. | Ready |
 | `DE-HANDLE-005` | Label targets are not generic handles | Hit testing cluster and room labels | `F1_SINGLE_ROOM` / `F15_COMPLEX_CLUSTER` | Label targets remain distinct from wall-corner, wall-line, corridor, and stair handles. | Ready |
 
 ## References

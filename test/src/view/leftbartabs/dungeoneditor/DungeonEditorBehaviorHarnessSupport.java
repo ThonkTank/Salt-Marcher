@@ -359,7 +359,29 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             double canvasY,
             boolean shiftDown
     ) {
-        fireMapMouse(view, eventType, button, canvasX, canvasY, shiftDown, false);
+        fireMapMouse(view, eventType, button, canvasX, canvasY, shiftDown, false, 1);
+    }
+
+    static void fireMapMouseClickCount(
+            DungeonMapView view,
+            javafx.event.EventType<MouseEvent> eventType,
+            MouseButton button,
+            double canvasX,
+            double canvasY,
+            int clickCount
+    ) {
+        fireMapMouse(view, eventType, button, canvasX, canvasY, false, false, clickCount);
+    }
+
+    static void fireMapMouseClickCountWithShift(
+            DungeonMapView view,
+            javafx.event.EventType<MouseEvent> eventType,
+            MouseButton button,
+            double canvasX,
+            double canvasY,
+            int clickCount
+    ) {
+        fireMapMouse(view, eventType, button, canvasX, canvasY, true, false, clickCount);
     }
 
     static void fireMapMouseWithControl(
@@ -369,7 +391,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             double canvasX,
             double canvasY
     ) {
-        fireMapMouse(view, eventType, button, canvasX, canvasY, false, true);
+        fireMapMouse(view, eventType, button, canvasX, canvasY, false, true, 1);
     }
 
     private static void fireMapMouse(
@@ -379,7 +401,8 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             double canvasX,
             double canvasY,
             boolean shiftDown,
-            boolean controlDown
+            boolean controlDown,
+            int clickCount
     ) {
         Pane canvasLayer = mapCanvasLayer(view);
         MouseEvent event = new MouseEvent(
@@ -389,7 +412,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                 canvasX,
                 canvasY,
                 button,
-                1,
+                clickCount,
                 shiftDown,
                 controlDown,
                 false,

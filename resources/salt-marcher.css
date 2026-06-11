@@ -846,6 +846,19 @@
 .dungeon-map-canvas {
     -fx-background-color: #12181c;
 }
+.dungeon-map-inline-label-editor {
+    -fx-background-color: rgba(26, 32, 37, 0.96);
+    -fx-border-color: -sm-dungeon-active-border;
+    -fx-border-radius: 3;
+    -fx-background-radius: 3;
+    -fx-text-fill: -sm-text-primary;
+    -fx-font-family: "SansSerif";
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-highlight-fill: -sm-accent-hover;
+    -fx-highlight-text-fill: -sm-bg-darkest;
+    -fx-padding: 2 5 2 5;
+}
 .dungeon-map-overlay-placeholder {
     -fx-text-fill: rgba(236, 237, 238, 0.92);
     -fx-font-size: 22px;

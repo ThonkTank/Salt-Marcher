@@ -8,8 +8,10 @@ Source of Truth: Target invariant catalog for Dungeon Room ownership proof.
 ## Purpose
 
 This catalog defines target model-invariant proof obligations for authored room
-identity, room naming, room-cell assignment, and room label facts. It
-supplements editor real-route proof and does not close `DE-*` rows by itself.
+identity, room naming, room-cell assignment, and model-owned room label source
+facts. It supplements editor real-route proof and does not close `DE-*` rows by
+itself. View-owned label rotation, hit geometry, and inline-editor presentation
+are qualified by the editor label matrix.
 
 Required proof rows publish `OwnerSuite=RoomInvariantHarness`,
 `ProofType=ModelInvariant`, and the invariant id.
@@ -18,10 +20,10 @@ Required proof rows publish `OwnerSuite=RoomInvariantHarness`,
 
 | Invariant ID | Target Owner | Invariant | Required Proof | Current Status |
 | --- | --- | --- | --- | --- |
-| `DGI-ROOM-001` | `Room` | Room identity and narration survive cluster edits when the room remains represented. | Current proof covers wall-run identity survival through `ProofType=RealRoute`; complete model-invariant coverage for all mutation families remains absent. | Partial |
-| `DGI-ROOM-002` | Room collection or partition owner | Every floor-owned room cell is assigned to exactly one room after closed-boundary partitioning. | Existing structure/floor invariant proof remains the owning evidence; this Wave 3 slice did not add a room invariant harness row. | Partial |
-| `DGI-ROOM-003` | Room name owner | Default room name is `Raum <roomId>` unless an authored custom name exists. | Current proof covers default and custom-name readback/render through the shared label-name use case; state-panel room selection remains unqualified. | Partial |
-| `DGI-ROOM-004` | Room label facts | Room label placement is derived from room floor cells; longest-wall orientation remains future work. | Current proof covers deterministic rendered room-label presence from room floor cells through `ProofType=RealRoute`; longest-wall model proof remains absent. | Partial |
+| `DGI-ROOM-001` | `DungeonRoom` | Room identity and narration survive aggregate cluster edits when the room remains represented. | `OwnerSuite=RoomInvariantHarness`, `ProofType=ModelInvariant` proves room identity and narration survival through named production owner/API edits. | Qualified |
+| `DGI-ROOM-002` | `RoomClusterRoomPartition` | Every floor-owned room cell is assigned to exactly one room after closed-boundary partitioning. | `OwnerSuite=RoomInvariantHarness`, `ProofType=ModelInvariant` proves one-room cell assignment without duplicate ownership. | Qualified |
+| `DGI-ROOM-003` | `DungeonRoom` and `DungeonMap` label facts | Default room name is `Raum <roomId>` unless an authored custom name exists. | `OwnerSuite=RoomInvariantHarness`, `ProofType=ModelInvariant` proves default and authored custom room-name facts. | Qualified |
+| `DGI-ROOM-004` | `RoomClusterRoomPartition` and `Room` anchor facts | Room label source facts are derived from partition-owned room floor cells and sorted room anchors. | `OwnerSuite=RoomInvariantHarness`, `ProofType=ModelInvariant` proves room-label source facts derive from room floor cells without claiming view-owned orientation. | Qualified |
 
 ## References
 

@@ -18,11 +18,11 @@ Required proof rows publish `OwnerSuite=ClusterInvariantHarness`,
 
 | Invariant ID | Target Owner | Invariant | Required Proof | Current Status |
 | --- | --- | --- | --- | --- |
-| `DGI-CLUSTER-001` | `RoomCluster` | Cluster identity remains stable across move, wall-run drag, and corner drag. Merge and split identity remain covered by room-route proof, not this invariant row. | Current proof is real-route coverage from `DungeonEditorClusterLabelHandleHarness`, not `OwnerSuite=ClusterInvariantHarness` model proof. | Partial |
-| `DGI-CLUSTER-002` | Cluster boundary owner | Editable cluster corners are true authored wall corners, not bounding-box corners over the occupied cells. | Current proof builds a non-rectangular cluster and proves the published edit-corner set matches real boundary vertices through `ProofType=RealRoute`. | Partial |
-| `DGI-CLUSTER-003` | Cluster boundary owner | Wall-line handles are derived from contiguous straight wall runs. | Current proof covers the published F15 wall-run handle set through `ProofType=RealRoute`; model-invariant harness remains absent. | Partial |
-| `DGI-CLUSTER-004` | Cluster mutation owner | Wall-run drag accepts valid geometry and rejects invalid geometry atomically. | Current proof covers valid wall-run preview/commit/no duplicate-orphan rows; invalid rejection remains unqualified. | Partial |
-| `DGI-CLUSTER-005` | Cluster label facts | Default cluster name is `Cluster <clusterId>` unless an authored custom name exists. | Current proof covers default, custom replacement, trimming, reload, and rendered publication through `ProofType=RealRoute`; model-invariant harness remains absent. | Partial |
+| `DGI-CLUSTER-001` | `DungeonMap` and `DungeonRoomCluster` | Cluster identity remains stable across move, wall-run drag, and corner movement. | `OwnerSuite=ClusterInvariantHarness`, `ProofType=ModelInvariant` proves cluster identity preservation through named production owner/API mutations. | Qualified |
+| `DGI-CLUSTER-002` | `DungeonRoomCluster` | Editable cluster corners are true authored wall corners, not bounding-box corners over the occupied cells. | `OwnerSuite=ClusterInvariantHarness`, `ProofType=ModelInvariant` builds a non-rectangular cluster and proves authored boundary vertices expose true corners. | Qualified |
+| `DGI-CLUSTER-003` | `RoomClusterWallMap` | Wall-line handles are derived from contiguous straight wall runs. | `OwnerSuite=ClusterInvariantHarness`, `ProofType=ModelInvariant` derives wall-line handles from contiguous straight wall-run facts. | Qualified |
+| `DGI-CLUSTER-004` | `DungeonMap` boundary-stretch mutation | Wall-run drag accepts valid geometry and rejects invalid geometry atomically. | `OwnerSuite=ClusterInvariantHarness`, `ProofType=ModelInvariant` proves valid wall-run movement and atomic invalid-movement rejection. | Qualified |
+| `DGI-CLUSTER-005` | `DungeonRoomCluster` and `DungeonMap` label facts | Default cluster name is `Cluster <clusterId>` unless an authored custom name exists. | `OwnerSuite=ClusterInvariantHarness`, `ProofType=ModelInvariant` proves default and authored custom cluster-name facts. | Qualified |
 
 ## References
 

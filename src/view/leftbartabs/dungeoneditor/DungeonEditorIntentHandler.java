@@ -61,6 +61,7 @@ final class DungeonEditorIntentHandler {
     private double lastCameraDragCanvasX;
     private double lastCameraDragCanvasY;
     private boolean cameraDragActive;
+    private boolean inlineEditOutsidePressActive;
 
     DungeonEditorIntentHandler(
             DungeonEditorContributionModel presentationModel,
@@ -283,18 +284,108 @@ final class DungeonEditorIntentHandler {
         if (event == null) {
             return;
         }
-        if (consumeLocalCameraInput(event)) {
+        if (consumeInlineLabelEditEvent(event) || consumeInlineEditOutsidePressGesture(event)
+                || consumeActiveInlineEditBoundary(event)
+                || consumeLocalCameraInput(event) || consumeScrollInput(event) || consumeEscapeInput(event)) {
             return;
         }
-        if (event.input().scrolled()) {
-            handleScroll(event);
-            return;
+        consumePointerToolInput(event);
+    }
+
+    private boolean consumeInlineLabelEditEvent(DungeonMapViewInputEvent event) {
+        if (event.input().labelEditCommitted()) {
+            inlineEditOutsidePressActive = false;
+            commitInlineLabelEdit(event.textInput());
+            return true;
+        }
+        if (event.input().labelEditCancelled()) {
+            inlineEditOutsidePressActive = false;
+            mapContentModel.clearInlineLabelEdit();
+            return true;
+        }
+        if (event.input().labelEditTextChanged()) {
+            mapContentModel.updateInlineLabelEditText(event.textInput());
+            return true;
+        }
+        return false;
+    }
+
+    private boolean consumeInlineEditOutsidePressGesture(DungeonMapViewInputEvent event) {
+        if (!inlineEditOutsidePressActive) {
+            return false;
+        }
+        if (event.input().mouseReleased()) {
+            inlineEditOutsidePressActive = false;
+            lastHoverSample = Optional.empty();
+            return true;
+        }
+        if (event.input().mouseDragged() || event.input().mouseMoved()) {
+            lastHoverSample = Optional.empty();
+            return true;
+        }
+        inlineEditOutsidePressActive = false;
+        return false;
+    }
+
+    private boolean consumeActiveInlineEditBoundary(DungeonMapViewInputEvent event) {
+        DungeonMapContentModel.InlineLabelEditState editState = mapContentModel.currentInlineLabelEditState();
+        if (editState == null || !editState.active()) {
+            return false;
         }
         if (event.input().escapePressed()) {
-            projectionEditor.setTool(new SetDungeonEditorToolCommand(DungeonEditorTool.SELECT));
-            lastHoverSample = Optional.empty();
-            return;
+            return cancelActiveInlineEdit();
         }
+        if (event.input().mousePressed()) {
+            return consumeActiveInlineEditMousePress(event);
+        }
+        if (passiveInlineEditCanvasInput(event)) {
+            lastHoverSample = Optional.empty();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean cancelActiveInlineEdit() {
+        mapContentModel.clearInlineLabelEdit();
+        inlineEditOutsidePressActive = false;
+        lastHoverSample = Optional.empty();
+        return true;
+    }
+
+    private boolean consumeActiveInlineEditMousePress(DungeonMapViewInputEvent event) {
+        if (event.buttons().primaryButtonDown()) {
+            mapContentModel.clearInlineLabelEdit();
+            inlineEditOutsidePressActive = true;
+        }
+        lastHoverSample = Optional.empty();
+        return true;
+    }
+
+    private static boolean passiveInlineEditCanvasInput(DungeonMapViewInputEvent event) {
+        return event.input().mouseDragged()
+                || event.input().mouseMoved()
+                || event.input().mouseReleased()
+                || event.input().scrolled();
+    }
+
+    private boolean consumeScrollInput(DungeonMapViewInputEvent event) {
+        if (!event.input().scrolled()) {
+            return false;
+        }
+        handleScroll(event);
+        return true;
+    }
+
+    private boolean consumeEscapeInput(DungeonMapViewInputEvent event) {
+        if (!event.input().escapePressed()) {
+            return false;
+        }
+        projectionEditor.setTool(new SetDungeonEditorToolCommand(DungeonEditorTool.SELECT));
+        lastHoverSample = Optional.empty();
+        return true;
+    }
+
+    private void consumePointerToolInput(DungeonMapViewInputEvent event) {
         DungeonEditorTool selectedTool = presentationModel.currentInteractionState().currentSelectedTool();
         DungeonEditorTool pointerTool = pointerTool(event, selectedTool);
         if (pointerTool == null) {
@@ -304,10 +395,70 @@ final class DungeonEditorIntentHandler {
         double sceneX = sceneX(event);
         double sceneY = sceneY(event);
         DungeonMapContentModel.PointerTarget pointerTarget = mapContentModel.resolvePointerTarget(sceneX, sceneY);
+        if (beginInlineLabelEdit(event, pointerTarget, sceneX, sceneY)) {
+            return;
+        }
         if (suppressedRepeatedHover(event, pointerTool, pointerTarget)) {
             return;
         }
         applyToolWorkflow(event, pointerSample(event, pointerTarget), pointerTool);
+    }
+
+    private boolean beginInlineLabelEdit(
+            DungeonMapViewInputEvent event,
+            DungeonMapContentModel.PointerTarget pointerTarget,
+            double sceneX,
+            double sceneY
+    ) {
+        if (!event.input().mousePressed()
+                || event.clickCount() < 2
+                || !event.buttons().primaryButtonDown()) {
+            return false;
+        }
+        DungeonMapContentModel.PointerTarget editTarget = event.modifiers().shiftDown()
+                ? mapContentModel.resolveRoomLabelPointerTarget(sceneX, sceneY)
+                : pointerTarget;
+        if (!editTarget.isLabelTarget()) {
+            return false;
+        }
+        mapContentModel.beginInlineLabelEdit(editTarget);
+        lastHoverSample = Optional.empty();
+        return true;
+    }
+
+    private void commitInlineLabelEdit(String text) {
+        DungeonMapContentModel.InlineLabelEditState editState = mapContentModel.currentInlineLabelEditState();
+        mapContentModel.clearInlineLabelEdit();
+        inlineEditOutsidePressActive = false;
+        if (editState == null || !editState.active() || text == null || text.isBlank()) {
+            return;
+        }
+        SaveDungeonEditorLabelNameCommand command = inlineLabelNameCommand(editState.target(), text);
+        if (command != null) {
+            labelNameEditor.saveLabelName(command);
+        }
+    }
+
+    private static @Nullable SaveDungeonEditorLabelNameCommand inlineLabelNameCommand(
+            DungeonMapContentModel.PointerTarget target,
+            String text
+    ) {
+        if (target == null || !target.isLabelTarget()) {
+            return null;
+        }
+        if (target.isClusterLabelTarget() && target.clusterId() > 0L) {
+            return new SaveDungeonEditorLabelNameCommand(
+                    SaveDungeonEditorLabelNameCommand.TARGET_CLUSTER,
+                    target.clusterId(),
+                    text);
+        }
+        if (target.isRoomLabelTarget() && target.topologyId() > 0L) {
+            return new SaveDungeonEditorLabelNameCommand(
+                    SaveDungeonEditorLabelNameCommand.TARGET_ROOM,
+                    target.topologyId(),
+                    text);
+        }
+        return null;
     }
 
     private boolean consumeLocalCameraInput(DungeonMapViewInputEvent event) {
