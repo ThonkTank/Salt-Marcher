@@ -146,7 +146,12 @@ evidenced in the sibling repo.
 - a single-cluster overlap merge MUST keep existing room and cluster identity, add the newly painted non-overlapping cells, and recompute the perimeter without duplicated overlap cells
 - adjacent room paint with no overlapping authored cell MUST create a distinct room and cluster even when the new rectangle touches an existing room edge
 - a freshly painted or adjacent new room uses the painted rectangle's minimum cell as its room component and cluster center until a later explicit move or stretch changes it
-- freshly painted or adjacent new rooms do not require persisted cluster-edge rows for perimeter walls; authored room, cluster, vertex, and floor truth must read back to the full cell set
+- freshly painted or adjacent new rooms MUST read back after commit and reload
+  with the full painted floor-cell set and a closed perimeter wall around that
+  floor set
+- freshly painted or adjacent new room perimeter walls MUST be authored durable
+  wall truth after commit; absent perimeter wall rows are old-map compatibility
+  input only, not the target output of fresh room creation
 - intentional wall deletion on a room perimeter MUST be observable as an authored open edge, distinct from an absent un-authored edge whose perimeter wall may still be derived
 - overlap merges MUST NOT leave stale old boundary rows visible as internal walls inside the merged room
 - wall finalization is idempotent: existing wall segments reuse topology, absent boundary segments create or mark that segment as wall, and neither path creates duplicate topology rows

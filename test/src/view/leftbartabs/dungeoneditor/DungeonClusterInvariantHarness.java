@@ -11,6 +11,7 @@ import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
+import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
 
 final class DungeonClusterInvariantHarness {
@@ -111,7 +112,14 @@ final class DungeonClusterInvariantHarness {
     }
 
     private static void assertClusterDefaultAndCustomNames() {
-        DungeonRoomCluster defaultCluster = new DungeonRoomCluster(42L, 7L, "", new Cell(0, 0, 0), Map.of(), Map.of());
+        DungeonRoomCluster defaultCluster = new DungeonRoomCluster(
+                42L,
+                7L,
+                "",
+                new Cell(0, 0, 0),
+                Map.of(),
+                new RoomClusterFloorMap(Map.of()),
+                Map.of());
         assertEquals("Cluster 42", defaultCluster.name(), "DGI-CLUSTER-005 default cluster name");
         assertEquals("North Hall", defaultCluster.withName("  North Hall  ").name(),
                 "DGI-CLUSTER-005 custom cluster name trims");
@@ -140,15 +148,18 @@ final class DungeonClusterInvariantHarness {
                         new Cell(1, 1, 0),
                         new Cell(1, 3, 0),
                         new Cell(0, 3, 0))),
+                new RoomClusterFloorMap(Map.of()),
                 Map.of(0, List.of(
                         boundary(0, 0, Direction.NORTH),
                         boundary(1, 0, Direction.NORTH),
                         boundary(2, 0, Direction.NORTH),
-                        boundary(3, 0, Direction.EAST),
-                        boundary(2, 1, Direction.SOUTH),
-                        boundary(1, 1, Direction.EAST),
-                        boundary(1, 2, Direction.EAST),
+                        boundary(2, 0, Direction.EAST),
+                        boundary(1, 0, Direction.SOUTH),
+                        boundary(2, 0, Direction.SOUTH),
+                        boundary(0, 1, Direction.EAST),
+                        boundary(0, 2, Direction.EAST),
                         boundary(0, 2, Direction.SOUTH),
+                        boundary(0, 2, Direction.WEST),
                         boundary(0, 1, Direction.WEST),
                         boundary(0, 0, Direction.WEST))));
     }

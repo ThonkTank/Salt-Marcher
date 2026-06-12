@@ -20,13 +20,19 @@ row. This catalog does not create a new public gate; until such a gate is
 explicitly added, proof may publish through the current aggregated dungeon
 model or editor harness surface.
 
+Editor route rows such as `DE-ROOM-001` prove that a UI-created room actually
+commits and reloads persisted floor-cell rows. This catalog proves only the
+model-owner invariants for authored floor facts and must not be used as a
+substitute for route-level persistence proof.
+
 ## Review Frame
 
 This catalog is a target-model change derived from the Dungeon domain target
 state and this catalog's candidate source-obligation rows. Reviewers must
 evaluate whether the Floor owner is coherent, traceable, and safely migratable.
-Do not block a row merely because current code keeps the behavior under a
-broader room or aggregate structure while the floor owner is being sharpened.
+Do not block a row merely because current code still exposes compatibility
+facades under a broader room or aggregate structure while the component owner
+is being sharpened.
 
 ## Proof Vocabulary
 
@@ -44,7 +50,7 @@ domain truth.
 
 | Invariant ID | Target Owner | Candidate Source Obligation | Invariant | Required Proof | Current Status | Deferred/Out Of Scope |
 | --- | --- | --- | --- | --- | --- | --- |
-| `DGI-FLOOR-001` | `RoomClusterFloorMap` or equivalent structure-local floor owner | Room clusters compose one floor owner inside the `DungeonMap` aggregate boundary. | A room cluster has one authoritative floor-cell map per structure scope; structures do not separately own raw floor cells after migration. | Model-invariant OwnerSuite creates a multi-level cluster floor map and proves structure access goes through the floor owner. | Qualified by `OwnerSuite=FloorInvariantHarness`. | Level-wide projected maps. |
+| `DGI-FLOOR-001` | `FloorCellMap` with `RoomClusterFloorMap` compatibility facade | Room clusters compose one floor owner inside the `DungeonMap` aggregate boundary. | A room cluster has one authoritative floor-cell map per structure scope; structures do not separately own raw floor cells after migration. | Model-invariant OwnerSuite creates a multi-level component floor map and proves structure access goes through the floor owner facade. | Qualified by `OwnerSuite=FloorInvariantHarness`. | Level-wide projected maps. |
 | `DGI-FLOOR-002` | Floor owner | Authored floor cells must be stable, unique, and grouped by level. | Floor cells reject nulls, deduplicate by `Cell`, preserve level grouping, and expose deterministic ordering. | Harness proves duplicate and unordered cell input normalizes to one deterministic level-grouped surface. | Qualified by `OwnerSuite=FloorInvariantHarness`. | Persistence row ordering. |
 | `DGI-FLOOR-003` | Floor owner | Room membership is derived from floor ownership and closed boundaries. | Room-cell assignment uses floor cells plus wall/boundary facts, not a second raw-cell owner. | Harness proves a split cluster assigns each floor-owned cell to exactly one room through the cluster floor owner. | Qualified by `OwnerSuite=FloorInvariantHarness`. | Out-of-floor anchor rejection and wall-map boundary ownership proof. |
 | `DGI-FLOOR-004` | Floor owner | Floor anchors identify room floors across levels. | Floor anchors are derived from owned floor cells, one anchor per room level, with deterministic reuse when a room survives repartition. | Harness proves anchor derivation, surviving-room anchor reuse, and deterministic split-component allocation. | Qualified by `OwnerSuite=FloorInvariantHarness`. | Narration and persistence identity. |

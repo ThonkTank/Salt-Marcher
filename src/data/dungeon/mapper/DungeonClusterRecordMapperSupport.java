@@ -6,7 +6,6 @@ import java.util.List;
 import java.util.Map;
 import src.data.dungeon.model.DungeonClusterBoundaryRecord;
 import src.data.dungeon.model.DungeonRoomClusterRecord;
-import src.data.dungeon.model.DungeonRoomClusterVertexRecord;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
@@ -26,7 +25,8 @@ final class DungeonClusterRecordMapperSupport {
                     record.mapId(),
                     record.name(),
                     new Cell(record.centerX(), record.centerY(), record.levelZ()),
-                    verticesByLevel(record.vertices()),
+                    DungeonClusterFloorCellRecordMapperSupport.compatibleRelativeLoopsByLevel(record),
+                    DungeonClusterFloorCellRecordMapperSupport.floorMap(record),
                     boundariesByLevel(record.boundaries())));
         }
         return List.copyOf(result);
@@ -42,20 +42,11 @@ final class DungeonClusterRecordMapperSupport {
                     cluster.center().q(),
                     cluster.center().r(),
                     cluster.center().level(),
-                    toVertexRecords(cluster.clusterId(), cluster.relativeVerticesByLevel()),
+                    List.of(),
+                    DungeonClusterFloorCellRecordMapperSupport.toFloorCellRecords(cluster.clusterId(), cluster),
                     toBoundaryRecords(cluster, cluster.boundariesByLevel())));
         }
         return List.copyOf(result);
-    }
-
-    private static Map<Integer, List<Cell>> verticesByLevel(List<DungeonRoomClusterVertexRecord> records) {
-        Map<Integer, List<Cell>> result = new LinkedHashMap<>();
-        for (DungeonRoomClusterVertexRecord record
-                : records == null ? List.<DungeonRoomClusterVertexRecord>of() : records) {
-            result.computeIfAbsent(record.levelZ(), ignored -> new ArrayList<>())
-                    .add(new Cell(record.relativeX(), record.relativeY(), record.levelZ()));
-        }
-        return copyNestedLists(result);
     }
 
     private static Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel(
@@ -75,28 +66,7 @@ final class DungeonClusterRecordMapperSupport {
                                     record.edgeType(),
                                     record.topologyElementId())));
         }
-        return copyNestedLists(result);
-    }
-
-    private static List<DungeonRoomClusterVertexRecord> toVertexRecords(
-            long clusterId,
-            Map<Integer, List<Cell>> verticesByLevel
-    ) {
-        List<DungeonRoomClusterVertexRecord> result = new ArrayList<>();
-        for (Map.Entry<Integer, List<Cell>> entry
-                : (verticesByLevel == null ? Map.<Integer, List<Cell>>of() : verticesByLevel).entrySet()) {
-            int index = 0;
-            for (Cell vertex : entry.getValue()) {
-                result.add(new DungeonRoomClusterVertexRecord(
-                        clusterId,
-                        entry.getKey(),
-                        index,
-                        vertex.q(),
-                        vertex.r()));
-                index++;
-            }
-        }
-        return List.copyOf(result);
+        return DungeonNestedListMaps.immutableCopy(result);
     }
 
     private static List<DungeonClusterBoundaryRecord> toBoundaryRecords(
@@ -119,14 +89,6 @@ final class DungeonClusterRecordMapperSupport {
             }
         }
         return List.copyOf(result);
-    }
-
-    private static <T> Map<Integer, List<T>> copyNestedLists(Map<Integer, List<T>> source) {
-        Map<Integer, List<T>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<T>> entry : source.entrySet()) {
-            result.put(entry.getKey(), List.copyOf(entry.getValue()));
-        }
-        return Map.copyOf(result);
     }
 
 }

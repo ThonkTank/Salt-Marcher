@@ -3,6 +3,7 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.component.floor.FloorCellMap;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
@@ -76,6 +77,9 @@ final class DungeonFloorInvariantHarness {
                 "cluster exposes level-zero cells through floor owner");
         assertEquals(cluster.floorMap().cellsByLevel(), cluster.cellsByLevel(),
                 "cluster compatibility access delegates to floor owner");
+        assertEquals(cluster.floorMap(),
+                new RoomClusterFloorMap(FloorCellMap.fromCells(cluster.allCells())),
+                "cluster floor facade delegates to the reusable component floor owner");
     }
 
     private static void assertFloorCellNormalization() {
@@ -85,7 +89,7 @@ final class DungeonFloorInvariantHarness {
                 new Cell(1, 1, 0),
                 new Cell(1, 1, 0)));
         cells.add(null);
-        RoomClusterFloorMap floorMap = RoomClusterFloorMap.fromCells(cells);
+        FloorCellMap floorMap = FloorCellMap.fromCells(cells);
 
         assertEquals(Map.of(
                         0, List.of(new Cell(1, 1, 0), new Cell(3, 2, 0)),
@@ -95,7 +99,7 @@ final class DungeonFloorInvariantHarness {
         assertEquals(List.of(0, 1), new java.util.ArrayList<>(floorMap.cellsByLevel().keySet()),
                 "floor owner exposes deterministic level iteration order");
         assertEquals(floorMap,
-                RoomClusterFloorMap.fromCells(List.of(
+                FloorCellMap.fromCells(List.of(
                         new Cell(1, 1, 0),
                         new Cell(2, 0, 1),
                         new Cell(3, 2, 0))),
@@ -159,11 +163,11 @@ final class DungeonFloorInvariantHarness {
     }
 
     private static void assertFloorMutationResult() {
-        RoomClusterFloorMap floorMap = RoomClusterFloorMap.fromCells(List.of(new Cell(0, 0, 0)));
+        FloorCellMap floorMap = FloorCellMap.fromCells(List.of(new Cell(0, 0, 0)));
 
         assertFalse(floorMap.replaceCellsByLevel(Map.of(0, List.of(new Cell(0, 0, 0)))).changed(),
                 "floor owner reports unchanged replacement as no-op");
-        RoomClusterFloorMap.FloorMutation changed =
+        FloorCellMap.FloorMutation changed =
                 floorMap.replaceCellsByLevel(Map.of(0, List.of(new Cell(0, 0, 0), new Cell(1, 0, 0))));
         assertTrue(changed.changed(), "floor owner reports changed replacement");
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0)),

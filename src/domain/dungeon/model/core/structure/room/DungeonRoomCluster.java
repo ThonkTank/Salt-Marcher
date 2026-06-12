@@ -15,6 +15,7 @@ public record DungeonRoomCluster(
         String name,
         Cell center,
         Map<Integer, List<Cell>> relativeVerticesByLevel,
+        RoomClusterFloorMap floorMap,
         Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
 ) {
     public DungeonRoomCluster(
@@ -23,6 +24,7 @@ public record DungeonRoomCluster(
             String name,
             Cell center,
             Map<Integer, List<Cell>> relativeVerticesByLevel,
+            RoomClusterFloorMap floorMap,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
         this.clusterId = clusterId;
@@ -30,6 +32,9 @@ public record DungeonRoomCluster(
         this.name = defaultName(clusterId, name);
         this.center = center == null ? new Cell(0, 0, 0) : center;
         this.relativeVerticesByLevel = copyNestedLists(relativeVerticesByLevel);
+        this.floorMap = floorMap == null
+                ? new RoomClusterFloorMap(Map.of())
+                : new RoomClusterFloorMap(floorMap.cellsByLevel());
         this.boundariesByLevel = copyNestedLists(boundariesByLevel);
     }
 
@@ -43,6 +48,15 @@ public record DungeonRoomCluster(
         return copyNestedLists(boundariesByLevel);
     }
 
+    @Override
+    public RoomClusterFloorMap floorMap() {
+        return new RoomClusterFloorMap(floorMap.cellsByLevel());
+    }
+
+    public Map<Integer, List<Cell>> cellsByLevel() {
+        return floorMap.cellsByLevel();
+    }
+
     public Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap() {
         return DungeonClusterBoundary.boundaryMap(center, flattenBoundaries());
     }
@@ -52,14 +66,11 @@ public record DungeonRoomCluster(
         for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
             copiedCellsByLevel.put(entry.getKey(), copiedCells(entry.getValue()));
         }
-        return new RoomCluster(clusterId, mapId, center, copiedCellsByLevel);
+        return new RoomCluster(clusterId, mapId, center, new RoomClusterFloorMap(copiedCellsByLevel));
     }
 
     public List<Cell> authoredBoundaryVertices(int level) {
-        return wallMap().authoredBoundaryVertices(
-                center,
-                level,
-                relativeVerticesByLevel().getOrDefault(level, List.of()));
+        return wallMap().authoredBoundaryVertices(level);
     }
 
     public List<WallRun> authoredWallRuns(int level) {
@@ -77,6 +88,7 @@ public record DungeonRoomCluster(
                 "",
                 cluster.center(),
                 relativeVerticesByLevel,
+                cluster.floorMap(),
                 boundariesByLevel);
     }
 
@@ -87,6 +99,7 @@ public record DungeonRoomCluster(
                 nextName,
                 center,
                 relativeVerticesByLevel,
+                floorMap,
                 boundariesByLevel);
     }
 

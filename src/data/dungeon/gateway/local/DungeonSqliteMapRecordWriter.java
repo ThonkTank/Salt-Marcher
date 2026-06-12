@@ -1,10 +1,8 @@
 package src.data.dungeon.gateway.local;
 
-import src.data.dungeon.model.DungeonClusterBoundaryRecord;
 import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonPersistenceSchema;
 import src.data.dungeon.model.DungeonRoomClusterRecord;
-import src.data.dungeon.model.DungeonRoomClusterVertexRecord;
 import src.data.dungeon.model.DungeonRoomExitDescriptionRecord;
 import src.data.dungeon.model.DungeonRoomFloorRecord;
 import src.data.dungeon.model.DungeonRoomRecord;
@@ -20,8 +18,6 @@ final class DungeonSqliteMapRecordWriter {
     private static final String INSERT_INTO = "INSERT INTO ";
     private static final String DELETE_FROM = "DELETE FROM ";
     private static final String SQL_WHERE = " WHERE ";
-    private static final String COLUMN_CLUSTER_ID = "cluster_id";
-    private static final String COLUMN_LEVEL_Z = "level_z";
 
     private DungeonSqliteMapRecordWriter() {
     }
@@ -60,9 +56,7 @@ final class DungeonSqliteMapRecordWriter {
         Set<Long> clusterIds = new LinkedHashSet<>();
         for (DungeonRoomClusterRecord cluster : record.roomClusters()) {
             clusterIds.add(cluster.clusterId());
-            upsertRoomCluster(connection, cluster);
-            replaceClusterVertices(connection, cluster);
-            replaceClusterBoundaries(connection, cluster);
+            DungeonSqliteClusterGeometryWriter.persist(connection, cluster);
         }
         Set<Long> roomIds = new LinkedHashSet<>();
         for (DungeonRoomRecord room : record.rooms()) {
@@ -73,84 +67,6 @@ final class DungeonSqliteMapRecordWriter {
         }
         DungeonSqliteRetainedIdCleanup.deleteObsoleteRooms(connection, record.mapId(), roomIds);
         DungeonSqliteRetainedIdCleanup.deleteObsoleteRoomClusters(connection, record.mapId(), clusterIds);
-    }
-
-    private static void upsertRoomCluster(Connection connection, DungeonRoomClusterRecord cluster) throws SQLException {
-        try (PreparedStatement update = connection.prepareStatement(
-                "UPDATE " + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
-                        + " SET name=?, center_x=?, center_y=?, " + COLUMN_LEVEL_Z + "=? WHERE " + COLUMN_CLUSTER_ID
-                        + "=? AND dungeon_map_id=?")) {
-            update.setString(1, cluster.name());
-            update.setInt(2, cluster.centerX());
-            update.setInt(3, cluster.centerY());
-            update.setInt(4, cluster.levelZ());
-            update.setLong(5, cluster.clusterId());
-            update.setLong(6, cluster.mapId());
-            if (update.executeUpdate() > 0) {
-                return;
-            }
-        }
-        try (PreparedStatement insert = connection.prepareStatement(
-                INSERT_INTO + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
-                        + "(" + COLUMN_CLUSTER_ID + ", dungeon_map_id, name, center_x, center_y, "
-                        + COLUMN_LEVEL_Z + ") VALUES(?,?,?,?,?,?)")) {
-            insert.setLong(1, cluster.clusterId());
-            insert.setLong(2, cluster.mapId());
-            insert.setString(3, cluster.name());
-            insert.setInt(4, cluster.centerX());
-            insert.setInt(5, cluster.centerY());
-            insert.setInt(6, cluster.levelZ());
-            insert.executeUpdate();
-        }
-    }
-
-    private static void replaceClusterVertices(Connection connection, DungeonRoomClusterRecord cluster)
-            throws SQLException {
-        try (PreparedStatement delete = connection.prepareStatement(
-                DELETE_FROM + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE + SQL_WHERE + COLUMN_CLUSTER_ID + "=?")) {
-            delete.setLong(1, cluster.clusterId());
-            delete.executeUpdate();
-        }
-        try (PreparedStatement insert = connection.prepareStatement(
-                INSERT_INTO + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE
-                        + "(" + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z
-                        + ", vertex_index, relative_x, relative_y) VALUES(?,?,?,?,?)")) {
-            for (DungeonRoomClusterVertexRecord vertex : cluster.vertices()) {
-                insert.setLong(1, cluster.clusterId());
-                insert.setInt(2, vertex.levelZ());
-                insert.setInt(3, vertex.vertexIndex());
-                insert.setInt(4, vertex.relativeX());
-                insert.setInt(5, vertex.relativeY());
-                insert.addBatch();
-            }
-            insert.executeBatch();
-        }
-    }
-
-    private static void replaceClusterBoundaries(Connection connection, DungeonRoomClusterRecord cluster)
-            throws SQLException {
-        try (PreparedStatement delete = connection.prepareStatement(
-                DELETE_FROM + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE + SQL_WHERE + COLUMN_CLUSTER_ID + "=?")) {
-            delete.setLong(1, cluster.clusterId());
-            delete.executeUpdate();
-        }
-        try (PreparedStatement insert = connection.prepareStatement(
-                INSERT_INTO + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
-                        + "(" + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z
-                        + ", cell_x, cell_y, edge_direction, edge_type, topology_element_id)"
-                        + " VALUES(?,?,?,?,?,?,?)")) {
-            for (DungeonClusterBoundaryRecord boundary : cluster.boundaries()) {
-                insert.setLong(1, cluster.clusterId());
-                insert.setInt(2, boundary.levelZ());
-                insert.setInt(3, boundary.cellX());
-                insert.setInt(4, boundary.cellY());
-                insert.setString(5, boundary.edgeDirection());
-                insert.setString(6, boundary.edgeType());
-                DungeonSqliteStatementSupport.setNullableLong(insert, 7, boundary.topologyElementId());
-                insert.addBatch();
-            }
-            insert.executeBatch();
-        }
     }
 
     private static void upsertRoomPosition(Connection connection, DungeonRoomRecord room) throws SQLException {

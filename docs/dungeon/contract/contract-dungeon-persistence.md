@@ -76,13 +76,39 @@ with the corresponding authored record graph. Default display names are
 compatibility and publication semantics, not separate stored authored truth that
 adapters may infer from render state or preview state.
 
+## Room And Cluster Geometry Storage Semantics
+
+`dungeon_room_floors` remains room-anchor storage. It stores persisted
+room-floor anchor facts needed to correlate room identity across levels and
+readback, but it is not the cluster floor-cell owner.
+
+`dungeon_room_cluster_floor_cells` stores cluster floor cells. For freshly
+authored room creation, adapters MUST persist the domain-provided cluster floor
+cell set and read it back as the stored floor-cell truth for the retained
+cluster. The table stores source-local rows for domain-owned floor facts; it
+does not own room-membership policy.
+
+`dungeon_room_cluster_edges` stores cluster boundary facts. For freshly
+authored room creation, the target stored perimeter is explicit
+`edge_type='WALL'` rows around the committed cluster floor-cell set. Absent
+perimeter wall rows are legacy compatibility input for older maps only; they
+are not the target write shape for new editor-authored rooms.
+
+`dungeon_room_cluster_vertices` remains legacy compatibility storage. Adapter
+reads MAY use readable old vertex rows to recover compatible floor and boundary
+facts when cluster floor cells or perimeter wall rows are absent. Adapter
+writes for freshly authored room geometry MUST write floor cells and boundary
+rows as the target stored truth rather than treating vertices as authoritative
+shape.
+
 ## Room Boundary Edge Semantics
 
 `dungeon_room_cluster_edges` stores authored boundary overrides for keyed room
 cluster edges:
 
-- no row means the edge is un-authored; room perimeter walls may be derived from
-  room cells
+- no row means the edge is un-authored; derived perimeter walls from room cells
+  are legacy compatibility input only and are not the target output for fresh
+  editor-authored room creation
 - `edge_type='WALL'` means an authored renderable wall edge
 - `edge_type='DOOR'` means an authored renderable door edge
 - `edge_type='OPEN'` means an authored negative perimeter override that

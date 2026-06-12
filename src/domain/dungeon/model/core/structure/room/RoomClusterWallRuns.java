@@ -1,12 +1,9 @@
 package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.component.boundary.BoundaryMap;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
@@ -20,124 +17,91 @@ final class RoomClusterWallRuns {
     }
 
     static List<WallRun> authoredWallRuns(
+            BoundaryMap boundaryMap,
             Map<EdgeKey, BoundaryRow> rowsByKey,
             int level
     ) {
-        Map<RunKey, List<WallSegment>> segmentsByRunLine = new LinkedHashMap<>();
-        for (WallSegment segment : wallSegments(rowsByKey, level)) {
-            segmentsByRunLine.computeIfAbsent(segment.runKey(), ignored -> new ArrayList<>()).add(segment);
-        }
         List<WallRun> result = new ArrayList<>();
-        for (List<WallSegment> runLine : segmentsByRunLine.values()) {
-            appendRunLine(result, runLine);
+        for (src.domain.dungeon.model.core.component.boundary.WallRun wallRun
+                : componentWallRuns(boundaryMap, level)) {
+            appendDirectionalRuns(result, wallRun.edgeKeys(), rowsByKey);
         }
         return List.copyOf(result);
     }
 
-    private static void appendRunLine(List<WallRun> result, List<WallSegment> runLine) {
-        runLine.sort(Comparator.comparingInt(WallSegment::start));
-        int start = runLine.getFirst().start();
-        int end = runLine.getFirst().end();
-        RunKey key = runLine.getFirst().runKey();
-        for (int segmentIndex = 1; segmentIndex < runLine.size(); segmentIndex++) {
-            WallSegment segment = runLine.get(segmentIndex);
-            if (segment.start() == end) {
-                end = segment.end();
-                continue;
-            }
-            addWallRun(result, key, start, end);
-            start = segment.start();
-            end = segment.end();
-        }
-        addWallRun(result, key, start, end);
-    }
-
-    private static List<WallSegment> wallSegments(
-            Map<EdgeKey, BoundaryRow> rowsByKey,
+    private static List<src.domain.dungeon.model.core.component.boundary.WallRun> componentWallRuns(
+            BoundaryMap boundaryMap,
             int level
     ) {
-        List<WallSegment> result = new ArrayList<>();
-        for (Map.Entry<EdgeKey, BoundaryRow> entry : rowsByKey.entrySet()) {
-            WallSegment segment = wallSegment(level, entry.getKey(), entry.getValue());
-            if (segment != null) {
-                result.add(segment);
-            }
-        }
-        result.sort(WallSegment.ORDERING);
-        return List.copyOf(result);
+        return boundaryMap == null
+                ? List.of()
+                : boundaryMap.wallRunsAt(level);
     }
 
-    private static @Nullable WallSegment wallSegment(
-            int level,
-            EdgeKey key,
-            BoundaryRow row
+    private static void appendDirectionalRuns(
+            List<WallRun> result,
+            List<EdgeKey> edgeKeys,
+            Map<EdgeKey, BoundaryRow> rowsByKey
     ) {
-        if (excluded(level, key, row)) {
-            return null;
+        List<EdgeKey> currentKeys = new ArrayList<>();
+        Direction currentDirection = null;
+        for (EdgeKey edgeKey : edgeKeys == null ? List.<EdgeKey>of() : edgeKeys) {
+            Direction direction = directionForEdge(edgeKey, rowsByKey);
+            if (currentDirection != null && direction != currentDirection) {
+                addDirectionalRun(result, currentKeys, currentDirection);
+                currentKeys = new ArrayList<>();
+            }
+            currentKeys.add(edgeKey);
+            currentDirection = direction;
         }
-        Cell lower = key.lower();
-        Cell upper = key.upper();
-        if (differentLevel(lower, upper)) {
-            return null;
+        addDirectionalRun(result, currentKeys, currentDirection);
+    }
+
+    private static Direction directionForEdge(EdgeKey edgeKey, Map<EdgeKey, BoundaryRow> rowsByKey) {
+        BoundaryRow row = rowsByKey.get(edgeKey);
+        if (row != null && row.kind() == BoundaryKind.WALL && row.direction() != null) {
+            return row.direction();
         }
-        if (lower.r() == upper.r()) {
-            return new WallSegment(
-                    new RunKey(level, true, lower.r(), row.direction()),
-                    Math.min(lower.q(), upper.q()),
-                    Math.max(lower.q(), upper.q()));
+        return Direction.NORTH;
+    }
+
+    private static void addDirectionalRun(List<WallRun> result, List<EdgeKey> edgeKeys, Direction direction) {
+        if (edgeKeys == null || edgeKeys.isEmpty()) {
+            return;
         }
-        if (lower.q() == upper.q()) {
-            return new WallSegment(
-                    new RunKey(level, false, lower.q(), row.direction()),
-                    Math.min(lower.r(), upper.r()),
-                    Math.max(lower.r(), upper.r()));
+        EdgeKey first = edgeKeys.getFirst();
+        boolean horizontal = first.lower().r() == first.upper().r();
+        int fixed = horizontal ? first.lower().r() : first.lower().q();
+        int start = Integer.MAX_VALUE;
+        int end = Integer.MIN_VALUE;
+        for (EdgeKey edgeKey : edgeKeys) {
+            int lower = horizontal ? edgeKey.lower().q() : edgeKey.lower().r();
+            int upper = horizontal ? edgeKey.upper().q() : edgeKey.upper().r();
+            start = Math.min(start, Math.min(lower, upper));
+            end = Math.max(end, Math.max(lower, upper));
         }
-        return null;
+        addRun(result, direction, horizontal, fixed, first.lower().level(), start, end);
     }
 
-    private static boolean excluded(int level, EdgeKey key, BoundaryRow row) {
-        return key == null || row == null || row.level() != level || row.kind() != BoundaryKind.WALL;
-    }
-
-    private static boolean differentLevel(Cell lower, Cell upper) {
-        return lower == null || upper == null || lower.level() != upper.level();
-    }
-
-    private static Cell wallRunAnchorCell(RunKey key, int start, int end) {
-        int midpoint = (int) Math.floor(wallRunMidpointCoordinate(start, end));
-        return key.horizontal()
-                ? new Cell(midpoint, key.fixed(), key.level())
-                : new Cell(key.fixed(), midpoint, key.level());
-    }
-
-    private static double wallRunMidpointCoordinate(int start, int end) {
-        return (start + end) / 2.0;
-    }
-
-    private static void addWallRun(List<WallRun> result, RunKey key, int start, int end) {
-        if (end - start >= MINIMUM_WALL_RUN_LENGTH) {
-            double variableMidpoint = wallRunMidpointCoordinate(start, end);
-            double midpointQ = key.horizontal() ? variableMidpoint : key.fixed();
-            double midpointR = key.horizontal() ? key.fixed() : variableMidpoint;
-            result.add(new WallRun(
-                    wallRunAnchorCell(key, start, end),
-                    midpointQ,
-                    midpointR,
-                    key.direction()));
+    private static void addRun(
+            List<WallRun> result,
+            Direction direction,
+            boolean horizontal,
+            int fixed,
+            int level,
+            int start,
+            int end
+    ) {
+        if (end - start < MINIMUM_WALL_RUN_LENGTH) {
+            return;
         }
-    }
-
-    private record RunKey(int level, boolean horizontal, int fixed, Direction direction) {
-        private static final Comparator<RunKey> ORDERING = Comparator
-                .comparingInt(RunKey::level)
-                .thenComparing(key -> !key.horizontal())
-                .thenComparingInt(RunKey::fixed)
-                .thenComparing(RunKey::direction);
-    }
-
-    private record WallSegment(RunKey runKey, int start, int end) {
-        private static final Comparator<WallSegment> ORDERING = Comparator
-                .comparing(WallSegment::runKey, RunKey.ORDERING)
-                .thenComparingInt(WallSegment::start);
+        double variableMidpoint = (start + end) / 2.0;
+        int anchorCoordinate = (int) Math.floor(variableMidpoint);
+        result.add(new WallRun(
+                horizontal ? new src.domain.dungeon.model.core.geometry.Cell(anchorCoordinate, fixed, level)
+                        : new src.domain.dungeon.model.core.geometry.Cell(fixed, anchorCoordinate, level),
+                horizontal ? variableMidpoint : fixed,
+                horizontal ? fixed : variableMidpoint,
+                direction));
     }
 }

@@ -46,14 +46,7 @@ public final class RoomTopologyRebuilder {
             DungeonRoomTopologyClusterWork work,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
-        DungeonRoomTopologyClusterWork safeWork = Objects.requireNonNull(work, "work");
-        return new DungeonRoomCluster(
-                safeWork.cluster().clusterId(),
-                safeWork.cluster().mapId(),
-                safeWork.cluster().name(),
-                safeWork.cluster().center(),
-                safeWork.cluster().relativeVerticesByLevel(),
-                boundariesByLevel);
+        return Objects.requireNonNull(work, "work").rebuiltClusterWithBoundaries(boundariesByLevel);
     }
 
     public DungeonRoomCluster clusterForStretch(

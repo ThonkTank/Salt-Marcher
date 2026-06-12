@@ -14,10 +14,6 @@ public record RoomCluster(
         RoomClusterWallMap wallMap,
         DoorIndex doorIndex
 ) {
-    public RoomCluster(long clusterId, long mapId, Cell center, Map<Integer, List<Cell>> cellsByLevel) {
-        this(clusterId, mapId, center, new RoomClusterFloorMap(cellsByLevel), new RoomClusterWallMap(center, List.of()));
-    }
-
     public RoomCluster(long clusterId, long mapId, Cell center, RoomClusterFloorMap floorMap) {
         this(clusterId, mapId, center, floorMap, new RoomClusterWallMap(center, List.of()));
     }

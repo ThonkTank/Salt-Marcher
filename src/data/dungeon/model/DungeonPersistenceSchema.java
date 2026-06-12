@@ -13,6 +13,7 @@ public final class DungeonPersistenceSchema {
     public static final String CORRIDORS_TABLE = "dungeon_corridors";
     public static final String CORRIDOR_MEMBERS_TABLE = "dungeon_corridor_members";
     public static final String ROOM_CLUSTER_VERTICES_TABLE = "dungeon_room_cluster_vertices";
+    public static final String ROOM_CLUSTER_FLOOR_CELLS_TABLE = "dungeon_room_cluster_floor_cells";
     public static final String ROOM_CLUSTER_EDGES_TABLE = "dungeon_room_cluster_edges";
     public static final String ROOM_FLOORS_TABLE = "dungeon_room_floors";
     public static final String TOPOLOGY_ELEMENTS_TABLE = "dungeon_topology_elements";
@@ -89,6 +90,15 @@ public final class DungeonPersistenceSchema {
                     + "relative_x   INTEGER NOT NULL,"
                     + "relative_y   INTEGER NOT NULL,"
                     + "PRIMARY KEY (cluster_id, level_z, vertex_index)"
+                    + ")";
+
+    public static final String CREATE_DUNGEON_ROOM_CLUSTER_FLOOR_CELLS_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS dungeon_room_cluster_floor_cells ("
+                    + "cluster_id INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
+                    + "level_z    INTEGER NOT NULL DEFAULT 0,"
+                    + "cell_x     INTEGER NOT NULL,"
+                    + "cell_y     INTEGER NOT NULL,"
+                    + "PRIMARY KEY (cluster_id, level_z, cell_y, cell_x)"
                     + ")";
 
     public static final String CREATE_DUNGEON_ROOM_CLUSTER_EDGES_TABLE_SQL =
@@ -284,6 +294,7 @@ public final class DungeonPersistenceSchema {
             CREATE_DUNGEON_CORRIDORS_TABLE_SQL,
             CREATE_DUNGEON_CORRIDOR_MEMBERS_TABLE_SQL,
             CREATE_DUNGEON_ROOM_CLUSTER_VERTICES_TABLE_SQL,
+            CREATE_DUNGEON_ROOM_CLUSTER_FLOOR_CELLS_TABLE_SQL,
             CREATE_DUNGEON_ROOM_CLUSTER_EDGES_TABLE_SQL,
             CREATE_DUNGEON_ROOM_FLOORS_TABLE_SQL,
             CREATE_DUNGEON_TOPOLOGY_ELEMENTS_TABLE_SQL,

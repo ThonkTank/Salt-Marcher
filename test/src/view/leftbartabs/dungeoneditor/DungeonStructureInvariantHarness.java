@@ -35,6 +35,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMateriali
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMaterialization;
+import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
@@ -670,7 +671,11 @@ final class DungeonStructureInvariantHarness {
         Cell middle = new Cell(1, 0, 0);
         Cell right = new Cell(2, 0, 0);
         Edge split = Edge.sideOf(left, Direction.EAST);
-        RoomCluster cluster = new RoomCluster(9L, 2L, left, Map.of(0, List.of(left, middle, right)));
+        RoomCluster cluster = new RoomCluster(
+                9L,
+                2L,
+                left,
+                new RoomClusterFloorMap(Map.of(0, List.of(left, middle, right))));
         Room existingRoom = new Room(7L, 2L, 9L, "Bestand", Map.of(0, left));
         RoomClusterWork work = new RoomClusterWork(cluster, List.of(existingRoom));
 

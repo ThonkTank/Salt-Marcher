@@ -1,8 +1,10 @@
 package src.domain.dungeon.model.core.geometry;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public final class CellOrdering {
 
@@ -11,8 +13,9 @@ public final class CellOrdering {
 
     public static List<Cell> sortedCells(Iterable<Cell> cells) {
         List<Cell> result = new ArrayList<>();
+        Set<Cell> seen = new HashSet<>();
         for (Cell cell : Objects.requireNonNull(cells)) {
-            if (!result.contains(Objects.requireNonNull(cell))) {
+            if (seen.add(Objects.requireNonNull(cell))) {
                 result.add(cell);
             }
         }

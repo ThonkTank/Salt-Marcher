@@ -30,6 +30,7 @@ final class DungeonSqliteSchemaManager {
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CORRIDORS_TABLE_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CORRIDOR_MEMBERS_TABLE_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_CLUSTER_VERTICES_TABLE_SQL);
+            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_CLUSTER_FLOOR_CELLS_TABLE_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_CLUSTER_EDGES_TABLE_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_FLOORS_TABLE_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_TOPOLOGY_ELEMENTS_TABLE_SQL);

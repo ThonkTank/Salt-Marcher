@@ -1,0 +1,92 @@
+package src.domain.dungeon.model.core.structure.room;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
+
+final class DungeonRoomBoundaryAuthority {
+
+    private DungeonRoomBoundaryAuthority() {
+    }
+
+    static Map<Integer, List<DungeonClusterBoundary>> fromFloorCells(
+            DungeonRoomCluster cluster,
+            Iterable<Cell> currentCells,
+            Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesByLevel
+    ) {
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundariesByKey = new LinkedHashMap<>();
+        for (List<DungeonClusterBoundary> boundaries : safeBoundaries(preservedBoundariesByLevel).values()) {
+            for (DungeonClusterBoundary boundary : boundaries) {
+                boundariesByKey.put(DungeonBoundaryKey.from(boundary.absoluteEdge(cluster.center())), boundary);
+            }
+        }
+        for (DungeonClusterBoundary boundary : perimeterWallBoundaries(cluster, currentCells)) {
+            boundariesByKey.putIfAbsent(DungeonBoundaryKey.from(boundary.absoluteEdge(cluster.center())), boundary);
+        }
+        return DungeonClusterBoundary.orderedByLevel(boundariesByKey.values());
+    }
+
+    private static List<DungeonClusterBoundary> perimeterWallBoundaries(
+            DungeonRoomCluster cluster,
+            Iterable<Cell> currentCells
+    ) {
+        Set<Cell> cells = normalizedCells(currentCells);
+        List<DungeonClusterBoundary> result = new ArrayList<>();
+        for (Cell cell : RoomClusterCells.sortedCells(cells)) {
+            for (Direction direction : Direction.values()) {
+                if (!cells.contains(direction.neighborOf(cell))) {
+                    addBoundary(result, cluster, cells, cell, direction);
+                }
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    private static void addBoundary(
+            List<DungeonClusterBoundary> result,
+            DungeonRoomCluster cluster,
+            Set<Cell> cells,
+            Cell cell,
+            Direction direction
+    ) {
+        BoundaryRow row = RoomClusterBoundaryMaterialization.forEdge(
+                cells,
+                cluster.center(),
+                cluster.clusterId(),
+                Edge.sideOf(cell, direction),
+                BoundaryKind.WALL);
+        if (row != null) {
+            result.add(new DungeonClusterBoundary(
+                    row.clusterId(),
+                    row.level(),
+                    row.relativeCell(),
+                    row.direction(),
+                    row.kind()));
+        }
+    }
+
+    private static Set<Cell> normalizedCells(Iterable<Cell> cells) {
+        Set<Cell> result = new LinkedHashSet<>();
+        for (Cell cell : cells == null ? List.<Cell>of() : cells) {
+            if (cell != null) {
+                result.add(cell);
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static Map<Integer, List<DungeonClusterBoundary>> safeBoundaries(
+            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+    ) {
+        return boundariesByLevel == null ? Map.of() : boundariesByLevel;
+    }
+}

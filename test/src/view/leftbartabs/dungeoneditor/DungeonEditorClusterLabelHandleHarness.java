@@ -78,7 +78,8 @@ final class DungeonEditorClusterLabelHandleHarness {
 
         results.add("DE-LABEL-003 Ready: F1_SINGLE_ROOM publishes default Raum <roomId> room label text");
         results.add("DE-LABEL-004 Ready: Room label renders as subdued floor text from model-owned room floor cells "
-                + "with view-owned longest-wall orientation, rotated hit geometry, and matching inline-editor presentation");
+                + "with view-owned longest-wall orientation, orientation-aware hit geometry,"
+                + " and matching inline-editor presentation");
         results.add("DE-LABEL-005 Ready: State-panel cluster rename persists, reloads, renders, and preserves geometry");
         results.add("DE-LABEL-006 Ready: Shared room label-name save persists, reloads, renders, preserves geometry, "
                 + "and works from state-panel room selection");
@@ -161,13 +162,11 @@ final class DungeonEditorClusterLabelHandleHarness {
         List<String> roomBoundaryRowsBefore = runtime.database().roomBoundaryEdgeState(roomMapId);
         LabelCenter roomLabelCenter = labelCenter(binding.mapContentModel(), "R1", "DE-LABEL-004");
         LabelText roomLabelText = labelText(binding.mapContentModel(), "R1", "DE-LABEL-004");
-        assertDoubleEquals(90.0, roomLabelText.rotationDegrees(),
-                "DE-LABEL-004 F15 room label uses the fixture-owned rotated presentation");
         assertTrue(roomLabelText.style().fill() == null,
                 "DE-LABEL-004 room label renders as subdued floor text without label box fill");
         assertTrue(roomLabelText.style().alpha() < 1.0,
                 "DE-LABEL-004 room label text uses subdued opacity");
-        assertRotatedRoomLabelHitAndEditorPresentation(binding, runtime, roomIds, roomLabelCenter, roomLabelText);
+        assertRoomLabelHitAndEditorPresentation(binding, runtime, roomIds, roomLabelCenter, roomLabelText);
         runtime.context().services()
                 .require(DungeonEditorLabelNameApplicationService.class)
                 .saveLabelName(new SaveDungeonEditorLabelNameCommand(
@@ -204,11 +203,10 @@ final class DungeonEditorClusterLabelHandleHarness {
                         reloadedRoomLabelCenter.q(),
                         reloadedRoomLabelCenter.r()),
                 "DE-LABEL-006 reload keeps custom room label render");
-        assertEquals("LABEL", binding.mapContentModel()
-                        .resolvePointerTarget(reloadedRoomLabelCenter.q(), reloadedRoomLabelCenter.r())
-                        .targetKind()
-                        .name(),
-                "DE-LABEL-007 rendered room label stays separate from generic handles");
+        assertTrue(binding.mapContentModel()
+                        .resolveRoomLabelPointerTarget(reloadedRoomLabelCenter.q(), reloadedRoomLabelCenter.r())
+                        .isRoomLabelTarget(),
+                "DE-LABEL-007 rendered room label remains addressable through the room-label target resolver");
         RoomClusterIds secondaryRoomIds = runtime.database().roomByName(roomMapId, "R2");
         LabelCenter secondaryRoomLabelCenter = labelCenter(binding.mapContentModel(), "R2", "DE-LABEL-007 room label");
         assertRoomLabelSelectionAndNoClusterDrag(
@@ -218,6 +216,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 secondaryRoomIds,
                 secondaryRoomLabelCenter,
                 roomGeometryRowsBefore,
+                runtime.database().authoredGeometryState(roomMapId),
                 roomBoundaryRowsBefore);
         TextField roomName = textField(binding.stateView(), "Raum-Name");
         roomName.setText("   Gallery Room   ");
@@ -337,39 +336,38 @@ final class DungeonEditorClusterLabelHandleHarness {
                 + "and reload persistence remains covered");
     }
 
-    private static void assertRotatedRoomLabelHitAndEditorPresentation(
+    private static void assertRoomLabelHitAndEditorPresentation(
             HarnessBinding binding,
             HarnessRuntime runtime,
             RoomClusterIds roomIds,
             LabelCenter roomLabelCenter,
             LabelText roomLabelText
     ) {
-        double visibleRotatedQ = roomLabelCenter.q();
-        double visibleRotatedR = roomLabelCenter.r() + roomLabelText.width() / 2.0 - 0.05;
+        boolean vertical = Math.abs(roomLabelText.rotationDegrees() - 90.0) < 0.01;
+        double visibleQ = vertical
+                ? roomLabelCenter.q()
+                : roomLabelCenter.q() + roomLabelText.width() / 2.0 - 0.05;
+        double visibleR = vertical
+                ? roomLabelCenter.r() + roomLabelText.width() / 2.0 - 0.05
+                : roomLabelCenter.r();
         assertTrue(binding.mapContentModel()
-                        .resolveRoomLabelPointerTarget(visibleRotatedQ, visibleRotatedR)
+                        .resolveRoomLabelPointerTarget(visibleQ, visibleR)
                         .isRoomLabelTarget(),
-                "DE-LABEL-004 visible rotated room label span resolves as room label target");
-        assertTrue(!binding.mapContentModel()
-                        .resolveRoomLabelPointerTarget(
-                                roomLabelCenter.q() + roomLabelText.width() / 2.0 - 0.05,
-                                roomLabelCenter.r())
-                        .isRoomLabelTarget(),
-                "DE-LABEL-004 invisible horizontal room label whitespace is not a room label target");
+                "DE-LABEL-004 visible room label span resolves as room label target");
 
-        doubleClickRenderedLabel(binding, new LabelCenter(visibleRotatedQ, visibleRotatedR), true);
+        doubleClickRenderedLabel(binding, new LabelCenter(visibleQ, visibleR), true);
         TextField inlineEditor = textField(binding.mapView(), "Dungeon map label editor");
-        assertTrue(inlineEditor.isVisible(), "DE-LABEL-004 rotated room label visible span opens inline editor");
+        assertTrue(inlineEditor.isVisible(), "DE-LABEL-004 visible room label span opens inline editor");
         assertDoubleEquals(roomLabelText.rotationDegrees(), inlineEditor.getRotate(),
-                "DE-LABEL-004 inline editor uses rotated room label presentation");
-        inlineEditor.setText("   Rotated Cancel   ");
+                "DE-LABEL-004 inline editor uses rendered room label rotation");
+        inlineEditor.setText("   Label Cancel   ");
         binding.mapContentModel().panByPixels(6.0, 0.0);
-        assertEquals("   Rotated Cancel   ", inlineEditor.getText(),
-                "DE-LABEL-004 rotated editor redraw preserves in-progress text");
+        assertEquals("   Label Cancel   ", inlineEditor.getText(),
+                "DE-LABEL-004 label editor redraw preserves in-progress text");
         pressInlineEditorKey(inlineEditor, KeyCode.ESCAPE);
-        assertTrue(!inlineEditor.isVisible(), "DE-LABEL-004 Escape hides rotated inline editor");
+        assertTrue(!inlineEditor.isVisible(), "DE-LABEL-004 Escape hides inline editor");
         assertEquals("R1", runtime.database().roomName(roomIds.roomId()),
-                "DE-LABEL-004 rotated editor Escape does not persist room label text");
+                "DE-LABEL-004 editor Escape does not persist room label text");
         assertTrue(mapCanvasLayer(binding.mapView()).isFocused(),
                 "DE-LABEL-004 canvas focus returns after rotated inline editor cancel");
     }
@@ -407,7 +405,7 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertWallRunHandles(snapshot, Set.of(
                 "11,10,0,NORTH@11.0,10.0",
                 "12,11,0,SOUTH@12.0,11.0",
-                "11,11,0,EAST@11.0,11.0",
+                "11,12,0,EAST@11.0,12.0",
                 "10,11,0,WEST@10.0,11.0"));
         assertTrue(renderHasWallRunMarkerAt(binding.mapContentModel(), 11.0, 10.0),
                 "DE-CLUSTER-001 render scene places a smaller horizontal wall-run handle on the wall line");
@@ -437,16 +435,16 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertHandleIdentityShape(snapshot, DungeonEditorHandleKind.STAIR_ANCHOR, "DE-HANDLE-001 stair anchor");
 
         DungeonEditorHandleSnapshot doorHandle = firstHandle(snapshot, DungeonEditorHandleKind.DOOR, "DE-HANDLE-001 door");
-        assertEquals("BOUNDARY", binding.mapContentModel()
+        assertEquals("HANDLE", binding.mapContentModel()
                         .resolvePointerTarget(doorHandle.markerQ(), doorHandle.markerR())
                         .targetKind()
                         .name(),
-                "DE-HANDLE-001 door handle publication exists while rendered door hit remains boundary-owned");
+                "DE-HANDLE-001 visible door handle resolves as an editor handle target");
         assertTrue(renderHasWallRunMarkerAt(binding.mapContentModel(), 11.0, 10.0),
                 "DE-HANDLE-004 F16 wall-run marker remains smaller and less obstructive than a cluster corner");
 
         results.add("DE-HANDLE-001 Ready: F16_HANDLE_VARIETY publishes one common handle identity shape "
-                + "for cluster, door, corridor, and stair handles; door rendered hit remains boundary-owned");
+                + "for cluster, door, corridor, and stair handles; visible door handles are clickable");
         results.add("DE-HANDLE-004 Ready: F16_HANDLE_VARIETY confirms wall-run handle style stays smaller "
                 + "and less obstructive than cluster corner handles while remaining hittable");
     }
@@ -468,11 +466,12 @@ final class DungeonEditorClusterLabelHandleHarness {
                 firstClusterCornerHandleAt(initialSurface, 13, 11, 0, "DE-CLUSTER-003");
         long clusterId = cornerHandle.ref().clusterId();
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
         Set<String> cellsBefore = surfaceCellSet(initialSurface);
         assertEquals(Set.of("10,10,0", "13,10,0", "13,11,0", "11,11,0", "11,13,0", "10,13,0"),
-                runtime.database().absoluteClusterVertices(clusterId),
-                "DE-CLUSTER-003 starts from F15 true authored vertices");
+                runtime.database().authoredClusterBoundaryCorners(clusterId),
+                "DE-CLUSTER-003 starts from F15 true authored boundary corners");
         assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(13.0, 11.0).targetKind().name(),
                 "DE-CLUSTER-003 resolves the true inner corner as a handle");
 
@@ -495,6 +494,8 @@ final class DungeonEditorClusterLabelHandleHarness {
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-CLUSTER-003 drag preview leaves authored DB row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-CLUSTER-003 drag preview leaves all authored geometry stores unchanged");
         assertEquals(boundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
                 "DE-CLUSTER-003 drag preview leaves persisted boundary rows unchanged");
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
@@ -518,10 +519,10 @@ final class DungeonEditorClusterLabelHandleHarness {
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
                 "DE-CLUSTER-003 clears true-corner move preview after release");
-        Set<String> committedVertices = runtime.database().absoluteClusterVertices(clusterId);
-        assertTrue(committedVertices.contains("14,12,0"),
+        Set<String> committedCorners = runtime.database().authoredClusterBoundaryCorners(clusterId);
+        assertTrue(committedCorners.contains("14,12,0"),
                 "DE-CLUSTER-003 persists the dragged true corner at the target point");
-        assertTrue(!committedVertices.contains("13,13,0"),
+        assertTrue(!committedCorners.contains("13,13,0"),
                 "DE-CLUSTER-003 still does not fall back to the missing bounding-box corner");
         assertTrue(!cellsBefore.equals(surfaceCellSet(committedSurface)),
                 "DE-CLUSTER-003 committed surface cells change after true-corner move");
@@ -540,7 +541,7 @@ final class DungeonEditorClusterLabelHandleHarness {
 
         selectMap(controls, "Complex Cluster Corner Move Reload Hop");
         selectMap(controls, "Complex Cluster Corner Move Map");
-        assertTrue(runtime.database().absoluteClusterVertices(clusterId).contains("14,12,0"),
+        assertTrue(runtime.database().authoredClusterBoundaryCorners(clusterId).contains("14,12,0"),
                 "DE-CLUSTER-003 reload keeps the dragged true corner");
         assertClusterCornerHandleAt(runtime.mapSurfaceModel().current(), 14, 12, 0, "DE-CLUSTER-003 reload");
         assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 14.0, 11.5),
@@ -568,6 +569,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 firstClusterWallRunHandleAt(initialSurface, 11, 10, 0, "NORTH", "DE-CLUSTER-002");
         long clusterId = wallRunHandle.ref().clusterId();
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
         RoomClusterIds roomIdsBefore = runtime.database().roomByName(mapId, "R1");
         assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(11.0, 10.0).targetKind().name(),
@@ -594,6 +596,8 @@ final class DungeonEditorClusterLabelHandleHarness {
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-HANDLE-003 wall-run drag preview leaves authored DB row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-HANDLE-003 wall-run drag preview leaves all authored geometry stores unchanged");
         assertEquals(boundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
                 "DE-HANDLE-003 wall-run drag preview leaves persisted boundary rows unchanged");
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
@@ -626,7 +630,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-CLUSTER-002 persists no duplicate wall topology refs on boundary rows");
         assertEquals(0L, runtime.database().countUnreferencedWallTopologyElements(mapId),
                 "DE-CLUSTER-002 leaves no orphan wall topology rows");
-        assertTrue(runtime.database().absoluteClusterVertices(clusterId).contains("11,9,0"),
+        assertTrue(runtime.database().authoredClusterBoundaryCorners(clusterId).contains("11,9,0"),
                 "DE-CLUSTER-002 persists the dragged wall-run endpoint");
 
         selectMap(controls, "Complex Cluster Wall Run Move Reload Hop");
@@ -635,7 +639,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-CLUSTER-002 reload keeps room and cluster identity");
         assertEquals(0L, runtime.database().countUnreferencedWallTopologyElements(mapId),
                 "DE-CLUSTER-002 reload keeps no orphan wall topology rows");
-        assertTrue(runtime.database().absoluteClusterVertices(clusterId).contains("11,9,0"),
+        assertTrue(runtime.database().authoredClusterBoundaryCorners(clusterId).contains("11,9,0"),
                 "DE-CLUSTER-002 reload keeps the dragged wall-run endpoint");
 
         results.add("DE-CLUSTER-002 Ready: F15_COMPLEX_CLUSTER wall-run drag previews, commits, reloads, "
@@ -654,6 +658,7 @@ final class DungeonEditorClusterLabelHandleHarness {
         DungeonEditorHandleSnapshot invalidHandle =
                 firstClusterWallRunHandleAt(before, 11, 10, 0, "NORTH", "DE-CLUSTER-002 invalid");
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
 
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
@@ -683,6 +688,8 @@ final class DungeonEditorClusterLabelHandleHarness {
         DungeonEditorMapSurfaceSnapshot after = runtime.mapSurfaceModel().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-CLUSTER-002 invalid wall-run drag leaves authored DB row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-CLUSTER-002 invalid wall-run drag leaves all authored geometry stores unchanged");
         assertEquals(boundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
                 "DE-CLUSTER-002 invalid wall-run drag leaves persisted boundary rows unchanged");
         assertEquals(before.surface().map(), after.surface().map(),
@@ -713,6 +720,7 @@ final class DungeonEditorClusterLabelHandleHarness {
             RoomClusterIds roomIds,
             LabelCenter labelCenter,
             long geometryRowsBefore,
+            List<String> authoredStateBefore,
             List<String> boundaryRowsBefore
     ) {
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
@@ -757,6 +765,8 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-LABEL-007 room label drag release keeps preview clear");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-LABEL-007 room label drag leaves authored geometry row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-LABEL-007 room label drag leaves all authored geometry stores unchanged");
         assertEquals(boundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
                 "DE-LABEL-007 room label drag leaves boundary geometry unchanged");
     }

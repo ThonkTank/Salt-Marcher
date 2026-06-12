@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.component.boundary.BoundaryMap;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
@@ -13,15 +14,18 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMateriali
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 
 public final class RoomClusterWallMap {
+    private final BoundaryMap boundaryMap;
     private final Map<EdgeKey, BoundaryRow> rowsByKey;
 
     public RoomClusterWallMap(@Nullable Cell center, Iterable<BoundaryRow> rows) {
         Cell resolvedCenter = center == null ? new Cell(0, 0, 0) : center;
         this.rowsByKey = RoomClusterWallRows.normalizeRows(resolvedCenter, rows);
+        this.boundaryMap = RoomClusterBoundaryMapAdapter.boundaryMap(rowsByKey);
     }
 
     private RoomClusterWallMap(Map<EdgeKey, BoundaryRow> rowsByKey) {
         this.rowsByKey = RoomClusterWallRows.copyRowsByKey(rowsByKey);
+        this.boundaryMap = RoomClusterBoundaryMapAdapter.boundaryMap(this.rowsByKey);
     }
 
     public static RoomClusterWallMap fromKeyedRows(Map<EdgeKey, BoundaryRow> rowsByKey) {
@@ -44,16 +48,12 @@ public final class RoomClusterWallMap {
                 deltaLevel);
     }
 
-    public List<Cell> authoredBoundaryVertices(
-            @Nullable Cell center,
-            int level,
-            Iterable<Cell> relativeVertices
-    ) {
-        return RoomClusterBoundaryVertices.authored(rowsByKey, center, level, relativeVertices);
+    public List<Cell> authoredBoundaryVertices(int level) {
+        return RoomClusterBoundaryVertices.authored(boundaryMap, level);
     }
 
     public List<WallRun> authoredWallRuns(int level) {
-        return RoomClusterWallRuns.authoredWallRuns(rowsByKey, level);
+        return RoomClusterWallRuns.authoredWallRuns(boundaryMap, rowsByKey, level);
     }
 
     public static List<Edge> authoredWallDeleteEdges(
@@ -66,12 +66,13 @@ public final class RoomClusterWallMap {
     @Override
     public boolean equals(Object other) {
         return other instanceof RoomClusterWallMap that
+                && boundaryMap.equals(that.boundaryMap)
                 && rowsByKey.equals(that.rowsByKey);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(rowsByKey);
+        return Objects.hash(boundaryMap, rowsByKey);
     }
 
     static @Nullable BoundaryRow materializeRow(

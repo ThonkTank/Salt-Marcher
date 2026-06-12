@@ -51,6 +51,7 @@ final class DungeonEditorRoomWallDoorHarness {
         route(results, () -> verifySelectedStraightWallStretchThroughMapView(results));
         route(results, () -> verifySelectedWallCornerMoveThroughMapView(results));
         route(results, () -> verifyWholeClusterMoveThroughMapView(results));
+        route(results, () -> verifyUiCreatedRoomCornerMoveAfterReloadThroughMapView(results));
         route(results, () -> verifyRoomNarrationThroughStateView(results));
         route(results, () -> verifyDoorCreateThroughMapView(results));
         route(results, () -> verifyDoorDeleteThroughMapView(results));
@@ -167,6 +168,7 @@ final class DungeonEditorRoomWallDoorHarness {
         selectMap(controls, "Straight Wall Stretch Map");
         RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
         var roomArea = roomAreaByLabel(runtime.mapSurfaceModel().current(), "R1", "DE-SEL-007");
         DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
@@ -192,6 +194,8 @@ final class DungeonEditorRoomWallDoorHarness {
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-SEL-007 drag preview leaves authored DB row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-SEL-007 drag preview leaves all authored geometry stores unchanged");
         assertEquals(boundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
                 "DE-SEL-007 drag preview leaves persisted boundary rows unchanged");
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveBoundaryStretchPreview,
@@ -227,8 +231,8 @@ final class DungeonEditorRoomWallDoorHarness {
         assertEquals(cellRect(1, 0, 3, 3, 0), persistedClusterCellsThroughRepository(mapId, roomIds.clusterId(), 0),
                 "DE-SEL-007 persisted readback expands room cells to y=0");
         assertEquals(Set.of("1,0,0", "4,0,0", "4,4,0", "1,4,0"),
-                runtime.database().absoluteClusterVertices(roomIds.clusterId()),
-                "DE-SEL-007 persisted absolute vertices move the north wall to y=0");
+                runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId()),
+                "DE-SEL-007 persisted boundary corners move the north wall to y=0");
         assertTrue(!boundaryRowsBefore.equals(runtime.database().roomBoundaryEdgeState(mapId)),
                 "DE-SEL-007 recomputes persisted boundary rows after release");
         assertEquals(3L, runtime.database().countWallBoundariesForDirection(mapId, "NORTH"),
@@ -300,10 +304,11 @@ final class DungeonEditorRoomWallDoorHarness {
         DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
         var cornerHandle = firstClusterCornerHandleAt(runtime.mapSurfaceModel().current(), 4, 4, 0, "DE-SEL-008");
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
         assertEquals(Set.of("1,1,0", "4,1,0", "4,4,0", "1,4,0"),
-                runtime.database().absoluteClusterVertices(roomIds.clusterId()),
-                "DE-SEL-008 starts with absolute cluster vertices");
+                runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId()),
+                "DE-SEL-008 starts with authored boundary corners");
         assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(4.0, 4.0).targetKind().name(),
                 "DE-SEL-008 input route resolves the south-east corner as a handle");
 
@@ -326,6 +331,8 @@ final class DungeonEditorRoomWallDoorHarness {
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-SEL-008 drag preview leaves authored DB row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-SEL-008 drag preview leaves all authored geometry stores unchanged");
         assertEquals(boundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
                 "DE-SEL-008 drag preview leaves persisted boundary rows unchanged");
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
@@ -353,8 +360,8 @@ final class DungeonEditorRoomWallDoorHarness {
         assertEquals(cellRect(1, 1, 4, 4, 0), persistedClusterCellsThroughRepository(mapId, roomIds.clusterId(), 0),
                 "DE-SEL-008 persisted readback expands the south-east corner");
         assertEquals(Set.of("1,1,0", "5,1,0", "5,5,0", "1,5,0"),
-                runtime.database().absoluteClusterVertices(roomIds.clusterId()),
-                "DE-SEL-008 persisted absolute vertices move the south-east corner to (5,5,0)");
+                runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId()),
+                "DE-SEL-008 persisted boundary corners move the south-east corner to (5,5,0)");
         assertTrue(!boundaryRowsBefore.equals(runtime.database().roomBoundaryEdgeState(mapId)),
                 "DE-SEL-008 recomputes persisted boundary rows after release");
         assertEquals(runtime.database().countWallBoundaryRows(mapId),
@@ -407,6 +414,7 @@ final class DungeonEditorRoomWallDoorHarness {
         click(button(controls, "Auswahl"));
         RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 2, 2, 0),
                 "DE-SEL-009 starts with R1 cluster centered at (2,2,0)");
         assertEquals(roomIds, runtime.database().roomByComponent(mapId, 2, 2, 0),
@@ -414,8 +422,8 @@ final class DungeonEditorRoomWallDoorHarness {
         assertEquals(cellRect(1, 1, 3, 3, 0), persistedClusterCellsThroughRepository(mapId, roomIds.clusterId(), 0),
                 "DE-SEL-009 starts with F1_SINGLE_ROOM cells");
         assertEquals(Set.of("1,1,0", "4,1,0", "4,4,0", "1,4,0"),
-                runtime.database().absoluteClusterVertices(roomIds.clusterId()),
-                "DE-SEL-009 starts with absolute cluster vertices");
+                runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId()),
+                "DE-SEL-009 starts with authored boundary corners");
 
         DungeonEditorMapSurfaceSnapshot loadedSurface = runtime.mapSurfaceModel().current();
         var roomArea = roomAreaByLabel(loadedSurface, "R1", "DE-SEL-009");
@@ -446,6 +454,8 @@ final class DungeonEditorRoomWallDoorHarness {
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-SEL-009 drag preview leaves authored DB row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-SEL-009 drag preview leaves all authored geometry stores unchanged");
         assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 2, 2, 0),
                 "DE-SEL-009 drag preview leaves persisted cluster center unchanged");
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
@@ -489,8 +499,8 @@ final class DungeonEditorRoomWallDoorHarness {
         assertEquals(cellRect(3, 2, 5, 4, 0), persistedClusterCellsThroughRepository(mapId, roomIds.clusterId(), 0),
                 "DE-SEL-009 persisted readback translates the whole cluster cells");
         assertEquals(Set.of("3,2,0", "6,2,0", "6,5,0", "3,5,0"),
-                runtime.database().absoluteClusterVertices(roomIds.clusterId()),
-                "DE-SEL-009 persisted absolute vertices translate by (+2,+1,0)");
+                runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId()),
+                "DE-SEL-009 persisted boundary corners translate by (+2,+1,0)");
 
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
@@ -509,6 +519,243 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-SEL-009 rendered canvas paints the moved cluster coordinates");
 
         results.add("DE-SEL-009 Ready: DungeonMapView cluster-label drag -> SQLite cluster move -> render readback");
+    }
+
+    private static void verifyUiCreatedRoomCornerMoveAfterReloadThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "UI Created Corner Move Map");
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
+        Set<String> initialCells = cellRect(1, 1, 3, 3, 0);
+        Set<String> expandedCells = cellRect(1, 1, 4, 4, 0);
+
+        click(button(controls, "Raum"));
+        assertEquals("ROOM_PAINT", runtime.controlsModel().current().selectedTool().name(),
+                "DE-SEL-010 room family selects room paint tool");
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        double startX = viewport.sceneToScreenX(1.5);
+        double startY = viewport.sceneToScreenY(1.5);
+        double endX = viewport.sceneToScreenX(3.5);
+        double endY = viewport.sceneToScreenY(3.5);
+
+        fireMapMouse(mapView, MouseEvent.MOUSE_PRESSED, MouseButton.PRIMARY, startX, startY, false);
+        fireMapMouse(mapView, MouseEvent.MOUSE_DRAGGED, MouseButton.PRIMARY, endX, endY, false);
+        fireMapMouse(mapView, MouseEvent.MOUSE_RELEASED, MouseButton.PRIMARY, endX, endY, false);
+
+        assertTrue(!authoredStateBefore.equals(runtime.database().authoredGeometryState(mapId)),
+                "DE-SEL-010 room paint changes authored DB state");
+        assertEquals(1L, runtime.database().countRoomsForMap(mapId),
+                "DE-SEL-010 DB has one room row after UI room paint");
+        assertEquals(1L, runtime.database().countRoomClustersForMap(mapId),
+                "DE-SEL-010 DB has one room cluster row after UI room paint");
+        RoomClusterIds roomIds = runtime.database().roomByComponent(mapId, 1, 1, 0);
+        assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 1, 1, 0),
+                "DE-SEL-010 cluster center uses the painted minimum cell");
+        assertTrue(runtime.database().roomFloorAnchors(roomIds.roomId()).isEmpty(),
+                "DE-SEL-010 DB room floors store no extra same-level anchors");
+        assertEquals(initialCells, runtime.database().clusterFloorCells(roomIds.clusterId()),
+                "DE-SEL-010 direct cluster floor-cell rows equal the painted rectangle");
+        assertEquals(0L, runtime.database().countClusterVertexRows(mapId),
+                "DE-SEL-010 fresh UI-created room writes no legacy vertex rows");
+        assertEquals(Set.of("1,1,0", "4,1,0", "4,4,0", "1,4,0"),
+                runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId()),
+                "DE-SEL-010 boundary-derived corners match the fresh painted rectangle");
+        assertEquals(
+                Set.of(
+                        "cell=1,1,0,direction=NORTH,type=WALL",
+                        "cell=2,1,0,direction=NORTH,type=WALL",
+                        "cell=3,1,0,direction=NORTH,type=WALL"),
+                runtime.database().wallBoundaryAbsoluteRowsForDirection(mapId, "NORTH"),
+                "DE-SEL-010 direct north wall rows close the painted rectangle");
+        assertEquals(
+                Set.of(
+                        "cell=1,3,0,direction=SOUTH,type=WALL",
+                        "cell=2,3,0,direction=SOUTH,type=WALL",
+                        "cell=3,3,0,direction=SOUTH,type=WALL"),
+                runtime.database().wallBoundaryAbsoluteRowsForDirection(mapId, "SOUTH"),
+                "DE-SEL-010 direct south wall rows close the painted rectangle");
+        assertEquals(
+                Set.of(
+                        "cell=1,1,0,direction=WEST,type=WALL",
+                        "cell=1,2,0,direction=WEST,type=WALL",
+                        "cell=1,3,0,direction=WEST,type=WALL"),
+                runtime.database().wallBoundaryAbsoluteRowsForDirection(mapId, "WEST"),
+                "DE-SEL-010 direct west wall rows close the painted rectangle");
+        assertEquals(
+                Set.of(
+                        "cell=3,1,0,direction=EAST,type=WALL",
+                        "cell=3,2,0,direction=EAST,type=WALL",
+                        "cell=3,3,0,direction=EAST,type=WALL"),
+                runtime.database().wallBoundaryAbsoluteRowsForDirection(mapId, "EAST"),
+                "DE-SEL-010 direct east wall rows close the painted rectangle");
+        assertEquals(12L, runtime.database().countClusterWallEdges(roomIds.clusterId()),
+                "DE-SEL-010 direct perimeter wall rows match the fresh rectangle");
+        assertEquals(runtime.database().countWallBoundaryRows(mapId),
+                runtime.database().countDistinctWallBoundaryTopologyRefs(mapId),
+                "DE-SEL-010 fresh room writes no duplicate wall topology refs");
+        assertEquals(0L, runtime.database().countUnreferencedWallTopologyElements(mapId),
+                "DE-SEL-010 fresh room leaves no unreferenced wall topology rows");
+
+        long reloadHopMapId = createMapThroughControls(controls, runtime, "UI Created Corner Move Reload Hop");
+        assertTrue(reloadHopMapId > 0L, "DE-SEL-010 creates a reload-hop map");
+        selectMap(controls, "UI Created Corner Move Reload Hop");
+        selectMap(controls, "UI Created Corner Move Map");
+        click(button(controls, "Auswahl"));
+
+        DungeonEditorMapSurfaceSnapshot loadedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(initialCells, surfaceCellSet(loadedSurface),
+                "DE-SEL-010 reload keeps the UI-created room cells");
+        var roomArea = roomAreaByCells(loadedSurface, initialCells, "DE-SEL-010 reloaded room");
+        DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
+        assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(initialCells),
+                "DE-SEL-010 reload render shows the UI-created room cells");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.5, 1.0),
+                "DE-SEL-010 reload render shows the north perimeter wall");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 4.0, 2.5),
+                "DE-SEL-010 reload render shows the east perimeter wall");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 2.5, 4.0),
+                "DE-SEL-010 reload render shows the south perimeter wall");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.0, 2.5),
+                "DE-SEL-010 reload render shows the west perimeter wall");
+        var cornerHandle = firstClusterCornerHandleAt(loadedSurface, 4, 4, 0, "DE-SEL-010");
+        assertEquals("CLUSTER_CORNER", cornerHandle.ref().kind().name(),
+                "DE-SEL-010 reload publishes a cluster-corner handle at the boundary-derived corner");
+        assertTrue(renderHasGlyphAt(binding.mapContentModel(), roomRef, 4.0, 4.0, false),
+                "DE-SEL-010 reload render shows the corner handle glyph");
+        assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(4.0, 4.0).targetKind().name(),
+                "DE-SEL-010 reload pointer route resolves the corner as a handle");
+
+        long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        List<String> authoredStateBeforeAfterReload = runtime.database().authoredGeometryState(mapId);
+        List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
+        Set<String> floorCellsBefore = runtime.database().clusterFloorCells(roomIds.clusterId());
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(4.0),
+                viewport.sceneToScreenY(4.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_DRAGGED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(5.0),
+                viewport.sceneToScreenY(5.0),
+                false);
+
+        DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
+        assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-SEL-010 drag preview leaves authored DB row count unchanged");
+        assertEquals(authoredStateBeforeAfterReload, runtime.database().authoredGeometryState(mapId),
+                "DE-SEL-010 drag preview leaves all authored geometry stores unchanged");
+        assertEquals(boundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
+                "DE-SEL-010 drag preview leaves persisted boundary rows unchanged");
+        assertEquals(floorCellsBefore, runtime.database().clusterFloorCells(roomIds.clusterId()),
+                "DE-SEL-010 drag preview leaves direct floor-cell rows unchanged");
+        assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
+                "DE-SEL-010 drag publishes a move-handle preview");
+        DungeonEditorPreview.MoveHandlePreview preview =
+                (DungeonEditorPreview.MoveHandlePreview) previewSurface.preview();
+        assertEquals(cornerHandle.ref().kind(), preview.handleRef().kind(),
+                "DE-SEL-010 preview keeps the corner-handle kind");
+        assertEquals(1L, preview.deltaQ(), "DE-SEL-010 preview delta q");
+        assertEquals(1L, preview.deltaR(), "DE-SEL-010 preview delta r");
+        assertEquals(0L, preview.deltaLevel(), "DE-SEL-010 preview delta level");
+        assertTrue(renderHasGlyphAt(binding.mapContentModel(), roomRef, 5.0, 5.0, true),
+                "DE-SEL-010 preview render shows the moved corner glyph");
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(5.0),
+                viewport.sceneToScreenY(5.0),
+                false);
+
+        assertEquals(roomIds, runtime.database().roomByComponent(mapId, 1, 1, 0),
+                "DE-SEL-010 corner release keeps room and cluster identity");
+        assertEquals(expandedCells, runtime.database().clusterFloorCells(roomIds.clusterId()),
+                "DE-SEL-010 direct floor-cell rows expand after corner release");
+        assertEquals(0L, runtime.database().countClusterVertexRows(mapId),
+                "DE-SEL-010 corner release still writes no legacy vertex rows");
+        assertEquals(Set.of("1,1,0", "5,1,0", "5,5,0", "1,5,0"),
+                runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId()),
+                "DE-SEL-010 boundary-derived corners move to the released corner");
+        assertEquals(
+                Set.of(
+                        "cell=1,1,0,direction=NORTH,type=WALL",
+                        "cell=2,1,0,direction=NORTH,type=WALL",
+                        "cell=3,1,0,direction=NORTH,type=WALL",
+                        "cell=4,1,0,direction=NORTH,type=WALL"),
+                runtime.database().wallBoundaryAbsoluteRowsForDirection(mapId, "NORTH"),
+                "DE-SEL-010 direct north wall rows recompute after corner release");
+        assertEquals(
+                Set.of(
+                        "cell=1,4,0,direction=SOUTH,type=WALL",
+                        "cell=2,4,0,direction=SOUTH,type=WALL",
+                        "cell=3,4,0,direction=SOUTH,type=WALL",
+                        "cell=4,4,0,direction=SOUTH,type=WALL"),
+                runtime.database().wallBoundaryAbsoluteRowsForDirection(mapId, "SOUTH"),
+                "DE-SEL-010 direct south wall rows recompute after corner release");
+        assertEquals(
+                Set.of(
+                        "cell=1,1,0,direction=WEST,type=WALL",
+                        "cell=1,2,0,direction=WEST,type=WALL",
+                        "cell=1,3,0,direction=WEST,type=WALL",
+                        "cell=1,4,0,direction=WEST,type=WALL"),
+                runtime.database().wallBoundaryAbsoluteRowsForDirection(mapId, "WEST"),
+                "DE-SEL-010 direct west wall rows recompute after corner release");
+        assertEquals(
+                Set.of(
+                        "cell=4,1,0,direction=EAST,type=WALL",
+                        "cell=4,2,0,direction=EAST,type=WALL",
+                        "cell=4,3,0,direction=EAST,type=WALL",
+                        "cell=4,4,0,direction=EAST,type=WALL"),
+                runtime.database().wallBoundaryAbsoluteRowsForDirection(mapId, "EAST"),
+                "DE-SEL-010 direct east wall rows recompute after corner release");
+        assertTrue(!boundaryRowsBefore.equals(runtime.database().roomBoundaryEdgeState(mapId)),
+                "DE-SEL-010 corner release changes persisted wall boundary rows");
+        assertEquals(runtime.database().countWallBoundaryRows(mapId),
+                runtime.database().countDistinctWallBoundaryTopologyRefs(mapId),
+                "DE-SEL-010 corner release persists no duplicate wall topology refs");
+        assertEquals(0L, runtime.database().countUnreferencedWallTopologyElements(mapId),
+                "DE-SEL-010 corner release leaves no orphan wall topology rows");
+
+        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
+                "DE-SEL-010 corner release clears the move preview");
+        assertSelectionMatches(roomRef, roomIds.clusterId(), committedSurface.selection(),
+                "DE-SEL-010 map surface keeps selection on the moved cluster");
+        assertEquals(expandedCells, surfaceCellSet(committedSurface),
+                "DE-SEL-010 published map exposes the moved room cells");
+        assertClusterCornerHandleAt(committedSurface, 5, 5, 0, "DE-SEL-010");
+        assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(expandedCells),
+                "DE-SEL-010 render-facing state shows the moved room cells");
+        assertTrue(renderHasGlyphAt(binding.mapContentModel(), roomRef, 5.0, 5.0, false),
+                "DE-SEL-010 render scene shows the moved corner handle glyph");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 4.5, 5.0),
+                "DE-SEL-010 render scene redraws the south wall to the moved corner");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 5.0, 4.5),
+                "DE-SEL-010 render scene redraws the east wall to the moved corner");
+
+        selectMap(controls, "UI Created Corner Move Reload Hop");
+        selectMap(controls, "UI Created Corner Move Map");
+        DungeonEditorMapSurfaceSnapshot reloadedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(expandedCells, surfaceCellSet(reloadedSurface),
+                "DE-SEL-010 second reload keeps the moved room cells");
+        assertClusterCornerHandleAt(reloadedSurface, 5, 5, 0, "DE-SEL-010 second reload");
+        assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(expandedCells),
+                "DE-SEL-010 second reload render shows the moved room cells");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 4.5, 5.0),
+                "DE-SEL-010 second reload render keeps the moved south wall");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 5.0, 4.5),
+                "DE-SEL-010 second reload render keeps the moved east wall");
+
+        results.add("DE-SEL-010 Ready: UI room paint -> reload -> corner handle drag -> SQLite floor/wall rewrite -> reload");
     }
 
 
@@ -792,16 +1039,16 @@ final class DungeonEditorRoomWallDoorHarness {
         RoomClusterIds roomIds = runtime.database().roomByComponent(mapId, 1, 1, 0);
         assertEquals(roomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 1, 1, 0),
                 "DE-ROOM-001 cluster center uses the painted minimum cell");
-        assertTrue(runtime.database().roomFloorCells(roomIds.roomId()).isEmpty(),
+        assertTrue(runtime.database().roomFloorAnchors(roomIds.roomId()).isEmpty(),
                 "DE-ROOM-001 DB room floors store no extra same-level anchors");
-        Set<String> persistedVertices = runtime.database().absoluteClusterVertices(roomIds.clusterId());
-        assertTrue(persistedVertices.containsAll(Set.of("1,1,0", "4,1,0", "4,4,0", "1,4,0")),
-                "DE-ROOM-001 DB cluster vertices include isolated room perimeter corners: "
-                        + persistedVertices);
+        Set<String> persistedCorners = runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId());
+        assertTrue(persistedCorners.containsAll(Set.of("1,1,0", "4,1,0", "4,4,0", "1,4,0")),
+                "DE-ROOM-001 DB boundary corners include isolated room perimeter corners: "
+                        + persistedCorners);
         assertEquals(expectedCells, persistedClusterCellsThroughRepository(mapId, roomIds.clusterId(), 0),
-                "DE-ROOM-001 product repository readback rasterizes persisted vertices to exactly painted cells");
-        assertEquals(0L, runtime.database().countClusterEdges(roomIds.clusterId()),
-                "DE-ROOM-001 isolated room does not require persisted perimeter edge rows");
+                "DE-ROOM-001 product repository readback keeps exactly painted floor cells");
+        assertEquals(12L, runtime.database().countClusterWallEdges(roomIds.clusterId()),
+                "DE-ROOM-001 isolated room persists one wall boundary row per perimeter edge");
 
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
@@ -941,11 +1188,11 @@ final class DungeonEditorRoomWallDoorHarness {
         RoomClusterIds newRoomIds = runtime.database().roomByComponent(mapId, 4, 1, 0);
         assertEquals(newRoomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 4, 1, 0),
                 "DE-ROOM-003 new cluster center uses the painted minimum cell");
-        assertTrue(runtime.database().absoluteClusterVertices(newRoomIds.clusterId())
+        assertTrue(runtime.database().authoredClusterBoundaryCorners(newRoomIds.clusterId())
                         .containsAll(Set.of("4,1,0", "7,1,0", "7,4,0", "4,4,0")),
-                "DE-ROOM-003 new cluster vertices include the painted rectangle corners");
-        assertEquals(0L, runtime.database().countClusterEdges(newRoomIds.clusterId()),
-                "DE-ROOM-003 new room does not require persisted perimeter edge rows");
+                "DE-ROOM-003 new boundary corners include the painted rectangle corners");
+        assertEquals(12L, runtime.database().countClusterWallEdges(newRoomIds.clusterId()),
+                "DE-ROOM-003 new room persists one wall boundary row per perimeter edge");
 
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),

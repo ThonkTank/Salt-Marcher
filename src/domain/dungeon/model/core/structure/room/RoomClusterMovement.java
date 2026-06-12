@@ -55,6 +55,7 @@ public final class RoomClusterMovement {
                                 cluster.center().r() + deltaR,
                                 cluster.center().level() + deltaLevel),
                         movedCellsByLevel(cluster.relativeVerticesByLevel(), deltaLevel),
+                        movedFloorMap(cluster.floorMap(), deltaQ, deltaR, deltaLevel),
                         movedBoundariesByLevel(cluster.boundariesByLevel(), deltaLevel)));
                 changed = true;
             } else {
@@ -120,6 +121,28 @@ public final class RoomClusterMovement {
             result.put(entry.getKey() + deltaLevel, movedCells);
         }
         return Map.copyOf(result);
+    }
+
+    private static RoomClusterFloorMap movedFloorMap(
+            RoomClusterFloorMap floorMap,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        if ((deltaQ == 0 && deltaR == 0 && deltaLevel == 0) || floorMap == null) {
+            return floorMap == null ? new RoomClusterFloorMap(Map.of()) : floorMap;
+        }
+        Map<Integer, List<Cell>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<Cell>> entry : floorMap.cellsByLevel().entrySet()) {
+            List<Cell> movedCells = new ArrayList<>();
+            for (Cell cell : entry.getValue()) {
+                if (cell != null) {
+                    movedCells.add(new Cell(cell.q() + deltaQ, cell.r() + deltaR, cell.level() + deltaLevel));
+                }
+            }
+            result.put(entry.getKey() + deltaLevel, List.copyOf(movedCells));
+        }
+        return new RoomClusterFloorMap(result);
     }
 
     private static Map<Integer, List<DungeonClusterBoundary>> movedBoundariesByLevel(

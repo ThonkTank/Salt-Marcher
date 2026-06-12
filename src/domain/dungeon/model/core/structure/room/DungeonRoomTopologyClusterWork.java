@@ -15,8 +15,6 @@ public record DungeonRoomTopologyClusterWork(
         Map<Integer, List<Cell>> cellsByLevel
 ) {
 
-    private static final RoomCellCoverage CELL_COVERAGE = new RoomCellCoverage();
-
     public DungeonRoomTopologyClusterWork {
         rooms = rooms == null ? List.of() : List.copyOf(rooms);
         cellsByLevel = copyCellsByLevel(cellsByLevel);
@@ -40,7 +38,10 @@ public record DungeonRoomTopologyClusterWork(
     }
 
     public DungeonRoomCluster rebuiltCluster() {
-        return rebuiltClusterWithBoundaries(preservedBoundaries());
+        return rebuiltClusterWithBoundaries(DungeonRoomBoundaryAuthority.fromFloorCells(
+                cluster,
+                allCells(),
+                preservedBoundaries()));
     }
 
     public DungeonRoomCluster rebuiltClusterWithBoundaries(Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel) {
@@ -50,6 +51,7 @@ public record DungeonRoomTopologyClusterWork(
                 cluster.name(),
                 cluster.center(),
                 verticesByLevel(),
+                new RoomClusterFloorMap(cellsByLevel),
                 boundariesByLevel);
     }
 
@@ -93,7 +95,7 @@ public record DungeonRoomTopologyClusterWork(
 
     private Map<Integer, List<DungeonClusterBoundary>> preservedBoundaries() {
         Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
-        Map<Integer, List<Cell>> oldCellsByLevel = CELL_COVERAGE.cellsByLevel(cluster, rooms);
+        Map<Integer, List<Cell>> oldCellsByLevel = cluster.cellsByLevel();
         for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : cluster.boundariesByLevel().entrySet()) {
             Set<Cell> oldCells = new LinkedHashSet<>(oldCellsByLevel.getOrDefault(entry.getKey(), List.of()));
             Set<Cell> newCells = new LinkedHashSet<>(cellsByLevel.getOrDefault(entry.getKey(), List.of()));
@@ -127,12 +129,13 @@ public record DungeonRoomTopologyClusterWork(
     }
 
     private Map<Integer, List<Cell>> verticesByLevel() {
+        RoomCellCoverage compatibility = new RoomCellCoverage();
         Map<Integer, List<Cell>> verticesByLevel = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
             if (!entry.getValue().isEmpty()) {
                 verticesByLevel.put(
                         entry.getKey(),
-                        CELL_COVERAGE.relativeCellLoops(cluster.center(), entry.getValue()));
+                        compatibility.relativeCellLoops(cluster.center(), entry.getValue()));
             }
         }
         return Map.copyOf(verticesByLevel);

@@ -21,6 +21,7 @@ public final class CellLoopRasterizer {
         if (safeLoops.isEmpty()) {
             return Set.of(new Cell(center.q(), center.r(), level));
         }
+        CellLoopRasterGuard.requireUnitRasterWorkLimit(safeLoops, UNIT_RECTANGLE_VERTEX_COUNT);
         RasterizedCells unitLoopCells = new UnitRectangleLoopRasterizer(center, level).cellsFrom(safeLoops);
         if (unitLoopCells.matched()) {
             return unitLoopCells.cells().isEmpty()
@@ -28,11 +29,15 @@ public final class CellLoopRasterizer {
                     : Set.copyOf(unitLoopCells.cells());
         }
         Bounds bounds = bounds(safeLoops);
+        CellLoopRasterGuard.requireRasterLimit(bounds.minQ(), bounds.maxQ(), bounds.minR(), bounds.maxR());
+        CellLoopRasterGuard.requireGeneralRasterWorkLimit(
+                CellLoopRasterGuard.cellCount(bounds.minQ(), bounds.maxQ(), bounds.minR(), bounds.maxR()),
+                safeLoops);
         Set<Cell> cells = new LinkedHashSet<>();
-        for (int q = bounds.minQ(); q <= bounds.maxQ(); q++) {
-            for (int r = bounds.minR(); r <= bounds.maxR(); r++) {
-                if (containsCell(safeLoops, q, r)) {
-                    cells.add(new Cell(center.q() + q, center.r() + r, level));
+        for (long q = bounds.minQ(); q <= bounds.maxQ(); q++) {
+            for (long r = bounds.minR(); r <= bounds.maxR(); r++) {
+                if (containsCell(safeLoops, Math.toIntExact(q), Math.toIntExact(r))) {
+                    cells.add(CellLoopRasterGuard.absoluteCell(center, q, r, level));
                 }
             }
         }
@@ -99,14 +104,18 @@ public final class CellLoopRasterizer {
 
     private static boolean filledRectangle(List<Cell> cells, Bounds bounds) {
         Set<Cell> cellSet = new LinkedHashSet<>(cells);
-        int expectedSize = (bounds.maxQ() - bounds.minQ() + 1) * (bounds.maxR() - bounds.minR() + 1);
+        long expectedSize = CellLoopRasterGuard.cellCount(
+                bounds.minQ(),
+                bounds.maxQ(),
+                bounds.minR(),
+                bounds.maxR());
         if (cellSet.size() != expectedSize) {
             return false;
         }
         int level = cells.getFirst().level();
-        for (int q = bounds.minQ(); q <= bounds.maxQ(); q++) {
-            for (int r = bounds.minR(); r <= bounds.maxR(); r++) {
-                if (!cellSet.contains(new Cell(q, r, level))) {
+        for (long q = bounds.minQ(); q <= bounds.maxQ(); q++) {
+            for (long r = bounds.minR(); r <= bounds.maxR(); r++) {
+                if (!cellSet.contains(new Cell(Math.toIntExact(q), Math.toIntExact(r), level))) {
                     return false;
                 }
             }
@@ -190,14 +199,18 @@ public final class CellLoopRasterizer {
     private record UnitRectangleLoopRasterizer(Cell center, int level) {
 
         private RasterizedCells cellsFrom(List<CellLoop> loops) {
+            CellLoopRasterGuard.requireUnitRasterWorkLimit(loops, UNIT_RECTANGLE_VERTEX_COUNT);
             Set<Cell> cells = new LinkedHashSet<>();
             for (CellLoop loop : loops) {
                 Cell cell = cellFrom(loop.vertices());
                 if (cell == null) {
                     return new RasterizedCells(false, Set.of());
                 }
-                if (!cells.add(cell)) {
+                if (cells.contains(cell)) {
                     cells.remove(cell);
+                } else {
+                    CellLoopRasterGuard.requireRasterizedCellLimit(cells.size() + 1L);
+                    cells.add(cell);
                 }
             }
             return new RasterizedCells(true, cells);
@@ -217,7 +230,7 @@ public final class CellLoopRasterizer {
                     || !containsCorner(loop, bounds.minQ(), bounds.maxR())) {
                 return null;
             }
-            return new Cell(center.q() + bounds.minQ(), center.r() + bounds.minR(), level);
+            return CellLoopRasterGuard.absoluteCell(center, bounds.minQ(), bounds.minR(), level);
         }
 
         private Bounds unitLoopBounds(List<Cell> loop) {

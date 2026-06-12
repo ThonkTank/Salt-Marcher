@@ -11,15 +11,12 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-import src.domain.dungeon.model.core.structure.room.RoomCellCoverage;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjectionKind;
 
 public final class DungeonEditorClusterHandleProjectionHelper {
-
-    private static final RoomCellCoverage CELL_COVERAGE = new RoomCellCoverage();
 
     public List<DungeonEditorHandleProjection> project(DungeonMap dungeonMap) {
         List<DungeonEditorHandleProjection> result = new ArrayList<>();
@@ -47,7 +44,7 @@ public final class DungeonEditorClusterHandleProjectionHelper {
             return;
         }
         DungeonRoom room = rooms.getFirst();
-        Map<Integer, List<Cell>> cellsByLevel = CELL_COVERAGE.cellsByLevel(cluster, rooms);
+        Map<Integer, List<Cell>> cellsByLevel = cluster.cellsByLevel();
         Cell labelCell = primaryLabelCell(cluster, cellsByLevel);
         result.add(new DungeonEditorHandleProjection(
                 DungeonEditorHandleProjectionKind.CLUSTER_LABEL,

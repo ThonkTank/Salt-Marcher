@@ -9,8 +9,10 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import src.data.dungeon.model.DungeonPersistenceSchema;
@@ -171,7 +173,7 @@ class DungeonEditorHarnessPersistenceSupport {
             rows += count("SELECT COUNT(*) FROM dungeon_room_clusters WHERE dungeon_map_id=?", mapId);
             rows += count("SELECT COUNT(*) FROM dungeon_room_floors WHERE room_id IN ("
                     + "SELECT room_id FROM dungeon_rooms WHERE dungeon_map_id=?)", mapId);
-            rows += count("SELECT COUNT(*) FROM dungeon_room_cluster_vertices WHERE cluster_id IN ("
+            rows += count("SELECT COUNT(*) FROM dungeon_room_cluster_floor_cells WHERE cluster_id IN ("
                     + "SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)", mapId);
             rows += count("SELECT COUNT(*) FROM dungeon_room_cluster_edges WHERE cluster_id IN ("
                     + "SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)", mapId);
@@ -214,8 +216,11 @@ class DungeonEditorHarnessPersistenceSupport {
             }
         }
 
-        long countClusterEdges(long clusterId) {
-            return count("SELECT COUNT(*) FROM dungeon_room_cluster_edges WHERE cluster_id=?", clusterId);
+        long countClusterWallEdges(long clusterId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_edges"
+                            + " WHERE cluster_id=? AND edge_type='WALL'",
+                    clusterId);
         }
 
         long countWallBoundariesForDirection(long mapId, String direction) {
@@ -389,7 +394,7 @@ class DungeonEditorHarnessPersistenceSupport {
             throw new IllegalArgumentException("Unsupported wall direction: " + direction);
         }
 
-        Set<String> roomFloorCells(long roomId) {
+        Set<String> roomFloorAnchors(long roomId) {
             try (Connection connection = open();
                  PreparedStatement statement = connection.prepareStatement(
                          "SELECT anchor_x, anchor_y, level_z"
@@ -408,7 +413,30 @@ class DungeonEditorHarnessPersistenceSupport {
                     return cells;
                 }
             } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to read room floor cells.", exception);
+                throw new IllegalStateException("Failed to read room floor anchors.", exception);
+            }
+        }
+
+        Set<String> clusterFloorCells(long clusterId) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT cell_x, cell_y, level_z"
+                                 + " FROM dungeon_room_cluster_floor_cells WHERE cluster_id=?"
+                                 + " ORDER BY level_z, cell_y, cell_x")) {
+                statement.setLong(1, clusterId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    Set<String> cells = new LinkedHashSet<>();
+                    while (resultSet.next()) {
+                        cells.add(resultSet.getInt("cell_x")
+                                + ","
+                                + resultSet.getInt("cell_y")
+                                + ","
+                                + resultSet.getInt("level_z"));
+                    }
+                    return cells;
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to read cluster floor cells.", exception);
             }
         }
 
@@ -565,9 +593,20 @@ class DungeonEditorHarnessPersistenceSupport {
             }
         }
 
-        Set<String> absoluteClusterVertices(long clusterId) {
-            try (Connection connection = open();
-                 PreparedStatement statement = connection.prepareStatement(
+        Set<String> authoredClusterBoundaryCorners(long clusterId) {
+            try (Connection connection = open()) {
+                Set<String> vertices = legacyAbsoluteClusterVertices(connection, clusterId);
+                if (!vertices.isEmpty()) {
+                    return vertices;
+                }
+                return boundaryDerivedClusterCorners(connection, clusterId);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to read authored cluster boundary corners.", exception);
+            }
+        }
+
+        private Set<String> legacyAbsoluteClusterVertices(Connection connection, long clusterId) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
                          "SELECT cluster_row.center_x + vertex_row.relative_x AS absolute_x,"
                                  + " cluster_row.center_y + vertex_row.relative_y AS absolute_y,"
                                  + " vertex_row.level_z AS level_z"
@@ -588,8 +627,70 @@ class DungeonEditorHarnessPersistenceSupport {
                     }
                     return vertices;
                 }
-            } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to read absolute cluster vertices.", exception);
+            }
+        }
+
+        private Set<String> boundaryDerivedClusterCorners(Connection connection, long clusterId) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                         "SELECT cluster_row.center_x, cluster_row.center_y,"
+                                 + " edge_row.level_z, edge_row.cell_x, edge_row.cell_y, edge_row.edge_direction"
+                                 + " FROM dungeon_room_cluster_edges edge_row"
+                                 + " JOIN dungeon_room_clusters cluster_row"
+                                 + " ON cluster_row.cluster_id=edge_row.cluster_id"
+                                 + " WHERE edge_row.cluster_id=?"
+                                 + " AND edge_row.edge_type IN ('WALL', 'DOOR')"
+                                 + " ORDER BY edge_row.level_z, edge_row.cell_y, edge_row.cell_x,"
+                                 + " edge_row.edge_direction")) {
+                statement.setLong(1, clusterId);
+                Map<Cell, BoundaryEndpointFacts> endpointFacts = new LinkedHashMap<>();
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        Cell absoluteCell = new Cell(
+                                resultSet.getInt("center_x") + resultSet.getInt("cell_x"),
+                                resultSet.getInt("center_y") + resultSet.getInt("cell_y"),
+                                resultSet.getInt("level_z"));
+                        Edge edge = Direction.parse(resultSet.getString("edge_direction")).edgeOf(absoluteCell);
+                        recordBoundaryEndpoint(endpointFacts, edge.from(), edge);
+                        recordBoundaryEndpoint(endpointFacts, edge.to(), edge);
+                    }
+                }
+                Set<String> vertices = new LinkedHashSet<>();
+                for (Map.Entry<Cell, BoundaryEndpointFacts> entry : endpointFacts.entrySet()) {
+                    if (entry.getValue().corner()) {
+                        Cell endpoint = entry.getKey();
+                        vertices.add(endpoint.q() + "," + endpoint.r() + "," + endpoint.level());
+                    }
+                }
+                return vertices;
+            }
+        }
+
+        private static void recordBoundaryEndpoint(
+                Map<Cell, BoundaryEndpointFacts> endpointFacts,
+                Cell endpoint,
+                Edge edge
+        ) {
+            BoundaryEndpointFacts facts = endpointFacts.get(endpoint);
+            if (facts == null) {
+                facts = new BoundaryEndpointFacts();
+                endpointFacts.put(endpoint, facts);
+            }
+            facts.record(edge);
+        }
+
+        private static final class BoundaryEndpointFacts {
+            private int edgeCount;
+            private boolean horizontal;
+            private boolean vertical;
+
+            void record(Edge edge) {
+                edgeCount++;
+                horizontal = horizontal || edge.from().r() == edge.to().r();
+                vertical = vertical || edge.from().q() == edge.to().q();
+            }
+
+            boolean corner() {
+                return edgeCount != 2 || (horizontal && vertical);
             }
         }
 
@@ -674,6 +775,19 @@ class DungeonEditorHarnessPersistenceSupport {
                                 + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=vertex_row.cluster_id"
                                 + " WHERE cluster_row.dungeon_map_id=?"
                                 + " ORDER BY vertex_row.cluster_id, vertex_row.level_z, vertex_row.vertex_index",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_room_cluster_floor_cells",
+                        "SELECT floor_cell_row.cluster_id, floor_cell_row.level_z,"
+                                + " floor_cell_row.cell_x, floor_cell_row.cell_y"
+                                + " FROM dungeon_room_cluster_floor_cells floor_cell_row"
+                                + " JOIN dungeon_room_clusters cluster_row"
+                                + " ON cluster_row.cluster_id=floor_cell_row.cluster_id"
+                                + " WHERE cluster_row.dungeon_map_id=?"
+                                + " ORDER BY floor_cell_row.cluster_id, floor_cell_row.level_z,"
+                                + " floor_cell_row.cell_y, floor_cell_row.cell_x",
                         mapId);
                 appendRows(
                         connection,
@@ -1306,6 +1420,7 @@ class DungeonEditorHarnessPersistenceSupport {
                 insertF6Vertex(connection, clusterId, 0, 3, 1, 1);
                 insertF6Vertex(connection, clusterId, 0, 4, 1, 3);
                 insertF6Vertex(connection, clusterId, 0, 5, 0, 3);
+                insertF15ComplexClusterFloorCells(connection, clusterId);
                 insertComplexClusterWalls(connection, mapId, clusterId);
                 connection.commit();
             } catch (SQLException exception) {
@@ -1683,6 +1798,7 @@ class DungeonEditorHarnessPersistenceSupport {
             insertF6Vertex(connection, clusterId, level, 1, 1, -1);
             insertF6Vertex(connection, clusterId, level, 2, 1, 1);
             insertF6Vertex(connection, clusterId, level, 3, -1, 1);
+            insertClusterFloorCells(connection, clusterId, level, anchorX, anchorY, 2, 2);
             insertTwoByTwoPerimeterWalls(connection, mapId, clusterId, level, anchorX + 1, anchorY + 1);
         }
 
@@ -1719,6 +1835,7 @@ class DungeonEditorHarnessPersistenceSupport {
             insertF6Vertex(connection, clusterId, level, 1, 2, -1);
             insertF6Vertex(connection, clusterId, level, 2, 2, 2);
             insertF6Vertex(connection, clusterId, level, 3, -1, 2);
+            insertClusterFloorCells(connection, clusterId, level, anchorX, anchorY, 3, 3);
             insertPerimeterWalls(connection, mapId, clusterId, level, anchorX + 1, anchorY + 1);
             return roomId;
         }
@@ -1757,7 +1874,6 @@ class DungeonEditorHarnessPersistenceSupport {
             insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 2, 0, "EAST", sortOrder++);
             insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 1, 0, "SOUTH", sortOrder++);
             insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 2, 0, "SOUTH", sortOrder++);
-            insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, 0, "EAST", sortOrder++);
             insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, 1, "EAST", sortOrder++);
             insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, 2, "EAST", sortOrder++);
             insertClusterBoundary(connection, mapId, clusterId, 0, 10, 10, 0, 2, "SOUTH", sortOrder++);
@@ -2253,6 +2369,46 @@ class DungeonEditorHarnessPersistenceSupport {
                 bind(statement, clusterId, level, vertexIndex, relativeX, relativeY);
                 statement.executeUpdate();
             }
+        }
+
+        private static void insertClusterFloorCells(
+                Connection connection,
+                long clusterId,
+                int level,
+                int anchorX,
+                int anchorY,
+                int width,
+                int height
+        ) throws SQLException {
+            for (int q = anchorX; q < anchorX + width; q++) {
+                for (int r = anchorY; r < anchorY + height; r++) {
+                    insertClusterFloorCell(connection, clusterId, level, q, r);
+                }
+            }
+        }
+
+        private static void insertClusterFloorCell(
+                Connection connection,
+                long clusterId,
+                int level,
+                int cellX,
+                int cellY
+        ) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_room_cluster_floor_cells("
+                            + "cluster_id, level_z, cell_x, cell_y) VALUES(?, ?, ?, ?)")) {
+                bind(statement, clusterId, level, cellX, cellY);
+                statement.executeUpdate();
+            }
+        }
+
+        private static void insertF15ComplexClusterFloorCells(Connection connection, long clusterId)
+                throws SQLException {
+            insertClusterFloorCell(connection, clusterId, 0, 10, 10);
+            insertClusterFloorCell(connection, clusterId, 0, 11, 10);
+            insertClusterFloorCell(connection, clusterId, 0, 12, 10);
+            insertClusterFloorCell(connection, clusterId, 0, 10, 11);
+            insertClusterFloorCell(connection, clusterId, 0, 10, 12);
         }
 
         static void bind(PreparedStatement statement, Object... values) throws SQLException {
