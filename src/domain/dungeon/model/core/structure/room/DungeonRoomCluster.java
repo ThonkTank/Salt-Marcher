@@ -18,7 +18,6 @@ public final class DungeonRoomCluster {
     private final long mapId;
     private final String name;
     private final Cell center;
-    private final Map<Integer, List<Cell>> relativeVerticesByLevel;
     private final RoomClusterFloorMap floorMap;
     private final Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel;
 
@@ -27,7 +26,6 @@ public final class DungeonRoomCluster {
             long mapId,
             String name,
             Cell center,
-            Map<Integer, List<Cell>> relativeVerticesByLevel,
             RoomClusterFloorMap floorMap,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
@@ -35,7 +33,6 @@ public final class DungeonRoomCluster {
         this.mapId = mapId;
         this.name = defaultName(clusterId, name);
         this.center = center == null ? new Cell(0, 0, 0) : center;
-        this.relativeVerticesByLevel = copyNestedLists(relativeVerticesByLevel);
         this.floorMap = floorMap == null
                 ? new RoomClusterFloorMap(Map.of())
                 : new RoomClusterFloorMap(floorMap.cellsByLevel());
@@ -47,7 +44,6 @@ public final class DungeonRoomCluster {
             long mapId,
             String name,
             Cell center,
-            Map<Integer, List<Cell>> relativeVerticesByLevel,
             RoomClusterFloorMap floorMap,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
@@ -56,7 +52,6 @@ public final class DungeonRoomCluster {
                 mapId,
                 name,
                 center,
-                relativeVerticesByLevel,
                 floorMap,
                 boundariesByLevel);
     }
@@ -157,7 +152,6 @@ public final class DungeonRoomCluster {
 
     DungeonRoomCluster rebuiltForTopologyWork(
             Map<Integer, List<Cell>> nextCellsByLevel,
-            Map<Integer, List<Cell>> nextRelativeVerticesByLevel,
             Map<Integer, List<DungeonClusterBoundary>> nextBoundariesByLevel
     ) {
         return new DungeonRoomCluster(
@@ -165,7 +159,6 @@ public final class DungeonRoomCluster {
                 mapId,
                 name,
                 center,
-                nextRelativeVerticesByLevel,
                 new RoomClusterFloorMap(nextCellsByLevel),
                 nextBoundariesByLevel);
     }
@@ -176,7 +169,6 @@ public final class DungeonRoomCluster {
 
     static DungeonRoomCluster fromCore(
             RoomCluster cluster,
-            Map<Integer, List<Cell>> relativeVerticesByLevel,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
         return new DungeonRoomCluster(
@@ -184,7 +176,6 @@ public final class DungeonRoomCluster {
                 cluster.mapId(),
                 "",
                 cluster.center(),
-                relativeVerticesByLevel,
                 cluster.floorMap(),
                 boundariesByLevel);
     }
@@ -195,7 +186,6 @@ public final class DungeonRoomCluster {
                 mapId,
                 nextName,
                 center,
-                relativeVerticesByLevel,
                 floorMap,
                 boundariesByLevel);
     }
@@ -206,7 +196,6 @@ public final class DungeonRoomCluster {
                 mapId,
                 name,
                 new Cell(center.q() + deltaQ, center.r() + deltaR, center.level() + deltaLevel),
-                movedRelativeVerticesByLevel(deltaLevel),
                 movedFloorMap(deltaQ, deltaR, deltaLevel),
                 movedBoundariesByLevel(deltaLevel));
     }
@@ -218,7 +207,6 @@ public final class DungeonRoomCluster {
                 && mapId == that.mapId
                 && Objects.equals(name, that.name)
                 && Objects.equals(center, that.center)
-                && Objects.equals(relativeVerticesByLevel, that.relativeVerticesByLevel)
                 && Objects.equals(floorMap, that.floorMap)
                 && Objects.equals(boundariesByLevel, that.boundariesByLevel);
     }
@@ -230,7 +218,6 @@ public final class DungeonRoomCluster {
                 mapId,
                 name,
                 center,
-                relativeVerticesByLevel,
                 floorMap,
                 boundariesByLevel);
     }
@@ -292,10 +279,6 @@ public final class DungeonRoomCluster {
             result.put(entry.getKey() + deltaLevel, movedCells);
         }
         return Map.copyOf(result);
-    }
-
-    private Map<Integer, List<Cell>> movedRelativeVerticesByLevel(int deltaLevel) {
-        return movedCellsByLevel(relativeVerticesByLevel, 0, 0, deltaLevel);
     }
 
     private RoomClusterFloorMap movedFloorMap(int deltaQ, int deltaR, int deltaLevel) {

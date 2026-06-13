@@ -23,19 +23,6 @@ final class DungeonClusterFloorCellRecordMapperSupport {
     private DungeonClusterFloorCellRecordMapperSupport() {
     }
 
-    static Map<Integer, List<Cell>> compatibleRelativeLoopsByLevel(DungeonRoomClusterRecord record) {
-        if (!floorCellsByLevel(record.floorCells()).isEmpty()) {
-            return Map.of();
-        }
-        Map<Integer, List<Cell>> floorCellsByLevel = legacyVerticesAsFloorCellsByLevel(record);
-        Map<Integer, List<Cell>> result = new LinkedHashMap<>();
-        Cell center = new Cell(record.centerX(), record.centerY(), record.levelZ());
-        for (Map.Entry<Integer, List<Cell>> entry : floorCellsByLevel.entrySet()) {
-            result.put(entry.getKey(), CellLoopSequence.relativeCellLoopVertices(center, entry.getValue()));
-        }
-        return DungeonNestedListMaps.immutableCopy(result);
-    }
-
     static RoomClusterFloorMap floorMap(DungeonRoomClusterRecord record) {
         return new RoomClusterFloorMap(floorCellsByLevel(record));
     }

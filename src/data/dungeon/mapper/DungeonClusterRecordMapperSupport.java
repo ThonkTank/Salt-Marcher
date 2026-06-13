@@ -25,7 +25,6 @@ final class DungeonClusterRecordMapperSupport {
                     record.mapId(),
                     record.name(),
                     new Cell(record.centerX(), record.centerY(), record.levelZ()),
-                    DungeonClusterFloorCellRecordMapperSupport.compatibleRelativeLoopsByLevel(record),
                     DungeonClusterFloorCellRecordMapperSupport.floorMap(record),
                     boundariesByLevel(record.boundaries())));
         }

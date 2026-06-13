@@ -64,10 +64,6 @@ public final class RoomCellCoverage {
         return anchors;
     }
 
-    public List<Cell> relativeCellLoops(Cell center, List<Cell> cells) {
-        return CellLoopSequence.relativeCellLoopVertices(center, cells);
-    }
-
     private static Set<Integer> levels(DungeonRoomCluster cluster, List<DungeonRoom> rooms) {
         Set<Integer> levels = new LinkedHashSet<>();
         levels.add(cluster.center().level());

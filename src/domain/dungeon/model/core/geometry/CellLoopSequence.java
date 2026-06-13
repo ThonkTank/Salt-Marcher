@@ -32,33 +32,4 @@ public final class CellLoopSequence {
         return List.copyOf(loops);
     }
 
-    public static List<Cell> relativeCellLoopVertices(Cell center, List<Cell> cells) {
-        if (center == null || cells == null || cells.isEmpty()) {
-            return List.of();
-        }
-        return flattened(CellLoopRasterizer.relativeCellLoops(center, nonNullCells(cells)));
-    }
-
-    private static List<Cell> flattened(List<CellLoop> loops) {
-        List<Cell> result = new ArrayList<>();
-        List<CellLoop> safeLoops = loops == null ? List.of() : loops;
-        boolean separateLoops = safeLoops.size() > 1;
-        for (CellLoop loop : safeLoops) {
-            result.addAll(loop.vertices());
-            if (separateLoops) {
-                result.add(LOOP_SEPARATOR);
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    private static List<Cell> nonNullCells(List<Cell> cells) {
-        List<Cell> result = new ArrayList<>();
-        for (Cell cell : cells == null ? List.<Cell>of() : cells) {
-            if (cell != null) {
-                result.add(cell);
-            }
-        }
-        return List.copyOf(result);
-    }
 }

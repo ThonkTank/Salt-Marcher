@@ -117,7 +117,6 @@ final class DungeonClusterInvariantHarness {
                 7L,
                 "",
                 new Cell(0, 0, 0),
-                Map.of(),
                 new RoomClusterFloorMap(Map.of()),
                 Map.of());
         assertEquals("Cluster 42", defaultCluster.name(), "DGI-CLUSTER-005 default cluster name");
@@ -141,14 +140,12 @@ final class DungeonClusterInvariantHarness {
                 9L,
                 "",
                 new Cell(10, 10, 0),
-                Map.of(0, List.of(
-                        new Cell(0, 0, 0),
-                        new Cell(3, 0, 0),
-                        new Cell(3, 1, 0),
-                        new Cell(1, 1, 0),
-                        new Cell(1, 3, 0),
-                        new Cell(0, 3, 0))),
-                new RoomClusterFloorMap(Map.of()),
+                new RoomClusterFloorMap(Map.of(0, List.of(
+                        new Cell(10, 10, 0),
+                        new Cell(11, 10, 0),
+                        new Cell(12, 10, 0),
+                        new Cell(10, 11, 0),
+                        new Cell(10, 12, 0)))),
                 Map.of(0, List.of(
                         boundary(0, 0, Direction.NORTH),
                         boundary(1, 0, Direction.NORTH),
