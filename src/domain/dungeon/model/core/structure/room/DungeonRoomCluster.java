@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
@@ -11,16 +12,17 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 
-public record DungeonRoomCluster(
-        long clusterId,
-        long mapId,
-        String name,
-        Cell center,
-        Map<Integer, List<Cell>> relativeVerticesByLevel,
-        RoomClusterFloorMap floorMap,
-        Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
-) {
-    public DungeonRoomCluster(
+@SuppressWarnings({"PMD.GodClass", "PMD.TooManyMethods"})
+public final class DungeonRoomCluster {
+    private final long clusterId;
+    private final long mapId;
+    private final String name;
+    private final Cell center;
+    private final Map<Integer, List<Cell>> relativeVerticesByLevel;
+    private final RoomClusterFloorMap floorMap;
+    private final Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel;
+
+    private DungeonRoomCluster(
             long clusterId,
             long mapId,
             String name,
@@ -40,23 +42,47 @@ public record DungeonRoomCluster(
         this.boundariesByLevel = copyNestedLists(boundariesByLevel);
     }
 
-    @Override
-    public Map<Integer, List<Cell>> relativeVerticesByLevel() {
-        return copyNestedLists(relativeVerticesByLevel);
+    public static DungeonRoomCluster fromCompatibilityInput(
+            long clusterId,
+            long mapId,
+            String name,
+            Cell center,
+            Map<Integer, List<Cell>> relativeVerticesByLevel,
+            RoomClusterFloorMap floorMap,
+            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
+    ) {
+        return new DungeonRoomCluster(
+                clusterId,
+                mapId,
+                name,
+                center,
+                relativeVerticesByLevel,
+                floorMap,
+                boundariesByLevel);
     }
 
-    @Override
-    public Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel() {
-        return copyNestedLists(boundariesByLevel);
+    public long clusterId() {
+        return clusterId;
     }
 
-    @Override
+    public long mapId() {
+        return mapId;
+    }
+
+    public String name() {
+        return name;
+    }
+
+    public Cell center() {
+        return center;
+    }
+
     public RoomClusterFloorMap floorMap() {
         return new RoomClusterFloorMap(floorMap.cellsByLevel());
     }
 
     public Map<Integer, List<Cell>> cellsByLevel() {
-        return floorMap.cellsByLevel();
+        return floorMap().cellsByLevel();
     }
 
     public Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap() {
@@ -148,7 +174,7 @@ public record DungeonRoomCluster(
         return boundarySnapshot().adjacentWallRunEdgeKeys(corner, vertical);
     }
 
-    public static DungeonRoomCluster fromCore(
+    static DungeonRoomCluster fromCore(
             RoomCluster cluster,
             Map<Integer, List<Cell>> relativeVerticesByLevel,
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
@@ -183,6 +209,30 @@ public record DungeonRoomCluster(
                 movedRelativeVerticesByLevel(deltaLevel),
                 movedFloorMap(deltaQ, deltaR, deltaLevel),
                 movedBoundariesByLevel(deltaLevel));
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof DungeonRoomCluster that
+                && clusterId == that.clusterId
+                && mapId == that.mapId
+                && Objects.equals(name, that.name)
+                && Objects.equals(center, that.center)
+                && Objects.equals(relativeVerticesByLevel, that.relativeVerticesByLevel)
+                && Objects.equals(floorMap, that.floorMap)
+                && Objects.equals(boundariesByLevel, that.boundariesByLevel);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(
+                clusterId,
+                mapId,
+                name,
+                center,
+                relativeVerticesByLevel,
+                floorMap,
+                boundariesByLevel);
     }
 
     private static List<Cell> copiedCells(List<Cell> cells) {

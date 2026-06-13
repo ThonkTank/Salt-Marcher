@@ -241,14 +241,8 @@ final class DungeonTopologyInvariantHarness {
 
     private static boolean hasDoorBoundary(DungeonMap map, long clusterId, Edge edge) {
         DungeonRoomCluster cluster = clusterById(map, clusterId);
-        for (List<DungeonClusterBoundary> boundaries : cluster.boundariesByLevel().values()) {
-            for (DungeonClusterBoundary boundary : boundaries) {
-                if (boundary.isDoor() && boundary.matchesAbsoluteEdge(cluster.center(), edge)) {
-                    return true;
-                }
-            }
-        }
-        return false;
+        DungeonClusterBoundary boundary = cluster.boundaryAt(edge);
+        return boundary != null && boundary.isDoor();
     }
 
     private static void assertPresent(DungeonMap map, DungeonTopologyRef ref, String message) {

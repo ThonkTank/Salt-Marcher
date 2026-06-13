@@ -20,7 +20,7 @@ final class DungeonClusterRecordMapperSupport {
     static List<DungeonRoomCluster> toClusters(List<DungeonRoomClusterRecord> records) {
         List<DungeonRoomCluster> result = new ArrayList<>();
         for (DungeonRoomClusterRecord record : records == null ? List.<DungeonRoomClusterRecord>of() : records) {
-            result.add(new DungeonRoomCluster(
+            result.add(DungeonRoomCluster.fromCompatibilityInput(
                     record.clusterId(),
                     record.mapId(),
                     record.name(),
