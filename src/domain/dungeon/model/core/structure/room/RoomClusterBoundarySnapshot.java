@@ -17,7 +17,6 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 
 final class RoomClusterBoundarySnapshot {
     private final Cell center;
-    private final Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel;
     private final List<DungeonClusterBoundary> orderedBoundaries;
 
     RoomClusterBoundarySnapshot(
@@ -25,9 +24,10 @@ final class RoomClusterBoundarySnapshot {
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
         this.center = center == null ? new Cell(0, 0, 0) : center;
-        this.boundariesByLevel = DungeonClusterBoundary.orderedByLevel(flattenBoundaries(boundariesByLevel));
+        Map<Integer, List<DungeonClusterBoundary>> normalizedBoundariesByLevel =
+                DungeonClusterBoundary.orderedByLevel(flattenBoundaries(boundariesByLevel));
         List<DungeonClusterBoundary> ordered = new ArrayList<>();
-        for (List<DungeonClusterBoundary> boundaries : this.boundariesByLevel.values()) {
+        for (List<DungeonClusterBoundary> boundaries : normalizedBoundariesByLevel.values()) {
             ordered.addAll(boundaries);
         }
         this.orderedBoundaries = List.copyOf(ordered);
@@ -42,11 +42,19 @@ final class RoomClusterBoundarySnapshot {
     }
 
     Set<Integer> boundaryLevels() {
-        return Collections.unmodifiableSet(new LinkedHashSet<>(boundariesByLevel.keySet()));
+        Set<Integer> levels = new LinkedHashSet<>();
+        for (DungeonClusterBoundary boundary : orderedBoundaries) {
+            if (boundary != null) {
+                levels.add(boundary.level());
+            }
+        }
+        return Collections.unmodifiableSet(levels);
     }
 
     Map<Integer, List<Edge>> closedBoundaryEdgesByLevel() {
-        return DungeonRoomBoundaryPartition.closedBoundaryEdgesByLevel(boundariesByLevel, center);
+        return DungeonRoomBoundaryPartition.closedBoundaryEdgesByLevel(
+                DungeonClusterBoundary.orderedByLevel(orderedBoundaries),
+                center);
     }
 
     List<Cell> authoredBoundaryVertices(int level) {
