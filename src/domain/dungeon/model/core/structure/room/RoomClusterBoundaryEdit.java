@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +43,19 @@ final class RoomClusterBoundaryEdit {
             }
             changed = upsertBoundary(target, boundaries, roomCells, resolvedKind, edge) || changed;
         }
-        return new BoundaryEditResult(DungeonClusterBoundary.orderedByLevel(boundaries.values()), changed);
+        return new BoundaryEditResult(flattenOrderedBoundaries(boundaries.values()), changed);
+    }
+
+    private static List<DungeonClusterBoundary> flattenOrderedBoundaries(Iterable<DungeonClusterBoundary> boundaries) {
+        List<DungeonClusterBoundary> result = new ArrayList<>();
+        for (List<DungeonClusterBoundary> boundariesAtLevel : DungeonClusterBoundary.orderedByLevel(boundaries).values()) {
+            for (DungeonClusterBoundary boundary : boundariesAtLevel) {
+                if (boundary != null) {
+                    result.add(boundary);
+                }
+            }
+        }
+        return List.copyOf(result);
     }
 
     private List<Edge> authoredWallDeleteEdges(
@@ -165,11 +178,11 @@ final class RoomClusterBoundaryEdit {
 
     static final class BoundaryEditResult {
 
-        private final Map<Integer, List<DungeonClusterBoundary>> editedBoundariesByLevel;
+        private final List<DungeonClusterBoundary> editedBoundaries;
         private final boolean changed;
 
-        BoundaryEditResult(Map<Integer, List<DungeonClusterBoundary>> editedBoundariesByLevel, boolean changed) {
-            this.editedBoundariesByLevel = copyBoundariesByLevel(editedBoundariesByLevel);
+        BoundaryEditResult(List<DungeonClusterBoundary> editedBoundaries, boolean changed) {
+            this.editedBoundaries = copyEditedBoundaries(editedBoundaries);
             this.changed = changed;
         }
 
@@ -182,27 +195,42 @@ final class RoomClusterBoundaryEdit {
                 RoomTopologyWorkCatalog.IdAllocation ids
         ) {
             return new DungeonRoomBoundaryPartition()
-                    .roomsForBoundaryEdit(target, editedBoundariesByLevel, ids);
+                    .roomsForBoundaryEdit(target, groupedCompatibilityBoundaries(), ids);
         }
 
         DungeonRoomCluster rebuiltEditedCluster(DungeonRoomTopologyClusterWork target) {
             return new RoomTopologyRebuilder()
-                    .clusterWithBoundaries(target, editedBoundariesByLevel);
+                    .clusterWithBoundaries(target, groupedCompatibilityBoundaries());
         }
 
-        private static Map<Integer, List<DungeonClusterBoundary>> copyBoundariesByLevel(
-                Map<Integer, List<DungeonClusterBoundary>> source
-        ) {
-            if (source == null || source.isEmpty()) {
+        private Map<Integer, List<DungeonClusterBoundary>> groupedCompatibilityBoundaries() {
+            if (editedBoundaries.isEmpty()) {
                 return Map.of();
             }
-            Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
-            for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : source.entrySet()) {
-                if (entry.getKey() != null && entry.getValue() != null) {
-                    result.put(entry.getKey(), List.copyOf(entry.getValue()));
+            Map<Integer, List<DungeonClusterBoundary>> mutable = new LinkedHashMap<>();
+            for (DungeonClusterBoundary boundary : editedBoundaries) {
+                if (boundary != null) {
+                    mutable.computeIfAbsent(boundary.level(), ignored -> new ArrayList<>()).add(boundary);
                 }
             }
-            return Map.copyOf(result);
+            Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
+            for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : mutable.entrySet()) {
+                result.put(entry.getKey(), List.copyOf(entry.getValue()));
+            }
+            return Collections.unmodifiableMap(result);
+        }
+
+        private static List<DungeonClusterBoundary> copyEditedBoundaries(List<DungeonClusterBoundary> source) {
+            if (source == null || source.isEmpty()) {
+                return List.of();
+            }
+            List<DungeonClusterBoundary> result = new ArrayList<>();
+            for (DungeonClusterBoundary boundary : source) {
+                if (boundary != null) {
+                    result.add(boundary);
+                }
+            }
+            return List.copyOf(result);
         }
     }
 }
