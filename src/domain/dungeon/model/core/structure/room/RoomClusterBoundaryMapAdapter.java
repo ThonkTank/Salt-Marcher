@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.component.boundary.BoundaryMap;
 import src.domain.dungeon.model.core.component.boundary.BoundarySegment;
-import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
@@ -19,18 +18,6 @@ final class RoomClusterBoundaryMapAdapter {
         for (Map.Entry<EdgeKey, BoundaryRow> entry : rowsByKey.entrySet()) {
             if (entry.getKey() != null && entry.getValue() != null) {
                 segments.add(new BoundarySegment(entry.getKey(), boundaryKind(entry.getValue().kind())));
-            }
-        }
-        return new BoundaryMap(segments);
-    }
-
-    static BoundaryMap boundaryMapFromClusterBoundaries(Map<DungeonBoundaryKey, DungeonClusterBoundary> boundariesByKey) {
-        List<BoundarySegment> segments = new ArrayList<>();
-        for (Map.Entry<DungeonBoundaryKey, DungeonClusterBoundary> entry : boundariesByKey.entrySet()) {
-            if (entry.getKey() != null && entry.getValue() != null) {
-                segments.add(new BoundarySegment(
-                        new EdgeKey(entry.getKey().lower(), entry.getKey().upper()),
-                        boundaryKind(entry.getValue().kind())));
             }
         }
         return new BoundaryMap(segments);

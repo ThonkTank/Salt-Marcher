@@ -78,29 +78,14 @@ public record DungeonClusterBoundary(
             Iterable<DungeonClusterBoundary> boundaries
     ) {
         Map<BoundaryRow, List<DungeonClusterBoundary>> boundariesByRow = boundariesByRow(boundaries);
+        List<BoundaryRow> orderedRows = RoomClusterBoundaryOrdering.sortedRows(boundariesByRow.keySet());
         Map<Integer, List<BoundaryRow>> coreRowsByLevel =
-                RoomClusterBoundaryOrdering.boundariesByLevel(boundariesByRow.keySet());
+                RoomClusterBoundaryOrdering.boundariesByLevel(orderedRows);
         Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<BoundaryRow>> entry : coreRowsByLevel.entrySet()) {
             result.put(entry.getKey(), orderedBoundariesForRows(boundariesByRow, entry.getValue()));
         }
         return Collections.unmodifiableMap(result);
-    }
-
-    public static Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap(
-            Cell center,
-            Iterable<DungeonClusterBoundary> boundaries
-    ) {
-        Map<BoundaryRow, List<DungeonClusterBoundary>> boundariesByRow = boundariesByRow(boundaries);
-        List<BoundaryRow> orderedRows = RoomClusterBoundaryOrdering.sortedRows(boundariesByRow.keySet());
-        Map<DungeonBoundaryKey, DungeonClusterBoundary> result = new LinkedHashMap<>();
-        for (BoundaryRow row : orderedRows) {
-            DungeonBoundaryKey key = boundaryKey(RoomClusterBoundaryOrdering.boundaryKey(center, row));
-            for (DungeonClusterBoundary boundary : boundariesByRow.getOrDefault(row, List.of())) {
-                result.put(key, boundary);
-            }
-        }
-        return result;
     }
 
     private static Map<BoundaryRow, List<DungeonClusterBoundary>> boundariesByRow(

@@ -19,8 +19,7 @@ final class RoomClusterCornerSideEdges {
             return List.of();
         }
         List<Edge> result = new ArrayList<>();
-        for (EdgeKey key : RoomClusterBoundaryMapAdapter.boundaryMapFromClusterBoundaries(cluster.boundaryMap())
-                .adjacentWallRunEdgeKeys(corner, vertical)) {
+        for (EdgeKey key : cluster.adjacentWallRunEdgeKeys(corner, vertical)) {
             result.add(new Edge(key.lower(), key.upper()));
         }
         return List.copyOf(result);

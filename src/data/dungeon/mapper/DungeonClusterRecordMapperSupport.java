@@ -44,7 +44,7 @@ final class DungeonClusterRecordMapperSupport {
                     cluster.center().level(),
                     List.of(),
                     DungeonClusterFloorCellRecordMapperSupport.toFloorCellRecords(cluster.clusterId(), cluster),
-                    toBoundaryRecords(cluster, cluster.boundariesByLevel())));
+                    toBoundaryRecords(cluster)));
         }
         return List.copyOf(result);
     }
@@ -69,24 +69,17 @@ final class DungeonClusterRecordMapperSupport {
         return DungeonNestedListMaps.immutableCopy(result);
     }
 
-    private static List<DungeonClusterBoundaryRecord> toBoundaryRecords(
-            DungeonRoomCluster cluster,
-            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
-    ) {
+    private static List<DungeonClusterBoundaryRecord> toBoundaryRecords(DungeonRoomCluster cluster) {
         List<DungeonClusterBoundaryRecord> result = new ArrayList<>();
-        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry
-                : (boundariesByLevel == null ? Map.<Integer, List<DungeonClusterBoundary>>of() : boundariesByLevel)
-                        .entrySet()) {
-            for (DungeonClusterBoundary boundary : entry.getValue()) {
-                result.add(new DungeonClusterBoundaryRecord(
-                        cluster.clusterId(),
-                        entry.getKey(),
-                        boundary.relativeCell().q(),
-                        boundary.relativeCell().r(),
-                        boundary.direction().name(),
-                        boundary.kind().name(),
-                        boundary.kind().renderable() ? boundary.resolvedTopologyRef(cluster.center()).id() : null));
-            }
+        for (DungeonClusterBoundary boundary : cluster.orderedBoundariesForWriteback()) {
+            result.add(new DungeonClusterBoundaryRecord(
+                    cluster.clusterId(),
+                    boundary.level(),
+                    boundary.relativeCell().q(),
+                    boundary.relativeCell().r(),
+                    boundary.direction().name(),
+                    boundary.kind().name(),
+                    boundary.kind().renderable() ? boundary.resolvedTopologyRef(cluster.center()).id() : null));
         }
         return List.copyOf(result);
     }

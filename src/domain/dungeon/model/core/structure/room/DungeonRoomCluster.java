@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
+import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 
 public record DungeonRoomCluster(
@@ -58,7 +58,7 @@ public record DungeonRoomCluster(
     }
 
     public Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap() {
-        return DungeonClusterBoundary.boundaryMap(center, flattenBoundaries());
+        return boundarySnapshot().boundaryMap();
     }
 
     public RoomCluster toCore(Map<Integer, List<Cell>> cellsByLevel) {
@@ -70,11 +70,19 @@ public record DungeonRoomCluster(
     }
 
     public List<Cell> authoredBoundaryVertices(int level) {
-        return wallMap().authoredBoundaryVertices(level);
+        return boundarySnapshot().authoredBoundaryVertices(level);
     }
 
     public List<WallRun> authoredWallRuns(int level) {
-        return wallMap().authoredWallRuns(level);
+        return boundarySnapshot().authoredWallRuns(level);
+    }
+
+    public List<DungeonClusterBoundary> orderedBoundariesForWriteback() {
+        return boundarySnapshot().orderedBoundaries();
+    }
+
+    List<EdgeKey> adjacentWallRunEdgeKeys(Cell corner, boolean vertical) {
+        return boundarySnapshot().adjacentWallRunEdgeKeys(corner, vertical);
     }
 
     public static DungeonRoomCluster fromCore(
@@ -103,14 +111,6 @@ public record DungeonRoomCluster(
                 boundariesByLevel);
     }
 
-    private List<DungeonClusterBoundary> flattenBoundaries() {
-        List<DungeonClusterBoundary> result = new ArrayList<>();
-        for (List<DungeonClusterBoundary> boundaries : boundariesByLevel().values()) {
-            result.addAll(boundaries);
-        }
-        return List.copyOf(result);
-    }
-
     private static List<Cell> copiedCells(List<Cell> cells) {
         List<Cell> result = new ArrayList<>();
         for (Cell cell : cells == null ? List.<Cell>of() : cells) {
@@ -134,16 +134,8 @@ public record DungeonRoomCluster(
         return Map.copyOf(result);
     }
 
-    private RoomClusterWallMap wallMap() {
-        List<BoundaryRow> rows = new ArrayList<>();
-        for (List<DungeonClusterBoundary> boundaries : boundariesByLevel().values()) {
-            for (DungeonClusterBoundary boundary : boundaries) {
-                if (boundary != null) {
-                    rows.add(boundary.toCoreRow());
-                }
-            }
-        }
-        return new RoomClusterWallMap(center, rows);
+    private RoomClusterBoundarySnapshot boundarySnapshot() {
+        return new RoomClusterBoundarySnapshot(center, boundariesByLevel);
     }
 
     private static String defaultName(long clusterId, String name) {
