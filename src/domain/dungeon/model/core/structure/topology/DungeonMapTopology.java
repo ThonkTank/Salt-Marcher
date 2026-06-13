@@ -115,18 +115,16 @@ public record DungeonMapTopology(
 
     private static void appendBoundaryBindings(List<DungeonTopologyBinding> result, SpatialTopology topology) {
         for (DungeonRoomCluster cluster : topology == null ? List.<DungeonRoomCluster>of() : topology.roomClusters()) {
-            for (List<DungeonClusterBoundary> boundaries : cluster.boundariesByLevel().values()) {
-                for (DungeonClusterBoundary boundary : boundaries) {
-                    if (!boundary.kind().renderable()) {
-                        continue;
-                    }
-                    DungeonTopologyRef ref = boundary.resolvedTopologyRef(cluster.center());
-                    result.add(new DungeonTopologyBinding(
-                            ref,
-                            cluster.clusterId(),
-                            0L,
-                            labelFor(ref.kind())));
+            for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
+                if (!boundary.kind().renderable()) {
+                    continue;
                 }
+                DungeonTopologyRef ref = boundary.resolvedTopologyRef(cluster.center());
+                result.add(new DungeonTopologyBinding(
+                        ref,
+                        cluster.clusterId(),
+                        0L,
+                        labelFor(ref.kind())));
             }
         }
     }

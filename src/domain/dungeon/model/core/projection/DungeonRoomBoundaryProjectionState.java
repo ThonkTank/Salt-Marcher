@@ -33,10 +33,8 @@ final class DungeonRoomBoundaryProjectionState {
     private long nextBoundaryId = 1_000L;
 
     void addAuthoredBoundaries(DungeonRoomCluster cluster, Map<Long, List<Cell>> roomCells) {
-        for (List<DungeonClusterBoundary> levelBoundaries : cluster.boundariesByLevel().values()) {
-            for (DungeonClusterBoundary boundary : levelBoundaries) {
-                addBoundary(cluster, boundary, roomCells);
-            }
+        for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
+            addBoundary(cluster, boundary, roomCells);
         }
     }
 

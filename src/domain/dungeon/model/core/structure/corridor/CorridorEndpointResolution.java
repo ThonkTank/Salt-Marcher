@@ -125,14 +125,7 @@ final class CorridorEndpointResolution {
         if (cluster == null || edge == null) {
             return null;
         }
-        for (List<DungeonClusterBoundary> boundaries : cluster.boundariesByLevel().values()) {
-            for (DungeonClusterBoundary boundary : boundaries) {
-                if (boundary.matchesAbsoluteEdge(cluster.center(), edge)) {
-                    return boundary;
-                }
-            }
-        }
-        return null;
+        return cluster.boundaryAt(edge);
     }
 
     private static CorridorResolvedEndpoint resolvedAnchor(CorridorAnchorBinding binding) {

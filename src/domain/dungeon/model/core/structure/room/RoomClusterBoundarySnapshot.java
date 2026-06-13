@@ -3,17 +3,21 @@ package src.domain.dungeon.model.core.structure.room;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import src.domain.dungeon.model.core.component.boundary.BoundaryMap;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 
 final class RoomClusterBoundarySnapshot {
     private final Cell center;
+    private final Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel;
     private final List<DungeonClusterBoundary> orderedBoundaries;
 
     RoomClusterBoundarySnapshot(
@@ -21,9 +25,12 @@ final class RoomClusterBoundarySnapshot {
             Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
     ) {
         this.center = center == null ? new Cell(0, 0, 0) : center;
-        Map<Integer, List<DungeonClusterBoundary>> copiedBoundariesByLevel =
-                copyBoundariesByLevel(boundariesByLevel);
-        this.orderedBoundaries = orderedBoundaries(copiedBoundariesByLevel);
+        this.boundariesByLevel = DungeonClusterBoundary.orderedByLevel(flattenBoundaries(boundariesByLevel));
+        List<DungeonClusterBoundary> ordered = new ArrayList<>();
+        for (List<DungeonClusterBoundary> boundaries : this.boundariesByLevel.values()) {
+            ordered.addAll(boundaries);
+        }
+        this.orderedBoundaries = List.copyOf(ordered);
     }
 
     Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap() {
@@ -32,6 +39,14 @@ final class RoomClusterBoundarySnapshot {
 
     List<DungeonClusterBoundary> orderedBoundaries() {
         return orderedBoundaries;
+    }
+
+    Set<Integer> boundaryLevels() {
+        return Collections.unmodifiableSet(new LinkedHashSet<>(boundariesByLevel.keySet()));
+    }
+
+    Map<Integer, List<Edge>> closedBoundaryEdgesByLevel() {
+        return DungeonRoomBoundaryPartition.closedBoundaryEdgesByLevel(boundariesByLevel, center);
     }
 
     List<Cell> authoredBoundaryVertices(int level) {
@@ -49,11 +64,11 @@ final class RoomClusterBoundarySnapshot {
         return boundaryMap.adjacentWallRunEdgeKeys(corner, vertical);
     }
 
-    private static Map<Integer, List<DungeonClusterBoundary>> copyBoundariesByLevel(
+    private static List<DungeonClusterBoundary> flattenBoundaries(
             Map<Integer, List<DungeonClusterBoundary>> source
     ) {
         if (source == null || source.isEmpty()) {
-            return Map.of();
+            return List.of();
         }
         List<DungeonClusterBoundary> boundaries = new ArrayList<>();
         for (List<DungeonClusterBoundary> levelBoundaries : source.values()) {
@@ -64,23 +79,7 @@ final class RoomClusterBoundarySnapshot {
                 }
             }
         }
-        return DungeonClusterBoundary.orderedByLevel(boundaries);
-    }
-
-    private static List<DungeonClusterBoundary> orderedBoundaries(
-            Map<Integer, List<DungeonClusterBoundary>> source
-    ) {
-        List<DungeonClusterBoundary> result = new ArrayList<>();
-        for (List<DungeonClusterBoundary> boundaries
-                : source == null ? List.<List<DungeonClusterBoundary>>of() : source.values()) {
-            for (DungeonClusterBoundary boundary
-                    : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
-                if (boundary != null) {
-                    result.add(boundary);
-                }
-            }
-        }
-        return List.copyOf(result);
+        return List.copyOf(boundaries);
     }
 
     private static Map<DungeonBoundaryKey, DungeonClusterBoundary> copyBoundariesByKey(

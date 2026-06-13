@@ -23,9 +23,7 @@ public final class RoomCellCoverage {
         Map<Long, List<Cell>> partitionedCellsByRoom = RoomClusterRoomPartition.cellsByRoom(
                 cluster.toCore(cellsByLevel),
                 coreRooms(safeRooms),
-                DungeonRoomBoundaryPartition.closedBoundaryEdgesByLevel(
-                        cluster.boundariesByLevel(),
-                        cluster.center()));
+                cluster.closedBoundaryEdgesByLevel());
         Map<Long, List<Cell>> result = new LinkedHashMap<>();
         for (Map.Entry<Long, List<Cell>> entry : partitionedCellsByRoom.entrySet()) {
             result.put(entry.getKey(), nonNullCells(entry.getValue()));
@@ -74,7 +72,7 @@ public final class RoomCellCoverage {
         Set<Integer> levels = new LinkedHashSet<>();
         levels.add(cluster.center().level());
         levels.addAll(cluster.cellsByLevel().keySet());
-        levels.addAll(cluster.boundariesByLevel().keySet());
+        levels.addAll(cluster.boundaryLevels());
         for (DungeonRoom room : rooms) {
             levels.addAll(room.floorAnchors().keySet());
         }

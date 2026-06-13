@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 
@@ -59,6 +61,30 @@ public record DungeonRoomCluster(
 
     public Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaryMap() {
         return boundarySnapshot().boundaryMap();
+    }
+
+    public List<DungeonClusterBoundary> orderedAuthoredBoundaries() {
+        return boundarySnapshot().orderedBoundaries();
+    }
+
+    public DungeonClusterBoundary boundaryAt(Edge edge) {
+        if (edge == null) {
+            return null;
+        }
+        for (DungeonClusterBoundary boundary : boundarySnapshot().orderedBoundaries()) {
+            if (boundary.matchesAbsoluteEdge(center, edge)) {
+                return boundary;
+            }
+        }
+        return null;
+    }
+
+    public Set<Integer> boundaryLevels() {
+        return boundarySnapshot().boundaryLevels();
+    }
+
+    public Map<Integer, List<Edge>> closedBoundaryEdgesByLevel() {
+        return boundarySnapshot().closedBoundaryEdgesByLevel();
     }
 
     public RoomCluster toCore(Map<Integer, List<Cell>> cellsByLevel) {
