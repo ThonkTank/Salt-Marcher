@@ -2,10 +2,8 @@ package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
 
@@ -41,18 +39,11 @@ public record DungeonRoomTopologyClusterWork(
         return rebuiltClusterWithBoundaries(DungeonRoomBoundaryAuthority.fromFloorCells(
                 cluster,
                 allCells(),
-                preservedBoundaries()));
+                cluster.preservedBoundariesForTopologyWork(cellsByLevel)));
     }
 
     public DungeonRoomCluster rebuiltClusterWithBoundaries(Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel) {
-        return new DungeonRoomCluster(
-                cluster.clusterId(),
-                cluster.mapId(),
-                cluster.name(),
-                cluster.center(),
-                verticesByLevel(),
-                new RoomClusterFloorMap(cellsByLevel),
-                boundariesByLevel);
+        return cluster.rebuiltForTopologyWork(cellsByLevel, verticesByLevel(), boundariesByLevel);
     }
 
     public RoomClusterWork toCore() {
@@ -91,41 +82,6 @@ public record DungeonRoomTopologyClusterWork(
             }
         }
         return DungeonRoomNarration.empty();
-    }
-
-    private Map<Integer, List<DungeonClusterBoundary>> preservedBoundaries() {
-        Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
-        Map<Integer, List<Cell>> oldCellsByLevel = cluster.cellsByLevel();
-        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : cluster.boundariesByLevel().entrySet()) {
-            Set<Cell> oldCells = new LinkedHashSet<>(oldCellsByLevel.getOrDefault(entry.getKey(), List.of()));
-            Set<Cell> newCells = new LinkedHashSet<>(cellsByLevel.getOrDefault(entry.getKey(), List.of()));
-            List<DungeonClusterBoundary> preserved = new ArrayList<>();
-            for (DungeonClusterBoundary boundary : entry.getValue()) {
-                if (boundary != null && keepBoundary(boundary, oldCells, newCells)) {
-                    preserved.add(boundary);
-                }
-            }
-            if (!preserved.isEmpty()) {
-                result.put(entry.getKey(), preserved);
-            }
-        }
-        return Map.copyOf(result);
-    }
-
-    private boolean keepBoundary(
-            DungeonClusterBoundary boundary,
-            Set<Cell> oldCells,
-            Set<Cell> newCells
-    ) {
-        Cell cell = boundary.absoluteCell(cluster.center());
-        if (!newCells.contains(cell)) {
-            return false;
-        }
-        Cell neighbor = boundary.direction().neighborOf(cell);
-        if (!newCells.contains(neighbor)) {
-            return true;
-        }
-        return boundary.isDoor() || oldCells.contains(cell) && oldCells.contains(neighbor);
     }
 
     private Map<Integer, List<Cell>> verticesByLevel() {

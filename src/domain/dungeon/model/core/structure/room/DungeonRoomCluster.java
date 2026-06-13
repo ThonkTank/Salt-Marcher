@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
@@ -108,6 +107,43 @@ public record DungeonRoomCluster(
         return boundarySnapshot().orderedBoundaries();
     }
 
+    Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesForTopologyWork(
+            Map<Integer, List<Cell>> nextCellsByLevel
+    ) {
+        Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
+        Map<Integer, List<Cell>> oldCellsByLevel = cellsByLevel();
+        Map<Integer, List<Cell>> copiedNextCellsByLevel = copyNestedLists(nextCellsByLevel);
+        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : boundariesByLevel.entrySet()) {
+            Set<Cell> oldCells = Set.copyOf(oldCellsByLevel.getOrDefault(entry.getKey(), List.of()));
+            Set<Cell> nextCells = Set.copyOf(copiedNextCellsByLevel.getOrDefault(entry.getKey(), List.of()));
+            List<DungeonClusterBoundary> preserved = new ArrayList<>();
+            for (DungeonClusterBoundary boundary : entry.getValue()) {
+                if (boundary != null && keepBoundaryForTopologyWork(boundary, oldCells, nextCells)) {
+                    preserved.add(boundary);
+                }
+            }
+            if (!preserved.isEmpty()) {
+                result.put(entry.getKey(), List.copyOf(preserved));
+            }
+        }
+        return Map.copyOf(result);
+    }
+
+    DungeonRoomCluster rebuiltForTopologyWork(
+            Map<Integer, List<Cell>> nextCellsByLevel,
+            Map<Integer, List<Cell>> nextRelativeVerticesByLevel,
+            Map<Integer, List<DungeonClusterBoundary>> nextBoundariesByLevel
+    ) {
+        return new DungeonRoomCluster(
+                clusterId,
+                mapId,
+                name,
+                center,
+                nextRelativeVerticesByLevel,
+                new RoomClusterFloorMap(nextCellsByLevel),
+                nextBoundariesByLevel);
+    }
+
     List<EdgeKey> adjacentWallRunEdgeKeys(Cell corner, boolean vertical) {
         return boundarySnapshot().adjacentWallRunEdgeKeys(corner, vertical);
     }
@@ -159,6 +195,22 @@ public record DungeonRoomCluster(
         return List.copyOf(result);
     }
 
+    private boolean keepBoundaryForTopologyWork(
+            DungeonClusterBoundary boundary,
+            Set<Cell> oldCells,
+            Set<Cell> nextCells
+    ) {
+        Cell cell = boundary.absoluteCell(center);
+        if (!nextCells.contains(cell)) {
+            return false;
+        }
+        Cell neighbor = boundary.direction().neighborOf(cell);
+        if (!nextCells.contains(neighbor)) {
+            return true;
+        }
+        return boundary.isDoor() || oldCells.contains(cell) && oldCells.contains(neighbor);
+    }
+
     private static <T> Map<Integer, List<T>> copyNestedLists(Map<Integer, List<T>> source) {
         if (source == null || source.isEmpty()) {
             return Map.of();
@@ -184,7 +236,7 @@ public record DungeonRoomCluster(
         Map<Integer, List<Cell>> result = new LinkedHashMap<>();
         for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
             List<Cell> movedCells = entry.getValue().stream()
-                    .filter(Objects::nonNull)
+                    .filter(cell -> cell != null)
                     .map(cell -> new Cell(cell.q() + deltaQ, cell.r() + deltaR, cell.level() + deltaLevel))
                     .toList();
             result.put(entry.getKey() + deltaLevel, movedCells);
