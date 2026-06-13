@@ -1,7 +1,8 @@
 package src.domain.dungeon.model.core.structure.room;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
@@ -162,12 +163,46 @@ final class RoomClusterBoundaryEdit {
         }
     }
 
-    record BoundaryEditResult(
-            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
-            boolean changed
-    ) {
-        BoundaryEditResult {
-            boundariesByLevel = boundariesByLevel == null ? Map.of() : Map.copyOf(boundariesByLevel);
+    static final class BoundaryEditResult {
+
+        private final Map<Integer, List<DungeonClusterBoundary>> editedBoundariesByLevel;
+        private final boolean changed;
+
+        BoundaryEditResult(Map<Integer, List<DungeonClusterBoundary>> editedBoundariesByLevel, boolean changed) {
+            this.editedBoundariesByLevel = copyBoundariesByLevel(editedBoundariesByLevel);
+            this.changed = changed;
+        }
+
+        boolean changed() {
+            return changed;
+        }
+
+        List<DungeonRoom> partitionEditedRooms(
+                DungeonRoomTopologyClusterWork target,
+                RoomTopologyWorkCatalog.IdAllocation ids
+        ) {
+            return new DungeonRoomBoundaryPartition()
+                    .roomsForBoundaryEdit(target, editedBoundariesByLevel, ids);
+        }
+
+        DungeonRoomCluster rebuiltEditedCluster(DungeonRoomTopologyClusterWork target) {
+            return new RoomTopologyRebuilder()
+                    .clusterWithBoundaries(target, editedBoundariesByLevel);
+        }
+
+        private static Map<Integer, List<DungeonClusterBoundary>> copyBoundariesByLevel(
+                Map<Integer, List<DungeonClusterBoundary>> source
+        ) {
+            if (source == null || source.isEmpty()) {
+                return Map.of();
+            }
+            Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
+            for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : source.entrySet()) {
+                if (entry.getKey() != null && entry.getValue() != null) {
+                    result.put(entry.getKey(), List.copyOf(entry.getValue()));
+                }
+            }
+            return Map.copyOf(result);
         }
     }
 }

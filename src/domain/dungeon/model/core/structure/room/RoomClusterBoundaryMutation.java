@@ -12,8 +12,6 @@ import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 public final class RoomClusterBoundaryMutation {
 
     private static final RoomClusterBoundaryEdit BOUNDARY_EDIT = new RoomClusterBoundaryEdit();
-    private static final DungeonRoomBoundaryPartition BOUNDARY_PARTITION =
-            new DungeonRoomBoundaryPartition();
     private static final RoomTopologyWorkCatalog WORK_CATALOG = new RoomTopologyWorkCatalog();
     private static final RoomTopologyRebuilder REBUILDER = new RoomTopologyRebuilder();
 
@@ -46,12 +44,12 @@ public final class RoomClusterBoundaryMutation {
             return Optional.empty();
         }
         RoomTopologyWorkCatalog.IdAllocation ids = WORK_CATALOG.newIdAllocation(topology, rooms);
-        List<DungeonRoom> rebuiltRooms = BOUNDARY_PARTITION.roomsForBoundaryEdit(target, edit.boundariesByLevel(), ids);
+        List<DungeonRoom> rebuiltRooms = edit.partitionEditedRooms(target, ids);
         List<DungeonRoomTopologyClusterWork> nextClusters = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : clusters) {
             nextClusters.add(work.cluster().clusterId() == clusterId
                     ? new DungeonRoomTopologyClusterWork(
-                    REBUILDER.clusterWithBoundaries(target, edit.boundariesByLevel()),
+                    edit.rebuiltEditedCluster(target),
                     rebuiltRooms,
                     target.cellsByLevel())
                     : work);
