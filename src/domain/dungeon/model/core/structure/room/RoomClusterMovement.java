@@ -46,17 +46,7 @@ public final class RoomClusterMovement {
         boolean changed = false;
         for (DungeonRoomCluster cluster : topology.roomClusters()) {
             if (cluster.clusterId() == clusterId) {
-                movedClusters.add(new DungeonRoomCluster(
-                        cluster.clusterId(),
-                        cluster.mapId(),
-                        cluster.name(),
-                        new Cell(
-                                cluster.center().q() + deltaQ,
-                                cluster.center().r() + deltaR,
-                                cluster.center().level() + deltaLevel),
-                        movedCellsByLevel(cluster.relativeVerticesByLevel(), deltaLevel),
-                        movedFloorMap(cluster.floorMap(), deltaQ, deltaR, deltaLevel),
-                        movedBoundariesByLevel(cluster.boundariesByLevel(), deltaLevel)));
+                movedClusters.add(cluster.movedBy(deltaQ, deltaR, deltaLevel));
                 changed = true;
             } else {
                 movedClusters.add(cluster);
@@ -101,76 +91,5 @@ public final class RoomClusterMovement {
                 room.name(),
                 movedAnchors,
                 room.narration());
-    }
-
-    private static Map<Integer, List<Cell>> movedCellsByLevel(
-            Map<Integer, List<Cell>> cellsByLevel,
-            int deltaLevel
-    ) {
-        if (deltaLevel == 0 || cellsByLevel == null || cellsByLevel.isEmpty()) {
-            return cellsByLevel;
-        }
-        Map<Integer, List<Cell>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
-            List<Cell> movedCells = new ArrayList<>();
-            for (Cell cell : entry.getValue()) {
-                if (cell != null) {
-                    movedCells.add(new Cell(cell.q(), cell.r(), cell.level() + deltaLevel));
-                }
-            }
-            result.put(entry.getKey() + deltaLevel, movedCells);
-        }
-        return Map.copyOf(result);
-    }
-
-    private static RoomClusterFloorMap movedFloorMap(
-            RoomClusterFloorMap floorMap,
-            int deltaQ,
-            int deltaR,
-            int deltaLevel
-    ) {
-        if ((deltaQ == 0 && deltaR == 0 && deltaLevel == 0) || floorMap == null) {
-            return floorMap == null ? new RoomClusterFloorMap(Map.of()) : floorMap;
-        }
-        Map<Integer, List<Cell>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<Cell>> entry : floorMap.cellsByLevel().entrySet()) {
-            List<Cell> movedCells = new ArrayList<>();
-            for (Cell cell : entry.getValue()) {
-                if (cell != null) {
-                    movedCells.add(new Cell(cell.q() + deltaQ, cell.r() + deltaR, cell.level() + deltaLevel));
-                }
-            }
-            result.put(entry.getKey() + deltaLevel, List.copyOf(movedCells));
-        }
-        return new RoomClusterFloorMap(result);
-    }
-
-    private static Map<Integer, List<DungeonClusterBoundary>> movedBoundariesByLevel(
-            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
-            int deltaLevel
-    ) {
-        if (deltaLevel == 0 || boundariesByLevel == null || boundariesByLevel.isEmpty()) {
-            return boundariesByLevel;
-        }
-        Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
-        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : boundariesByLevel.entrySet()) {
-            List<DungeonClusterBoundary> movedBoundaries = new ArrayList<>();
-            for (DungeonClusterBoundary boundary : entry.getValue()) {
-                if (boundary != null) {
-                    movedBoundaries.add(new DungeonClusterBoundary(
-                            boundary.clusterId(),
-                            boundary.level() + deltaLevel,
-                            new Cell(
-                                    boundary.relativeCell().q(),
-                                    boundary.relativeCell().r(),
-                                    boundary.relativeCell().level() + deltaLevel),
-                            boundary.direction(),
-                            boundary.kind(),
-                            boundary.topologyRef()));
-                }
-            }
-            result.put(entry.getKey() + deltaLevel, movedBoundaries);
-        }
-        return Map.copyOf(result);
     }
 }

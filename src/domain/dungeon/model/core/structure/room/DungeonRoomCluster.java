@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
@@ -137,6 +138,17 @@ public record DungeonRoomCluster(
                 boundariesByLevel);
     }
 
+    DungeonRoomCluster movedBy(int deltaQ, int deltaR, int deltaLevel) {
+        return new DungeonRoomCluster(
+                clusterId,
+                mapId,
+                name,
+                new Cell(center.q() + deltaQ, center.r() + deltaR, center.level() + deltaLevel),
+                movedRelativeVerticesByLevel(deltaLevel),
+                movedFloorMap(deltaQ, deltaR, deltaLevel),
+                movedBoundariesByLevel(deltaLevel));
+    }
+
     private static List<Cell> copiedCells(List<Cell> cells) {
         List<Cell> result = new ArrayList<>();
         for (Cell cell : cells == null ? List.<Cell>of() : cells) {
@@ -156,6 +168,63 @@ public record DungeonRoomCluster(
             if (entry.getKey() != null && entry.getValue() != null) {
                 result.put(entry.getKey(), List.copyOf(entry.getValue()));
             }
+        }
+        return Map.copyOf(result);
+    }
+
+    private Map<Integer, List<Cell>> movedCellsByLevel(
+            Map<Integer, List<Cell>> cellsByLevel,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        if ((deltaQ == 0 && deltaR == 0 && deltaLevel == 0) || cellsByLevel == null || cellsByLevel.isEmpty()) {
+            return cellsByLevel == null ? Map.of() : cellsByLevel;
+        }
+        Map<Integer, List<Cell>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
+            List<Cell> movedCells = entry.getValue().stream()
+                    .filter(Objects::nonNull)
+                    .map(cell -> new Cell(cell.q() + deltaQ, cell.r() + deltaR, cell.level() + deltaLevel))
+                    .toList();
+            result.put(entry.getKey() + deltaLevel, movedCells);
+        }
+        return Map.copyOf(result);
+    }
+
+    private Map<Integer, List<Cell>> movedRelativeVerticesByLevel(int deltaLevel) {
+        return movedCellsByLevel(relativeVerticesByLevel, 0, 0, deltaLevel);
+    }
+
+    private RoomClusterFloorMap movedFloorMap(int deltaQ, int deltaR, int deltaLevel) {
+        if (deltaQ == 0 && deltaR == 0 && deltaLevel == 0) {
+            return floorMap;
+        }
+        return new RoomClusterFloorMap(movedCellsByLevel(floorMap.cellsByLevel(), deltaQ, deltaR, deltaLevel));
+    }
+
+    private Map<Integer, List<DungeonClusterBoundary>> movedBoundariesByLevel(int deltaLevel) {
+        if (deltaLevel == 0 || boundariesByLevel.isEmpty()) {
+            return boundariesByLevel;
+        }
+        Map<Integer, List<DungeonClusterBoundary>> result = new LinkedHashMap<>();
+        for (Map.Entry<Integer, List<DungeonClusterBoundary>> entry : boundariesByLevel.entrySet()) {
+            List<DungeonClusterBoundary> movedBoundaries = new ArrayList<>();
+            for (DungeonClusterBoundary boundary : entry.getValue()) {
+                if (boundary != null) {
+                    movedBoundaries.add(new DungeonClusterBoundary(
+                            boundary.clusterId(),
+                            boundary.level() + deltaLevel,
+                            new Cell(
+                                    boundary.relativeCell().q(),
+                                    boundary.relativeCell().r(),
+                                    boundary.relativeCell().level() + deltaLevel),
+                            boundary.direction(),
+                            boundary.kind(),
+                            boundary.topologyRef()));
+                }
+            }
+            result.put(entry.getKey() + deltaLevel, List.copyOf(movedBoundaries));
         }
         return Map.copyOf(result);
     }
