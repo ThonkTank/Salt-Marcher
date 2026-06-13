@@ -52,9 +52,7 @@ final class RoomClusterBoundarySnapshot {
     }
 
     Map<Integer, List<Edge>> closedBoundaryEdgesByLevel() {
-        return DungeonRoomBoundaryPartition.closedBoundaryEdgesByLevel(
-                DungeonClusterBoundary.orderedByLevel(orderedBoundaries),
-                center);
+        return DungeonRoomBoundaryPartition.closedBoundaryEdgesByLevel(orderedBoundaries, center);
     }
 
     List<Cell> authoredBoundaryVertices(int level) {
