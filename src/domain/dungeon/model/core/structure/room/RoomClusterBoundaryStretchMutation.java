@@ -15,8 +15,6 @@ import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
 public final class RoomClusterBoundaryStretchMutation {
 
-    private static final DungeonRoomBoundaryPartition BOUNDARY_PARTITION =
-            new DungeonRoomBoundaryPartition();
     private static final RoomBoundaryStretchSelection SELECTION =
             new RoomBoundaryStretchSelection();
     private static final RoomBoundaryStretchMutationStep MUTATION =
@@ -92,18 +90,7 @@ public final class RoomClusterBoundaryStretchMutation {
             StretchMutationResult mutation
     ) {
         RoomTopologyWorkCatalog.IdAllocation ids = WORK_CATALOG.newIdAllocation(topology, roomCatalog);
-        DungeonRoomTopologyClusterWork partitionWork =
-                new DungeonRoomTopologyClusterWork(target.cluster(), target.rooms(), mutation.cellsByLevel());
-        List<DungeonRoom> rooms = BOUNDARY_PARTITION.roomsForBoundaryEdit(partitionWork, mutation.boundariesByLevel(), ids);
-        DungeonRoomTopologyClusterWork rebuiltWork = stretch.outer()
-                ? new DungeonRoomTopologyClusterWork(
-                REBUILDER.clusterForStretch(partitionWork, mutation.boundariesByLevel()),
-                rooms,
-                mutation.cellsByLevel())
-                : new DungeonRoomTopologyClusterWork(
-                REBUILDER.clusterWithBoundaries(target, mutation.boundariesByLevel()),
-                rooms,
-                mutation.cellsByLevel());
+        DungeonRoomTopologyClusterWork rebuiltWork = mutation.rebuiltStretchWork(target, stretch.outer(), ids);
         List<DungeonRoomTopologyClusterWork> nextClusters = new ArrayList<>();
         for (DungeonRoomTopologyClusterWork work : clusters) {
             nextClusters.add(work.cluster().clusterId() == target.cluster().clusterId() ? rebuiltWork : work);
