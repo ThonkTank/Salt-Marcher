@@ -23,7 +23,11 @@ Before changing repo-tracked files in SaltMarcher:
    rules before planning, implementing, refactoring, or reviewing covered work.
 5. For production-code, check/enforcement, or dependency work, identify the
    continuous-refactoring scope before editing.
-6. Identify the required verification surface before editing and report the
+6. For production-code, check/enforcement, or dependency work, search the
+   planned write set and directly owning adapters for `LEGACY_REMOVE_ON_TOUCH`.
+   Any hit must be removed in the same pass or reported as an explicit blocker;
+   do not grow marked support.
+7. Identify the required verification surface before editing and report the
    literal result before handoff.
 
 If a touched surface has no clear canonical owner, stop and report the ambiguity

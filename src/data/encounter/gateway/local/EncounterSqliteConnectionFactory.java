@@ -9,6 +9,7 @@ final class EncounterSqliteConnectionFactory extends AbstractSqliteConnectionFac
     EncounterSqliteConnectionFactory() {
         super(
                 resolveDatabasePath(EncounterPersistenceSchema.DATABASE_FILE_NAME),
+                // LEGACY_REMOVE_ON_TOUCH: Root DB copy; entfernen, sobald dieser Bereich bearbeitet wird.
                 Path.of(EncounterPersistenceSchema.DATABASE_FILE_NAME).toAbsolutePath().normalize());
     }
 }

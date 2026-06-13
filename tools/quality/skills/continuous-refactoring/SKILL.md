@@ -43,29 +43,34 @@ manifests:
 4. Inspect current quality evidence for the scope. Prefer the helper:
    `tools/quality/reporting/continuous_refactoring_candidates.py --scope <path>`.
    If the helper is insufficient, read the underlying reports directly.
-5. Separate findings into:
+5. Search the planned write set and directly owning adapters for
+   `LEGACY_REMOVE_ON_TOUCH` markers.
+6. Separate findings into:
    `Blocking In Scope`, `Small Local Cleanup`, `Separate Slice`, and
    `Out Of Scope`.
-6. Fix new or touched-scope blocker findings before handoff unless the finding
+7. Treat `LEGACY_REMOVE_ON_TOUCH` as `Blocking In Scope` when the marked file,
+   class, method, or owning adapter is touched by the current task.
+8. Fix new or touched-scope blocker findings before handoff unless the finding
    is a documented false positive owned by the existing gate policy.
-7. Include small local cleanup when it is behavior-preserving and stays inside
+9. Include small local cleanup when it is behavior-preserving and stays inside
    the current owner scope.
-8. Split large refactors into a separate pass when they move public APIs,
+10. Split large refactors into a separate pass when they move public APIs,
    change architecture ownership, require package moves, need dependency
    upgrades, or touch unrelated owners.
-9. For dependency work, check whether Dependabot already owns the update path.
+11. For dependency work, check whether Dependabot already owns the update path.
    Dependency upgrades must remain dependency-only unless the user explicitly
    combines them with product work.
-10. Run the required SaltMarcher verification surface for the actual changed
+12. Run the required SaltMarcher verification surface for the actual changed
     files and keep the literal result available for review.
-11. Write the implementation pass log required by
+13. Write the implementation pass log required by
     `docs/project/architecture/agent-instructions.md` under
     `build/agent-pass-logs/`. Include local cleanup decisions, abandoned
     approaches, reversals, repeated edits, architecture friction, quality
     tradeoffs, and verification results.
-12. Before starting the review step, read and follow the global caller skill
-    `/home/aaron/.codex/skills/local/adversarial-review/SKILL.md`; it requires a
-    main-agent-launched `review-overview` coordinator pass that owns nested
+14. Before starting the review step, read and follow the global caller skills
+    `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md` and
+    `/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md`; they require
+    one main-agent-launched Overview coordinator pass that owns nested
     specialist review and scoped follow-up worker launches before handoff.
 
 ## Evidence Sources
@@ -91,6 +96,9 @@ Allowed in the current pass:
   extraction does not create a new architectural seam
 - obvious pass-through helpers or carriers that only preserve legacy wording
   inside the touched owner scope
+- `LEGACY_REMOVE_ON_TOUCH` support in the touched file, marked method or class,
+  or directly owning adapter; remove it in the same pass instead of reshaping
+  or extending it
 - touched-scope PMD, CPD, Lizard, compile, SpotBugs, and dead-code findings
   whose fix is behavior-preserving
 
@@ -103,6 +111,12 @@ Separate slice required:
 - report-wide cleanup outside the touched owner scope
 - any cleanup whose correctness depends on product behavior review
 
+Forbidden without explicit user approval:
+
+- new legacy or compatibility support without a stated removal condition
+- remodeling, extending, or migrating code marked `LEGACY_REMOVE_ON_TOUCH`
+  instead of removing it or reporting a blocker
+
 ## Handoff Requirements
 
 Every covered handoff must report one of these exact statuses:
@@ -113,7 +127,10 @@ Every covered handoff must report one of these exact statuses:
   the current pass.
 
 Every covered handoff must also report the adversarial review outcome required
-by the global adversarial-review caller skill.
+by the global `coord-adversarial-review` caller skill.
+
+Every covered handoff must report `Legacy markers`: removed, explicit blocker,
+or none found in the write set.
 
 Every covered handoff must report the implementation pass log path and, when
 review completed, the review pass log path or the blocker that prevented the
@@ -134,6 +151,6 @@ not claim that global debt is solved because a scoped pass is clean.
 - [OpenRewrite Gradle Plugin Configuration](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openrewrite-gradle-plugin-configuration.md)
 - [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md)
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md)
-- [Global Review Overview Skill](/home/aaron/.codex/skills/local/review-overview/SKILL.md)
-- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/adversarial-review/SKILL.md)
-- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md)
+- [Global Main To Overview Coordination Skill](/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md)
+- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md)
+- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md)

@@ -58,6 +58,7 @@ final class DungeonSqliteClusterGeometryWriter {
         }
     }
 
+    // LEGACY_REMOVE_ON_TOUCH: Vertex cleanup; entfernen, sobald dieser Bereich bearbeitet wird.
     private static void deleteLegacyClusterVertices(Connection connection, DungeonRoomClusterRecord cluster)
             throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(

@@ -64,6 +64,7 @@ final class DungeonClusterFloorCellRecordMapperSupport {
         return floorCellsByLevel.isEmpty() ? legacyVerticesAsFloorCellsByLevel(record) : floorCellsByLevel;
     }
 
+    // LEGACY_REMOVE_ON_TOUCH: Vertex raster fallback; entfernen, sobald dieser Bereich bearbeitet wird.
     private static Map<Integer, List<Cell>> legacyVerticesAsFloorCellsByLevel(DungeonRoomClusterRecord record) {
         Map<Integer, List<Cell>> verticesByLevel = verticesByLevel(record.vertices());
         if (verticesByLevel.isEmpty()) {

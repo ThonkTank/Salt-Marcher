@@ -18,6 +18,7 @@ public abstract class AbstractSqliteConnectionFactory {
     private static final String APP_DATA_DIR_NAME = "salt-marcher";
 
     private final Path databasePath;
+    // LEGACY_REMOVE_ON_TOUCH: Root DB copy; entfernen, sobald dieser Bereich bearbeitet wird.
     private final Path legacyDatabasePath;
     private final String url;
 
@@ -71,6 +72,7 @@ public abstract class AbstractSqliteConnectionFactory {
         }
     }
 
+    // LEGACY_REMOVE_ON_TOUCH: Root DB migration; entfernen, sobald dieser Bereich bearbeitet wird.
     private void migrateLegacyDatabaseIfNeeded() throws IOException {
         if (legacyDatabasePath.equals(databasePath) || Files.exists(databasePath) || !Files.exists(legacyDatabasePath)) {
             return;

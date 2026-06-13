@@ -11,6 +11,7 @@ import java.util.Map;
 import src.data.dungeon.model.DungeonPersistenceSchema;
 import src.data.dungeon.model.DungeonRoomClusterVertexRecord;
 
+// LEGACY_REMOVE_ON_TOUCH: Old vertex geometry loader fallback; entfernen, sobald dieser Bereich bearbeitet wird.
 final class DungeonSqliteClusterVertexLoader {
 
     private static final int LOOP_SEPARATOR_COORDINATE = Integer.MIN_VALUE;

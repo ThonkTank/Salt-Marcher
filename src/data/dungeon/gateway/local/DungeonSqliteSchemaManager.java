@@ -8,6 +8,7 @@ import src.data.persistencecore.sqlite.SqliteSchemaColumnSupport;
 
 final class DungeonSqliteSchemaManager {
 
+    // LEGACY_REMOVE_ON_TOUCH: Old schema upgrades; entfernen, sobald dieser Bereich bearbeitet wird.
     private static final DungeonSqliteCompatibilityUpgrade COMPATIBILITY_UPGRADE =
             new DungeonSqliteCompatibilityUpgrade();
     private static final DungeonSqliteTopologyBackfill TOPOLOGY_BACKFILL =
@@ -29,6 +30,7 @@ final class DungeonSqliteSchemaManager {
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOMS_TABLE_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CORRIDORS_TABLE_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_CORRIDOR_MEMBERS_TABLE_SQL);
+            // LEGACY_REMOVE_ON_TOUCH: Old vertex table create; entfernen, sobald dieser Bereich bearbeitet wird.
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_CLUSTER_VERTICES_TABLE_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_CLUSTER_FLOOR_CELLS_TABLE_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_ROOM_CLUSTER_EDGES_TABLE_SQL);

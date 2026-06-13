@@ -77,6 +77,7 @@ final class DungeonSqliteMapRecordLoader {
     }
 
     private static List<DungeonRoomClusterRecord> loadRoomClusters(Connection connection, long mapId) throws SQLException {
+        // LEGACY_REMOVE_ON_TOUCH: Vertex fallback; entfernen, sobald dieser Bereich bearbeitet wird.
         Map<Long, List<DungeonRoomClusterVertexRecord>> verticesByCluster = loadClusterVertices(connection, mapId);
         Map<Long, List<DungeonRoomClusterFloorCellRecord>> floorCellsByCluster =
                 loadClusterFloorCells(connection, mapId);

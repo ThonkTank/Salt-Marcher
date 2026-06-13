@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+// LEGACY_REMOVE_ON_TOUCH: Additive columns for old SQLite installs; entfernen, sobald dieser Bereich bearbeitet wird.
 final class DungeonSqliteCompatibilityColumns {
 
     private static final String COLUMN_LEVEL_Z = "level_z";

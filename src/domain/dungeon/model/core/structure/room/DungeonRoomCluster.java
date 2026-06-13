@@ -39,6 +39,7 @@ public final class DungeonRoomCluster {
         this.boundariesByLevel = copyNestedLists(boundariesByLevel);
     }
 
+    // LEGACY_REMOVE_ON_TOUCH: Compatibility constructor; entfernen, sobald dieser Bereich bearbeitet wird.
     public static DungeonRoomCluster fromCompatibilityInput(
             long clusterId,
             long mapId,

@@ -12,6 +12,7 @@ public final class DungeonPersistenceSchema {
     public static final String ROOM_CLUSTERS_TABLE = "dungeon_room_clusters";
     public static final String CORRIDORS_TABLE = "dungeon_corridors";
     public static final String CORRIDOR_MEMBERS_TABLE = "dungeon_corridor_members";
+    // LEGACY_REMOVE_ON_TOUCH: Vertex table name; entfernen, sobald dieser Bereich bearbeitet wird.
     public static final String ROOM_CLUSTER_VERTICES_TABLE = "dungeon_room_cluster_vertices";
     public static final String ROOM_CLUSTER_FLOOR_CELLS_TABLE = "dungeon_room_cluster_floor_cells";
     public static final String ROOM_CLUSTER_EDGES_TABLE = "dungeon_room_cluster_edges";
@@ -26,6 +27,7 @@ public final class DungeonPersistenceSchema {
     public static final String STAIR_PATH_NODES_TABLE = "dungeon_stair_path_nodes";
     public static final String STAIR_EXITS_TABLE = "dungeon_stair_exits";
     public static final String TRANSITIONS_TABLE = "dungeon_transitions";
+    // LEGACY_REMOVE_ON_TOUCH: Structure levels table; entfernen, sobald dieser Bereich bearbeitet wird.
     public static final String LEGACY_STRUCTURE_LEVELS_TABLE = "dungeon_structure_levels";
 
     public static final String CREATE_DUNGEON_MAPS_TABLE_SQL =
@@ -44,6 +46,7 @@ public final class DungeonPersistenceSchema {
                     + "level_z          INTEGER NOT NULL DEFAULT 0"
                     + ")";
 
+    // LEGACY_REMOVE_ON_TOUCH: structure_object SQL; entfernen, sobald dieser Bereich bearbeitet wird.
     public static final String DROP_LEGACY_ROOM_CLUSTERS_STRUCTURE_OBJECT_TABLE_SQL =
             "DROP TABLE IF EXISTS dungeon_room_clusters_legacy_structure_object";
 
@@ -82,6 +85,7 @@ public final class DungeonPersistenceSchema {
                     + "PRIMARY KEY (corridor_id, room_id)"
                     + ")";
 
+    // LEGACY_REMOVE_ON_TOUCH: Old vertex geometry table DDL; entfernen, sobald dieser Bereich bearbeitet wird.
     public static final String CREATE_DUNGEON_ROOM_CLUSTER_VERTICES_TABLE_SQL =
             "CREATE TABLE IF NOT EXISTS dungeon_room_cluster_vertices ("
                     + "cluster_id   INTEGER NOT NULL REFERENCES dungeon_room_clusters(cluster_id) ON DELETE CASCADE,"
@@ -309,6 +313,7 @@ public final class DungeonPersistenceSchema {
             CREATE_DUNGEON_TRANSITIONS_TABLE_SQL
     );
 
+    // LEGACY_REMOVE_ON_TOUCH: Additive ALTER SQL; entfernen, sobald dieser Bereich bearbeitet wird.
     public static final List<String> COMPATIBILITY_ALTER_TABLE_SQL = List.of(
             ADD_DUNGEON_ROOMS_VISUAL_DESCRIPTION_COLUMN_SQL,
             ADD_DUNGEON_ROOM_CLUSTERS_CENTER_X_COLUMN_SQL,

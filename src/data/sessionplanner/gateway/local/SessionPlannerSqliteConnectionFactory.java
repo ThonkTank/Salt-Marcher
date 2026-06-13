@@ -9,6 +9,7 @@ final class SessionPlannerSqliteConnectionFactory extends AbstractSqliteConnecti
     SessionPlannerSqliteConnectionFactory() {
         super(
                 resolveDatabasePath(SessionPlannerPersistenceSchema.DATABASE_FILE_NAME),
+                // LEGACY_REMOVE_ON_TOUCH: Root DB copy; entfernen, sobald dieser Bereich bearbeitet wird.
                 Path.of(SessionPlannerPersistenceSchema.DATABASE_FILE_NAME).toAbsolutePath().normalize());
     }
 }

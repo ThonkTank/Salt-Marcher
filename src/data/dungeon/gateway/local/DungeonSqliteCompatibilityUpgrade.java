@@ -6,6 +6,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+// LEGACY_REMOVE_ON_TOUCH: One-shot old dungeon schema upgrade paths; entfernen, sobald dieser Bereich bearbeitet wird.
 final class DungeonSqliteCompatibilityUpgrade {
 
     private static final String SQL_FROM = " FROM ";

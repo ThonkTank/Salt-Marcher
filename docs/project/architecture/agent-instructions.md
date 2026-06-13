@@ -141,6 +141,8 @@ An implementation pass log must include:
 - touched paths and intentionally untouched dirty paths
 - owner documents and mandatory skills used
 - implementation summary and key tradeoffs
+- `LEGACY_REMOVE_ON_TOUCH` markers found in the write set and whether they were
+  removed or reported as blockers
 - verification commands and literal results
 - reversals, reimplemented work, abandoned approaches, or repeated edits to the
   same behavior
