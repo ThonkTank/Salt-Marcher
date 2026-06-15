@@ -66,8 +66,8 @@ evaluation harness for an ordinary process experiment:
 - workspace and SaltMarcher `AGENTS.md` rules
 - mandatory skill routing
 - context hygiene, repo-tool, code-exploration, and layer-skill obligations
-- the required qualitative `code-simplifier` pass for covered implementation
-  work
+- the required qualitative `code-simplifier` review-agent step for covered
+  implementation work
 - planner escalation before repairs for systemic review, architecture-check,
   behavior-harness, or proof feedback
 - implementation and review pass-log obligations
@@ -273,7 +273,8 @@ status: active
    fallback.
 4. Produce a reduced implementation brief.
 5. Run the normal SaltMarcher implementation workflow unchanged, including the
-   required code-simplifier pass and planner escalation for covered work.
+   required code-simplifier review-agent step and planner escalation for
+   covered work.
 6. Capture a feedback packet.
 7. Score the run with the fixed process metrics and primary score formula.
 8. Keep, discard, crash, blocked, or quarantine the process variant.

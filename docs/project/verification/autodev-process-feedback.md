@@ -25,7 +25,8 @@ This feedback strategy verifies:
 - the current private process variant used for an inner implementation run
 - the inner run's process cost and context footprint
 - mandatory skill and proof-route adherence
-- required `code-simplifier` pass adherence for covered implementation work
+- required `code-simplifier` review-agent step adherence for covered
+  implementation work
 - required planner escalation adherence when systemic review, architecture,
   behavior-harness, or proof feedback shaped a repair
 - implementation, proof, review, publication, and delayed regression outcomes
@@ -124,7 +125,7 @@ The process score is computed from these fixed, reviewable factors:
 
 | Metric | Required computation |
 | --- | --- |
-| `harness_pass` | `1` only when every scope-required gate, mandatory skill, implementation pass log, Overview review, review pass log, and publication rule is satisfied; otherwise `0`. Dirty-attribution failure, missed mandatory proof, missed required review, missed `code-simplifier`, missed required planner escalation, or private-boundary violation forces `0`. |
+| `harness_pass` | `1` only when every scope-required gate, mandatory skill, implementation pass log, Overview review, review pass log, and publication rule is satisfied; otherwise `0`. Dirty-attribution failure, missed mandatory proof, missed required review, missed required `code-simplifier` review-agent step, missed required planner escalation, or private-boundary violation forces `0`. |
 | `done_when_pass_rate` | Completed Done-When bullets divided by planned Done-When bullets. Empty or missing Done-When sets score `0`. |
 | `diagnostic_value_rate` | Bounded value from useful blocked-run diagnosis, normalized from `0` to `1`; it never counts as verified progress and is multiplied by `0.25` in the primary score. |
 | `proof_success_rate` | Successful required proof commands divided by required proof commands. No required proof on a planning-only private run is `not_applicable`; repo-tracked work without required proof scores `0`. |
@@ -181,8 +182,9 @@ process_score =
 
 `harness_pass = 0` prevents a variant from winning by reducing tokens while
 weakening SaltMarcher gates. `proof_success_rate`, `dirty_attribution`, private
-boundary status, mandatory skill routing, required `code-simplifier`, planner
-escalation, pass logs, and required review feed into `harness_pass`; they are
+boundary status, mandatory skill routing, required `code-simplifier`
+review-agent step, planner escalation, pass logs, and required review feed into
+`harness_pass`; they are
 also reported separately so reviewers can identify why a run failed.
 
 `cost_units` is the denominator without the leading `1`:
@@ -196,7 +198,7 @@ Penalties apply for:
 - proof failure or stale proof
 - Overview or specialist review blockers
 - missed mandatory skills
-- missed or unjustifiably skipped required `code-simplifier` pass
+- missed or unjustifiably skipped required `code-simplifier` review-agent step
 - missed required planner project-health escalation for systemic feedback
 - dirty-tree ambiguity
 - oversized or unfocused context

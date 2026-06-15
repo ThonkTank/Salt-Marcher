@@ -85,24 +85,23 @@ SaltMarcher keeps review instructions in global skills, not in this standard.
 
 ## Qualitative Simplification Pass
 
-SaltMarcher uses `code-simplifier` as a fixed qualitative step in the active
-implementation workflow. It is an in-agent orchestrator over the global
-simplicity, elegance, smell, and performance lenses. It finds local
-behavior-preserving simplification patches for inefficiencies that mechanical
-static-analysis gates do not cover.
-
-Implementation agents must run the installed `code-simplifier` skill after the
-main edit and before writing the implementation pass log when the pass changes
-production code, check/enforcement packages, build or verification wiring,
-dependency surfaces, or agent-facing instruction surfaces. If the harness does
-not auto-discover the skill, read and apply:
-
-- `/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/skills/code-simplifier/SKILL.md`
-
-The simplification pass must not create new static-analysis gates, weaken
-required proof, replace the mandatory Overview-coordinated review, or launch
-review subagents by default. It may produce a small local patch, record that no
-safe simplification was found, or downgrade a risky idea to a review note.
+SaltMarcher uses `code-simplifier` as a fixed qualitative review-agent step, not as an implementation-agent self-check. It coordinates independent
+simplicity, elegance, smell, and performance review, then consolidates findings
+into behavior-preserving patches, explicit deferrals, or no-op.
+Implementation agents must launch or otherwise run the installed skill after the
+main edit and before pass logging when a pass changes production code,
+check/enforcement packages, build or verification wiring, dependency surfaces,
+or agent-facing instruction surfaces. If auto-discovery fails, read the
+installed skill file linked in References.
+For this topic, the code-simplifier agent uses Main's changed files, owner
+documents, proof state, and implementation context; launches independent
+reviewers for the four lenses when tooling is available; keeps reviewers
+read-only unless Main assigns a scoped fix; rejects speculative ideas;
+consolidates safe patches, explicit deferrals, or no-op; and reports before
+pass logging.
+The step must not create static-analysis gates, weaken proof, replace Overview
+handoff review, or claim full handoff coverage. If it changes repo-tracked
+files, Main must rerun the required proof before Overview handoff.
 
 ## Planner Escalation For Systemic Feedback
 
@@ -236,8 +235,9 @@ An implementation pass log must include:
 - touched paths and intentionally untouched dirty paths
 - owner documents and mandatory skills used
 - implementation summary and key tradeoffs
-- `code-simplifier` outcome for covered implementation passes, including safe
-  patches made, no-op result, or skipped status with reason
+- `code-simplifier` review-agent outcome for covered implementation passes,
+  including reviewer lenses used, safe patches made, no-op result, explicit
+  deferrals, or skipped status with reason
 - planner escalation outcome when systemic review, architecture-check,
   behavior-harness, or proof feedback shaped the project-health plan
 - `LEGACY_REMOVE_ON_TOUCH` markers found in the write set and whether they were
@@ -315,8 +315,9 @@ When a covered artifact changes, reviewers must check:
 - Did the change introduce duplicate or conflicting truth across covered
   surfaces?
 - Does the chosen verification path match the actual changed surfaces?
-- Did covered implementation work run `code-simplifier` before pass logging and
-  Overview review, without treating it as a substitute for proof or review?
+- Did covered implementation work run `code-simplifier` as a qualitative
+  review agent before pass logging and Overview review, without treating it as
+  a substitute for proof or handoff review?
 - If systemic review, architecture-check, behavior-harness, or proof feedback
   shaped the repair, did Main obtain a planner project-health plan before
   implementing the fix?

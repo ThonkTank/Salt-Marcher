@@ -85,13 +85,17 @@ document exists.
 - Repo-tracked implementation passes that change production code,
   check/enforcement packages, build or verification wiring, dependency
   surfaces, or agent-facing instruction surfaces must run the installed
-  `code-simplifier` skill after the main edit and before the implementation
-  pass log and Overview handoff review. If the harness does not auto-discover
-  the skill, read
+  `code-simplifier` skill as a dedicated qualitative review agent after the
+  main edit and before the implementation pass log and Overview handoff review.
+  If the harness does not auto-discover the skill, read
   `/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/skills/code-simplifier/SKILL.md`
-  directly. This is a qualitative in-agent simplification pass over the
-  simplicity, elegance, smell, and performance lenses; it is not a new
-  static-analysis gate and does not replace mandatory proof or review.
+  directly. This is a qualitative review-coordination pass: the
+  code-simplifier agent acts like a review coordinator for simplification and
+  launches independent simplicity, elegance, smell, and performance reviewers
+  when subagent tooling is available, then consolidates their findings into
+  safe local patches, explicit deferrals, or a no-op result. It is not a new
+  static-analysis gate and does not replace mandatory proof or Overview
+  review.
 - When review results, architecture checks, behavior harnesses, or required
   proof expose a systemic blocker, Main must use the global `planner` skill to
   obtain a project-health repair plan before implementing the repair. The

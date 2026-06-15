@@ -53,7 +53,8 @@ Before running, planning, changing, or reviewing a process experiment:
 The process optimizer MUST NOT treat these as normal experiment knobs:
 
 - mandatory skill routing
-- required qualitative `code-simplifier` passes for covered implementation work
+- required qualitative `code-simplifier` review-agent steps for covered
+  implementation work
 - required planner escalation before repair for systemic review, architecture,
   behavior-harness, or proof feedback
 - implementation and review pass-log obligations
@@ -135,11 +136,11 @@ and `process_score`.
 
 The optimizer scores verified useful progress over process cost using the fixed
 primary formula from the verification standard. It must penalize proof failure,
-stale proof, missed mandatory skills, missed required `code-simplifier`, missed
-required planner escalation, review blockers, dirty-tree ambiguity, user
-correction, delayed regressions, and context bloat. Until the verification
-standard changes, score computation may use only the documented `score_inputs`
-keys.
+stale proof, missed mandatory skills, missed required `code-simplifier`
+review-agent step, missed required planner escalation, review blockers,
+dirty-tree ambiguity, user correction, delayed regressions, and context bloat.
+Until the verification standard changes, score computation may use only the
+documented `score_inputs` keys.
 
 Archive runs may attach `archive_variant_id`, `parent_variant_id`,
 `evaluation_set_id`, and `novelty_notes` to feedback packets. These fields are
