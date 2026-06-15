@@ -395,7 +395,7 @@ final class DungeonEditorIntentHandler {
         double sceneX = sceneX(event);
         double sceneY = sceneY(event);
         DungeonMapContentModel.PointerTarget pointerTarget = mapContentModel.resolvePointerTarget(sceneX, sceneY);
-        if (beginInlineLabelEdit(event, pointerTarget, sceneX, sceneY)) {
+        if (beginInlineLabelEdit(event, sceneX, sceneY)) {
             return;
         }
         if (suppressedRepeatedHover(event, pointerTool, pointerTarget)) {
@@ -406,7 +406,6 @@ final class DungeonEditorIntentHandler {
 
     private boolean beginInlineLabelEdit(
             DungeonMapViewInputEvent event,
-            DungeonMapContentModel.PointerTarget pointerTarget,
             double sceneX,
             double sceneY
     ) {
@@ -417,7 +416,7 @@ final class DungeonEditorIntentHandler {
         }
         DungeonMapContentModel.PointerTarget editTarget = event.modifiers().shiftDown()
                 ? mapContentModel.resolveRoomLabelPointerTarget(sceneX, sceneY)
-                : pointerTarget;
+                : mapContentModel.resolveClusterLabelPointerTarget(sceneX, sceneY);
         if (!editTarget.isLabelTarget()) {
             return false;
         }

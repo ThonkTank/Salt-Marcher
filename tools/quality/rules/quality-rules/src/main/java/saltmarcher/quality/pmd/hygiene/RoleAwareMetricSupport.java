@@ -34,6 +34,7 @@ final class RoleAwareMetricSupport {
     private static boolean isMetricOwnedViewRole(ViewRole role) {
         return role == ViewRole.BINDER
                 || role == ViewRole.CONTENT_MODEL
+                || role == ViewRole.CONTENT_PART_MODEL
                 || role == ViewRole.CONTRIBUTION
                 || role == ViewRole.CONTRIBUTION_MODEL
                 || role == ViewRole.INTENT_HANDLER

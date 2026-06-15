@@ -96,6 +96,7 @@ final class DungeonEditorClusterLabelHandleHarness {
         DungeonEditorControlsView controls = binding.controls();
 
         verifyDefaultRoomLabelAndClusterRename(runtime, binding, controls);
+        verifyClusterLabelSelectionAndStatePanelRename(runtime, binding, controls);
         verifySharedRoomLabelNameOperation(runtime, binding, controls);
 
         results.add("DE-LABEL-003 Ready: F1_SINGLE_ROOM publishes default Raum <roomId> room label text");
@@ -122,9 +123,6 @@ final class DungeonEditorClusterLabelHandleHarness {
         click(button(controls, "Auswahl"));
 
         RoomClusterIds ids = runtime.database().roomByComponent(mapId, 2, 2, 0);
-        long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
-        List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
-        DungeonEditorMapSurfaceSnapshot initial = runtime.mapSurfaceModel().current();
         assertTrue(renderHasLabelAt(binding.mapContentModel(), "Raum " + ids.roomId(), 2.5, 2.5),
                 "DE-LABEL-003 render scene publishes default room label text");
         assertEquals("LABEL", binding.mapContentModel()
@@ -132,41 +130,54 @@ final class DungeonEditorClusterLabelHandleHarness {
                         .targetKind()
                         .name(),
                 "DE-HANDLE-005 room label hit remains label target");
+    }
 
+    private static void verifyClusterLabelSelectionAndStatePanelRename(
+            HarnessRuntime runtime,
+            HarnessBinding binding,
+            DungeonEditorControlsView controls
+    ) {
+        long mapId = createMapThroughControls(controls, runtime, "Cluster Label Rename Map");
+        runtime.database().seedF15ComplexCluster(mapId);
+        createMapThroughControls(controls, runtime, "Cluster Label Rename Reload Hop");
+        selectMap(controls, "Cluster Label Rename Map");
+        click(button(controls, "Auswahl"));
+
+        DungeonEditorMapSurfaceSnapshot initial = runtime.mapSurfaceModel().current();
         DungeonEditorHandleSnapshot clusterLabel = singleClusterLabel(initial, "DE-LABEL-005");
-        clickMap(
-                binding.mapView(),
-                binding.mapContentModel(),
-                clusterLabel.cell().q() + 0.5,
-                clusterLabel.cell().r() + 0.5);
-        assertClusterLabelSelection(runtime, ids.clusterId(), "DE-LABEL-007 cluster label selection target");
+        long clusterId = clusterLabel.ref().clusterId();
+        long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
+        double labelQ = clusterLabel.cell().q() + 0.5;
+        double labelR = clusterLabel.cell().r() + 0.5;
+        assertEquals("LABEL", binding.mapContentModel()
+                        .resolvePointerTarget(labelQ, labelR)
+                        .targetKind()
+                        .name(),
+                "DE-LABEL-007 rendered cluster label stays separate from generic handles");
+
+        clickMap(binding.mapView(), binding.mapContentModel(), labelQ, labelR);
+        assertClusterLabelSelection(runtime, clusterId, "DE-LABEL-007 cluster label selection target");
         TextField clusterName = textField(binding.stateView(), "Cluster-Name");
         clusterName.setText("   West Wing   ");
         click(buttonWithAccessibleText(binding.stateView(), "Cluster-Name speichern"));
-        assertEquals("West Wing", runtime.database().clusterName(ids.clusterId()),
+        assertEquals("West Wing", runtime.database().clusterName(clusterId),
                 "DE-LABEL-005 state panel trims and saves custom cluster label");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-LABEL-005 cluster rename leaves authored geometry row count unchanged");
         assertEquals(boundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
                 "DE-LABEL-005 cluster rename leaves boundary geometry unchanged");
-        assertTrue(renderHasLabelAt(binding.mapContentModel(), "West Wing", 2.5, 2.5),
+        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+                "DE-LABEL-005 cluster rename keeps preview empty");
+        assertTrue(renderHasLabelAt(binding.mapContentModel(), "West Wing", labelQ, labelR),
                 "DE-LABEL-005 render scene updates custom cluster label");
 
-        selectMap(controls, "Room Label Rename Reload Hop");
-        selectMap(controls, "Room Label Rename Map");
-        assertTrue(renderHasLabelAt(binding.mapContentModel(), "West Wing", 2.5, 2.5),
+        selectMap(controls, "Cluster Label Rename Reload Hop");
+        selectMap(controls, "Cluster Label Rename Map");
+        assertTrue(renderHasLabelAt(binding.mapContentModel(), "West Wing", labelQ, labelR),
                 "DE-LABEL-005 reload keeps custom cluster label render");
-        assertEquals("LABEL", binding.mapContentModel()
-                        .resolvePointerTarget(2.5, 2.5)
-                        .targetKind()
-                        .name(),
-                "DE-LABEL-007 rendered cluster label stays separate from generic handles");
-        clickMap(
-                binding.mapView(),
-                binding.mapContentModel(),
-                clusterLabel.cell().q() + 0.5,
-                clusterLabel.cell().r() + 0.5);
-        assertClusterLabelSelection(runtime, ids.clusterId(), "DE-LABEL-007 cluster label reload selection target");
+        clickMap(binding.mapView(), binding.mapContentModel(), labelQ, labelR);
+        assertClusterLabelSelection(runtime, clusterId, "DE-LABEL-007 cluster label reload selection target");
     }
 
     private static void verifySharedRoomLabelNameOperation(
@@ -444,11 +455,14 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertNotHandleTarget(binding.mapContentModel(), 11.0, 10.0,
                 "DE-HANDLE-002 cluster wall-run handle is not hittable before cluster selection");
         click(button(controls, "Auswahl"));
-        selectClusterArea(runtime, binding, 10.25, 10.25, "DE-HANDLE-002");
+        selectRoomFloorWithoutClusterMode(runtime, binding, 10.25, 10.25, "DE-HANDLE-002");
+        assertNotHandleTarget(binding.mapContentModel(), 11.0, 10.0,
+                "DE-HANDLE-002 plain room floor selection still does not expose cluster wall-run handles");
+        selectClusterLabel(runtime, binding, "DE-HANDLE-002");
         assertTrue(renderHasWallRunMarkerAt(binding.mapContentModel(), 11.0, 10.0),
-                "DE-CLUSTER-001 area-selected render scene places a smaller horizontal wall-run handle on the wall line");
+                "DE-CLUSTER-001 cluster-label-selected render scene places a smaller horizontal wall-run handle on the wall line");
         assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(11.0, 10.0).targetKind().name(),
-                "DE-HANDLE-002 area-selected cluster wall-run handle resolves as a handle target");
+                "DE-HANDLE-002 cluster-label-selected wall-run handle resolves as a handle target");
         assertWallRunSourceEdgesPresent(snapshot, "DE-HANDLE-002");
         results.add("DE-CLUSTER-001 Ready: F15_COMPLEX_CLUSTER publishes true corner handles and source-edged wall-run midpoint handles");
     }
@@ -529,9 +543,9 @@ final class DungeonEditorClusterLabelHandleHarness {
         DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
         firstHandle(snapshot, DungeonEditorHandleKind.CLUSTER_WALL_RUN, "DE-HANDLE-004 wall-run");
         click(button(controls, "Auswahl"));
-        selectClusterArea(runtime, binding, 10.25, 10.25, "DE-HANDLE-004");
+        selectClusterLabel(runtime, binding, "DE-HANDLE-004");
         assertTrue(renderHasWallRunMarkerAt(binding.mapContentModel(), 11.0, 10.0),
-                "DE-HANDLE-004 area-selected F16 wall-run marker remains smaller and less obstructive than a cluster corner");
+                "DE-HANDLE-004 cluster-label-selected F16 wall-run marker remains smaller and less obstructive than a cluster corner");
 
         results.add("DE-HANDLE-004 Ready: F16_HANDLE_VARIETY confirms wall-run handle style stays smaller "
                 + "and less obstructive than cluster corner handles while selected");
@@ -652,7 +666,7 @@ final class DungeonEditorClusterLabelHandleHarness {
         createMapThroughControls(controls, runtime, "Complex Cluster Wall Run Move Reload Hop");
         selectMap(controls, "Complex Cluster Wall Run Move Map");
         click(button(controls, "Auswahl"));
-        selectClusterArea(runtime, binding, 10.25, 10.25, "DE-CLUSTER-002");
+        selectClusterLabel(runtime, binding, "DE-CLUSTER-002");
 
         DungeonEditorMapSurfaceSnapshot initialSurface = runtime.mapSurfaceModel().current();
         assertWallRunHandleTargets(binding.mapContentModel(), "DE-CLUSTER-002");
@@ -798,7 +812,19 @@ final class DungeonEditorClusterLabelHandleHarness {
             long clusterId,
             String message
     ) {
-        DungeonEditorStateSnapshot.Selection selection = runtime.stateModel().current().selection();
+        DungeonEditorStateSnapshot.Selection stateSelection = runtime.stateModel().current().selection();
+        DungeonEditorStateSnapshot.Selection surfaceSelection = runtime.mapSurfaceModel().current().selection();
+        assertClusterLabelSelection(stateSelection, clusterId, message + " state model");
+        assertClusterLabelSelection(surfaceSelection, clusterId, message + " map surface");
+        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+                message + " keeps preview empty");
+    }
+
+    private static void assertClusterLabelSelection(
+            DungeonEditorStateSnapshot.Selection selection,
+            long clusterId,
+            String message
+    ) {
         assertEquals(clusterId, selection.clusterId(), message + " cluster id");
         assertTrue(selection.clusterSelection(), message + " selects cluster-name target");
         assertTrue(selection.handleRef() != null
@@ -812,7 +838,10 @@ final class DungeonEditorClusterLabelHandleHarness {
             String message
     ) {
         DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
-        DungeonEditorHandleSnapshot label = singleClusterLabel(snapshot, message);
+        DungeonEditorHandleSnapshot label = snapshot.surface().map().editorHandles().stream()
+                .filter(handle -> handle.ref().kind() == DungeonEditorHandleKind.CLUSTER_LABEL)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + " cluster label not published"));
         return selectClusterLabel(runtime, binding, label, message);
     }
 
@@ -846,7 +875,7 @@ final class DungeonEditorClusterLabelHandleHarness {
         return label;
     }
 
-    private static void selectClusterArea(
+    private static void selectRoomFloorWithoutClusterMode(
             HarnessRuntime runtime,
             HarnessBinding binding,
             double q,
@@ -854,11 +883,24 @@ final class DungeonEditorClusterLabelHandleHarness {
             String message
     ) {
         clickMap(binding.mapView(), binding.mapContentModel(), q, r);
-        DungeonEditorStateSnapshot.Selection selection = runtime.stateModel().current().selection();
-        assertEquals("ROOM", selection.topologyRef().kind(), message + " area selection topology kind");
-        assertTrue(selection.clusterId() > 0L, message + " area selection keeps cluster id");
-        assertTrue(selection.clusterSelection(), message + " area selection activates cluster handles");
-        assertEquals(null, selection.handleRef(), message + " area selection does not fake a cluster-label handle");
+        DungeonEditorStateSnapshot.Selection stateSelection = runtime.stateModel().current().selection();
+        DungeonEditorStateSnapshot.Selection surfaceSelection = runtime.mapSurfaceModel().current().selection();
+        assertEquals("ROOM", stateSelection.topologyRef().kind(),
+                message + " state model room floor selection topology kind");
+        assertTrue(stateSelection.clusterId() > 0L, message + " state model room floor selection keeps cluster id");
+        assertTrue(!stateSelection.clusterSelection(),
+                message + " state model room floor selection stays out of cluster mode");
+        assertEquals(null, stateSelection.handleRef(),
+                message + " state model room floor selection does not fake a cluster-label handle");
+        assertEquals("ROOM", surfaceSelection.topologyRef().kind(),
+                message + " map surface room floor selection topology kind");
+        assertTrue(surfaceSelection.clusterId() > 0L, message + " map surface room floor selection keeps cluster id");
+        assertTrue(!surfaceSelection.clusterSelection(),
+                message + " map surface room floor selection stays out of cluster mode");
+        assertEquals(null, surfaceSelection.handleRef(),
+                message + " map surface room floor selection does not fake a cluster-label handle");
+        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+                message + " room floor selection keeps preview empty");
     }
 
     private static void assertNotHandleTarget(
@@ -955,16 +997,27 @@ final class DungeonEditorClusterLabelHandleHarness {
                 false);
 
         DungeonEditorStateSnapshot.Selection selectedRoom = runtime.stateModel().current().selection();
+        DungeonEditorStateSnapshot.Selection selectedSurfaceRoom = runtime.mapSurfaceModel().current().selection();
         assertEquals("ROOM", selectedRoom.topologyRef().kind(),
-                "DE-LABEL-007 room label selects room topology");
+                "DE-LABEL-007 state model room label selects room topology");
         assertEquals(roomIds.roomId(), selectedRoom.topologyRef().id(),
-                "DE-LABEL-007 room label selects room id");
+                "DE-LABEL-007 state model room label selects room id");
         assertEquals(roomIds.clusterId(), selectedRoom.clusterId(),
-                "DE-LABEL-007 room label preserves owning cluster id without cluster selection");
+                "DE-LABEL-007 state model room label preserves owning cluster id without cluster selection");
         assertTrue(!selectedRoom.clusterSelection(),
-                "DE-LABEL-007 room label does not select cluster-name target");
+                "DE-LABEL-007 state model room label does not select cluster-name target");
         assertEquals(null, selectedRoom.handleRef(),
-                "DE-LABEL-007 room label does not publish a draggable cluster-label handle");
+                "DE-LABEL-007 state model room label does not publish a draggable cluster-label handle");
+        assertEquals("ROOM", selectedSurfaceRoom.topologyRef().kind(),
+                "DE-LABEL-007 map surface room label selects room topology");
+        assertEquals(roomIds.roomId(), selectedSurfaceRoom.topologyRef().id(),
+                "DE-LABEL-007 map surface room label selects room id");
+        assertEquals(roomIds.clusterId(), selectedSurfaceRoom.clusterId(),
+                "DE-LABEL-007 map surface room label preserves owning cluster id without cluster selection");
+        assertTrue(!selectedSurfaceRoom.clusterSelection(),
+                "DE-LABEL-007 map surface room label does not select cluster-name target");
+        assertEquals(null, selectedSurfaceRoom.handleRef(),
+                "DE-LABEL-007 map surface room label does not publish a draggable cluster-label handle");
 
         fireMapMouse(
                 binding.mapView(),

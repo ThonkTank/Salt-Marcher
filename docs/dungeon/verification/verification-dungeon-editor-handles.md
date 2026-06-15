@@ -13,10 +13,11 @@ published handle identity, hit behavior, drag behavior, and non-obstructive
 rendering. Concept-specific mutation effects remain in the owning room,
 cluster, wall, corridor, door, or stair catalogs. Wall-run midpoint markers are part
 of the shared published handle vocabulary, but cluster drag handles are canvas
-visible and hittable only while their owning cluster is selected. Selecting a
-cluster floor area is a cluster selection for this purpose. Door handle refs are
-visible shared canvas drag handles; corridor endpoint refs remain focused-route
-facts unless a corridor-specific route promotes them.
+visible and hittable only while their owning cluster is selected through a
+cluster-specific route such as the cluster label. Selecting a room floor area is
+a room selection, not a cluster selection, for this purpose. Door handle refs
+are visible shared canvas drag handles; corridor endpoint refs remain
+focused-route facts unless a corridor-specific route promotes them.
 
 Later proof for corner-drag on a freshly UI-created room must compose this
 shared handle route with the owning room and wall/floor persistence catalogs.
@@ -37,7 +38,7 @@ Focused feature tasks depend on only the handle suite they need.
 | ID | Interaction | Route | Fixture | Expected proof | Status |
 | --- | --- | --- | --- | --- | --- |
 | `DE-HANDLE-001` | Shared handle publication and active door handles | Load map with cluster, corridor, stair, and door facts | `F16_HANDLE_VARIETY` | Published refs preserve identity shape; door refs resolve as shared canvas drag handles while corridor endpoint refs remain passive outside focused corridor routes. | Ready |
-| `DE-HANDLE-002` | Selected cluster handle hit route | `DungeonMapView` hit testing before and after cluster floor-area selection | Existing focused handle fixtures | Cluster wall-run and cluster-corner handles are not hittable before cluster selection; after selecting the owning cluster area, they resolve to handle targets. | Ready |
+| `DE-HANDLE-002` | Selected cluster handle hit route | `DungeonMapView` hit testing before and after cluster-label selection | Existing focused handle fixtures | Cluster wall-run and cluster-corner handles are not hittable before cluster selection; after selecting the owning cluster label, they resolve to handle targets. | Ready |
 | `DE-HANDLE-003` | Cluster handle drag preview | Primary drag on selected movable cluster handles | Existing focused handle fixtures | Cluster corner drags publish move-handle preview deltas; cluster wall-run drags publish boundary-stretch preview deltas covering the contiguous wall run; neither mutates authored rows before release. | Ready |
 | `DE-HANDLE-004` | Non-obstructive selected visual style | Render scene inspection | `F16_HANDLE_VARIETY` | Selected wall-run handle style is a thinner midpoint affordance than selected cluster corner handles. | Ready |
 | `DE-HANDLE-005` | Label targets are not generic handles | Hit testing cluster and room labels | `F1_SINGLE_ROOM` / `F15_COMPLEX_CLUSTER` | Label targets remain distinct from selected wall-corner, selected wall-run, corridor endpoint, door, and stair routes. | Ready |

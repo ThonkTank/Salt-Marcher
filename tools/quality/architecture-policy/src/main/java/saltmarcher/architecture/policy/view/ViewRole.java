@@ -5,6 +5,7 @@ public enum ViewRole {
     BINDER("Binder.java"),
     CONTRIBUTION_MODEL("ContributionModel.java"),
     CONTENT_MODEL("ContentModel.java"),
+    CONTENT_PART_MODEL("ContentPartModel.java"),
     INTENT_HANDLER("IntentHandler.java"),
     VIEW_INPUT_EVENT("ViewInputEvent.java"),
     PUBLISHED_EVENT("PublishedEvent.java"),
@@ -32,6 +33,9 @@ public enum ViewRole {
         }
         if (fileName.endsWith("ContentModel.java")) {
             return CONTENT_MODEL;
+        }
+        if (fileName.endsWith("ContentPartModel.java")) {
+            return CONTENT_PART_MODEL;
         }
         if (fileName.endsWith("IntentHandler.java")) {
             return INTENT_HANDLER;
@@ -61,11 +65,11 @@ public enum ViewRole {
         return switch (unitKind) {
             case ACTIVE_ROOT -> switch (this) {
                 case CONTRIBUTION, BINDER, CONTRIBUTION_MODEL, INTENT_HANDLER,
-                        CONTENT_MODEL, VIEW_INPUT_EVENT, VIEW -> true;
+                        CONTENT_MODEL, CONTENT_PART_MODEL, VIEW_INPUT_EVENT, VIEW -> true;
                 default -> false;
             };
             case REUSABLE_SLOTCONTENT -> switch (this) {
-                case CONTENT_MODEL, VIEW_INPUT_EVENT, VIEW -> true;
+                case CONTENT_MODEL, CONTENT_PART_MODEL, VIEW_INPUT_EVENT, VIEW -> true;
                 default -> false;
             };
         };
@@ -73,6 +77,10 @@ public enum ViewRole {
 
     public boolean isProjectionModel() {
         return this == CONTRIBUTION_MODEL || this == CONTENT_MODEL;
+    }
+
+    public boolean isProjectionRole() {
+        return isProjectionModel() || this == CONTENT_PART_MODEL;
     }
 
     public boolean hasStem() {

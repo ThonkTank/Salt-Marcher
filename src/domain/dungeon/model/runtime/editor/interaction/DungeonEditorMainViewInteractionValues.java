@@ -248,9 +248,7 @@ public final class DungeonEditorMainViewInteractionValues {
             topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? EMPTY_KIND : topologyRefKind.trim();
             topologyRefId = Math.max(0L, topologyRefId);
             labelKind = labelKind == null || labelKind.isBlank() ? EMPTY_KIND : labelKind.trim();
-            handleRef = handleRef == null
-                    ? HandleTarget.clusterLabel(topologyRefKind, topologyRefId, ownerId, clusterId)
-                    : handleRef;
+            handleRef = handleRef == null ? HandleTarget.empty() : handleRef;
             boundaryTarget = boundaryTarget == null ? BoundaryTarget.empty() : boundaryTarget;
         }
 
@@ -277,7 +275,6 @@ public final class DungeonEditorMainViewInteractionValues {
 
         public boolean clusterSelection() {
             return clusterLabelTarget()
-                    || (kind == HitKind.ROOM && clusterId > 0L)
                     || (kind == HitKind.HANDLE
                             && (handleRef.clusterLabel()
                                     || handleRef.clusterCorner()

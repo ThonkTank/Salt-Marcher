@@ -61,6 +61,7 @@
                 WHEN topLevelName ENDS WITH 'Binder' THEN 'BINDER'
                 WHEN topLevelName ENDS WITH 'ContributionModel' THEN 'CONTRIBUTION_MODEL'
                 WHEN topLevelName ENDS WITH 'ContentModel' THEN 'CONTENT_MODEL'
+                WHEN topLevelName ENDS WITH 'ContentPartModel' THEN 'CONTENT_PART_MODEL'
                 WHEN topLevelName ENDS WITH 'IntentHandler' THEN 'INTENT_HANDLER'
                 WHEN topLevelName ENDS WITH 'ViewInputEvent' THEN 'VIEW_INPUT_EVENT'
                 WHEN topLevelName ENDS WITH 'PublishedEvent' THEN 'PUBLISHED_EVENT'

@@ -1,5 +1,6 @@
 package src.domain.dungeon.model.runtime.helper;
 
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorInteractionValues.VertexTarget;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.BoundaryTarget;
@@ -9,7 +10,6 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainView
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.PointerState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorMainViewPointerTarget;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 
 public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
     private static final double VERTEX_SNAP_DISTANCE = 0.22;
@@ -45,19 +45,29 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
     private static HitTarget toHitTarget(DungeonEditorMainViewPointerTarget target) {
         DungeonEditorMainViewPointerTarget safeTarget =
                 target == null ? DungeonEditorMainViewPointerTarget.empty() : target;
-        return switch (safeTarget.targetCode()) {
-            case DungeonEditorMainViewPointerTarget.CELL_TARGET ->
-                    simpleTarget(toHitKind(safeTarget.elementKind()), safeTarget);
-            case DungeonEditorMainViewPointerTarget.LABEL_TARGET,
-                    DungeonEditorMainViewPointerTarget.GRAPH_NODE_TARGET -> simpleTarget(HitKind.LABEL, safeTarget);
-            case DungeonEditorMainViewPointerTarget.HANDLE_TARGET -> handleTarget(safeTarget.handleRef());
-            case DungeonEditorMainViewPointerTarget.BOUNDARY_TARGET -> boundaryTarget(safeTarget);
-            default -> HitTarget.empty();
+        return switch (safeTarget.targetKind().category()) {
+            case EMPTY -> HitTarget.empty();
+            case SIMPLE -> simpleTarget(toHitKind(safeTarget.elementKind()), safeTarget);
+            case LABEL -> labelTarget(HitKind.LABEL, safeTarget, safeTarget.targetKind().clusterLabel());
+            case HANDLE -> handleTarget(safeTarget.handleRef());
+            case BOUNDARY -> boundaryTarget(safeTarget);
         };
     }
 
     private static HitTarget simpleTarget(HitKind kind, DungeonEditorMainViewPointerTarget target) {
-        HandleTarget handleTarget = kind == HitKind.LABEL
+        return new HitTarget(
+                kind,
+                target.ownerId(),
+                target.clusterId(),
+                target.topologyRef().kind().name(),
+                target.topologyRef().id(),
+                target.labelKind(),
+                HandleTarget.empty(),
+                BoundaryTarget.empty());
+    }
+
+    private static HitTarget labelTarget(HitKind kind, DungeonEditorMainViewPointerTarget target, boolean clusterHandle) {
+        HandleTarget handleTarget = clusterHandle
                 ? HandleTarget.clusterLabel(
                         target.topologyRef().kind().name(),
                         target.topologyRef().id(),
@@ -121,11 +131,7 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 boundaryTarget.topologyRefKind(),
                 boundaryTarget.topologyRefId(),
                 DungeonEditorMainViewInteractionValues.EMPTY_KIND,
-                HandleTarget.clusterLabel(
-                        boundaryTarget.topologyRefKind(),
-                        boundaryTarget.topologyRefId(),
-                        boundaryTarget.ownerId(),
-                        boundaryTarget.clusterId()),
+                HandleTarget.empty(),
                 boundaryTarget);
     }
 

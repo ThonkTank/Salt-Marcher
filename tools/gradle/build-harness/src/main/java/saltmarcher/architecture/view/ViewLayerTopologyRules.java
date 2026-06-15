@@ -150,8 +150,8 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
                             ? "view-layer-active-root-file-role"
                             : "view-layer-slotcontent-file-role",
                     facts.unit().kind() == ViewUnitKind.ACTIVE_ROOT
-                            ? "Active contribution roots may contain only *Contribution.java, *Binder.java, exactly one aggregate *ContributionModel.java, optional *IntentHandler.java, passive *View.java, same-stem *ContentModel.java, and optional same-stem *ViewInputEvent.java files. Move projection, formatting, selection preparation, or component presentation logic into the owning same-stem *ContentModel or aggregate *ContributionModel instead of adding standalone helper files."
-                            : "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one *ContentModel.java file, and a same-stem *ViewInputEvent.java file only when that View is interactive. Top-level *IntentHandler.java, *PublishedEvent.java, *InspectorEntry.java, *Scene.java, *PointerEvent.java, *Signal.java, *Support.java, and standalone helper files are illegal reusable slotcontent roles.");
+                            ? "Active contribution roots may contain only *Contribution.java, *Binder.java, exactly one aggregate *ContributionModel.java, optional *IntentHandler.java, passive *View.java, same-stem *ContentModel.java, owned *ContentPartModel.java files, and optional same-stem *ViewInputEvent.java files. Move projection, formatting, selection preparation, or component presentation logic into the owning projection model instead of adding standalone helper files."
+                            : "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one *ContentModel.java file, owned *ContentPartModel.java files, and a same-stem *ViewInputEvent.java file only when that View is interactive. Top-level *IntentHandler.java, *PublishedEvent.java, *InspectorEntry.java, *Scene.java, *PointerEvent.java, *Signal.java, *Support.java, and standalone helper files are illegal reusable slotcontent roles.");
         }
     }
 
@@ -243,18 +243,21 @@ public final class ViewLayerTopologyRules implements ArchitectureRule {
                         "View architecture must use *ContributionModel.java or *ContentModel.java and must not retain *ViewModel.java, *PresentationModel.java, or *Projector.java role files.");
                 continue;
             }
-            if (!source.role().isProjectionModel()) {
+            if (!source.role().isProjectionRole()) {
                 continue;
             }
             if (facts.unit().kind() == ViewUnitKind.ACTIVE_ROOT
                     && source.role() != ViewRole.CONTRIBUTION_MODEL
-                    && source.role() != ViewRole.CONTENT_MODEL) {
+                    && source.role() != ViewRole.CONTENT_MODEL
+                    && source.role() != ViewRole.CONTENT_PART_MODEL) {
                 violations.add(source.source(), "view-layer-active-root-projection-role",
-                        "Active contribution roots must use exactly one aggregate *ContributionModel.java plus same-stem *ContentModel.java files paired with passive Views.");
+                        "Active contribution roots must use exactly one aggregate *ContributionModel.java plus same-stem *ContentModel.java files paired with passive Views and owned *ContentPartModel.java submodels.");
             }
-            if (facts.unit().kind() == ViewUnitKind.REUSABLE_SLOTCONTENT && source.role() != ViewRole.CONTENT_MODEL) {
+            if (facts.unit().kind() == ViewUnitKind.REUSABLE_SLOTCONTENT
+                    && source.role() != ViewRole.CONTENT_MODEL
+                    && source.role() != ViewRole.CONTENT_PART_MODEL) {
                 violations.add(source.source(), "view-layer-slotcontent-projection-role",
-                        "Reusable slotcontent units must name their reusable projection role *ContentModel.java.");
+                        "Reusable slotcontent units must name their main reusable projection role *ContentModel.java and may split owned submodels into *ContentPartModel.java files.");
             }
         }
     }

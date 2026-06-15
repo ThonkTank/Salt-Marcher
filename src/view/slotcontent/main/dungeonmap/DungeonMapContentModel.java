@@ -54,6 +54,8 @@ public final class DungeonMapContentModel {
     private final ReadOnlyObjectWrapper<CanvasState> canvasState;
     private final ReadOnlyObjectWrapper<InlineLabelEditState> inlineLabelEditState;
     private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(defaultZoom());
+    private final DungeonMapPointerTargetContentPartModel pointerTargetContentPartModel =
+            new DungeonMapPointerTargetContentPartModel();
     private DungeonMapRenderState renderState;
     private Map<String, PointerTarget> pointerTargets = Map.of();
 
@@ -152,11 +154,7 @@ public final class DungeonMapContentModel {
     }
 
     public PointerTarget resolvePointerTarget(double sceneX, double sceneY) {
-        CanvasHit hit = hitAt(sceneX, sceneY);
-        if (hit == null || hit.hitRef().isBlank()) {
-            return PointerTarget.empty();
-        }
-        return pointerTargets.getOrDefault(hit.hitRef(), PointerTarget.empty());
+        return pointerTargetContentPartModel.choosePrimary(hitsAt(sceneX, sceneY), pointerTargets);
     }
 
     public PointerTarget resolveLabelPointerTarget(double sceneX, double sceneY, String labelKind) {
@@ -173,6 +171,10 @@ public final class DungeonMapContentModel {
 
     public PointerTarget resolveRoomLabelPointerTarget(double sceneX, double sceneY) {
         return resolveLabelPointerTarget(sceneX, sceneY, ROOM_LABEL_KIND);
+    }
+
+    public PointerTarget resolveClusterLabelPointerTarget(double sceneX, double sceneY) {
+        return resolveLabelPointerTarget(sceneX, sceneY, CLUSTER_LABEL_KIND);
     }
 
     public void beginInlineLabelEdit(PointerTarget target) {
@@ -224,8 +226,8 @@ public final class DungeonMapContentModel {
         setCanvasState(canvasState.get().withRenderScene(renderScene == null ? RenderScene.empty(placeholderTitle) : renderScene));
     }
 
-    private @Nullable CanvasHit hitAt(double sceneX, double sceneY) {
-        return canvasState.get().hitAt(sceneX, sceneY);
+    private List<CanvasHit> hitsAt(double sceneX, double sceneY) {
+        return canvasState.get().hitsAt(sceneX, sceneY);
     }
 
     private Optional<DungeonMapRenderState.Label> labelForTarget(PointerTarget target) {
@@ -297,8 +299,8 @@ public final class DungeonMapContentModel {
             return new CanvasState(renderScene, nextViewport, hitIndex);
         }
 
-        private @Nullable CanvasHit hitAt(double sceneX, double sceneY) {
-            return hitIndex.hitAt(sceneX, sceneY, viewport.gridSize());
+        private List<CanvasHit> hitsAt(double sceneX, double sceneY) {
+            return hitIndex.hitsAt(sceneX, sceneY, viewport.gridSize());
         }
 
         private static List<HitArea> indexableHitAreas(RenderScene renderScene) {
@@ -940,18 +942,21 @@ public final class DungeonMapContentModel {
             return new HitIndex(copyBuckets(nextBuckets));
         }
 
-        private @Nullable CanvasHit hitAt(double sceneX, double sceneY, double gridSize) {
+        private List<CanvasHit> hitsAt(double sceneX, double sceneY, double gridSize) {
             List<HitCandidate> candidates = buckets.get(key(bucket(sceneX), bucket(sceneY)));
             if (candidates == null) {
-                return null;
+                return List.of();
             }
             double tolerance = Math.max(hitTolerancePixels() / gridSize, minimumHitTolerance());
+            List<CanvasHit> hits = new ArrayList<>();
+            Set<String> seenHitRefs = new LinkedHashSet<>();
             for (HitCandidate candidate : candidates) {
-                if (candidate.matches(sceneX, sceneY, tolerance)) {
-                    return candidate.hit();
+                if (candidate.matches(sceneX, sceneY, tolerance)
+                        && seenHitRefs.add(candidate.hit().hitRef())) {
+                    hits.add(candidate.hit());
                 }
             }
-            return null;
+            return List.copyOf(hits);
         }
 
         private static int bucket(double sceneCoordinate) {

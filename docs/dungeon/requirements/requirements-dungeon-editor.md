@@ -125,8 +125,9 @@ commit supported mutations without inventing a second authored state source.
 - straight wall-stretch movement for selected cluster walls
 - selected cluster corner movement through published corner handles and
   selected wall-line movement through published wall-midpoint handles
-- selecting a cluster floor area MUST expose the same cluster corner and
-  wall-run handles as selecting that cluster through its label
+- selecting a room floor area MUST select that room without exposing cluster
+  corner or wall-run handles; selecting the cluster label MUST expose the
+  owning cluster corner and wall-run handles
 - door handles MUST be visible canvas handles, hittable through the shared
   handle route, draggable with live preview, and committed as authored door
   boundary movement

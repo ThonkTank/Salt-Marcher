@@ -40,7 +40,7 @@ public final class ViewTopologyPerimeterRules implements ArchitectureRule {
 
     private static String roleDetails(ViewUnitKind unitKind) {
         return unitKind == ViewUnitKind.ACTIVE_ROOT
-                ? "Active view roots may contain only *Contribution.java, *Binder.java, exactly one aggregate *ContributionModel.java, optional *IntentHandler.java, passive *View.java, same-stem *ContentModel.java, and optional same-stem *ViewInputEvent.java files."
-                : "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one *ContentModel.java file, and a same-stem *ViewInputEvent.java file only when that View is interactive. Every other top-level role file in slotcontent/** is illegal.";
+                ? "Active view roots may contain only *Contribution.java, *Binder.java, exactly one aggregate *ContributionModel.java, optional *IntentHandler.java, passive *View.java, same-stem *ContentModel.java, owned *ContentPartModel.java files, and optional same-stem *ViewInputEvent.java files."
+                : "Reusable slotcontent units may contain only exactly one passive *View.java file, exactly one *ContentModel.java file, owned *ContentPartModel.java files, and a same-stem *ViewInputEvent.java file only when that View is interactive. Every other top-level role file in slotcontent/** is illegal.";
     }
 }

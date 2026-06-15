@@ -4,7 +4,7 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public record DungeonEditorMainViewPointerTarget(
-        int targetCode,
+        AuthoredTargetKind targetKind,
         DungeonTopologyElementKind elementKind,
         long ownerId,
         long clusterId,
@@ -18,15 +18,8 @@ public record DungeonEditorMainViewPointerTarget(
 ) {
     private static final String EMPTY_LABEL_KIND = "EMPTY";
 
-    public static final int NO_TARGET = 0;
-    public static final int CELL_TARGET = 1;
-    public static final int LABEL_TARGET = 2;
-    public static final int GRAPH_NODE_TARGET = 3;
-    public static final int HANDLE_TARGET = 4;
-    public static final int BOUNDARY_TARGET = 5;
-
     public DungeonEditorMainViewPointerTarget {
-        targetCode = normalizeTargetCode(targetCode);
+        targetKind = targetKind == null ? AuthoredTargetKind.EMPTY : targetKind;
         elementKind = elementKind == null ? DungeonTopologyElementKind.EMPTY : elementKind;
         ownerId = Math.max(0L, ownerId);
         clusterId = Math.max(0L, clusterId);
@@ -43,7 +36,7 @@ public record DungeonEditorMainViewPointerTarget(
 
     public static DungeonEditorMainViewPointerTarget empty() {
         return new DungeonEditorMainViewPointerTarget(
-                NO_TARGET,
+                AuthoredTargetKind.EMPTY,
                 DungeonTopologyElementKind.EMPTY,
                 0L,
                 0L,
@@ -63,7 +56,7 @@ public record DungeonEditorMainViewPointerTarget(
             DungeonTopologyRef topologyRef
     ) {
         return new DungeonEditorMainViewPointerTarget(
-                CELL_TARGET,
+                authoredCellTargetKind(elementKind),
                 elementKind,
                 ownerId,
                 clusterId,
@@ -85,13 +78,14 @@ public record DungeonEditorMainViewPointerTarget(
         DungeonTopologyRef safeTopologyRef = topologyRef == null
                 ? DungeonTopologyRef.empty()
                 : topologyRef;
+        String safeLabelKind = labelKind == null || labelKind.isBlank() ? EMPTY_LABEL_KIND : labelKind.trim();
         return new DungeonEditorMainViewPointerTarget(
-                LABEL_TARGET,
+                authoredLabelTargetKind(safeLabelKind),
                 safeTopologyRef.kind(),
                 ownerId,
                 clusterId,
                 safeTopologyRef,
-                labelKind,
+                safeLabelKind,
                 DungeonEditorWorkspaceValues.HandleRef.empty(),
                 DungeonEditorWorkspaceValues.BoundaryKind.defaultKind(),
                 "",
@@ -108,7 +102,7 @@ public record DungeonEditorMainViewPointerTarget(
                 ? DungeonTopologyRef.empty()
                 : topologyRef;
         return new DungeonEditorMainViewPointerTarget(
-                GRAPH_NODE_TARGET,
+                AuthoredTargetKind.GRAPH_NODE,
                 safeTopologyRef.kind(),
                 ownerId,
                 clusterId,
@@ -126,7 +120,7 @@ public record DungeonEditorMainViewPointerTarget(
                 ? DungeonEditorWorkspaceValues.HandleRef.empty()
                 : handleRef;
         return new DungeonEditorMainViewPointerTarget(
-                HANDLE_TARGET,
+                AuthoredTargetKind.HANDLE,
                 safeHandle.topologyRef().kind(),
                 safeHandle.ownerId(),
                 safeHandle.clusterId(),
@@ -151,7 +145,7 @@ public record DungeonEditorMainViewPointerTarget(
                 ? DungeonTopologyRef.empty()
                 : topologyRef;
         return new DungeonEditorMainViewPointerTarget(
-                BOUNDARY_TARGET,
+                AuthoredTargetKind.BOUNDARY,
                 safeTopologyRef.kind(),
                 ownerId,
                 0L,
@@ -170,11 +164,64 @@ public record DungeonEditorMainViewPointerTarget(
                 || !boundaryKey.isBlank();
     }
 
-    private static int normalizeTargetCode(int targetCode) {
-        return switch (targetCode) {
-            case CELL_TARGET, LABEL_TARGET, GRAPH_NODE_TARGET, HANDLE_TARGET, BOUNDARY_TARGET -> targetCode;
-            default -> NO_TARGET;
+    private static AuthoredTargetKind authoredCellTargetKind(DungeonTopologyElementKind elementKind) {
+        if (elementKind == DungeonTopologyElementKind.ROOM) {
+            return AuthoredTargetKind.ROOM_FLOOR;
+        }
+        if (elementKind == DungeonTopologyElementKind.CORRIDOR) {
+            return AuthoredTargetKind.CORRIDOR;
+        }
+        if (elementKind == DungeonTopologyElementKind.STAIR) {
+            return AuthoredTargetKind.STAIR;
+        }
+        if (elementKind == DungeonTopologyElementKind.TRANSITION) {
+            return AuthoredTargetKind.TRANSITION;
+        }
+        return AuthoredTargetKind.EMPTY;
+    }
+
+    private static AuthoredTargetKind authoredLabelTargetKind(String labelKind) {
+        return switch (labelKind) {
+            case "ROOM_LABEL" -> AuthoredTargetKind.ROOM_LABEL;
+            case "CLUSTER_LABEL" -> AuthoredTargetKind.CLUSTER_LABEL;
+            case "FEATURE_LABEL" -> AuthoredTargetKind.FEATURE_LABEL;
+            default -> AuthoredTargetKind.EMPTY;
         };
     }
 
+    public enum AuthoredTargetKind {
+        EMPTY(AuthoredTargetCategory.EMPTY),
+        ROOM_FLOOR(AuthoredTargetCategory.SIMPLE),
+        ROOM_LABEL(AuthoredTargetCategory.LABEL),
+        CLUSTER_LABEL(AuthoredTargetCategory.LABEL),
+        FEATURE_LABEL(AuthoredTargetCategory.LABEL),
+        CORRIDOR(AuthoredTargetCategory.SIMPLE),
+        STAIR(AuthoredTargetCategory.SIMPLE),
+        TRANSITION(AuthoredTargetCategory.SIMPLE),
+        GRAPH_NODE(AuthoredTargetCategory.SIMPLE),
+        HANDLE(AuthoredTargetCategory.HANDLE),
+        BOUNDARY(AuthoredTargetCategory.BOUNDARY);
+
+        private final AuthoredTargetCategory category;
+
+        AuthoredTargetKind(AuthoredTargetCategory category) {
+            this.category = category;
+        }
+
+        public AuthoredTargetCategory category() {
+            return category;
+        }
+
+        public boolean clusterLabel() {
+            return this == CLUSTER_LABEL;
+        }
+    }
+
+    public enum AuthoredTargetCategory {
+        EMPTY,
+        SIMPLE,
+        LABEL,
+        HANDLE,
+        BOUNDARY
+    }
 }

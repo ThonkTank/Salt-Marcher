@@ -44,6 +44,17 @@ public final class ViewProjectionModelBoundaryCheckers {
     }
 
     @BugPattern(
+            name = "ViewContentPartModelDependencyBoundary",
+            summary = "ContentPartModels may depend only on read-side published carriers, bindable JavaFX state types, and owning same-unit ContentModel value types.",
+            severity = BugPattern.SeverityLevel.ERROR)
+    public static final class ViewContentPartModelDependencyBoundaryChecker extends BugChecker
+            implements BugChecker.CompilationUnitTreeMatcher {
+
+        @Override
+        public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) { return projectionModelDependencyViolation(tree, state, ViewRole.CONTENT_PART_MODEL, "ContentPartModel", this); }
+    }
+
+    @BugPattern(
             name = "ViewContributionModelFlatSurface",
             summary = "ContributionModels must not declare nested input, request, command, query, operation, or edit carrier types.",
             severity = BugPattern.SeverityLevel.ERROR)
@@ -63,6 +74,17 @@ public final class ViewProjectionModelBoundaryCheckers {
 
         @Override
         public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) { return flatSurfaceViolation(tree, ViewRole.CONTENT_MODEL, this); }
+    }
+
+    @BugPattern(
+            name = "ViewContentPartModelFlatSurface",
+            summary = "ContentPartModels must not declare nested input, request, command, query, operation, or edit carrier types.",
+            severity = BugPattern.SeverityLevel.ERROR)
+    public static final class ViewContentPartModelFlatSurfaceChecker extends BugChecker
+            implements BugChecker.CompilationUnitTreeMatcher {
+
+        @Override
+        public Description matchCompilationUnit(CompilationUnitTree tree, VisitorState state) { return flatSurfaceViolation(tree, ViewRole.CONTENT_PART_MODEL, this); }
     }
 
     @BugPattern(
@@ -120,21 +142,20 @@ public final class ViewProjectionModelBoundaryCheckers {
 
         @Override
         public Description matchNewClass(NewClassTree tree, VisitorState state) {
-            ViewSourceDescriptor source = ViewSourceDescriptor.describe(state.getPath().getCompilationUnit());
-            if (!source.isRecognizedViewSource() || source.role() != ViewRole.CONTENT_MODEL) {
-                return Description.NO_MATCH;
-            }
+            return publishedTranslationBoundaryViolation(tree, state, ViewRole.CONTENT_MODEL, "ContentModels", this);
+        }
+    }
 
-            String constructedType = ViewArchitectureSupport.qualifiedTypeNameOf(tree);
-            if (!isPublishedCarrier(constructedType)) {
-                return Description.NO_MATCH;
-            }
-            return buildDescription(tree)
-                    .setMessage("ContentModels must not construct domain published carriers such as '"
-                            + constructedType
-                            + "'. Move published-to-published translation into the owning application-service or"
-                            + " runtime projection boundary.")
-                    .build();
+    @BugPattern(
+            name = "ViewContentPartModelPublishedTranslationBoundary",
+            summary = "ContentPartModels must not construct domain published carriers; published-to-published translation belongs upstream.",
+            severity = BugPattern.SeverityLevel.ERROR)
+    public static final class ViewContentPartModelPublishedTranslationBoundaryChecker extends BugChecker
+            implements BugChecker.NewClassTreeMatcher {
+
+        @Override
+        public Description matchNewClass(NewClassTree tree, VisitorState state) {
+            return publishedTranslationBoundaryViolation(tree, state, ViewRole.CONTENT_PART_MODEL, "ContentPartModels", this);
         }
     }
 
@@ -240,7 +261,15 @@ public final class ViewProjectionModelBoundaryCheckers {
             if (source.qualifiedTopLevelTypeName().equals(referencedSource.qualifiedTopLevelTypeName())) {
                 return false;
             }
-            return true;
+            return referencedSource.role() != ViewRole.CONTENT_PART_MODEL
+                    || !source.isSameViewUnitAs(referencedSource);
+        }
+        if (source.role() == ViewRole.CONTENT_PART_MODEL) {
+            if (source.qualifiedTopLevelTypeName().equals(referencedSource.qualifiedTopLevelTypeName())) {
+                return false;
+            }
+            return referencedSource.role() != ViewRole.CONTENT_MODEL
+                    || !source.isSameViewUnitAs(referencedSource);
         }
         if (!referencedSource.isProjectionModelSource()) {
             return true;
@@ -275,6 +304,30 @@ public final class ViewProjectionModelBoundaryCheckers {
     private static boolean isPublishedCarrier(String constructedType) {
         return constructedType != null
                 && constructedType.matches("^src\\.domain\\.[^.]+\\.published\\.[^.]+(?:\\$.*)?$");
+    }
+
+    private static Description publishedTranslationBoundaryViolation(
+            NewClassTree tree,
+            VisitorState state,
+            ViewRole role,
+            String roleLabel,
+            BugChecker checker
+    ) {
+        ViewSourceDescriptor source = ViewSourceDescriptor.describe(state.getPath().getCompilationUnit());
+        if (!source.isRecognizedViewSource() || source.role() != role) {
+            return Description.NO_MATCH;
+        }
+
+        String constructedType = ViewArchitectureSupport.qualifiedTypeNameOf(tree);
+        if (!isPublishedCarrier(constructedType)) {
+            return Description.NO_MATCH;
+        }
+        return checker.buildDescription(tree)
+                .setMessage(roleLabel + " must not construct domain published carriers such as '"
+                        + constructedType
+                        + "'. Move published-to-published translation into the owning application-service or"
+                        + " runtime projection boundary.")
+                .build();
     }
 
     private static String sourceText(CompilationUnitTree tree, VisitorState state) {

@@ -82,19 +82,31 @@ final class DungeonEditorSelectionHarness {
                 .orElseThrow(() -> new IllegalStateException("F1_SINGLE_ROOM R1 area not loaded."));
         DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
         long roomClusterId = roomArea.clusterId();
+        double roomFloorQ = 1.5;
+        double roomFloorR = 1.5;
 
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMousePressed(
                 mapView,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(2.5),
-                viewport.sceneToScreenY(2.5),
+                viewport.sceneToScreenX(roomFloorQ),
+                viewport.sceneToScreenY(roomFloorR),
                 false);
 
         DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
         DungeonEditorMapSurfaceSnapshot selectedSurface = runtime.mapSurfaceModel().current();
         assertSelectionMatches(roomRef, roomClusterId, selectedState.selection(), "DE-SEL-001 state model");
         assertSelectionMatches(roomRef, roomClusterId, selectedSurface.selection(), "DE-SEL-001 map surface");
+        assertTrue(!selectedState.selection().clusterSelection(),
+                "DE-SEL-001 state model room floor click stays out of cluster selection mode");
+        assertTrue(selectedState.selection().handleRef() == null,
+                "DE-SEL-001 state model room floor click does not publish a cluster-label handle");
+        assertTrue(!selectedSurface.selection().clusterSelection(),
+                "DE-SEL-001 map surface room floor click stays out of cluster selection mode");
+        assertTrue(selectedSurface.selection().handleRef() == null,
+                "DE-SEL-001 map surface room floor click does not publish a cluster-label handle");
+        assertEquals(DungeonEditorPreview.none(), selectedSurface.preview(),
+                "DE-SEL-001 room floor click keeps preview empty");
         assertTrue(selectedState.inspector() != null, "DE-SEL-001 inspector is published for the selected room");
         assertTrue(
                 selectedState.inspector().title().contains("R1") || selectedState.inspector().facts().stream()
@@ -102,7 +114,7 @@ final class DungeonEditorSelectionHarness {
                 "DE-SEL-001 inspector identifies the selected room");
         assertTrue(renderHasSelectedSurfacePrimitive(binding.mapContentModel(), roomRef),
                 "DE-SEL-001 render scene highlights the selected room surface");
-        assertCanvasPaintedAtScene(mapView, 2.5, 2.5,
+        assertCanvasPaintedAtScene(mapView, roomFloorQ, roomFloorR,
                 "DE-SEL-001 rendered canvas paints the selected room coordinates");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-SEL-001 leaves authored DB rows unchanged");
