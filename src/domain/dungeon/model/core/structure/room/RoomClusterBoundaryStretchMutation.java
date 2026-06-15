@@ -1,6 +1,5 @@
 package src.domain.dungeon.model.core.structure.room;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -20,7 +19,7 @@ public final class RoomClusterBoundaryStretchMutation {
     private static final RoomBoundaryStretchMutationStep MUTATION =
             new RoomBoundaryStretchMutationStep();
     private static final RoomTopologyWorkCatalog WORK_CATALOG = new RoomTopologyWorkCatalog();
-    private static final RoomTopologyRebuilder REBUILDER = new RoomTopologyRebuilder();
+    private static final RoomPartitionPreservingMutation ROOM_MUTATION = new RoomPartitionPreservingMutation();
 
     public Optional<RebuildResult> moveBoundaryStretch(
             SpatialTopology topology,
@@ -55,7 +54,7 @@ public final class RoomClusterBoundaryStretchMutation {
         if (mutation.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of(rebuiltStretch(topology, rooms, clusters, target, stretch.get(), mutation.get()));
+        return rebuiltStretch(topology, rooms, clusters, target, mutation.get());
     }
 
     private @Nullable DungeonRoomTopologyClusterWork targetCluster(
@@ -81,21 +80,21 @@ public final class RoomClusterBoundaryStretchMutation {
                 : MUTATION.applyInnerStretch(corridors, target, stretch, boundaries);
     }
 
-    private RebuildResult rebuiltStretch(
+    private Optional<RebuildResult> rebuiltStretch(
             SpatialTopology topology,
             RoomCatalog roomCatalog,
             List<DungeonRoomTopologyClusterWork> clusters,
             DungeonRoomTopologyClusterWork target,
-            StretchSelection stretch,
             StretchMutationResult mutation
     ) {
         RoomTopologyWorkCatalog.IdAllocation ids = WORK_CATALOG.newIdAllocation(topology, roomCatalog);
-        DungeonRoomTopologyClusterWork rebuiltWork = mutation.rebuiltStretchWork(target, stretch.outer(), ids);
-        List<DungeonRoomTopologyClusterWork> nextClusters = new ArrayList<>();
-        for (DungeonRoomTopologyClusterWork work : clusters) {
-            nextClusters.add(work.cluster().clusterId() == target.cluster().clusterId() ? rebuiltWork : work);
-        }
-        return REBUILDER.rebuiltPreservingRooms(topology, nextClusters);
+        return ROOM_MUTATION.stretchCluster(
+                topology,
+                clusters,
+                target,
+                mutation.cellsByLevel(),
+                mutation.boundariesByLevel(),
+                ids);
     }
 
     private boolean invalidStretchRequest(long clusterId, List<Edge> sourceEdges) {

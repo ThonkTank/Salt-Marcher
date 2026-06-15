@@ -46,40 +46,28 @@ final class RoomClusterRoomAssignment {
             Set<EdgeKey> barriers
     ) {
         Set<Cell> clusterCells = clusterCells(cluster, rooms, level);
-        Set<Cell> unclaimedCells = new LinkedHashSet<>(clusterCells);
-        for (Room room : rooms) {
-            claimRoomCells(result, room, level, clusterCells, unclaimedCells, barriers);
+        for (Set<Cell> component : RoomClusterBoundaryTraversal.connectedComponents(clusterCells, barriers)) {
+            assignComponentCells(
+                    result,
+                    component,
+                    RoomCellOwnerSelection.roomsWithAnchorsIn(rooms, level, component),
+                    level);
         }
     }
 
-    private static void claimRoomCells(
+    private static void assignComponentCells(
             Map<Long, List<Cell>> result,
-            Room room,
-            int level,
-            Set<Cell> clusterCells,
-            Set<Cell> unclaimedCells,
-            Set<EdgeKey> barriers
+            Set<Cell> component,
+            List<Room> componentRooms,
+            int level
     ) {
-        if (room == null) {
+        if (componentRooms.isEmpty()) {
             return;
         }
-        Cell anchor = room.floorAnchors().get(level);
-        if (anchor == null) {
-            return;
+        for (Cell cell : RoomClusterCells.sortedCells(component)) {
+            Room owner = RoomCellOwnerSelection.nearestRoom(cell, componentRooms, level);
+            roomCells(result, owner.roomId()).add(cell);
         }
-        if (!clusterCells.contains(anchor)) {
-            clusterCells.add(anchor);
-            unclaimedCells.add(anchor);
-        } else if (!unclaimedCells.contains(anchor)) {
-            roomCells(result, room.roomId()).add(anchor);
-            return;
-        }
-        Set<Cell> reachable = RoomClusterBoundaryTraversal.reachableCells(anchor, unclaimedCells, barriers);
-        if (reachable.isEmpty()) {
-            reachable = Set.of(anchor);
-        }
-        unclaimedCells.removeAll(reachable);
-        roomCells(result, room.roomId()).addAll(reachable);
     }
 
     private static Set<Cell> clusterCells(RoomCluster cluster, List<Room> rooms, int level) {

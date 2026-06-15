@@ -57,22 +57,8 @@ public record RoomCluster(
         return floorMap.cellsAt(level);
     }
 
-    public List<Cell> allCells() {
-        return floorMap.allCells();
-    }
-
     public Map<Integer, List<Cell>> cellsByLevel() {
         return floorMap.cellsByLevel();
-    }
-
-    public RoomCluster withCellsByLevel(Map<Integer, ? extends Iterable<Cell>> nextCellsByLevel) {
-        return new RoomCluster(
-                clusterId,
-                mapId,
-                center,
-                floorMap.replaceCellsByLevel(nextCellsByLevel).floorMap(),
-                wallMap,
-                doorIndex);
     }
 
 }

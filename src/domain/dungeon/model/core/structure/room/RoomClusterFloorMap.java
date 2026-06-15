@@ -37,11 +37,6 @@ public final class RoomClusterFloorMap {
         return delegate.preferredCentroidOr(preferredLevel, fallback);
     }
 
-    public FloorMutation replaceCellsByLevel(Map<Integer, ? extends Iterable<Cell>> nextCellsByLevel) {
-        FloorCellMap.FloorMutation mutation = delegate.replaceCellsByLevel(nextCellsByLevel);
-        return new FloorMutation(mutation.changed(), new RoomClusterFloorMap(mutation.floorMap()));
-    }
-
     @Override
     public boolean equals(Object other) {
         return other instanceof RoomClusterFloorMap that
@@ -53,14 +48,4 @@ public final class RoomClusterFloorMap {
         return Objects.hash(delegate);
     }
 
-    public record FloorMutation(boolean changed, RoomClusterFloorMap floorMap) {
-        public FloorMutation {
-            floorMap = floorMap == null ? new RoomClusterFloorMap(Map.of()) : floorMap;
-        }
-
-        @Override
-        public RoomClusterFloorMap floorMap() {
-            return new RoomClusterFloorMap(floorMap.cellsByLevel());
-        }
-    }
 }

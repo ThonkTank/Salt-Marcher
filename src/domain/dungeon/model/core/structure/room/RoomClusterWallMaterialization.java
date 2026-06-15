@@ -28,6 +28,16 @@ final class RoomClusterWallMaterialization {
             @Nullable Edge edge,
             @Nullable BoundaryKind kind
     ) {
+        return materializeRowFromCells(normalizedCells(clusterCells), center, clusterId, edge, kind);
+    }
+
+    static @Nullable BoundaryRow materializeRowFromCells(
+            Set<Cell> clusterCells,
+            @Nullable Cell center,
+            long clusterId,
+            @Nullable Edge edge,
+            @Nullable BoundaryKind kind
+    ) {
         if (center == null || edge == null || kind == null) {
             return null;
         }
@@ -83,6 +93,10 @@ final class RoomClusterWallMaterialization {
             }
         }
         return Set.copyOf(result);
+    }
+
+    private static Set<Cell> normalizedCells(Set<Cell> cells) {
+        return cells == null ? Set.of() : cells;
     }
 
     private static @Nullable Direction directionFrom(Cell cell, Edge edge) {

@@ -2,6 +2,7 @@ package src.domain.dungeon.model.core.structure.room;
 
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
@@ -28,6 +29,16 @@ public final class RoomClusterBoundaryMaterialization {
             @Nullable Edge edge
     ) {
         return forEdge(clusterCells, center, clusterId, edge, BoundaryKind.OPEN);
+    }
+
+    static @Nullable BoundaryRow forCells(
+            Set<Cell> clusterCells,
+            @Nullable Cell center,
+            long clusterId,
+            @Nullable Edge edge,
+            @Nullable BoundaryKind kind
+    ) {
+        return RoomClusterWallMaterialization.materializeRowFromCells(clusterCells, center, clusterId, edge, kind);
     }
 
     public enum BoundaryKind {

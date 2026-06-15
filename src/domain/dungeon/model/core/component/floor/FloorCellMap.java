@@ -59,11 +59,6 @@ public final class FloorCellMap {
         return fallback == null ? new Cell(0, 0, 0) : fallback;
     }
 
-    public FloorMutation replaceCellsByLevel(Map<Integer, ? extends Iterable<Cell>> nextCellsByLevel) {
-        FloorCellMap next = new FloorCellMap(nextCellsByLevel);
-        return new FloorMutation(!cellsByLevel.equals(next.cellsByLevel), next);
-    }
-
     @Override
     public boolean equals(Object other) {
         return other instanceof FloorCellMap that
@@ -75,14 +70,4 @@ public final class FloorCellMap {
         return Objects.hash(cellsByLevel);
     }
 
-    public record FloorMutation(boolean changed, FloorCellMap floorMap) {
-        public FloorMutation {
-            floorMap = floorMap == null ? new FloorCellMap(Map.of()) : floorMap;
-        }
-
-        @Override
-        public FloorCellMap floorMap() {
-            return new FloorCellMap(floorMap.cellsByLevel());
-        }
-    }
 }

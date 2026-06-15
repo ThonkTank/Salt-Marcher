@@ -55,6 +55,7 @@ final class DungeonWallInvariantHarness {
                 "DGI-WALL-003",
                 "Wall owner materializes perimeter wall/open rows from floor facts and rejects invalid edges");
         assertWallStretchSelection();
+        assertInvalidShrinkRejected();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
                 OWNER,
@@ -241,6 +242,18 @@ final class DungeonWallInvariantHarness {
         assertEquals(List.of(new Edge(new Cell(0, 0, 0), new Cell(0, -1, 0))),
                 selection.connectorPath(selection.vertices().getFirst()),
                 "wall owner returns core connector path derivation");
+
+        RoomClusterBoundaryStretchPlan.Selection inwardSelection =
+                keyedWallMap.stretchSelection(
+                        floorMap,
+                        List.of(northLeft, northRight),
+                        0,
+                        1,
+                        0)
+                        .orElseThrow(() -> new IllegalStateException("expected inward wall-owned stretch selection"));
+        assertFalse(inwardSelection.movesOutward(), "wall owner resolves inward stretch direction");
+        assertEquals(Set.of(new Cell(0, 0, 0), new Cell(1, 0, 0)), inwardSelection.stripCells(),
+                "wall owner resolves inward source strip cells");
     }
 
     private static void assertWallDoorBoundarySurface() {
@@ -391,6 +404,26 @@ final class DungeonWallInvariantHarness {
                 "wall owner expands the second corner run to the next corner");
         assertTrue(cornerDeletedWalls.contains(southTarget),
                 "wall owner keeps the opposite side of the corner unless supplied as a target");
+    }
+
+    private static void assertInvalidShrinkRejected() {
+        DungeonMap map = roomMap();
+        long clusterId = clusterIdForAnchor(map, new Cell(1, 1, 0));
+        Set<Edge> before = wallEdges(new DungeonDerivedStateProjection().project(map));
+        DungeonMap rejectedStretch = map.moveBoundaryStretch(
+                clusterId,
+                List.of(Edge.sideOf(new Cell(1, 1, 0), Direction.NORTH),
+                        Edge.sideOf(new Cell(2, 1, 0), Direction.NORTH),
+                        Edge.sideOf(new Cell(3, 1, 0), Direction.NORTH)),
+                0,
+                4,
+                0);
+        DungeonMap rejectedCorner = map.moveClusterCorner(clusterId, new Cell(4, 4, 0), -4, -4, 0);
+
+        assertEquals(before, wallEdges(new DungeonDerivedStateProjection().project(rejectedStretch)),
+                "wall owner rejects inward wall-run shrink that would erase the room");
+        assertEquals(before, wallEdges(new DungeonDerivedStateProjection().project(rejectedCorner)),
+                "wall owner rejects inward corner shrink that would erase the room");
     }
 
     private static void assertExteriorWallDeleteProtection() {

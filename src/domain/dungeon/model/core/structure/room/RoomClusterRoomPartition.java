@@ -16,10 +16,24 @@ public final class RoomClusterRoomPartition {
             Map<Integer, ? extends Iterable<Edge>> closedBoundaryEdgesByLevel,
             long nextRoomId
     ) {
-        return RoomClusterRoomComponents.roomsForBoundaryEdit(
+        return RoomClusterRoomComponents.roomsForMutation(
                 safeWork(work),
                 closedBoundaryEdgesByLevel,
-                nextRoomId);
+                nextRoomId,
+                null);
+    }
+
+    public static List<Room> roomsForMutation(
+            RoomClusterWork work,
+            Map<Integer, ? extends Iterable<Edge>> closedBoundaryEdgesByLevel,
+            long nextRoomId,
+            Map<Long, List<Cell>> previousCellsByRoom
+    ) {
+        return RoomClusterRoomComponents.roomsForMutation(
+                safeWork(work),
+                closedBoundaryEdgesByLevel,
+                nextRoomId,
+                previousCellsByRoom);
     }
 
     public static Map<Long, List<Cell>> cellsByRoom(

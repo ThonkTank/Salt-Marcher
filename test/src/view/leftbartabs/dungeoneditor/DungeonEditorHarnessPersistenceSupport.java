@@ -701,6 +701,19 @@ class DungeonEditorHarnessPersistenceSupport {
                     visualDescription);
         }
 
+        void saveRoomVisualDescription(long roomId, String visualDescription) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "UPDATE dungeon_rooms SET visual_description=? WHERE room_id=?")) {
+                bind(statement, visualDescription, roomId);
+                if (statement.executeUpdate() != 1) {
+                    throw new SQLException("Expected exactly one room row for visual description update.");
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to save room visual description.", exception);
+            }
+        }
+
         long countRoomExitDescription(
                 long roomId,
                 int cellX,

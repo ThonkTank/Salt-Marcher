@@ -41,14 +41,6 @@ public final class RoomClusterCornerMovement {
             int deltaQ,
             int deltaR
     ) {
-        Optional<RebuildResult> verticalFirst = moveVerticalFirst(
-                topology,
-                rooms,
-                corridors,
-                clusterId,
-                corner,
-                deltaQ,
-                deltaR);
         Optional<RebuildResult> horizontalFirst = moveHorizontalFirst(
                 topology,
                 rooms,
@@ -61,10 +53,21 @@ public final class RoomClusterCornerMovement {
         if (containsCorner(horizontalFirst, clusterId, targetCorner)) {
             return horizontalFirst;
         }
+        Optional<RebuildResult> verticalFirst = moveVerticalFirst(
+                topology,
+                rooms,
+                corridors,
+                clusterId,
+                corner,
+                deltaQ,
+                deltaR);
         if (containsCorner(verticalFirst, clusterId, targetCorner)) {
             return verticalFirst;
         }
-        return verticalFirst.isPresent() ? verticalFirst : horizontalFirst;
+        if (verticalFirst.isPresent()) {
+            return verticalFirst;
+        }
+        return horizontalFirst;
     }
 
     private Optional<RebuildResult> moveVerticalFirst(
@@ -77,6 +80,9 @@ public final class RoomClusterCornerMovement {
             int deltaR
     ) {
         Optional<RebuildResult> vertical = moveVertical(topology, rooms, corridors, clusterId, corner, deltaQ);
+        if (deltaQ != 0 && vertical.isEmpty()) {
+            return Optional.empty();
+        }
         RebuildResult afterVertical = vertical.orElse(new RebuildResult(topology, rooms));
         Optional<RebuildResult> horizontal = moveHorizontal(
                 afterVertical,
@@ -84,6 +90,9 @@ public final class RoomClusterCornerMovement {
                 clusterId,
                 new Cell(corner.q() + deltaQ, corner.r(), corner.level()),
                 deltaR);
+        if (deltaR != 0 && horizontal.isEmpty()) {
+            return Optional.empty();
+        }
         return horizontal.isPresent() ? horizontal : vertical;
     }
 
@@ -98,6 +107,9 @@ public final class RoomClusterCornerMovement {
     ) {
         RebuildResult current = new RebuildResult(topology, rooms);
         Optional<RebuildResult> horizontal = moveHorizontal(current, corridors, clusterId, corner, deltaR);
+        if (deltaR != 0 && horizontal.isEmpty()) {
+            return Optional.empty();
+        }
         RebuildResult afterHorizontal = horizontal.orElse(current);
         Optional<RebuildResult> vertical = moveVertical(
                 afterHorizontal.topology(),
@@ -106,6 +118,9 @@ public final class RoomClusterCornerMovement {
                 clusterId,
                 new Cell(corner.q(), corner.r() + deltaR, corner.level()),
                 deltaQ);
+        if (deltaQ != 0 && vertical.isEmpty()) {
+            return Optional.empty();
+        }
         return vertical.isPresent() ? vertical : horizontal;
     }
 

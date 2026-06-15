@@ -18,8 +18,26 @@ public final class DungeonRoomBoundaryPartition {
     ) {
         List<Room> coreRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
                 work.toCore(),
-                closedBoundaryEdgesByLevel(flattenBoundaries(boundariesByLevel), work.cluster().center()),
+                closedBoundaryEdgesByLevel(DungeonBoundaryRehoming.flatten(boundariesByLevel), work.cluster().center()),
                 ids.nextRoomId());
+        return authoredRooms(coreRooms, work);
+    }
+
+    public List<DungeonRoom> roomsForMutation(
+            DungeonRoomTopologyClusterWork work,
+            Map<Integer, List<Cell>> nextCellsByLevel,
+            Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel,
+            long nextRoomId,
+            Map<Long, List<Cell>> previousCellsByRoom
+    ) {
+        RoomClusterWork coreWork = new RoomClusterWork(
+                work.cluster().toCore(nextCellsByLevel),
+                coreRooms(work.rooms(), work.cluster().clusterId()));
+        List<Room> coreRooms = RoomClusterRoomPartition.roomsForMutation(
+                coreWork,
+                closedBoundaryEdgesByLevel(DungeonBoundaryRehoming.flatten(boundariesByLevel), work.cluster().center()),
+                nextRoomId,
+                previousCellsByRoom);
         return authoredRooms(coreRooms, work);
     }
 
@@ -61,21 +79,20 @@ public final class DungeonRoomBoundaryPartition {
         return DungeonRoomNarration.empty();
     }
 
-    private static List<DungeonClusterBoundary> flattenBoundaries(
-            @Nullable Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel
-    ) {
-        if (boundariesByLevel == null || boundariesByLevel.isEmpty()) {
-            return List.of();
-        }
-        List<DungeonClusterBoundary> flattened = new ArrayList<>();
-        for (List<DungeonClusterBoundary> boundaries : boundariesByLevel.values()) {
-            for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
-                if (boundary != null) {
-                    flattened.add(boundary);
-                }
+    private static List<Room> coreRooms(List<DungeonRoom> rooms, long clusterId) {
+        List<Room> result = new ArrayList<>();
+        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
+            if (room != null) {
+                Room coreRoom = room.toCore();
+                result.add(new Room(
+                        coreRoom.roomId(),
+                        coreRoom.mapId(),
+                        clusterId,
+                        coreRoom.name(),
+                        coreRoom.floorAnchors()));
             }
         }
-        return List.copyOf(flattened);
+        return List.copyOf(result);
     }
 
     private static @Nullable Edge closedBoundaryEdge(

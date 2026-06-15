@@ -13,9 +13,9 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 
-final class DungeonRoomBoundaryAuthority {
+final class RoomPerimeterBoundaryMaterialization {
 
-    private DungeonRoomBoundaryAuthority() {
+    private RoomPerimeterBoundaryMaterialization() {
     }
 
     static Map<Integer, List<DungeonClusterBoundary>> fromFloorCells(
@@ -23,16 +23,24 @@ final class DungeonRoomBoundaryAuthority {
             Iterable<Cell> currentCells,
             Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesByLevel
     ) {
-        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundariesByKey = new LinkedHashMap<>();
-        for (List<DungeonClusterBoundary> boundaries : safeBoundaries(preservedBoundariesByLevel).values()) {
-            for (DungeonClusterBoundary boundary : boundaries) {
-                boundariesByKey.put(DungeonBoundaryKey.from(boundary.absoluteEdge(cluster.center())), boundary);
-            }
-        }
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundariesByKey = preservedByKey(cluster, preservedBoundariesByLevel);
         for (DungeonClusterBoundary boundary : perimeterWallBoundaries(cluster, currentCells)) {
             boundariesByKey.putIfAbsent(DungeonBoundaryKey.from(boundary.absoluteEdge(cluster.center())), boundary);
         }
         return DungeonClusterBoundary.orderedByLevel(boundariesByKey.values());
+    }
+
+    private static Map<DungeonBoundaryKey, DungeonClusterBoundary> preservedByKey(
+            DungeonRoomCluster cluster,
+            Map<Integer, List<DungeonClusterBoundary>> preservedBoundariesByLevel
+    ) {
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> result = new LinkedHashMap<>();
+        for (List<DungeonClusterBoundary> boundaries : safeBoundaries(preservedBoundariesByLevel).values()) {
+            for (DungeonClusterBoundary boundary : boundaries) {
+                result.put(DungeonBoundaryKey.from(boundary.absoluteEdge(cluster.center())), boundary);
+            }
+        }
+        return result;
     }
 
     private static List<DungeonClusterBoundary> perimeterWallBoundaries(
@@ -42,13 +50,22 @@ final class DungeonRoomBoundaryAuthority {
         Set<Cell> cells = normalizedCells(currentCells);
         List<DungeonClusterBoundary> result = new ArrayList<>();
         for (Cell cell : RoomClusterCells.sortedCells(cells)) {
-            for (Direction direction : Direction.values()) {
-                if (!cells.contains(direction.neighborOf(cell))) {
-                    addBoundary(result, cluster, cells, cell, direction);
-                }
-            }
+            addMissingCellBoundaries(result, cluster, cells, cell);
         }
         return List.copyOf(result);
+    }
+
+    private static void addMissingCellBoundaries(
+            List<DungeonClusterBoundary> result,
+            DungeonRoomCluster cluster,
+            Set<Cell> cells,
+            Cell cell
+    ) {
+        for (Direction direction : Direction.values()) {
+            if (!cells.contains(direction.neighborOf(cell))) {
+                addBoundary(result, cluster, cells, cell, direction);
+            }
+        }
     }
 
     private static void addBoundary(
@@ -58,7 +75,7 @@ final class DungeonRoomBoundaryAuthority {
             Cell cell,
             Direction direction
     ) {
-        BoundaryRow row = RoomClusterBoundaryMaterialization.forEdge(
+        BoundaryRow row = RoomClusterBoundaryMaterialization.forCells(
                 cells,
                 cluster.center(),
                 cluster.clusterId(),

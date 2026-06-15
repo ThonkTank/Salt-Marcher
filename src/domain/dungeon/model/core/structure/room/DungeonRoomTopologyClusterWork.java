@@ -35,13 +35,6 @@ public record DungeonRoomTopologyClusterWork(
         return CellOrdering.sortedCells(result);
     }
 
-    public DungeonRoomCluster rebuiltCluster() {
-        return rebuiltClusterWithBoundaries(DungeonRoomBoundaryAuthority.fromFloorCells(
-                cluster,
-                allCells(),
-                cluster.preservedBoundariesForTopologyWork(cellsByLevel)));
-    }
-
     public DungeonRoomCluster rebuiltClusterWithBoundaries(Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel) {
         return cluster.rebuiltForTopologyWork(cellsByLevel, boundariesByLevel);
     }

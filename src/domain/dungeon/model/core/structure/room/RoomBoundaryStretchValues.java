@@ -138,19 +138,12 @@ final class RoomBoundaryStretchValues {
             this.stretchBoundariesByLevel = copyListsByLevel(boundariesByLevel);
         }
 
-        DungeonRoomTopologyClusterWork rebuiltStretchWork(
-                DungeonRoomTopologyClusterWork target,
-                boolean outer,
-                RoomTopologyWorkCatalog.IdAllocation ids
-        ) {
-            var partitionWork =
-                    new DungeonRoomTopologyClusterWork(target.cluster(), target.rooms(), stretchCellsByLevel);
-            var rooms = new DungeonRoomBoundaryPartition()
-                    .roomsForBoundaryEdit(partitionWork, stretchBoundariesByLevel, ids);
-            var rebuiltCluster = outer
-                    ? new RoomTopologyRebuilder().clusterForStretch(partitionWork, stretchBoundariesByLevel)
-                    : new RoomTopologyRebuilder().clusterWithBoundaries(target, stretchBoundariesByLevel);
-            return new DungeonRoomTopologyClusterWork(rebuiltCluster, rooms, stretchCellsByLevel);
+        Map<Integer, List<Cell>> cellsByLevel() {
+            return stretchCellsByLevel;
+        }
+
+        Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel() {
+            return stretchBoundariesByLevel;
         }
 
         private static <T> Map<Integer, List<T>> copyListsByLevel(Map<Integer, List<T>> source) {

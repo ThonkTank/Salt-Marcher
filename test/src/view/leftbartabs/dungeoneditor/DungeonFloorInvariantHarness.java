@@ -52,12 +52,12 @@ final class DungeonFloorInvariantHarness {
                 OWNER,
                 "DGI-FLOOR-004",
                 "Floor owner derives deterministic room floor anchors and reuses surviving room anchors");
-        assertFloorMutationResult();
+        assertFloorReplacementByConstruction();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
                 OWNER,
                 "DGI-FLOOR-005",
-                "Floor owner reports no-op and changed floor mutations while DungeonMap keeps revision policy outside the owner");
+                "Floor owner replacement is explicit value construction while DungeonMap keeps revision policy outside the owner");
         assertDungeonLevelFloorProjection();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -78,7 +78,7 @@ final class DungeonFloorInvariantHarness {
         assertEquals(cluster.floorMap().cellsByLevel(), cluster.cellsByLevel(),
                 "cluster compatibility access delegates to floor owner");
         assertEquals(cluster.floorMap(),
-                new RoomClusterFloorMap(FloorCellMap.fromCells(cluster.allCells())),
+                new RoomClusterFloorMap(FloorCellMap.fromCells(cluster.floorMap().allCells())),
                 "cluster floor facade delegates to the reusable component floor owner");
     }
 
@@ -141,9 +141,6 @@ final class DungeonFloorInvariantHarness {
         assertEquals(Map.of(0, lowerFirst, 1, upperFirst),
                 Room.anchorsByLevel(cluster.floorMap().cellsByLevel()),
                 "floor owner derives one sorted anchor per owned floor level");
-        assertEquals(Map.of(0, lowerFirst, 1, upperFirst),
-                work.rebuiltRoom().orElseThrow().floorAnchors(),
-                "floor owner rebuild keeps anchors derived from the owned floor map");
 
         Edge split = Edge.sideOf(lowerFirst, Direction.EAST);
         List<Room> splitRooms = RoomClusterRoomPartition.roomsForBoundaryEdit(
@@ -162,17 +159,18 @@ final class DungeonFloorInvariantHarness {
                 "floor owner derives an anchor for the remaining upper-level component");
     }
 
-    private static void assertFloorMutationResult() {
+    private static void assertFloorReplacementByConstruction() {
         FloorCellMap floorMap = FloorCellMap.fromCells(List.of(new Cell(0, 0, 0)));
+        FloorCellMap same = new FloorCellMap(Map.of(0, List.of(new Cell(0, 0, 0))));
+        FloorCellMap changed = new FloorCellMap(Map.of(0, List.of(new Cell(0, 0, 0), new Cell(1, 0, 0))));
 
-        assertFalse(floorMap.replaceCellsByLevel(Map.of(0, List.of(new Cell(0, 0, 0)))).changed(),
-                "floor owner reports unchanged replacement as no-op");
-        FloorCellMap.FloorMutation changed =
-                floorMap.replaceCellsByLevel(Map.of(0, List.of(new Cell(0, 0, 0), new Cell(1, 0, 0))));
-        assertTrue(changed.changed(), "floor owner reports changed replacement");
+        assertEquals(floorMap, same,
+                "floor owner exposes unchanged replacement as equal value construction");
+        assertFalse(floorMap.equals(changed),
+                "floor owner exposes changed replacement as different value construction");
         assertEquals(List.of(new Cell(0, 0, 0), new Cell(1, 0, 0)),
-                changed.floorMap().cellsAt(0),
-                "floor mutation returns the next floor owner");
+                changed.cellsAt(0),
+                "floor replacement value exposes the next owned cells");
     }
 
     private static void assertDungeonLevelFloorProjection() {

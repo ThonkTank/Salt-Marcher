@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapAuthoring;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
@@ -11,6 +12,7 @@ import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.Room;
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 
 final class DungeonRoomInvariantHarness {
@@ -64,6 +66,37 @@ final class DungeonRoomInvariantHarness {
         DungeonRoom stretchedRoom = firstRoom(stretched);
         assertEquals(original.roomId(), stretchedRoom.roomId(), "DGI-ROOM-001 room id survives wall-run stretch");
         assertEquals(original.narration(), stretchedRoom.narration(), "DGI-ROOM-001 narration survives wall-run stretch");
+
+        DungeonMap partitioned = DungeonMapAuthoring.empty(new DungeonMapIdentity(11L), "Partitioned Paint Harness")
+                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(2, 1, 0));
+        long clusterId = firstRoom(partitioned).clusterId();
+        partitioned = partitioned.editClusterBoundaries(
+                clusterId,
+                List.of(EdgeSide.eastOf(1, 1)),
+                BoundaryKind.WALL,
+                false);
+        DungeonRoom left = roomByAnchor(partitioned, new Cell(1, 1, 0));
+        DungeonRoom right = roomByAnchor(partitioned, new Cell(2, 1, 0));
+        DungeonRoomNarration leftNarration = new DungeonRoomNarration("Left identity", List.of());
+        DungeonRoomNarration rightNarration = new DungeonRoomNarration("Right identity", List.of());
+        DungeonMap narratedTwoRooms = partitioned
+                .saveRoomNarration(left.roomId(), leftNarration)
+                .saveRoomNarration(right.roomId(), rightNarration);
+        DungeonMap expanded = narratedTwoRooms.paintRoomRectangle(new Cell(1, 1, 0), new Cell(1, 2, 0));
+        assertEquals(leftNarration, roomById(expanded, left.roomId()).narration(),
+                "DGI-ROOM-001 partition-preserving paint keeps left room narration");
+        assertEquals(rightNarration, roomById(expanded, right.roomId()).narration(),
+                "DGI-ROOM-001 partition-preserving paint keeps right room narration");
+        assertEquals(2L, (long) expanded.rooms().rooms().size(),
+                "DGI-ROOM-001 partition-preserving paint keeps both represented rooms");
+
+        DungeonMap trimmed = expanded.deleteRoomRectangle(new Cell(1, 2, 0), new Cell(1, 2, 0));
+        assertEquals(leftNarration, roomById(trimmed, left.roomId()).narration(),
+                "DGI-ROOM-001 partition-preserving delete keeps represented left room narration");
+        assertEquals(rightNarration, roomById(trimmed, right.roomId()).narration(),
+                "DGI-ROOM-001 partition-preserving delete keeps represented right room narration");
+        assertEquals(2L, (long) trimmed.rooms().rooms().size(),
+                "DGI-ROOM-001 partition-preserving delete keeps both represented rooms");
     }
 
     private static void assertRoomPartitionAssignsCellsOnce() {
@@ -113,6 +146,24 @@ final class DungeonRoomInvariantHarness {
         return map.rooms().rooms().getFirst();
     }
 
+    private static DungeonRoom roomByAnchor(DungeonMap map, Cell anchor) {
+        for (DungeonRoom room : map.rooms().rooms()) {
+            if (anchor.equals(room.primaryAnchor())) {
+                return room;
+            }
+        }
+        throw new IllegalStateException("Expected room at anchor " + anchor);
+    }
+
+    private static DungeonRoom roomById(DungeonMap map, long roomId) {
+        for (DungeonRoom room : map.rooms().rooms()) {
+            if (room.roomId() == roomId) {
+                return room;
+            }
+        }
+        throw new IllegalStateException("Expected room id " + roomId);
+    }
+
     private static void assertEquals(Object expected, Object actual, String message) {
         DungeonEditorBehaviorHarnessSupport.assertEquals(expected, actual, message);
     }
@@ -124,6 +175,10 @@ final class DungeonRoomInvariantHarness {
         private static src.domain.dungeon.model.core.geometry.Edge northOf(int q, int r) {
             return src.domain.dungeon.model.core.geometry.Edge.sideOf(new Cell(q, r, 0),
                     src.domain.dungeon.model.core.geometry.Direction.NORTH);
+        }
+
+        private static src.domain.dungeon.model.core.geometry.Edge eastOf(int q, int r) {
+            return src.domain.dungeon.model.core.geometry.Edge.sideOf(new Cell(q, r, 0), Direction.EAST);
         }
     }
 }

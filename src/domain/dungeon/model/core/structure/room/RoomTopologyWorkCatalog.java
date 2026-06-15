@@ -39,36 +39,6 @@ public final class RoomTopologyWorkCatalog {
         return Optional.empty();
     }
 
-    public RoomClusterCollection coreClusters(List<DungeonRoomTopologyClusterWork> clusters) {
-        List<RoomClusterWork> coreClusters = new ArrayList<>();
-        List<DungeonRoomTopologyClusterWork> safeClusters =
-                clusters == null ? List.of() : clusters;
-        for (DungeonRoomTopologyClusterWork work : safeClusters) {
-            if (work != null) {
-                coreClusters.add(work.toCore());
-            }
-        }
-        return new RoomClusterCollection(coreClusters);
-    }
-
-    public List<DungeonRoomTopologyClusterWork> fromCoreClusters(
-            RoomClusterCollection coreClusters,
-            List<DungeonRoomTopologyClusterWork> previousClusters
-    ) {
-        Map<Long, DungeonRoomTopologyClusterWork> previousByClusterId = previousByClusterId(previousClusters);
-        List<DungeonRoomTopologyClusterWork> result = new ArrayList<>();
-        for (RoomClusterWork work : coreClusters == null
-                ? List.<RoomClusterWork>of()
-                : coreClusters.clusters()) {
-            if (work != null && work.cluster() != null) {
-                result.add(DungeonRoomTopologyClusterWork.fromCore(
-                        work,
-                        previousByClusterId.get(work.cluster().clusterId())));
-            }
-        }
-        return result;
-    }
-
     public IdAllocation newIdAllocation(SpatialTopology topology, RoomCatalog rooms) {
         return new IdAllocation(topology, rooms);
     }
@@ -112,20 +82,6 @@ public final class RoomTopologyWorkCatalog {
                 CELL_COVERAGE.cellsByLevel(cluster, rooms));
     }
 
-    private Map<Long, DungeonRoomTopologyClusterWork> previousByClusterId(
-            List<DungeonRoomTopologyClusterWork> previousClusters
-    ) {
-        Map<Long, DungeonRoomTopologyClusterWork> result = new LinkedHashMap<>();
-        List<DungeonRoomTopologyClusterWork> safeClusters =
-                previousClusters == null ? List.of() : previousClusters;
-        for (DungeonRoomTopologyClusterWork work : safeClusters) {
-            if (work != null && work.cluster() != null) {
-                result.put(work.cluster().clusterId(), work);
-            }
-        }
-        return Map.copyOf(result);
-    }
-
     public static final class IdAllocation {
 
         private final long nextClusterId;
@@ -134,6 +90,11 @@ public final class RoomTopologyWorkCatalog {
         IdAllocation(SpatialTopology topology, RoomCatalog rooms) {
             this.nextClusterId = nextClusterId(topology);
             this.nextRoomId = nextRoomId(rooms);
+        }
+
+        IdAllocation(long nextClusterId, long nextRoomId) {
+            this.nextClusterId = Math.max(1L, nextClusterId);
+            this.nextRoomId = Math.max(1L, nextRoomId);
         }
 
         private static long nextClusterId(SpatialTopology topology) {
@@ -156,8 +117,8 @@ public final class RoomTopologyWorkCatalog {
             return result + 1L;
         }
 
-        public RoomClusterCollection.IdAllocation toCore() {
-            return new RoomClusterCollection.IdAllocation(nextClusterId, nextRoomId);
+        public long nextClusterId() {
+            return nextClusterId;
         }
 
         public long nextRoomId() {

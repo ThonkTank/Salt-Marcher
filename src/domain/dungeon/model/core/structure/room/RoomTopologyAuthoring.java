@@ -15,7 +15,7 @@ import src.domain.dungeon.model.core.structure.room.RoomTopologyRebuilder.Rebuil
 public final class RoomTopologyAuthoring {
 
     private static final RoomTopologyWorkCatalog WORK_CATALOG = new RoomTopologyWorkCatalog();
-    private static final RoomTopologyRebuilder REBUILDER = new RoomTopologyRebuilder();
+    private static final RoomPartitionPreservingMutation ROOM_MUTATION = new RoomPartitionPreservingMutation();
     private static final RoomClusterBoundaryMutation BOUNDARY_MUTATION =
             new RoomClusterBoundaryMutation();
     private static final RoomClusterBoundaryStretchMutation STRETCH_MUTATION =
@@ -28,14 +28,14 @@ public final class RoomTopologyAuthoring {
         if (start == null || end == null) {
             return target;
         }
-        List<DungeonRoomTopologyClusterWork> clusters = WORK_CATALOG.workClusters(target.topology(), target.rooms());
-        RoomClusterCollection nextCoreClusters = WORK_CATALOG.coreClusters(clusters).paintRectangle(
+        Optional<RebuildResult> rebuild = ROOM_MUTATION.paintRectangle(
+                target.topology(),
+                WORK_CATALOG.workClusters(target.topology(), target.rooms()),
                 start,
                 end,
                 target.metadata().mapId().value(),
-                WORK_CATALOG.newIdAllocation(target.topology(), target.rooms()).toCore());
-        List<DungeonRoomTopologyClusterWork> nextClusters = WORK_CATALOG.fromCoreClusters(nextCoreClusters, clusters);
-        return withRoomTopology(target, REBUILDER.rebuilt(target.topology(), nextClusters));
+                WORK_CATALOG.newIdAllocation(target.topology(), target.rooms()));
+        return rebuild.map(result -> withRoomTopology(target, result)).orElse(target);
     }
 
     public DungeonMap deleteRectangle(DungeonMap dungeonMap, Cell start, Cell end) {
@@ -43,13 +43,13 @@ public final class RoomTopologyAuthoring {
         if (start == null || end == null) {
             return target;
         }
-        List<DungeonRoomTopologyClusterWork> clusters = WORK_CATALOG.workClusters(target.topology(), target.rooms());
-        RoomClusterCollection nextCoreClusters = WORK_CATALOG.coreClusters(clusters).deleteRectangle(
+        Optional<RebuildResult> rebuild = ROOM_MUTATION.deleteRectangle(
+                target.topology(),
+                WORK_CATALOG.workClusters(target.topology(), target.rooms()),
                 start,
                 end,
-                WORK_CATALOG.newIdAllocation(target.topology(), target.rooms()).toCore());
-        List<DungeonRoomTopologyClusterWork> nextClusters = WORK_CATALOG.fromCoreClusters(nextCoreClusters, clusters);
-        return withRoomTopology(target, REBUILDER.rebuilt(target.topology(), nextClusters));
+                WORK_CATALOG.newIdAllocation(target.topology(), target.rooms()));
+        return rebuild.map(result -> withRoomTopology(target, result)).orElse(target);
     }
 
     public DungeonMap editBoundaries(
