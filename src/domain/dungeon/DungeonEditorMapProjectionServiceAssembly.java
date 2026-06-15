@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
 
 final class DungeonEditorMapProjectionServiceAssembly {
@@ -15,21 +16,24 @@ final class DungeonEditorMapProjectionServiceAssembly {
         if (surface == null) {
             return null;
         }
-        return new src.domain.dungeon.published.DungeonEditorSurface(
+        DungeonEditorMapSnapshot committedMap = map(surface.map());
+        DungeonEditorMapSnapshot previewMap = surface.previewMap() == null ? null : map(surface.previewMap());
+        return new DungeonEditorSurface(
                 surface.mapName(),
                 surface.revision(),
-                map(surface.map()),
-                surface.previewMap() == null ? null : map(surface.previewMap()),
+                committedMap,
+                previewMap,
+                DungeonEditorPreviewDiffProjectionServiceAssembly.previewDiff(committedMap, previewMap),
                 DungeonEditorInspectorProjectionServiceAssembly.inspector(surface.inspector()));
     }
 
-    private static src.domain.dungeon.published.DungeonEditorMapSnapshot map(
+    private static DungeonEditorMapSnapshot map(
             src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot map
     ) {
         src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot safeMap = map == null
                 ? src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot.empty()
                 : map;
-        return new src.domain.dungeon.published.DungeonEditorMapSnapshot(
+        return new DungeonEditorMapSnapshot(
                 safeMap.topology().name(),
                 safeMap.width(),
                 safeMap.height(),
@@ -39,10 +43,10 @@ final class DungeonEditorMapProjectionServiceAssembly {
                 handles(safeMap.editorHandles()));
     }
 
-    private static List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Area> areas(
+    private static List<DungeonEditorMapSnapshot.Area> areas(
             List<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Area> areas
     ) {
-        List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Area> result = new ArrayList<>();
+        List<DungeonEditorMapSnapshot.Area> result = new ArrayList<>();
         for (src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Area area
                 : areas == null ? List.<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Area>of() : areas) {
             result.add(area(area));
@@ -50,11 +54,11 @@ final class DungeonEditorMapProjectionServiceAssembly {
         return List.copyOf(result);
     }
 
-    private static src.domain.dungeon.published.DungeonEditorMapSnapshot.Area area(
+    private static DungeonEditorMapSnapshot.Area area(
             src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.@Nullable Area area
     ) {
         if (area == null) {
-            return new src.domain.dungeon.published.DungeonEditorMapSnapshot.Area(
+            return new DungeonEditorMapSnapshot.Area(
                     "ROOM",
                     1L,
                     0L,
@@ -62,7 +66,7 @@ final class DungeonEditorMapProjectionServiceAssembly {
                     List.of(),
                     src.domain.dungeon.published.DungeonEditorTopologyElementRef.empty());
         }
-        return new src.domain.dungeon.published.DungeonEditorMapSnapshot.Area(
+        return new DungeonEditorMapSnapshot.Area(
                 area.kind().name(),
                 area.id(),
                 area.clusterId(),
@@ -71,10 +75,10 @@ final class DungeonEditorMapProjectionServiceAssembly {
                 DungeonEditorValueProjectionServiceAssembly.topologyRef(area.topologyRef()));
     }
 
-    private static List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Boundary> boundaries(
+    private static List<DungeonEditorMapSnapshot.Boundary> boundaries(
             List<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Boundary> boundaries
     ) {
-        List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Boundary> result = new ArrayList<>();
+        List<DungeonEditorMapSnapshot.Boundary> result = new ArrayList<>();
         for (src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Boundary boundary
                 : boundaries == null ? List.<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Boundary>of() : boundaries) {
             result.add(boundary(boundary));
@@ -82,18 +86,18 @@ final class DungeonEditorMapProjectionServiceAssembly {
         return List.copyOf(result);
     }
 
-    private static src.domain.dungeon.published.DungeonEditorMapSnapshot.Boundary boundary(
+    private static DungeonEditorMapSnapshot.Boundary boundary(
             src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.@Nullable Boundary boundary
     ) {
         if (boundary == null) {
-            return new src.domain.dungeon.published.DungeonEditorMapSnapshot.Boundary(
+            return new DungeonEditorMapSnapshot.Boundary(
                     "boundary",
                     1L,
                     "boundary",
                     DungeonEditorValueProjectionServiceAssembly.edge(null),
                     src.domain.dungeon.published.DungeonEditorTopologyElementRef.empty());
         }
-        return new src.domain.dungeon.published.DungeonEditorMapSnapshot.Boundary(
+        return new DungeonEditorMapSnapshot.Boundary(
                 boundary.kind().externalKind(),
                 boundary.id(),
                 boundary.label(),
@@ -101,10 +105,10 @@ final class DungeonEditorMapProjectionServiceAssembly {
                 DungeonEditorValueProjectionServiceAssembly.topologyRef(boundary.topologyRef()));
     }
 
-    private static List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Feature> features(
+    private static List<DungeonEditorMapSnapshot.Feature> features(
             List<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Feature> features
     ) {
-        List<src.domain.dungeon.published.DungeonEditorMapSnapshot.Feature> result = new ArrayList<>();
+        List<DungeonEditorMapSnapshot.Feature> result = new ArrayList<>();
         for (src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Feature feature
                 : features == null ? List.<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Feature>of() : features) {
             result.add(feature(feature));
@@ -112,11 +116,11 @@ final class DungeonEditorMapProjectionServiceAssembly {
         return List.copyOf(result);
     }
 
-    private static src.domain.dungeon.published.DungeonEditorMapSnapshot.Feature feature(
+    private static DungeonEditorMapSnapshot.Feature feature(
             src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.@Nullable Feature feature
     ) {
         if (feature == null) {
-            return new src.domain.dungeon.published.DungeonEditorMapSnapshot.Feature(
+            return new DungeonEditorMapSnapshot.Feature(
                     "STAIR",
                     1L,
                     "STAIR",
@@ -125,7 +129,7 @@ final class DungeonEditorMapProjectionServiceAssembly {
                     "",
                     src.domain.dungeon.published.DungeonEditorTopologyElementRef.empty());
         }
-        return new src.domain.dungeon.published.DungeonEditorMapSnapshot.Feature(
+        return new DungeonEditorMapSnapshot.Feature(
                 feature.kind().name(),
                 feature.id(),
                 feature.label(),

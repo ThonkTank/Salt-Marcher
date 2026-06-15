@@ -825,8 +825,10 @@ final class DungeonEditorCorridorHarness {
                 binding,
                 mapId,
                 "DE-COR-013 generic room first click");
+        long previewStartNanos = System.nanoTime();
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
+        assertPreviewLatencyWithinBudget(previewStartNanos, "DE-COR-013 generic-room hover preview");
         assertVisibleCorridorPreview(
                 runtime,
                 binding,
@@ -965,6 +967,17 @@ final class DungeonEditorCorridorHarness {
         addedPreviewCells.removeAll(committedCells);
         assertEquals(expectedAddedPreviewCells, addedPreviewCells,
                 message + " preview map adds exactly the candidate corridor route cells");
+        boolean structuredRoutePublished = snapshot.surface().previewDiff().changedAreas().stream()
+                .filter(area -> "CORRIDOR".equalsIgnoreCase(area.kind()))
+                .map(DungeonEditorBehaviorHarnessSupport::areaCellSet)
+                .anyMatch(expectedCells::equals);
+        boolean structuredFeaturePublished = snapshot.surface().previewDiff().changedFeatures().stream()
+                .map(feature -> feature.cells().stream()
+                        .map(cell -> cell.q() + "," + cell.r() + "," + cell.level())
+                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)))
+                .anyMatch(expectedCells::equals);
+        assertTrue(structuredRoutePublished || structuredFeaturePublished,
+                message + " structured preview diff publishes the candidate corridor route");
         assertEquals(expectedCells, renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()),
                 message + " render scene paints exactly the candidate corridor route cells");
     }

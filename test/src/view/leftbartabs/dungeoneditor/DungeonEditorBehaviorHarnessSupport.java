@@ -75,6 +75,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
     static final long LARGE_VERTEX_FIXTURE_MIN_ROWS = 56_000L;
     static final long LARGE_VERTEX_STARTUP_MAX_MILLIS = 5_000L;
     static final long LARGE_VERTEX_INPUT_MAX_MILLIS = 500L;
+    static final long PREVIEW_LATENCY_BUDGET_MS = 250L;
     static final Color MAP_BACKGROUND = Color.rgb(0x12, 0x18, 0x1c);
 
     DungeonEditorBehaviorHarnessSupport() {
@@ -1984,6 +1985,13 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
 
     static long elapsedMillis(long startedNanos) {
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedNanos);
+    }
+
+    static long assertPreviewLatencyWithinBudget(long startedNanos, String message) {
+        long elapsedMillis = elapsedMillis(startedNanos);
+        assertTrue(elapsedMillis <= PREVIEW_LATENCY_BUDGET_MS,
+                message + " stays within latency budget: " + elapsedMillis + "ms");
+        return elapsedMillis;
     }
 
     static void assertEquals(long expected, long actual, String message) {

@@ -180,6 +180,14 @@ waiting on a recurring SaltMarcher process, inspect the newest relevant local
 pass log or retained Gradle run log when available and use its last observed
 duration as the expected wait time.
 
+- Near the beginning of a pass, agents should do one wait-time intake for the
+  process classes they are likely to run or wait on, such as behavior harnesses,
+  staged verification routes, desktop installation, Overview review, and common
+  specialist reviews. Use the newest relevant pass-log or run-log duration as
+  the central local expectation for that process class.
+- Do not repeatedly rescan wait-time history while a process is already
+  running unless the first estimate is clearly wrong or the process emits a new
+  failure signal.
 - If a previous comparable run took several minutes, schedule the first
   completion poll near that observed duration instead of polling every few
   seconds.

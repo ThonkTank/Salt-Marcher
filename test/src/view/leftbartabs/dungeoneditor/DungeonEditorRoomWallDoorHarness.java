@@ -1025,6 +1025,7 @@ final class DungeonEditorRoomWallDoorHarness {
                 viewport.sceneToScreenX(1.5),
                 viewport.sceneToScreenY(1.5),
                 false);
+        long previewStartNanos = System.nanoTime();
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_DRAGGED,
@@ -1032,6 +1033,7 @@ final class DungeonEditorRoomWallDoorHarness {
                 viewport.sceneToScreenX(3.5),
                 viewport.sceneToScreenY(3.5),
                 false);
+        assertPreviewLatencyWithinBudget(previewStartNanos, "DE-PREVIEW-001 room drag preview");
 
         assertEquals(0L, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-PREVIEW-001 does not persist authored geometry before release");
@@ -1047,8 +1049,19 @@ final class DungeonEditorRoomWallDoorHarness {
         assertTrue(!preview.deleteMode(), "DE-PREVIEW-001 room paint preview is not in delete mode");
         assertTrue(previewSurface.surface().map().areas().isEmpty(),
                 "DE-PREVIEW-001 committed published map remains empty before release");
+        assertTrue(previewSurface.surface().previewMap() != null,
+                "DE-PREVIEW-001 publishes a preview map before release");
+        assertEquals(cellRect(1, 1, 3, 3, 0), mapSnapshotCellSet(previewSurface.surface().previewMap()),
+                "DE-PREVIEW-001 preview map contains the painted room cells");
+        assertEquals(1L, (long) previewSurface.surface().previewDiff().changedAreas().size(),
+                "DE-PREVIEW-001 structured preview diff publishes one changed room area");
+        assertEquals(cellRect(1, 1, 3, 3, 0),
+                areaCellSet(previewSurface.surface().previewDiff().changedAreas().getFirst()),
+                "DE-PREVIEW-001 structured preview diff carries the painted room cells");
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(1, 1, 3, 3, 0)),
                 "DE-PREVIEW-001 render scene contains preview cells at expected coordinates");
+        assertEquals(cellRect(1, 1, 3, 3, 0), renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()),
+                "DE-PREVIEW-001 preview render layer contains only the painted room cells");
         assertCanvasPaintedAtScene(mapView, 2.0, 2.0, "DE-PREVIEW-001 rendered canvas paints preview area");
 
         results.add("DE-PREVIEW-001 Ready: DungeonMapView room drag -> SQLite unchanged -> live room preview");

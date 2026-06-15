@@ -9,6 +9,7 @@ import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
+import src.domain.dungeon.published.DungeonEditorPreviewDiff;
 import src.domain.dungeon.published.DungeonEditorStateModel;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
@@ -111,6 +112,7 @@ final class DungeonEditorPublishedStateServiceAssembly implements DungeonEditorS
                 surface.revision(),
                 surface.map(),
                 null,
+                DungeonEditorPreviewDiff.empty(),
                 surface.inspector());
     }
 

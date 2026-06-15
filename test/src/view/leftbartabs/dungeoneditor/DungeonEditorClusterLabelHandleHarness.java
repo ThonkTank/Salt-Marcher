@@ -25,7 +25,6 @@ final class DungeonEditorClusterLabelHandleHarness {
     private static final String CLUSTER_CORNER_KIND = DungeonEditorHandleKind.CLUSTER_CORNER.name();
     private static final String CLUSTER_WALL_RUN_KIND = DungeonEditorHandleKind.CLUSTER_WALL_RUN.name();
     private static final String DOOR_KIND = DungeonEditorHandleKind.DOOR.name();
-    private static final long DRAG_PREVIEW_LATENCY_BUDGET_MS = 250L;
 
     private DungeonEditorClusterLabelHandleHarness() {
     }
@@ -586,6 +585,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 viewport.sceneToScreenX(13.0),
                 viewport.sceneToScreenY(11.0),
                 false);
+        long previewStartNanos = System.nanoTime();
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_DRAGGED,
@@ -593,6 +593,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 viewport.sceneToScreenX(14.0),
                 viewport.sceneToScreenY(12.0),
                 false);
+        assertPreviewLatencyWithinBudget(previewStartNanos, "DE-CLUSTER-003 cluster corner drag preview");
 
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
@@ -610,6 +611,16 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertEquals(1L, preview.deltaQ(), "DE-CLUSTER-003 preview delta q");
         assertEquals(1L, preview.deltaR(), "DE-CLUSTER-003 preview delta r");
         assertEquals(0L, preview.deltaLevel(), "DE-CLUSTER-003 preview delta level");
+        assertTrue(previewSurface.surface().previewMap() != null,
+                "DE-CLUSTER-003 publishes a preview map during true-corner drag");
+        assertTrue(!mapSnapshotCellSet(previewSurface.surface().previewMap()).equals(cellsBefore),
+                "DE-CLUSTER-003 preview map changes affected cluster cells before release");
+        assertTrue(previewSurface.surface().previewDiff().changedHandles().stream().anyMatch(handle ->
+                        handle.ref().kind() == cornerHandle.ref().kind()
+                                && handle.cell().q() == 14
+                                && handle.cell().r() == 12
+                                && handle.cell().level() == 0),
+                "DE-CLUSTER-003 structured preview diff carries the moved corner handle");
 
         fireMapMouse(
                 mapView,
@@ -690,6 +701,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 viewport.sceneToScreenX(11.0),
                 viewport.sceneToScreenY(10.0),
                 false);
+        long previewStartNanos = System.nanoTime();
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_DRAGGED,
@@ -697,6 +709,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 viewport.sceneToScreenX(11.0),
                 viewport.sceneToScreenY(9.0),
                 false);
+        assertPreviewLatencyWithinBudget(previewStartNanos, "DE-HANDLE-003 wall-run drag preview");
 
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
@@ -716,6 +729,16 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertEquals(0L, preview.deltaQ(), "DE-CLUSTER-002 preview delta q");
         assertEquals(-1L, preview.deltaR(), "DE-CLUSTER-002 preview delta r");
         assertEquals(0L, preview.deltaLevel(), "DE-CLUSTER-002 preview delta level");
+        assertTrue(previewSurface.surface().previewMap() != null,
+                "DE-HANDLE-003 publishes a preview map during wall-run drag");
+        assertTrue(!mapSnapshotCellSet(previewSurface.surface().previewMap())
+                        .equals(mapSnapshotCellSet(previewSurface.surface().map())),
+                "DE-HANDLE-003 preview map differs from the committed cluster cells");
+        assertTrue(previewSurface.surface().previewDiff().changedBoundaries().size() > 1,
+                "DE-HANDLE-003 structured preview diff covers the contiguous wall run");
+        assertTrue(previewSurface.surface().previewDiff().changedAreas().stream().anyMatch(area ->
+                        !areaCellSet(area).isEmpty()),
+                "DE-HANDLE-003 structured preview diff carries affected room cells");
 
         fireMapMouse(
                 mapView,
@@ -937,9 +960,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 viewport.sceneToScreenX(doorHandle.markerQ()),
                 viewport.sceneToScreenY(doorHandle.markerR() + 1.0),
                 false);
-        long previewElapsedMillis = (System.nanoTime() - previewStartNanos) / 1_000_000L;
-        assertTrue(previewElapsedMillis <= DRAG_PREVIEW_LATENCY_BUDGET_MS,
-                "DE-HANDLE-006 door drag preview stays within latency budget: " + previewElapsedMillis + "ms");
+        assertPreviewLatencyWithinBudget(previewStartNanos, "DE-HANDLE-006 door drag preview");
 
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
