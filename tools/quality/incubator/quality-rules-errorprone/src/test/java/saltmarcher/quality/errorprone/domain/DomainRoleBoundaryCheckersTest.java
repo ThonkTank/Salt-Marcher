@@ -7,6 +7,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import saltmarcher.quality.errorprone.DomainApplicationServiceApiShapeChecker;
 import saltmarcher.quality.errorprone.DomainApplicationServiceRoleBoundaryChecker;
+import saltmarcher.quality.errorprone.DomainApplicationServiceThinRouterChecker;
 import saltmarcher.quality.errorprone.DomainConstantsRoleBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainHelperRoleBoundaryChecker;
 import saltmarcher.quality.errorprone.DomainModelRoleBoundaryChecker;
@@ -212,6 +213,274 @@ public final class DomainRoleBoundaryCheckersTest {
     }
 
     @Test
+    public void applicationServiceAllowsBoundaryAdapterLocalPublishedValueDecomposition() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.application.ApplySelectionUseCase.Input;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "import src.domain.foo.published.SelectionTarget;",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    Input input = toInput(command);",
+                        "  }",
+                        "  private static Input toInput(ApplySelectionCommand command) {",
+                        "    SelectionTarget target = command.target();",
+                        "    return new Input(target == null ? \"\" : target.value());",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class ApplySelectionUseCase {",
+                        "  public record Input(String value) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(SelectionTarget target) { }")
+                .addSourceLines(
+                        "src/domain/foo/published/SelectionTarget.java",
+                        "package src.domain.foo.published;",
+                        "public record SelectionTarget(String value) { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsBoundaryAdapterForwardedPublishedValueCarrier() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.application.ApplySelectionUseCase.Input;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "import src.domain.foo.published.SelectionTarget;",
+                        "// BUG: Diagnostic contains: method argument from",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    Input input = toInput(command);",
+                        "  }",
+                        "  private static Input toInput(ApplySelectionCommand command) {",
+                        "    SelectionTarget target = command.target();",
+                        "    return Input.from(target);",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class ApplySelectionUseCase {",
+                        "  public record Input(String value) {",
+                        "    public static Input from(Object target) {",
+                        "      return new Input(String.valueOf(target));",
+                        "    }",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(SelectionTarget target) { }")
+                .addSourceLines(
+                        "src/domain/foo/published/SelectionTarget.java",
+                        "package src.domain.foo.published;",
+                        "public record SelectionTarget(String value) { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsBoundaryAdapterConstructorForwardedPublishedValueCarrier() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.application.ApplySelectionUseCase.Input;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "import src.domain.foo.published.SelectionTarget;",
+                        "// BUG: Diagnostic contains: constructor argument",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    Input input = toInput(command);",
+                        "  }",
+                        "  private static Input toInput(ApplySelectionCommand command) {",
+                        "    SelectionTarget target = command.target();",
+                        "    return new Input(target);",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class ApplySelectionUseCase {",
+                        "  public record Input(Object value) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(SelectionTarget target) { }")
+                .addSourceLines(
+                        "src/domain/foo/published/SelectionTarget.java",
+                        "package src.domain.foo.published;",
+                        "public record SelectionTarget(String value) { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsBoundaryAdapterForwardedWidenedPublishedValueCarrier() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.application.ApplySelectionUseCase.Input;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: method argument from",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    Input input = toInput(command);",
+                        "  }",
+                        "  private static Input toInput(ApplySelectionCommand command) {",
+                        "    Object target = command.target();",
+                        "    return Input.from(target);",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class ApplySelectionUseCase {",
+                        "  public record Input(String value) {",
+                        "    public static Input from(Object target) {",
+                        "      return new Input(String.valueOf(target));",
+                        "    }",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(SelectionTarget target) { }")
+                .addSourceLines(
+                        "src/domain/foo/published/SelectionTarget.java",
+                        "package src.domain.foo.published;",
+                        "public record SelectionTarget(String value) { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsBoundaryAdapterForwardedTransitivePublishedValueCarrierAlias() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.application.ApplySelectionUseCase.Input;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: method argument from",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    Input input = toInput(command);",
+                        "  }",
+                        "  private static Input toInput(ApplySelectionCommand command) {",
+                        "    Object first = command.target();",
+                        "    Object second = first;",
+                        "    return Input.from(second);",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class ApplySelectionUseCase {",
+                        "  public record Input(String value) {",
+                        "    public static Input from(Object target) {",
+                        "      return new Input(String.valueOf(target));",
+                        "    }",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(SelectionTarget target) { }")
+                .addSourceLines(
+                        "src/domain/foo/published/SelectionTarget.java",
+                        "package src.domain.foo.published;",
+                        "public record SelectionTarget(String value) { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsBoundaryAdapterForwardedCastAssignedPublishedValueCarrierAlias() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.application.ApplySelectionUseCase.Input;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: method argument from",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    Input input = toInput(command);",
+                        "  }",
+                        "  private static Input toInput(ApplySelectionCommand command) {",
+                        "    Object first;",
+                        "    first = (Object) (command.target());",
+                        "    Object second;",
+                        "    second = (Object) first;",
+                        "    return Input.from((Object) second);",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class ApplySelectionUseCase {",
+                        "  public record Input(String value) {",
+                        "    public static Input from(Object target) {",
+                        "      return new Input(String.valueOf(target));",
+                        "    }",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(SelectionTarget target) { }")
+                .addSourceLines(
+                        "src/domain/foo/published/SelectionTarget.java",
+                        "package src.domain.foo.published;",
+                        "public record SelectionTarget(String value) { }")
+                .doTest();
+    }
+
+    @Test
+    public void applicationServiceRejectsBoundaryAdapterUnrootedPublishedValueLocal() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.application.ApplySelectionUseCase.Input;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "import src.domain.foo.published.SelectionTarget;",
+                        "// BUG: Diagnostic contains: local variable target",
+                        "public final class FooSelectionApplicationService {",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    Input input = toInput(command);",
+                        "  }",
+                        "  private static Input toInput(ApplySelectionCommand command) {",
+                        "    SelectionTarget target = new SelectionTarget(\"manual\");",
+                        "    return new Input(target.value());",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class ApplySelectionUseCase {",
+                        "  public record Input(String value) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(SelectionTarget target) { }")
+                .addSourceLines(
+                        "src/domain/foo/published/SelectionTarget.java",
+                        "package src.domain.foo.published;",
+                        "public record SelectionTarget(String value) { }")
+                .doTest();
+    }
+
+    @Test
     public void applicationServiceRejectsGenericBoundaryAdapterParameter() {
         CompilationTestHelper.newInstance(DomainApplicationServiceRoleBoundaryChecker.class, getClass())
                 .addSourceLines(
@@ -402,6 +671,87 @@ public final class DomainRoleBoundaryCheckersTest {
                         "src/domain/foo/published/ApplySelectionCommand.java",
                         "package src.domain.foo.published;",
                         "public record ApplySelectionCommand() { }")
+                .doTest();
+    }
+
+    @Test
+    public void thinRouterIgnoresNestedUseCaseInputConstructorsAndFactories() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceThinRouterChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.application.ApplySelectionUseCase;",
+                        "import src.domain.foo.application.ApplySelectionUseCase.Input;",
+                        "import src.domain.foo.application.ApplySelectionUseCase.Mode;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "public final class FooSelectionApplicationService {",
+                        "  private final ApplySelectionUseCase useCase;",
+                        "  public FooSelectionApplicationService(ApplySelectionUseCase useCase) {",
+                        "    this.useCase = useCase;",
+                        "  }",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    useCase.apply(new Input(Mode.fromName(command.mode())));",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class ApplySelectionUseCase {",
+                        "  public void apply(Input input) { }",
+                        "  public record Input(Mode mode) { }",
+                        "  public enum Mode {",
+                        "    DEFAULT;",
+                        "    public static Mode fromName(String name) { return DEFAULT; }",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(String mode) { }")
+                .doTest();
+    }
+
+    @Test
+    public void thinRouterStillRejectsMultipleRealUseCaseCalls() {
+        CompilationTestHelper.newInstance(DomainApplicationServiceThinRouterChecker.class, getClass())
+                .addSourceLines(
+                        "src/domain/foo/FooSelectionApplicationService.java",
+                        "package src.domain.foo;",
+                        "import src.domain.foo.application.ApplySelectionUseCase;",
+                        "import src.domain.foo.application.ApplySelectionUseCase.Input;",
+                        "import src.domain.foo.application.AuditSelectionUseCase;",
+                        "import src.domain.foo.published.ApplySelectionCommand;",
+                        "// BUG: Diagnostic contains: calls same-context UseCase methods 2 time(s)",
+                        "public final class FooSelectionApplicationService {",
+                        "  private final ApplySelectionUseCase useCase;",
+                        "  private final AuditSelectionUseCase auditUseCase;",
+                        "  public FooSelectionApplicationService(",
+                        "      ApplySelectionUseCase useCase, AuditSelectionUseCase auditUseCase) {",
+                        "    this.useCase = useCase;",
+                        "    this.auditUseCase = auditUseCase;",
+                        "  }",
+                        "  public void apply(ApplySelectionCommand command) {",
+                        "    useCase.apply(new Input(command.mode()));",
+                        "    auditUseCase.apply();",
+                        "  }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/ApplySelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class ApplySelectionUseCase {",
+                        "  public void apply(Input input) { }",
+                        "  public record Input(String mode) { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/application/AuditSelectionUseCase.java",
+                        "package src.domain.foo.application;",
+                        "public final class AuditSelectionUseCase {",
+                        "  public void apply() { }",
+                        "}")
+                .addSourceLines(
+                        "src/domain/foo/published/ApplySelectionCommand.java",
+                        "package src.domain.foo.published;",
+                        "public record ApplySelectionCommand(String mode) { }")
                 .doTest();
     }
 

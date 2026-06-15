@@ -12,6 +12,12 @@ This catalog owns proof rows for cluster and room map labels: default text,
 custom naming routes, placement, render style, hit behavior, and reload
 stability. It does not own narration text or transition destination labels.
 
+## Proof Suite
+
+Label rows are covered by the `labels` suite and by
+`dungeonEditorClusterBehaviorHarness` when cluster behavior is investigated.
+Door-focused runs do not depend on label rows.
+
 ## Verification Matrix
 
 | ID | Interaction | Route | Fixture | Expected proof | Status |

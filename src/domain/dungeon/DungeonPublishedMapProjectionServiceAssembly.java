@@ -107,7 +107,8 @@ final class DungeonPublishedMapProjectionServiceAssembly {
                 handle.roomId(),
                 handle.index(),
                 cell(handle.cell()),
-                handle.direction().name());
+                handle.direction().name(),
+                handle.sourceEdge() == null ? null : edge(handle.sourceEdge()));
     }
 
     private static src.domain.dungeon.published.DungeonEdgeRef edge(src.domain.dungeon.model.core.geometry.Edge edge) {

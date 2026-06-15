@@ -9,8 +9,8 @@ state route expectations for Dungeon Editor behavior verification.
 ## Purpose
 
 This catalog owns route expectations for corridor creation, preview-only
-drafting, anchor movement, route splitting, protected deletion, invalid-route
-rejection, and corridor point editing. The shared proof model, status
+drafting, passive anchor refs, route splitting, protected deletion,
+invalid-route rejection, and focused corridor point editing. The shared proof model, status
 vocabulary, gesture convention, route ownership, and completion criteria remain
 in [Dungeon Editor-Wide Invariants](verification-dungeon-editor-wide-invariants.md).
 
@@ -18,10 +18,10 @@ in [Dungeon Editor-Wide Invariants](verification-dungeon-editor-wide-invariants.
 
 | ID | Interaction | Route | Fixture | Expected proof | Status |
 | --- | --- | --- | --- | --- | --- |
-| `DE-SEL-006` | Move selected corridor handle | Select tool plus corridor-anchor handle drag | `F5_CORRIDOR_WITH_ANCHOR` | Drag preview moves the handle visually without DB mutation; release persists the existing anchor identity at the new cell. | Ready |
+| `DE-SEL-006` | Suppress generic corridor canvas handle drag | Select tool plus corridor-anchor coordinates | `F5_CORRIDOR_WITH_ANCHOR` | Published corridor anchor refs are not rendered or hit-tested as generic canvas drag handles; attempted anchor drag leaves preview, SQLite, and render state unchanged. | Ready |
 | `DE-STATE-004` | Corridor point edit from state panel | `DungeonEditorStateView` corridor point card | `F5_CORRIDOR_WITH_ANCHOR` | Existing anchor/waypoint coordinates update without duplicate anchor, endpoint, or route churn. | Ready |
 | `DE-COR-004` | Split corridor at crossing | Full corridor commit whose route crosses an existing corridor | `F5_CORRIDOR_WITH_ANCHOR` variant | Crossing split reuses the authored crossing anchor through SQLite readback and render. | Ready |
-| `DE-COR-005` | Persist moved corridor anchor | Release after corridor-anchor handle drag | `F5_CORRIDOR_WITH_ANCHOR` | Release persists the existing anchor identity at the new cell and renders readback. | Ready |
+| `DE-COR-005` | Keep suppressed corridor anchor drag passive | Release after attempted corridor-anchor canvas drag | `F5_CORRIDOR_WITH_ANCHOR` | Release after a suppressed anchor drag keeps the existing anchor identity and coordinates unchanged; state-panel endpoint editing owns coordinate movement. | Ready |
 | `DE-COR-006` | Delete connection point and reroute | Corridor family plus secondary delete on point | `F5_CORRIDOR_WITH_ANCHOR` | Selected point is removed only when replacement route is valid; invalid replacement leaves all rows unchanged. | Ready |
 | `DE-COR-007` | Delete door connection branch | Corridor family plus secondary delete on door binding | `F5_CORRIDOR_WITH_ANCHOR` | Only the branch span to the nearest surviving authored corridor point is removed. | Ready |
 | `DE-COR-008` | Invalid route rejected | Corridor draft completed with blocked target | `F11_BLOCKED_CORRIDOR_ROUTE` | Status reports rejection and no draft endpoint materialization persists. | Ready |

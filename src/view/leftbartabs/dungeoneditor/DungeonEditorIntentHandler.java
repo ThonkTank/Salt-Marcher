@@ -1064,7 +1064,7 @@ final class DungeonEditorIntentHandler {
             DungeonMapContentModel.HandleTarget safeHandle = handle == null
                     ? DungeonMapContentModel.HandleTarget.empty()
                     : handle;
-            return new DungeonEditorHandleRef(
+            DungeonEditorHandleRef baseRef = new DungeonEditorHandleRef(
                     safeHandle.kind(),
                     topologyRef(safeHandle.topologyKind(), safeHandle.topologyId()),
                     safeHandle.ownerId(),
@@ -1073,7 +1073,15 @@ final class DungeonEditorIntentHandler {
                     safeHandle.roomId(),
                     safeHandle.orderIndex(),
                     cellRef(safeHandle.q(), safeHandle.r(), safeHandle.level()),
-                    safeHandle.direction());
+                    safeHandle.direction(),
+                    null);
+            DungeonMapContentModel.HandleTarget.SourceEdgeTarget sourceEdge = safeHandle.sourceEdgeTarget();
+            return sourceEdge.present()
+                    ? DungeonEditorHandleRef.withSourceEdge(
+                            baseRef,
+                            cellRef(sourceEdge.startQ(), sourceEdge.startR(), sourceEdge.startLevel()),
+                            cellRef(sourceEdge.endQ(), sourceEdge.endR(), sourceEdge.endLevel()))
+                    : baseRef;
         }
 
         private static DungeonEditorBoundaryTargetRef boundaryRef(DungeonMapContentModel.BoundaryTarget boundary) {

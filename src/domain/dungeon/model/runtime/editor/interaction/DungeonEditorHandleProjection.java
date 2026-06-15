@@ -2,6 +2,7 @@ package src.domain.dungeon.model.runtime.editor.interaction;
 
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public record DungeonEditorHandleProjection(
@@ -16,7 +17,8 @@ public record DungeonEditorHandleProjection(
         double markerQ,
         double markerR,
         Direction direction,
-        String label
+        String label,
+        Edge sourceEdge
 ) {
     public DungeonEditorHandleProjection {
         kind = kind == null ? DungeonEditorHandleProjectionKind.defaultKind() : kind;

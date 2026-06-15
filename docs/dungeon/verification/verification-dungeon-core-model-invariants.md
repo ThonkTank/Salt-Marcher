@@ -34,11 +34,10 @@ new Gradle task or public verification gate.
 
 ## Proof Model
 
-Model invariant rows are grouped by the package-level
-`DungeonCoreModelInvariantHarness` entrypoint and are still published through
-the existing `dungeonEditorBehaviorHarness` public Gradle aggregator. This
-document does not introduce a new public Gradle gate; the focused entrypoint is
-an internal harness concern route used by the aggregator. Each published harness
+Model invariant rows are grouped by the `core` suite in
+`DungeonEditorBehaviorSuiteHarness`. They are runnable through
+`dungeonEditorCoreBehaviorHarness` for focused investigation and remain part of
+the complete `dungeonEditorBehaviorHarness` aggregate. Each published harness
 summary row must include:
 
 - `OwnerSuite`

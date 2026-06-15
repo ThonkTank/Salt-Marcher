@@ -82,6 +82,31 @@ document exists.
   nearby files, shared entrypoints, repo-local tools, or tool output.
 - Exploration subagents launched for that workflow must use the repo-owned
   `code-exploration-agent` skill before reading or reporting.
+- Repo-tracked implementation passes that change production code,
+  check/enforcement packages, build or verification wiring, dependency
+  surfaces, or agent-facing instruction surfaces must run the installed
+  `code-simplifier` skill after the main edit and before the implementation
+  pass log and Overview handoff review. If the harness does not auto-discover
+  the skill, read
+  `/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/skills/code-simplifier/SKILL.md`
+  directly. This is a qualitative in-agent simplification pass over the
+  simplicity, elegance, smell, and performance lenses; it is not a new
+  static-analysis gate and does not replace mandatory proof or review.
+- When review results, architecture checks, behavior harnesses, or required
+  proof expose a systemic blocker, Main must use the global `planner` skill to
+  obtain a project-health repair plan before implementing the repair. The
+  planner optimizes for the long-term target architecture, maintainability, and
+  fitting solution shape, not for the shortest immediate unblocker. Systemic
+  blockers include unclear root cause, repeated fix cycles, architecture or
+  harness mismatch, cross-owner repair, or likely edits across multiple
+  packages, documents, checks, or generated surfaces. Small local blockers with
+  an obvious one-file fix do not require this planner escalation.
+- Work that runs, plans, changes, or reviews the SaltMarcher
+  process-autoresearch loop must use the repo-owned
+  `autodev-process-optimizer` skill. The process optimizer tunes implementer
+  prompts, slice briefs, context budgets, model routing, review routing, and
+  feedback capture; it must not weaken mandatory SaltMarcher proof, review, or
+  publication rules.
 - Production-code, check/enforcement, and dependency work must use the
   repo-owned `continuous-refactoring` skill before planning, implementing,
   refactoring, or reviewing. The skill is a workflow rule for keeping cleanup
@@ -224,6 +249,9 @@ document exists.
 - [Repo Tools Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/repo-tools/SKILL.md:1)
 - [Code Exploration Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/code-exploration/SKILL.md:1)
 - [Code Exploration Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/code-exploration-agent/SKILL.md:1)
+- [Installed Code Simplifier Skill](/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/skills/code-simplifier/SKILL.md:1)
+- [Global Planner Skill](/home/aaron/.codex/skills/local/planner/SKILL.md:1)
+- [Autodev Process Optimizer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/autodev-process-optimizer/SKILL.md:1)
 - [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
 - [Global Main To Overview Coordination Skill](/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md:1)
 - [Global Overview To Reviewer Coordination Skill](/home/aaron/.codex/skills/local/coord-overview-reviewer/SKILL.md:1)

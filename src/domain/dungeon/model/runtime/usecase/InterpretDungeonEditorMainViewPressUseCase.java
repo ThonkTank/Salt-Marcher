@@ -1,7 +1,9 @@
 package src.domain.dungeon.model.runtime.usecase;
 
 import src.domain.dungeon.model.runtime.helper.DungeonEditorBoundaryStretchHelper;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorCorridorPointLookup;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.BoundaryStretchSession;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.DragSession;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.InteractionState;
@@ -30,7 +32,8 @@ final class InterpretDungeonEditorMainViewPressUseCase {
             return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.select(nextStretchSession.selection()));
         }
         if (input.hitTarget().selectable()) {
-            DungeonEditorSessionValues.Selection nextSelection = input.hitTarget().toSelection();
+            DungeonEditorSessionValues.Selection nextSelection =
+                    selectedCorridorPoint(input, snapshot, input.hitTarget().toSelection());
             DragSession nextDrag = input.hitTarget().draggable()
                     ? DragSession.start(nextSelection, input.q(), input.r(), input.level())
                     : DragSession.none();
@@ -40,6 +43,27 @@ final class InterpretDungeonEditorMainViewPressUseCase {
             return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorMainViewEffect.select(nextSelection));
         }
         return new DungeonEditorMainViewInterpretation(state.clear(), DungeonEditorMainViewEffect.clearedSelection());
+    }
+
+    private static DungeonEditorSessionValues.Selection selectedCorridorPoint(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Selection selection
+    ) {
+        if (selection.topologyRef().kind() != DungeonTopologyElementKind.CORRIDOR
+                || !DungeonEditorWorkspaceValues.hasId(selection.topologyRef().id())) {
+            return selection;
+        }
+        DungeonEditorWorkspaceValues.HandleRef point =
+                DungeonEditorCorridorPointLookup.authoredPointAt(input, snapshot, selection.topologyRef().id());
+        if (!DungeonEditorWorkspaceValues.hasId(point.topologyRef().id())) {
+            return selection;
+        }
+        return new DungeonEditorSessionValues.Selection(
+                selection.topologyRef(),
+                selection.clusterId(),
+                selection.clusterSelection(),
+                point);
     }
 
     DungeonEditorMainViewInterpretation interpretBoundary(

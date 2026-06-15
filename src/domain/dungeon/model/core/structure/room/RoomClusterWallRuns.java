@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.component.boundary.BoundaryMap;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
@@ -97,11 +99,18 @@ final class RoomClusterWallRuns {
         }
         double variableMidpoint = (start + end) / 2.0;
         int anchorCoordinate = (int) Math.floor(variableMidpoint);
+        Cell sourceFrom = horizontal
+                ? new Cell(anchorCoordinate, fixed, level)
+                : new Cell(fixed, anchorCoordinate, level);
+        Cell sourceTo = horizontal
+                ? new Cell(anchorCoordinate + 1, fixed, level)
+                : new Cell(fixed, anchorCoordinate + 1, level);
         result.add(new WallRun(
                 horizontal ? new src.domain.dungeon.model.core.geometry.Cell(anchorCoordinate, fixed, level)
                         : new src.domain.dungeon.model.core.geometry.Cell(fixed, anchorCoordinate, level),
                 horizontal ? variableMidpoint : fixed,
                 horizontal ? fixed : variableMidpoint,
-                direction));
+                direction,
+                new Edge(sourceFrom, sourceTo)));
     }
 }

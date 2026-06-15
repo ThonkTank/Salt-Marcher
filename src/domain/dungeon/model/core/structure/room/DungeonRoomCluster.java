@@ -9,7 +9,6 @@ import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 
 @SuppressWarnings({"PMD.GodClass", "PMD.TooManyMethods"})
@@ -39,7 +38,6 @@ public final class DungeonRoomCluster {
         this.boundariesByLevel = copyNestedLists(boundariesByLevel);
     }
 
-    // LEGACY_REMOVE_ON_TOUCH: Compatibility constructor; entfernen, sobald dieser Bereich bearbeitet wird.
     public static DungeonRoomCluster fromCompatibilityInput(
             long clusterId,
             long mapId,
@@ -164,8 +162,16 @@ public final class DungeonRoomCluster {
                 nextBoundariesByLevel);
     }
 
-    List<EdgeKey> adjacentWallRunEdgeKeys(Cell corner, boolean vertical) {
-        return boundarySnapshot().adjacentWallRunEdgeKeys(corner, vertical);
+    DungeonRoomCluster withAuthoredBoundaries(
+            Map<Integer, List<DungeonClusterBoundary>> nextBoundariesByLevel
+    ) {
+        return new DungeonRoomCluster(
+                clusterId,
+                mapId,
+                name,
+                center,
+                floorMap,
+                nextBoundariesByLevel);
     }
 
     static DungeonRoomCluster fromCore(
@@ -189,6 +195,10 @@ public final class DungeonRoomCluster {
                 center,
                 floorMap,
                 boundariesByLevel);
+    }
+
+    public DungeonRoomCluster withMovedDoorBoundary(RoomClusterDoorBoundaryMove move) {
+        return new RoomClusterDoorBoundaryMovement().moved(this, move);
     }
 
     DungeonRoomCluster movedBy(int deltaQ, int deltaR, int deltaLevel) {
@@ -315,7 +325,7 @@ public final class DungeonRoomCluster {
         return Map.copyOf(result);
     }
 
-    private RoomClusterBoundarySnapshot boundarySnapshot() {
+    RoomClusterBoundarySnapshot boundarySnapshot() {
         return new RoomClusterBoundarySnapshot(center, boundariesByLevel);
     }
 

@@ -164,29 +164,109 @@ tasks.test {
 val dungeonEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("dungeon-editor-behavior-data")
 val dungeonEditorBehaviorHarnessResultsDir = layout.buildDirectory.dir("dungeon-editor-behavior-results")
 
-tasks.register<JavaExec>("dungeonEditorBehaviorHarness") {
+fun registerDungeonEditorBehaviorHarnessTask(
+    taskName: String,
+    taskDescription: String,
+    suiteIds: List<String>
+) {
+    tasks.register<JavaExec>(taskName) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = taskDescription
+        dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
+        classpath = dungeonEditorBehaviorHarness.runtimeClasspath
+        mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorSuiteHarness")
+        args(suiteIds)
+        inputs.files(fileTree("docs/dungeon/verification") {
+            include("verification-dungeon-*-invariants.md")
+            include("verification-dungeon-editor-*.md")
+        })
+            .withPropertyName("dungeonEditorBehaviorCatalogs")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+        inputs.property("dungeonEditorBehaviorSuites", suiteIds.joinToString(","))
+        outputs.dir(dungeonEditorBehaviorHarnessResultsDir)
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = dungeonEditorBehaviorHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            mkdir(dungeonEditorBehaviorHarnessResultsDir)
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+        systemProperty(
+            "saltmarcher.dungeonEditorBehavior.resultsDir",
+            dungeonEditorBehaviorHarnessResultsDir.get().asFile.absolutePath
+        )
+    }
+}
+
+registerDungeonEditorBehaviorHarnessTask(
+    "dungeonEditorBehaviorHarness",
+    "Run all focused view-driven Dungeon Editor behavior suites.",
+    listOf("all")
+)
+
+registerDungeonEditorBehaviorHarnessTask(
+    "dungeonEditorCoreBehaviorHarness",
+    "Run Dungeon Editor core model invariant suites.",
+    listOf("core")
+)
+
+registerDungeonEditorBehaviorHarnessTask(
+    "dungeonEditorRouteBehaviorHarness",
+    "Run Dungeon Editor route behavior suites.",
+    listOf("routes")
+)
+
+registerDungeonEditorBehaviorHarnessTask(
+    "dungeonEditorDoorBehaviorHarness",
+    "Run Door behavior plus declared geometry/domain dependencies.",
+    listOf("doors")
+)
+
+registerDungeonEditorBehaviorHarnessTask(
+    "dungeonEditorWallBehaviorHarness",
+    "Run Wall behavior plus declared geometry/domain dependencies.",
+    listOf("walls")
+)
+
+registerDungeonEditorBehaviorHarnessTask(
+    "dungeonEditorRoomBehaviorHarness",
+    "Run Room behavior plus declared geometry/domain dependencies.",
+    listOf("rooms")
+)
+
+registerDungeonEditorBehaviorHarnessTask(
+    "dungeonEditorClusterBehaviorHarness",
+    "Run Cluster behavior plus declared geometry/domain dependencies.",
+    listOf("labels", "cluster-handles", "cluster-routes")
+)
+
+registerDungeonEditorBehaviorHarnessTask(
+    "dungeonEditorCorridorBehaviorHarness",
+    "Run Corridor behavior plus declared geometry/domain dependencies.",
+    listOf("corridors")
+)
+
+registerDungeonEditorBehaviorHarnessTask(
+    "dungeonEditorStairBehaviorHarness",
+    "Run Stair behavior plus declared geometry/domain dependencies.",
+    listOf("stairs")
+)
+
+registerDungeonEditorBehaviorHarnessTask(
+    "dungeonEditorTransitionBehaviorHarness",
+    "Run Transition behavior plus declared geometry/domain dependencies.",
+    listOf("transitions")
+)
+
+tasks.register<JavaExec>("dungeonEditorBehaviorHarnessSuites") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run the focused view-driven Dungeon Editor behavior harness."
+    description = "Print the available Dungeon Editor behavior suite ids."
     dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
     classpath = dungeonEditorBehaviorHarness.runtimeClasspath
-    mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorToolBehaviorHarness")
-    inputs.files(fileTree("docs/dungeon/verification") {
-        include("verification-dungeon-*-invariants.md")
-        include("verification-dungeon-editor-*.md")
-    })
-        .withPropertyName("dungeonEditorBehaviorCatalogs")
-        .withPathSensitivity(PathSensitivity.RELATIVE)
-    outputs.dir(dungeonEditorBehaviorHarnessResultsDir)
-    outputs.upToDateWhen { false }
-    doFirst {
-        val runDataDir = dungeonEditorBehaviorHarnessDataDir.get()
-            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
-        mkdir(runDataDir)
-        mkdir(runDataDir.dir("salt-marcher"))
-        mkdir(dungeonEditorBehaviorHarnessResultsDir)
-        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
-    }
-    systemProperty("saltmarcher.dungeonEditorBehavior.resultsDir", dungeonEditorBehaviorHarnessResultsDir.get().asFile.absolutePath)
+    mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorSuiteHarness")
+    args("--list")
 }
 
 val mainJavaClassesDir = layout.buildDirectory.dir("classes/java/main")

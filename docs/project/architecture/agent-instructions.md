@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-26
+Last Reviewed: 2026-06-14
 Source of Truth: Governance for agent instruction surfaces, the mandatory
 global instruction skill, and ownership boundaries between instruction
 artifacts.
@@ -83,6 +83,60 @@ SaltMarcher keeps review instructions in global skills, not in this standard.
   not create repo-local copies unless the user explicitly asks for a
   SaltMarcher-owned fork.
 
+## Qualitative Simplification Pass
+
+SaltMarcher uses `code-simplifier` as a fixed qualitative step in the active
+implementation workflow. It is an in-agent orchestrator over the global
+simplicity, elegance, smell, and performance lenses. It finds local
+behavior-preserving simplification patches for inefficiencies that mechanical
+static-analysis gates do not cover.
+
+Implementation agents must run the installed `code-simplifier` skill after the
+main edit and before writing the implementation pass log when the pass changes
+production code, check/enforcement packages, build or verification wiring,
+dependency surfaces, or agent-facing instruction surfaces. If the harness does
+not auto-discover the skill, read and apply:
+
+- `/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/skills/code-simplifier/SKILL.md`
+
+The simplification pass must not create new static-analysis gates, weaken
+required proof, replace the mandatory Overview-coordinated review, or launch
+review subagents by default. It may produce a small local patch, record that no
+safe simplification was found, or downgrade a risky idea to a review note.
+
+## Planner Escalation For Systemic Feedback
+
+SaltMarcher treats large review, architecture-check, behavior-harness, and
+proof blockers as planning inputs before repair. When feedback suggests a
+systemic problem rather than a local defect, Main must obtain a
+project-health repair plan from the global planner before implementing the
+repair. The planner optimizes for the long-term target architecture,
+maintainability, and fitting solution shape, not for the shortest immediate
+unblocker.
+
+Planner escalation is required when any of these signals appear:
+
+- the root cause is unclear after the literal finding or harness output is
+  inspected
+- the same behavior, check, or proof surface has required repeated fix cycles
+- the finding suggests an architecture, check, or behavior-harness mismatch
+- a repair likely touches multiple owner surfaces, packages, documents, checks,
+  or generated surfaces
+- a quick local fix would satisfy the immediate finding while making the target
+  design less direct, less cohesive, or harder to maintain
+
+Planner escalation is not required for isolated local issues with an obvious
+single-surface fix, such as typos, missing imports, stale references, or
+one-file documentation corrections.
+
+Main gives the planner only neutral, inspectable evidence: task goal, literal
+finding or harness output, current changed paths, owner documents, proof state,
+dirty baseline, constraints, and known non-goals. The planner returns a concise
+project-health plan with root cause, target-state alignment, chosen approach,
+rejected short-cuts, write set, proof route, risks, and Done When criteria. The
+planner does not implement, review, run proof, launch workers, or replace the
+Overview coordinator.
+
 ## Implementation And Review Pass Logs
 
 SaltMarcher uses local pass logs as generated operational evidence for
@@ -107,12 +161,45 @@ contracts, architecture, domain truth, or verification policy.
   reviewer outputs.
 - Pass logs live under `build/agent-pass-logs/` and are generated local
   evidence. Do not commit them and do not cite them as canonical truth.
+- Pass logs are also the local memory for expected wait times of recurring
+  long-running processes. Agents MUST record observed durations for frequently
+  repeated harnesses, staged verification routes, desktop installation, and
+  other long checks they run so later agents can choose sensible polling
+  intervals.
 - Missing pass logs for prior work do not block a pass by themselves, but a
   required current implementation or review pass without its log remains WIP
   until the log is written or the blocker is reported.
 - If the build directory has been cleaned, reviewers treat the missing logs as
   unavailable operational history rather than as evidence that no prior loop or
   degradation occurred.
+
+## Wait-Time And Polling Evidence
+
+Agents SHOULD avoid tight polling of known long-running processes. Before
+waiting on a recurring SaltMarcher process, inspect the newest relevant local
+pass log or retained Gradle run log when available and use its last observed
+duration as the expected wait time.
+
+- If a previous comparable run took several minutes, schedule the first
+  completion poll near that observed duration instead of polling every few
+  seconds.
+- For example, when the latest comparable harness run took about 10 minutes,
+  the next agent should wait about 10 minutes before the first completion poll,
+  unless the process emits meaningful incremental output that needs immediate
+  triage.
+- If no prior duration exists, use the observable wrapper output or normal
+  30-60 second status intervals until the process class has one recorded
+  duration.
+- After the expected wait time has elapsed, poll at a moderate interval
+  such as 30-60 seconds until completion or failure.
+- Do not launch duplicate Gradle, harness, or verification processes merely
+  because a known long-running process is quiet.
+
+Implementation and review pass logs MUST include a `Wait-Time Observations`
+entry whenever the pass ran a recurring process that took long enough to affect
+agent polling behavior. Each entry records the command or process class,
+observed elapsed time, result, evidence log path when one exists, and the
+recommended first-poll interval for the next comparable run.
 
 Implementation log filenames must use:
 
@@ -141,9 +228,15 @@ An implementation pass log must include:
 - touched paths and intentionally untouched dirty paths
 - owner documents and mandatory skills used
 - implementation summary and key tradeoffs
+- `code-simplifier` outcome for covered implementation passes, including safe
+  patches made, no-op result, or skipped status with reason
+- planner escalation outcome when systemic review, architecture-check,
+  behavior-harness, or proof feedback shaped the project-health plan
 - `LEGACY_REMOVE_ON_TOUCH` markers found in the write set and whether they were
   removed or reported as blockers
 - verification commands and literal results
+- wait-time observations for recurring long-running processes, including
+  recommended first-poll intervals for future comparable runs
 - reversals, reimplemented work, abandoned approaches, or repeated edits to the
   same behavior
 - architecture, quality, maintainability, elegance, or performance friction
@@ -155,6 +248,8 @@ A review pass log must include:
 - exact local timestamp, Overview aggregation role or main fallback handoff
   role, reviewed scope, and reviewed pass-log paths
 - verification evidence inspected
+- wait-time evidence inspected or updated when review depends on long-running
+  proof, harness, or installation processes
 - selected review panel or unavailable nested-review blocker
 - findings and fix outcomes
 - trend observations, including repeated reversals, looped implementation,
@@ -212,6 +307,11 @@ When a covered artifact changes, reviewers must check:
 - Did the change introduce duplicate or conflicting truth across covered
   surfaces?
 - Does the chosen verification path match the actual changed surfaces?
+- Did covered implementation work run `code-simplifier` before pass logging and
+  Overview review, without treating it as a substitute for proof or review?
+- If systemic review, architecture-check, behavior-harness, or proof feedback
+  shaped the repair, did Main obtain a planner project-health plan before
+  implementing the fix?
 - Did the implementing agent obtain a completed global `lens-coordinator-handoff`
   coordinator result before handoff?
 - Did any specialist review skill used for the pass remain a read-only review
@@ -234,6 +334,8 @@ When a covered artifact changes, reviewers must check:
 - [Global Handoff Coordinator Lens](/home/aaron/.codex/skills/local/lens-coordinator-handoff/SKILL.md:1)
 - [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md:1)
 - [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md:1)
+- [Installed Code Simplifier Skill](/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/skills/code-simplifier/SKILL.md:1)
+- [Global Planner Skill](/home/aaron/.codex/skills/local/planner/SKILL.md:1)
 - [Global Performance Review Skill](/home/aaron/.codex/skills/local/lens-performance/SKILL.md:1)
 - [Global Code Quality Review Skill](/home/aaron/.codex/skills/local/lens-quality/SKILL.md:1)
 - [Global Architecture Review Skill](/home/aaron/.codex/skills/local/lens-architecture/SKILL.md:1)

@@ -16,7 +16,7 @@ public final class CorridorBindingMovement {
     private static final CorridorConnectionNormalization CONNECTION_NORMALIZATION =
             new CorridorConnectionNormalization();
 
-    public DungeonMap moveDoorBinding(
+    public DoorBindingMoveResult moveDoorBindingWithResult(
             DungeonMap dungeonMap,
             long corridorId,
             int bindingIndex,
@@ -25,9 +25,10 @@ public final class CorridorBindingMovement {
             int deltaR,
             int deltaLevel
     ) {
+        CorridorDoorBindingState oldBinding = doorBinding(dungeonMap, corridorId, bindingIndex, roomId);
         Objects.requireNonNull(dungeonMap, "dungeonMap");
         if (stationary(deltaQ, deltaR, deltaLevel)) {
-            return dungeonMap;
+            return new DoorBindingMoveResult(dungeonMap, dungeonMap, oldBinding, oldBinding);
         }
         List<Corridor> movedCorridors = new ArrayList<>();
         boolean changed = false;
@@ -39,7 +40,12 @@ public final class CorridorBindingMovement {
             changed = addDoorMovedCorridor(movedCorridors, corridor, bindingIndex, roomId, deltaQ, deltaR, deltaLevel)
                     || changed;
         }
-        return changed ? copyWithConnections(dungeonMap, movedCorridors, dungeonMap.stairs()) : dungeonMap;
+        DungeonMap movedMap = changed ? copyWithConnections(dungeonMap, movedCorridors, dungeonMap.stairs()) : dungeonMap;
+        return new DoorBindingMoveResult(
+                dungeonMap,
+                movedMap,
+                oldBinding,
+                doorBinding(movedMap, corridorId, bindingIndex, roomId));
     }
 
     public DungeonMap moveAnchorBinding(
@@ -219,5 +225,38 @@ public final class CorridorBindingMovement {
 
     private static boolean stationary(int deltaQ, int deltaR, int deltaLevel) {
         return deltaQ == 0 && deltaR == 0 && deltaLevel == 0;
+    }
+
+    private static CorridorDoorBindingState doorBinding(
+            DungeonMap dungeonMap,
+            long corridorId,
+            int bindingIndex,
+            long roomId
+    ) {
+        if (dungeonMap == null || bindingIndex < 0) {
+            return null;
+        }
+        for (Corridor corridor : dungeonMap.corridors()) {
+            if (corridor.corridorId() != corridorId || bindingIndex >= corridor.stateBindings().doorBindings().size()) {
+                continue;
+            }
+            CorridorDoorBindingState binding = corridor.stateBindings().doorBindings().get(bindingIndex);
+            if (binding.roomId() == roomId) {
+                return binding;
+            }
+        }
+        return null;
+    }
+
+    public record DoorBindingMoveResult(
+            DungeonMap sourceMap,
+            DungeonMap movedMap,
+            CorridorDoorBindingState oldBinding,
+            CorridorDoorBindingState newBinding
+    ) {
+        public DoorBindingMoveResult {
+            sourceMap = Objects.requireNonNull(sourceMap, "sourceMap");
+            movedMap = Objects.requireNonNull(movedMap, "movedMap");
+        }
     }
 }

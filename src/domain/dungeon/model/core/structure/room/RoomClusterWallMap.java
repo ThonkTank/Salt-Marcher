@@ -93,7 +93,7 @@ public final class RoomClusterWallMap {
         return RoomClusterWallRows.keyForRow(center, row);
     }
 
-    public record WallRun(Cell anchorCell, double markerQ, double markerR, Direction direction) {
+    public record WallRun(Cell anchorCell, double markerQ, double markerR, Direction direction, Edge sourceEdge) {
         public WallRun {
             anchorCell = anchorCell == null ? new Cell(0, 0, 0) : anchorCell;
             markerQ = Double.isFinite(markerQ) ? markerQ : anchorCell.q();

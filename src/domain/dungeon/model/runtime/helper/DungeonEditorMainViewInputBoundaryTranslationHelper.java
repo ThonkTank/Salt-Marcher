@@ -88,7 +88,8 @@ public final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 safeHandle.roomId(),
                 safeHandle.index(),
                 toCellTarget(safeHandle.cell()),
-                safeHandle.direction());
+                safeHandle.direction(),
+                safeHandle.hasSourceEdge() ? safeHandle.sourceEdge() : null);
         return new HitTarget(
                 HitKind.HANDLE,
                 handleTarget.ownerId(),

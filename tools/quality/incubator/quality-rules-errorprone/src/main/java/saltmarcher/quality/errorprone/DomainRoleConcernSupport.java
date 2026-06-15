@@ -1,6 +1,7 @@
 package saltmarcher.quality.errorprone;
 
 import com.google.errorprone.util.ASTHelpers;
+import com.sun.source.tree.AssignmentTree;
 import com.sun.source.tree.ClassTree;
 import com.sun.source.tree.CompilationUnitTree;
 import com.sun.source.tree.IdentifierTree;
@@ -8,11 +9,16 @@ import com.sun.source.tree.ImportTree;
 import com.sun.source.tree.MemberSelectTree;
 import com.sun.source.tree.MethodInvocationTree;
 import com.sun.source.tree.MethodTree;
+import com.sun.source.tree.NewClassTree;
+import com.sun.source.tree.ParenthesizedTree;
 import com.sun.source.tree.Tree;
+import com.sun.source.tree.TypeCastTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.TreeScanner;
 import com.sun.tools.javac.code.Symbol;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,7 +63,8 @@ final class DomainRoleConcernSupport {
     private record ApplicationServiceCarrierScanContext(
             Symbol.MethodSymbol currentMethod,
             Symbol legalRootParameter,
-            boolean insideLegalRootParameterType
+            Map<Symbol, Set<String>> legalBoundaryCarrierLocals,
+            boolean insideLegalBoundaryCarrierType
     ) {
     }
 
@@ -414,6 +421,9 @@ final class DomainRoleConcernSupport {
         if (rootMatcher.matches()) {
             return feature.equals(rootMatcher.group(1));
         }
+        if (isSameFeatureRootUseCaseOwnedType(referencedType, feature)) {
+            return true;
+        }
         Matcher modelMatcher = DOMAIN_MODEL_ROLE_TYPE.matcher(referencedType);
         return modelMatcher.matches()
                 && feature.equals(modelMatcher.group(1))
@@ -506,17 +516,59 @@ final class DomainRoleConcernSupport {
             public Void visitMethodInvocation(
                     MethodInvocationTree methodInvocation,
                     ApplicationServiceCarrierScanContext context) {
-                if (isLegalRootParameterBoundaryRead(methodInvocation, context)) {
+                if (isLegalBoundaryCarrierRead(methodInvocation, context)) {
                     return null;
                 }
+                if (!isLegalApplicationServiceBoundaryAdapterInvocation(sourceRole, methodInvocation)) {
+                    addApplicationServiceForwardedCarrierArgumentViolations(
+                            sourceRole,
+                            methodInvocation.getArguments(),
+                            "method argument " + methodInvocationName(methodInvocation),
+                            context,
+                            violations);
+                }
                 return super.visitMethodInvocation(methodInvocation, context);
+            }
+
+            @Override
+            public Void visitNewClass(
+                    NewClassTree newClassTree,
+                    ApplicationServiceCarrierScanContext context) {
+                addApplicationServiceForwardedCarrierArgumentViolations(
+                        sourceRole,
+                        newClassTree.getArguments(),
+                        "constructor argument " + newClassTree.getIdentifier(),
+                        context,
+                        violations);
+                return super.visitNewClass(newClassTree, context);
+            }
+
+            @Override
+            public Void visitAssignment(
+                    AssignmentTree assignmentTree,
+                    ApplicationServiceCarrierScanContext context) {
+                Symbol symbol = expressionSymbol(assignmentTree.getVariable());
+                Symbol.MethodSymbol currentMethod = context == null ? null : context.currentMethod();
+                if (context != null
+                        && symbol != null
+                        && symbol.owner == currentMethod
+                        && isLegalApplicationServiceBoundaryAdapterLocalCarrierAlias(
+                                sourceRole,
+                                assignmentTree.getExpression(),
+                                currentMethod,
+                                context)) {
+                    context.legalBoundaryCarrierLocals().put(
+                            symbol,
+                            boundaryCarrierOriginTypes(null, assignmentTree.getExpression(), context));
+                }
+                return super.visitAssignment(assignmentTree, context);
             }
 
             @Override
             public Void visitMemberSelect(
                     MemberSelectTree memberSelect,
                     ApplicationServiceCarrierScanContext context) {
-                if (isLegalRootParameterBoundaryRead(memberSelect, context)) {
+                if (isLegalBoundaryCarrierRead(memberSelect, context)) {
                     return null;
                 }
                 Symbol symbol = ASTHelpers.getSymbol(memberSelect);
@@ -534,7 +586,7 @@ final class DomainRoleConcernSupport {
             public Void visitIdentifier(
                     IdentifierTree identifierTree,
                     ApplicationServiceCarrierScanContext context) {
-                if (!isInsideLegalRootParameterType(context)) {
+                if (!isInsideLegalBoundaryCarrierType(context)) {
                     Symbol symbol = ASTHelpers.getSymbol(identifierTree);
                     if (isApplicationServicePublishedCarrierTypeUseSymbol(symbol, context)) {
                         addApplicationServicePublishedCarrierViolations(
@@ -571,6 +623,7 @@ final class DomainRoleConcernSupport {
                 return super.visitMethod(methodTree, new ApplicationServiceCarrierScanContext(
                         methodSymbol,
                         legalRootParameter(sourceRole, methodSymbol),
+                        new LinkedHashMap<>(),
                         false));
             }
 
@@ -588,6 +641,26 @@ final class DomainRoleConcernSupport {
                         scan(variableTree.getType(), new ApplicationServiceCarrierScanContext(
                                 currentMethod,
                                 symbol,
+                                context == null ? new LinkedHashMap<>() : context.legalBoundaryCarrierLocals(),
+                                true));
+                        scan(variableTree.getInitializer(), context);
+                        return null;
+                    }
+                    boolean legalBoundaryAlias = isLegalApplicationServiceBoundaryAdapterLocalCarrierAlias(
+                            sourceRole,
+                            variableTree.getInitializer(),
+                            currentMethod,
+                            context);
+                    if (legalBoundaryAlias) {
+                        if (context != null) {
+                            context.legalBoundaryCarrierLocals().put(
+                                    symbol,
+                                    boundaryCarrierOriginTypes(symbol.asType(), variableTree.getInitializer(), context));
+                        }
+                        scan(variableTree.getType(), new ApplicationServiceCarrierScanContext(
+                                currentMethod,
+                                context == null ? null : context.legalRootParameter(),
+                                context == null ? new LinkedHashMap<>() : context.legalBoundaryCarrierLocals(),
                                 true));
                         scan(variableTree.getInitializer(), context);
                         return null;
@@ -601,30 +674,19 @@ final class DomainRoleConcernSupport {
     }
 
     private static ApplicationServiceCarrierScanContext nullContext() {
-        return new ApplicationServiceCarrierScanContext(null, null, false);
+        return new ApplicationServiceCarrierScanContext(null, null, new LinkedHashMap<>(), false);
     }
 
-    private static boolean isInsideLegalRootParameterType(ApplicationServiceCarrierScanContext context) {
-        return context != null && context.insideLegalRootParameterType();
+    private static boolean isInsideLegalBoundaryCarrierType(ApplicationServiceCarrierScanContext context) {
+        return context != null && context.insideLegalBoundaryCarrierType();
     }
 
-    private static boolean isLegalRootParameterVariable(
-            Tree currentTree,
-            ApplicationServiceCarrierScanContext context) {
-        if (!(currentTree instanceof VariableTree variableTree)) {
-            return false;
-        }
-        Symbol symbol = ASTHelpers.getSymbol(variableTree);
-        Symbol.MethodSymbol currentMethod = context == null ? null : context.currentMethod();
-        return symbol != null && isLegalApplicationServicePublishedCarrierParameter(null, symbol, currentMethod);
-    }
-
-    private static boolean isLegalRootParameterSymbol(
+    private static boolean isLegalBoundaryCarrierSymbol(
             Symbol symbol,
             ApplicationServiceCarrierScanContext context) {
         return context != null
-                && context.legalRootParameter() != null
-                && symbol == context.legalRootParameter();
+                && ((context.legalRootParameter() != null && symbol == context.legalRootParameter())
+                || context.legalBoundaryCarrierLocals().containsKey(symbol));
     }
 
     private static boolean isLegalRootParameterTypeSymbol(
@@ -637,6 +699,33 @@ final class DomainRoleConcernSupport {
         return collectTypeReferences(context.legalRootParameter().asType()).contains(symbolTypeName);
     }
 
+    private static void addApplicationServiceForwardedCarrierArgumentViolations(
+            SourceRole sourceRole,
+            Iterable<? extends Tree> arguments,
+            String position,
+            ApplicationServiceCarrierScanContext context,
+            Set<String> violations) {
+        if (context == null) {
+            return;
+        }
+        for (Tree argument : arguments) {
+            if (isRootedInLegalBoundaryCarrier(argument, context)) {
+                Set<String> referencedTypes = new LinkedHashSet<>();
+                TypeMirror argumentType = expressionValueType(argument);
+                if (argumentType != null) {
+                    referencedTypes.addAll(collectTypeReferences(argumentType));
+                }
+                Symbol argumentSymbol = expressionSymbol(argument);
+                if (argumentSymbol != null) {
+                    referencedTypes.addAll(context.legalBoundaryCarrierLocals().getOrDefault(
+                            argumentSymbol,
+                            Set.of()));
+                }
+                addApplicationServicePublishedCarrierViolations(sourceRole, referencedTypes, position, violations);
+            }
+        }
+    }
+
     private static boolean isApplicationServicePublishedCarrierTypeUseSymbol(
             Symbol symbol,
             ApplicationServiceCarrierScanContext context) {
@@ -645,11 +734,11 @@ final class DomainRoleConcernSupport {
                 || symbol.getKind() == ElementKind.CONSTRUCTOR) {
             return false;
         }
-        return !isLegalRootParameterSymbol(symbol, context)
+        return !isLegalBoundaryCarrierSymbol(symbol, context)
                 && !isLegalRootParameterTypeSymbol(symbol, context);
     }
 
-    private static boolean isLegalRootParameterBoundaryRead(
+    private static boolean isLegalBoundaryCarrierRead(
             Tree currentTree,
             ApplicationServiceCarrierScanContext context) {
         if (context == null || context.legalRootParameter() == null) {
@@ -657,12 +746,27 @@ final class DomainRoleConcernSupport {
         }
         if (currentTree instanceof MethodInvocationTree methodInvocation) {
             return isRequireNonNullOnLegalRootParameter(methodInvocation, context.legalRootParameter())
-                    || isRootedInLegalRootParameter(methodInvocation.getMethodSelect(), context.legalRootParameter());
+                    || isRootedInLegalBoundaryCarrier(methodInvocation.getMethodSelect(), context);
         }
         if (currentTree instanceof MemberSelectTree memberSelect) {
-            return isRootedInLegalRootParameter(memberSelect.getExpression(), context.legalRootParameter());
+            return isRootedInLegalBoundaryCarrier(memberSelect.getExpression(), context);
         }
         return false;
+    }
+
+    private static boolean isLegalApplicationServiceBoundaryAdapterInvocation(
+            SourceRole sourceRole,
+            MethodInvocationTree methodInvocation) {
+        Symbol symbol = ASTHelpers.getSymbol(methodInvocation);
+        if (!(symbol instanceof Symbol.MethodSymbol methodSymbol)) {
+            return false;
+        }
+        return isApplicationServiceBoundaryAdapterMethod(sourceRole, methodSymbol);
+    }
+
+    private static String methodInvocationName(MethodInvocationTree methodInvocation) {
+        Symbol symbol = ASTHelpers.getSymbol(methodInvocation);
+        return symbol == null ? methodInvocation.getMethodSelect().toString() : symbol.getSimpleName().toString();
     }
 
     private static boolean isRequireNonNullOnLegalRootParameter(
@@ -678,15 +782,21 @@ final class DomainRoleConcernSupport {
         return ASTHelpers.getSymbol(methodInvocation.getArguments().getFirst()) == legalRootParameter;
     }
 
-    private static boolean isRootedInLegalRootParameter(Tree tree, Symbol legalRootParameter) {
+    private static boolean isRootedInLegalBoundaryCarrier(
+            Tree tree,
+            ApplicationServiceCarrierScanContext context) {
         if (tree instanceof IdentifierTree identifierTree) {
-            return ASTHelpers.getSymbol(identifierTree) == legalRootParameter;
+            return isLegalBoundaryCarrierSymbol(ASTHelpers.getSymbol(identifierTree), context);
+        }
+        tree = unwrapExpression(tree);
+        if (tree instanceof IdentifierTree identifierTree) {
+            return isLegalBoundaryCarrierSymbol(ASTHelpers.getSymbol(identifierTree), context);
         }
         if (tree instanceof MemberSelectTree memberSelectTree) {
-            return isRootedInLegalRootParameter(memberSelectTree.getExpression(), legalRootParameter);
+            return isRootedInLegalBoundaryCarrier(memberSelectTree.getExpression(), context);
         }
         if (tree instanceof MethodInvocationTree methodInvocationTree) {
-            return isRootedInLegalRootParameter(methodInvocationTree.getMethodSelect(), legalRootParameter);
+            return isRootedInLegalBoundaryCarrier(methodInvocationTree.getMethodSelect(), context);
         }
         return false;
     }
@@ -740,6 +850,95 @@ final class DomainRoleConcernSupport {
                 && modifiers.contains(Modifier.STATIC)
                 && isApplicationServiceBoundaryAdapterName(currentMethod)
                 && isDirectSameFeaturePublishedCommandParameter(symbol, sourceRole.feature());
+    }
+
+    private static boolean isLegalApplicationServiceBoundaryAdapterLocalCarrierAlias(
+            SourceRole sourceRole,
+            Tree initializer,
+            Symbol.MethodSymbol currentMethod,
+            ApplicationServiceCarrierScanContext context) {
+        if (sourceRole == null
+                || initializer == null
+                || !isApplicationServiceBoundaryAdapterMethod(sourceRole, currentMethod)
+                || !isRootedInLegalBoundaryCarrier(initializer, context)) {
+            return false;
+        }
+        return boundaryCarrierOriginTypes(null, initializer, context).stream()
+                .anyMatch(typeName -> isSameFeaturePublishedNonModelType(typeName, sourceRole.feature())
+                        && !typeName.endsWith("Command"));
+    }
+
+    private static Set<String> boundaryCarrierOriginTypes(
+            TypeMirror declaredType,
+            Tree initializer,
+            ApplicationServiceCarrierScanContext context) {
+        Set<String> referencedTypes = new LinkedHashSet<>();
+        if (declaredType != null) {
+            referencedTypes.addAll(collectTypeReferences(declaredType));
+        }
+        if (initializer != null) {
+            Tree unwrappedInitializer = unwrapExpression(initializer);
+            TypeMirror initializerType = expressionValueType(unwrappedInitializer);
+            if (initializerType != null) {
+                referencedTypes.addAll(collectTypeReferences(initializerType));
+            }
+            Symbol initializerSymbol = expressionSymbol(unwrappedInitializer);
+            if (context != null && initializerSymbol != null) {
+                referencedTypes.addAll(context.legalBoundaryCarrierLocals().getOrDefault(
+                        initializerSymbol,
+                        Set.of()));
+            }
+        }
+        return referencedTypes;
+    }
+
+    private static TypeMirror expressionValueType(Tree tree) {
+        tree = unwrapExpression(tree);
+        if (tree instanceof MethodInvocationTree methodInvocation) {
+            Symbol symbol = ASTHelpers.getSymbol(methodInvocation);
+            if (symbol instanceof Symbol.MethodSymbol methodSymbol) {
+                return methodSymbol.getReturnType();
+            }
+            Symbol selectSymbol = ASTHelpers.getSymbol(methodInvocation.getMethodSelect());
+            if (selectSymbol instanceof Symbol.MethodSymbol methodSymbol) {
+                return methodSymbol.getReturnType();
+            }
+        }
+        TypeMirror treeType = ASTHelpers.getType(tree);
+        if (treeType != null) {
+            return treeType;
+        }
+        Symbol symbol = ASTHelpers.getSymbol(tree);
+        return symbol == null ? null : symbol.asType();
+    }
+
+    private static Symbol expressionSymbol(Tree tree) {
+        return ASTHelpers.getSymbol(unwrapExpression(tree));
+    }
+
+    private static Tree unwrapExpression(Tree tree) {
+        Tree current = tree;
+        while (current instanceof ParenthesizedTree || current instanceof TypeCastTree) {
+            if (current instanceof ParenthesizedTree parenthesizedTree) {
+                current = parenthesizedTree.getExpression();
+            } else {
+                current = ((TypeCastTree) current).getExpression();
+            }
+        }
+        return current;
+    }
+
+    private static boolean isApplicationServiceBoundaryAdapterMethod(
+            SourceRole sourceRole,
+            Symbol.MethodSymbol currentMethod) {
+        return currentMethod != null
+                && currentMethod.getModifiers().contains(Modifier.PRIVATE)
+                && currentMethod.getModifiers().contains(Modifier.STATIC)
+                && isApplicationServiceBoundaryAdapterName(currentMethod)
+                && currentMethod.getParameters().size() == 1
+                && isDirectSameFeaturePublishedCommandParameter(
+                        currentMethod.getParameters().getFirst(),
+                        sourceRole.feature());
     }
 
     private static boolean isApplicationServiceBoundaryAdapterName(Symbol.MethodSymbol currentMethod) {

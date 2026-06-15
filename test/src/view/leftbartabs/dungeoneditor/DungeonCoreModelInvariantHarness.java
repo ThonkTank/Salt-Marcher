@@ -10,7 +10,7 @@ public final class DungeonCoreModelInvariantHarness {
     public static void main(String[] args) throws Exception {
         DungeonEditorBehaviorHarnessSupport.runPublishedHarness(
                 "Dungeon Core model invariant harness",
-                DungeonCoreModelInvariantHarness::run);
+                results -> DungeonEditorBehaviorSuiteHarness.run(List.of("core"), results));
     }
 
     static void run(List<String> results) {

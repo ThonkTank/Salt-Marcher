@@ -42,6 +42,21 @@ public final class BuildDungeonEditorSnapshotUseCase {
         List<MapSummary> maps = currentDungeonFacts.currentFacts(null, safeState.selection(), safeState.preview()).maps();
         @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState, maps);
         refreshAuthoredSurface(resolvedMapId, safeState);
+        return snapshotData(safeState, maps, resolvedMapId);
+    }
+
+    public DungeonEditorSessionSnapshot.SnapshotData executeInMemoryPreview(@Nullable DungeonEditorSession state) {
+        DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
+        List<MapSummary> maps = currentDungeonFacts.currentFacts(null, safeState.selection(), safeState.preview()).maps();
+        @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState, maps);
+        return snapshotData(safeState, maps, resolvedMapId);
+    }
+
+    private DungeonEditorSessionSnapshot.SnapshotData snapshotData(
+            DungeonEditorSession safeState,
+            List<MapSummary> maps,
+            @Nullable MapId resolvedMapId
+    ) {
         DungeonEditorDungeonFacts surfaceFacts = currentDungeonFacts.currentFacts(
                 resolvedMapId,
                 safeState.selection(),

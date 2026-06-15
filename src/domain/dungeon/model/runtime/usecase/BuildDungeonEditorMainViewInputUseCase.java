@@ -143,7 +143,8 @@ public final class BuildDungeonEditorMainViewInputUseCase {
             long roomId,
             int index,
             CellInput cell,
-            String direction
+            String direction,
+            BoundaryInput sourceEdge
     ) {
         public HandleInput {
             kind = kind == null ? HandleKindInput.CLUSTER_LABEL : kind;
@@ -155,6 +156,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
             index = Math.max(0, index);
             cell = cell == null ? CellInput.empty() : cell;
             direction = direction == null ? "" : direction.trim();
+            sourceEdge = sourceEdge == null ? BoundaryInput.empty() : sourceEdge;
         }
 
         public static HandleInput empty() {
@@ -167,7 +169,8 @@ public final class BuildDungeonEditorMainViewInputUseCase {
                     0L,
                     0,
                     CellInput.empty(),
-                    "");
+                    "",
+                    BoundaryInput.empty());
         }
 
         private DungeonEditorWorkspaceValues.HandleRef handleRef() {
@@ -180,7 +183,8 @@ public final class BuildDungeonEditorMainViewInputUseCase {
                     roomId,
                     index,
                     cell.cell(),
-                    direction);
+                    direction,
+                    sourceEdge.present() ? sourceEdge.edge() : null);
         }
     }
 
@@ -209,6 +213,14 @@ public final class BuildDungeonEditorMainViewInputUseCase {
                     TopologyRefInput.empty(),
                     CellInput.empty(),
                     CellInput.empty());
+        }
+
+        private boolean present() {
+            return !start.cell().equals(end.cell());
+        }
+
+        private DungeonEditorWorkspaceValues.Edge edge() {
+            return new DungeonEditorWorkspaceValues.Edge(start.cell(), end.cell());
         }
     }
 

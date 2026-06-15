@@ -8,6 +8,8 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
+import src.domain.dungeon.published.DungeonEditorHandleKind;
+import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
@@ -48,18 +50,35 @@ final class DungeonEditorRoomWallDoorHarness {
     }
 
     static void run(List<String> results) throws Exception {
+        runClusterMovement(results);
+        runDoor(results);
+        runRoom(results);
+        runWall(results);
+    }
+
+    static void runClusterMovement(List<String> results) throws Exception {
         route(results, () -> verifySelectedStraightWallStretchThroughMapView(results));
         route(results, () -> verifySelectedWallCornerMoveThroughMapView(results));
         route(results, () -> verifyWholeClusterMoveThroughMapView(results));
         route(results, () -> verifyUiCreatedRoomCornerMoveAfterReloadThroughMapView(results));
-        route(results, () -> verifyRoomNarrationThroughStateView(results));
+    }
+
+    static void runDoor(List<String> results) throws Exception {
         route(results, () -> verifyDoorCreateThroughMapView(results));
         route(results, () -> verifyDoorDeleteThroughMapView(results));
+    }
+
+    static void runRoom(List<String> results) throws Exception {
+        route(results, () -> verifyRoomNarrationThroughStateView(results));
         route(results, () -> verifyRoomPreviewThroughMapView(results));
         route(results, () -> verifyIsolatedRoomPaintThroughMapView(results));
         route(results, () -> verifyOverlappingRoomPaintThroughMapView(results));
         route(results, () -> verifyAdjacentRoomPaintThroughMapView(results));
         route(results, () -> verifyRoomDeleteThroughMapView(results));
+        route(results, () -> verifyCancelDraftThroughMapView(results));
+    }
+
+    static void runWall(List<String> results) throws Exception {
         route(results, () -> verifyWallStartDraftThroughMapView(results));
         route(results, () -> verifyWallPreviewMoveThroughMapView(results));
         route(results, () -> verifyWallPathSecondaryCompletionThroughMapView(results));
@@ -68,7 +87,6 @@ final class DungeonEditorRoomWallDoorHarness {
         route(results, () -> verifyWallDeleteSegmentRunThroughMapView(results));
         route(results, () -> verifyWallDeleteCornerRunsThroughMapView(results));
         route(results, () -> verifyExteriorWallDeleteRejectedThroughMapView(results));
-        route(results, () -> verifyCancelDraftThroughMapView(results));
     }
 
     private static void route(
@@ -302,6 +320,7 @@ final class DungeonEditorRoomWallDoorHarness {
         RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
         var roomArea = roomAreaByLabel(runtime.mapSurfaceModel().current(), "R1", "DE-SEL-008");
         DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
+        selectClusterForHandles(binding, runtime.mapSurfaceModel().current(), roomIds.clusterId(), "DE-SEL-008");
         var cornerHandle = firstClusterCornerHandleAt(runtime.mapSurfaceModel().current(), 4, 4, 0, "DE-SEL-008");
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
@@ -621,6 +640,7 @@ final class DungeonEditorRoomWallDoorHarness {
         assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "WALL", 1.0, 2.5),
                 "DE-SEL-010 reload render shows the west perimeter wall");
         var cornerHandle = firstClusterCornerHandleAt(loadedSurface, 4, 4, 0, "DE-SEL-010");
+        selectClusterForHandles(binding, loadedSurface, roomIds.clusterId(), "DE-SEL-010");
         assertEquals("CLUSTER_CORNER", cornerHandle.ref().kind().name(),
                 "DE-SEL-010 reload publishes a cluster-corner handle at the boundary-derived corner");
         assertTrue(renderHasGlyphAt(binding.mapContentModel(), roomRef, 4.0, 4.0, false),
@@ -815,6 +835,34 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-DOOR-001 reloaded rendered canvas paints the door boundary coordinates");
 
         results.add("DE-DOOR-001 Ready: DungeonMapView door click -> SQLite -> live door boundary -> reload");
+    }
+
+    private static void selectClusterForHandles(
+            HarnessBinding binding,
+            DungeonEditorMapSurfaceSnapshot snapshot,
+            long clusterId,
+            String message
+    ) {
+        DungeonEditorHandleSnapshot label = snapshot.surface().map().editorHandles().stream()
+                .filter(handle -> handle.ref().kind() == DungeonEditorHandleKind.CLUSTER_LABEL)
+                .filter(handle -> handle.ref().clusterId() == clusterId)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + " cluster label not published for " + clusterId));
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        fireMapMouse(
+                binding.mapView(),
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(label.cell().q() + 0.5),
+                viewport.sceneToScreenY(label.cell().r() + 0.5),
+                false);
+        fireMapMouse(
+                binding.mapView(),
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(label.cell().q() + 0.5),
+                viewport.sceneToScreenY(label.cell().r() + 0.5),
+                false);
     }
 
 

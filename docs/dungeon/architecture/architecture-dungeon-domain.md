@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-15
 Source of Truth: Dungeon-specific domain architecture, model-family ownership,
 and dependency direction below `src/domain/dungeon/**`.
 
@@ -26,6 +26,11 @@ Current state:
 - Stable topology refs are map-owned and reused by rooms, corridors, doors,
   corridor anchors, stairs, transitions, handles, and labels.
 - Search and write-model persistence are separate outbound contracts.
+- Editor canvas affordance facts for cluster labels, true corners, and
+  wall-run midpoints are owned by runtime editor interaction models derived
+  from `DungeonMap` truth. The view may apply selection-dependent visibility
+  and hit indexing, but it must not reinterpret corridor, door, or cluster
+  geometry facts into new authoritative edit handles.
 
 Target state:
 

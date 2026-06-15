@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-25
+Last Reviewed: 2026-06-14
 Source of Truth: Entry point into project-wide canonical documentation grouped by the closed six-type taxonomy.
 
 # Project Documentation
@@ -22,11 +22,13 @@ This directory owns cross-feature canonical SaltMarcher documentation. Project-w
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
 - [Agent Context Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
+- [Autodev Process Loop](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/autodev-process-loop.md:1)
 - [Layer Patterns](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
 - [Styling Enforcement Package](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
+- [Autodev Process Feedback](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/autodev-process-feedback.md:1)
 - [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/source-references.md:1)
 
 ## Migration Status

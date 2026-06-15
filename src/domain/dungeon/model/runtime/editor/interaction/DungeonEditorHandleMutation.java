@@ -57,7 +57,7 @@ public final class DungeonEditorHandleMutation {
         if (handle.kind().isClusterWallRun()) {
             return current.moveBoundaryStretch(
                     clusterId(current, handle),
-                    java.util.List.of(handle.direction().edgeOf(safeCell(handle.cell()))),
+                    java.util.List.of(sourceEdge(handle)),
                     deltaQ,
                     deltaR,
                     deltaLevel);
@@ -119,5 +119,11 @@ public final class DungeonEditorHandleMutation {
 
     private static Cell safeCell(Cell cell) {
         return cell == null ? new Cell(0, 0, 0) : cell;
+    }
+
+    private static src.domain.dungeon.model.core.geometry.Edge sourceEdge(DungeonEditorHandleMovement handle) {
+        return handle.sourceEdge() == null
+                ? handle.direction().edgeOf(safeCell(handle.cell()))
+                : handle.sourceEdge();
     }
 }

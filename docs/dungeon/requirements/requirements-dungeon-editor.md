@@ -96,6 +96,9 @@ commit supported mutations without inventing a second authored state source.
   guesses
 - preview MUST read as if the pending operation were applied, but MUST NOT
   persist authored truth
+- handle drag preview MUST be responsive and MUST avoid a full authored
+  map reload during per-mouse-move preview when the typed preview can be
+  rendered from the current editor session
 - apply MUST commit only on explicit gesture completion
 - corridor editing MUST support visible create and delete flows
 - stair editing MUST support visible create and delete flows plus stair shape,
@@ -122,6 +125,11 @@ commit supported mutations without inventing a second authored state source.
 - straight wall-stretch movement for selected cluster walls
 - selected cluster corner movement through published corner handles and
   selected wall-line movement through published wall-midpoint handles
+- selecting a cluster floor area MUST expose the same cluster corner and
+  wall-run handles as selecting that cluster through its label
+- door handles MUST be visible canvas handles, hittable through the shared
+  handle route, draggable with live preview, and committed as authored door
+  boundary movement
 - corridor create and delete flows
 - corridor targeting resolves to explicit authored endpoints only: room-side
   doors and corridor-side anchors
@@ -180,6 +188,7 @@ evidenced in the sibling repo.
 - dragging a selected wall-midpoint handle MUST move the whole contiguous
   straight wall run one-to-one with pointer movement while preserving cluster
   identity and rejecting invalid geometry atomically
+- cluster corner and wall-run drag handles MUST be visible and hittable only while their owning cluster is selected; corner handles render as compact point affordances on true authored corners, and wall-run handles render as compact midpoint affordances on the corresponding wall line
 - deleting an unbound door restores the same boundary segment to a wall and removes the door topology or semantic binding; it does not delete the entire wall segment
 - deleting a corridor-bound door MUST be rejected without mutating the door, corridor, room boundary, or preview state
 - corridor creation MUST use deterministic orthogonal routing between concrete endpoints: horizontal-first, then vertical; vertical-first only when needed; reject if neither candidate is valid
@@ -190,6 +199,7 @@ evidenced in the sibling repo.
 - a generic room hit in corridor mode resolves to the boundary edge that faces the other endpoint, reusing an existing door or authoring exactly one new door there before commit
 - a generic corridor hit in corridor mode resolves to the clicked host corridor cell, reusing an existing anchor or authoring exactly one new anchor there before commit
 - corridor routes with turns or crossings expose authored anchors at every turn or crossing point and keep straight spans free of unnecessary intermediate anchors
+- corridor anchor and waypoint refs MUST NOT render or hit-test as generic canvas drag handles; endpoint movement is owned by the focused corridor point edit route, and corridor tool endpoint deletion uses semantic corridor-body or door-boundary targets
 - deleting an intermediate corridor waypoint or connection point reroutes deterministically between the remaining neighboring authored endpoints using the same creation-route policy; invalid replacement routes reject without partial mutation
 - deleting a corridor door endpoint removes the branch segment from that door to the nearest surviving branch junction, authored corridor anchor, or other door endpoint, while preserving unaffected branches, surviving topology refs, and non-stale handles
 - a cluster with no user-authored name defaults to `Cluster <clusterId>` on the
@@ -311,9 +321,9 @@ Delete and corridor binding behavior:
 - Wall paths keep draft state until explicit completion, never finalize merely
   because a second point is clicked, delete only eligible interior straight
   runs, and reject exterior-wall deletion without changing authored state.
-- Cluster handles are proven on true corners and wall-run midpoints for complex
-  shapes; moving a corner or wall run preserves cluster identity and recomputes
-  affected geometry atomically.
+- Cluster handles are proven on selected true corners and selected wall-run
+  midpoints for complex shapes; moving a corner or wall run preserves cluster
+  identity and recomputes affected geometry atomically.
 - Cluster and room labels use the required default text, placement, custom-name
   edit routes, and reload stability.
 - Corridor creation accepts room-to-room, room-to-corridor, and
@@ -332,16 +342,7 @@ Delete and corridor binding behavior:
 
 - [Dungeon Feature Requirements](./requirements-dungeon.md)
 - [Dungeon Editor-Wide Invariants](../verification/verification-dungeon-editor-wide-invariants.md)
-- [Dungeon Editor Selection Matrix](../verification/verification-dungeon-editor-selection.md)
-- [Dungeon Editor Room Matrix](../verification/verification-dungeon-editor-rooms.md)
-- [Dungeon Editor Cluster Matrix](../verification/verification-dungeon-editor-clusters.md)
-- [Dungeon Editor Wall Matrix](../verification/verification-dungeon-editor-walls.md)
-- [Dungeon Editor Door Matrix](../verification/verification-dungeon-editor-doors.md)
-- [Dungeon Editor Corridor Matrix](../verification/verification-dungeon-editor-corridors.md)
-- [Dungeon Editor Stair Matrix](../verification/verification-dungeon-editor-stairs.md)
-- [Dungeon Editor Transition Matrix](../verification/verification-dungeon-editor-transitions.md)
-- [Dungeon Editor Handle Matrix](../verification/verification-dungeon-editor-handles.md)
-- [Dungeon Editor Label Matrix](../verification/verification-dungeon-editor-labels.md)
+- [Dungeon Editor tool matrices](../verification/)
 - [Maps Canvas Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/requirements/requirements-maps-canvas.md:1)
 - [Dungeon Map Surface Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-dungeon-surface.md:1)
 - [Dungeon Map Adoption Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)

@@ -48,6 +48,34 @@ Every published route proof row must include `OwnerSuite`, `ProofType=RealRoute`
 and the catalog `DE-*` row id. Model invariant rows must include `OwnerSuite`,
 `ProofType=ModelInvariant`, and their `DGI-*` id.
 
+## Behavior Suite Routing
+
+Dungeon Editor behavior proof is addressed through
+`DungeonEditorBehaviorSuiteHarness`. The harness owns the runnable suite graph:
+atomic suites declare their prerequisite suites, while `core`, `routes`, and
+`all` are aliases only. The registry is the only ordering source; legacy
+entrypoints delegate to it instead of keeping separate proof order.
+
+Use these focused Gradle entrypoints during investigation:
+
+| Task | Suite scope |
+| --- | --- |
+| `dungeonEditorDoorBehaviorHarness` | Door route behavior, door handles, and declared core dependencies. |
+| `dungeonEditorWallBehaviorHarness` | Wall route behavior and declared wall/core dependencies. |
+| `dungeonEditorRoomBehaviorHarness` | Room route behavior and declared room/core dependencies. |
+| `dungeonEditorClusterBehaviorHarness` | Label, cluster-handle, and cluster-route behavior plus declared cluster/core dependencies. |
+| `dungeonEditorCorridorBehaviorHarness` | Corridor route behavior and declared corridor/core dependencies. |
+| `dungeonEditorStairBehaviorHarness` | Stair route behavior and declared stair/core dependencies. |
+| `dungeonEditorTransitionBehaviorHarness` | Transition route behavior and declared transition/core dependencies. |
+| `dungeonEditorCoreBehaviorHarness` | Model-only `DGI-*` core invariant suites. |
+| `dungeonEditorRouteBehaviorHarness` | All editor real-route suites through the same registry. |
+| `dungeonEditorBehaviorHarness` | Complete Dungeon Editor behavior proof aggregate. |
+
+`dungeonEditorBehaviorHarnessSuites` prints the current suite IDs. A focused
+task must not manually construct expected behavior or bypass production routes;
+it only selects which existing production-route proofs and declared dependencies
+run.
+
 ## Status Vocabulary
 
 | Status | Meaning |

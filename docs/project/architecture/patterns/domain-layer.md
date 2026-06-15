@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-15
 Source of Truth: Binding domain-layer pattern, role ownership, communication seams, context map, and topology for `src/domain/**`.
 
 # Domain Layer Standard
@@ -19,20 +19,17 @@ This document is the sole architectural source of truth for `src/domain/**`.
 The repo-owned `tools/quality/skills/domain-layer/SKILL.md` operationalizes
 this standard for agent work. Domain enforcement documents under
 `docs/project/architecture/enforcement/` may inventory gates, candidate rows,
-review-owned rows, and current mechanical drift, but they must not redefine
-the pattern or become a second architecture owner.
+review-owned rows, and drift, but must not redefine the pattern.
 
 ## Current State And Target State
-Current state: production still contains legacy tactical packages and blockers that enforcement documents must describe as drift, not target architecture.
-
+Current state: legacy tactical packages remain; enforcement docs describe drift, not target architecture.
 Target state: each context uses only the closed role family below. Roots expose
 family `*ApplicationService`, direct-root `*ServiceContribution`, and optional
-package-private `*ServiceAssembly` files for composition and same-context
-published-state decomposition. `ApplicationService` stays thin, `UseCase` owns
-one operation, `Model` owns work state, `Published` owns outward language,
-`Helper`/`Constants` own pure support, `Port` consumes foreign published state,
-and `Repository` owns outbound foreign writes or layered data access. The narrow
-`*PublishedStateRepository` subtype is only a same-context publication sink.
+package-private `*ServiceAssembly` for composition and same-context publication
+decomposition. `ApplicationService` stays thin, `UseCase` owns one operation,
+`Model` owns work state, and `Published` owns outward language. `Helper` and
+`Constants` own pure support, `Port` consumes foreign published state, and
+`Repository` owns outbound writes, data access, or `*PublishedStateRepository`.
 
 ## Role Family
 The closed architectural role family is:
@@ -94,7 +91,7 @@ PublishedStateRepository -> published/*Model`
 ### Same-Context Publication Sink
 
 `UseCase typed snapshot/publication record -> *PublishedStateRepository ->
-runtime-owned PublishedState -> published/*Model current/subscribe fanout`
+runtime-owned PublishedState -> published/*Model fanout`
 
 ### Cross-Domain Write
 
@@ -120,6 +117,9 @@ registration`
 - delegates to exactly one focused `UseCase`
 - may collaborate only with same-context `UseCase` ownership and same-context
   non-`*Model` published command carriers
+- may use one private static `to*` or `from*` boundary adapter per root method
+  to flatten a same-context published command into UseCase-owned input without
+  storing or forwarding published carriers
 - does not own business policy, model mutation details, publication ownership,
   repositories, ports, helpers, shell registration, runtime service lookup,
   callback protocols, or adapter construction

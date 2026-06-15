@@ -16,6 +16,7 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainView
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.BoundaryStretchSide;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewInteractionValues.PointerState;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorWallRunBoundaryTargetResolver;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
@@ -38,7 +39,7 @@ public final class DungeonEditorBoundaryStretchHelper {
                 DungeonEditorSessionValues.Selection currentSelection,
                 StretchEdges edges
         ) {
-            BoundaryTarget boundaryTarget = stretchBoundaryTarget(input);
+            BoundaryTarget boundaryTarget = stretchBoundaryTarget(input, currentSelection);
             if (boundaryTarget == null) {
                 return null;
             }
@@ -46,7 +47,9 @@ public final class DungeonEditorBoundaryStretchHelper {
             if (orientation == null) {
                 return null;
             }
-            long clusterId = StretchCluster.resolveBoundaryClusterId(snapshot, boundaryTarget);
+            long clusterId = boundaryTarget.clusterId() > 0L
+                    ? boundaryTarget.clusterId()
+                    : StretchCluster.resolveBoundaryClusterId(snapshot, boundaryTarget);
             if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
                 return null;
             }
@@ -58,13 +61,16 @@ public final class DungeonEditorBoundaryStretchHelper {
             return session(input, sourceEdges, orientation, selection(snapshot, currentSelection, clusterId, boundaryTarget), clusterId);
         }
 
-        private static @Nullable BoundaryTarget stretchBoundaryTarget(@Nullable PointerState input) {
+        private static @Nullable BoundaryTarget stretchBoundaryTarget(
+                @Nullable PointerState input,
+                DungeonEditorSessionValues.@Nullable Selection currentSelection
+        ) {
             if (input == null || !input.primaryButtonDown()) {
                 return null;
             }
             BoundaryTarget boundaryTarget = input.boundaryTarget();
             if (boundaryTarget == null || !boundaryTarget.present() || boundaryTarget.doorKind()) {
-                return null;
+                return DungeonEditorWallRunBoundaryTargetResolver.resolve(input, currentSelection);
             }
             return boundaryTarget;
         }

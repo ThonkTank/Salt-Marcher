@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-14
+Last Reviewed: 2026-06-15
 Source of Truth: Aggregate entrypoints, staged handoff routing, and local
 invocation policy for SaltMarcher quality platforms.
 
@@ -125,11 +125,14 @@ the public production-handoff or documentation-enforcement proof routes.
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `pmdStrictMain`, `checkRewriteNearMisses`, `spotbugsMain`, `cpdMain`,
 `lizardMain`, `ckjmMain`, repository/resource policy checks, technical
-`check*Enforcement` layer surfaces, `checkDocumentationEnforcement`, and the
+`check*Enforcement` layer surfaces, `checkDocumentationEnforcement`, the
 feature-scoped `./gradlew dungeonEditorBehaviorHarness --console=plain`
-route for Dungeon Editor behavior catalog work, and the Gradle-owned
-`focused-handoff` route, each run through its documented command shape.
-Investigation tasks are not alternate production-handoff entries.
+aggregate for Dungeon Editor behavior catalog work, focused Dungeon Editor
+suite tasks documented in
+`docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md`,
+and the Gradle-owned `focused-handoff` route, each run through its documented
+command shape. Investigation tasks are not alternate production-handoff
+entries.
 
 ## Runtime Wrapper Policy
 

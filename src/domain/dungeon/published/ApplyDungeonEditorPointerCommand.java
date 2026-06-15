@@ -11,7 +11,7 @@ public record ApplyDungeonEditorPointerCommand(
         long transitionDestinationMapId,
         long transitionDestinationTileId,
         long transitionDestinationTransitionId
-) implements DungeonEditorPointerCommand {
+) {
     public ApplyDungeonEditorPointerCommand {
         tool = Objects.requireNonNull(tool, "tool");
         action = Objects.requireNonNull(action, "action");
@@ -26,27 +26,22 @@ public record ApplyDungeonEditorPointerCommand(
         return action.name();
     }
 
-    @Override
     public String transitionDestinationTypeName() {
         return transitionDestinationType;
     }
 
-    @Override
     public long transitionDestinationMapId() {
         return transitionDestinationMapId;
     }
 
-    @Override
     public long transitionDestinationTileId() {
         return transitionDestinationTileId;
     }
 
-    @Override
     public long transitionDestinationTransitionId() {
         return transitionDestinationTransitionId;
     }
 
-    @Override
     public boolean wallSingleClickMode() {
         return wallSingleClickMode;
     }

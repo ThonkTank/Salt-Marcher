@@ -44,6 +44,11 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
         snapshotPublicationUseCase.execute(currentSnapshot());
     }
 
+    private void publishInMemoryPreview() {
+        snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(
+                snapshotBuilder.executeInMemoryPreview(workflow.session())));
+    }
+
     public DungeonEditorWorkspaceValues.@Nullable MapSnapshot committedGridOrPublishCurrent() {
         DungeonEditorWorkspaceValues.MapSnapshot committedSnapshot = loadCommittedSnapshot();
         if (!workflow.session().hasSelectedMap() || committedSnapshot == null || !workflow.session().viewMode().isGrid()) {
@@ -63,6 +68,10 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
             if (clearsSelectionAfterApply(applyPreview)) {
                 workflow.applyEffect(DungeonEditorMainViewEffect.clearedSelection());
             }
+        }
+        if (applyPreview == null && inMemoryPreview(effect.preview())) {
+            publishInMemoryPreview();
+            return;
         }
         publishCurrent();
     }
@@ -84,5 +93,10 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
             case DungeonEditorSessionValues.MoveHandlePreview ignored -> false;
             case DungeonEditorSessionValues.MoveBoundaryStretchPreview ignored -> false;
         };
+    }
+
+    private static boolean inMemoryPreview(DungeonEditorSessionValues.@Nullable Preview preview) {
+        return preview instanceof DungeonEditorSessionValues.MoveHandlePreview moveHandle
+                && "DOOR".equals(moveHandle.handleRef().kind().name());
     }
 }

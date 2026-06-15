@@ -62,4 +62,36 @@ public record MoveDungeonEditorHandleCommand(
     public String handleDirection() {
         return handleRef.direction();
     }
+
+    public int handleSourceEdgeFromQ() {
+        return sourceEdgeFrom() == null ? 0 : sourceEdgeFrom().q();
+    }
+
+    public int handleSourceEdgeFromR() {
+        return sourceEdgeFrom() == null ? 0 : sourceEdgeFrom().r();
+    }
+
+    public int handleSourceEdgeFromLevel() {
+        return sourceEdgeFrom() == null ? 0 : sourceEdgeFrom().level();
+    }
+
+    public int handleSourceEdgeToQ() {
+        return sourceEdgeTo() == null ? 0 : sourceEdgeTo().q();
+    }
+
+    public int handleSourceEdgeToR() {
+        return sourceEdgeTo() == null ? 0 : sourceEdgeTo().r();
+    }
+
+    public int handleSourceEdgeToLevel() {
+        return sourceEdgeTo() == null ? 0 : sourceEdgeTo().level();
+    }
+
+    private DungeonCellRef sourceEdgeFrom() {
+        return handleRef.sourceEdge() == null ? null : handleRef.sourceEdge().from();
+    }
+
+    private DungeonCellRef sourceEdgeTo() {
+        return handleRef.sourceEdge() == null ? null : handleRef.sourceEdge().to();
+    }
 }

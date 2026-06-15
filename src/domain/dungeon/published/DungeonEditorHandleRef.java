@@ -9,8 +9,22 @@ public record DungeonEditorHandleRef(
         long roomId,
         int index,
         DungeonCellRef cell,
-        String direction
+        String direction,
+        DungeonEdgeRef sourceEdge
 ) {
+    public DungeonEditorHandleRef(
+            DungeonEditorHandleKind kind,
+            DungeonTopologyElementRef topologyRef,
+            long ownerId,
+            long clusterId,
+            long corridorId,
+            long roomId,
+            int index,
+            DungeonCellRef cell,
+            String direction
+    ) {
+        this(kind, topologyRef, ownerId, clusterId, corridorId, roomId, index, cell, direction, null);
+    }
 
     public DungeonEditorHandleRef {
         kind = kind == null ? DungeonEditorHandleKind.CLUSTER_LABEL : kind;
@@ -34,6 +48,29 @@ public record DungeonEditorHandleRef(
                 0L,
                 0,
                 new DungeonCellRef(0, 0, 0),
-                "");
+                "",
+                null);
+    }
+
+    public static DungeonEditorHandleRef withSourceEdge(
+            DungeonEditorHandleRef base,
+            DungeonCellRef from,
+            DungeonCellRef to
+    ) {
+        DungeonEditorHandleRef safeBase = base == null ? empty() : base;
+        if (from == null || to == null) {
+            return safeBase;
+        }
+        return new DungeonEditorHandleRef(
+                safeBase.kind(),
+                safeBase.topologyRef(),
+                safeBase.ownerId(),
+                safeBase.clusterId(),
+                safeBase.corridorId(),
+                safeBase.roomId(),
+                safeBase.index(),
+                safeBase.cell(),
+                safeBase.direction(),
+                new DungeonEdgeRef(from, to));
     }
 }

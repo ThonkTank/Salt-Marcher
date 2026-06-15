@@ -35,8 +35,10 @@ public final class DomainApplicationServiceThinRouterChecker extends BugChecker
     private static final Pattern SAME_FEATURE_PUBLISHED_MODEL =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.published\\.[^.]+Model$");
     private static final Pattern SAME_FEATURE_ROOT_USECASE =
-            Pattern.compile("^src\\.domain\\.([^.]+)\\.application\\.[^.]+UseCase(?:[.$].*)?$");
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.application\\.[^.]+UseCase$");
     private static final Pattern SAME_FEATURE_MODEL_USECASE =
+            Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.[^.]+\\.usecase\\.[^.]+UseCase$");
+    private static final Pattern SAME_FEATURE_MODEL_USECASE_OWNED =
             Pattern.compile("^src\\.domain\\.([^.]+)\\.model\\.[^.]+\\.usecase\\.[^.]+UseCase(?:[.$].*)?$");
 
     @Override
@@ -114,7 +116,9 @@ public final class DomainApplicationServiceThinRouterChecker extends BugChecker
 
     private static boolean isSameFeatureModelConcern(String referencedType, String feature) {
         Matcher matcher = SAME_FEATURE_MODEL_CONCERN.matcher(referencedType);
-        return matcher.matches() && feature.equals(matcher.group(1)) && !isSameFeatureModelUseCase(referencedType, feature);
+        return matcher.matches()
+                && feature.equals(matcher.group(1))
+                && !isSameFeatureModelUseCaseOwned(referencedType, feature);
     }
 
     private static boolean isSameFeatureRepositoryConcern(String referencedType, String feature) {
@@ -137,6 +141,11 @@ public final class DomainApplicationServiceThinRouterChecker extends BugChecker
 
     private static boolean isSameFeatureModelUseCase(String referencedType, String feature) {
         Matcher matcher = SAME_FEATURE_MODEL_USECASE.matcher(referencedType);
+        return matcher.matches() && feature.equals(matcher.group(1));
+    }
+
+    private static boolean isSameFeatureModelUseCaseOwned(String referencedType, String feature) {
+        Matcher matcher = SAME_FEATURE_MODEL_USECASE_OWNED.matcher(referencedType);
         return matcher.matches() && feature.equals(matcher.group(1));
     }
 

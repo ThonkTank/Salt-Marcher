@@ -61,7 +61,10 @@ public interface DungeonEditorAuthoredOperationHelper {
                                     moveHandle.handleRef().roomId(),
                                     moveHandle.handleRef().index(),
                                     cell(moveHandle.handleRef().cell()),
-                                    Direction.parse(moveHandle.handleRef().direction())),
+                                    Direction.parse(moveHandle.handleRef().direction()),
+                                    moveHandle.handleRef().sourceEdge() == null
+                                            ? null
+                                            : edge(moveHandle.handleRef().sourceEdge())),
                             moveHandle.deltaQ(),
                             moveHandle.deltaR(),
                             moveHandle.deltaLevel());
@@ -96,6 +99,14 @@ public interface DungeonEditorAuthoredOperationHelper {
             }
         }
         return List.copyOf(result);
+    }
+
+    static Edge edge(DungeonEditorWorkspaceValues.Edge edge) {
+        if (edge == null) {
+            Cell origin = cell(null);
+            return new Edge(origin, origin);
+        }
+        return new Edge(cell(edge.from()), cell(edge.to()));
     }
 
     private static List<Edge> unitEdges(Cell from, Cell to) {

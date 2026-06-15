@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
@@ -29,7 +30,8 @@ public final class DungeonEditorWorkspaceHandleProjectionHelper {
                 handle.roomId(),
                 handle.index(),
                 workspaceCell,
-                handle.direction().name());
+                handle.direction().name(),
+                edge(handle.sourceEdge()));
         return new DungeonEditorWorkspaceValues.Handle(ref, handle.label(), workspaceCell);
     }
 
@@ -37,5 +39,11 @@ public final class DungeonEditorWorkspaceHandleProjectionHelper {
         return cell == null
                 ? DungeonEditorWorkspaceValues.Cell.empty()
                 : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level());
+    }
+
+    private static DungeonEditorWorkspaceValues.Edge edge(@Nullable Edge edge) {
+        return edge == null
+                ? null
+                : new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to()));
     }
 }

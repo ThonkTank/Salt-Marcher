@@ -80,10 +80,11 @@ final class DungeonEditorCorridorHarness {
                 .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR anchor handle not loaded."));
-        DungeonEditorTopologyElementRef anchorRef = editorTopologyRef(corridorAnchor.ref().topologyRef());
         List<String> anchorRowsBefore = runtime.database().corridorAnchorState(mapId);
         List<String> stableRowsBefore = runtime.database().corridorStableConnectionState(mapId);
-        String a1AnchorRowBefore = anchorRowsBefore.stream()
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
+        long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        String a1AnchorRow = anchorRowsBefore.stream()
                 .filter(row -> row.contains("anchor_id=1")
                         && row.contains("cell_x=6")
                         && row.contains("cell_y=5")
@@ -91,20 +92,31 @@ final class DungeonEditorCorridorHarness {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException(
                         "DE-COR-005 starts with A1 anchored at (6,5,0): " + anchorRowsBefore));
-        assertTrue(a1AnchorRowBefore.contains("|cell_y=5|"),
-                "DE-COR-005 captures exact A1 anchor row at (6,5,0): " + a1AnchorRowBefore);
-        String a1AnchorRowAfter = a1AnchorRowBefore.replace("|cell_y=5|", "|cell_y=4|");
-        assertTrue(a1AnchorRowAfter.contains("|cell_y=4|"),
-                "DE-COR-005 expected A1 anchor row changes only to cell_y=4: " + a1AnchorRowAfter);
+        assertTrue(a1AnchorRow.contains("|cell_y=5|"),
+                "DE-COR-005 captures exact A1 anchor row at (6,5,0): " + a1AnchorRow);
+        assertTrue(!"HANDLE".equals(binding.mapContentModel()
+                        .resolvePointerTarget(corridorAnchor.markerQ(), corridorAnchor.markerR())
+                        .targetKind()
+                        .name()),
+                "DE-SEL-006 corridor anchor marker does not resolve as a draggable handle");
+        Point2D corridorBody = new Point2D(corridorAnchor.markerQ() + 0.05, corridorAnchor.markerR() + 0.05);
+        assertEquals("CELL", binding.mapContentModel()
+                        .resolvePointerTarget(corridorBody.getX(), corridorBody.getY())
+                        .targetKind()
+                        .name(),
+                "DE-SEL-006 corridor anchor body resolves as a generic corridor cell");
+        assertEquals("CORRIDOR", binding.mapContentModel()
+                        .resolvePointerTarget(corridorBody.getX(), corridorBody.getY())
+                        .elementKind(),
+                "DE-SEL-006 corridor anchor body keeps corridor element identity");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-        Point2D anchorCenter = glyphCenterForRef(binding.mapContentModel(), anchorRef);
 
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_PRESSED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(anchorCenter.getX()),
-                viewport.sceneToScreenY(anchorCenter.getY()),
+                viewport.sceneToScreenX(corridorAnchor.markerQ()),
+                viewport.sceneToScreenY(corridorAnchor.markerR()),
                 false);
         fireMapMouse(
                 mapView,
@@ -116,20 +128,11 @@ final class DungeonEditorCorridorHarness {
 
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertEquals(anchorRowsBefore, runtime.database().corridorAnchorState(mapId),
-                "DE-SEL-006 drag preview leaves corridor anchor DB rows unchanged before release");
+                "DE-SEL-006 suppressed anchor drag leaves corridor anchor DB rows unchanged before release");
         assertEquals(stableRowsBefore, runtime.database().corridorStableConnectionState(mapId),
-                "DE-SEL-006 drag preview leaves stable corridor connection DB rows unchanged before release");
-        assertEquals(anchorRef, previewSurface.selection().topologyRef(),
-                "DE-SEL-006 preview keeps the same selected anchor topology ref");
-        assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
-                "DE-SEL-006 publishes a move-handle preview during anchor drag");
-        DungeonEditorPreview.MoveHandlePreview preview =
-                (DungeonEditorPreview.MoveHandlePreview) previewSurface.preview();
-        assertEquals(0L, preview.deltaQ(), "DE-SEL-006 preview delta q");
-        assertEquals(-1L, preview.deltaR(), "DE-SEL-006 preview delta r");
-        assertEquals(0L, preview.deltaLevel(), "DE-SEL-006 preview delta level");
-        assertTrue(renderHasGlyphAt(binding.mapContentModel(), anchorRef, 6.5, 4.5, true),
-                "DE-SEL-006 render scene shows selected preview anchor marker at (6,4,0)");
+                "DE-SEL-006 suppressed anchor drag leaves stable corridor connection DB rows unchanged before release");
+        assertEquals(DungeonEditorPreview.none(), previewSurface.preview(),
+                "DE-SEL-006 suppressed anchor drag does not publish a move preview");
 
         fireMapMouse(
                 mapView,
@@ -140,30 +143,26 @@ final class DungeonEditorCorridorHarness {
                 false);
 
         List<String> anchorRowsAfter = runtime.database().corridorAnchorState(mapId);
-        assertTrue(anchorRowsAfter.contains(a1AnchorRowAfter),
-                "DE-COR-005 persists existing A1 anchor at (6,4,0): " + anchorRowsAfter);
-        assertTrue(!anchorRowsAfter.contains(a1AnchorRowBefore),
-                "DE-COR-005 removes old A1 anchor coordinates after release: " + anchorRowsAfter);
+        assertEquals(anchorRowsBefore, anchorRowsAfter,
+                "DE-COR-005 suppressed anchor drag keeps existing A1 anchor coordinates: " + anchorRowsAfter);
         assertEquals(stableRowsBefore, runtime.database().corridorStableConnectionState(mapId),
                 "DE-COR-005 keeps stable corridor rows, endpoint refs, waypoints, and topology refs");
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
-                "DE-COR-005 clears move preview after release");
-        assertEquals(anchorRef, committedSurface.selection().topologyRef(),
-                "DE-COR-005 keeps selection on the same anchor topology ref after release");
+                "DE-COR-005 keeps move preview absent after release");
+        assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-COR-005 suppressed anchor drag leaves authored DB row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-COR-005 suppressed anchor drag leaves authored geometry state unchanged");
         assertTrue(committedSurface.surface().map().editorHandles().stream().anyMatch(handle ->
                         handle.ref().topologyRef().equals(corridorAnchor.ref().topologyRef())
                                 && handle.cell().q() == 6
-                                && handle.cell().r() == 4
+                                && handle.cell().r() == 5
                                 && handle.cell().level() == 0),
-                "DE-COR-005 published handle readback moves A1 to (6,4,0)");
-        assertTrue(renderHasGlyphAt(binding.mapContentModel(), anchorRef, 6.5, 4.5, false),
-                "DE-COR-005 render scene shows committed anchor marker at (6,4,0)");
-        assertCanvasPaintedAtScene(mapView, 6.5, 4.5,
-                "DE-COR-005 rendered canvas paints the moved anchor corridor route");
+                "DE-COR-005 published passive anchor readback keeps A1 at (6,5,0)");
 
-        results.add("DE-SEL-006 Ready: DungeonMapView anchor drag -> preview without DB mutation");
-        results.add("DE-COR-005 Ready: DungeonMapView anchor release -> SQLite anchor move -> render readback");
+        results.add("DE-SEL-006 Ready: DungeonMapView corridor anchor ref is not a draggable canvas handle");
+        results.add("DE-COR-005 Ready: DungeonMapView suppressed anchor drag leaves SQLite and render unchanged");
     }
 
 
@@ -180,10 +179,12 @@ final class DungeonEditorCorridorHarness {
         selectMap(controls, "Corridor State Point Map");
         click(button(controls, "Auswahl"));
         var corridorAnchor = firstCorridorAnchorHandle(runtime.mapSurfaceModel().current(), "DE-STATE-004");
-        DungeonEditorTopologyElementRef anchorRef = editorTopologyRef(corridorAnchor.ref().topologyRef());
         Set<Long> existingCorridorIds = runtime.database().corridorIdsForMap(mapId);
         assertEquals(1L, existingCorridorIds.size(), "DE-STATE-004 fixture starts with one authored corridor");
         long existingCorridorId = existingCorridorIds.iterator().next();
+        DungeonEditorTopologyElementRef corridorRef =
+                corridorAreaById(runtime.mapSurfaceModel().current(), existingCorridorId, "DE-STATE-004")
+                        .topologyRef();
         List<String> anchorRowsBefore = runtime.database().corridorAnchorState(mapId);
         List<String> stableRowsBefore = runtime.database().corridorStableConnectionState(mapId);
         String a1AnchorRowBefore = anchorRowsBefore.stream()
@@ -196,17 +197,19 @@ final class DungeonEditorCorridorHarness {
                         "DE-STATE-004 starts with A1 anchored at (6,5,0): " + anchorRowsBefore));
         String a1AnchorRowAfter = a1AnchorRowBefore.replace("|cell_y=5|", "|cell_y=4|");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-        Point2D anchorCenter = glyphCenterForRef(binding.mapContentModel(), anchorRef);
+        Point2D corridorBody = new Point2D(corridorAnchor.markerQ() + 0.05, corridorAnchor.markerR() + 0.05);
 
         fireMapMousePressed(
                 mapView,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(anchorCenter.getX()),
-                viewport.sceneToScreenY(anchorCenter.getY()),
+                viewport.sceneToScreenX(corridorBody.getX()),
+                viewport.sceneToScreenY(corridorBody.getY()),
                 false);
 
+        assertEquals(corridorRef, runtime.stateModel().current().selection().topologyRef(),
+                "DE-STATE-004 state model selects the corridor body");
         assertEquals(corridorAnchor.ref(), runtime.stateModel().current().selection().handleRef(),
-                "DE-STATE-004 state model selects the corridor anchor handle");
+                "DE-STATE-004 state model publishes the focused corridor anchor edit ref");
         TextField qField = textField(stateView, "Korridorpunkt q");
         TextField rField = textField(stateView, "Korridorpunkt r");
         Label levelLabel = label(stateView, "Korridorpunkt z");
@@ -223,8 +226,8 @@ final class DungeonEditorCorridorHarness {
         fireMapMousePressed(
                 mapView,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(anchorCenter.getX()),
-                viewport.sceneToScreenY(anchorCenter.getY()),
+                viewport.sceneToScreenX(corridorBody.getX()),
+                viewport.sceneToScreenY(corridorBody.getY()),
                 false);
         qField = textField(stateView, "Korridorpunkt q");
         rField = textField(stateView, "Korridorpunkt r");
@@ -246,8 +249,8 @@ final class DungeonEditorCorridorHarness {
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
                 "DE-STATE-004 clears move preview after state-panel submit");
-        assertEquals(anchorRef, committedSurface.selection().topologyRef(),
-                "DE-STATE-004 keeps selection on the moved anchor topology ref");
+        assertEquals(corridorRef, committedSurface.selection().topologyRef(),
+                "DE-STATE-004 keeps selection on the corridor topology ref");
         assertTrue(committedSurface.surface().map().editorHandles().stream().anyMatch(handle ->
                         handle.ref().topologyRef().equals(corridorAnchor.ref().topologyRef())
                                 && handle.cell().q() == 6
@@ -259,8 +262,6 @@ final class DungeonEditorCorridorHarness {
                 "DE-STATE-004 published corridor area includes the edited connection point cell");
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).contains("6,4,0"),
                 "DE-STATE-004 render-facing corridor state includes the edited connection point cell");
-        assertTrue(renderHasGlyphAt(binding.mapContentModel(), anchorRef, 6.5, 4.5, false),
-                "DE-STATE-004 render scene shows committed anchor marker at (6,4,0)");
         selectMap(controls, "Corridor State Point Reload Hop");
         selectMap(controls, "Corridor State Point Map");
         assertTrue(areaCellSet(corridorAreaById(
@@ -268,8 +269,6 @@ final class DungeonEditorCorridorHarness {
                         existingCorridorId,
                         "DE-STATE-004 reload")).contains("6,4,0"),
                 "DE-STATE-004 reload published corridor area keeps the edited connection point cell");
-        assertTrue(renderHasGlyphAt(binding.mapContentModel(), anchorRef, 6.5, 4.5, false),
-                "DE-STATE-004 reload render keeps committed anchor marker at (6,4,0)");
 
         results.add("DE-STATE-004 Ready: DungeonEditorStateView corridor point edit -> SQLite anchor move -> render");
     }
@@ -414,10 +413,6 @@ final class DungeonEditorCorridorHarness {
                 "DE-COR-004");
         assertCorridorAnchorHandleAt(runtime.mapSurfaceModel().current(), 6, 5, 0, "DE-COR-004");
         assertOnlyCorridorWaypointHandleAt(runtime.mapSurfaceModel().current(), newCorridorId, 6, 5, 0, "DE-COR-004");
-        DungeonEditorTopologyElementRef crossingAnchor =
-                new DungeonEditorTopologyElementRef("CORRIDOR_ANCHOR", crossingAnchorTopologyId);
-        assertTrue(renderHasGlyphAt(binding.mapContentModel(), crossingAnchor, 6.5, 5.5, false),
-                "DE-COR-004 render scene shows the reused crossing anchor marker at (6,5,0)");
         selectMap(controls, "Corridor Crossing Split Reload Hop");
         selectMap(controls, "Corridor Crossing Split Map");
         assertCorridorCreatedInSnapshot(
@@ -446,7 +441,12 @@ final class DungeonEditorCorridorHarness {
         var anchorHandle = firstCorridorAnchorHandle(runtime.mapSurfaceModel().current(), "DE-COR-006");
         long corridorId = anchorHandle.ref().corridorId();
         DungeonEditorTopologyElementRef anchorRef = editorTopologyRef(anchorHandle.ref().topologyRef());
-        Point2D anchorCenter = glyphCenterForRef(binding.mapContentModel(), anchorRef);
+        Point2D anchorCenter = new Point2D(anchorHandle.markerQ() + 0.05, anchorHandle.markerR() + 0.05);
+        assertEquals("CELL", binding.mapContentModel()
+                        .resolvePointerTarget(anchorCenter.getX(), anchorCenter.getY())
+                        .targetKind()
+                        .name(),
+                "DE-COR-006 existing anchor delete uses a corridor body point, not a rendered anchor handle");
         assertEquals(1L, runtime.database().countCorridorAnchorsAt(mapId, 6, 5, 0),
                 "DE-COR-006 fixture starts with authored A1 at (6,5,0)");
         click(button(controls, "Korridor"));
@@ -506,7 +506,7 @@ final class DungeonEditorCorridorHarness {
         DungeonEditorTopologyElementRef anchorRef =
                 editorTopologyRef(firstCorridorAnchorHandle(runtime.mapSurfaceModel().current(), "DE-COR-007")
                         .ref().topologyRef());
-        Point2D doorCenter = glyphCenterForRef(binding.mapContentModel(), doorRef);
+        Point2D doorCenter = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         click(button(controls, "Korridor"));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
@@ -531,8 +531,6 @@ final class DungeonEditorCorridorHarness {
         assertDisjoint(areaCellSet(corridorAreaById(committedSurface, corridorId, "DE-COR-007")),
                 Set.of("4,2,0", "5,2,0", "6,2,0"),
                 "DE-COR-007 committed corridor omits removed D1 branch");
-        assertTrue(renderHasGlyphAt(binding.mapContentModel(), anchorRef, 6.5, 5.5, false),
-                "DE-COR-007 render preserves A1 marker");
 
         selectMap(controls, "Corridor Door Delete Reload Hop");
         selectMap(controls, "Corridor Door Delete Map");
@@ -717,10 +715,6 @@ final class DungeonEditorCorridorHarness {
                                 && handle.cell().r() == 4
                                 && handle.cell().level() == 0),
                 "DE-COR-013 new-anchor published snapshot exposes the new anchor handle at (6,4,0)");
-        DungeonEditorTopologyElementRef materializedAnchor =
-                new DungeonEditorTopologyElementRef("CORRIDOR_ANCHOR", materializedAnchorRef);
-        assertTrue(renderHasGlyphAt(binding.mapContentModel(), materializedAnchor, 6.5, 4.5, false),
-                "DE-COR-013 new-anchor render scene shows materialized anchor marker at (6,4,0)");
         selectMap(controls, "Corridor Absent Anchor Reload Hop");
         selectMap(controls, "Corridor Absent Anchor Map");
         assertCorridorCreatedInSnapshot(

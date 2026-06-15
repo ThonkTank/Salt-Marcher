@@ -61,12 +61,13 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
         workflows = Map.copyOf(registeredWorkflows);
     }
 
-    public void apply(ToolInput tool, WorkflowAction action, MainViewInput input) {
-        switch (Objects.requireNonNull(action, "action")) {
-            case START -> press(tool, input);
-            case CONTINUE -> drag(tool, input);
-            case FINISH -> release(tool, input);
-            case PREVIEW -> hover(tool, input);
+    public void apply(ToolWorkflowInput input) {
+        ToolWorkflowInput safeInput = Objects.requireNonNull(input, "input");
+        switch (safeInput.action()) {
+            case START -> press(safeInput.tool(), safeInput.mainViewInput());
+            case CONTINUE -> drag(safeInput.tool(), safeInput.mainViewInput());
+            case FINISH -> release(safeInput.tool(), safeInput.mainViewInput());
+            case PREVIEW -> hover(safeInput.tool(), safeInput.mainViewInput());
             case IGNORED -> {
             }
         }
@@ -138,6 +139,18 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
         FINISH,
         PREVIEW,
         IGNORED
+    }
+
+    public record ToolWorkflowInput(
+            ToolInput tool,
+            WorkflowAction action,
+            MainViewInput mainViewInput
+    ) {
+        public ToolWorkflowInput {
+            tool = Objects.requireNonNull(tool, "tool");
+            action = Objects.requireNonNull(action, "action");
+            mainViewInput = Objects.requireNonNull(mainViewInput, "mainViewInput");
+        }
     }
 
     @FunctionalInterface

@@ -109,7 +109,8 @@ public final class DungeonEditorMainViewInteractionValues {
             long roomId,
             int orderIndex,
             CellTarget anchor,
-            String direction
+            String direction,
+            DungeonEditorWorkspaceValues.Edge sourceEdge
     ) {
         public HandleTarget {
             kind = kind == null || kind.isBlank() ? CLUSTER_LABEL_KIND : kind;
@@ -135,11 +136,23 @@ public final class DungeonEditorMainViewInteractionValues {
                     0L,
                     0,
                     CellTarget.empty(),
-                    "");
+                    "",
+                    null);
         }
 
         public static HandleTarget clusterLabel(String topologyRefKind, long topologyRefId, long ownerId, long clusterId) {
-            return new HandleTarget(CLUSTER_LABEL_KIND, topologyRefKind, topologyRefId, ownerId, clusterId, 0L, 0L, 0, CellTarget.empty(), "");
+            return new HandleTarget(
+                    CLUSTER_LABEL_KIND,
+                    topologyRefKind,
+                    topologyRefId,
+                    ownerId,
+                    clusterId,
+                    0L,
+                    0L,
+                    0,
+                    CellTarget.empty(),
+                    "",
+                    null);
         }
 
         public boolean clusterLabel() {
@@ -178,7 +191,8 @@ public final class DungeonEditorMainViewInteractionValues {
                     roomId,
                     orderIndex,
                     anchor.toWorkspaceCell(),
-                    direction);
+                    direction,
+                    sourceEdge);
         }
     }
 
@@ -257,12 +271,13 @@ public final class DungeonEditorMainViewInteractionValues {
         }
 
         public boolean draggable() {
-            return (kind == HitKind.HANDLE || clusterLabelTarget())
+            return ((kind == HitKind.HANDLE && !handleRef.clusterWallRun()) || clusterLabelTarget())
                     && (clusterId > 0L || handleRef.ownerId() > 0L);
         }
 
         public boolean clusterSelection() {
             return clusterLabelTarget()
+                    || (kind == HitKind.ROOM && clusterId > 0L)
                     || (kind == HitKind.HANDLE
                             && (handleRef.clusterLabel()
                                     || handleRef.clusterCorner()

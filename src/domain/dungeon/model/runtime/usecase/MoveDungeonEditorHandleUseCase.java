@@ -60,6 +60,12 @@ public final class MoveDungeonEditorHandleUseCase {
             int sourceR,
             int sourceLevel,
             String direction,
+            int sourceEdgeFromQ,
+            int sourceEdgeFromR,
+            int sourceEdgeFromLevel,
+            int sourceEdgeToQ,
+            int sourceEdgeToR,
+            int sourceEdgeToLevel,
             int targetQ,
             int targetR
     ) {
@@ -75,7 +81,7 @@ public final class MoveDungeonEditorHandleUseCase {
         }
 
         static HandleMoveInput empty() {
-            return new HandleMoveInput("", "", 0L, 0L, 0L, 0L, 0L, 0, 0, 0, 0, "", 0, 0);
+            return new HandleMoveInput("", "", 0L, 0L, 0L, 0L, 0L, 0, 0, 0, 0, "", 0, 0, 0, 0, 0, 0, 0, 0);
         }
 
         private Optional<DungeonEditorWorkspaceValues.HandleRef> handleRef() {
@@ -93,7 +99,19 @@ public final class MoveDungeonEditorHandleUseCase {
                     roomId,
                     index,
                     new DungeonEditorWorkspaceValues.Cell(sourceQ, sourceR, sourceLevel),
-                    direction));
+                    direction,
+                    sourceEdge()));
+        }
+
+        private DungeonEditorWorkspaceValues.Edge sourceEdge() {
+            if (sourceEdgeFromQ == sourceEdgeToQ
+                    && sourceEdgeFromR == sourceEdgeToR
+                    && sourceEdgeFromLevel == sourceEdgeToLevel) {
+                return null;
+            }
+            return new DungeonEditorWorkspaceValues.Edge(
+                    new DungeonEditorWorkspaceValues.Cell(sourceEdgeFromQ, sourceEdgeFromR, sourceEdgeFromLevel),
+                    new DungeonEditorWorkspaceValues.Cell(sourceEdgeToQ, sourceEdgeToR, sourceEdgeToLevel));
         }
 
         private Optional<DungeonEditorHandleType> handleKind() {

@@ -769,10 +769,20 @@ final class DungeonStructureInvariantHarness {
 
         assertEquals(
                 List.of(
-                        new RoomClusterWallMap.WallRun(new Cell(1, 0, 0), 1.0, 0.0, Direction.NORTH),
-                        new RoomClusterWallMap.WallRun(new Cell(3, 0, 0), 3.0, 0.0, Direction.SOUTH)),
+                        new RoomClusterWallMap.WallRun(
+                                new Cell(1, 0, 0),
+                                1.0,
+                                0.0,
+                                Direction.NORTH,
+                                new Edge(new Cell(1, 0, 0), new Cell(2, 0, 0))),
+                        new RoomClusterWallMap.WallRun(
+                                new Cell(3, 0, 0),
+                                3.0,
+                                0.0,
+                                Direction.SOUTH,
+                                new Edge(new Cell(3, 0, 0), new Cell(4, 0, 0)))),
                 wallMap.authoredWallRuns(0),
-                "core room wall runs publish geometric midpoints and do not merge different directions");
+                "core room wall runs publish geometric midpoints, source edges, and do not merge different directions");
     }
 
     private static BoundaryRow wallRow(int relativeQ, int relativeR, Direction direction) {

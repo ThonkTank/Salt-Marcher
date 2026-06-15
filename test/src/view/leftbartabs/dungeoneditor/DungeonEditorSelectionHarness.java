@@ -15,6 +15,7 @@ import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
+import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
@@ -292,28 +293,41 @@ final class DungeonEditorSelectionHarness {
                 .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR anchor handle not loaded."));
-        DungeonEditorTopologyElementRef anchorRef = editorTopologyRef(corridorAnchor.ref().topologyRef());
+        DungeonEditorTopologyElementRef corridorRef = runtime.mapSurfaceModel().current().surface().map().areas().stream()
+                .filter(area -> "CORRIDOR".equals(area.kind()))
+                .map(DungeonEditorMapSnapshot.Area::topologyRef)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR corridor area not loaded."));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-        Point2D anchorCenter = glyphCenterForRef(binding.mapContentModel(), anchorRef);
+        Point2D corridorBody = new Point2D(corridorAnchor.markerQ() + 0.05, corridorAnchor.markerR() + 0.05);
+        assertEquals("CELL", binding.mapContentModel()
+                        .resolvePointerTarget(corridorBody.getX(), corridorBody.getY())
+                        .targetKind()
+                        .name(),
+                "DE-SEL-004 corridor body resolves as a body cell instead of an anchor handle");
+        assertEquals("CORRIDOR", binding.mapContentModel()
+                        .resolvePointerTarget(corridorBody.getX(), corridorBody.getY())
+                        .elementKind(),
+                "DE-SEL-004 corridor body keeps corridor element identity");
 
         fireMapMousePressed(
                 mapView,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(anchorCenter.getX()),
-                viewport.sceneToScreenY(anchorCenter.getY()),
+                viewport.sceneToScreenX(corridorBody.getX()),
+                viewport.sceneToScreenY(corridorBody.getY()),
                 false);
 
         DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
         DungeonEditorMapSurfaceSnapshot selectedSurface = runtime.mapSurfaceModel().current();
-        assertEquals(anchorRef, selectedState.selection().topologyRef(),
-                "DE-SEL-004 state model selected corridor-anchor topology ref");
-        assertEquals(anchorRef, selectedSurface.selection().topologyRef(),
-                "DE-SEL-004 map surface selected corridor-anchor topology ref");
+        assertEquals(corridorRef, selectedState.selection().topologyRef(),
+                "DE-SEL-004 state model selected corridor topology ref");
+        assertEquals(corridorRef, selectedSurface.selection().topologyRef(),
+                "DE-SEL-004 map surface selected corridor topology ref");
         assertEquals(corridorAnchor.ref(), selectedState.selection().handleRef(),
-                "DE-SEL-004 state model selected handle ref");
-        assertTrue(selectedState.inspector() != null, "DE-SEL-004 inspector is published for selected corridor anchor");
-        assertTrue(renderHasSelectedGlyphPrimitive(binding.mapContentModel(), anchorRef),
-                "DE-SEL-004 render scene highlights the selected corridor-anchor handle");
+                "DE-SEL-004 corridor body selection publishes only the focused state-edit anchor ref");
+        assertTrue(selectedState.inspector() != null, "DE-SEL-004 inspector is published for selected corridor");
+        assertTrue(renderHasSelectedSurfacePrimitive(binding.mapContentModel(), corridorRef),
+                "DE-SEL-004 render scene highlights the selected corridor route");
         assertCanvasPaintedAtScene(mapView, 6.5, 3.5,
                 "DE-SEL-004 rendered canvas paints the selected anchor corridor route");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
@@ -321,7 +335,7 @@ final class DungeonEditorSelectionHarness {
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
                 "DE-SEL-004 leaves authored DB state unchanged");
 
-        results.add("DE-SEL-004 Ready: DungeonMapView corridor-anchor click -> SQLite unchanged -> anchor selection");
+        results.add("DE-SEL-004 Ready: DungeonMapView corridor body click -> SQLite unchanged -> corridor selection");
     }
 
 }

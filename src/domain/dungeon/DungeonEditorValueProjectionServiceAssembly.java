@@ -51,7 +51,8 @@ final class DungeonEditorValueProjectionServiceAssembly {
                 handleRef.roomId(),
                 handleRef.index(),
                 cell(handleRef.cell()),
-                handleRef.direction());
+                handleRef.direction(),
+                handleRef.sourceEdge() == null ? null : edge(handleRef.sourceEdge()));
     }
 
     static src.domain.dungeon.published.DungeonEditorTopologyElementRef topologyRef(@Nullable DungeonTopologyRef ref) {

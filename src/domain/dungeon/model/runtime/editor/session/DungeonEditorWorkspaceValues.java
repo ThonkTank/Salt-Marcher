@@ -229,8 +229,23 @@ public final class DungeonEditorWorkspaceValues {
             long roomId,
             int index,
             Cell cell,
-            String direction
+            String direction,
+            Edge sourceEdge
     ) {
+        public HandleRef(
+                DungeonEditorHandleType kind,
+                DungeonTopologyRef topologyRef,
+                long ownerId,
+                long clusterId,
+                long corridorId,
+                long roomId,
+                int index,
+                Cell cell,
+                String direction
+        ) {
+            this(kind, topologyRef, ownerId, clusterId, corridorId, roomId, index, cell, direction, null);
+        }
+
         public HandleRef {
             kind = kind == null ? DungeonEditorHandleType.CLUSTER_LABEL : kind;
             topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
@@ -253,7 +268,12 @@ public final class DungeonEditorWorkspaceValues {
                     0L,
                     0,
                     Cell.empty(),
-                    "");
+                    "",
+                    null);
+        }
+
+        public boolean hasSourceEdge() {
+            return sourceEdge != null;
         }
     }
 

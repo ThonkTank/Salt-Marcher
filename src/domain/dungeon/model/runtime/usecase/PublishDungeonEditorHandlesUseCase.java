@@ -6,29 +6,30 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.stair.Stair;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorAffordanceModel;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjectionKind;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-import src.domain.dungeon.model.runtime.helper.DungeonEditorClusterHandleProjectionHelper;
 
 /**
  * Publishes authored editor handles from one dungeon map snapshot.
  */
 public final class PublishDungeonEditorHandlesUseCase {
-    private static final DungeonEditorClusterHandleProjectionHelper CLUSTER_HANDLE_HELPER =
-            new DungeonEditorClusterHandleProjectionHelper();
+    private static final DungeonEditorAffordanceModel AFFORDANCE_MODEL =
+            new DungeonEditorAffordanceModel();
 
     public List<DungeonEditorHandleProjection> execute(@Nullable DungeonMap dungeonMap) {
         if (dungeonMap == null) {
             return List.of();
         }
         List<DungeonEditorHandleProjection> result = new ArrayList<>();
-        result.addAll(CLUSTER_HANDLE_HELPER.project(dungeonMap));
+        result.addAll(AFFORDANCE_MODEL.clusterAffordances(dungeonMap));
         appendDoorHandles(result, dungeonMap);
         appendAnchorHandles(result, dungeonMap);
         appendWaypointHandles(result, dungeonMap);
@@ -49,6 +50,7 @@ public final class PublishDungeonEditorHandlesUseCase {
                                 cluster.center().r() + roomCell.r(),
                                 roomCell.level());
                 Cell corridorCell = binding.direction().neighborOf(absoluteRoomCell);
+                Edge doorEdge = binding.direction().edgeOf(absoluteRoomCell);
                 result.add(new DungeonEditorHandleProjection(
                         DungeonEditorHandleProjectionKind.DOOR,
                         binding.topologyRef(),
@@ -58,12 +60,17 @@ public final class PublishDungeonEditorHandlesUseCase {
                         binding.roomId(),
                         index,
                         corridorCell,
-                        corridorCell.q(),
-                        corridorCell.r(),
+                        midpoint(doorEdge.from().q(), doorEdge.to().q()),
+                        midpoint(doorEdge.from().r(), doorEdge.to().r()),
                         binding.direction(),
-                        "Tür " + corridor.corridorId() + "." + (index + 1)));
+                        "Tür " + corridor.corridorId() + "." + (index + 1),
+                        doorEdge));
             }
         }
+    }
+
+    private static double midpoint(int first, int second) {
+        return (first + second) / 2.0;
     }
 
     private static void appendWaypointHandles(List<DungeonEditorHandleProjection> result, DungeonMap dungeonMap) {
@@ -86,7 +93,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                         absolute.q(),
                         absolute.r(),
                         Direction.NORTH,
-                        "Wegpunkt " + (index + 1)));
+                        "Wegpunkt " + (index + 1),
+                        null));
             }
         }
     }
@@ -108,7 +116,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                         anchorCell.q(),
                         anchorCell.r(),
                         Direction.NORTH,
-                        "Korridoranker " + (index + 1)));
+                        "Korridoranker " + (index + 1),
+                        null));
             }
         }
     }
@@ -141,7 +150,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                 cell.q(),
                 cell.r(),
                 stair.direction(),
-                label);
+                label,
+                null);
     }
 
     private static @Nullable DungeonRoomCluster cluster(DungeonMap dungeonMap, long clusterId) {

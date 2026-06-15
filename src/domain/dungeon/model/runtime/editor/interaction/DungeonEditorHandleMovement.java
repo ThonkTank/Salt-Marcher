@@ -2,6 +2,7 @@ package src.domain.dungeon.model.runtime.editor.interaction;
 
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public record DungeonEditorHandleMovement(
@@ -13,7 +14,8 @@ public record DungeonEditorHandleMovement(
         long roomId,
         int index,
         Cell cell,
-        Direction direction
+        Direction direction,
+        Edge sourceEdge
 ) {
     public DungeonEditorHandleMovement {
         kind = kind == null ? DungeonEditorHandleMovementKind.defaultKind() : kind;
