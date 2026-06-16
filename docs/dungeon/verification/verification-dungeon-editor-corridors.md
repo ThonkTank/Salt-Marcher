@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-11
+Last Reviewed: 2026-06-16
 Source of Truth: Corridor route, anchor, waypoint, deletion, and corridor
 state route expectations for Dungeon Editor behavior verification.
 
@@ -27,6 +27,7 @@ in [Dungeon Editor-Wide Invariants](verification-dungeon-editor-wide-invariants.
 | `DE-COR-008` | Invalid route rejected | Corridor draft completed with blocked target | `F11_BLOCKED_CORRIDOR_ROUTE` | Status reports rejection and no draft endpoint materialization persists. | Ready |
 | `DE-COR-013` | Generic endpoint materializes only at full commit | Pending corridor draft using generic room or corridor hit | `F12_ROOM_TO_DOOR_ROUTE_TARGET`, `F5_CORRIDOR_WITH_ANCHOR` | Generic room hits materialize the facing door only at successful commit; generic corridor hits reuse an existing anchor or create exactly one missing anchor only at successful commit. Hover proves a visible corridor preview map and rendered preview route without publishing a typed preview or materializing endpoints early; success is proved through SQLite readback, topology identity, published snapshot, reload, and render. | Ready |
 | `DE-COR-014` | Horizontal-blocked corridor uses fallback route | Corridor family plus two door hits where horizontal-first crosses a blocking room and vertical-first is open | `F17_VERTICAL_FALLBACK_CORRIDOR_ROUTE` | The first explicit door click persists no partial corridor; hover proves the vertical-first fallback route is visible while committed door targets remain authoritative; the full click route reuses existing explicit door endpoint identities, persists one corridor using the fallback cells, reloads the same rendered route, and leaves the visible fallback corridor body as a semantic corridor target. | Ready |
+| `DE-COR-015` | Move host anchor with dependent corridor route | State-panel corridor point edit on a host corridor anchor referenced by another corridor | `F5_CORRIDOR_WITH_ANCHOR` variant | Moving the host anchor updates the dependent corridor route through SQLite, published snapshot, render, and reload while preserving the dependent anchor-ref identity and omitting the former stale anchor cell. | Ready |
 
 ## References
 

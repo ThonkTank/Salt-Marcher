@@ -64,6 +64,19 @@ public final class DoorIndex {
         return new DoorIndex(result);
     }
 
+    public boolean canMoveDoor(Door currentDoor, Door movedDoor) {
+        if (currentDoor == null || movedDoor == null) {
+            return false;
+        }
+        Optional<Door> existing = doorAt(currentDoor.clusterId(), currentDoor.relativeCell(), currentDoor.direction());
+        if (existing.filter(currentDoor::equals).isEmpty()) {
+            return false;
+        }
+        DoorKey currentKey = DoorKey.from(currentDoor);
+        DoorKey movedKey = DoorKey.from(movedDoor);
+        return currentKey.equals(movedKey) || !doorsByBoundary.containsKey(movedKey);
+    }
+
     private static List<Door> sortedDoors(Iterable<Door> doors) {
         List<Door> result = new ArrayList<>();
         for (Door door : doors == null ? List.<Door>of() : doors) {

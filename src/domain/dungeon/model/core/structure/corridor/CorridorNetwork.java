@@ -70,6 +70,19 @@ public record CorridorNetwork(List<Corridor> corridors) {
         return new CorridorNetwork(result);
     }
 
+    Set<Long> corridorsReferencing(Set<AnchorKey> anchors) {
+        if (anchors == null || anchors.isEmpty()) {
+            return Set.of();
+        }
+        Set<Long> result = new LinkedHashSet<>();
+        for (Corridor corridor : corridors) {
+            if (corridor != null && referencesAny(corridor, anchors)) {
+                result.add(corridor.corridorId());
+            }
+        }
+        return Set.copyOf(result);
+    }
+
     private Corridor corridorById(long corridorId) {
         return corridorById(corridors, corridorId);
     }
@@ -191,12 +204,16 @@ public record CorridorNetwork(List<Corridor> corridors) {
         }
     }
 
-    private record AnchorKey(long hostCorridorId, long anchorId) {
-        private static AnchorKey from(CorridorAnchor anchor) {
+    record AnchorKey(long hostCorridorId, long anchorId) {
+        static AnchorKey from(CorridorAnchor anchor) {
             return new AnchorKey(anchor.hostCorridorId(), anchor.anchorId());
         }
 
-        private static AnchorKey from(CorridorAnchorRef ref) {
+        static AnchorKey from(CorridorAnchorBinding binding) {
+            return new AnchorKey(binding.hostCorridorId(), binding.anchorId());
+        }
+
+        static AnchorKey from(CorridorAnchorRef ref) {
             return new AnchorKey(ref.hostCorridorId(), ref.anchorId());
         }
     }

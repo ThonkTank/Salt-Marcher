@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-16
 Source of Truth: Door route expectations for Dungeon Editor behavior
 verification.
 
@@ -28,6 +28,7 @@ must not run label or cluster-only proof rows.
 | `DE-DOOR-002` | Delete or reject door delete | Door family plus secondary click on a door | `F4_WALLED_ROOM_WITH_DOOR` variants | Unbound door delete removes the binding/topology and restores the boundary segment as wall; corridor-bound delete rejects and leaves authored state unchanged. | Ready |
 | `DE-DOOR-003` | Focused protected-door rejection row | Door family plus secondary click on corridor-bound door | `F4_WALLED_ROOM_WITH_DOOR` variant | Door, corridor, room boundary, topology, preview, selection, published map, and render remain unchanged under a dedicated protected-delete proof. | Ready |
 | `DE-DOOR-004` | Move door by shared handle | Selection tool plus primary drag on a door handle | `F16_HANDLE_VARIETY` | The door handle is visible and hittable, preview leaves SQLite unchanged, release moves the corridor binding and authored door boundary, and reload preserves the moved door. | Ready |
+| `DE-DOOR-005` | Reject invalid door handle move atomically | Selection tool plus primary drag on a door handle to an ineligible boundary | `F16_HANDLE_VARIETY` variant | Drag may publish transient preview, but rejected release clears preview, publishes rejection feedback, keeps SQLite door boundary and corridor binding rows unchanged, keeps the published map unchanged, and leaves no orphan moved door handle after render/reload. | Ready |
 
 ## References
 

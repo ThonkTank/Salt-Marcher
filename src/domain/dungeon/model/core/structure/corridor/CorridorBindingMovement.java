@@ -1,8 +1,10 @@
 package src.domain.dungeon.model.core.structure.corridor;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
@@ -13,8 +15,7 @@ import src.domain.dungeon.model.core.structure.stair.StairCollection;
  * Owns authored movement of corridor door, anchor, and waypoint bindings.
  */
 public final class CorridorBindingMovement {
-    private static final CorridorConnectionNormalization CONNECTION_NORMALIZATION =
-            new CorridorConnectionNormalization();
+    private static final CorridorNetworkMovement NETWORK_MOVEMENT = new CorridorNetworkMovement();
 
     public DoorBindingMoveResult moveDoorBindingWithResult(
             DungeonMap dungeonMap,
@@ -25,10 +26,15 @@ public final class CorridorBindingMovement {
             int deltaR,
             int deltaLevel
     ) {
-        CorridorDoorBindingState oldBinding = doorBinding(dungeonMap, corridorId, bindingIndex, roomId);
         Objects.requireNonNull(dungeonMap, "dungeonMap");
+        CorridorDoorBindingState oldBinding = doorBinding(dungeonMap.corridors(), corridorId, bindingIndex, roomId);
         if (stationary(deltaQ, deltaR, deltaLevel)) {
-            return new DoorBindingMoveResult(dungeonMap, dungeonMap, oldBinding, oldBinding);
+            return new DoorBindingMoveResult(
+                    dungeonMap,
+                    dungeonMap.corridors(),
+                    Set.of(),
+                    oldBinding,
+                    oldBinding);
         }
         List<Corridor> movedCorridors = new ArrayList<>();
         boolean changed = false;
@@ -40,12 +46,14 @@ public final class CorridorBindingMovement {
             changed = addDoorMovedCorridor(movedCorridors, corridor, bindingIndex, roomId, deltaQ, deltaR, deltaLevel)
                     || changed;
         }
-        DungeonMap movedMap = changed ? copyWithConnections(dungeonMap, movedCorridors, dungeonMap.stairs()) : dungeonMap;
         return new DoorBindingMoveResult(
                 dungeonMap,
-                movedMap,
+                changed ? List.copyOf(movedCorridors) : dungeonMap.corridors(),
+                changed ? Set.of(corridorId) : Set.of(),
                 oldBinding,
-                doorBinding(movedMap, corridorId, bindingIndex, roomId));
+                changed
+                        ? doorBinding(movedCorridors, corridorId, bindingIndex, roomId)
+                        : oldBinding);
     }
 
     public DungeonMap moveAnchorBinding(
@@ -78,7 +86,9 @@ public final class CorridorBindingMovement {
                     deltaR,
                     deltaLevel) || changed;
         }
-        return changed ? copyWithConnections(dungeonMap, movedCorridors, dungeonMap.stairs()) : dungeonMap;
+        return changed
+                ? moveCorridorNetwork(dungeonMap, movedCorridors, Set.of(corridorId), dungeonMap.stairs())
+                : dungeonMap;
     }
 
     public DungeonMap moveWaypoint(
@@ -108,7 +118,9 @@ public final class CorridorBindingMovement {
                     deltaR,
                     deltaLevel) || changed;
         }
-        return changed ? copyWithConnections(dungeonMap, movedCorridors, dungeonMap.stairs()) : dungeonMap;
+        return changed
+                ? moveCorridorNetwork(dungeonMap, movedCorridors, Set.of(corridorId), dungeonMap.stairs())
+                : dungeonMap;
     }
 
     private static boolean addDoorMovedCorridor(
@@ -206,14 +218,16 @@ public final class CorridorBindingMovement {
         return changed;
     }
 
-    private DungeonMap copyWithConnections(
+    private DungeonMap moveCorridorNetwork(
             DungeonMap dungeonMap,
-            List<Corridor> nextCorridors,
+            List<Corridor> movedCorridors,
+            Set<Long> movedCorridorIds,
             StairCollection nextStairs
     ) {
-        return CONNECTION_NORMALIZATION.copyWithConnections(
+        return NETWORK_MOVEMENT.moveCorridors(
                 dungeonMap,
-                nextCorridors,
+                movedCorridors,
+                movedCorridorIds,
                 nextStairs,
                 dungeonMap.transitionCatalog());
     }
@@ -228,15 +242,15 @@ public final class CorridorBindingMovement {
     }
 
     private static CorridorDoorBindingState doorBinding(
-            DungeonMap dungeonMap,
+            Iterable<Corridor> corridors,
             long corridorId,
             int bindingIndex,
             long roomId
     ) {
-        if (dungeonMap == null || bindingIndex < 0) {
+        if (corridors == null || bindingIndex < 0) {
             return null;
         }
-        for (Corridor corridor : dungeonMap.corridors()) {
+        for (Corridor corridor : corridors) {
             if (corridor.corridorId() != corridorId || bindingIndex >= corridor.stateBindings().doorBindings().size()) {
                 continue;
             }
@@ -250,13 +264,53 @@ public final class CorridorBindingMovement {
 
     public record DoorBindingMoveResult(
             DungeonMap sourceMap,
-            DungeonMap movedMap,
+            List<Corridor> movedCorridors,
+            Set<Long> movedCorridorIds,
             CorridorDoorBindingState oldBinding,
             CorridorDoorBindingState newBinding
     ) {
         public DoorBindingMoveResult {
             sourceMap = Objects.requireNonNull(sourceMap, "sourceMap");
-            movedMap = Objects.requireNonNull(movedMap, "movedMap");
+            movedCorridors = movedCorridors == null ? sourceMap.corridors() : List.copyOf(movedCorridors);
+            movedCorridorIds = normalizedCorridorIds(movedCorridorIds);
+        }
+
+        public boolean hasDoorBindingDelta() {
+            return !sourceMap.corridors().equals(movedCorridors)
+                    && !movedCorridorIds.isEmpty()
+                    && oldBinding != null
+                    && newBinding != null;
+        }
+
+        @Override
+        public List<Corridor> movedCorridors() {
+            return List.copyOf(movedCorridors);
+        }
+
+        @Override
+        public Set<Long> movedCorridorIds() {
+            return Set.copyOf(movedCorridorIds);
+        }
+
+        public DungeonMap movedMapOrSource() {
+            return hasDoorBindingDelta()
+                    ? NETWORK_MOVEMENT.moveCorridors(
+                            sourceMap,
+                            movedCorridors,
+                            movedCorridorIds,
+                            sourceMap.stairs(),
+                            sourceMap.transitionCatalog())
+                    : sourceMap;
+        }
+
+        private static Set<Long> normalizedCorridorIds(Set<Long> source) {
+            Set<Long> result = new LinkedHashSet<>();
+            for (Long corridorId : source == null ? Set.<Long>of() : source) {
+                if (corridorId != null && corridorId > 0L) {
+                    result.add(corridorId);
+                }
+            }
+            return Set.copyOf(result);
         }
     }
 }

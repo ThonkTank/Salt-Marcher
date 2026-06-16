@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 final class CorridorReplacementRouteValidation {
@@ -17,21 +19,15 @@ final class CorridorReplacementRouteValidation {
             Corridor corridor,
             List<Corridor> candidateCorridors
     ) {
-        if (dungeonMap == null || corridor == null || corridor.endpointCount() < 2) {
-            return false;
-        }
-        Map<Long, DungeonRoomCluster> clustersById = ROOM_CELLS.clustersById(dungeonMap);
-        Map<Long, List<Cell>> roomCellsByRoom = ROOM_CELLS.roomCellsByRoom(dungeonMap);
-        List<CorridorHostEndpoint> endpoints = ENDPOINTS.endpoints(
-                corridor,
-                clustersById,
-                ROOM_CELLS.roomsById(dungeonMap),
-                roomCellsByRoom,
-                ENDPOINTS.anchorBindingsByRef(candidateCorridors));
-        List<Cell> backbone = corridor.stateBindings().waypoints().isEmpty()
-                ? BACKBONE_CELLS.endpointBackbone(endpoints)
-                : BACKBONE_CELLS.authoredBackbone(corridor.stateBindings().waypoints(), clustersById, endpoints);
-        return hasUnblockedBackbone(backbone, ROOM_CELLS.allRoomCells(roomCellsByRoom));
+        return ValidationContext.from(dungeonMap, candidateCorridors)
+                .hasValidReplacementRoute(corridor);
+    }
+
+    ValidationContext validationContext(
+            DungeonMap dungeonMap,
+            List<Corridor> candidateCorridors
+    ) {
+        return ValidationContext.from(dungeonMap, candidateCorridors);
     }
 
     private static boolean hasUnblockedBackbone(List<Cell> backbone, Set<Cell> roomCells) {
@@ -45,5 +41,57 @@ final class CorridorReplacementRouteValidation {
             }
         }
         return true;
+    }
+
+    record ValidationContext(
+            boolean valid,
+            Map<Long, DungeonRoomCluster> clustersById,
+            Map<Long, DungeonRoom> roomsById,
+            Map<Long, List<Cell>> roomCellsByRoom,
+            Map<DungeonTopologyRef, CorridorAnchorBinding> anchorBindingsByRef,
+            Set<Cell> allRoomCells
+    ) {
+        static ValidationContext from(
+                DungeonMap dungeonMap,
+                List<Corridor> candidateCorridors
+        ) {
+            if (dungeonMap == null) {
+                return invalid();
+            }
+            Map<Long, List<Cell>> roomCellsByRoom = ROOM_CELLS.roomCellsByRoom(dungeonMap);
+            return new ValidationContext(
+                    true,
+                    ROOM_CELLS.clustersById(dungeonMap),
+                    ROOM_CELLS.roomsById(dungeonMap),
+                    roomCellsByRoom,
+                    ENDPOINTS.anchorBindingsByRef(candidateCorridors),
+                    ROOM_CELLS.allRoomCells(roomCellsByRoom));
+        }
+
+        static ValidationContext invalid() {
+            return new ValidationContext(
+                    false,
+                    Map.of(),
+                    Map.of(),
+                    Map.of(),
+                    Map.of(),
+                    Set.of());
+        }
+
+        boolean hasValidReplacementRoute(Corridor corridor) {
+            if (!valid || corridor == null || corridor.endpointCount() < 2) {
+                return false;
+            }
+            List<CorridorHostEndpoint> endpoints = ENDPOINTS.endpoints(
+                    corridor,
+                    clustersById,
+                    roomsById,
+                    roomCellsByRoom,
+                    anchorBindingsByRef);
+            List<Cell> backbone = corridor.stateBindings().waypoints().isEmpty()
+                    ? BACKBONE_CELLS.endpointBackbone(endpoints)
+                    : BACKBONE_CELLS.authoredBackbone(corridor.stateBindings().waypoints(), clustersById, endpoints);
+            return hasUnblockedBackbone(backbone, allRoomCells);
+        }
     }
 }

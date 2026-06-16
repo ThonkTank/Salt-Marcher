@@ -8,6 +8,7 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
+import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
@@ -50,6 +51,7 @@ final class DungeonEditorCorridorHarness {
     static void run(List<String> results) throws Exception {
         route(results, () -> verifyCorridorAnchorMoveThroughMapView(results));
         route(results, () -> verifyCorridorPointEditThroughStateView(results));
+        route(results, () -> verifyDependentCorridorRouteUpdatesThroughHostAnchorMove(results));
         route(results, () -> verifyDoorToDoorVerticalFallbackCorridorCreateThroughMapView(results));
         route(results, () -> verifyCorridorSplitAtCrossingThroughMapView(results));
         route(results, () -> verifyCorridorConnectionPointDeleteThroughMapView(results));
@@ -271,6 +273,146 @@ final class DungeonEditorCorridorHarness {
                 "DE-STATE-004 reload published corridor area keeps the edited connection point cell");
 
         results.add("DE-STATE-004 Ready: DungeonEditorStateView corridor point edit -> SQLite anchor move -> render");
+    }
+
+
+    private static void verifyDependentCorridorRouteUpdatesThroughHostAnchorMove(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+        DungeonEditorStateView stateView = binding.stateView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Corridor Network Host Move Map");
+        runtime.database().seedCorridorWithAnchor(mapId);
+        createMapThroughControls(controls, runtime, "Corridor Network Host Move Reload Hop");
+        selectMap(controls, "Corridor Network Host Move Map");
+        long dependentCorridorId = createDependentCorridorFromExistingAnchor(runtime, binding, controls, mapView, mapId);
+        DungeonEditorTopologyElementRef anchorRef =
+                editorTopologyRef(firstCorridorAnchorHandle(
+                        runtime.mapSurfaceModel().current(),
+                        "DE-COR-NET dependent").ref().topologyRef());
+        assertCorridorAnchorRef(
+                runtime.database().corridorStableConnectionState(mapId),
+                dependentCorridorId,
+                anchorRef.id(),
+                "DE-COR-NET dependent corridor starts anchored to host A1");
+
+        click(button(controls, "Auswahl"));
+        DungeonEditorHandleSnapshot hostAnchor =
+                firstCorridorAnchorHandle(runtime.mapSurfaceModel().current(), "DE-COR-NET host");
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        Point2D hostAnchorBody = new Point2D(hostAnchor.markerQ() + 0.05, hostAnchor.markerR() + 0.05);
+        fireMapMousePressed(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(hostAnchorBody.getX()),
+                viewport.sceneToScreenY(hostAnchorBody.getY()),
+                false);
+
+        List<String> stableRowsBeforeMove = runtime.database().corridorStableConnectionState(mapId);
+        List<String> anchorRowsBeforeMove = runtime.database().corridorAnchorState(mapId);
+        assertTrue(anchorRowsBeforeMove.stream().anyMatch(row ->
+                        row.contains("anchor_id=1")
+                                && row.contains("cell_x=6")
+                                && row.contains("cell_y=5")
+                                && row.contains("cell_z=0")),
+                "DE-COR-NET starts with host A1 at (6,5,0): " + anchorRowsBeforeMove);
+        textField(stateView, "Korridorpunkt q").setText("6");
+        textField(stateView, "Korridorpunkt r").setText("4");
+        click(buttonWithAccessibleText(stateView, "Korridor-Anker verschieben"));
+
+        List<String> anchorRowsAfterMove = runtime.database().corridorAnchorState(mapId);
+        assertTrue(anchorRowsAfterMove.stream().anyMatch(row ->
+                        row.contains("anchor_id=1")
+                                && row.contains("cell_x=6")
+                                && row.contains("cell_y=4")
+                                && row.contains("cell_z=0")),
+                "DE-COR-NET moves host A1 to (6,4,0): " + anchorRowsAfterMove);
+        assertTrue(!anchorRowsAfterMove.equals(anchorRowsBeforeMove),
+                "DE-COR-NET host move changes anchor DB rows");
+        List<String> stableRowsAfterMove = runtime.database().corridorStableConnectionState(mapId);
+        assertCorridorAnchorRef(
+                stableRowsAfterMove,
+                dependentCorridorId,
+                anchorRef.id(),
+                "DE-COR-NET preserves dependent anchor ref after host move");
+        assertEquals(stableRowsBeforeMove, stableRowsAfterMove,
+                "DE-COR-NET keeps stable endpoint refs while the host anchor row carries the movement");
+        Set<String> expectedDependentCells = Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0");
+        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        assertCorridorCreatedInSnapshot(
+                committedSurface,
+                binding.mapContentModel(),
+                dependentCorridorId,
+                expectedDependentCells,
+                "DE-COR-NET moved dependent corridor");
+        assertTrue(!areaCellSet(corridorAreaById(committedSurface, dependentCorridorId, "DE-COR-NET moved"))
+                        .contains("6,5,0"),
+                "DE-COR-NET moved dependent corridor omits stale former anchor cell");
+        selectMap(controls, "Corridor Network Host Move Reload Hop");
+        selectMap(controls, "Corridor Network Host Move Map");
+        assertCorridorCreatedInSnapshot(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                dependentCorridorId,
+                expectedDependentCells,
+                "DE-COR-NET moved dependent corridor reload");
+        assertCorridorAnchorRef(
+                runtime.database().corridorStableConnectionState(mapId),
+                dependentCorridorId,
+                anchorRef.id(),
+                "DE-COR-NET reload preserves dependent anchor ref");
+
+        results.add("DE-COR-015 Ready: host corridor anchor move updates dependent corridor route, SQLite, render, reload");
+    }
+
+
+    private static long createDependentCorridorFromExistingAnchor(
+            HarnessRuntime runtime,
+            HarnessBinding binding,
+            DungeonEditorControlsView controls,
+            DungeonMapView mapView,
+            long mapId
+    ) {
+        Set<Long> corridorIdsBefore = runtime.database().corridorIdsForMap(mapId);
+        Point2D genericCorridorPoint = new Point2D(6.05, 5.05);
+        Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
+        AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
+        click(button(controls, "Korridor"));
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+
+        fireMapMousePressed(mapView, MouseButton.PRIMARY,
+                viewport.sceneToScreenX(genericCorridorPoint.getX()),
+                viewport.sceneToScreenY(genericCorridorPoint.getY()),
+                false);
+        assertFirstClickDraftOnly(
+                beforeFirstClick,
+                runtime,
+                binding,
+                mapId,
+                "DE-COR-NET dependent first click");
+        fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
+                viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
+        assertVisibleCorridorPreview(
+                runtime,
+                binding,
+                Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
+                "DE-COR-NET dependent hover");
+        fireMapMousePressed(mapView, MouseButton.PRIMARY,
+                viewport.sceneToScreenX(doorOne.getX()), viewport.sceneToScreenY(doorOne.getY()), false);
+
+        long dependentCorridorId = singleNewCorridorId(
+                corridorIdsBefore,
+                runtime.database().corridorIdsForMap(mapId),
+                "DE-COR-NET dependent");
+        assertCorridorCreatedInSnapshot(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                dependentCorridorId,
+                Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
+                "DE-COR-NET dependent created");
+        return dependentCorridorId;
     }
 
 

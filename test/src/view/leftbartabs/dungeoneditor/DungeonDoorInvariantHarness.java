@@ -6,13 +6,28 @@ import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
+import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.door.Door;
 import src.domain.dungeon.model.core.structure.door.DoorBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.door.DoorIndex;
+import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
+import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.room.RoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
+import src.domain.dungeon.model.core.structure.stair.StairCollection;
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 
 final class DungeonDoorInvariantHarness {
 
@@ -46,6 +61,12 @@ final class DungeonDoorInvariantHarness {
                 OWNER,
                 "DGI-DOOR-004",
                 "Door index rejects corridor-bound deletes and exposes restored wall boundary state for unbound doors");
+        assertDoorMoveAtomicity();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-DOOR-006",
+                "Door binding movement applies the corridor endpoint and room boundary together or rejects unchanged");
     }
 
     private static void assertDoorLocalFacts() {
@@ -159,6 +180,109 @@ final class DungeonDoorInvariantHarness {
                 "door index removes only unbound door");
         assertEquals(Door.BoundaryState.Kind.WALL, unbound.restoredWallState().kind(),
                 "door owner restores unbound delete to wall boundary state");
+    }
+
+    private static void assertDoorMoveAtomicity() {
+        DungeonMap source = doorMoveMapWithWallTarget();
+        DungeonMap moved = source.moveDoorBinding(20L, 0, 11L, 0, 1, 0);
+
+        assertFalse(source.equals(moved), "door move changes the aggregate for a valid target");
+        assertEquals(
+                new Cell(1, 1, 0),
+                moved.corridors().getFirst().stateBindings().doorBindings().getFirst().relativeCell(),
+                "door move updates the corridor door binding to the moved boundary cell");
+        assertTrue(boundaryIs(moved, new Cell(1, 0, 0), Direction.EAST, BoundaryKind.WALL),
+                "door move restores the old authored room boundary to wall");
+        assertTrue(boundaryIs(moved, new Cell(1, 1, 0), Direction.EAST, BoundaryKind.DOOR),
+                "door move materializes the target authored room boundary as door");
+        assertEquals(
+                DungeonTopologyRef.door(200L),
+                boundaryRef(moved, new Cell(1, 1, 0), Direction.EAST),
+                "door move preserves the stable door topology ref on the moved boundary");
+
+        DungeonMap missingTarget = source.moveDoorBinding(20L, 0, 11L, 0, 4, 0);
+        assertEquals(source, missingTarget,
+                "invalid door move rejects without moving the corridor binding away from the room boundary");
+        DungeonMap duplicateSource = doorMoveMapWithDuplicateTargetDoor();
+        DungeonMap duplicateTarget = duplicateSource.moveDoorBinding(20L, 0, 11L, 0, 1, 0);
+        assertEquals(duplicateSource, duplicateTarget,
+                "duplicate target door move rejects without orphaning the source handle");
+    }
+
+    private static DungeonMap doorMoveMapWithWallTarget() {
+        return doorMoveMap(false);
+    }
+
+    private static DungeonMap doorMoveMapWithDuplicateTargetDoor() {
+        return doorMoveMap(true);
+    }
+
+    private static DungeonMap doorMoveMap(boolean duplicateDoorAtTarget) {
+        long mapId = 1L;
+        long clusterId = 42L;
+        long roomId = 11L;
+        DungeonTopologyRef doorRef = DungeonTopologyRef.door(200L);
+        List<DungeonClusterBoundary> boundaries = new ArrayList<>(List.of(
+                new DungeonClusterBoundary(clusterId, 0, new Cell(1, 0, 0), Direction.EAST, BoundaryKind.DOOR, doorRef),
+                new DungeonClusterBoundary(clusterId, 0, new Cell(1, 1, 0), Direction.EAST,
+                        duplicateDoorAtTarget ? BoundaryKind.DOOR : BoundaryKind.WALL,
+                        duplicateDoorAtTarget ? DungeonTopologyRef.door(201L) : DungeonTopologyRef.wall(201L))));
+        DungeonRoomCluster cluster = DungeonRoomCluster.fromCompatibilityInput(
+                clusterId,
+                mapId,
+                "R1",
+                new Cell(0, 0, 0),
+                RoomClusterFloorMap.fromCells(List.of(
+                        new Cell(0, 0, 0),
+                        new Cell(0, 1, 0),
+                        new Cell(1, 0, 0),
+                        new Cell(1, 1, 0))),
+                DungeonClusterBoundary.orderedByLevel(boundaries));
+        DungeonRoom room = new DungeonRoom(roomId, mapId, clusterId, "R1", Map.of(0, new Cell(0, 0, 0)), null);
+        Corridor corridor = new Corridor(
+                20L,
+                mapId,
+                0,
+                List.of(roomId),
+                new CorridorBindingState(
+                        List.of(),
+                        List.of(new CorridorDoorBindingState(
+                                roomId,
+                                clusterId,
+                                new Cell(1, 0, 0),
+                                Direction.EAST,
+                                doorRef)),
+                        List.of(),
+                        List.of()));
+        return new DungeonMap(
+                new DungeonMapMetadata(new DungeonMapIdentity(mapId), "Door Move Invariant"),
+                SpatialTopology.defaultGrid().withRoomClusters(List.of(cluster)),
+                new RoomCatalog(List.of(room)),
+                List.of(corridor),
+                new StairCollection(List.of()),
+                new TransitionCatalog(List.of()),
+                0L);
+    }
+
+    private static boolean boundaryIs(DungeonMap map, Cell relativeCell, Direction direction, BoundaryKind kind) {
+        for (DungeonClusterBoundary boundary : map.topology().roomClusters().getFirst().orderedAuthoredBoundaries()) {
+            if (relativeCell.equals(boundary.relativeCell())
+                    && direction == boundary.direction()
+                    && kind == boundary.kind()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static DungeonTopologyRef boundaryRef(DungeonMap map, Cell relativeCell, Direction direction) {
+        DungeonRoomCluster cluster = map.topology().roomClusters().getFirst();
+        for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
+            if (relativeCell.equals(boundary.relativeCell()) && direction == boundary.direction()) {
+                return boundary.resolvedTopologyRef(cluster.center());
+            }
+        }
+        return DungeonTopologyRef.empty();
     }
 
     private static void assertEquals(Object expected, Object actual, String message) {

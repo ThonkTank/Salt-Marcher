@@ -48,6 +48,10 @@ public record CorridorBindingState(
                 null);
     }
 
+    public CorridorBindingState replaceWaypoints(List<CorridorWaypoint> updatedWaypoints) {
+        return new CorridorBindingState(updatedWaypoints, doorBindings, anchorBindings, anchorRefs);
+    }
+
     public CorridorBindings toCore() {
         return new CorridorBindings(
                 waypoints,

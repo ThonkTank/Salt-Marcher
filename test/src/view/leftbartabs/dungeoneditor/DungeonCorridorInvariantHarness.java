@@ -10,9 +10,15 @@ import src.domain.dungeon.model.core.component.CorridorDoorBinding;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorEndpointMaterialization;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
+import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointSemantics;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
@@ -22,6 +28,10 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorRoute;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoutePlan;
 import src.domain.dungeon.model.core.structure.corridor.CorridorTargetDeletion;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorDeletionOwnerProbe;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog;
+import src.domain.dungeon.model.core.structure.stair.StairCollection;
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
+import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 import src.domain.dungeon.model.runtime.usecase.DungeonEditorRuntimeDraftOwnerProbe;
 import static src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorHarnessSupport.*;
 
@@ -54,6 +64,13 @@ final class DungeonCorridorInvariantHarness {
                 "DGI-CORRIDOR-004",
                 "Corridor deletion owner removes point and door branch targets, protects referenced whole"
                         + " corridors, prunes detached anchors, and rejects invalid replacement routes before mutation");
+        assertNetworkMovementOwner();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-CORRIDOR-005",
+                "Corridor network movement moves host anchors through the aggregate and rejects duplicate"
+                        + " moved anchor cells unchanged");
         DungeonEditorRuntimeDraftOwnerProbe.assertCorridorDraftSessionOwner();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -232,6 +249,76 @@ final class DungeonCorridorInvariantHarness {
         assertEquals(List.of(10L), corridorIds(network.withoutCorridor(11L)),
                 "corridor network deletes the unreferenced branch corridor");
         DungeonCorridorDeletionOwnerProbe.assertInvalidReplacementRouteRejectedBeforeMutation();
+    }
+
+    private static void assertNetworkMovementOwner() {
+        Corridor host = anchorMoveMapWithSingleAnchorTarget().corridors().getFirst();
+        Corridor dependent = new Corridor(
+                11L,
+                1L,
+                0,
+                new CorridorRoomSet(List.of()),
+                new CorridorBindings(
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(new CorridorAnchorRef(10L, 1L))));
+        CorridorNetwork network = new CorridorNetwork(List.of(host, dependent));
+        assertTrue(!network.canDeleteCorridor(10L),
+                "corridor network owner identifies dependent corridors by hosted anchor ref");
+
+        DungeonMap duplicateSource = anchorMoveMapWithDuplicateAnchorTarget();
+        DungeonMap rejected = duplicateSource.moveCorridorAnchor(
+                10L,
+                0,
+                DungeonTopologyRef.corridorAnchor(1L),
+                1,
+                0,
+                0);
+        assertEquals(duplicateSource, rejected,
+                "corridor network movement rejects a host move that would duplicate owned anchor cells");
+    }
+
+    private static DungeonMap anchorMoveMapWithSingleAnchorTarget() {
+        return anchorMoveMap(false);
+    }
+
+    private static DungeonMap anchorMoveMapWithDuplicateAnchorTarget() {
+        return anchorMoveMap(true);
+    }
+
+    private static DungeonMap anchorMoveMap(boolean duplicateTarget) {
+        CorridorAnchorBinding movedAnchor = new CorridorAnchorBinding(
+                1L,
+                10L,
+                new Cell(1, 0, 0),
+                DungeonTopologyRef.corridorAnchor(1L));
+        List<CorridorAnchorBinding> anchors = duplicateTarget
+                ? List.of(
+                        movedAnchor,
+                        new CorridorAnchorBinding(2L, 10L, new Cell(2, 0, 0), DungeonTopologyRef.corridorAnchor(2L)))
+                : List.of(movedAnchor);
+        Corridor host = new Corridor(
+                10L,
+                1L,
+                0,
+                new CorridorRoomSet(List.of()),
+                new CorridorBindingState(
+                        List.of(
+                                new CorridorWaypoint(0L, new Cell(0, 0, 0), 0),
+                                new CorridorWaypoint(0L, new Cell(1, 0, 0), 0),
+                                new CorridorWaypoint(0L, new Cell(2, 0, 0), 0)),
+                        List.of(),
+                        anchors,
+                        List.of(new CorridorAnchorRef(10L, 1L))));
+        return new DungeonMap(
+                new DungeonMapMetadata(new DungeonMapIdentity(1L), "Corridor Network Invariant"),
+                SpatialTopology.defaultGrid(),
+                RoomCatalog.empty(),
+                List.of(host),
+                new StairCollection(List.of()),
+                new TransitionCatalog(List.of()),
+                0L);
     }
 
     private static Corridor emptyCorridor(long corridorId) {

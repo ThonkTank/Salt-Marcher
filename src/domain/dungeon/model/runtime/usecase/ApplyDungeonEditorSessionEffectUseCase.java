@@ -3,6 +3,7 @@ package src.domain.dungeon.model.runtime.usecase;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonFacts;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
@@ -59,6 +60,7 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
     }
 
     public void applyEffect(DungeonEditorMainViewEffect effect) {
+        DungeonEditorSessionValues.Preview previousPreview = workflow.session().preview();
         DungeonEditorSessionValues.Preview applyPreview = workflow.applyEffect(effect);
         if (applyPreview != null) {
             if (workflow.session().selectedMapId() != null) {
@@ -69,7 +71,10 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
                 workflow.applyEffect(DungeonEditorMainViewEffect.clearedSelection());
             }
         }
-        if (applyPreview == null && inMemoryPreview(effect.preview())) {
+        if (applyPreview == null && inMemoryDoorMovePreview(effect.preview())) {
+            if (previousPreview.equals(workflow.session().preview())) {
+                return;
+            }
             publishInMemoryPreview();
             return;
         }
@@ -95,8 +100,8 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
         };
     }
 
-    private static boolean inMemoryPreview(DungeonEditorSessionValues.@Nullable Preview preview) {
+    private static boolean inMemoryDoorMovePreview(DungeonEditorSessionValues.@Nullable Preview preview) {
         return preview instanceof DungeonEditorSessionValues.MoveHandlePreview moveHandle
-                && "DOOR".equals(moveHandle.handleRef().kind().name());
+                && moveHandle.handleRef().kind() == DungeonEditorHandleType.DOOR;
     }
 }

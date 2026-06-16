@@ -44,8 +44,13 @@ public final class CorridorConnectionNormalization {
                 dungeonMap.revision() + 1L);
     }
 
-    private List<Corridor> snapOwnedAnchors(DungeonMap dungeonMap, List<Corridor> corridors) {
-        CorridorHostCells hostCells = new CorridorHostCells(HOST_CELL_QUERY.cellsByCorridor(dungeonMap, corridors));
+    List<Corridor> snapOwnedAnchors(DungeonMap dungeonMap, List<Corridor> corridors) {
+        return snapOwnedAnchors(
+                corridors,
+                new CorridorHostCells(HOST_CELL_QUERY.cellsByCorridor(dungeonMap, corridors)));
+    }
+
+    List<Corridor> snapOwnedAnchors(List<Corridor> corridors, CorridorHostCells hostCells) {
         List<Corridor> result = new ArrayList<>();
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             List<CorridorAnchorBinding> snapped = new ArrayList<>();

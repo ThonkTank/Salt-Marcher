@@ -153,6 +153,15 @@ document exists.
   quality degradation, architecture friction, recurring smells, or
   governance/check misses in their reviewer output so the Overview
   coordinator, or main fallback handoff, can aggregate them.
+- When Main is waiting for an implementation, proof, review, or simplification
+  agent that may still change the target write set, Main must not start proof,
+  quality analysis, review, code-simplifier, production-handoff,
+  desktop-install, or other expensive sidecar work against that same unstable
+  checkout or behavior surface. Before launching such work after any wait,
+  interruption, resume, or user correction, refresh the active user
+  instruction, agent status, worktree dirty paths, and ownership boundary. The
+  canonical rule is the Stable-State Barrier in
+  `docs/project/architecture/agent-instructions.md`.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.

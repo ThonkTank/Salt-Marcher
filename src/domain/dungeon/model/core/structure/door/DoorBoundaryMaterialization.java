@@ -35,6 +35,18 @@ public final class DoorBoundaryMaterialization {
         return materializesDoor;
     }
 
+    static ExistingBoundaryKind noExistingBoundary() {
+        return ExistingBoundaryKind.NONE;
+    }
+
+    static ExistingBoundaryKind existingDoorBoundary() {
+        return ExistingBoundaryKind.DOOR;
+    }
+
+    static ExistingBoundaryKind existingNonDoorBoundary() {
+        return ExistingBoundaryKind.NON_DOOR;
+    }
+
     private static TouchingRooms touchingRooms(
             @Nullable Edge edge,
             Map<Long, ? extends Iterable<Cell>> cellsByRoom

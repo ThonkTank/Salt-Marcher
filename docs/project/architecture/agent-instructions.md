@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-14
+Last Reviewed: 2026-06-16
 Source of Truth: Governance for agent instruction surfaces, the mandatory
 global instruction skill, and ownership boundaries between instruction
 artifacts.
@@ -48,93 +48,54 @@ Any work on covered surfaces must use that skill first.
 
 SaltMarcher keeps review instructions in global skills, not in this standard.
 
-- Implementing agents read
-  `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md` before
-  starting the mandatory adversarial review step and use
-  `/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md` when launching
-  the Overview coordinator.
-- For implementation handoff, the implementing agent must launch one Overview
-  coordinator subagent. That Overview coordinator first reads
-  `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`,
-  then uses `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md`
-  and `/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md` before
-  applying the Main-assigned coordinator lens, normally
-  `/home/aaron/.codex/skills/local/lens-coordinator-handoff/SKILL.md`.
-  Before launching specialist reviewers, the Overview coordinator uses
-  `/home/aaron/.codex/skills/local/coord-overview-reviewer/SKILL.md`.
-- The Overview coordinator returns the reviewability decision, responsibility
-  slices, required specialist skills, specialist review outcomes, scoped
-  follow-up fix outcomes, and the final clean-or-blocked result.
-- The Overview coordinator owns nested specialist review launches and scoped
-  follow-up worker launches. If the Overview result says the change is not
-  reviewable or remains blocked, the pass remains WIP until the named blocker
-  is fixed and Overview is rerun.
-- Specialist review subagents read
-  `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`
-  before applying assigned `lens-*` skills.
-- Proof ownership follows the global `coord-adversarial-review` skill and the
-  repository verification routing. Required proof tools run at the top-level
-  handoff layer. Overview coordinators and specialist reviewers inspect
-  provided literal results and report missing or stale proof instead of
-  rerunning those tools. The top-level handoff agent must keep reviewed paths
-  and behavior stable while review is running, or rerun the required proof and
-  launch a fresh coordinator when the tested surface changes.
-- The global review specialist skills remain external supplementary lenses; do
-  not create repo-local copies unless the user explicitly asks for a
-  SaltMarcher-owned fork.
+- Implementing agents use the global caller stack:
+  `coord-adversarial-review` before review and `coord-main-overview` when
+  launching the one required Overview coordinator for implementation handoff.
+- The Overview coordinator uses the global adversarial, coordinator, and
+  handoff coordinator lenses; before nested specialist reviewers it also uses
+  `coord-overview-reviewer`.
+- Specialist reviewers first use `lens-adversarial-review-agent`, then their
+  assigned `lens-*` skill.
+- Overview owns reviewer launch, scoped follow-up launch, reviewability,
+  specialist outcomes, fix outcomes, and the final clean-or-blocked result. If
+  it returns not-reviewable or blocked, the pass remains WIP until fixed and
+  reviewed again.
+- Required proof tools run only at the top-level handoff layer. Reviewers
+  inspect provided literal proof and report missing or stale proof instead of
+  rerunning it. If reviewed paths or behavior change, Main reruns proof and
+  launches a fresh coordinator.
+- Global review specialist skills remain supplementary lenses; do not create
+  repo-local copies unless the user explicitly asks for a SaltMarcher fork.
 
 ## Qualitative Simplification Pass
 
-SaltMarcher uses `code-simplifier` as a fixed qualitative review-agent step, not as an implementation-agent self-check. It coordinates independent
-simplicity, elegance, smell, and performance review, then consolidates findings
-into behavior-preserving patches, explicit deferrals, or no-op.
-Implementation agents must launch or otherwise run the installed skill after the
-main edit and before pass logging when a pass changes production code,
-check/enforcement packages, build or verification wiring, dependency surfaces,
-or agent-facing instruction surfaces. If auto-discovery fails, read the
-installed skill file linked in References.
-For this topic, the code-simplifier agent uses Main's changed files, owner
-documents, proof state, and implementation context; launches independent
-reviewers for the four lenses when tooling is available; keeps reviewers
-read-only unless Main assigns a scoped fix; rejects speculative ideas;
-consolidates safe patches, explicit deferrals, or no-op; and reports before
-pass logging.
-The step must not create static-analysis gates, weaken proof, replace Overview
-handoff review, or claim full handoff coverage. If it changes repo-tracked
-files, Main must rerun the required proof before Overview handoff.
+SaltMarcher uses `code-simplifier` as a qualitative review-agent coordinator,
+not as an implementation-agent self-check. Covered implementation passes run the
+installed skill after the main edit and before pass logging. It reviews
+simplicity, elegance, smells, and performance; consolidates safe patches,
+explicit deferrals, or no-op; and keeps reviewers read-only unless Main assigns
+a scoped fix. It must not create static-analysis gates, weaken proof, replace
+Overview handoff review, or claim full handoff coverage. If it changes
+repo-tracked files, Main reruns required proof before Overview.
 
 ## Planner Escalation For Systemic Feedback
 
-SaltMarcher treats large review, architecture-check, behavior-harness, and
-proof blockers as planning inputs before repair. When feedback suggests a
-systemic problem rather than a local defect, Main must obtain a
-project-health repair plan from the global planner before implementing the
-repair. The planner optimizes for the long-term target architecture,
-maintainability, and fitting solution shape, not for the shortest immediate
-unblocker.
+When review, architecture-check, behavior-harness, or proof feedback indicates
+a systemic problem rather than a local defect, Main obtains a project-health
+repair plan from the global planner before repair. The planner optimizes for
+target architecture and maintainability, not the shortest immediate unblocker.
 
-Planner escalation is required when any of these signals appear:
-
-- the root cause is unclear after the literal finding or harness output is
-  inspected
-- the same behavior, check, or proof surface has required repeated fix cycles
-- the finding suggests an architecture, check, or behavior-harness mismatch
-- a repair likely touches multiple owner surfaces, packages, documents, checks,
-  or generated surfaces
-- a quick local fix would satisfy the immediate finding while making the target
-  design less direct, less cohesive, or harder to maintain
-
-Planner escalation is not required for isolated local issues with an obvious
-single-surface fix, such as typos, missing imports, stale references, or
+Escalate when root cause is unclear, the same surface has repeated fix cycles,
+the finding suggests architecture/check/harness mismatch, the repair crosses
+multiple owners, or a quick local fix would damage the target design. Do not
+escalate isolated obvious single-surface fixes such as stale references or
 one-file documentation corrections.
 
-Main gives the planner only neutral, inspectable evidence: task goal, literal
-finding or harness output, current changed paths, owner documents, proof state,
-dirty baseline, constraints, and known non-goals. The planner returns a concise
-project-health plan with root cause, target-state alignment, chosen approach,
-rejected short-cuts, write set, proof route, risks, and Done When criteria. The
-planner does not implement, review, run proof, launch workers, or replace the
-Overview coordinator.
+Main gives only neutral evidence: task goal, literal finding or output, changed
+paths, owner documents, proof state, dirty baseline, constraints, and non-goals.
+The planner returns root cause, target-state alignment, chosen approach,
+rejected shortcuts, write set, proof route, risks, and Done When criteria. It
+does not implement, review, run proof, launch workers, or replace Overview.
 
 ## Implementation And Review Pass Logs
 
@@ -207,6 +168,34 @@ entry whenever the pass ran a recurring process that took long enough to affect
 agent polling behavior. Each entry records the command or process class,
 observed elapsed time, result, evidence log path when one exists, and the
 recommended first-poll interval for the next comparable run.
+
+## Stable-State Barrier For Waiting Agents
+
+When Main is waiting for an implementation, proof, review, or simplification
+agent that may still change the target write set, Main MUST treat that target
+as unstable until the agent finishes, is explicitly cancelled, or reports that
+it will make no further file changes.
+
+While the target is unstable, Main MUST NOT start proof, quality analysis,
+review, code-simplifier, production-handoff, desktop-install, or other
+expensive sidecar work against the same checkout or behavior surface. Such work
+would spend compute on a state that can still be invalidated and can produce
+stale evidence. Main may only do work that is clearly independent of the moving
+surface, such as reading governance, updating an explicitly requested
+non-overlapping instruction document, checking whether a previously launched
+process is still running, or waiting for the active agent.
+
+Before launching any proof, review, or expensive local tool after a wait, Main
+MUST refresh the active coordination state: current user instruction, active
+agent status, worktree dirty paths, and whether any open agent owns files or
+behavior that the proposed tool would inspect. If any active agent can still
+change that surface, defer the tool until the agent result is integrated or the
+agent is cancelled. After an interruption, user correction, resume, or context
+compaction, Main MUST repeat this refresh before continuing the workflow.
+
+If Main intentionally runs independent work while waiting, it must name the
+independence boundary before starting and must not claim the result as evidence
+for the unstable target surface.
 
 Implementation log filenames must use:
 

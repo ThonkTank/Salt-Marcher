@@ -2725,7 +2725,6 @@ public final class DungeonMapContentModel {
         DungeonEditorMapSnapshot map = surface.map();
         ProjectionAccumulator projection = assemble(
                 map,
-                surface.previewMap(),
                 surface.previewDiff(),
                 selection == null ? DungeonEditorStateSnapshot.Selection.empty() : selection,
                 preview == null ? DungeonEditorPreview.none() : preview,
@@ -2737,7 +2736,6 @@ public final class DungeonMapContentModel {
 
     private static ProjectionAccumulator assemble(
             DungeonEditorMapSnapshot map,
-            @Nullable DungeonEditorMapSnapshot previewMap,
             DungeonEditorPreviewDiff previewDiff,
             DungeonEditorStateSnapshot.Selection selection,
             DungeonEditorPreview preview,
@@ -2746,7 +2744,7 @@ public final class DungeonMapContentModel {
         ProjectionAccumulator projection = new ProjectionAccumulator();
         projection.addAreas(map, selection);
         projection.addClusterLabels(map, selection);
-        projection.addPreviewAndBoundaries(map, selection, preview, previewMap);
+        projection.addPreviewAndBoundaries(map, selection, preview);
         projection.addFeatures(map, selection);
         projection.addHandles(map, selection, preview);
         projection.addPreviewDiff(previewDiffContentPartModel, previewDiff, selection, preview);
@@ -2779,21 +2777,19 @@ public final class DungeonMapContentModel {
     private interface EditorPreviewProjection {
 
     static void addEditorPreview(
-            List<DungeonMapRenderState.Cell> cells,
             List<DungeonMapRenderState.Edge> edges,
-            List<DungeonMapRenderState.Label> labels,
+            List<DungeonMapRenderState.Marker> markers,
             DungeonEditorMapSnapshot map,
             DungeonEditorStateSnapshot.Selection selection,
-            DungeonEditorPreview preview,
-            @Nullable DungeonEditorMapSnapshot previewMap
+            DungeonEditorPreview preview
     ) {
-        switch (preview) {
-            case DungeonEditorPreview.ClusterBoundariesPreview boundaryEdges ->
-                    addBoundaryEdgesPreview(edges, boundaryEdges);
-            case DungeonEditorPreview.MoveHandlePreview ignored -> {
-            }
-            case DungeonEditorPreview.RoomRectanglePreview ignored -> {
-            }
+            switch (preview) {
+                case DungeonEditorPreview.ClusterBoundariesPreview boundaryEdges ->
+                        addBoundaryEdgesPreview(edges, boundaryEdges);
+                case DungeonEditorPreview.MoveHandlePreview ignored -> {
+                }
+                case DungeonEditorPreview.RoomRectanglePreview ignored -> {
+                }
             case DungeonEditorPreview.MoveBoundaryStretchPreview ignored -> {
             }
             case DungeonEditorPreview.NonePreview ignored -> {
@@ -3073,14 +3069,7 @@ public final class DungeonMapContentModel {
     ) {
         DungeonEditorHandleRef selected = selection.handleRef();
         return selected != null
-                && ref.kind() == selected.kind()
-                && EditorProjectionFacts.topologyRef(ref.topologyRef()).equals(
-                        EditorProjectionFacts.topologyRef(selected.topologyRef()))
-                && ref.ownerId() == selected.ownerId()
-                && ref.clusterId() == selected.clusterId()
-                && ref.corridorId() == selected.corridorId()
-                && ref.roomId() == selected.roomId()
-                && ref.index() == selected.index();
+                && EditorProjectionFacts.sameHandleRef(ref, selected);
     }
 
     static boolean selectedClusterLabel(
@@ -3201,6 +3190,18 @@ public final class DungeonMapContentModel {
 
     static long clusterId(DungeonEditorMapSnapshot.Area area) {
         return area.clusterId();
+    }
+
+    static boolean sameHandleRef(DungeonEditorHandleRef first, DungeonEditorHandleRef second) {
+        return first != null
+                && second != null
+                && first.kind() == second.kind()
+                && topologyRef(first.topologyRef()).equals(topologyRef(second.topologyRef()))
+                && first.ownerId() == second.ownerId()
+                && first.clusterId() == second.clusterId()
+                && first.corridorId() == second.corridorId()
+                && first.roomId() == second.roomId()
+                && first.index() == second.index();
     }
 
     static boolean invalidEdge(@Nullable DungeonEdgeRef edge) {
@@ -3372,10 +3373,9 @@ public final class DungeonMapContentModel {
         private void addPreviewAndBoundaries(
                 DungeonEditorMapSnapshot map,
                 DungeonEditorStateSnapshot.Selection selection,
-                DungeonEditorPreview preview,
-                @Nullable DungeonEditorMapSnapshot previewMap
+                DungeonEditorPreview preview
         ) {
-            EditorPreviewProjection.addEditorPreview(cells, edges, labels, map, selection, preview, previewMap);
+            EditorPreviewProjection.addEditorPreview(edges, markers, map, selection, preview);
             for (DungeonEditorMapSnapshot.Boundary boundary : map.boundaries()) {
                 if (EditorProjectionFacts.invalidEdge(boundary.edge())) {
                     continue;
@@ -3441,8 +3441,16 @@ public final class DungeonMapContentModel {
                 if (!EditorHandleVisibility.visibleCanvasHandle(handle.ref(), selection)) {
                     continue;
                 }
+                if (movingPreviewHandle(handle.ref(), preview)) {
+                    continue;
+                }
                 markers.add(EditorRenderElements.handleMarker(handle, selection, false));
             }
+        }
+
+        private static boolean movingPreviewHandle(DungeonEditorHandleRef ref, DungeonEditorPreview preview) {
+            return preview instanceof DungeonEditorPreview.MoveHandlePreview handlePreview
+                    && EditorProjectionFacts.sameHandleRef(ref, handlePreview.handleRef());
         }
 
         private void addPreviewDiff(

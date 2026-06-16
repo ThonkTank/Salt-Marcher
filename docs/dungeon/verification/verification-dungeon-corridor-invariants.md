@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-11
+Last Reviewed: 2026-06-16
 Source of Truth: Target invariant catalog for Dungeon Corridor ownership proof.
 
 # Dungeon Corridor Invariants
@@ -25,6 +25,7 @@ real-route coverage alone does not satisfy a model-invariant obligation.
 | `DGI-CORRIDOR-002` | Corridor endpoint owner | Generic room and corridor hits resolve to concrete authored endpoints only at successful commit. | `CorridorInvariantHarness` proves concrete door and anchor endpoint owner APIs plus generic-corridor anchor materialization/reuse/rejection mechanics; `DE-COR-013` supplies full real-route commit, SQLite, topology, snapshot, reload, and render proof for generic room/corridor hits. | Qualified |
 | `DGI-CORRIDOR-003` | Corridor route owner | Corridor route cells and split points are deterministic for the committed endpoint pair. | `CorridorInvariantHarness` proves straight, turned, blocked, and crossing-anchor waypoint/ref route owner mechanics. | Qualified |
 | `DGI-CORRIDOR-004` | Corridor deletion owner | Deleting a point or door branch preserves unaffected branches and rejects invalid replacement routes without partial mutation. | `CorridorInvariantHarness` proves point delete, endpoint branch delete, protected whole-corridor delete, detached-anchor pruning mechanics, and invalid replacement-route rejection before mutation through the corridor deletion owner. | Qualified |
+| `DGI-CORRIDOR-005` | Corridor network movement owner | Moving a host anchor updates dependent corridor route facts through the aggregate without duplicate moved-anchor cells. | `CorridorInvariantHarness` proves host-anchor network movement, dependent route update, duplicate moved-anchor rejection, and unchanged duplicate-cell rejection. | Qualified |
 
 ## References
 

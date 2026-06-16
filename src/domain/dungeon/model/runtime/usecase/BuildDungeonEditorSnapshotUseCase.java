@@ -49,6 +49,11 @@ public final class BuildDungeonEditorSnapshotUseCase {
         DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
         List<MapSummary> maps = currentDungeonFacts.currentFacts(null, safeState.selection(), safeState.preview()).maps();
         @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState, maps);
+        DungeonEditorDungeonFacts committedFacts = currentDungeonFacts.currentFacts(
+                resolvedMapId,
+                safeState.selection(),
+                DungeonEditorSessionValues.Preview.none());
+        previewOperationUseCase.executeInMemory(committedFacts.surface(), safeState.preview());
         return snapshotData(safeState, maps, resolvedMapId);
     }
 

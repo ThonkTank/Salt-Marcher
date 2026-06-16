@@ -3,6 +3,7 @@ package src.domain.dungeon.model.runtime.usecase;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorAuthoredOperationHelper;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
@@ -15,6 +16,8 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
     private final DungeonEditorDungeonState state;
     private final DungeonEditorAuthoredPublicationUseCase publicationUseCase =
             new DungeonEditorAuthoredPublicationUseCase();
+    private final PreviewDungeonEditorDoorMoveUseCase doorMovePreviewUseCase =
+            new PreviewDungeonEditorDoorMoveUseCase();
 
     public PreviewDungeonEditorAuthoredOperationUseCase(
             ApplyDungeonAuthoredMutationUseCase mutationUseCase,
@@ -35,6 +38,13 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
                 domainMapId(mapId),
                 operation);
         state.replacePreview(previewFacts(result));
+    }
+
+    public void executeInMemory(
+            DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
+            DungeonEditorSessionValues.Preview preview
+    ) {
+        state.replacePreview(doorMovePreviewUseCase.execute(surface, preview));
     }
 
     private static DungeonMapIdentity domainMapId(MapId mapId) {

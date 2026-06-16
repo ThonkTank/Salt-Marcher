@@ -6,6 +6,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.DungeonEditorLabelNameApplicationService;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
@@ -49,6 +50,7 @@ final class DungeonEditorClusterLabelHandleHarness {
 
     static void runDoorHandles(List<String> results) throws Exception {
         route(results, () -> verifyDoorHandleDrag(results));
+        route(results, () -> verifyInvalidDoorHandleMoveRejectedThroughMapView(results));
     }
 
     static void runClusterHandles(List<String> results) throws Exception {
@@ -521,10 +523,80 @@ final class DungeonEditorClusterLabelHandleHarness {
                 firstDoorHandleForDirection(snapshot, "EAST", "DE-DOOR-004 door");
         assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(doorHandle.markerQ(), doorHandle.markerR()).targetKind().name(),
                 "DE-DOOR-004 door handle resolves as canvas drag handle");
-        assertDoorHandleDrag(runtime, binding, mapView, mapId, doorHandle);
+        assertDoorHandleDrag(runtime, binding, controls, mapView, mapId, doorHandle);
 
         results.add("DE-DOOR-004 Ready: published door handle drag previews, commits the authored door boundary, and reloads");
         results.add("DE-HANDLE-006 Ready: door handle drag preview stays within the editor latency budget");
+    }
+
+    private static void verifyInvalidDoorHandleMoveRejectedThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Door Handle Invalid Move Map");
+        runtime.database().seedCorridorWithAnchor(mapId);
+        createMapThroughControls(controls, runtime, "Door Handle Invalid Move Reload Hop");
+        selectMap(controls, "Door Handle Invalid Move Map");
+        DungeonEditorHandleSnapshot doorHandle =
+                firstDoorHandleAt(runtime.mapSurfaceModel().current(), 4, 2, 0, "DE-DOOR-005 invalid");
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
+        List<String> doorRowsBefore = runtime.database().doorBoundaryState(mapId);
+        List<String> corridorRowsBefore = runtime.database().corridorStableConnectionState(mapId);
+        DungeonEditorMapSurfaceSnapshot surfaceBefore = runtime.mapSurfaceModel().current();
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(doorHandle.markerQ()),
+                viewport.sceneToScreenY(doorHandle.markerR()),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_DRAGGED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(doorHandle.markerQ()),
+                viewport.sceneToScreenY(doorHandle.markerR() + 4.0),
+                false);
+        assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.MoveHandlePreview,
+                "DE-DOOR-005 invalid still publishes transient drag preview before rejected release");
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(doorHandle.markerQ()),
+                viewport.sceneToScreenY(doorHandle.markerR() + 4.0),
+                false);
+
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-DOOR-005 invalid release leaves authored DB unchanged");
+        assertEquals(doorRowsBefore, runtime.database().doorBoundaryState(mapId),
+                "DE-DOOR-005 invalid release leaves door boundary rows unchanged");
+        assertEquals(corridorRowsBefore, runtime.database().corridorStableConnectionState(mapId),
+                "DE-DOOR-005 invalid release leaves corridor bindings unchanged");
+        DungeonEditorMapSurfaceSnapshot rejectedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(DungeonEditorPreview.none(), rejectedSurface.preview(),
+                "DE-DOOR-005 invalid release clears preview");
+        assertTrue(!runtime.controlsModel().current().statusText().isBlank(),
+                "DE-DOOR-005 invalid release publishes user-visible rejection feedback");
+        assertEquals(surfaceBefore.surface().map(), rejectedSurface.surface().map(),
+                "DE-DOOR-005 invalid release keeps published map unchanged");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 2.5),
+                "DE-DOOR-005 invalid render keeps source door boundary");
+        assertTrue(!renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 6.5),
+                "DE-DOOR-005 invalid render does not leave an orphan moved handle");
+        selectMap(controls, "Door Handle Invalid Move Reload Hop");
+        selectMap(controls, "Door Handle Invalid Move Map");
+        assertEquals(doorRowsBefore, runtime.database().doorBoundaryState(mapId),
+                "DE-DOOR-005 invalid reload keeps original door boundary rows");
+        assertEquals(corridorRowsBefore, runtime.database().corridorStableConnectionState(mapId),
+                "DE-DOOR-005 invalid reload keeps original corridor binding rows");
+
+        results.add("DE-DOOR-005 Ready: invalid door handle move rejects without partial corridor or boundary state");
     }
 
     private static void verifySelectedWallRunHandleStyle(List<String> results) {
@@ -938,12 +1010,15 @@ final class DungeonEditorClusterLabelHandleHarness {
     private static void assertDoorHandleDrag(
             HarnessRuntime runtime,
             HarnessBinding binding,
+            DungeonEditorControlsView controls,
             DungeonMapView mapView,
             long mapId,
             DungeonEditorHandleSnapshot doorHandle
     ) {
         long doorRowsBefore = runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST");
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
+        List<String> corridorRowsBefore = runtime.database().corridorStableConnectionState(mapId);
+        long corridorId = runtime.database().corridorIdsForMap(mapId).iterator().next();
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMouse(
                 mapView,
@@ -971,16 +1046,44 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-HANDLE-006 preview handle kind");
         assertEquals(0L, preview.deltaQ(), "DE-HANDLE-006 preview delta q");
         assertEquals(1L, preview.deltaR(), "DE-HANDLE-006 preview delta r");
-        assertTrue(renderHasDoorMarkerAt(
+        assertTrue(renderHasDoorPreviewMarkerAt(
                         binding.mapContentModel(),
                         movedDoorMarkerQ(doorHandle, 0),
                         movedDoorMarkerR(doorHandle, 1)),
                 "DE-HANDLE-006 render scene shows door preview marker at the moved boundary midpoint; actual door glyphs "
                         + renderedDoorMarkers(binding.mapContentModel()));
+        assertEquals(1L,
+                countDoorMarkersAt(binding.mapContentModel(), movedDoorMarkerQ(doorHandle, 0), movedDoorMarkerR(doorHandle, 1)),
+                "DE-HANDLE-006 render scene has exactly one moved door marker authority: "
+                        + renderedDoorMarkers(binding.mapContentModel()));
+        assertEquals(0L,
+                countDoorMarkersAt(binding.mapContentModel(), doorHandle.markerQ(), doorHandle.markerR()),
+                "DE-HANDLE-006 render scene hides stale source door marker during drag preview: "
+                        + renderedDoorMarkers(binding.mapContentModel()));
+        assertTrue(previewSurface.surface().previewMap() != null,
+                "DE-HANDLE-006 door drag publishes an authoritative preview map");
+        assertTrue(mapHasBoundaryKindAt(
+                        previewSurface.surface().previewMap(),
+                        "door",
+                        new Cell(4, 3, 0),
+                        new Cell(4, 4, 0)),
+                "DE-HANDLE-006 door drag preview map contains the moved door boundary");
+        assertTrue(previewSurface.surface().previewDiff().changedBoundaries().stream()
+                        .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
+                                && sameEdge(boundary.edge(), new Cell(4, 3, 0), new Cell(4, 4, 0))),
+                "DE-HANDLE-006 structured preview diff carries the moved door boundary");
+        assertTrue(previewSurface.surface().previewDiff().changedHandles().stream()
+                        .anyMatch(handle -> handle.ref().kind() == DungeonEditorHandleKind.DOOR
+                                && handle.ref().corridorId() == corridorId
+                                && handle.ref().topologyRef().id() == doorHandle.ref().topologyRef().id()
+                                && sameCell(handle.cell(), new Cell(4, 3, 0))),
+                "DE-HANDLE-006 structured preview diff carries the moved corridor-bound door handle");
         assertEquals(doorRowsBefore, runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST"),
                 "DE-HANDLE-006 door preview keeps persisted source door row");
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
                 "DE-HANDLE-006 door preview leaves authored stores unchanged");
+        assertEquals(corridorRowsBefore, runtime.database().corridorStableConnectionState(mapId),
+                "DE-HANDLE-006 door preview leaves corridor binding stores unchanged");
 
         fireMapMouse(
                 mapView,
@@ -994,8 +1097,38 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-DOOR-004 release moves the source door row away");
         assertEquals(1L, runtime.database().countDoorBoundariesAt(mapId, 1, 1, "EAST"),
                 "DE-DOOR-004 release persists the moved door row");
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+        List<String> stableRowsAfter = runtime.database().corridorStableConnectionState(mapId);
+        assertTrue(stableRowsAfter.stream().anyMatch(row ->
+                        row.startsWith("dungeon_corridor_door_overrides|")
+                                && row.contains("|relative_cell_x=1|")
+                                && row.contains("|relative_cell_y=1|")
+                                && row.contains("|edge_direction=EAST|")
+                                && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
+                "DE-DOOR-004 release moves the bound corridor endpoint with the door: " + stableRowsAfter);
+        assertTrue(stableRowsAfter.stream().noneMatch(row ->
+                        row.startsWith("dungeon_corridor_door_overrides|")
+                                && row.contains("|relative_cell_x=1|")
+                                && row.contains("|relative_cell_y=0|")
+                                && row.contains("|edge_direction=EAST|")
+                                && row.contains("|topology_element_id=" + doorHandle.ref().topologyRef().id())),
+                "DE-DOOR-004 release leaves no stale source corridor binding: " + stableRowsAfter);
+        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
                 "DE-DOOR-004 release clears door preview");
+        assertTrue(surfaceHasBoundaryKindAt(
+                        committedSurface,
+                        "door",
+                        new Cell(4, 3, 0),
+                        new Cell(4, 4, 0)),
+                "DE-DOOR-004 release publishes moved door boundary");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 3.5),
+                "DE-DOOR-004 release renders moved door boundary");
+        selectMap(controls, "Door Handle Drag Reload Hop");
+        selectMap(controls, "Door Handle Drag Map");
+        assertEquals(1L, runtime.database().countDoorBoundariesAt(mapId, 1, 1, "EAST"),
+                "DE-DOOR-004 reload preserves moved door boundary");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 4.0, 3.5),
+                "DE-DOOR-004 reload renders moved door boundary");
     }
 
     private static void assertRoomLabelSelectionAndNoClusterDrag(
@@ -1099,6 +1232,18 @@ final class DungeonEditorClusterLabelHandleHarness {
                         && handle.cell().q() == q
                         && handle.cell().r() == r
                         && handle.cell().level() == level);
+    }
+
+    private static boolean mapHasBoundaryKindAt(
+            DungeonEditorMapSnapshot map,
+            String kind,
+            Cell from,
+            Cell to
+    ) {
+        return map.boundaries().stream()
+                .filter(boundary -> kind.equalsIgnoreCase(boundary.kind()))
+                .map(DungeonEditorMapSnapshot.Boundary::edge)
+                .anyMatch(edge -> sameEdge(edge, from, to));
     }
 
     private static void assertClusterCorners(
@@ -1306,7 +1451,15 @@ final class DungeonEditorClusterLabelHandleHarness {
                         .anyMatch(corner -> lowerAffordanceThanInteractiveCorner(wallRun, corner)));
     }
 
-    private static boolean renderHasDoorMarkerAt(
+    private static boolean renderHasDoorPreviewMarkerAt(
+            DungeonMapContentModel mapContentModel,
+            double q,
+            double r
+    ) {
+        return countDoorMarkersAt(mapContentModel, q, r) > 0L;
+    }
+
+    private static long countDoorMarkersAt(
             DungeonMapContentModel mapContentModel,
             double q,
             double r
@@ -1317,8 +1470,9 @@ final class DungeonEditorClusterLabelHandleHarness {
                 .glyphs()
                 .stream()
                 .filter(glyph -> glyphMatchesHandleKind(glyph, DOOR_KIND) || "D".equals(glyph.label()))
-                .anyMatch(glyph -> Math.abs(glyphCenterQ(glyph) - q) < 0.000_001
-                        && Math.abs(glyphCenterR(glyph) - r) < 0.000_001);
+                .filter(glyph -> Math.abs(glyphCenterQ(glyph) - q) < 0.000_001
+                        && Math.abs(glyphCenterR(glyph) - r) < 0.000_001)
+                .count();
     }
 
     private static double movedDoorMarkerQ(DungeonEditorHandleSnapshot doorHandle, int deltaQ) {

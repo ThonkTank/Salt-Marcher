@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-16
 Source of Truth: Target invariant catalog for Dungeon Door ownership proof.
 
 # Dungeon Door Invariants
@@ -52,6 +52,7 @@ domain truth. All active rows below are qualified by the named OwnerSuite.
 | `DGI-DOOR-003` | Door owner with Wall owner collaboration | Door materialization is not room-structure policy. | Door materialization consumes wall/floor facts to decide eligible door creation; invalid edges and existing doors are no-ops. | Harness proves single-room and split-room materialization eligibility plus existing-door rejection. | Qualified by `OwnerSuite=DoorInvariantHarness`. | Real View replacement route remains `DE-DOOR-*`. |
 | `DGI-DOOR-004` | Door owner with Corridor path owner collaboration | Corridor-bound doors are protected authored endpoints. | Door deletion is rejected when corridor/path bindings still reference the door; for unbound deletes, the Door owner exposes restored wall boundary state for the caller to apply. | Harness proves protected delete rejection, unbound removal, and restored wall boundary state through door owner APIs. | Qualified by `OwnerSuite=DoorInvariantHarness`. | Full corridor reroute behavior. |
 | `DGI-DOOR-005` | Door owner with `DungeonMap` topology coordination | Door identity remains map-stable. | Door operations preserve stable topology identity where the door survives and release it only when the door is removed. | Harness proves create, update, protected reject, and delete identity behavior. | Qualified by `OwnerSuite=TopologyInvariantHarness`. | Topology graph migration. |
+| `DGI-DOOR-006` | Door owner with Corridor path owner and Room boundary owner collaboration | Door binding movement is atomic across corridor endpoint and room boundary facts. | Moving a corridor-bound door applies the corridor endpoint and authored room boundary together, or rejects unchanged/ineligible movement without partial state. | Harness proves corridor-bound door movement applies endpoint and room-boundary movement together and rejects unchanged movement. | Qualified by `OwnerSuite=DoorInvariantHarness`. | Richer aggregate topology replacement API. |
 
 ## References
 

@@ -5,7 +5,9 @@ import src.domain.dungeon.model.core.structure.corridor.CorridorBindingMovement;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingMovement.DoorBindingMoveResult;
 import src.domain.dungeon.model.core.structure.corridor.CorridorMapAuthoring;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.door.DoorBoundaryRelocation.DoorBoundaryMovePlan;
 import src.domain.dungeon.model.core.structure.door.DoorBoundaryRelocation;
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
 final class DungeonMapCorridorAuthoring {
     private final CorridorMapAuthoring corridorAuthoring = new CorridorMapAuthoring();
@@ -29,11 +31,30 @@ final class DungeonMapCorridorAuthoring {
                 deltaQ,
                 deltaR,
                 deltaLevel);
-        return doorBoundaryRelocation.relocateMovedDoorBinding(
+        if (!movement.hasDoorBindingDelta()) {
+            return dungeonMap;
+        }
+        DoorBoundaryMovePlan plan = doorBoundaryRelocation.planMovedDoorBinding(
                 movement.sourceMap(),
-                movement.movedMap(),
                 movement.oldBinding(),
                 movement.newBinding());
+        if (plan == null) {
+            return dungeonMap;
+        }
+        DungeonMap movedMap = movement.movedMapOrSource();
+        if (movedMap.equals(movement.sourceMap())) {
+            return dungeonMap;
+        }
+        SpatialTopology nextTopology = doorBoundaryRelocation.relocateMovedDoorBinding(movement.sourceMap(), plan);
+        return new DungeonMap(
+                movedMap.metadata(),
+                nextTopology,
+                movedMap.topologyIndex(),
+                movedMap.rooms(),
+                movedMap.corridors(),
+                movedMap.stairs(),
+                movedMap.transitionCatalog(),
+                movedMap.revision());
     }
 
     DungeonMap moveCorridorAnchor(

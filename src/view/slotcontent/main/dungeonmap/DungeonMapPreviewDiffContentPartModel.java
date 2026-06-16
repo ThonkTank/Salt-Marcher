@@ -3,6 +3,7 @@ package src.view.slotcontent.main.dungeonmap;
 import java.util.ArrayList;
 import java.util.List;
 import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreviewDiff;
@@ -73,8 +74,41 @@ final class DungeonMapPreviewDiffContentPartModel {
             if (!DungeonMapContentModel.EditorHandleVisibility.visibleCanvasHandle(handle.ref(), selection)) {
                 continue;
             }
-            markers.add(DungeonMapContentModel.EditorRenderElements.handleMarker(handle, selection, true));
+            markers.add(previewHandleMarker(handle, selection));
         }
+    }
+
+    private DungeonMapContentModel.DungeonMapRenderState.Marker previewHandleMarker(
+            DungeonEditorHandleSnapshot handle,
+            DungeonEditorStateSnapshot.Selection selection
+    ) {
+        return DungeonMapContentModel.EditorRenderElements.handleMarker(
+                handle.ref(),
+                handle.cell().q(),
+                handle.cell().r(),
+                handle.cell().level(),
+                previewMarkerQ(handle),
+                previewMarkerR(handle),
+                DungeonMapContentModel.EditorSelectionFacts.selectedHandle(handle.ref(), selection),
+                true);
+    }
+
+    private static double previewMarkerQ(DungeonEditorHandleSnapshot handle) {
+        DungeonEdgeRef sourceEdge = handle.ref().sourceEdge();
+        return sourceEdge == null
+                ? handle.markerQ()
+                : midpoint(sourceEdge.from().q(), sourceEdge.to().q());
+    }
+
+    private static double previewMarkerR(DungeonEditorHandleSnapshot handle) {
+        DungeonEdgeRef sourceEdge = handle.ref().sourceEdge();
+        return sourceEdge == null
+                ? handle.markerR()
+                : midpoint(sourceEdge.from().r(), sourceEdge.to().r());
+    }
+
+    private static double midpoint(int first, int second) {
+        return (first + second) / 2.0;
     }
 
     private void addPreviewFeatureDiff(
