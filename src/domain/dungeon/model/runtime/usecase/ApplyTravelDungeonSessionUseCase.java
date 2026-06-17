@@ -2,17 +2,14 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSession;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionCommand;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSnapshot.SnapshotData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.PositionData;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.LocationKind;
 
 public final class ApplyTravelDungeonSessionUseCase {
 
     private static final long NO_MAP_ID = 0L;
-    private static final long NO_TILE_ID = 0L;
 
     private final TravelDungeonSession session;
     private final LoadTravelDungeonSessionSurfaceUseCase loadTravelDungeonSessionSurfaceUseCase;
@@ -87,12 +84,8 @@ public final class ApplyTravelDungeonSessionUseCase {
         if (mapId <= NO_MAP_ID) {
             return snapshot();
         }
-        session.applySurface(loadTravelDungeonSessionSurfaceUseCase.loadOrInitialize(new PositionData(
-                mapId,
-                LocationKind.TILE,
-                NO_TILE_ID,
-                new Cell(0, 0, 0),
-                "SOUTH")));
+        session.applySurface(loadTravelDungeonSessionSurfaceUseCase.loadOrInitialize(
+                LoadTravelDungeonSessionSurfaceUseCase.Input.selectedMap(mapId)));
         return snapshot();
     }
 
@@ -108,7 +101,7 @@ public final class ApplyTravelDungeonSessionUseCase {
 
     public SnapshotData snapshot() {
         if (!session.hasCurrentSurface()) {
-            session.applySurface(loadTravelDungeonSessionSurfaceUseCase.loadOrInitialize(null));
+            session.applySurface(loadTravelDungeonSessionSurfaceUseCase.loadOrInitialize((PositionData) null));
         }
         stabilizeProjectionLevel();
         return session.snapshot();

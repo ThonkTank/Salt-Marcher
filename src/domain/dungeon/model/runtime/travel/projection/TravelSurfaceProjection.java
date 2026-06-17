@@ -96,6 +96,16 @@ public final class TravelSurfaceProjection {
                         preferredPosition.tile(),
                         heading);
             }
+            Transition entryTransition =
+                    TravelAuthoredSurfaceQueries.deterministicEntryTransition(authoredSurface);
+            if (entryTransition != null && entryTransition.anchor() != null) {
+                return new TravelPositionFacts(
+                        authoredSurface.header().mapId(),
+                        TravelPositionFacts.LocationKind.TRANSITION,
+                        entryTransition.transitionId(),
+                        entryTransition.anchor(),
+                        heading);
+            }
             Cell fallback = TravelAuthoredSurfaceQueries.firstCell(authoredSurface);
             Cell resolvedTile = fallback == null ? new Cell(0, 0, 0) : fallback;
             return new TravelPositionFacts(

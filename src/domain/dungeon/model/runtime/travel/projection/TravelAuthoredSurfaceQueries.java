@@ -22,6 +22,20 @@ final class TravelAuthoredSurfaceQueries {
         return areaAt(surface, cell) != null || travelFeatureAt(surface, cell) != null;
     }
 
+    static TravelAuthoredSurface.Transition deterministicEntryTransition(TravelAuthoredSurface surface) {
+        TravelAuthoredSurface.Transition result = null;
+        for (TravelAuthoredSurface.Transition transition : surface.transitions()) {
+            Cell anchor = transition.anchor();
+            if (anchor == null || !contains(surface, anchor)) {
+                continue;
+            }
+            if (result == null || transition.transitionId() < result.transitionId()) {
+                result = transition;
+            }
+        }
+        return result;
+    }
+
     static @Nullable Cell firstCell(TravelAuthoredSurface surface) {
         Cell first = null;
         for (AreaData area : surface.map().areas()) {
