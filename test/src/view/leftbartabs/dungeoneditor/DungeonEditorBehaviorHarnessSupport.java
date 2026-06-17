@@ -71,11 +71,11 @@ import shell.host.AppShell;
 final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPublicationSupport {
 
     static final double DEFAULT_GRID_SIZE = 32.0;
-    static final int LARGE_VERTEX_FIXTURE_WIDTH = 104;
-    static final int LARGE_VERTEX_FIXTURE_HEIGHT = 108;
-    static final long LARGE_VERTEX_FIXTURE_MIN_ROWS = 56_000L;
-    static final long LARGE_VERTEX_STARTUP_MAX_MILLIS = 5_000L;
-    static final long LARGE_VERTEX_INPUT_MAX_MILLIS = 500L;
+    static final int LARGE_CURRENT_GEOMETRY_FIXTURE_WIDTH = 240;
+    static final int LARGE_CURRENT_GEOMETRY_FIXTURE_HEIGHT = 234;
+    static final long LARGE_CURRENT_GEOMETRY_FIXTURE_MIN_FLOOR_CELLS = 56_000L;
+    static final long LARGE_CURRENT_GEOMETRY_STARTUP_MAX_MILLIS = 5_000L;
+    static final long LARGE_CURRENT_GEOMETRY_INPUT_MAX_MILLIS = 500L;
     static final long PREVIEW_LATENCY_BUDGET_MS = 250L;
     static final Color MAP_BACKGROUND = Color.rgb(0x12, 0x18, 0x1c);
 

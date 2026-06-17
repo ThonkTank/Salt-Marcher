@@ -6,7 +6,6 @@ import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonPersistenceSchema;
 import src.data.dungeon.model.DungeonRoomClusterRecord;
 import src.data.dungeon.model.DungeonRoomClusterFloorCellRecord;
-import src.data.dungeon.model.DungeonRoomClusterVertexRecord;
 import src.data.dungeon.model.DungeonRoomExitDescriptionRecord;
 import src.data.dungeon.model.DungeonRoomFloorRecord;
 import src.data.dungeon.model.DungeonRoomRecord;
@@ -77,8 +76,6 @@ final class DungeonSqliteMapRecordLoader {
     }
 
     private static List<DungeonRoomClusterRecord> loadRoomClusters(Connection connection, long mapId) throws SQLException {
-        // LEGACY_REMOVE_ON_TOUCH: Vertex fallback; entfernen, sobald dieser Bereich bearbeitet wird.
-        Map<Long, List<DungeonRoomClusterVertexRecord>> verticesByCluster = loadClusterVertices(connection, mapId);
         Map<Long, List<DungeonRoomClusterFloorCellRecord>> floorCellsByCluster =
                 loadClusterFloorCells(connection, mapId);
         Map<Long, List<DungeonClusterBoundaryRecord>> boundariesByCluster = loadClusterBoundaries(connection, mapId);
@@ -98,20 +95,12 @@ final class DungeonSqliteMapRecordLoader {
                             resultSet.getInt("center_x"),
                             resultSet.getInt("center_y"),
                             resultSet.getInt(COLUMN_LEVEL_Z),
-                            verticesByCluster.getOrDefault(clusterId, List.of()),
                             floorCellsByCluster.getOrDefault(clusterId, List.of()),
                             boundariesByCluster.getOrDefault(clusterId, List.of())));
                 }
                 return List.copyOf(records);
             }
         }
-    }
-
-    private static Map<Long, List<DungeonRoomClusterVertexRecord>> loadClusterVertices(
-            Connection connection,
-            long mapId
-    ) throws SQLException {
-        return DungeonSqliteClusterVertexLoader.load(connection, mapId);
     }
 
     private static Map<Long, List<DungeonRoomClusterFloorCellRecord>> loadClusterFloorCells(

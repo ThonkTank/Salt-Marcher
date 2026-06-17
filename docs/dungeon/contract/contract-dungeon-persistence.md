@@ -66,10 +66,10 @@ Persisted authored truth includes:
 source values are compatibility inputs that the domain normalizes to
 `Raum <roomId>` on readback and publication.
 
-`dungeon_room_clusters.name` stores the authored cluster display name. Older
-databases that do not yet contain the column are migrated additively, and blank
-or missing source values are compatibility inputs that the domain normalizes to
-`Cluster <clusterId>` on readback and publication.
+`dungeon_room_clusters.name` stores the authored cluster display name. Current
+schema readiness requires the column to exist. Blank source values remain
+compatibility inputs that the domain normalizes to `Cluster <clusterId>` on
+readback and publication.
 
 SQLite adapters MUST persist the domain-provided room and room-cluster names
 with the corresponding authored record graph. Default display names are
@@ -90,16 +90,16 @@ does not own room-membership policy.
 
 `dungeon_room_cluster_edges` stores cluster boundary facts. For freshly
 authored room creation, the target stored perimeter is explicit
-`edge_type='WALL'` rows around the committed cluster floor-cell set. Absent
-perimeter wall rows are legacy compatibility input for older maps only; they
-are not the target write shape for new editor-authored rooms.
+`edge_type='WALL'` rows around the committed cluster floor-cell set. Current
+adapter reads use persisted floor cells plus boundary rows as the only
+room-cluster geometry source.
 
-`dungeon_room_cluster_vertices` remains legacy compatibility storage. Adapter
-reads MAY use readable old vertex rows to recover compatible floor and boundary
-facts when cluster floor cells or perimeter wall rows are absent. Adapter
-writes for freshly authored room geometry MUST write floor cells and boundary
-rows as the target stored truth rather than treating vertices as authoritative
-shape.
+The retired `dungeon_room_cluster_vertices` table is historical legacy input
+only. Current schema creation, adapter reads, and adapter writes MUST NOT create,
+load, write, or clean up vertex rows as a supported room-cluster geometry path.
+Local databases that still contain only vertex geometry without
+`dungeon_room_cluster_floor_cells` and `dungeon_room_cluster_edges` rows require
+manual data cleanup before they can be loaded as current authored maps.
 
 ## Room Boundary Edge Semantics
 
@@ -165,8 +165,13 @@ values.
 
 - new fields belong in source-local records first, then map into domain-owned
   values
-- additive compatibility migrations remain allowed where needed for older
-  dungeon databases
+- schema readiness creates the current table set and may run current topology
+  and boundary topology backfills for installed current-schema databases
+- old-install upgrades for `dungeon_structure_levels`,
+  `dungeon_room_clusters.structure_object_id`, transition stair-anchor columns,
+  and broad additive ALTER lists are retired; databases that still require
+  those paths need explicit data cleanup or coordinator-approved repair before
+  they are treated as supported authored maps
 - direct runtime token movement does not justify new authored-position tables;
   runtime party position remains owned outside dungeon persistence
 

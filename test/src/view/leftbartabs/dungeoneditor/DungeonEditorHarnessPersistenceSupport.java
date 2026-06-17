@@ -27,7 +27,6 @@ import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
-import src.domain.dungeon.model.core.structure.room.RoomCellCoverage;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
@@ -192,9 +191,25 @@ class DungeonEditorHarnessPersistenceSupport {
             return count("SELECT COUNT(*) FROM dungeon_room_clusters WHERE dungeon_map_id=?", mapId);
         }
 
-        long countClusterVertexRows(long mapId) {
+        long countRetiredLegacyClusterVertexRowsIfPresent(long mapId) {
+            if (!tableExists("dungeon_room_cluster_vertices")) {
+                return 0L;
+            }
             return count(
                     "SELECT COUNT(*) FROM dungeon_room_cluster_vertices WHERE cluster_id IN ("
+                            + "SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)",
+                    mapId);
+        }
+
+        private boolean tableExists(String tableName) {
+            return count(
+                    "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?",
+                    tableName) > 0L;
+        }
+
+        long countClusterFloorCellRows(long mapId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_room_cluster_floor_cells WHERE cluster_id IN ("
                             + "SELECT cluster_id FROM dungeon_room_clusters WHERE dungeon_map_id=?)",
                     mapId);
         }
@@ -512,14 +527,6 @@ class DungeonEditorHarnessPersistenceSupport {
                 appendRows(
                         connection,
                         state,
-                        "dungeon_room_cluster_vertices",
-                        "SELECT cluster_id, level_z, vertex_index, relative_x, relative_y"
-                                + " FROM dungeon_room_cluster_vertices WHERE cluster_id=?"
-                                + " ORDER BY level_z, vertex_index",
-                        ids.clusterId());
-                appendRows(
-                        connection,
-                        state,
                         "dungeon_room_cluster_edges",
                         "SELECT cluster_id, level_z, cell_x, cell_y, edge_direction, edge_type, topology_element_id"
                                 + " FROM dungeon_room_cluster_edges WHERE cluster_id=?"
@@ -595,38 +602,9 @@ class DungeonEditorHarnessPersistenceSupport {
 
         Set<String> authoredClusterBoundaryCorners(long clusterId) {
             try (Connection connection = open()) {
-                Set<String> vertices = legacyAbsoluteClusterVertices(connection, clusterId);
-                if (!vertices.isEmpty()) {
-                    return vertices;
-                }
                 return boundaryDerivedClusterCorners(connection, clusterId);
             } catch (SQLException exception) {
                 throw new IllegalStateException("Failed to read authored cluster boundary corners.", exception);
-            }
-        }
-
-        private Set<String> legacyAbsoluteClusterVertices(Connection connection, long clusterId) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                         "SELECT cluster_row.center_x + vertex_row.relative_x AS absolute_x,"
-                                 + " cluster_row.center_y + vertex_row.relative_y AS absolute_y,"
-                                 + " vertex_row.level_z AS level_z"
-                                 + " FROM dungeon_room_cluster_vertices vertex_row"
-                                 + " JOIN dungeon_room_clusters cluster_row"
-                                 + " ON cluster_row.cluster_id=vertex_row.cluster_id"
-                                 + " WHERE vertex_row.cluster_id=?"
-                                 + " ORDER BY vertex_row.level_z, vertex_row.vertex_index")) {
-                statement.setLong(1, clusterId);
-                try (ResultSet resultSet = statement.executeQuery()) {
-                    Set<String> vertices = new LinkedHashSet<>();
-                    while (resultSet.next()) {
-                        vertices.add(resultSet.getInt("absolute_x")
-                                + ","
-                                + resultSet.getInt("absolute_y")
-                                + ","
-                                + resultSet.getInt("level_z"));
-                    }
-                    return vertices;
-                }
             }
         }
 
@@ -777,17 +755,6 @@ class DungeonEditorHarnessPersistenceSupport {
                                 + " JOIN dungeon_rooms room ON room.room_id=room_floor.room_id"
                                 + " WHERE room.dungeon_map_id=?"
                                 + " ORDER BY room_floor.room_id, room_floor.level_z",
-                        mapId);
-                appendRows(
-                        connection,
-                        state,
-                        "dungeon_room_cluster_vertices",
-                        "SELECT vertex_row.cluster_id, vertex_row.level_z, vertex_row.vertex_index,"
-                                + " vertex_row.relative_x, vertex_row.relative_y"
-                                + " FROM dungeon_room_cluster_vertices vertex_row"
-                                + " JOIN dungeon_room_clusters cluster_row ON cluster_row.cluster_id=vertex_row.cluster_id"
-                                + " WHERE cluster_row.dungeon_map_id=?"
-                                + " ORDER BY vertex_row.cluster_id, vertex_row.level_z, vertex_row.vertex_index",
                         mapId);
                 appendRows(
                         connection,
@@ -1427,12 +1394,6 @@ class DungeonEditorHarnessPersistenceSupport {
                 long roomTwoId = insertClusterRoom(connection, mapId, clusterId, "R2", 11, 10, 0);
                 insertTopologyElement(connection, mapId, roomOneId, clusterId, "R1");
                 insertTopologyElement(connection, mapId, roomTwoId, clusterId, "R2");
-                insertF6Vertex(connection, clusterId, 0, 0, 0, 0);
-                insertF6Vertex(connection, clusterId, 0, 1, 3, 0);
-                insertF6Vertex(connection, clusterId, 0, 2, 3, 1);
-                insertF6Vertex(connection, clusterId, 0, 3, 1, 1);
-                insertF6Vertex(connection, clusterId, 0, 4, 1, 3);
-                insertF6Vertex(connection, clusterId, 0, 5, 0, 3);
                 insertF15ComplexClusterFloorCells(connection, clusterId);
                 insertComplexClusterWalls(connection, mapId, clusterId);
                 connection.commit();
@@ -1732,7 +1693,7 @@ class DungeonEditorHarnessPersistenceSupport {
             }
         }
 
-        void seedLargePerCellLoopRoom(long mapId, int width, int height) {
+        void seedLargeCurrentGeometryRoom(long mapId, int width, int height) {
             try (Connection connection = open()) {
                 connection.setAutoCommit(false);
                 long clusterId = insertAndReturnId(
@@ -1756,25 +1717,11 @@ class DungeonEditorHarnessPersistenceSupport {
                         0,
                         0);
                 insertTopologyElement(connection, mapId, roomId, clusterId, "Large Per-Cell Room");
-                int vertexIndex = 0;
-                for (int q = 0; q < width; q++) {
-                    for (int r = 0; r < height; r++) {
-                        insertF6Vertex(connection, clusterId, 0, vertexIndex++, q, r);
-                        insertF6Vertex(connection, clusterId, 0, vertexIndex++, q + 1, r);
-                        insertF6Vertex(connection, clusterId, 0, vertexIndex++, q + 1, r + 1);
-                        insertF6Vertex(connection, clusterId, 0, vertexIndex++, q, r + 1);
-                        insertF6Vertex(
-                                connection,
-                                clusterId,
-                                0,
-                                vertexIndex++,
-                                RoomCellCoverage.LOOP_SEPARATOR.q(),
-                                RoomCellCoverage.LOOP_SEPARATOR.r());
-                    }
-                }
+                insertClusterFloorCells(connection, clusterId, 0, 0, 0, width, height);
+                insertRectangularPerimeterWalls(connection, mapId, clusterId, 0, 0, 0, width, height);
                 connection.commit();
             } catch (SQLException exception) {
-                throw new IllegalStateException("Failed to seed large per-cell loop room fixture.", exception);
+                throw new IllegalStateException("Failed to seed large current-geometry room fixture.", exception);
             }
         }
 
@@ -1807,10 +1754,6 @@ class DungeonEditorHarnessPersistenceSupport {
                     anchorY + 1,
                     level);
             insertTopologyElement(connection, mapId, roomId, clusterId, roomName);
-            insertF6Vertex(connection, clusterId, level, 0, -1, -1);
-            insertF6Vertex(connection, clusterId, level, 1, 1, -1);
-            insertF6Vertex(connection, clusterId, level, 2, 1, 1);
-            insertF6Vertex(connection, clusterId, level, 3, -1, 1);
             insertClusterFloorCells(connection, clusterId, level, anchorX, anchorY, 2, 2);
             insertTwoByTwoPerimeterWalls(connection, mapId, clusterId, level, anchorX + 1, anchorY + 1);
         }
@@ -1844,10 +1787,6 @@ class DungeonEditorHarnessPersistenceSupport {
                     anchorY + 1,
                     level);
             insertTopologyElement(connection, mapId, roomId, clusterId, roomName);
-            insertF6Vertex(connection, clusterId, level, 0, -1, -1);
-            insertF6Vertex(connection, clusterId, level, 1, 2, -1);
-            insertF6Vertex(connection, clusterId, level, 2, 2, 2);
-            insertF6Vertex(connection, clusterId, level, 3, -1, 2);
             insertClusterFloorCells(connection, clusterId, level, anchorX, anchorY, 3, 3);
             insertPerimeterWalls(connection, mapId, clusterId, level, anchorX + 1, anchorY + 1);
             return roomId;
@@ -2069,6 +2008,37 @@ class DungeonEditorHarnessPersistenceSupport {
                         sortOrder);
                 sortOrder++;
                 insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, -1, relativeY, "WEST",
+                        sortOrder);
+                sortOrder++;
+            }
+        }
+
+        static void insertRectangularPerimeterWalls(
+                Connection connection,
+                long mapId,
+                long clusterId,
+                int level,
+                int centerX,
+                int centerY,
+                int width,
+                int height
+        ) throws SQLException {
+            int sortOrder = 1;
+            int maxRelativeX = width - 1;
+            int maxRelativeY = height - 1;
+            for (int relativeX = 0; relativeX < width; relativeX++) {
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, 0, "NORTH",
+                        sortOrder);
+                sortOrder++;
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, relativeX, maxRelativeY,
+                        "SOUTH", sortOrder);
+                sortOrder++;
+            }
+            for (int relativeY = 0; relativeY < height; relativeY++) {
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, maxRelativeX, relativeY,
+                        "EAST", sortOrder);
+                sortOrder++;
+                insertClusterBoundary(connection, mapId, clusterId, level, centerX, centerY, 0, relativeY, "WEST",
                         sortOrder);
                 sortOrder++;
             }
@@ -2368,22 +2338,6 @@ class DungeonEditorHarnessPersistenceSupport {
             }
         }
 
-        static void insertF6Vertex(
-                Connection connection,
-                long clusterId,
-                int level,
-                int vertexIndex,
-                int relativeX,
-                int relativeY
-        ) throws SQLException {
-            try (PreparedStatement statement = connection.prepareStatement(
-                    "INSERT INTO dungeon_room_cluster_vertices("
-                            + "cluster_id, level_z, vertex_index, relative_x, relative_y) VALUES(?, ?, ?, ?, ?)")) {
-                bind(statement, clusterId, level, vertexIndex, relativeX, relativeY);
-                statement.executeUpdate();
-            }
-        }
-
         private static void insertClusterFloorCells(
                 Connection connection,
                 long clusterId,
@@ -2393,9 +2347,14 @@ class DungeonEditorHarnessPersistenceSupport {
                 int width,
                 int height
         ) throws SQLException {
-            for (int q = anchorX; q < anchorX + width; q++) {
-                for (int r = anchorY; r < anchorY + height; r++) {
-                    insertClusterFloorCell(connection, clusterId, level, q, r);
+            try (PreparedStatement statement = connection.prepareStatement(
+                    "INSERT INTO dungeon_room_cluster_floor_cells("
+                            + "cluster_id, level_z, cell_x, cell_y) VALUES (?, ?, ?, ?)")) {
+                for (int q = anchorX; q < anchorX + width; q++) {
+                    for (int r = anchorY; r < anchorY + height; r++) {
+                        bind(statement, clusterId, level, q, r);
+                        statement.executeUpdate();
+                    }
                 }
             }
         }

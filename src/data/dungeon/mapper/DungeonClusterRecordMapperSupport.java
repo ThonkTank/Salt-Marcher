@@ -20,8 +20,7 @@ final class DungeonClusterRecordMapperSupport {
     static List<DungeonRoomCluster> toClusters(List<DungeonRoomClusterRecord> records) {
         List<DungeonRoomCluster> result = new ArrayList<>();
         for (DungeonRoomClusterRecord record : records == null ? List.<DungeonRoomClusterRecord>of() : records) {
-            // LEGACY_REMOVE_ON_TOUCH: Compatibility constructor adapter; entfernen, sobald dieser Bereich bearbeitet wird.
-            result.add(DungeonRoomCluster.fromCompatibilityInput(
+            result.add(DungeonRoomCluster.fromPersistenceState(
                     record.clusterId(),
                     record.mapId(),
                     record.name(),
@@ -42,7 +41,6 @@ final class DungeonClusterRecordMapperSupport {
                     cluster.center().q(),
                     cluster.center().r(),
                     cluster.center().level(),
-                    List.of(),
                     DungeonClusterFloorCellRecordMapperSupport.toFloorCellRecords(cluster.clusterId(), cluster),
                     toBoundaryRecords(cluster)));
         }

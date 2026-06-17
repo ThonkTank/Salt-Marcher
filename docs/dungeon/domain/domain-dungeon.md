@@ -42,18 +42,15 @@ Published dungeon carriers must not own:
 Only authored write-model state and stable identities may persist.
 
 Target authored room geometry is owned as cluster-local floor and boundary truth
-inside the `DungeonMap` aggregate. During the migration, the domain may still
-transport some room geometry through compatibility relative-loop carriers and
-room-cell coverage adapters; those carriers are transitional and must continue
-shrinking instead of becoming the desired authority model. Cluster-owned floor
-cells and wall or boundary facts are the target durable authored truth for room
-geometry. Published corner and midpoint handles already derive from boundary
-facts through the wall facade. Room cell membership, room anchors, room labels,
-and cluster centroids continue migrating toward derivation from authored floor
-and boundary truth rather than from an independent room-cell source. Cluster
-vertices are not target authoritative room geometry; they may participate only
-as legacy compatibility input while loading or adapting older maps and must not
-be expanded into a second write-model owner.
+inside the `DungeonMap` aggregate. Current persistence and domain readback use
+cluster-owned floor cells and wall or boundary facts as durable authored truth
+for room geometry. Published corner and midpoint handles already derive from
+boundary facts through the wall facade. Room cell membership, room anchors, room
+labels, and cluster centroids continue migrating toward derivation from authored
+floor and boundary truth rather than from an independent room-cell source.
+Retired cluster-vertex persistence is not target authoritative room geometry
+and must not participate in current schema read/write or cleanup paths or be
+expanded into a second write-model owner.
 
 Derived state must not become a second source of truth. This includes:
 
@@ -182,8 +179,7 @@ Active root boundaries:
   boundary-segment component ownership; boundary-corner and wall-run handle
   derivation now also routes through that component boundary surface, while
   cluster-local relative boundary rows still transport persistence-facing
-  direction and storage compatibility during the remaining migration and legacy
-  relative-loop carriers must not become a second geometry owner
+  direction and storage compatibility during the remaining migration
 - runtime travel state never becomes authored dungeon persistence
 - data rows and view models may transport dungeon facts, but they are not the
   owner of dungeon meaning

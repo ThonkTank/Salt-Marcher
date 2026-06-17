@@ -112,7 +112,7 @@ final class DungeonClusterInvariantHarness {
     }
 
     private static void assertClusterDefaultAndCustomNames() {
-        DungeonRoomCluster defaultCluster = DungeonRoomCluster.fromCompatibilityInput(
+        DungeonRoomCluster defaultCluster = DungeonRoomCluster.fromPersistenceState(
                 42L,
                 7L,
                 "",
@@ -135,7 +135,7 @@ final class DungeonClusterInvariantHarness {
     }
 
     private static DungeonRoomCluster nonRectangularCluster() {
-        return DungeonRoomCluster.fromCompatibilityInput(
+        return DungeonRoomCluster.fromPersistenceState(
                 15L,
                 9L,
                 "",

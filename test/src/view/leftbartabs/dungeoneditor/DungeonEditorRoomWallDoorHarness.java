@@ -908,8 +908,8 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-SEL-010 DB room floors store no extra same-level anchors");
         assertEquals(initialCells, runtime.database().clusterFloorCells(roomIds.clusterId()),
                 "DE-SEL-010 direct cluster floor-cell rows equal the painted rectangle");
-        assertEquals(0L, runtime.database().countClusterVertexRows(mapId),
-                "DE-SEL-010 fresh UI-created room writes no legacy vertex rows");
+        assertEquals(0L, runtime.database().countRetiredLegacyClusterVertexRowsIfPresent(mapId),
+                "DE-SEL-010 fresh UI-created room writes no retired legacy geometry rows");
         assertEquals(Set.of("1,1,0", "4,1,0", "4,4,0", "1,4,0"),
                 runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId()),
                 "DE-SEL-010 boundary-derived corners match the fresh painted rectangle");
@@ -1031,8 +1031,8 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-SEL-010 corner release keeps room and cluster identity");
         assertEquals(expandedCells, runtime.database().clusterFloorCells(roomIds.clusterId()),
                 "DE-SEL-010 direct floor-cell rows expand after corner release");
-        assertEquals(0L, runtime.database().countClusterVertexRows(mapId),
-                "DE-SEL-010 corner release still writes no legacy vertex rows");
+        assertEquals(0L, runtime.database().countRetiredLegacyClusterVertexRowsIfPresent(mapId),
+                "DE-SEL-010 corner release still writes no retired legacy geometry rows");
         assertEquals(Set.of("1,1,0", "5,1,0", "5,5,0", "1,5,0"),
                 runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId()),
                 "DE-SEL-010 boundary-derived corners move to the released corner");
@@ -1515,7 +1515,7 @@ final class DungeonEditorRoomWallDoorHarness {
         assertEquals(initialIds, mergedIds,
                 "DE-ROOM-002 merge preserves R1/C1 identity");
         assertEquals(expectedUnionCells, persistedClusterCellsThroughRepository(mapId, mergedIds.clusterId(), 0),
-                "DE-ROOM-002 product repository readback rasterizes persisted vertices to the set union");
+                "DE-ROOM-002 product repository readback preserves persisted floor-cell set union");
         assertDisjoint(persistedClusterCellsThroughRepository(mapId, mergedIds.clusterId(), 0), boundingBoxOnlyCells,
                 "DE-ROOM-002 merge does not fill unpainted bounding-box cells: " + boundingBoxOnlyCells);
 

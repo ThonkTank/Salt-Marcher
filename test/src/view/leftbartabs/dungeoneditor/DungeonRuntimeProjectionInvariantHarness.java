@@ -394,7 +394,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
     ) {
         long clusterId = 41L + mapId;
         long roomId = 81L + mapId;
-        DungeonRoomCluster cluster = DungeonRoomCluster.fromCompatibilityInput(
+        DungeonRoomCluster cluster = DungeonRoomCluster.fromPersistenceState(
                 clusterId,
                 mapId,
                 mapName,

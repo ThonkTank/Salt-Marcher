@@ -1,10 +1,7 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.ArrayList;
 import java.util.List;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.CellLoopRasterizer;
-import src.domain.dungeon.model.core.geometry.CellLoopSequence;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
@@ -42,13 +39,6 @@ final class DungeonGeometryInvariantHarness {
                 OWNER,
                 "DGI-GEO-004",
                 "Route creates horizontal-first corridor cells with explicit level-transition policy");
-        assertCellLoopRasterBounds();
-        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
-                results,
-                OWNER,
-                "DGI-GEO-005",
-                "Cell loop rasterization rejects malformed persisted legacy extents, over-cap unit loops, "
-                        + "duplicate unit-loop work, many non-unit loops, and overflowing unit loops");
     }
 
     private static void assertDirectionNeighborInvariants() {
@@ -111,100 +101,6 @@ final class DungeonGeometryInvariantHarness {
                 List.of(new Cell(1, 1, 0), new Cell(2, 1, 0)),
                 Route.horizontalFirstOnStartLevel(new Cell(1, 1, 0), new Cell(2, 1, 1)),
                 "route can stay on start level for authored corridor validation");
-    }
-
-    private static void assertCellLoopRasterBounds() {
-        assertOversizedLegacyLoopRejected();
-        assertManyNonUnitLegacyLoopsRejected();
-        assertOverCapUnitLegacyLoopsRejected();
-        assertDuplicateUnitLoopWorkRejected();
-        assertOverflowingUnitLegacyLoopRejected();
-    }
-
-    private static void assertOversizedLegacyLoopRejected() {
-        try {
-            CellLoopRasterizer.cellsFromRelativeVertices(
-                    new Cell(0, 0, 0),
-                    0,
-                    CellLoopSequence.splitBySeparator(List.of(
-                            new Cell(0, 0, 0),
-                            new Cell(200_000, 0, 0),
-                            new Cell(200_000, 2, 0),
-                            new Cell(0, 2, 0))));
-        } catch (IllegalArgumentException expected) {
-            return;
-        }
-        throw new IllegalStateException("oversized legacy loop should be rejected");
-    }
-
-    private static void assertManyNonUnitLegacyLoopsRejected() {
-        List<CellLoopRasterizer.CellLoop> loops = new ArrayList<>();
-        for (int index = 0; index < 1_500; index++) {
-            loops.add(nonUnitLoop(index % 32, (index / 32) % 32));
-        }
-        try {
-            CellLoopRasterizer.cellsFromRelativeVertices(new Cell(0, 0, 0), 0, loops);
-        } catch (IllegalArgumentException expected) {
-            return;
-        }
-        throw new IllegalStateException("many non-unit legacy loops should be rejected");
-    }
-
-    private static void assertOverCapUnitLegacyLoopsRejected() {
-        List<CellLoopRasterizer.CellLoop> loops = new ArrayList<>();
-        for (int q = 0; q <= 100_000; q++) {
-            loops.add(unitLoop(q, 0));
-        }
-        try {
-            CellLoopRasterizer.cellsFromRelativeVertices(new Cell(0, 0, 0), 0, loops);
-        } catch (IllegalArgumentException expected) {
-            return;
-        }
-        throw new IllegalStateException("over-cap unit legacy loops should be rejected");
-    }
-
-    private static void assertDuplicateUnitLoopWorkRejected() {
-        List<CellLoopRasterizer.CellLoop> loops = new ArrayList<>();
-        for (int index = 0; index <= 100_001; index++) {
-            loops.add(unitLoop(0, 0));
-        }
-        try {
-            CellLoopRasterizer.cellsFromRelativeVertices(new Cell(0, 0, 0), 0, loops);
-        } catch (IllegalArgumentException expected) {
-            return;
-        }
-        throw new IllegalStateException("duplicate unit legacy loops should be rejected");
-    }
-
-    private static void assertOverflowingUnitLegacyLoopRejected() {
-        try {
-            CellLoopRasterizer.cellsFromRelativeVertices(
-                    new Cell(Integer.MAX_VALUE, 0, 0),
-                    0,
-                    CellLoopSequence.splitBySeparator(List.of(
-                            new Cell(1, 0, 0),
-                            new Cell(2, 0, 0),
-                            new Cell(2, 1, 0),
-                            new Cell(1, 1, 0))));
-        } catch (ArithmeticException expected) {
-            return;
-        }
-        throw new IllegalStateException("overflowing unit legacy loop should be rejected");
-    }
-
-    private static CellLoopRasterizer.CellLoop unitLoop(int q, int r) {
-        return new CellLoopRasterizer.CellLoop(List.of(
-                new Cell(q, r, 0),
-                new Cell(q + 1, r, 0),
-                new Cell(q + 1, r + 1, 0),
-                new Cell(q, r + 1, 0)));
-    }
-
-    private static CellLoopRasterizer.CellLoop nonUnitLoop(int q, int r) {
-        return new CellLoopRasterizer.CellLoop(List.of(
-                new Cell(q, r, 0),
-                new Cell(q + 1, r, 0),
-                new Cell(q, r + 1, 0)));
     }
 
     private static void assertCell(Cell expected, Cell actual, String label) {

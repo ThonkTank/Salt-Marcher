@@ -24,7 +24,6 @@ final class DungeonSqliteClusterGeometryWriter {
 
     static void persist(Connection connection, DungeonRoomClusterRecord cluster) throws SQLException {
         upsertRoomCluster(connection, cluster);
-        deleteLegacyClusterVertices(connection, cluster);
         replaceClusterFloorCells(connection, cluster);
         replaceClusterBoundaries(connection, cluster);
     }
@@ -55,17 +54,6 @@ final class DungeonSqliteClusterGeometryWriter {
             insert.setInt(5, cluster.centerY());
             insert.setInt(6, cluster.levelZ());
             insert.executeUpdate();
-        }
-    }
-
-    // LEGACY_REMOVE_ON_TOUCH: Vertex cleanup; entfernen, sobald dieser Bereich bearbeitet wird.
-    private static void deleteLegacyClusterVertices(Connection connection, DungeonRoomClusterRecord cluster)
-            throws SQLException {
-        try (PreparedStatement delete = connection.prepareStatement(
-                DELETE_FROM + DungeonPersistenceSchema.ROOM_CLUSTER_VERTICES_TABLE
-                        + SQL_WHERE + COLUMN_CLUSTER_ID + "=?")) {
-            delete.setLong(1, cluster.clusterId());
-            delete.executeUpdate();
         }
     }
 

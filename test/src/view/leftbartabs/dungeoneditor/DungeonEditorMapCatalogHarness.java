@@ -53,7 +53,7 @@ final class DungeonEditorMapCatalogHarness {
         route(results, () -> verifyDeleteMapThroughControlsView(results));
         route(results, () -> verifyLoadMapThroughControlsView(results));
         route(results, () -> verifyReloadMapThroughControlsView(results));
-        route(results, () -> verifyLargeStoredVertexStartupThroughMapView(results));
+        route(results, () -> verifyLargeCurrentGeometryStartupThroughMapView(results));
     }
 
     private static void route(
@@ -334,14 +334,14 @@ final class DungeonEditorMapCatalogHarness {
     }
 
 
-    private static void verifyLargeStoredVertexStartupThroughMapView(List<String> results) {
+    private static void verifyLargeCurrentGeometryStartupThroughMapView(List<String> results) {
         DatabaseAssertions database = new DatabaseAssertions();
         database.clearDungeonData();
-        long mapId = database.createPersistedMap("Large Stored Vertex Startup Map");
-        database.seedLargePerCellLoopRoom(
+        long mapId = database.createPersistedMap("Large Current Geometry Startup Map");
+        database.seedLargeCurrentGeometryRoom(
                 mapId,
-                LARGE_VERTEX_FIXTURE_WIDTH,
-                LARGE_VERTEX_FIXTURE_HEIGHT);
+                LARGE_CURRENT_GEOMETRY_FIXTURE_WIDTH,
+                LARGE_CURRENT_GEOMETRY_FIXTURE_HEIGHT);
         long startupStarted = System.nanoTime();
         ApplicationHarnessBinding application = bindDiscoveredApplicationHarness(1_150.0, 700.0);
         long startupMillis = elapsedMillis(startupStarted);
@@ -352,23 +352,29 @@ final class DungeonEditorMapCatalogHarness {
         DungeonEditorControlsView controls = binding.controls();
         DungeonEditorControlsSnapshot controlsSnapshot = controlsModel.current();
 
-        long persistedVertexRows = database.countClusterVertexRows(mapId);
+        long persistedFloorCellRows = database.countClusterFloorCellRows(mapId);
+        long persistedBoundaryRows = database.countWallBoundaryRows(mapId);
 
-        assertTrue(startupMillis <= LARGE_VERTEX_STARTUP_MAX_MILLIS,
+        assertTrue(startupMillis <= LARGE_CURRENT_GEOMETRY_STARTUP_MAX_MILLIS,
                 "DE-START-001 installed-shell startup latency millis=" + startupMillis);
         assertEquals(null, controlsSnapshot.selectedMapId(),
                 "DE-START-001 discovered app shell does not auto-load the large persisted map");
         assertTrue(
                 controlsSnapshot.maps().stream().anyMatch(map ->
                         map.mapId().value() == mapId
-                                && "Large Stored Vertex Startup Map".equals(map.mapName())),
+                                && "Large Current Geometry Startup Map".equals(map.mapName())),
                 "DE-START-001 discovered app shell publishes the seeded map in the catalog");
         assertEquals(
-                (long) LARGE_VERTEX_FIXTURE_WIDTH * LARGE_VERTEX_FIXTURE_HEIGHT * 5L,
-                persistedVertexRows,
-                "DE-START-001 fixture stores the expected per-cell vertex loop rows");
-        assertTrue(persistedVertexRows >= LARGE_VERTEX_FIXTURE_MIN_ROWS,
-                "DE-START-001 fixture covers the reported 56k-scale persisted vertex class");
+                (long) LARGE_CURRENT_GEOMETRY_FIXTURE_WIDTH * LARGE_CURRENT_GEOMETRY_FIXTURE_HEIGHT,
+                persistedFloorCellRows,
+                "DE-START-001 fixture stores the expected current floor-cell rows");
+        assertEquals(
+                (long) LARGE_CURRENT_GEOMETRY_FIXTURE_WIDTH * 2L
+                        + (long) LARGE_CURRENT_GEOMETRY_FIXTURE_HEIGHT * 2L,
+                persistedBoundaryRows,
+                "DE-START-001 fixture stores explicit perimeter wall boundary rows");
+        assertTrue(persistedFloorCellRows >= LARGE_CURRENT_GEOMETRY_FIXTURE_MIN_FLOOR_CELLS,
+                "DE-START-001 fixture covers the reported 56k-scale persisted current-geometry class");
         assertEquals(null, mapSurfaceModel.current().surface(),
                 "DE-START-001 startup surface remains unloaded until explicit map selection");
         assertVisiblePlaceholder(mapView,
@@ -378,16 +384,17 @@ final class DungeonEditorMapCatalogHarness {
         long inputStarted = System.nanoTime();
         fireMapShortcut(mapView, KeyCode.ESCAPE);
         long inputMillis = elapsedMillis(inputStarted);
-        assertTrue(inputMillis <= LARGE_VERTEX_INPUT_MAX_MILLIS,
+        assertTrue(inputMillis <= LARGE_CURRENT_GEOMETRY_INPUT_MAX_MILLIS,
                 "DE-START-001 post-load map key input latency millis=" + inputMillis);
         assertEquals("SELECT", controlsModel.current().selectedTool().name(),
                 "DE-START-001 map key input remains responsive after installed-shell startup");
         assertEquals("SELECT", mapSurfaceModel.current().selectedTool().name(),
                 "DE-START-001 published surface returns to selection after real View Esc route");
-        assertEquals(1L, database.countMapsNamed("Large Stored Vertex Startup Map"),
+        assertEquals(1L, database.countMapsNamed("Large Current Geometry Startup Map"),
                 "DE-START-001 persisted map survives the startup/input smoke route");
 
-        results.add("DE-START-001 Ready: 56k persisted per-cell vertices -> AppBootstrap discovered shell catalog startup -> "
+        results.add("DE-START-001 Ready: 56k persisted floor cells with perimeter walls -> "
+                + "AppBootstrap discovered shell catalog startup -> "
                 + "bounded render/input latency startupMillis=" + startupMillis + " inputMillis=" + inputMillis);
     }
 

@@ -55,7 +55,6 @@ use the editor route catalogs' `Ready` status vocabulary.
 | `DGI-GEO-002` | `DungeonGeometryInvariantHarness` | `core/geometry/Edge` | `Edge.sideOf` and `touchingCells` return the two authored cells adjacent to each cardinal side and reject non-orthogonal edge adjacency. |
 | `DGI-GEO-003` | `DungeonGeometryInvariantHarness` | `core/geometry/CellOrdering` | Cell ordering deduplicates cells and orders by level, row, then column. |
 | `DGI-GEO-004` | `DungeonGeometryInvariantHarness` | `core/geometry/Route` | Route creates horizontal-first corridor cells and owns the explicit policy difference between level-transition paths and validation paths that stay on the start level. |
-| `DGI-GEO-005` | `DungeonGeometryInvariantHarness` | `core/geometry/CellLoopRasterizer` | Cell loop rasterization rejects malformed persisted legacy extents, over-cap unit loops, duplicate unit-loop work, many non-unit loops, and overflowing unit loops. |
 
 ## Component Invariants
 

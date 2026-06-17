@@ -532,8 +532,8 @@ final class DungeonEditorCorridorHarness {
         click(button(controls, "Korridor"));
         Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         Point2D doorTwo = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 10.0, 7.5);
-        assertPointerTarget(binding.mapContentModel(), doorOne, "BOUNDARY", "DE-COR-014 first door");
-        assertPointerTarget(binding.mapContentModel(), doorTwo, "BOUNDARY", "DE-COR-014 second door");
+        assertPointerTarget(binding.mapContentModel(), doorOne, "HANDLE", "DE-COR-014 first door");
+        assertPointerTarget(binding.mapContentModel(), doorTwo, "HANDLE", "DE-COR-014 second door");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
@@ -555,7 +555,7 @@ final class DungeonEditorCorridorHarness {
                 "8,7,0",
                 "9,7,0");
         assertVisibleCorridorPreview(runtime, binding, expectedCells, "DE-COR-014 hover");
-        assertPointerTarget(binding.mapContentModel(), doorTwo, "BOUNDARY",
+        assertPointerTarget(binding.mapContentModel(), doorTwo, "HANDLE",
                 "DE-COR-014 hover keeps committed second door target authoritative");
         clickMap(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
@@ -614,8 +614,8 @@ final class DungeonEditorCorridorHarness {
         click(button(controls, "Korridor"));
         assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
                 "DE-COR-004 corridor family selects corridor-create tool");
-        assertPointerTarget(binding.mapContentModel(), doorOne, "BOUNDARY", "DE-COR-004 D1");
-        assertPointerTarget(binding.mapContentModel(), doorThree, "BOUNDARY", "DE-COR-004 D3");
+        assertPointerTarget(binding.mapContentModel(), doorOne, "HANDLE", "DE-COR-004 D1");
+        assertPointerTarget(binding.mapContentModel(), doorThree, "HANDLE", "DE-COR-004 D3");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
@@ -1054,7 +1054,7 @@ final class DungeonEditorCorridorHarness {
                         .resolvePointerTarget(roomInterior.getX(), roomInterior.getY())
                         .elementKind(),
                 "DE-COR-013 generic-room start resolves as a room target rather than a door target");
-        assertPointerTarget(binding.mapContentModel(), doorTwo, "BOUNDARY", "DE-COR-013 generic-room second door");
+        assertPointerTarget(binding.mapContentModel(), doorTwo, "HANDLE", "DE-COR-013 generic-room second door");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 

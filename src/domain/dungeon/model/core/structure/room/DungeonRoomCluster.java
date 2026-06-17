@@ -38,7 +38,7 @@ public final class DungeonRoomCluster {
         this.boundariesByLevel = copyNestedLists(boundariesByLevel);
     }
 
-    public static DungeonRoomCluster fromCompatibilityInput(
+    public static DungeonRoomCluster fromPersistenceState(
             long clusterId,
             long mapId,
             String name,

@@ -10,10 +10,7 @@ import java.util.Map;
 import java.util.Set;
 import src.data.dungeon.model.DungeonRoomClusterFloorCellRecord;
 import src.data.dungeon.model.DungeonRoomClusterRecord;
-import src.data.dungeon.model.DungeonRoomClusterVertexRecord;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.CellLoopRasterizer;
-import src.domain.dungeon.model.core.geometry.CellLoopSequence;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
@@ -60,50 +57,7 @@ final class DungeonClusterFloorCellRecordMapperSupport {
     }
 
     private static Map<Integer, List<Cell>> floorCellsByLevel(DungeonRoomClusterRecord record) {
-        Map<Integer, List<Cell>> floorCellsByLevel = floorCellsByLevel(record.floorCells());
-        return floorCellsByLevel.isEmpty() ? legacyVerticesAsFloorCellsByLevel(record) : floorCellsByLevel;
-    }
-
-    // LEGACY_REMOVE_ON_TOUCH: Vertex raster fallback; entfernen, sobald dieser Bereich bearbeitet wird.
-    private static Map<Integer, List<Cell>> legacyVerticesAsFloorCellsByLevel(DungeonRoomClusterRecord record) {
-        Map<Integer, List<Cell>> verticesByLevel = verticesByLevel(record.vertices());
-        if (verticesByLevel.isEmpty()) {
-            return Map.of();
-        }
-        Map<Integer, List<Cell>> result = new LinkedHashMap<>();
-        Cell center = new Cell(record.centerX(), record.centerY(), record.levelZ());
-        for (Map.Entry<Integer, List<Cell>> entry : verticesByLevel.entrySet()) {
-            result.put(entry.getKey(), legacyFloorCells(record.clusterId(), center, entry));
-        }
-        return immutableSortedCellMap(result);
-    }
-
-    private static List<Cell> legacyFloorCells(
-            long clusterId,
-            Cell center,
-            Map.Entry<Integer, List<Cell>> entry
-    ) {
-        try {
-            return new ArrayList<>(CellLoopRasterizer.cellsFromRelativeVertices(
-                    center,
-                    entry.getKey(),
-                    CellLoopSequence.splitBySeparator(entry.getValue())));
-        } catch (ArithmeticException | IllegalArgumentException exception) {
-            throw new IllegalArgumentException(
-                    "Invalid legacy room-cluster vertex rows for cluster " + clusterId
-                            + " on level " + entry.getKey(),
-                    exception);
-        }
-    }
-
-    private static Map<Integer, List<Cell>> verticesByLevel(List<DungeonRoomClusterVertexRecord> records) {
-        Map<Integer, List<Cell>> result = new LinkedHashMap<>();
-        for (DungeonRoomClusterVertexRecord record
-                : records == null ? List.<DungeonRoomClusterVertexRecord>of() : records) {
-            result.computeIfAbsent(record.levelZ(), ignored -> new ArrayList<>())
-                    .add(new Cell(record.relativeX(), record.relativeY(), record.levelZ()));
-        }
-        return DungeonNestedListMaps.immutableCopy(result);
+        return floorCellsByLevel(record.floorCells());
     }
 
     private static Map<Integer, List<Cell>> floorCellsByLevel(DungeonRoomCluster cluster) {

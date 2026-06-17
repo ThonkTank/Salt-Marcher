@@ -227,7 +227,7 @@ final class DungeonDoorInvariantHarness {
                 new DungeonClusterBoundary(clusterId, 0, new Cell(1, 1, 0), Direction.EAST,
                         duplicateDoorAtTarget ? BoundaryKind.DOOR : BoundaryKind.WALL,
                         duplicateDoorAtTarget ? DungeonTopologyRef.door(201L) : DungeonTopologyRef.wall(201L))));
-        DungeonRoomCluster cluster = DungeonRoomCluster.fromCompatibilityInput(
+        DungeonRoomCluster cluster = DungeonRoomCluster.fromPersistenceState(
                 clusterId,
                 mapId,
                 "R1",
