@@ -5,6 +5,8 @@ import java.util.Objects;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
 import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
 import src.domain.dungeon.published.DungeonOverlaySettings;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 
@@ -13,6 +15,7 @@ final class DungeonTravelIntentHandler {
 
 
     private final DungeonTravelContributionModel presentationModel;
+    private final CatalogCrudControlsContentModel catalogContentModel;
     private final DungeonMapContentModel mapContentModel;
     private final DungeonTravelRuntimeApplicationService travel;
     private double previousMiddleDragCanvasX;
@@ -21,10 +24,12 @@ final class DungeonTravelIntentHandler {
 
     DungeonTravelIntentHandler(
             DungeonTravelContributionModel presentationModel,
+            CatalogCrudControlsContentModel catalogContentModel,
             DungeonMapContentModel mapContentModel,
             DungeonTravelRuntimeApplicationService travel
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
+        this.catalogContentModel = Objects.requireNonNull(catalogContentModel, "catalogContentModel");
         this.mapContentModel = Objects.requireNonNull(mapContentModel, "mapContentModel");
         this.travel = Objects.requireNonNull(travel, "travel");
     }
@@ -55,7 +60,15 @@ final class DungeonTravelIntentHandler {
                         event.overlayModeKey(),
                         event.overlayRange(),
                         event.overlayOpacity(),
-                        parseLevels(event.overlayLevelsText()))));
+                parseLevels(event.overlayLevelsText()))));
+    }
+
+    void consume(CatalogCrudControlsViewInputEvent event) {
+        if (event == null || event.selectedItemId().isBlank()) {
+            return;
+        }
+        catalogContentModel.selectItem(event.selectedItemId());
+        travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.selectMap(parseMapId(event.selectedItemId())));
     }
 
     void consume(DungeonTravelStateViewInputEvent event) {
@@ -79,6 +92,14 @@ final class DungeonTravelIntentHandler {
                     .toList();
         } catch (NumberFormatException exception) {
             return List.of();
+        }
+    }
+
+    private static long parseMapId(String rawMapId) {
+        try {
+            return Long.parseLong(rawMapId);
+        } catch (NumberFormatException exception) {
+            return 0L;
         }
     }
 

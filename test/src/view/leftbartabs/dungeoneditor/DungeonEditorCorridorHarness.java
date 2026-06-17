@@ -52,6 +52,7 @@ final class DungeonEditorCorridorHarness {
         route(results, () -> verifyCorridorAnchorMoveThroughMapView(results));
         route(results, () -> verifyCorridorPointEditThroughStateView(results));
         route(results, () -> verifyDependentCorridorRouteUpdatesThroughHostAnchorMove(results));
+        route(results, () -> verifyDependentCorridorRouteUpdatesThroughWholeClusterMove(results));
         route(results, () -> verifyDoorToDoorVerticalFallbackCorridorCreateThroughMapView(results));
         route(results, () -> verifyCorridorSplitAtCrossingThroughMapView(results));
         route(results, () -> verifyCorridorConnectionPointDeleteThroughMapView(results));
@@ -413,6 +414,106 @@ final class DungeonEditorCorridorHarness {
                 Set.of("4,2,0", "5,2,0", "6,2,0", "6,3,0", "6,4,0", "6,5,0"),
                 "DE-COR-NET dependent created");
         return dependentCorridorId;
+    }
+
+    private static void verifyDependentCorridorRouteUpdatesThroughWholeClusterMove(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Cluster Corridor Move Map");
+        runtime.database().seedCorridorWithAnchor(mapId);
+        createMapThroughControls(controls, runtime, "Cluster Corridor Move Reload Hop");
+        selectMap(controls, "Cluster Corridor Move Map");
+        long dependentCorridorId = createDependentCorridorFromExistingAnchor(runtime, binding, controls, mapView, mapId);
+        RoomClusterIds movedRoomIds = runtime.database().roomByName(mapId, "R1");
+        List<String> anchorRowsBeforeMove = runtime.database().corridorAnchorState(mapId);
+        List<String> stableRowsBeforeMove = runtime.database().corridorStableConnectionState(mapId);
+        List<String> authoredStateBeforeMove = runtime.database().authoredGeometryState(mapId);
+        long geometryRowsBeforeMove = runtime.database().countAuthoredGeometryRows(mapId);
+        click(button(controls, "Auswahl"));
+        DungeonEditorHandleSnapshot clusterLabel = runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
+                .filter(handle -> "CLUSTER_LABEL".equals(handle.ref().kind().name()))
+                .filter(handle -> handle.ref().clusterId() == movedRoomIds.clusterId())
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("DE-CLUSTER-COR-001 cluster label not loaded."));
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        double clusterLabelQ = clusterLabel.cell().q() + 0.5;
+        double clusterLabelR = clusterLabel.cell().r() + 0.5;
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(clusterLabelQ),
+                viewport.sceneToScreenY(clusterLabelR),
+                false);
+        assertTrue(runtime.stateModel().current().selection().clusterSelection(),
+                "DE-CLUSTER-COR-001 cluster label drag starts from cluster selection");
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_DRAGGED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(clusterLabelQ + 2.0),
+                viewport.sceneToScreenY(clusterLabelR),
+                false);
+
+        assertEquals(anchorRowsBeforeMove, runtime.database().corridorAnchorState(mapId),
+                "DE-CLUSTER-COR-001 cluster drag preview leaves corridor anchor rows unchanged");
+        assertEquals(stableRowsBeforeMove, runtime.database().corridorStableConnectionState(mapId),
+                "DE-CLUSTER-COR-001 cluster drag preview leaves stable corridor rows unchanged");
+        assertEquals(authoredStateBeforeMove, runtime.database().authoredGeometryState(mapId),
+                "DE-CLUSTER-COR-001 cluster drag preview leaves authored geometry unchanged");
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(clusterLabelQ + 2.0),
+                viewport.sceneToScreenY(clusterLabelR),
+                false);
+
+        assertEquals(movedRoomIds.clusterId(), runtime.database().clusterIdByCenter(mapId, 4, 2, 0),
+                "DE-CLUSTER-COR-001 cluster move persists translated cluster center at (4,2,0)");
+        List<String> anchorRowsAfterMove = runtime.database().corridorAnchorState(mapId);
+        assertTrue(anchorRowsAfterMove.stream().anyMatch(row ->
+                        row.contains("anchor_id=1")
+                                && row.contains("cell_x=6")
+                                && row.contains("cell_y=4")
+                                && row.contains("cell_z=0")),
+                "DE-CLUSTER-COR-001 cluster move updates host A1 to (6,4,0): " + anchorRowsAfterMove);
+        assertTrue(!anchorRowsAfterMove.stream().anyMatch(row ->
+                        row.contains("anchor_id=1")
+                                && row.contains("cell_x=6")
+                                && row.contains("cell_y=5")
+                                && row.contains("cell_z=0")),
+                "DE-CLUSTER-COR-001 cluster move removes stale host A1 at (6,5,0): " + anchorRowsAfterMove);
+        assertEquals(geometryRowsBeforeMove, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-CLUSTER-COR-001 cluster move keeps authored DB row count stable");
+        List<String> stableRowsAfterMove = runtime.database().corridorStableConnectionState(mapId);
+        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        assertCorridorCreatedInSnapshot(
+                committedSurface,
+                binding.mapContentModel(),
+                dependentCorridorId,
+                Set.of("6,2,0", "6,3,0", "6,4,0"),
+                "DE-CLUSTER-COR-001 moved dependent corridor");
+        assertTrue(!areaCellSet(corridorAreaById(committedSurface, dependentCorridorId, "DE-CLUSTER-COR-001 moved"))
+                        .contains("6,5,0"),
+                "DE-CLUSTER-COR-001 moved dependent corridor omits stale former anchor cell");
+        assertTrue(stableRowsAfterMove.equals(stableRowsBeforeMove),
+                "DE-CLUSTER-COR-001 keeps stable endpoint refs after cluster move");
+        selectMap(controls, "Cluster Corridor Move Reload Hop");
+        selectMap(controls, "Cluster Corridor Move Map");
+        assertCorridorCreatedInSnapshot(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                dependentCorridorId,
+                Set.of("6,2,0", "6,3,0", "6,4,0"),
+                "DE-CLUSTER-COR-001 moved dependent corridor reload");
+
+        results.add("DE-COR-016 Ready: whole-cluster move updates dependent corridor route, SQLite, render, reload");
     }
 
 

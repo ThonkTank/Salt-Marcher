@@ -82,10 +82,11 @@ public final class BoundaryMap {
             for (BoundarySegment segment : segmentsByKey.values()) {
                 addWallSegment(segmentsByRunLine, segment, level);
             }
+            Set<Cell> splitVertices = splitVertices(segmentsByKey, level);
             List<WallRun> result = new ArrayList<>();
             for (List<WallSegment> runLine : segmentsByRunLine.values()) {
                 runLine.sort(Comparator.comparingInt(WallSegment::start));
-                appendRunLine(result, runLine);
+                appendRunLine(result, runLine, splitVertices);
             }
             return List.copyOf(result);
         }
@@ -130,14 +131,18 @@ public final class BoundaryMap {
             segmentsByRunLine.computeIfAbsent(segment.runKey(), ignored -> new ArrayList<>()).add(segment);
         }
 
-        private static void appendRunLine(List<WallRun> result, List<WallSegment> runLine) {
+        private static void appendRunLine(
+                List<WallRun> result,
+                List<WallSegment> runLine,
+                Set<Cell> splitVertices
+        ) {
             int start = runLine.getFirst().start();
             int end = runLine.getFirst().end();
             RunKey key = runLine.getFirst().runKey();
             List<EdgeKey> edgeKeys = new ArrayList<>(List.of(runLine.getFirst().edgeKey()));
             for (int segmentIndex = 1; segmentIndex < runLine.size(); segmentIndex++) {
                 WallSegment segment = runLine.get(segmentIndex);
-                if (segment.start() == end) {
+                if (segment.start() == end && !splitVertices.contains(vertexAt(key, end))) {
                     end = segment.end();
                     edgeKeys.add(segment.edgeKey());
                 } else {
@@ -148,6 +153,16 @@ public final class BoundaryMap {
                 }
             }
             addWallRun(result, key, start, end, edgeKeys);
+        }
+
+        private static Set<Cell> splitVertices(Map<EdgeKey, BoundarySegment> segmentsByKey, int level) {
+            return BoundaryCornerDerivation.cornerSetAt(segmentsByKey, level);
+        }
+
+        private static Cell vertexAt(RunKey key, int variable) {
+            return key.horizontal()
+                    ? new Cell(variable, key.fixed(), key.level())
+                    : new Cell(key.fixed(), variable, key.level());
         }
 
         private static void addWallRun(List<WallRun> result, RunKey key, int start, int end, List<EdgeKey> edgeKeys) {
@@ -173,6 +188,13 @@ public final class BoundaryMap {
 
     private static final class BoundaryCornerDerivation {
         private static List<BoundaryCorner> boundaryCornersAt(Map<EdgeKey, BoundarySegment> segmentsByKey, int level) {
+            return cornerSetAt(segmentsByKey, level).stream()
+                    .sorted(CellOrdering::compareCells)
+                    .map(BoundaryCorner::new)
+                    .toList();
+        }
+
+        private static Set<Cell> cornerSetAt(Map<EdgeKey, BoundarySegment> segmentsByKey, int level) {
             Set<Cell> corners = new LinkedHashSet<>();
             Map<Cell, EndpointFacts> endpointFacts = new LinkedHashMap<>();
             for (BoundarySegment segment : segmentsByKey.values()) {
@@ -183,10 +205,7 @@ public final class BoundaryMap {
                     corners.add(entry.getKey());
                 }
             }
-            return corners.stream()
-                    .sorted(CellOrdering::compareCells)
-                    .map(BoundaryCorner::new)
-                    .toList();
+            return Set.copyOf(corners);
         }
 
         private static void recordSegmentEndpoints(
@@ -232,8 +251,6 @@ public final class BoundaryMap {
     }
 
     private static final class AdjacentWallRunEdgeKeyDerivation {
-        private static final int SINGLE_ADJACENT_EDGE = 1;
-
         private static List<EdgeKey> adjacentWallRunEdgeKeys(
                 Map<EdgeKey, BoundarySegment> segmentsByKey,
                 Cell corner,
@@ -243,18 +260,26 @@ public final class BoundaryMap {
                 return List.of();
             }
             Map<EdgeKey, Edge> wallEdges = wallEdgesByKey(segmentsByKey, corner.level(), vertical);
-            List<Edge> adjacent = adjacentEdges(wallEdges, corner);
-            if (adjacent.size() != SINGLE_ADJACENT_EDGE) {
+            Set<Cell> splitVertices = BoundaryCornerDerivation.cornerSetAt(segmentsByKey, corner.level());
+            List<Edge> adjacent = new ArrayList<>(adjacentEdges(wallEdges, corner));
+            if (adjacent.isEmpty()) {
                 return List.of();
             }
-            Optional<Cell> next = otherEndpoint(adjacent.getFirst(), corner);
-            if (next.isEmpty()) {
-                return List.of();
+            adjacent.sort(Comparator.comparing(edge -> endpointCoordinate(otherEndpoint(edge, corner), vertical)));
+            Set<EdgeKey> result = new LinkedHashSet<>();
+            for (Edge edge : adjacent) {
+                Optional<Cell> next = otherEndpoint(edge, corner);
+                if (next.isEmpty()) {
+                    continue;
+                }
+                int step = vertical
+                        ? Integer.compare(next.orElseThrow().r(), corner.r())
+                        : Integer.compare(next.orElseThrow().q(), corner.q());
+                if (step != 0) {
+                    result.addAll(contiguousEdges(wallEdges, corner, vertical, step, splitVertices));
+                }
             }
-            int step = vertical
-                    ? Integer.compare(next.orElseThrow().r(), corner.r())
-                    : Integer.compare(next.orElseThrow().q(), corner.q());
-            return step == 0 ? List.of() : contiguousEdges(wallEdges, corner, vertical, step);
+            return List.copyOf(result);
         }
 
         private static Map<EdgeKey, Edge> wallEdgesByKey(
@@ -293,7 +318,8 @@ public final class BoundaryMap {
                 Map<EdgeKey, Edge> wallEdges,
                 Cell corner,
                 boolean vertical,
-                int step
+                int step,
+                Set<Cell> splitVertices
         ) {
             List<EdgeKey> result = new ArrayList<>();
             Cell start = corner;
@@ -307,7 +333,15 @@ public final class BoundaryMap {
                 }
                 result.add(key);
                 start = end;
+                if (splitVertices.contains(start)) {
+                    return List.copyOf(result);
+                }
             }
+        }
+
+        private static int endpointCoordinate(Optional<Cell> cell, boolean vertical) {
+            Cell resolved = cell.orElseThrow();
+            return vertical ? resolved.r() : resolved.q();
         }
 
         private static Optional<Cell> otherEndpoint(Edge edge, Cell corner) {

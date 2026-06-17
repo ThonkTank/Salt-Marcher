@@ -45,13 +45,11 @@ final class ShellWorkspacePane extends SplitPane {
         ShellFx.addStyleClass(controlsPanel, "control-panel");
         controlsPanel.setPrefWidth(240);
         controlsPanel.setMinWidth(200);
-        controlsPanel.setMinHeight(USE_PREF_SIZE);
-        controlsPanel.setMaxHeight(USE_PREF_SIZE);
         controlsPanel.setMaxWidth(Double.MAX_VALUE);
         controlsPanel.setFillWidth(true);
         ShellContentLayout.clipToBounds(controlsPanel);
 
-        VBox.setVgrow(controlsPanel, Priority.NEVER);
+        VBox.setVgrow(controlsPanel, Priority.ALWAYS);
         VBox.setVgrow(mainPanel, Priority.ALWAYS);
         VBox leftColumn = new VBox(controlsPanel, mainPanel);
         leftColumn.setFillWidth(true);
@@ -124,7 +122,7 @@ final class ShellWorkspacePane extends SplitPane {
                 region.setMaxWidth(Double.MAX_VALUE);
             }
             ShellFx.addChild(controlsPanel, controls);
-            VBox.setVgrow(controls, Priority.NEVER);
+            VBox.setVgrow(controls, Priority.ALWAYS);
         }
         controlsPanel.setVisible(controls != null);
         controlsPanel.setManaged(controls != null);

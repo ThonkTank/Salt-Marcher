@@ -5,6 +5,7 @@ import java.util.Objects;
 import javafx.scene.Node;
 import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
+import shell.api.ShellControls;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
@@ -12,10 +13,13 @@ import src.domain.sessionplanner.SessionPlannerEncounterApplicationService;
 import src.domain.sessionplanner.SessionPlannerLootApplicationService;
 import src.domain.sessionplanner.SessionPlannerParticipantApplicationService;
 import src.domain.sessionplanner.SessionPlannerRestApplicationService;
+import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 
 final class SessionPlannerBinder {
 
@@ -39,6 +43,8 @@ final class SessionPlannerBinder {
                 services.require(SessionPlannerLootApplicationService.class);
         SessionPlannerCurrentSessionModel sessionModel =
                 services.require(SessionPlannerCurrentSessionModel.class);
+        SessionPlannerCatalogModel catalogModel =
+                services.require(SessionPlannerCatalogModel.class);
         SessionPlannerParticipantsModel participantsModel =
                 services.require(SessionPlannerParticipantsModel.class);
         SessionPlannerEncountersModel encountersModel =
@@ -46,10 +52,12 @@ final class SessionPlannerBinder {
         SessionPlannerStatePanelModel statePanelModel =
                 services.require(SessionPlannerStatePanelModel.class);
         SessionPlannerControlsContentModel controlsContentModel = new SessionPlannerControlsContentModel();
+        CatalogCrudControlsContentModel catalogContentModel = new CatalogCrudControlsContentModel();
         SessionPlannerTimelineMainContentModel timelineMainContentModel = new SessionPlannerTimelineMainContentModel();
         SessionPlannerStateContentModel stateContentModel = new SessionPlannerStateContentModel();
         SessionPlannerContributionModel contributionModel = new SessionPlannerContributionModel(
                 controlsContentModel,
+                catalogContentModel,
                 timelineMainContentModel,
                 stateContentModel);
         SessionPlannerIntentHandler intentHandler = new SessionPlannerIntentHandler(
@@ -57,19 +65,24 @@ final class SessionPlannerBinder {
                 participants,
                 encounters,
                 rests,
-                loot);
+                loot,
+                controlsContentModel,
+                catalogContentModel);
         SessionPlannerControlsView controlsView = new SessionPlannerControlsView();
+        CatalogCrudControlsView catalogView = new CatalogCrudControlsView();
         SessionPlannerTimelineMainView timelineView = new SessionPlannerTimelineMainView();
         SessionPlannerStateView stateView = new SessionPlannerStateView();
 
+        catalogView.bind(catalogContentModel);
         controlsView.bind(controlsContentModel);
         timelineView.bind(timelineMainContentModel);
         stateView.bind(stateContentModel);
+        catalogView.onViewInputEvent(intentHandler::consume);
         controlsView.onViewInputEvent(intentHandler::consume);
         timelineView.onViewInputEvent(intentHandler::consume);
 
-        contributionModel.bindReadback(sessionModel, participantsModel, encountersModel, statePanelModel);
-        return new Binding(controlsView, timelineView, stateView);
+        contributionModel.bindReadback(sessionModel, catalogModel, participantsModel, encountersModel, statePanelModel);
+        return new Binding(ShellControls.stack(catalogView, controlsView), timelineView, stateView);
     }
 
     private record Binding(

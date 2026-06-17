@@ -41,6 +41,7 @@ final class SessionPlannerSessionProjectionServiceAssembly {
         return new SessionPlannerSessionSnapshot(
                 new SessionPlannerSessionSnapshot.SessionState(
                         session.sessionId(),
+                        session.displayName(),
                         session.encounterDays().value(),
                         session.encounterDays().displayText(),
                         session.selectedEncounterId(),

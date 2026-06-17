@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
 import shell.api.ShellBinding;
+import shell.api.ShellControls;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.dungeon.DungeonEditorLabelNameApplicationService;
@@ -19,6 +20,8 @@ import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateModel;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
@@ -49,6 +52,7 @@ final class DungeonEditorBinder {
         DungeonEditorMapSurfaceModel mapSurfaceModel = runtimeContext.services().require(DungeonEditorMapSurfaceModel.class);
         DungeonEditorStateModel stateModel = runtimeContext.services().require(DungeonEditorStateModel.class);
         DungeonEditorControlsContentModel controlsContentModel = new DungeonEditorControlsContentModel();
+        CatalogCrudControlsContentModel mapCatalogContentModel = new CatalogCrudControlsContentModel();
         DungeonEditorStateContentModel stateContentModel = new DungeonEditorStateContentModel();
         DungeonEditorContributionModel contributionModel = new DungeonEditorContributionModel(stateContentModel);
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Dungeon workspace", true);
@@ -56,6 +60,7 @@ final class DungeonEditorBinder {
                 new DungeonEditorIntentHandler(
                         contributionModel,
                         controlsContentModel,
+                        mapCatalogContentModel,
                         stateContentModel,
                         mapContentModel,
                         new DungeonEditorIntentHandler.ApplicationServices(
@@ -67,23 +72,27 @@ final class DungeonEditorBinder {
                                 transitionEditor,
                                 stairEditor));
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
+        CatalogCrudControlsView mapCatalog = new CatalogCrudControlsView();
         DungeonMapView main = new DungeonMapView();
         DungeonEditorStateView state = new DungeonEditorStateView();
 
         main.bind(mapContentModel);
         controls.bind(controlsContentModel);
+        mapCatalog.bind(mapCatalogContentModel);
         state.bind(stateContentModel);
         main.onViewInputEvent(intentHandler::consume);
         controls.onViewInputEvent(intentHandler::consume);
+        mapCatalog.onViewInputEvent(intentHandler::consume);
         state.onViewInputEvent(intentHandler::consume);
         contributionModel.bindControlsContentModel(controlsContentModel);
+        contributionModel.bindMapCatalogContentModel(controlsContentModel, mapCatalogContentModel);
         controlsModel.subscribe(snapshot -> applyControls(snapshot, contributionModel));
         mapSurfaceModel.subscribe(snapshot -> applyMapSurface(snapshot, mapContentModel));
         stateModel.subscribe(snapshot -> applyState(snapshot, contributionModel));
         applyControls(controlsModel.current(), contributionModel);
         applyMapSurface(mapSurfaceModel.current(), mapContentModel);
         applyState(stateModel.current(), contributionModel);
-        return new Binding(controls, main, state);
+        return new Binding(ShellControls.stack(mapCatalog, controls), main, state);
     }
 
     private static void applyControls(

@@ -269,6 +269,75 @@ tasks.register<JavaExec>("dungeonEditorBehaviorHarnessSuites") {
     args("--list")
 }
 
+val catalogInitialLoadHarnessDataDir = layout.buildDirectory.dir("catalog-initial-load-data")
+val catalogCrudControlsHarnessDataDir = layout.buildDirectory.dir("catalog-crud-controls-data")
+val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
+val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
+
+tasks.register<JavaExec>("catalogInitialLoadHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run the view-driven Catalog initial-load behavior harness."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("src.view.leftbartabs.catalog.CatalogInitialLoadHarness")
+    outputs.upToDateWhen { false }
+    doFirst {
+        val runDataDir = catalogInitialLoadHarnessDataDir.get()
+            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+        mkdir(runDataDir)
+        mkdir(runDataDir.dir("salt-marcher"))
+        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+    }
+}
+
+tasks.register<JavaExec>("catalogCrudControlsHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run the shared Catalog CRUD controls behavior harness."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsHarness")
+    outputs.upToDateWhen { false }
+    doFirst {
+        val runDataDir = catalogCrudControlsHarnessDataDir.get()
+            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+        mkdir(runDataDir)
+        mkdir(runDataDir.dir("salt-marcher"))
+        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+    }
+}
+
+tasks.register<JavaExec>("sessionPlannerCatalogHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run the Session Planner catalog CRUD behavior harness."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("src.view.leftbartabs.sessionplanner.SessionPlannerCatalogHarness")
+    outputs.upToDateWhen { false }
+    doFirst {
+        val runDataDir = sessionPlannerCatalogHarnessDataDir.get()
+            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+        mkdir(runDataDir)
+        mkdir(runDataDir.dir("salt-marcher"))
+        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+    }
+}
+
+tasks.register<JavaExec>("sessionPlannerShellLayoutHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run the Session Planner shell controls layout behavior harness."
+    dependsOn(tasks.named("testClasses"))
+    classpath = sourceSets["test"].runtimeClasspath
+    mainClass.set("shell.host.SessionPlannerShellLayoutHarness")
+    outputs.upToDateWhen { false }
+    doFirst {
+        val runDataDir = sessionPlannerShellLayoutHarnessDataDir.get()
+            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+        mkdir(runDataDir)
+        mkdir(runDataDir.dir("salt-marcher"))
+        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+    }
+}
+
 val mainJavaClassesDir = layout.buildDirectory.dir("classes/java/main")
 
 val architectureTest by tasks.registering(Test::class) {

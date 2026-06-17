@@ -21,6 +21,7 @@ public final class ShellLayerTopologyRules implements ArchitectureRule {
                     "ServiceContribution.java",
                     "ServiceRegistry.java",
                     "ShellBinding.java",
+                    "ShellControls.java",
                     "ShellContribution.java",
                     "ShellContributionSpec.java",
                     "ShellRuntimeContext.java",

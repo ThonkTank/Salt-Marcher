@@ -8,6 +8,7 @@ import java.util.Iterator;
 import java.util.List;
 public record SessionPlan(
         long sessionId,
+        String displayName,
         List<Long> participantRefs,
         EncounterDays encounterDays,
         List<SessionEncounter> encounters,
@@ -26,6 +27,7 @@ public record SessionPlan(
 
     public SessionPlan {
         sessionId = Math.max(1L, sessionId);
+        displayName = normalizeDisplayName(displayName, sessionId);
         participantRefs = participantRefs == null ? List.of() : List.copyOf(participantRefs);
         encounterDays = encounterDays == null ? EncounterDays.one() : encounterDays;
         encounters = encounters == null ? List.of() : List.copyOf(encounters);
@@ -44,6 +46,7 @@ public record SessionPlan(
     ) {
         return new SessionPlan(
                 sessionId,
+                "Session #" + Math.max(1L, sessionId),
                 participantRefs,
                 encounterDays,
                 List.of(),
@@ -61,6 +64,21 @@ public record SessionPlan(
 
     public SessionPlan withStatus(String statusText) {
         return copy(participantRefs, encounterDays, encounters, restPlacements, lootPlaceholders, selectedEncounterId, statusText, nextEncounterId, nextLootId);
+    }
+
+    public SessionPlan rename(String nextDisplayName) {
+        return new SessionPlan(
+                sessionId,
+                normalizeDisplayName(nextDisplayName, sessionId),
+                participantRefs,
+                encounterDays,
+                encounters,
+                restPlacements,
+                lootPlaceholders,
+                selectedEncounterId,
+                "Session umbenannt.",
+                nextEncounterId,
+                nextLootId);
     }
 
     public SessionPlan addParticipant(long characterId) {
@@ -259,6 +277,7 @@ public record SessionPlan(
     ) {
         return new SessionPlan(
                 sessionId,
+                displayName,
                 participantRefs,
                 encounterDays,
                 encounters,
@@ -268,6 +287,13 @@ public record SessionPlan(
                 statusText,
                 nextEncounterId,
                 nextLootId);
+    }
+
+    private static String normalizeDisplayName(String name, long sessionId) {
+        if (name == null || name.isBlank()) {
+            return "Session #" + Math.max(1L, sessionId);
+        }
+        return name.trim();
     }
 
     private static int encounterIndex(List<SessionEncounter> encounters, long encounterId) {

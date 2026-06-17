@@ -2,6 +2,7 @@ package src.data.sessionplanner.model;
 
 public record SessionPlanRecord(
         long sessionId,
+        String displayName,
         String encounterDays,
         long selectedEncounterId,
         String statusText,
@@ -11,6 +12,9 @@ public record SessionPlanRecord(
 
     public SessionPlanRecord {
         sessionId = Math.max(1L, sessionId);
+        displayName = displayName == null || displayName.isBlank()
+                ? "Session #" + sessionId
+                : displayName.trim();
         encounterDays = encounterDays == null ? "1" : encounterDays.trim();
         selectedEncounterId = Math.max(0L, selectedEncounterId);
         statusText = statusText == null ? "" : statusText.trim();

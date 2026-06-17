@@ -21,6 +21,13 @@ final class DungeonEditorRuntimeServiceAssembly {
         return component(registry, publishedState).mapService();
     }
 
+    void initialize(
+            ServiceRegistry registry,
+            DungeonAuthoredPublishedStateServiceAssembly publishedState
+    ) {
+        component(registry, publishedState);
+    }
+
     DungeonEditorProjectionApplicationService projectionService(
             ServiceRegistry registry,
             DungeonAuthoredPublishedStateServiceAssembly publishedState

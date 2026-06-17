@@ -61,8 +61,9 @@ Current state:
 - the current planner binder reads the four published planner read models
   directly from the runtime service registry instead of loading readback
   through the root service
-- the current planner persistence stores exactly one current session record,
-  not a session list or explicit load UI
+- the current planner persistence stores multiple session records with a
+  user-visible session name, a current-session pointer, and explicit
+  create/open/rename/delete controls
 
 Target state:
 
@@ -115,8 +116,8 @@ Target state:
   registry instead of asking the root to load it
 - mutations enter through explicit planner workflows, not through mutable view
   state or direct foreign application-service calls from the view layer
-- the current persistence model keeps exactly one current session record rather
-  than a persisted session list
+- the current persistence model keeps a persisted session list plus a current
+  pointer used by the planner workspace
 
 ## Verification Notes
 

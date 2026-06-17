@@ -42,15 +42,23 @@ public final class LoadTravelDungeonSessionSurfaceUseCase {
         SurfaceData surface = TravelDungeonSessionProjectionMapper.toRuntimeSurface(
                 loadDungeonTravelSurfaceUseCase.execute(new LoadDungeonTravelSurfaceUseCase.Input(
                         TravelDungeonSessionProjectionMapper.toRuntimePositionFacts(effectivePosition))));
-        if (requestedTravelPosition == null
-                && activeTravel.partyLocation() == null
-                && !activeTravel.travelCharacterIds().isEmpty()) {
+        if (shouldSavePosition(requestedTravelPosition, activeTravel)) {
             boolean saved = partyPositionRepository.saveDungeonPosition(
                     surface.position(),
                     activeTravel.travelCharacterIds());
             return saved ? surface : failedInitialSaveSurface(surface);
         }
         return surface;
+    }
+
+    private static boolean shouldSavePosition(
+            @Nullable PositionData requestedTravelPosition,
+            ActiveTravelStateData activeTravel
+    ) {
+        if (activeTravel.travelCharacterIds().isEmpty()) {
+            return false;
+        }
+        return requestedTravelPosition != null || activeTravel.partyLocation() == null;
     }
 
     private static SurfaceData failedInitialSaveSurface(SurfaceData surface) {

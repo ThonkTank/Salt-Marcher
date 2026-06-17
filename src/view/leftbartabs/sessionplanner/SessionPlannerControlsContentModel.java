@@ -16,6 +16,7 @@ public final class SessionPlannerControlsContentModel {
     private static final String STYLE_BUDGET_OK = "session-planner-budget-ok";
     private static final String STYLE_BUDGET_OVER = "session-planner-budget-over";
     private static final String XP_SUFFIX = " XP";
+    private static final long NO_SESSION_ID = 0L;
 
     private final ReadOnlyObjectWrapper<Projection> projection =
             new ReadOnlyObjectWrapper<>(Projection.empty());
@@ -34,6 +35,10 @@ public final class SessionPlannerControlsContentModel {
     void applyParticipants(SessionPlannerParticipantsProjection projection) {
         participantsProjection = projection == null ? SessionPlannerParticipantsProjection.empty() : projection;
         refreshProjection();
+    }
+
+    boolean hasCurrentSession() {
+        return projection.get().session().hasCurrentSession();
     }
 
     private void refreshProjection() {
@@ -85,6 +90,7 @@ public final class SessionPlannerControlsContentModel {
                     snapshot == null ? SessionPlannerSessionSnapshot.empty("") : snapshot;
             SessionPlannerParticipantsProjection safeProjection =
                     projection == null ? SessionPlannerParticipantsProjection.empty() : projection;
+            boolean hasCurrentSession = safeSnapshot.session().sessionId() > NO_SESSION_ID;
             Set<Long> participantIds = safeProjection.participants().stream()
                     .map(SessionPlannerParticipantsProjection.SessionParticipant::characterId)
                     .collect(Collectors.toSet());
@@ -96,10 +102,13 @@ public final class SessionPlannerControlsContentModel {
                     mapRestAdvice(safeSnapshot.restAdvice()),
                     mapGold(safeSnapshot.goldBudget()),
                     safeSnapshot.availableEncounterPlans().stream()
-                            .map(Projection::mapAvailablePlan)
+                            .map(plan -> mapAvailablePlan(plan, hasCurrentSession))
                             .toList(),
                     safeProjection.activePartyMembers().stream()
-                            .map(member -> mapPartyMember(member, participantIds.contains(member.characterId())))
+                            .map(member -> mapPartyMember(
+                                    member,
+                                    participantIds.contains(member.characterId()),
+                                    hasCurrentSession))
                             .toList(),
                     safeProjection.participants().stream()
                             .map(Projection::mapSessionParticipant)
@@ -109,15 +118,19 @@ public final class SessionPlannerControlsContentModel {
         private static SessionModel mapSession(SessionPlannerSessionSnapshot.SessionState session) {
             SessionPlannerSessionSnapshot.SessionState safe =
                     session == null ? SessionPlannerSessionSnapshot.SessionState.empty() : session;
+            if (safe.sessionId() <= NO_SESSION_ID) {
+                return SessionModel.empty();
+            }
             String selectionText = safe.hasSelectedEncounter()
                     ? "Encounter fuer State-Panel ausgewaehlt"
                     : "Noch kein Encounter fuer State-Panel ausgewaehlt";
             return new SessionModel(
                     safe.sessionId(),
-                    "Session #" + Math.max(0L, safe.sessionId()),
+                    safe.displayName(),
                     safe.encounterDaysText(),
                     safe.hasSelectedEncounter(),
-                    selectionText);
+                    selectionText,
+                    false);
         }
 
         private static PartyModel mapParty(SessionPlannerParticipantsProjection.PartyState party) {
@@ -170,8 +183,10 @@ public final class SessionPlannerControlsContentModel {
         }
 
         private static AvailablePlanModel mapAvailablePlan(
-                SessionPlannerSessionSnapshot.AvailableEncounterPlan plan
+                SessionPlannerSessionSnapshot.AvailableEncounterPlan plan,
+                boolean hasCurrentSession
         ) {
+            boolean importEnabled = hasCurrentSession && plan.importEnabled();
             return new AvailablePlanModel(
                     plan.planId(),
                     plan.name(),
@@ -179,16 +194,18 @@ public final class SessionPlannerControlsContentModel {
                     plan.adjustedXp(),
                     plan.difficultyLabel(),
                     plan.statusText(),
-                    plan.importEnabled(),
+                    importEnabled,
                     "An Session anhaengen",
                     "accent",
-                    !plan.importEnabled());
+                    !importEnabled);
         }
 
         private static PartyMemberModel mapPartyMember(
                 SessionPlannerParticipantsProjection.ActivePartyMember member,
-                boolean alreadyInSession
+                boolean alreadyInSession,
+                boolean hasCurrentSession
         ) {
+            boolean actionDisabled = alreadyInSession || !hasCurrentSession;
             return new PartyMemberModel(
                     member.characterId(),
                     member.name(),
@@ -196,8 +213,8 @@ public final class SessionPlannerControlsContentModel {
                     alreadyInSession,
                     "Level " + member.level(),
                     alreadyInSession ? "Schon in Session" : "Hinzufuegen",
-                    alreadyInSession ? "flat" : "accent",
-                    alreadyInSession);
+                    actionDisabled ? "flat" : "accent",
+                    actionDisabled);
         }
 
         private static SessionParticipantModel mapSessionParticipant(
@@ -239,22 +256,28 @@ public final class SessionPlannerControlsContentModel {
                 String sessionIdText,
                 String encounterDaysText,
                 boolean hasSelectedEncounter,
-                String selectionText
+                String selectionText,
+                boolean sessionActionsDisabled
         ) {
 
             SessionModel {
                 sessionIdText = sessionIdText == null ? "" : sessionIdText;
-                encounterDaysText = encounterDaysText == null ? "1" : encounterDaysText;
+                encounterDaysText = encounterDaysText == null ? "" : encounterDaysText;
                 selectionText = selectionText == null ? "" : selectionText;
+            }
+
+            boolean hasCurrentSession() {
+                return sessionId > 0L;
             }
 
             static SessionModel empty() {
                 return new SessionModel(
                         0L,
-                        "Session #0",
-                        "1",
+                        "Keine Session",
+                        "",
                         false,
-                        "Noch kein Encounter fuer State-Panel ausgewaehlt");
+                        "Erstelle oder oeffne eine Session.",
+                        true);
             }
         }
 

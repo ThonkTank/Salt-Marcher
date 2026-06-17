@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
+import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
@@ -35,6 +36,9 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
         services.registerFactory(
                 SessionPlannerCurrentSessionModel.class,
                 registry -> resolver.apply(registry).currentSessionModel(registry));
+        services.registerFactory(
+                SessionPlannerCatalogModel.class,
+                registry -> resolver.apply(registry).catalogModel(registry));
         services.registerFactory(
                 SessionPlannerParticipantsModel.class,
                 registry -> resolver.apply(registry).participantsModel(registry));

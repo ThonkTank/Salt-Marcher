@@ -34,6 +34,9 @@ Before planning, implementing, refactoring, or reviewing a repo-tracked change:
    implementation or review work.
 7. Keep only the context that affects the current task. Link to canonical
    owners instead of copying their rules into new prose.
+8. When condensing or adding instructions, state the target behavior directly.
+   Use negative wording only for boundaries that the positive rule does not
+   already imply.
 
 ## Defaults
 
@@ -42,6 +45,8 @@ Before planning, implementing, refactoring, or reviewing a repo-tracked change:
 - Treat nearby implementation shape as `Candidate` until the owner document or
   skill says it is still the target shape.
 - Prefer deleting, linking, or splitting stale context before adding new text.
+- Prefer target-pattern wording over anti-pattern reminders when both would
+  steer the same behavior.
 - If a workflow repeats across `AGENTS.md`, `SKILL.md`, architecture standards,
   and verification docs, keep the protocol in one owner and reduce other
   surfaces to routing text. For implementation and review pass logs, the owner
@@ -54,7 +59,8 @@ Before planning, implementing, refactoring, or reviewing a repo-tracked change:
 For covered work, report context hygiene only when it affected the change:
 
 - `Owner-Proven`: name the owner document or skill that constrained the patch.
-- `Candidate/Suspect deferred`: name the content that was not used as authority.
+- `Candidate/Suspect excluded`: name the content that was not used as
+  authority.
 - `Context deduplicated`: name the surfaces where repeated protocol text was
   replaced by routing text.
 

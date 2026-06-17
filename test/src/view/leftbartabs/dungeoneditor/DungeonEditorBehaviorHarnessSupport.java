@@ -1677,7 +1677,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
     }
 
     static ButtonBase button(Parent parent, String text) {
-        return descendants(parent).stream()
+        return descendantsWithFallback(parent).stream()
                 .filter(ButtonBase.class::isInstance)
                 .map(ButtonBase.class::cast)
                 .filter(button -> text.equals(button.getText()))
@@ -1686,7 +1686,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
     }
 
     static ButtonBase buttonWithAccessibleText(Parent parent, String accessibleText) {
-        return descendants(parent).stream()
+        return descendantsWithFallback(parent).stream()
                 .filter(ButtonBase.class::isInstance)
                 .map(ButtonBase.class::cast)
                 .filter(button -> accessibleText.equals(button.getAccessibleText()))
@@ -1715,7 +1715,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
     }
 
     static TextField textField(Parent parent, String accessibleText) {
-        return descendants(parent).stream()
+        return descendantsWithFallback(parent).stream()
                 .filter(TextField.class::isInstance)
                 .map(TextField.class::cast)
                 .filter(field -> accessibleText.equals(field.getAccessibleText()))
@@ -1724,7 +1724,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
     }
 
     static boolean textFieldPresent(Parent parent, String accessibleText) {
-        return descendants(parent).stream()
+        return descendantsWithFallback(parent).stream()
                 .filter(TextField.class::isInstance)
                 .map(TextField.class::cast)
                 .anyMatch(field -> accessibleText.equals(field.getAccessibleText()));
@@ -1774,7 +1774,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
     }
 
     static ComboBox<?> comboBox(Parent parent, String accessibleText) {
-        return descendants(parent).stream()
+        return descendantsWithFallback(parent).stream()
                 .filter(ComboBox.class::isInstance)
                 .map(ComboBox.class::cast)
                 .filter(box -> accessibleText.equals(box.getAccessibleText()))
@@ -1867,6 +1867,21 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         return nodes;
     }
 
+    private static List<Node> descendantsWithFallback(Parent parent) {
+        List<Node> localNodes = descendants(parent);
+        Parent wrapper = parent.getParent();
+        if (wrapper == null || wrapper.getChildrenUnmodifiable().size() <= 1) {
+            return localNodes;
+        }
+        List<Node> wrapperNodes = new ArrayList<>(localNodes);
+        for (Node node : descendants(wrapper)) {
+            if (!wrapperNodes.contains(node)) {
+                wrapperNodes.add(node);
+            }
+        }
+        return wrapperNodes;
+    }
+
     static <T extends Node> T descendant(Parent parent, Class<T> type) {
         return descendants(parent).stream()
                 .filter(type::isInstance)
@@ -1901,12 +1916,12 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
 
     static HarnessBinding bindHarness(HarnessRuntime runtime, double width, double height) {
         ShellBinding shellBinding = new DungeonEditorContribution().bind(runtime.context());
-        DungeonEditorControlsView controls =
-                slot(shellBinding, ShellSlot.COCKPIT_CONTROLS, DungeonEditorControlsView.class);
+        Parent controlsRoot = slot(shellBinding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+        DungeonEditorControlsView controls = descendant(controlsRoot, DungeonEditorControlsView.class);
         DungeonMapView mapView = slot(shellBinding, ShellSlot.COCKPIT_MAIN, DungeonMapView.class);
         DungeonEditorStateView stateView = slot(shellBinding, ShellSlot.COCKPIT_STATE, DungeonEditorStateView.class);
         Stage stage = new Stage();
-        HBox root = new HBox(controls, mapView, stateView);
+        HBox root = new HBox(controlsRoot, mapView, stateView);
         stage.setScene(new Scene(root, width, height));
         stage.show();
         root.applyCss();

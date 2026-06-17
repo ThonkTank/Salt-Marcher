@@ -29,6 +29,27 @@ final class SessionPlanSqliteWrites {
         }
     }
 
+    void renameSession(Connection connection, long sessionId, String displayName) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "UPDATE "
+                        + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
+                        + " SET display_name = ?, updated_at = CURRENT_TIMESTAMP WHERE session_id = ?")) {
+            statement.setString(1, displayName == null ? "" : displayName.trim());
+            statement.setLong(2, sessionId);
+            statement.executeUpdate();
+        }
+    }
+
+    void deleteSession(Connection connection, long sessionId) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "DELETE FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
+                        + " WHERE session_id = ?")) {
+            statement.setLong(1, sessionId);
+            statement.executeUpdate();
+        }
+    }
+
     void savePlan(Connection connection, SessionPlanRecord plan) throws SQLException {
         if (existsPlan(connection, plan.sessionId())) {
             updatePlan(connection, plan);
@@ -77,14 +98,15 @@ final class SessionPlanSqliteWrites {
                 INSERT_INTO
                         + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
                         + " "
-                        + "(session_id, encounter_days, selected_encounter_id, status_text, "
-                        + "next_encounter_id, next_loot_id) VALUES (?, ?, ?, ?, ?, ?)")) {
+                        + "(session_id, display_name, encounter_days, selected_encounter_id, status_text, "
+                        + "next_encounter_id, next_loot_id) VALUES (?, ?, ?, ?, ?, ?, ?)")) {
             statement.setLong(1, plan.sessionId());
-            statement.setString(2, plan.encounterDays());
-            statement.setLong(3, plan.selectedEncounterId());
-            statement.setString(4, plan.statusText());
-            statement.setLong(5, plan.nextEncounterId());
-            statement.setLong(6, plan.nextLootId());
+            statement.setString(2, plan.displayName());
+            statement.setString(3, plan.encounterDays());
+            statement.setLong(4, plan.selectedEncounterId());
+            statement.setString(5, plan.statusText());
+            statement.setLong(6, plan.nextEncounterId());
+            statement.setLong(7, plan.nextLootId());
             statement.executeUpdate();
         }
     }
@@ -94,15 +116,16 @@ final class SessionPlanSqliteWrites {
                 "UPDATE "
                         + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
                         + " "
-                        + "SET encounter_days = ?, selected_encounter_id = ?, status_text = ?, "
+                        + "SET display_name = ?, encounter_days = ?, selected_encounter_id = ?, status_text = ?, "
                         + "next_encounter_id = ?, next_loot_id = ?, updated_at = CURRENT_TIMESTAMP "
                         + "WHERE session_id = ?")) {
-            statement.setString(1, plan.encounterDays());
-            statement.setLong(2, plan.selectedEncounterId());
-            statement.setString(3, plan.statusText());
-            statement.setLong(4, plan.nextEncounterId());
-            statement.setLong(5, plan.nextLootId());
-            statement.setLong(6, plan.sessionId());
+            statement.setString(1, plan.displayName());
+            statement.setString(2, plan.encounterDays());
+            statement.setLong(3, plan.selectedEncounterId());
+            statement.setString(4, plan.statusText());
+            statement.setLong(5, plan.nextEncounterId());
+            statement.setLong(6, plan.nextLootId());
+            statement.setLong(7, plan.sessionId());
             statement.executeUpdate();
         }
     }

@@ -12,6 +12,7 @@ import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
+import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
@@ -40,6 +41,10 @@ final class SessionPlannerPublishedStateServiceAssembly {
 
     SessionPlannerCurrentSessionModel currentSessionModel(ServiceRegistry services) {
         return create(services).currentSessionModel();
+    }
+
+    SessionPlannerCatalogModel catalogModel(ServiceRegistry services) {
+        return create(services).catalogModel();
     }
 
     SessionPlannerParticipantsModel participantsModel(ServiceRegistry services) {

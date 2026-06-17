@@ -38,6 +38,7 @@ public record SessionPlannerSessionSnapshot(
 
     public record SessionState(
             long sessionId,
+            String displayName,
             BigDecimal encounterDays,
             String encounterDaysText,
             long selectedEncounterId,
@@ -46,13 +47,16 @@ public record SessionPlannerSessionSnapshot(
 
         public SessionState {
             sessionId = Math.max(0L, sessionId);
+            displayName = displayName == null || displayName.isBlank()
+                    ? "Session #" + sessionId
+                    : displayName.trim();
             encounterDays = encounterDays == null ? BigDecimal.ONE : encounterDays;
             encounterDaysText = encounterDaysText == null ? encounterDays.stripTrailingZeros().toPlainString() : encounterDaysText;
             selectedEncounterId = Math.max(0L, selectedEncounterId);
         }
 
         public static SessionState empty() {
-            return new SessionState(0L, BigDecimal.ONE, "1", 0L, false);
+            return new SessionState(0L, "Session #0", BigDecimal.ONE, "1", 0L, false);
         }
     }
 

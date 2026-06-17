@@ -3,8 +3,13 @@ package src.domain.dungeon.model.core.structure.door;
 import java.util.ArrayList;
 import java.util.List;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
+import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
+import src.domain.dungeon.model.core.structure.room.RoomCellCoverage;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterDoorBoundaryMove;
 
 final class DoorBoundaryMovedCluster {
@@ -26,6 +31,40 @@ final class DoorBoundaryMovedCluster {
                 context.newBinding().relativeCell(),
                 context.newBinding().direction(),
                 context.expectedTopologyRef()));
+    }
+
+    DungeonRoomCluster movedStandaloneDoor(
+            DungeonRoomCluster cluster,
+            DungeonClusterBoundary oldDoorBoundary,
+            Edge nextDoorEdge,
+            DungeonTopologyRef topologyRef,
+            List<DungeonRoom> rooms
+    ) {
+        RoomClusterBoundaryMaterialization.BoundaryRow materialized =
+                RoomClusterBoundaryMaterialization.forEdge(
+                        new RoomCellCoverage().clusterCells(cluster, rooms, nextDoorEdge.from().level()),
+                        cluster.center(),
+                        cluster.clusterId(),
+                        nextDoorEdge,
+                        RoomClusterBoundaryMaterialization.BoundaryKind.DOOR);
+        if (materialized == null) {
+            return cluster;
+        }
+        DoorIndex doorIndex = DoorIndex.from(boundaryDoors(cluster));
+        Door movedDoor = new Door(
+                topologyRef.id(),
+                0L,
+                cluster.clusterId(),
+                materialized.relativeCell(),
+                materialized.direction());
+        if (!doorIndex.canMoveDoor(boundaryDoor(oldDoorBoundary, cluster.center()), movedDoor)) {
+            return cluster;
+        }
+        return cluster.withMovedDoorBoundary(new RoomClusterDoorBoundaryMove(
+                oldDoorBoundary,
+                materialized.relativeCell(),
+                materialized.direction(),
+                topologyRef));
     }
 
     private static List<Door> boundaryDoors(DungeonRoomCluster cluster) {

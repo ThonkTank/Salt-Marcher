@@ -75,13 +75,22 @@ public final class DungeonEditorHandleMutation {
             int deltaLevel
     ) {
         if (handle.kind().isDoor()) {
-            return current.moveDoorBinding(
-                    handle.corridorId(),
-                    handle.index(),
-                    handle.roomId(),
-                    deltaQ,
-                    deltaR,
-                    deltaLevel);
+            return handle.corridorId() > 0L
+                    ? current.moveDoorBinding(
+                            handle.corridorId(),
+                            handle.index(),
+                            handle.roomId(),
+                            deltaQ,
+                            deltaR,
+                            deltaLevel)
+                    : current.moveDoorBoundary(
+                            handle.topologyRef(),
+                            clusterId(current, handle),
+                            handle.roomId(),
+                            sourceEdge(handle),
+                            deltaQ,
+                            deltaR,
+                            deltaLevel);
         }
         if (handle.kind().isCorridorAnchor()) {
             return current.moveCorridorAnchor(

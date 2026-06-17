@@ -61,6 +61,7 @@ final class CatalogBinder {
         models.builderInputs().subscribe(intentHandler::applyEncounterBuilderInputs);
 
         presentationModel.controlsContentModel().applyCreatureFilterOptions(models.filterOptions().current());
+        presentationModel.mainContentModel().applySearchResult(models.catalog().current());
         presentationModel.controlsContentModel().applyEncounterTables(models.encounterTables().current());
         presentationModel.controlsContentModel().applyEncounterTuningPreview(models.tuningPreview().current().labels());
         intentHandler.applyEncounterBuilderInputs(models.builderInputs().current());

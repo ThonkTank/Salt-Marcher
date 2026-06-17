@@ -23,9 +23,14 @@ public final class CreateSessionPlanUseCase {
         this.seedSessionPlanUseCase = Objects.requireNonNull(seedSessionPlanUseCase, "seedSessionPlanUseCase");
     }
 
-    public void execute() {
+    public void execute(String displayName) {
+        String requestedName = displayName == null ? "" : displayName.trim();
+        var seeded = seedSessionPlanUseCase.execute(nextSessionId());
+        if (!requestedName.isBlank()) {
+            seeded = seeded.rename(requestedName);
+        }
         saveCurrentSessionPlanUseCase.executeNewCurrent(
-                seedSessionPlanUseCase.execute(nextSessionId()).withStatus("Neue Session erstellt."));
+                seeded.withStatus("Neue Session erstellt."));
     }
 
     private long nextSessionId() {

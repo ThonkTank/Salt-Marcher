@@ -748,7 +748,12 @@ final class DungeonEditorRoomWallDoorHarness {
         var roomArea = roomAreaByLabel(loadedSurface, "R1", "DE-SEL-009");
         DungeonEditorTopologyElementRef roomRef = roomArea.topologyRef();
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-        Point2D labelCenter = labelCenterForRef(binding.mapContentModel(), roomRef);
+        DungeonEditorHandleSnapshot clusterLabel = loadedSurface.surface().map().editorHandles().stream()
+                .filter(handle -> handle.ref().kind() == DungeonEditorHandleKind.CLUSTER_LABEL)
+                .filter(handle -> handle.ref().clusterId() == roomIds.clusterId())
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("DE-SEL-009 cluster label not published"));
+        Point2D labelCenter = new Point2D(clusterLabel.cell().q() + 0.5, clusterLabel.cell().r() + 0.5);
 
         fireMapMouse(
                 mapView,

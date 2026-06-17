@@ -31,9 +31,9 @@ public final class DungeonEditorSessionWorkflow {
                     .clearSelection()
                     .clearTransientState("Dungeon-Map erstellt.");
             case MAP_RENAMED -> session.current().withSelectedMap(mapId).withStatusText("Dungeon-Map umbenannt.");
-            case MAP_DELETED -> (mapId != null && mapId.equals(session.current().selectedMapId())
-                    ? session.current().withSelectedMap(null)
-                    : session.current()).clearSelection().clearTransientState("Dungeon-Map gelöscht.");
+            case MAP_DELETED -> session.current().withSelectedMap(mapId)
+                    .clearSelection()
+                    .clearTransientState("Dungeon-Map gelöscht.");
             default -> session.current();
         });
     }

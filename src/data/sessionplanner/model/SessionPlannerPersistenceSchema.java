@@ -20,6 +20,7 @@ public final class SessionPlannerPersistenceSchema {
     public static final String CREATE_SESSION_PLANS_SQL =
             CREATE_TABLE_IF_NOT_EXISTS + SESSION_PLANS_TABLE + " ("
                     + "session_id INTEGER PRIMARY KEY, "
+                    + "display_name TEXT NOT NULL DEFAULT '', "
                     + "encounter_days TEXT NOT NULL, "
                     + "selected_encounter_id INTEGER NOT NULL DEFAULT 0, "
                     + "status_text TEXT NOT NULL DEFAULT '', "

@@ -7,12 +7,14 @@ import java.util.Map;
 import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.corridor.RoomClusterCorridorMovement;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
 /**
  * Owns authored movement of a whole room cluster and its room anchors.
  */
 public final class RoomClusterMovement {
+    private static final RoomClusterCorridorMovement CORRIDOR_MOVEMENT = new RoomClusterCorridorMovement();
 
     public DungeonMap moveCluster(DungeonMap dungeonMap, long clusterId, int deltaQ, int deltaR, int deltaLevel) {
         DungeonMap target = Objects.requireNonNull(dungeonMap, "dungeonMap");
@@ -24,7 +26,7 @@ public final class RoomClusterMovement {
         if (nextTopology.equals(target.topology()) && nextRooms.equals(target.rooms())) {
             return target;
         }
-        return new DungeonMap(
+        DungeonMap clusterMovedMap = new DungeonMap(
                 target.metadata(),
                 nextTopology,
                 target.topologyIndex(),
@@ -33,6 +35,7 @@ public final class RoomClusterMovement {
                 target.stairs(),
                 target.transitionCatalog(),
                 target.revision() + 1L);
+        return CORRIDOR_MOVEMENT.moveAffectedCorridors(target, clusterMovedMap);
     }
 
     private static SpatialTopology moveTopologyCluster(

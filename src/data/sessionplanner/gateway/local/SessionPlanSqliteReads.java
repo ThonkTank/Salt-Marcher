@@ -8,17 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import src.data.sessionplanner.model.CurrentSessionPointerRecord;
-import src.data.sessionplanner.model.SessionEncounterRecord;
-import src.data.sessionplanner.model.SessionLootPlaceholderRecord;
-import src.data.sessionplanner.model.SessionParticipantRecord;
 import src.data.sessionplanner.model.SessionPlanRecord;
 import src.data.sessionplanner.model.SessionPlanSnapshotRecord;
-import src.data.sessionplanner.model.SessionRestPlacementRecord;
 import src.data.sessionplanner.model.SessionPlannerPersistenceSchema;
 
 final class SessionPlanSqliteReads {
 
-    private static final String SORT_ORDER = "sort_order";
+    private final SessionPlanSqliteDetailReads detailReads = new SessionPlanSqliteDetailReads();
 
     long nextSessionId(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
@@ -41,10 +37,25 @@ final class SessionPlanSqliteReads {
         }
         return Optional.of(new SessionPlanSnapshotRecord(
                 plan.get(),
-                loadParticipants(connection, sessionId),
-                loadEncounters(connection, sessionId),
-                loadRests(connection, sessionId),
-                loadLootPlaceholders(connection, sessionId)));
+                detailReads.loadParticipants(connection, sessionId),
+                detailReads.loadEncounters(connection, sessionId),
+                detailReads.loadRests(connection, sessionId),
+                detailReads.loadLootPlaceholders(connection, sessionId)));
+    }
+
+    List<SessionPlanRecord> listSessions(Connection connection) throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT session_id, display_name, encounter_days, selected_encounter_id, status_text, "
+                        + "next_encounter_id, next_loot_id FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE
+                        + " ORDER BY LOWER(display_name), session_id");
+                ResultSet resultSet = statement.executeQuery()) {
+            List<SessionPlanRecord> sessions = new ArrayList<>();
+            while (resultSet.next()) {
+                sessions.add(planRecord(resultSet));
+            }
+            return List.copyOf(sessions);
+        }
     }
 
     private Optional<CurrentSessionPointerRecord> loadCurrentPointer(Connection connection) throws SQLException {
@@ -63,99 +74,28 @@ final class SessionPlanSqliteReads {
 
     private Optional<SessionPlanRecord> loadPlan(Connection connection, long sessionId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT session_id, encounter_days, selected_encounter_id, status_text, next_encounter_id, next_loot_id "
+                "SELECT session_id, display_name, encounter_days, selected_encounter_id, status_text, "
+                        + "next_encounter_id, next_loot_id "
                         + "FROM " + SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE + " WHERE session_id = ?")) {
             statement.setLong(1, sessionId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 if (!resultSet.next()) {
                     return Optional.empty();
                 }
-                return Optional.of(new SessionPlanRecord(
-                        resultSet.getLong("session_id"),
-                        resultSet.getString("encounter_days"),
-                        resultSet.getLong("selected_encounter_id"),
-                        resultSet.getString("status_text"),
-                        resultSet.getLong("next_encounter_id"),
-                        resultSet.getLong("next_loot_id")));
+                return Optional.of(planRecord(resultSet));
             }
         }
     }
 
-    private List<SessionParticipantRecord> loadParticipants(Connection connection, long sessionId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT character_id, sort_order FROM "
-                        + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS_TABLE
-                        + " WHERE session_id = ? ORDER BY sort_order, character_id")) {
-            statement.setLong(1, sessionId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<SessionParticipantRecord> participants = new ArrayList<>();
-                while (resultSet.next()) {
-                    participants.add(new SessionParticipantRecord(
-                            resultSet.getLong("character_id"),
-                            resultSet.getInt(SORT_ORDER)));
-                }
-                return participants;
-            }
-        }
+    private static SessionPlanRecord planRecord(ResultSet resultSet) throws SQLException {
+        return new SessionPlanRecord(
+                resultSet.getLong("session_id"),
+                resultSet.getString("display_name"),
+                resultSet.getString("encounter_days"),
+                resultSet.getLong("selected_encounter_id"),
+                resultSet.getString("status_text"),
+                resultSet.getLong("next_encounter_id"),
+                resultSet.getLong("next_loot_id"));
     }
 
-    private List<SessionEncounterRecord> loadEncounters(Connection connection, long sessionId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT encounter_id, encounter_plan_id, budget_percentage, sort_order "
-                        + "FROM " + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE + " "
-                        + "WHERE session_id = ? ORDER BY sort_order, encounter_id")) {
-            statement.setLong(1, sessionId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<SessionEncounterRecord> encounters = new ArrayList<>();
-                while (resultSet.next()) {
-                    encounters.add(new SessionEncounterRecord(
-                            resultSet.getLong("encounter_id"),
-                            resultSet.getLong("encounter_plan_id"),
-                            resultSet.getString("budget_percentage"),
-                            resultSet.getInt(SORT_ORDER)));
-                }
-                return encounters;
-            }
-        }
-    }
-
-    private List<SessionRestPlacementRecord> loadRests(Connection connection, long sessionId) throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT left_encounter_id, right_encounter_id, rest_kind, sort_order "
-                        + "FROM " + SessionPlannerPersistenceSchema.SESSION_RESTS_TABLE + " "
-                        + "WHERE session_id = ? ORDER BY sort_order, left_encounter_id, right_encounter_id")) {
-            statement.setLong(1, sessionId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<SessionRestPlacementRecord> rests = new ArrayList<>();
-                while (resultSet.next()) {
-                    rests.add(new SessionRestPlacementRecord(
-                            resultSet.getLong("left_encounter_id"),
-                            resultSet.getLong("right_encounter_id"),
-                            resultSet.getString("rest_kind"),
-                            resultSet.getInt(SORT_ORDER)));
-                }
-                return rests;
-            }
-        }
-    }
-
-    private List<SessionLootPlaceholderRecord> loadLootPlaceholders(Connection connection, long sessionId)
-            throws SQLException {
-        try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT loot_id, label, sort_order FROM "
-                        + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
-                        + " WHERE session_id = ? ORDER BY sort_order, loot_id")) {
-            statement.setLong(1, sessionId);
-            try (ResultSet resultSet = statement.executeQuery()) {
-                List<SessionLootPlaceholderRecord> lootPlaceholders = new ArrayList<>();
-                while (resultSet.next()) {
-                    lootPlaceholders.add(new SessionLootPlaceholderRecord(
-                            resultSet.getLong("loot_id"),
-                            resultSet.getString("label"),
-                            resultSet.getInt(SORT_ORDER)));
-                }
-                return lootPlaceholders;
-            }
-        }
-    }
 }

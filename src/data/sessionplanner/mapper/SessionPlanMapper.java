@@ -25,6 +25,7 @@ public final class SessionPlanMapper {
         return new SessionPlanSnapshotRecord(
                 new SessionPlanRecord(
                         plan.sessionId(),
+                        plan.displayName(),
                         plan.encounterDays().displayText(),
                         plan.selectedEncounterId(),
                         plan.statusText(),
@@ -40,6 +41,7 @@ public final class SessionPlanMapper {
         SessionPlanRecord plan = snapshot.plan();
         return new SessionPlan(
                 plan.sessionId(),
+                plan.displayName(),
                 snapshot.participants().stream()
                         .map(SessionParticipantRecord::characterId)
                         .toList(),

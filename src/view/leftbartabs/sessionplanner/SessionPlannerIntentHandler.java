@@ -12,11 +12,14 @@ import src.domain.sessionplanner.published.AttachSessionEncounterCommand;
 import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
 import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
 import src.domain.sessionplanner.published.SessionPlannerActionCommand;
+import src.domain.sessionplanner.published.SessionPlannerCatalogCommand;
 import src.domain.sessionplanner.published.SessionPlannerEncounterAllocationCommand;
 import src.domain.sessionplanner.published.SessionPlannerEncounterCommand;
 import src.domain.sessionplanner.published.SessionPlannerParticipantCommand;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent;
 
 final class SessionPlannerIntentHandler {
 
@@ -29,27 +32,33 @@ final class SessionPlannerIntentHandler {
     private final SessionPlannerEncounterApplicationService encounters;
     private final SessionPlannerRestApplicationService rests;
     private final SessionPlannerLootApplicationService loot;
+    private final SessionPlannerControlsContentModel controlsContentModel;
+    private final CatalogCrudControlsContentModel catalogContentModel;
 
     SessionPlannerIntentHandler(
             SessionPlannerApplicationService planner,
             SessionPlannerParticipantApplicationService participants,
             SessionPlannerEncounterApplicationService encounters,
             SessionPlannerRestApplicationService rests,
-            SessionPlannerLootApplicationService loot
+            SessionPlannerLootApplicationService loot,
+            SessionPlannerControlsContentModel controlsContentModel,
+            CatalogCrudControlsContentModel catalogContentModel
     ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.participants = Objects.requireNonNull(participants, "participants");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
         this.rests = Objects.requireNonNull(rests, "rests");
         this.loot = Objects.requireNonNull(loot, "loot");
+        this.controlsContentModel = Objects.requireNonNull(controlsContentModel, "controlsContentModel");
+        this.catalogContentModel = Objects.requireNonNull(catalogContentModel, "catalogContentModel");
     }
 
     void consume(SessionPlannerControlsViewInputEvent event) {
         if (event == null) {
             return;
         }
-        if (event.createSessionRequested()) {
-            createSession();
+        if (!controlsContentModel.hasCurrentSession()) {
+            return;
         }
         if (hasPositiveId(event.participantToAddId())) {
             addParticipant(event.participantToAddId());
@@ -67,24 +76,40 @@ final class SessionPlannerIntentHandler {
     }
 
     void consume(SessionPlannerTimelineMainViewInputEvent event) {
-        if (event == null) {
+        if (event == null || !controlsContentModel.hasCurrentSession()) {
             return;
         }
+        consumeTimelineSelection(event);
+        consumeTimelineMutation(event);
+        consumeTimelineRest(event);
+        consumeTimelineLoot(event);
+    }
+
+    private void consumeTimelineSelection(SessionPlannerTimelineMainViewInputEvent event) {
         if (hasPositiveId(event.selectedEncounterToken())) {
             selectEncounter(event.selectedEncounterToken());
         }
         if (hasPositiveId(event.allocationEncounterToken())) {
             setEncounterAllocation(event.allocationEncounterToken(), event.targetAllocationPercentage());
         }
+    }
+
+    private void consumeTimelineMutation(SessionPlannerTimelineMainViewInputEvent event) {
         if (hasPositiveId(event.moveEncounterToken())) {
             applyMove(event.moveEncounterToken(), event.moveDirection());
         }
         if (hasPositiveId(event.encounterTokenToRemove())) {
             removeEncounter(event.encounterTokenToRemove());
         }
+    }
+
+    private void consumeTimelineRest(SessionPlannerTimelineMainViewInputEvent event) {
         if (isResolvedGap(event.restLeftEncounterId(), event.restRightEncounterId())) {
             applyRestGap(event.restLeftEncounterId(), event.restRightEncounterId(), event.restSelection());
         }
+    }
+
+    private void consumeTimelineLoot(SessionPlannerTimelineMainViewInputEvent event) {
         if (event.addLootPlaceholderRequested()) {
             addLootPlaceholder();
         }
@@ -95,6 +120,14 @@ final class SessionPlannerIntentHandler {
 
     private static boolean hasPositiveId(long id) {
         return id > 0L;
+    }
+
+    private static long parsePositiveLong(String raw) {
+        try {
+            return Math.max(0L, Long.parseLong(raw));
+        } catch (NumberFormatException exception) {
+            return 0L;
+        }
     }
 
     private static boolean isResolvedGap(long leftEncounterId, long rightEncounterId) {
@@ -122,8 +155,69 @@ final class SessionPlannerIntentHandler {
         }
     }
 
-    private void createSession() {
-        planner.createSession(SessionPlannerActionCommand.createSession());
+    void consume(CatalogCrudControlsViewInputEvent event) {
+        if (event == null) {
+            return;
+        }
+        if (consumeCatalogSelection(event)) {
+            return;
+        }
+        if (consumeCatalogSubmit(event)) {
+            return;
+        }
+        consumeCatalogEditor(event);
+    }
+
+    private boolean consumeCatalogSelection(CatalogCrudControlsViewInputEvent event) {
+        if (!event.selectedItemId().isBlank()) {
+            catalogContentModel.selectItem(event.selectedItemId());
+            selectSession(parsePositiveLong(event.selectedItemId()));
+            return true;
+        }
+        return false;
+    }
+
+    private boolean consumeCatalogSubmit(CatalogCrudControlsViewInputEvent event) {
+        if (!event.createDraftName().isBlank()) {
+            catalogContentModel.closeOperation();
+            planner.createSession(new SessionPlannerCatalogCommand.CreateSessionCommand(event.createDraftName()));
+            return true;
+        }
+        if (!event.renameItemId().isBlank() && !event.renameDraftName().isBlank()) {
+            catalogContentModel.closeOperation();
+            planner.renameSession(new SessionPlannerCatalogCommand.RenameSessionCommand(
+                    parsePositiveLong(event.renameItemId()),
+                    event.renameDraftName()));
+            return true;
+        }
+        if (!event.deleteConfirmItemId().isBlank()) {
+            catalogContentModel.closeOperation();
+            planner.deleteSession(new SessionPlannerCatalogCommand.DeleteSessionCommand(parsePositiveLong(event.deleteConfirmItemId())));
+            return true;
+        }
+        return false;
+    }
+
+    private void consumeCatalogEditor(CatalogCrudControlsViewInputEvent event) {
+        if (event.createEditorOpened()) {
+            catalogContentModel.openCreate();
+            return;
+        }
+        if (!event.renameEditorItemId().isBlank()) {
+            catalogContentModel.openRename(event.renameEditorItemId());
+            return;
+        }
+        if (!event.deleteRequestItemId().isBlank()) {
+            catalogContentModel.openDelete(event.deleteRequestItemId());
+            return;
+        }
+        if (event.dismissed()) {
+            catalogContentModel.closeOperation();
+        }
+    }
+
+    private void selectSession(long sessionId) {
+        planner.selectSession(new SessionPlannerCatalogCommand.SelectSessionCommand(sessionId));
     }
 
     private void addParticipant(long characterId) {

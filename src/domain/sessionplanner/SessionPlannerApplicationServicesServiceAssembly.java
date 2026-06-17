@@ -28,7 +28,18 @@ final class SessionPlannerApplicationServicesServiceAssembly {
                 new src.domain.sessionplanner.model.session.usecase.CreateSessionPlanUseCase(
                         runtime.repository,
                         runtime.saveCurrentSessionPlanUseCase,
-                        runtime.seedSessionPlanUseCase));
+                        runtime.seedSessionPlanUseCase),
+                new src.domain.sessionplanner.model.session.usecase.SelectSessionPlanUseCase(
+                        runtime.repository,
+                        runtime.publishedStateRepository),
+                new src.domain.sessionplanner.model.session.usecase.RenameSessionPlanUseCase(
+                        runtime.repository,
+                        runtime.publishedStateRepository),
+                new src.domain.sessionplanner.model.session.usecase.DeleteSessionPlanUseCase(
+                        runtime.repository,
+                        runtime.saveCurrentSessionPlanUseCase,
+                        runtime.seedSessionPlanUseCase,
+                        runtime.publishedStateRepository));
     }
 
     SessionPlannerParticipantApplicationService createParticipants(ServiceRegistry services) {
@@ -119,7 +130,8 @@ final class SessionPlannerApplicationServicesServiceAssembly {
                 repository,
                 loadCurrentSessionPlanUseCase,
                 saveCurrentSessionPlanUseCase,
-                seedSessionPlanUseCase);
+                seedSessionPlanUseCase,
+                publishedState.create(services));
     }
 
     private static final class UseCaseRuntime {
@@ -130,6 +142,8 @@ final class SessionPlannerApplicationServicesServiceAssembly {
         private final src.domain.sessionplanner.model.session.usecase.SaveCurrentSessionPlanUseCase
                 saveCurrentSessionPlanUseCase;
         private final src.domain.sessionplanner.model.session.usecase.SeedSessionPlanUseCase seedSessionPlanUseCase;
+        private final src.domain.sessionplanner.model.session.repository.SessionPlannerPublishedStateRepository
+                publishedStateRepository;
 
         private UseCaseRuntime(
                 SessionPlanRepository repository,
@@ -137,12 +151,15 @@ final class SessionPlannerApplicationServicesServiceAssembly {
                         loadCurrentSessionPlanUseCase,
                 src.domain.sessionplanner.model.session.usecase.SaveCurrentSessionPlanUseCase
                         saveCurrentSessionPlanUseCase,
-                src.domain.sessionplanner.model.session.usecase.SeedSessionPlanUseCase seedSessionPlanUseCase
+                src.domain.sessionplanner.model.session.usecase.SeedSessionPlanUseCase seedSessionPlanUseCase,
+                src.domain.sessionplanner.model.session.repository.SessionPlannerPublishedStateRepository
+                        publishedStateRepository
         ) {
             this.repository = repository;
             this.loadCurrentSessionPlanUseCase = loadCurrentSessionPlanUseCase;
             this.saveCurrentSessionPlanUseCase = saveCurrentSessionPlanUseCase;
             this.seedSessionPlanUseCase = seedSessionPlanUseCase;
+            this.publishedStateRepository = publishedStateRepository;
         }
     }
 }

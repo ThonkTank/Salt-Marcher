@@ -105,8 +105,8 @@ commit supported mutations without inventing a second authored state source.
   direction, and exit-level configuration
 - transition editing MUST support visible create and delete flows plus
   destination selection for dungeon or overworld outcomes
-- cluster and room naming MUST support default names plus user-authored custom
-  names through the state panel and direct label editing
+- cluster and room naming MUST support default and custom names through the
+  state panel; only cluster labels may also use direct label editing
 
 ## Supported Interaction States
 
@@ -139,8 +139,8 @@ commit supported mutations without inventing a second authored state source.
 - stair create and delete flows with visible shape and exit configuration
 - transition create and delete flows with description, destination, and
   bidirectional-link options
-- custom cluster and room name editing through state-panel fields and direct
-  map-label editing
+- custom cluster name editing through state-panel fields and direct map-label
+  editing; custom room name editing through state-panel fields
 - grid and graph projection modes
 - level and overlay controls that affect presentation only
 
@@ -206,9 +206,8 @@ evidenced in the sibling repo.
 - a cluster with no user-authored name defaults to `Cluster <clusterId>` on the
   map surface, and its label is centered in the cluster's authored floor-cell
   centroid rather than using the first room name or bounding-box midpoint
-- a room with no user-authored name defaults to `Raum <roomId>`; its map label
-  renders as subdued floor text parallel to the longest available wall run of
-  that room rather than as a cluster-style label handle
+- a room with no user-authored name defaults to `Raum <roomId>`; its passive
+  map label renders as subdued floor text parallel to the longest wall run
 - cluster and room custom names persist as authored editor behavior and remain
   visible after reload
 
@@ -326,7 +325,8 @@ Delete and corridor binding behavior:
   midpoints for complex shapes; moving a corner or wall run preserves cluster
   identity and recomputes affected geometry atomically.
 - Cluster and room labels use the required default text, placement, custom-name
-  edit routes, and reload stability.
+  persistence, and reload stability; only cluster labels are direct map-label
+  edit targets.
 - Corridor creation accepts room-to-room, room-to-corridor, and
   corridor-to-corridor flows, but commits only after a valid full route between
   two explicit authored endpoints; preview endpoint materialization has no

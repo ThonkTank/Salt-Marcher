@@ -14,7 +14,7 @@ final class DungeonServiceAssembly {
 
     void register(ServiceRegistry.Builder services) {
         services.registerFactory(DungeonTravelRuntimeApplicationService.class, travelRuntime::service);
-        authoredPublishedState.registerModels(services);
+        authoredPublishedState.registerModels(services, editorRuntime);
         services.registerFactory(src.domain.dungeon.published.TravelDungeonModel.class, travelRuntime::travelModel);
         services.registerFactory(
                 DungeonEditorMapApplicationService.class,

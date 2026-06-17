@@ -31,6 +31,14 @@ public record ApplyTravelDungeonSessionCommand(
                 DungeonOverlaySettings.defaults());
     }
 
+    public static ApplyTravelDungeonSessionCommand selectMap(long mapId) {
+        return new ApplyTravelDungeonSessionCommand(
+                Action.SELECT_MAP,
+                Long.toString(Math.max(0L, mapId)),
+                0,
+                DungeonOverlaySettings.defaults());
+    }
+
     public ApplyTravelDungeonSessionCommand {
         action = action == null ? Action.REFRESH : action;
         actionId = actionId == null ? "" : actionId.trim();
@@ -44,6 +52,7 @@ public record ApplyTravelDungeonSessionCommand(
     public enum Action {
         REFRESH,
         ACTION,
+        SELECT_MAP,
         SET_PROJECTION_LEVEL,
         SET_OVERLAY
     }

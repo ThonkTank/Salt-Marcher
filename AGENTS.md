@@ -92,10 +92,15 @@ document exists.
   directly. This is a qualitative review-coordination pass: the
   code-simplifier agent acts like a review coordinator for simplification and
   launches independent simplicity, elegance, smell, and performance reviewers
-  when subagent tooling is available, then consolidates their findings into
-  safe local patches, explicit deferrals, or a no-op result. It is not a new
-  static-analysis gate and does not replace mandatory proof or Overview
-  review.
+  when subagent tooling is available, then consolidates findings into blocking
+  same-run work or a no-op result. It is not a new static-analysis gate and
+  does not replace mandatory proof or Overview review.
+  Main treats every code-simplifier finding as current-run work. Main fixes
+  each finding, assigns it to a scoped same-run worker and integrates the
+  result, or closes it as a false positive/review-owned concern with evidence.
+  Main decides how to integrate the repair into the current run and must read
+  the current code-simplifier pass log before follow-up planning, Overview
+  launch, or any handoff-readiness claim.
 - When review results, architecture checks, behavior harnesses, or required
   proof expose a systemic blocker, Main must use the global `planner` skill to
   obtain a project-health repair plan before implementing the repair. The

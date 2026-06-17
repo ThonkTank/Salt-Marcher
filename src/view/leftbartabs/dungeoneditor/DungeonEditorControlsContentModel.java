@@ -23,10 +23,6 @@ final class DungeonEditorControlsContentModel {
             new ReadOnlyObjectWrapper<>(ToolProjection.initial());
     private final Map<ToolFamily, String> selectedFamilyOptionKeys = new EnumMap<>(ToolFamily.class);
 
-    ReadOnlyObjectProperty<MapProjection> mapProjectionProperty() {
-        return mapProjection.getReadOnlyProperty();
-    }
-
     ReadOnlyObjectProperty<MapEditorUiState> mapEditorProperty() {
         return mapEditor.getReadOnlyProperty();
     }

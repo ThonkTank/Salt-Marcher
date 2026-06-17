@@ -3,6 +3,7 @@ package src.domain.sessionplanner;
 import java.util.Objects;
 import shell.api.ServiceRegistry;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
+import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
@@ -38,6 +39,10 @@ final class SessionPlannerServiceAssembly {
 
     SessionPlannerCurrentSessionModel currentSessionModel(ServiceRegistry services) {
         return runtime.currentSessionModel(services);
+    }
+
+    SessionPlannerCatalogModel catalogModel(ServiceRegistry services) {
+        return runtime.catalogModel(services);
     }
 
     SessionPlannerParticipantsModel participantsModel(ServiceRegistry services) {

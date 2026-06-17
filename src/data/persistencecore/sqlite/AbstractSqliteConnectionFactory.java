@@ -3,7 +3,6 @@ package src.data.persistencecore.sqlite;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -18,17 +17,12 @@ public abstract class AbstractSqliteConnectionFactory {
     private static final String APP_DATA_DIR_NAME = "salt-marcher";
 
     private final Path databasePath;
-    // LEGACY_REMOVE_ON_TOUCH: Root DB copy; entfernen, sobald dieser Bereich bearbeitet wird.
-    private final Path legacyDatabasePath;
     private final String url;
 
     private boolean prepared;
 
-    protected AbstractSqliteConnectionFactory(Path databasePath, Path legacyDatabasePath) {
+    protected AbstractSqliteConnectionFactory(Path databasePath) {
         this.databasePath = Objects.requireNonNull(databasePath, "databasePath").toAbsolutePath().normalize();
-        this.legacyDatabasePath = Objects.requireNonNull(legacyDatabasePath, "legacyDatabasePath")
-                .toAbsolutePath()
-                .normalize();
         this.url = "jdbc:sqlite:" + this.databasePath;
     }
 
@@ -65,19 +59,10 @@ public abstract class AbstractSqliteConnectionFactory {
             if (parent != null) {
                 Files.createDirectories(parent);
             }
-            migrateLegacyDatabaseIfNeeded();
             prepared = true;
         } catch (IOException exception) {
             throw new SQLException("Could not prepare SQLite path " + databasePath, exception);
         }
-    }
-
-    // LEGACY_REMOVE_ON_TOUCH: Root DB migration; entfernen, sobald dieser Bereich bearbeitet wird.
-    private void migrateLegacyDatabaseIfNeeded() throws IOException {
-        if (legacyDatabasePath.equals(databasePath) || Files.exists(databasePath) || !Files.exists(legacyDatabasePath)) {
-            return;
-        }
-        Files.copy(legacyDatabasePath, databasePath, StandardCopyOption.COPY_ATTRIBUTES);
     }
 
     private static void loadDriver() throws SQLException {

@@ -15,9 +15,10 @@ Current state:
 
 - `sessionplanner` now owns its own data feature under
   `src/data/sessionplanner/**`
-- the current implementation persists exactly one current session record
-- the current implementation still does not expose a session list or explicit
-  session identifier
+- the current implementation persists multiple session records with stable
+  session identity, user-visible display names, and a current-session pointer
+- the current implementation exposes create/open/rename/delete session catalog
+  operations through the planner-owned public boundary
 
 Target state:
 
@@ -47,6 +48,7 @@ Target state:
 The persisted session record stores only sessionplanner-owned truth:
 
 - stable session identity
+- user-visible session display name
 - session-local participant references to party characters
 - exact `encounterDays` planning input
 - ordered references to encounter-owned saved plans
@@ -98,9 +100,8 @@ The session record does not persist:
 - sessionplanner persistence stays the canonical home for session-owned
   allocations and selection state even when later workflows trigger encounter
   or loot mutations through foreign boundaries
-- the current pointer model for one active session is an implementation detail,
-  not a claim that sessionplanner owns foreign loading UX or a permanent
-  single-session domain limit
+- the current pointer model identifies the active persisted session and does
+  not collapse the persisted catalog back to a single-session domain limit
 
 ## Verification Notes
 

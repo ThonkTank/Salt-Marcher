@@ -2,10 +2,8 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
 import javafx.scene.Node;
@@ -14,10 +12,8 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
-import javafx.scene.control.MenuItem;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
-import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Toggle;
 import javafx.scene.control.ToggleButton;
@@ -26,9 +22,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
-import javafx.util.StringConverter;
 import org.jspecify.annotations.Nullable;
 
 public final class DungeonEditorControlsView extends VBox {
@@ -54,150 +48,17 @@ public final class DungeonEditorControlsView extends VBox {
         }
         boolean[] rendering = {false};
         DungeonEditorControlsContentModel.ToolControls toolControls = contentModel.toolControls();
-        MapControls mapControls = new MapControls(rendering);
-        MapEditorSection mapEditorSection = new MapEditorSection(rendering);
         ProjectionSection projectionSection = new ProjectionSection(contentModel, toolControls, rendering);
         ToolSection toolSection = new ToolSection(toolControls);
 
         replaceChildren(
                 this,
-                mapControls,
-                mapEditorSection,
                 projectionSection,
                 projectionSection.overlayRow(),
                 toolSection);
 
-        mapControls.bind(contentModel);
-        mapEditorSection.bind(contentModel);
         projectionSection.bind(contentModel);
         toolSection.bind(contentModel, toolControls);
-    }
-
-    private final class MapControls extends HBox {
-
-        private final boolean[] rendering;
-        private final ComboBox<Object> mapSelector = new ComboBox<>();
-        private final SplitMenuButton mapActionButton =
-                styled(new SplitMenuButton(), "toolbar-action-button", "dungeon-toolbar-menu");
-        private final MenuItem reloadMapItem = new MenuItem("Dungeon neu laden");
-        private final MenuItem editMapItem = new MenuItem("Dungeon bearbeiten");
-        private final MenuItem deleteMapItem = new MenuItem("Dungeon löschen");
-        private final Label statusLabel = mutedLabel("");
-
-        private MapControls(boolean[] rendering) {
-            this.rendering = rendering;
-            styled(this, controlRowStyle(), "dungeon-control-map-row");
-            setAlignment(Pos.CENTER_LEFT);
-            setMaxWidth(Double.MAX_VALUE);
-            replaceChildren(this, mapSelector, mapActionButton, statusLabel);
-            configureMapSelector();
-            configureMapActions();
-            setHgrow(mapSelector, Priority.ALWAYS);
-        }
-
-        private void bind(DungeonEditorControlsContentModel contentModel) {
-            contentModel.mapProjectionProperty().addListener((ignored, before, after) -> show(after));
-            show(contentModel.mapProjectionProperty().get());
-        }
-
-        private void configureMapSelector() {
-            mapSelector.setConverter(new MapItemStringConverter());
-            mapSelector.setMaxWidth(Double.MAX_VALUE);
-            mapSelector.setMinWidth(0.0);
-            mapSelector.setPromptText("Dungeon auswählen");
-            mapSelector.setAccessibleText("Dungeon auswählen");
-            selectedItemProperty(mapSelector).addListener((ignored, before, after) -> {
-                DungeonEditorControlsContentModel.MapItem selectedItem = asMapItem(after);
-                if (!rendering[0] && selectedItem != null) {
-                    emitMapSelection(selectedItem.mapId());
-                }
-            });
-        }
-
-        private void configureMapActions() {
-            mapActionButton.setText("Neu");
-            replaceMenuItems(mapActionButton, reloadMapItem, editMapItem, deleteMapItem);
-            mapActionButton.setMinWidth(USE_PREF_SIZE);
-            mapActionButton.setAccessibleText("Neuen Dungeon erstellen; weitere Dungeon-Aktionen im Menü");
-            mapActionButton.setOnAction(event -> emitMapEditorInput(
-                    rendering, "", true, false, false, false, false, false));
-            reloadMapItem.setOnAction(event -> emitMapReload());
-            editMapItem.setOnAction(event -> emitMapEditorInput(
-                    rendering, "", false, true, false, false, false, false));
-            deleteMapItem.setOnAction(event -> emitMapEditorInput(
-                    rendering, "", false, false, true, false, false, false));
-        }
-
-        private void show(DungeonEditorControlsContentModel.MapProjection projection) {
-            DungeonEditorControlsContentModel.MapProjection safeProjection = projection;
-            List<DungeonEditorControlsContentModel.MapItem> safeMaps = safeProjection.maps();
-            rendering[0] = true;
-            replaceComboItems(mapSelector, safeMaps);
-            selectMapItem(mapSelector, resolveSelected(safeMaps, safeProjection.selectedKey()));
-            rendering[0] = false;
-            mapSelector.setDisable(safeProjection.busy() || safeMaps.isEmpty());
-            mapActionButton.setDisable(safeProjection.busy());
-            boolean selectionMissing = selectedComboItem(mapSelector) == null;
-            reloadMapItem.setDisable(safeProjection.busy() || selectionMissing);
-            editMapItem.setDisable(safeProjection.busy() || selectionMissing);
-            deleteMapItem.setDisable(safeProjection.busy() || selectionMissing);
-            setTextVisibility(statusLabel, safeProjection.statusText(), !safeProjection.statusText().isBlank());
-        }
-
-        private void emitMapReload() {
-            DungeonEditorControlsContentModel.MapItem selectedItem = asMapItem(selectedComboItem(mapSelector));
-            if (!rendering[0] && selectedItem != null) {
-                DungeonEditorControlsView.this.emitMapReload(selectedItem.mapId());
-            }
-        }
-    }
-
-    private final class MapEditorSection extends VBox {
-
-        private final boolean[] rendering;
-        private final Label title = new Label();
-        private final TextField draftField = new TextField();
-        private final Label errorLabel = mutedLabel("");
-        private final Button cancelButton = new Button("Abbrechen");
-        private final Button saveButton = new Button("Speichern");
-        private final Button confirmDeleteButton = new Button("Löschen");
-
-        private MapEditorSection(boolean[] rendering) {
-            this.rendering = rendering;
-            styled(this, "dropdown-window", "dropdown-form", "dungeon-editor-popup");
-            Label draftLabel = new Label("Name");
-            draftLabel.setLabelFor(draftField);
-            draftField.setAccessibleText("Dungeon-Name");
-            replaceChildren(this, title, draftLabel, draftField, errorLabel, row(cancelButton, saveButton, confirmDeleteButton));
-            setNodeVisibility(this, false);
-        }
-
-        private void bind(DungeonEditorControlsContentModel contentModel) {
-            draftField.textProperty().addListener((ignored, before, after) ->
-                    emitMapEditorInput(rendering, after, false, false, false, false, false, false));
-            cancelButton.setOnAction(event -> emitMapEditorInput(
-                    rendering, draftField.getText(), false, false, false, true, false, false));
-            saveButton.setOnAction(event -> emitMapEditorInput(
-                    rendering, draftField.getText(), false, false, false, false, true, false));
-            confirmDeleteButton.setOnAction(event -> emitMapEditorInput(
-                    rendering, draftField.getText(), false, false, false, false, false, true));
-            contentModel.mapEditorProperty().addListener((ignored, before, after) -> show(after));
-            show(contentModel.mapEditorProperty().get());
-        }
-
-        private void show(DungeonEditorControlsContentModel.MapEditorUiState state) {
-            DungeonEditorControlsContentModel.MapEditorUiState resolvedState = state;
-            setNodeVisibility(this, resolvedState.visible());
-            title.setText(resolvedState.title());
-            rendering[0] = true;
-            draftField.setText(resolvedState.draftName());
-            rendering[0] = false;
-            setNodeVisibility(draftField, resolvedState.draftFieldVisible());
-            setNodeVisibility(saveButton, resolvedState.submitVisible());
-            saveButton.setText(resolvedState.submitLabel());
-            setNodeVisibility(confirmDeleteButton, resolvedState.deleteConfirmationVisible());
-            setTextVisibility(errorLabel, resolvedState.errorText(), !resolvedState.errorText().isBlank());
-        }
     }
 
     private final class ProjectionSection extends HBox {
@@ -615,45 +476,6 @@ public final class DungeonEditorControlsView extends VBox {
         emitViewMode(toolControls.gridView());
     }
 
-    private void emitMapSelection(long selectedMapIdValue) {
-        viewInputEventHandler.accept(new DungeonEditorControlsViewInputEvent(
-                new DungeonEditorControlsViewInputEvent.MapSnapshot(
-                        selectedMapIdValue, "", false, false, false, false, false, false, false, false),
-                new DungeonEditorControlsViewInputEvent.ToolSnapshot("", "", false),
-                new DungeonEditorControlsViewInputEvent.ProjectionSnapshot("", 0),
-                new DungeonEditorControlsViewInputEvent.OverlaySnapshot("", 0, 0.0, "")));
-    }
-
-    private void emitMapReload(long selectedMapIdValue) {
-        viewInputEventHandler.accept(new DungeonEditorControlsViewInputEvent(
-                new DungeonEditorControlsViewInputEvent.MapSnapshot(
-                        selectedMapIdValue, "", false, false, false, false, false, false, false, true),
-                new DungeonEditorControlsViewInputEvent.ToolSnapshot("", "", false),
-                new DungeonEditorControlsViewInputEvent.ProjectionSnapshot("", 0),
-                new DungeonEditorControlsViewInputEvent.OverlaySnapshot("", 0, 0.0, "")));
-    }
-
-    private void emitMapEditorInput(
-            boolean[] rendering,
-            String draftText,
-            boolean openCreate,
-            boolean openRename,
-            boolean openDelete,
-            boolean dismiss,
-            boolean submit,
-            boolean confirmDelete
-    ) {
-        if (rendering[0]) {
-            return;
-        }
-        viewInputEventHandler.accept(new DungeonEditorControlsViewInputEvent(
-                new DungeonEditorControlsViewInputEvent.MapSnapshot(
-                        0L, draftText, true, openCreate, openRename, openDelete, dismiss, submit, confirmDelete, false),
-                new DungeonEditorControlsViewInputEvent.ToolSnapshot("", "", false),
-                new DungeonEditorControlsViewInputEvent.ProjectionSnapshot("", 0),
-                new DungeonEditorControlsViewInputEvent.OverlaySnapshot("", 0, 0.0, "")));
-    }
-
     private void emitViewMode(String viewModeKey) {
         viewInputEventHandler.accept(new DungeonEditorControlsViewInputEvent(
                 new DungeonEditorControlsViewInputEvent.MapSnapshot(0L, "", false, false, false, false, false, false, false, false),
@@ -760,18 +582,6 @@ public final class DungeonEditorControlsView extends VBox {
         return styled(new Label(text == null ? "" : text), "text-muted");
     }
 
-    private static DungeonEditorControlsContentModel.@Nullable MapItem resolveSelected(
-            List<DungeonEditorControlsContentModel.MapItem> maps,
-            String selectedKey
-    ) {
-        for (DungeonEditorControlsContentModel.MapItem item : maps) {
-            if (Objects.equals(item.key(), selectedKey)) {
-                return item;
-            }
-        }
-        return null;
-    }
-
     private static void selectOverlayMode(
             ComboBox<Object> modeSelector,
             String modeKey
@@ -822,11 +632,6 @@ public final class DungeonEditorControlsView extends VBox {
         return family.selectedOption();
     }
 
-    private static void setTextVisibility(Label label, String text, boolean visible) {
-        label.setText(text);
-        setNodeVisibility(label, visible);
-    }
-
     private static void setNodeVisibility(Node node, boolean visible) {
         node.setVisible(visible);
         node.setManaged(visible);
@@ -850,10 +655,6 @@ public final class DungeonEditorControlsView extends VBox {
         pane.getChildren().setAll(nodes);
     }
 
-    private static void replaceMenuItems(SplitMenuButton button, MenuItem... menuItems) {
-        button.getItems().setAll(menuItems);
-    }
-
     private static <T> void replaceComboItems(ComboBox<T> comboBox, List<? extends T> items) {
         comboBox.getItems().setAll(items);
     }
@@ -865,18 +666,6 @@ public final class DungeonEditorControlsView extends VBox {
     private static <T> @Nullable T firstComboItem(ComboBox<T> comboBox) {
         Iterator<T> items = comboItems(comboBox).iterator();
         return items.hasNext() ? items.next() : null;
-    }
-
-    private static <T> void selectMapItem(ComboBox<T> comboBox, @Nullable T selectedItem) {
-        comboBox.getSelectionModel().select(selectedItem);
-    }
-
-    private static <T> @Nullable T selectedComboItem(ComboBox<T> comboBox) {
-        return comboBox.getSelectionModel().getSelectedItem();
-    }
-
-    private static <T> ObservableValue<T> selectedItemProperty(ComboBox<T> comboBox) {
-        return comboBox.getSelectionModel().selectedItemProperty();
     }
 
     private static void setSpinnerValue(Spinner<Integer> spinner, int value) {
@@ -894,28 +683,9 @@ public final class DungeonEditorControlsView extends VBox {
         return value == null ? 0 : value;
     }
 
-    private static DungeonEditorControlsContentModel.@Nullable MapItem asMapItem(@Nullable Object value) {
-        return value instanceof DungeonEditorControlsContentModel.MapItem mapItem ? mapItem : null;
-    }
-
     private static DungeonEditorControlsContentModel.@Nullable OverlayModeOption asOverlayModeOption(
             @Nullable Object value
     ) {
         return value instanceof DungeonEditorControlsContentModel.OverlayModeOption option ? option : null;
-    }
-
-    private static final class MapItemStringConverter
-            extends StringConverter<Object> {
-
-        @Override
-        public String toString(Object item) {
-            DungeonEditorControlsContentModel.MapItem mapItem = asMapItem(item);
-            return mapItem == null ? "" : mapItem.mapName();
-        }
-
-        @Override
-        public @Nullable Object fromString(String string) {
-            return null;
-        }
     }
 }

@@ -121,7 +121,8 @@ The only intentional public boundaries across layers are:
 
 - shell-facing contracts under `shell/api/**`
 - shell-owned runtime composition under `shell/api/**`, including
-  `ShellRuntimeContext`, `ServiceContribution`, and `ServiceRegistry`
+  `ShellControls`, `ShellRuntimeContext`, `ServiceContribution`, and
+  `ServiceRegistry`
 - view `*Contribution` roots as shell-facing registration adapters
 - view `*Binder` roots as runtime composition adapters
 - domain family `*ApplicationService` roots as the public backend boundary

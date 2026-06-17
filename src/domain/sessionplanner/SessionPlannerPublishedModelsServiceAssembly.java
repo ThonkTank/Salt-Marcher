@@ -1,5 +1,7 @@
 package src.domain.sessionplanner;
 
+import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
+import src.domain.sessionplanner.published.SessionPlannerCatalogSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
 import src.domain.sessionplanner.published.SessionPlannerEncountersProjection;
@@ -15,6 +17,8 @@ final class SessionPlannerPublishedModelsServiceAssembly {
     private final SessionPlannerPublishedModelChannelServiceAssembly<SessionPlannerSessionSnapshot> sessions =
             new SessionPlannerPublishedModelChannelServiceAssembly<>(
                     SessionPlannerSessionSnapshot.empty("Session ist noch nicht geladen."));
+    private final SessionPlannerPublishedModelChannelServiceAssembly<SessionPlannerCatalogSnapshot> catalog =
+            new SessionPlannerPublishedModelChannelServiceAssembly<>(SessionPlannerCatalogSnapshot.empty());
     private final SessionPlannerPublishedModelChannelServiceAssembly<SessionPlannerParticipantsProjection>
             participants = new SessionPlannerPublishedModelChannelServiceAssembly<>(
                     SessionPlannerParticipantsProjection.empty());
@@ -25,6 +29,7 @@ final class SessionPlannerPublishedModelsServiceAssembly {
             statePanel = new SessionPlannerPublishedModelChannelServiceAssembly<>(
                     SessionPlannerStatePanelProjection.empty());
     private final SessionPlannerCurrentSessionModel currentSessionModel;
+    private final SessionPlannerCatalogModel catalogModel;
     private final SessionPlannerParticipantsModel participantsModel;
     private final SessionPlannerEncountersModel encountersModel;
     private final SessionPlannerStatePanelModel statePanelModel;
@@ -37,6 +42,12 @@ final class SessionPlannerPublishedModelsServiceAssembly {
                     return sessions.current();
                 },
                 sessions::subscribe);
+        this.catalogModel = new SessionPlannerCatalogModel(
+                () -> {
+                    loadPublishedState.run();
+                    return catalog.current();
+                },
+                catalog::subscribe);
         this.participantsModel = new SessionPlannerParticipantsModel(
                 () -> {
                     loadPublishedState.run();
@@ -61,6 +72,10 @@ final class SessionPlannerPublishedModelsServiceAssembly {
         return currentSessionModel;
     }
 
+    SessionPlannerCatalogModel catalogModel() {
+        return catalogModel;
+    }
+
     SessionPlannerParticipantsModel participantsModel() {
         return participantsModel;
     }
@@ -75,6 +90,10 @@ final class SessionPlannerPublishedModelsServiceAssembly {
 
     void publishSession(SessionPlannerSessionSnapshot snapshot) {
         sessions.publish(snapshot);
+    }
+
+    void publishCatalog(SessionPlannerCatalogSnapshot snapshot) {
+        catalog.publish(snapshot);
     }
 
     void publishParticipants(SessionPlannerParticipantsProjection projection) {

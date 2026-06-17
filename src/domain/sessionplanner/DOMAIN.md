@@ -52,8 +52,9 @@ Current state:
 
 - the current code already delegates planner mutations to dedicated
   `model/session/usecase/*UseCase` owners over `SessionPlan`
-- it now keeps exactly one repository-backed current session through
-  planner-owned session repositories and canonical load/save session use cases
+- it now keeps multiple repository-backed sessions through planner-owned
+  session repositories, canonical load/save use cases, and a current-session
+  pointer
 - the read-only planner state model is exported directly instead of being
   loaded through a root query method
 
@@ -69,6 +70,7 @@ Aggregate Root: SessionPlan
 `SessionPlan` owns the persisted planning record for one session. It stores:
 
 - stable session identity
+- user-visible session display name
 - session-local participant references
 - exact `encounterDays`
 - ordered encounter-plan references
@@ -96,7 +98,8 @@ Core invariants:
 
 - planner XP math is based on public party and encounter reads only
 - session participant count equals the number of session participant references
-- the current persistence model holds exactly one current session record
+- the current persistence model holds multiple session records and one current
+  session pointer
 - attached encounters keep the session-local order chosen by the planner
 - rests can exist only between adjacent encounters
 - each attached encounter refers to exactly one encounter-owned saved plan
@@ -108,8 +111,9 @@ Core invariants:
 
 Current state:
 
-- the current implementation now keeps one current persisted session through a
-  planner-owned repository port plus canonical load/save session use cases
+- the current implementation now keeps a persisted session catalog plus one
+  current pointer through a planner-owned repository port and canonical
+  load/save session use cases
 - reopening the planner after reload or application restart preserves
   participant refs, encounter order, allocations, selection, rests, and
   placeholders for that current session only

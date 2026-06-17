@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
@@ -28,6 +30,47 @@ public final class DoorBoundaryRelocation {
             return null;
         }
         DungeonRoomCluster movedCluster = MOVED_CLUSTER.movedCluster(context);
+        if (movedCluster.equals(context.targetCluster())) {
+            return null;
+        }
+        return new DoorBoundaryMovePlan(context.targetCluster().clusterId(), movedCluster);
+    }
+
+    public @Nullable DoorBoundaryMovePlan planMovedStandaloneDoorBoundary(
+            DungeonMap sourceMap,
+            DungeonTopologyRef topologyRef,
+            long clusterId,
+            long roomId,
+            Edge sourceEdge,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        DungeonMap safeSourceMap = Objects.requireNonNull(sourceMap, "sourceMap");
+        DoorBoundaryRelocationSupport.StandaloneMoveContext context =
+                DoorBoundaryRelocationSupport.standaloneMoveContext(
+                        safeSourceMap,
+                        topologyRef,
+                        clusterId,
+                        roomId,
+                        sourceEdge,
+                        new DoorBoundaryRelocationSupport.MovementDelta(deltaQ, deltaR, deltaLevel));
+        if (context == null) {
+            return null;
+        }
+        if (!DoorBoundaryRelocationGeometry.targetMaterializesDoor(
+                safeSourceMap,
+                context.targetCluster(),
+                context.nextDoorEdge(),
+                DoorBoundaryRelocationGeometry.boundaryAt(context.targetCluster(), context.nextDoorEdge()))) {
+            return null;
+        }
+        DungeonRoomCluster movedCluster = MOVED_CLUSTER.movedStandaloneDoor(
+                context.targetCluster(),
+                context.oldDoorBoundary(),
+                context.nextDoorEdge(),
+                context.expectedTopologyRef(),
+                DoorBoundaryRelocationGeometry.roomsInCluster(safeSourceMap, context.targetCluster().clusterId()));
         if (movedCluster.equals(context.targetCluster())) {
             return null;
         }

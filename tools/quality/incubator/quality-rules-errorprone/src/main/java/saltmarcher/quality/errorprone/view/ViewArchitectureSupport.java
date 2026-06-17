@@ -31,7 +31,7 @@ public final class ViewArchitectureSupport {
     private static final Set<String> BINDER_ALLOWED_SHELL_TYPES = Set.of(
             "shell.api.ContributionKey", "shell.api.InspectorEntrySpec", "shell.api.InspectorSink",
             "shell.api.NavigationGraphicResource", "shell.api.NavigationGroupSpec", "shell.api.ShellBinding",
-            "shell.api.ShellContributionSpec", "shell.api.ShellLeftBarTabMode", "shell.api.ShellLeftBarTabSpec",
+            "shell.api.ShellControls", "shell.api.ShellContributionSpec", "shell.api.ShellLeftBarTabMode", "shell.api.ShellLeftBarTabSpec",
             "shell.api.ShellRuntimeContext", "shell.api.ShellSlot", "shell.api.ShellStateTabSpec",
             "shell.api.ServiceRegistry", "shell.api.ShellTopBarSpec");
     private static final Set<String> CONTRIBUTION_ALLOWED_SHELL_TYPES = Set.of(

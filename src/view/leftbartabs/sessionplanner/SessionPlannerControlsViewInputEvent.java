@@ -1,7 +1,6 @@
 package src.view.leftbartabs.sessionplanner;
 
 public record SessionPlannerControlsViewInputEvent(
-        boolean createSessionRequested,
         long participantToAddId,
         long participantToRemoveId,
         String encounterDaysText,

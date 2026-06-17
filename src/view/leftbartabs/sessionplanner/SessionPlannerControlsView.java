@@ -31,6 +31,11 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private final Label sessionIdLabel = label("");
     private final Label selectionLabel = label("", STYLE_TEXT_SECONDARY);
     private final TextField encounterDaysField = new TextField();
+    private final Button applyDaysButton = button(
+            "Tage setzen",
+            ignored -> publishEncounterDays(),
+            STYLE_COMPACT,
+            "flat");
     private final Label partyHeadlineLabel = label("");
     private final Label partyDetailLabel = label("", STYLE_TEXT_SECONDARY);
     private final VBox sessionParticipantsRows = new VBox(6);
@@ -83,25 +88,10 @@ public final class SessionPlannerControlsView extends ScrollPane {
     }
 
     private VBox sessionSection() {
-        Button createButton = button(
-                "Neue Session",
-                ignored -> publish(new SessionPlannerControlsViewInputEvent(true, 0L, 0L, "", 0L)),
-                STYLE_COMPACT,
-                "accent");
-        Button applyDaysButton = button(
-                "Tage setzen",
-                ignored -> publish(new SessionPlannerControlsViewInputEvent(
-                        false,
-                        0L,
-                        0L,
-                        encounterDaysField.getText(),
-                        0L)),
-                STYLE_COMPACT,
-                "flat");
         encounterDaysField.setPromptText("1.0");
         return new VBox(
                 10,
-                headerRow(label("SESSION PLANNER", "section-header", "text-muted"), createButton),
+                headerRow(label("SESSION PLANNER", "section-header", "text-muted")),
                 sectionCard(
                         "Session",
                         sessionIdLabel,
@@ -146,6 +136,8 @@ public final class SessionPlannerControlsView extends ScrollPane {
         sessionIdLabel.setText(model.sessionIdText());
         selectionLabel.setText(model.selectionText());
         encounterDaysField.setText(model.encounterDaysText());
+        encounterDaysField.setDisable(model.sessionActionsDisabled());
+        applyDaysButton.setDisable(model.sessionActionsDisabled());
     }
 
     private void showParticipants(
@@ -276,7 +268,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         if (event.getSource() instanceof Button button && button.getUserData() instanceof Number id) {
             participantId = id.longValue();
         }
-        publish(new SessionPlannerControlsViewInputEvent(false, participantId, 0L, "", 0L));
+        publish(new SessionPlannerControlsViewInputEvent(participantId, 0L, "", 0L));
     }
 
     private void publishRemoveParticipant(ActionEvent event) {
@@ -284,7 +276,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         if (event.getSource() instanceof Button button && button.getUserData() instanceof Number id) {
             participantId = id.longValue();
         }
-        publish(new SessionPlannerControlsViewInputEvent(false, 0L, participantId, "", 0L));
+        publish(new SessionPlannerControlsViewInputEvent(0L, participantId, "", 0L));
     }
 
     private void publishAttachPlan(ActionEvent event) {
@@ -292,7 +284,18 @@ public final class SessionPlannerControlsView extends ScrollPane {
         if (event.getSource() instanceof Button button && button.getUserData() instanceof Number id) {
             planId = id.longValue();
         }
-        publish(new SessionPlannerControlsViewInputEvent(false, 0L, 0L, "", planId));
+        publish(new SessionPlannerControlsViewInputEvent(0L, 0L, "", planId));
+    }
+
+    private void publishEncounterDays() {
+        if (applyDaysButton.isDisabled()) {
+            return;
+        }
+        publish(new SessionPlannerControlsViewInputEvent(
+                0L,
+                0L,
+                encounterDaysField.getText(),
+                0L));
     }
 
     private void publish(SessionPlannerControlsViewInputEvent event) {

@@ -12,6 +12,7 @@ import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorViewMode;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 
 public final class DungeonEditorContributionModel {
 
@@ -50,6 +51,22 @@ public final class DungeonEditorContributionModel {
         applyControlsProjection(controlsProjection.get(), contentModel);
     }
 
+    void bindMapCatalogContentModel(
+            DungeonEditorControlsContentModel controlsContentModel,
+            CatalogCrudControlsContentModel catalogContentModel
+    ) {
+        if (controlsContentModel == null || catalogContentModel == null) {
+            return;
+        }
+        Runnable refresh = () -> applyMapCatalogProjection(
+                controlsProjection.get(),
+                controlsContentModel.currentMapEditorUiState(),
+                catalogContentModel);
+        controlsProjection.addListener((ignored, before, after) -> refresh.run());
+        controlsContentModel.mapEditorProperty().addListener((ignored, before, after) -> refresh.run());
+        refresh.run();
+    }
+
     private static void applyControlsProjection(
             ControlsProjection projection,
             DungeonEditorControlsContentModel contentModel
@@ -73,6 +90,58 @@ public final class DungeonEditorContributionModel {
                 safeProjection.overlaySettings(),
                 safeProjection.projectionLevel(),
                 safeProjection.selectedToolLabel());
+    }
+
+    private static void applyMapCatalogProjection(
+            ControlsProjection projection,
+            DungeonEditorControlsContentModel.MapEditorUiState mapEditor,
+            CatalogCrudControlsContentModel catalogContentModel
+    ) {
+        ControlsProjection safeProjection = projection == null
+                ? ControlsProjection.initial()
+                : projection;
+        catalogContentModel.showCatalog(new CatalogCrudControlsContentModel.CatalogState(
+                "Dungeon Maps",
+                "Dungeon auswählen",
+                "Keine Dungeon Maps verfuegbar.",
+                safeProjection.selectedMapKey(),
+                safeProjection.mapEntries().stream()
+                        .map(DungeonEditorContributionModel::toCatalogItem)
+                        .toList(),
+                new CatalogCrudControlsContentModel.Actions(true, true, true, true),
+                safeProjection.busy(),
+                safeProjection.statusText()));
+        applyCatalogEditorState(mapEditor, catalogContentModel);
+    }
+
+    private static CatalogCrudControlsContentModel.Item toCatalogItem(MapListEntry entry) {
+        return new CatalogCrudControlsContentModel.Item(
+                Long.toString(entry.mapIdValue()),
+                entry.mapName(),
+                "",
+                0L,
+                true);
+    }
+
+    private static void applyCatalogEditorState(
+            DungeonEditorControlsContentModel.MapEditorUiState mapEditor,
+            CatalogCrudControlsContentModel catalogContentModel
+    ) {
+        DungeonEditorControlsContentModel.MapEditorUiState safeEditor =
+                DungeonEditorControlsContentModel.MapEditorUiState.resolve(mapEditor);
+        if (!safeEditor.visible()) {
+            catalogContentModel.closeOperation();
+            return;
+        }
+        if (safeEditor.isCreateMode()) {
+            catalogContentModel.openCreate();
+        } else if (safeEditor.isRenameMode()) {
+            catalogContentModel.openRename(Long.toString(safeEditor.mapIdValue()));
+        } else if (safeEditor.isDeleteMode()) {
+            catalogContentModel.openDelete(Long.toString(safeEditor.mapIdValue()));
+        }
+        catalogContentModel.updateDraft(safeEditor.draftName());
+        catalogContentModel.showValidationError(safeEditor.errorText());
     }
 
     private void refreshProjection() {

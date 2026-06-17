@@ -25,12 +25,29 @@ final class CorridorNetworkMovement {
             StairCollection nextStairs,
             TransitionCatalog nextTransitions
     ) {
+        return moveCorridors(
+                sourceMap,
+                sourceMap,
+                candidateCorridors,
+                movedCorridorIds,
+                nextStairs,
+                nextTransitions);
+    }
+
+    DungeonMap moveCorridors(
+            DungeonMap sourceMap,
+            DungeonMap currentMap,
+            List<Corridor> candidateCorridors,
+            Set<Long> movedCorridorIds,
+            StairCollection nextStairs,
+            TransitionCatalog nextTransitions
+    ) {
         List<Corridor> normalizedCandidates = nonNullCorridors(candidateCorridors);
         Set<Long> normalizedMovedIds = normalizedCorridorIds(movedCorridorIds);
         if (normalizedCandidates.isEmpty() || normalizedMovedIds.isEmpty()) {
-            return sourceMap;
+            return currentMap;
         }
-        CorridorHostCells hostCells = new CorridorHostCells(HOST_CELL_QUERY.cellsByCorridor(sourceMap, normalizedCandidates));
+        CorridorHostCells hostCells = new CorridorHostCells(HOST_CELL_QUERY.cellsByCorridor(currentMap, normalizedCandidates));
         List<Corridor> snappedCorridors = CONNECTION_NORMALIZATION.snapOwnedAnchors(normalizedCandidates, hostCells);
         if (MOVEMENT_ANCHORS.hasDuplicateMovedAnchorCells(snappedCorridors, normalizedMovedIds)) {
             return sourceMap;
@@ -42,15 +59,18 @@ final class CorridorNetworkMovement {
                         normalizedMovedIds);
         CorridorAnchorDependencyUpdate.DependencyUpdateResult dependencyUpdate =
                 ANCHOR_DEPENDENCY_UPDATE.rerouteDependents(
-                        sourceMap,
+                        currentMap,
                         snappedCorridors,
                         movedAnchors,
                         normalizedMovedIds);
         if (!dependencyUpdate.accepted()) {
             return sourceMap;
         }
+        if (dependencyUpdate.corridors().equals(currentMap.corridors())) {
+            return currentMap;
+        }
         return CONNECTION_NORMALIZATION.copyWithConnections(
-                sourceMap,
+                currentMap,
                 dependencyUpdate.corridors(),
                 nextStairs,
                 nextTransitions);

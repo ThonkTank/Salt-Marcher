@@ -72,6 +72,8 @@ Ownership rules:
 ## Dependency Rules
 
 - shell depends only on shell-owned contracts and hosting code
+- `ShellControls` owns reusable shell-side composition for stacked cockpit
+  control-slot content
 - shell must not import feature contributions, models, IntentHandlers, or
   Views
 - feature code must not import `AppShell` or concrete shell pane classes

@@ -72,11 +72,19 @@ SaltMarcher keeps review instructions in global skills, not in this standard.
 SaltMarcher uses `code-simplifier` as a qualitative review-agent coordinator,
 not as an implementation-agent self-check. Covered implementation passes run the
 installed skill after the main edit and before pass logging. It reviews
-simplicity, elegance, smells, and performance; consolidates safe patches,
-explicit deferrals, or no-op; and keeps reviewers read-only unless Main assigns
-a scoped fix. It must not create static-analysis gates, weaken proof, replace
-Overview handoff review, or claim full handoff coverage. If it changes
-repo-tracked files, Main reruns required proof before Overview.
+simplicity, elegance, smells, and performance; consolidates safe patches or a
+no-op result; and keeps reviewers read-only unless Main assigns a scoped fix.
+It must not create static-analysis gates, weaken proof, replace Overview
+handoff review, or claim full handoff coverage. If it changes repo-tracked
+files, Main reruns required proof before Overview.
+
+Main owns disposition of the code-simplifier result. A covered pass is ready for
+Overview only after Main has read the current code-simplifier pass log or worker
+report and handled every finding as fixed with affected proof rerun, assigned to
+a scoped same-run worker and integrated, or closed as false
+positive/review-owned with evidence. Findings become blocking same-run
+implementation tasks. Overview inspects the code-simplifier log with
+implementation logs.
 
 ## Planner Escalation For Systemic Feedback
 
@@ -108,8 +116,8 @@ contracts, architecture, domain truth, or verification policy.
   repo-tracked implementation pass and before starting the required Overview
   handoff review.
 - Overview coordinators and specialist review agents must read the relevant
-  available implementation and review pass logs before classifying final review
-  status.
+  available implementation, code-simplifier, and review pass logs before
+  classifying final review status.
 - Nested specialist reviewers remain read-only. They must not write files
   directly; they include pass-log evidence and trend observations in their
   reviewer output.
@@ -225,8 +233,8 @@ An implementation pass log must include:
 - owner documents and mandatory skills used
 - implementation summary and key tradeoffs
 - `code-simplifier` review-agent outcome for covered implementation passes,
-  including reviewer lenses used, safe patches made, no-op result, explicit
-  deferrals, or skipped status with reason
+  including reviewer lenses used, safe patches made, no-op result, skipped
+  status with reason, and same-run Main disposition for each finding
 - planner escalation outcome when systemic review, architecture-check,
   behavior-harness, or proof feedback shaped the project-health plan
 - `LEGACY_REMOVE_ON_TOUCH` markers found in the write set and whether they were
@@ -258,9 +266,8 @@ A review pass log must include:
 
 When a review agent sees a systemic trend instead of an isolated defect, it
 must report that trend explicitly. If the trend suggests an architecture-model,
-governance, skill, or mechanical-check change, the review must classify it as a
-separate systemic finding unless the user or current scope explicitly includes
-that change.
+governance, skill, or mechanical-check change, the review reports it as a
+blocking finding. Main integrates the repair into the same run.
 
 ## Verification Path
 
@@ -307,6 +314,8 @@ When a covered artifact changes, reviewers must check:
 - Did covered implementation work run `code-simplifier` as a qualitative
   review agent before pass logging and Overview review, without treating it as
   a substitute for proof or handoff review?
+- Did Main read the code-simplifier pass log and dispose every finding before
+  Overview or any handoff-readiness claim?
 - If systemic review, architecture-check, behavior-harness, or proof feedback
   shaped the repair, did Main obtain a planner project-health plan before
   implementing the fix?

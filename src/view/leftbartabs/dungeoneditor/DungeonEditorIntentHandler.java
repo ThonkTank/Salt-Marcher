@@ -39,6 +39,8 @@ import src.domain.dungeon.published.SetDungeonEditorOverlayCommand;
 import src.domain.dungeon.published.SetDungeonEditorToolCommand;
 import src.domain.dungeon.published.SetDungeonEditorViewModeCommand;
 import src.domain.dungeon.published.ShiftDungeonEditorProjectionLevelCommand;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 
@@ -48,6 +50,7 @@ final class DungeonEditorIntentHandler {
 
     private final DungeonEditorContributionModel presentationModel;
     private final DungeonEditorControlsContentModel controlsContentModel;
+    private final CatalogCrudControlsContentModel catalogContentModel;
     private final DungeonEditorStateContentModel stateContentModel;
     private final DungeonMapContentModel mapContentModel;
     private final DungeonEditorMapApplicationService mapEditor;
@@ -66,12 +69,14 @@ final class DungeonEditorIntentHandler {
     DungeonEditorIntentHandler(
             DungeonEditorContributionModel presentationModel,
             DungeonEditorControlsContentModel controlsContentModel,
+            CatalogCrudControlsContentModel catalogContentModel,
             DungeonEditorStateContentModel stateContentModel,
             DungeonMapContentModel mapContentModel,
             ApplicationServices applicationServices
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
         this.controlsContentModel = Objects.requireNonNull(controlsContentModel, "controlsContentModel");
+        this.catalogContentModel = Objects.requireNonNull(catalogContentModel, "catalogContentModel");
         this.stateContentModel = Objects.requireNonNull(stateContentModel, "stateContentModel");
         this.mapContentModel = Objects.requireNonNull(mapContentModel, "mapContentModel");
         ApplicationServices safeApplicationServices = Objects.requireNonNull(applicationServices, "applicationServices");
@@ -127,6 +132,77 @@ final class DungeonEditorIntentHandler {
         }
         if (!overlay.modeKey().isBlank()) {
             handleOverlayInput(overlay);
+        }
+    }
+
+    void consume(CatalogCrudControlsViewInputEvent event) {
+        if (event == null) {
+            return;
+        }
+        if (consumeCatalogSelection(event)) {
+            return;
+        }
+        if (consumeCatalogSubmit(event)) {
+            return;
+        }
+        consumeCatalogEditor(event);
+    }
+
+    private boolean consumeCatalogSelection(CatalogCrudControlsViewInputEvent event) {
+        if (!event.selectedItemId().isBlank()) {
+            catalogContentModel.selectItem(event.selectedItemId());
+            handleMapSelection(parseLongOrZero(event.selectedItemId()));
+            return true;
+        }
+        if (!event.reloadItemId().isBlank()) {
+            reloadSelectedMap(parseLongOrZero(event.reloadItemId()));
+            return true;
+        }
+        return false;
+    }
+
+    private boolean consumeCatalogSubmit(CatalogCrudControlsViewInputEvent event) {
+        if (!event.createDraftName().isBlank()) {
+            catalogContentModel.closeOperation();
+            createMap(event.createDraftName());
+            return true;
+        }
+        if (!event.renameItemId().isBlank() && !event.renameDraftName().isBlank()) {
+            catalogContentModel.closeOperation();
+            renameMap(parseLongOrZero(event.renameItemId()), event.renameDraftName());
+            return true;
+        }
+        if (!event.deleteConfirmItemId().isBlank()) {
+            catalogContentModel.closeOperation();
+            deleteMap(parseLongOrZero(event.deleteConfirmItemId()));
+            return true;
+        }
+        return false;
+    }
+
+    private void consumeCatalogEditor(CatalogCrudControlsViewInputEvent event) {
+        if (event.createEditorOpened()) {
+            catalogContentModel.openCreate();
+            controlsContentModel.openCreateMapEditor();
+            return;
+        }
+        if (!event.renameEditorItemId().isBlank()) {
+            catalogContentModel.openRename(event.renameEditorItemId());
+            controlsContentModel.openSelectedMapEditor(
+                    DungeonEditorControlsContentModel.MapEditorMode.RENAME,
+                    parseLongOrZero(event.renameEditorItemId()));
+            return;
+        }
+        if (!event.deleteRequestItemId().isBlank()) {
+            catalogContentModel.openDelete(event.deleteRequestItemId());
+            controlsContentModel.openSelectedMapEditor(
+                    DungeonEditorControlsContentModel.MapEditorMode.DELETE,
+                    parseLongOrZero(event.deleteRequestItemId()));
+            return;
+        }
+        if (event.dismissed()) {
+            catalogContentModel.closeOperation();
+            controlsContentModel.closeMapEditor();
         }
     }
 
@@ -759,6 +835,37 @@ final class DungeonEditorIntentHandler {
         }
         if (mapEditorUiState.isRenameMode()) {
             submitRename(mapEditorUiState, draftName);
+        }
+    }
+
+    private void createMap(String draftName) {
+        String safeDraftName = draftName == null ? "" : draftName.strip();
+        if (safeDraftName.isBlank()) {
+            controlsContentModel.showMapEditorValidationError("Name fehlt.");
+            return;
+        }
+        controlsContentModel.closeMapEditor();
+        mapEditor.createMap(new DungeonMapCatalogCommand.CreateMapCommand(safeDraftName));
+    }
+
+    private void renameMap(long mapIdValue, String draftName) {
+        String safeDraftName = draftName == null ? "" : draftName.strip();
+        if (safeDraftName.isBlank()) {
+            controlsContentModel.showMapEditorValidationError("Name fehlt.");
+            return;
+        }
+        long noSelectedMapId = 0L;
+        if (mapIdValue > noSelectedMapId) {
+            controlsContentModel.closeMapEditor();
+            mapEditor.renameMap(new DungeonMapCatalogCommand.RenameMapCommand(new DungeonMapId(mapIdValue), safeDraftName));
+        }
+    }
+
+    private void deleteMap(long mapIdValue) {
+        long noSelectedMapId = 0L;
+        if (mapIdValue > noSelectedMapId) {
+            controlsContentModel.closeMapEditor();
+            mapEditor.deleteMap(new DeleteDungeonMapCommand(new DungeonMapId(mapIdValue)));
         }
     }
 

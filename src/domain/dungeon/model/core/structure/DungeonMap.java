@@ -74,7 +74,7 @@ public record DungeonMap(
     }
 
     private static final DungeonMapRoomAuthoring ROOM_AUTHORING = new DungeonMapRoomAuthoring();
-    private static final DungeonMapCorridorAuthoring CORRIDOR_AUTHORING = new DungeonMapCorridorAuthoring();
+    private static final DungeonMapConnectionAuthoring CONNECTION_AUTHORING = new DungeonMapConnectionAuthoring();
     private static final DungeonMapStairAuthoring STAIR_AUTHORING = new DungeonMapStairAuthoring();
 
     public DungeonMap moveCluster(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
@@ -93,11 +93,31 @@ public record DungeonMap(
             int deltaR,
             int deltaLevel
     ) {
-        return CORRIDOR_AUTHORING.moveDoorBinding(
+        return CONNECTION_AUTHORING.moveDoorBinding(
                 this,
                 corridorId,
                 bindingIndex,
                 roomId,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+    }
+
+    public DungeonMap moveDoorBoundary(
+            DungeonTopologyRef topologyRef,
+            long clusterId,
+            long roomId,
+            Edge sourceEdge,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        return CONNECTION_AUTHORING.moveDoorBoundary(
+                this,
+                topologyRef,
+                clusterId,
+                roomId,
+                sourceEdge,
                 deltaQ,
                 deltaR,
                 deltaLevel);
@@ -111,7 +131,7 @@ public record DungeonMap(
             int deltaR,
             int deltaLevel
     ) {
-        return CORRIDOR_AUTHORING.moveCorridorAnchor(
+        return CONNECTION_AUTHORING.moveCorridorAnchor(
                 this,
                 corridorId,
                 bindingIndex,
@@ -128,7 +148,7 @@ public record DungeonMap(
             int deltaR,
             int deltaLevel
     ) {
-        return CORRIDOR_AUTHORING.moveCorridorWaypoint(this, corridorId, waypointIndex, deltaQ, deltaR, deltaLevel);
+        return CONNECTION_AUTHORING.moveCorridorWaypoint(this, corridorId, waypointIndex, deltaQ, deltaR, deltaLevel);
     }
 
     public DungeonMap moveStairAnchor(long stairId, int handleIndex, int deltaQ, int deltaR, int deltaLevel) {
@@ -303,7 +323,7 @@ public record DungeonMap(
             DungeonCorridorEndpoint start,
             DungeonCorridorEndpoint end
     ) {
-        return CORRIDOR_AUTHORING.createCorridor(this, stairId, start, end);
+        return CONNECTION_AUTHORING.createCorridor(this, stairId, start, end);
     }
 
     public DungeonMap deleteCorridor(
@@ -313,7 +333,7 @@ public record DungeonMap(
             long roomId,
             int waypointIndex
     ) {
-        return CORRIDOR_AUTHORING.deleteCorridor(
+        return CONNECTION_AUTHORING.deleteCorridor(
                 this,
                 corridorId,
                 targetKind,

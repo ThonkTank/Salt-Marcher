@@ -7,7 +7,10 @@ import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.dungeon.published.TravelDungeonAction;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.domain.dungeon.published.TravelDungeonWorkspaceState;
+import src.domain.dungeon.published.DungeonMapCatalogResponse;
+import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 
 public final class DungeonTravelContributionModel {
 
@@ -18,6 +21,7 @@ public final class DungeonTravelContributionModel {
     private final ReadOnlyObjectWrapper<OverlayProjection> overlaySettings =
             new ReadOnlyObjectWrapper<>(OverlayProjection.defaults());
     private final ReadOnlyIntegerWrapper projectionLevel = new ReadOnlyIntegerWrapper(0);
+    private CatalogCrudControlsContentModel mapCatalogContentModel;
 
     public DungeonTravelContributionModel() {
         refreshStateText(null);
@@ -47,6 +51,36 @@ public final class DungeonTravelContributionModel {
         contentModel.showMapName(mapName.get());
         contentModel.showOverlaySettings(toControlsOverlaySettings(overlaySettings.get()), false);
         contentModel.showProjectionLevel(projectionLevel.get());
+    }
+
+    void bindMapCatalogContentModel(CatalogCrudControlsContentModel contentModel) {
+        mapCatalogContentModel = contentModel;
+    }
+
+    void applyMapCatalog(DungeonMapCatalogResponse response, long selectedMapId) {
+        if (mapCatalogContentModel == null || !(response instanceof DungeonMapCatalogResponse.MapList mapList)) {
+            return;
+        }
+        mapCatalogContentModel.showCatalog(new CatalogCrudControlsContentModel.CatalogState(
+                "Dungeon Maps",
+                "Dungeon auswählen",
+                "Keine Dungeon Maps verfuegbar.",
+                selectedMapId <= 0L ? "" : Long.toString(selectedMapId),
+                mapList.maps().stream()
+                        .map(DungeonTravelContributionModel::catalogItem)
+                        .toList(),
+                CatalogCrudControlsContentModel.Actions.readOnly(),
+                false,
+                ""));
+    }
+
+    private static CatalogCrudControlsContentModel.Item catalogItem(DungeonMapSummary summary) {
+        return new CatalogCrudControlsContentModel.Item(
+                Long.toString(summary.mapId().value()),
+                summary.mapName(),
+                "",
+                summary.revision(),
+                true);
     }
 
     void apply(TravelDungeonSnapshot snapshot) {
