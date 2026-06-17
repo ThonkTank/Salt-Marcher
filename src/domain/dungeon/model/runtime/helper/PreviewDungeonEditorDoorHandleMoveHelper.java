@@ -16,7 +16,7 @@ public final class PreviewDungeonEditorDoorHandleMoveHelper {
     ) {
         List<Handle> result = new ArrayList<>();
         for (Handle handle : source) {
-            result.add(sameHandleRef(handle.ref(), preview.handleRef())
+            result.add(handle.ref().equals(preview.handleRef())
                     ? movedHandle(handle, preview)
                     : handle);
         }
@@ -48,16 +48,6 @@ public final class PreviewDungeonEditorDoorHandleMoveHelper {
                                 : movedEdge(ref.sourceEdge(), preview.deltaQ(), preview.deltaR(), preview.deltaLevel())),
                 handle.label(),
                 movedCell);
-    }
-
-    private static boolean sameHandleRef(HandleRef first, HandleRef second) {
-        return first.kind() == second.kind()
-                && first.topologyRef().equals(second.topologyRef())
-                && first.ownerId() == second.ownerId()
-                && first.clusterId() == second.clusterId()
-                && first.corridorId() == second.corridorId()
-                && first.roomId() == second.roomId()
-                && first.index() == second.index();
     }
 
     private static Cell movedCell(Cell cell, int deltaQ, int deltaR, int deltaLevel) {

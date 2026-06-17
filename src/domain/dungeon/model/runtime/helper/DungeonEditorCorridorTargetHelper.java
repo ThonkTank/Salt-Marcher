@@ -91,6 +91,7 @@ public final class DungeonEditorCorridorTargetHelper {
                 return null;
             }
             HandleTarget handleRef = hit.handleRef();
+            DungeonEditorWorkspaceValues.Cell roomCell = roomCellForDoorHandle(handleRef);
             return new PendingCorridorTarget.EndpointTarget(
                     DungeonEditorMainViewInteractionValues.ROOM_PREFIX + handleRef.roomId() + ":door:" + hit.topologyRefId(),
                     DOOR_LABEL_PREFIX + hit.topologyRefId(),
@@ -105,7 +106,7 @@ public final class DungeonEditorCorridorTargetHelper {
                     new DungeonEditorWorkspaceValues.CorridorDoorEndpoint(
                             handleRef.roomId(),
                             handleRef.clusterId(),
-                            handleRef.anchor().toWorkspaceCell(),
+                            roomCell,
                             handleRef.direction(),
                             new DungeonTopologyRef(
                                     DungeonTopologyElementKind.DOOR,
@@ -216,6 +217,28 @@ public final class DungeonEditorCorridorTargetHelper {
                     && DungeonEditorWorkspaceValues.hasId(hit.handleRef().clusterId())
                     && !hit.handleRef().direction().isBlank()
                     && DungeonEditorWorkspaceValues.hasId(hit.topologyRefId());
+        }
+
+        private static DungeonEditorWorkspaceValues.Cell roomCellForDoorHandle(HandleTarget handleRef) {
+            DungeonEditorWorkspaceValues.Cell corridorCell = handleRef.anchor().toWorkspaceCell();
+            return switch (handleRef.direction()) {
+                case "EAST" -> roomCellNear(corridorCell, -1, 0);
+                case "SOUTH" -> roomCellNear(corridorCell, 0, -1);
+                case "WEST" -> roomCellNear(corridorCell, 1, 0);
+                case "NORTH" -> roomCellNear(corridorCell, 0, 1);
+                default -> roomCellNear(corridorCell, 0, 1);
+            };
+        }
+
+        private static DungeonEditorWorkspaceValues.Cell roomCellNear(
+                DungeonEditorWorkspaceValues.Cell corridorCell,
+                int deltaQ,
+                int deltaR
+        ) {
+            return new DungeonEditorWorkspaceValues.Cell(
+                    corridorCell.q() + deltaQ,
+                    corridorCell.r() + deltaR,
+                    corridorCell.level());
         }
 
         private static long resolveCorridorId(HitTarget hit) {

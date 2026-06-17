@@ -751,7 +751,7 @@ public class DungeonMapView extends BorderPane {
                 gc.setGlobalAlpha(text.style().alpha());
                 gc.setFill(PaintPalette.defaultTextColor(text.textColor()));
                 gc.setFont(PaintPalette.fxFont(text.typography()));
-                gc.fillText(text.text(), centerX, y + height * 0.69);
+                gc.fillText(text.text(), centerX, y + height * 0.69, Math.max(1.0, width * 0.92));
                 gc.restore();
             }
             gc.setTextAlign(TextAlignment.LEFT);

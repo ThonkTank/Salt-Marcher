@@ -6,7 +6,6 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainView
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonFacts;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
@@ -37,12 +36,13 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
         return snapshotBuilder.loadCommittedSnapshot(workflow.session().selectedMapId());
     }
 
-    DungeonEditorSessionSnapshot.SnapshotData currentSnapshot() {
-        return workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
+    public void publishCurrent() {
+        snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
     }
 
-    public void publishCurrent() {
-        snapshotPublicationUseCase.execute(currentSnapshot());
+    public void publishSessionPreview() {
+        snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(
+                snapshotBuilder.executeSessionPreview(workflow.session())));
     }
 
     private void publishInMemoryPreview() {
@@ -71,7 +71,7 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
                 workflow.applyEffect(DungeonEditorMainViewEffect.clearedSelection());
             }
         }
-        if (applyPreview == null && inMemoryDoorMovePreview(effect.preview())) {
+        if (applyPreview == null && inMemoryDragPreview(effect.preview())) {
             if (previousPreview.equals(workflow.session().preview())) {
                 return;
             }
@@ -92,6 +92,7 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
         return switch (preview) {
             case DungeonEditorSessionValues.RoomRectanglePreview room -> room.deleteMode();
             case DungeonEditorSessionValues.ClusterBoundariesPreview boundaries -> boundaries.deleteMode();
+            case DungeonEditorSessionValues.StairCreatePreview ignored -> false;
             case DungeonEditorSessionValues.DeleteCorridorPreview ignored -> true;
             case DungeonEditorSessionValues.NoPreview ignored -> false;
             case DungeonEditorSessionValues.CorridorCreatePreview ignored -> false;
@@ -100,8 +101,18 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
         };
     }
 
-    private static boolean inMemoryDoorMovePreview(DungeonEditorSessionValues.@Nullable Preview preview) {
-        return preview instanceof DungeonEditorSessionValues.MoveHandlePreview moveHandle
-                && moveHandle.handleRef().kind() == DungeonEditorHandleType.DOOR;
+    private static boolean inMemoryDragPreview(DungeonEditorSessionValues.@Nullable Preview preview) {
+        if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview moveHandle) {
+            return inMemoryMoveHandlePreview(moveHandle);
+        }
+        return preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview;
+    }
+
+    private static boolean inMemoryMoveHandlePreview(DungeonEditorSessionValues.MoveHandlePreview moveHandle) {
+        DungeonEditorHandleType kind = moveHandle.handleRef().kind();
+        return kind == DungeonEditorHandleType.DOOR
+                || kind == DungeonEditorHandleType.CLUSTER_LABEL
+                || kind == DungeonEditorHandleType.CLUSTER_CORNER
+                || kind == DungeonEditorHandleType.CLUSTER_WALL_RUN;
     }
 }

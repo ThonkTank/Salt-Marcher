@@ -3,6 +3,7 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import javafx.beans.property.ReadOnlyObjectProperty;
@@ -763,7 +764,7 @@ final class DungeonEditorStateContentModel {
     private record NameDraftKey(long selectedMapIdValue, String targetKind, long targetId) {
         NameDraftKey {
             selectedMapIdValue = Math.max(0L, selectedMapIdValue);
-            targetKind = targetKind == null ? "" : targetKind.trim().toUpperCase(java.util.Locale.ROOT);
+            targetKind = targetKind == null ? "" : targetKind.trim().toUpperCase(Locale.ROOT);
             targetId = Math.max(0L, targetId);
         }
     }
@@ -841,7 +842,7 @@ final class DungeonEditorStateContentModel {
     }
 
     private static String transitionDestinationType(String value) {
-        String normalized = value == null ? "" : value.strip().toUpperCase(java.util.Locale.ROOT);
+        String normalized = value == null ? "" : value.strip().toUpperCase(Locale.ROOT);
         if (normalized.isBlank()) {
             return "OVERWORLD_TILE";
         }
@@ -922,6 +923,13 @@ final class DungeonEditorStateContentModel {
             if (preview == null || preview instanceof DungeonEditorPreview.NonePreview) {
                 return "Topologie-Preview: inaktiv";
             }
+            if (preview instanceof DungeonEditorPreview.StairCreatePreview stairCreatePreview) {
+                return "Topologie-Preview: "
+                        + stairShapeLabel(stairCreatePreview.shapeName())
+                        + " bei q=" + stairCreatePreview.anchor().q()
+                        + ", r=" + stairCreatePreview.anchor().r()
+                        + ", z=" + stairCreatePreview.anchor().level();
+            }
             if (preview instanceof DungeonEditorPreview.MoveHandlePreview movePreview) {
                 return "Topologie-Preview: verschieben dq=" + movePreview.deltaQ()
                         + ", dr=" + movePreview.deltaR()
@@ -944,6 +952,14 @@ final class DungeonEditorStateContentModel {
                         + " (" + stretch.sourceEdges().size() + ")";
             }
             return "Topologie-Preview: aktiv";
+        }
+
+        private static String stairShapeLabel(String shapeName) {
+            return switch (shapeName == null ? "" : shapeName.trim().toUpperCase(Locale.ROOT)) {
+                case "SQUARE" -> "Eckspirale";
+                case "CIRCULAR" -> "Rundspirale";
+                default -> "Gerade";
+            };
         }
     }
 

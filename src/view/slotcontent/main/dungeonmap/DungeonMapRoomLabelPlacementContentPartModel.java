@@ -1,5 +1,6 @@
 package src.view.slotcontent.main.dungeonmap;
 
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -7,24 +8,29 @@ import org.jspecify.annotations.Nullable;
 
 final class DungeonMapRoomLabelPlacementContentPartModel {
     private static final double WALL_OFFSET_SCENE = 0.34;
-    private static final double EPSILON = 0.000_001;
+    private static final double LABEL_WALL_PADDING_SCENE = 0.32;
+    private static final Comparator<WallRun> WALL_RUN_ORDER =
+            Comparator.comparingInt(WallRun::length)
+                    .thenComparingInt(run -> -run.priority())
+                    .thenComparingDouble(WallRun::centerR)
+                    .thenComparingDouble(run -> -run.centerQ());
 
     RoomLabelPlacement placementFor(List<DungeonMapContentModel.DungeonMapRenderState.Cell> cells) {
         List<DungeonMapContentModel.DungeonMapRenderState.Cell> safeCells = cells == null ? List.of() : cells;
         DungeonMapContentModel.EditorProjectionFacts.CellCenter fallback =
                 DungeonMapContentModel.EditorProjectionFacts.centerOfCells(safeCells);
         if (safeCells.isEmpty()) {
-            return new RoomLabelPlacement(fallback.q(), fallback.r(), 0.0);
+            return new RoomLabelPlacement(fallback.q(), fallback.r(), 0.0, 0.0);
         }
         Set<String> occupied = occupiedCells(safeCells);
         WallRun best = null;
         for (DungeonMapContentModel.DungeonMapRenderState.Cell cell : safeCells) {
-            best = better(best, horizontalRunIfStart(cell, occupied, -1, 0, 0, 1), fallback);
-            best = better(best, horizontalRunIfStart(cell, occupied, 1, 1, 1, -1), fallback);
-            best = better(best, verticalRunIfStart(cell, occupied, -1, 2, 0, 1), fallback);
-            best = better(best, verticalRunIfStart(cell, occupied, 1, 3, 1, -1), fallback);
+            best = better(best, horizontalRunIfStart(cell, occupied, -1, 2, 0, 1));
+            best = better(best, horizontalRunIfStart(cell, occupied, 1, 0, 1, -1));
+            best = better(best, verticalRunIfStart(cell, occupied, -1, 1, 0, 1));
+            best = better(best, verticalRunIfStart(cell, occupied, 1, 3, 1, -1));
         }
-        return best == null ? new RoomLabelPlacement(fallback.q(), fallback.r(), 0.0) : best.toPlacement();
+        return best == null ? new RoomLabelPlacement(fallback.q(), fallback.r(), 0.0, 0.0) : best.toPlacement();
     }
 
     private static Set<String> occupiedCells(List<DungeonMapContentModel.DungeonMapRenderState.Cell> cells) {
@@ -55,7 +61,7 @@ final class DungeonMapRoomLabelPlacementContentPartModel {
         }
         double centerQ = (cell.q() + endQ + 1.0) / 2.0;
         double centerR = cell.r() + lineOffsetR + inwardDirection * WALL_OFFSET_SCENE;
-        return new WallRun(endQ - cell.q() + 1, centerQ, centerR, 0.0, priority, Double.POSITIVE_INFINITY);
+        return new WallRun(endQ - cell.q() + 1, centerQ, centerR, 0.0, priority);
     }
 
     private static @Nullable WallRun verticalRunIfStart(
@@ -78,31 +84,20 @@ final class DungeonMapRoomLabelPlacementContentPartModel {
         }
         double centerQ = cell.q() + lineOffsetQ + inwardDirection * WALL_OFFSET_SCENE;
         double centerR = (cell.r() + endR + 1.0) / 2.0;
-        return new WallRun(endR - cell.r() + 1, centerQ, centerR, 90.0, priority, Double.POSITIVE_INFINITY);
+        return new WallRun(endR - cell.r() + 1, centerQ, centerR, 90.0, priority);
     }
 
     private static WallRun better(
             @Nullable WallRun current,
-            @Nullable WallRun candidate,
-            DungeonMapContentModel.EditorProjectionFacts.CellCenter center
+            @Nullable WallRun candidate
     ) {
         if (candidate == null) {
             return current;
         }
-        WallRun qualifiedCandidate = candidate.withDistanceTo(center);
-        if (current == null) {
-            return qualifiedCandidate;
+        if (current == null || WALL_RUN_ORDER.compare(candidate, current) > 0) {
+            return candidate;
         }
-        if (qualifiedCandidate.length() != current.length()) {
-            return qualifiedCandidate.length() > current.length() ? qualifiedCandidate : current;
-        }
-        if (qualifiedCandidate.distanceToCentroid() < current.distanceToCentroid() - EPSILON) {
-            return qualifiedCandidate;
-        }
-        if (qualifiedCandidate.distanceToCentroid() > current.distanceToCentroid() + EPSILON) {
-            return current;
-        }
-        return qualifiedCandidate.priority() < current.priority() ? qualifiedCandidate : current;
+        return current;
     }
 
     private static boolean exposed(
@@ -124,7 +119,7 @@ final class DungeonMapRoomLabelPlacementContentPartModel {
         return q + "," + r + "," + z;
     }
 
-    record RoomLabelPlacement(double centerQ, double centerR, double rotationDegrees) {
+    record RoomLabelPlacement(double centerQ, double centerR, double rotationDegrees, double availableLengthScene) {
     }
 
     private record WallRun(
@@ -132,17 +127,14 @@ final class DungeonMapRoomLabelPlacementContentPartModel {
             double centerQ,
             double centerR,
             double rotationDegrees,
-            int priority,
-            double distanceToCentroid
+            int priority
     ) {
-        private WallRun withDistanceTo(DungeonMapContentModel.EditorProjectionFacts.CellCenter center) {
-            double deltaQ = centerQ - center.q();
-            double deltaR = centerR - center.r();
-            return new WallRun(length, centerQ, centerR, rotationDegrees, priority, Math.hypot(deltaQ, deltaR));
-        }
-
         private RoomLabelPlacement toPlacement() {
-            return new RoomLabelPlacement(centerQ, centerR, rotationDegrees);
+            return new RoomLabelPlacement(
+                    centerQ,
+                    centerR,
+                    rotationDegrees,
+                    Math.max(0.0, length - LABEL_WALL_PADDING_SCENE));
         }
     }
 }

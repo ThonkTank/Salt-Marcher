@@ -110,9 +110,9 @@ final class DungeonEditorPointerApplicationServiceAssembly {
                         new PairedToolUseCases(
                                 pointer(createCorridor::press, null, null, createCorridor::hover),
                                 pointer(deleteCorridor::press, null, null, deleteCorridor::hover)),
-                        pointer(createStair::press, null, null, null),
-                        pointer(createStair::pressSquare, null, null, null),
-                        pointer(createStair::pressCircular, null, null, null),
+                        pointer(createStair::press, null, null, createStair::hover),
+                        pointer(createStair::pressSquare, null, null, createStair::hoverSquare),
+                        pointer(createStair::pressCircular, null, null, createStair::hoverCircular),
                         pointer(deleteStair::press, null, null, null),
                         pointer(createTransition::press, null, null, null),
                         pointer(deleteTransition::press, null, null, null)));

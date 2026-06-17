@@ -173,6 +173,19 @@
 .button.accent:hover {
     -fx-background-color: -sm-accent-hover;
 }
+.split-menu-button.compact > .label,
+.split-menu-button.compact > .arrow-button {
+    -fx-padding: 2 6 2 6;
+    -fx-font-size: 11px;
+}
+.split-menu-button.accent > .label,
+.split-menu-button.accent > .arrow-button {
+    -fx-background-color: -sm-accent;
+}
+.split-menu-button.accent:hover > .label,
+.split-menu-button.accent:hover > .arrow-button {
+    -fx-background-color: -sm-accent-hover;
+}
 .button.neutral-action {
     -fx-background-color: -sm-bg-card;
     -fx-border-color: -sm-border-subtle;
@@ -859,6 +872,10 @@
     -fx-highlight-text-fill: -sm-bg-darkest;
     -fx-padding: 2 5 2 5;
 }
+.dungeon-map-inline-label-room {
+    -fx-font-family: "Monospaced";
+    -fx-font-weight: bold;
+}
 .dungeon-map-overlay-placeholder {
     -fx-text-fill: rgba(236, 237, 238, 0.92);
     -fx-font-size: 22px;
@@ -926,6 +943,10 @@
 .dungeon-editor-popup {
     -fx-padding: 10;
     -fx-spacing: 4;
+}
+.catalog-crud-popup {
+    -fx-padding: 10;
+    -fx-spacing: 10;
 }
 .dungeon-editor-popup-actions {
     -fx-spacing: 8;
@@ -1233,6 +1254,10 @@
 .combat-name {
     -fx-font-size: 14px;
     -fx-font-weight: bold;
+}
+.shell-state-scroll {
+    -fx-background-color: transparent;
+    -fx-background: transparent;
 }
 .combat-name-dead {
     -fx-text-fill: -sm-text-muted;

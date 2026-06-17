@@ -167,11 +167,18 @@ final class DungeonEditorSelectionHarness {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("DE-SEL-002 door boundary not loaded."));
         Point2D doorMidpoint = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
-        var doorPointerTarget = binding.mapContentModel()
+        var doorMidpointTarget = binding.mapContentModel()
                 .resolvePointerTarget(doorMidpoint.getX(), doorMidpoint.getY());
+        assertEquals("HANDLE",
+                doorMidpointTarget.targetKind().name(),
+                "DE-SEL-002 render hit index resolves the centered door drag affordance at the door midpoint: "
+                        + doorMidpointTarget);
+        Point2D doorSelectionPoint = new Point2D(doorMidpoint.getX(), doorMidpoint.getY() - 0.42);
+        var doorPointerTarget = binding.mapContentModel()
+                .resolvePointerTarget(doorSelectionPoint.getX(), doorSelectionPoint.getY());
         assertEquals("BOUNDARY",
                 doorPointerTarget.targetKind().name(),
-                "DE-SEL-002 render hit index resolves the door midpoint as a boundary: "
+                "DE-SEL-002 render hit index resolves the free door segment as a boundary: "
                         + doorPointerTarget);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 

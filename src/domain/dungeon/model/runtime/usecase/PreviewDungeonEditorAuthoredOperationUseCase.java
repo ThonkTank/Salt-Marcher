@@ -16,8 +16,8 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
     private final DungeonEditorDungeonState state;
     private final DungeonEditorAuthoredPublicationUseCase publicationUseCase =
             new DungeonEditorAuthoredPublicationUseCase();
-    private final PreviewDungeonEditorDoorMoveUseCase doorMovePreviewUseCase =
-            new PreviewDungeonEditorDoorMoveUseCase();
+    private final PreviewDungeonEditorSurfaceMoveUseCase surfaceMovePreviewUseCase =
+            new PreviewDungeonEditorSurfaceMoveUseCase();
 
     public PreviewDungeonEditorAuthoredOperationUseCase(
             ApplyDungeonAuthoredMutationUseCase mutationUseCase,
@@ -28,6 +28,10 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
     }
 
     public void execute(MapId mapId, DungeonEditorSessionValues.Preview preview) {
+        if (preview instanceof DungeonEditorSessionValues.StairCreatePreview) {
+            state.replacePreview(null);
+            return;
+        }
         DungeonEditorAuthoredOperation operation =
                 DungeonEditorAuthoredOperationHelper.authoredOperation(preview);
         if (operation == null) {
@@ -37,14 +41,18 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
         ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.preview(
                 domainMapId(mapId),
                 operation);
-        state.replacePreview(previewFacts(result));
+        publishPreview(result);
     }
 
     public void executeInMemory(
             DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
             DungeonEditorSessionValues.Preview preview
     ) {
-        state.replacePreview(doorMovePreviewUseCase.execute(surface, preview));
+        state.replacePreview(surfaceMovePreviewUseCase.execute(surface, preview));
+    }
+
+    public void publishPreview(ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData preview) {
+        state.replacePreview(previewFacts(preview));
     }
 
     private static DungeonMapIdentity domainMapId(MapId mapId) {
@@ -76,9 +84,6 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
 
     private static String statusText(ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData preview) {
         if (preview == null) {
-            return "";
-        }
-        if (!preview.changed()) {
             return "";
         }
         if (!preview.reactionMessages().isEmpty()) {

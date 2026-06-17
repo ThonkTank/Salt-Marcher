@@ -528,6 +528,7 @@ final class DungeonEditorStairHarness {
         assertTrue(stableRowsBefore.isEmpty(), "DE-STAIR-001 fixture starts without stair stable rows");
         assertTrue(pathRowsBefore.isEmpty(), "DE-STAIR-001 fixture starts without stair path rows");
         assertTrue(exitRowsBefore.isEmpty(), "DE-STAIR-001 fixture starts without stair exit rows");
+        Set<String> committedRenderCellsBefore = renderSurfaceCellOriginsWithZ(binding.mapContentModel());
 
         click(button(controls, "Treppe"));
         assertTrue(popupButtonVisible("Gerade"), "DE-STAIR-001 straight stair option is visible");
@@ -535,9 +536,26 @@ final class DungeonEditorStairHarness {
         assertEquals("STAIR_CREATE", runtime.controlsModel().current().selectedTool().name(),
                 "DE-STAIR-001 input route selects the straight stair creation tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        long hoverStartNanos = System.nanoTime();
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(6.5),
+                viewport.sceneToScreenY(6.5),
+                false);
+        assertPreviewLatencyWithinBudget(hoverStartNanos, "DE-STAIR-001 straight stair hover preview");
+        assertStairCreatePreview(
+                runtime.mapSurfaceModel().current(),
+                "STRAIGHT",
+                6,
+                6,
+                0,
+                "DE-STAIR-001 straight stair hover");
+        assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).contains("6,6,0"),
+                "DE-STAIR-001 render scene exposes the straight stair hover preview cell");
         List<String> invalidAuthoredRowsBefore = runtime.database().authoredGeometryState(mapId);
         DungeonEditorMapSurfaceSnapshot invalidCreateSurfaceBefore = runtime.mapSurfaceModel().current();
-        Set<String> invalidCreateRenderCellsBefore = renderSurfaceCellOriginsWithZ(binding.mapContentModel());
         clickMap(
                 mapView,
                 MouseButton.PRIMARY,
@@ -556,7 +574,7 @@ final class DungeonEditorStairHarness {
                 runtime,
                 binding,
                 invalidCreateSurfaceBefore,
-                invalidCreateRenderCellsBefore,
+                committedRenderCellsBefore,
                 "DE-STAIR-007 room-interior stair create");
         assertEquals("Treppengeometrie ungueltig.", runtime.controlsModel().current().statusText(),
                 "DE-STAIR-007 room-interior stair create publishes rejection status");
@@ -901,9 +919,44 @@ final class DungeonEditorStairHarness {
         runtime.database().seedGlobalStairIdentitySentinel(reloadHopMapId);
         long globalStairIdBefore = runtime.database().maxStairId();
         selectMap(controls, "Cross Level Corridor Stair Map");
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+
+        click(button(controls, "Treppe"));
+        click(popupButton("Gerade"));
+        long hoverStartNanos = System.nanoTime();
+        fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
+                viewport.sceneToScreenX(4.5), viewport.sceneToScreenY(2.5), false);
+        assertPreviewLatencyWithinBudget(hoverStartNanos,
+                "DE-STAIR-001 cross-level straight stair hover preview");
+        assertStairCreatePreview(
+                runtime.mapSurfaceModel().current(),
+                "STRAIGHT",
+                4,
+                2,
+                0,
+                "DE-STAIR-001 cross-level straight stair hover");
+        click(button(controls, "+"));
+        assertEquals(1, runtime.mapSurfaceModel().current().projectionLevel(),
+                "DE-STAIR-001 level shift publishes the next projection level");
+        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+                "DE-STAIR-001 level shift clears stale straight stair hover preview");
+        long levelHoverStartNanos = System.nanoTime();
+        fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
+                viewport.sceneToScreenX(4.5), viewport.sceneToScreenY(2.5), false);
+        assertPreviewLatencyWithinBudget(levelHoverStartNanos,
+                "DE-STAIR-001 same-position stair hover preview after level shift");
+        assertStairCreatePreview(
+                runtime.mapSurfaceModel().current(),
+                "STRAIGHT",
+                4,
+                2,
+                1,
+                "DE-STAIR-001 same-position stair hover after level shift");
+        click(button(controls, "-"));
+        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+                "DE-STAIR-001 level shift back clears cross-level stair hover preview");
 
         click(button(controls, "Tür"));
-        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D levelZeroWall = boundaryMidpointNear(binding.mapContentModel(), "WALL", 4.0, 2.5);
         clickMap(
                 mapView,
@@ -929,7 +982,13 @@ final class DungeonEditorStairHarness {
         click(button(controls, "Korridor"));
         assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
                 "DE-STAIR-008 corridor family selects corridor-create tool");
-        Point2D levelZeroDoor = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
+        Point2D levelZeroDoor = doorHandleCenterAt(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                4,
+                2,
+                0,
+                "DE-STAIR-008 lower door");
         fireMapMousePressed(
                 mapView,
                 MouseButton.PRIMARY,
@@ -939,7 +998,13 @@ final class DungeonEditorStairHarness {
         assertEquals(corridorIdsBefore, runtime.database().corridorIdsForMap(mapId),
                 "DE-STAIR-008 first cross-level endpoint does not persist a partial corridor");
         click(button(controls, "+"));
-        Point2D levelOneDoor = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
+        Point2D levelOneDoor = doorHandleCenterAt(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                4,
+                2,
+                1,
+                "DE-STAIR-008 upper door");
         fireMapMousePressed(
                 mapView,
                 MouseButton.PRIMARY,
@@ -1002,6 +1067,24 @@ final class DungeonEditorStairHarness {
         results.add("DE-STAIR-008 Ready: cross-level door corridor -> SQLite corridor-bound stair -> snapshot/render");
     }
 
+    private static void assertStairCreatePreview(
+            DungeonEditorMapSurfaceSnapshot snapshot,
+            String expectedShape,
+            int expectedQ,
+            int expectedR,
+            int expectedLevel,
+            String message
+    ) {
+        assertTrue(snapshot.preview() instanceof DungeonEditorPreview.StairCreatePreview,
+                message + " publishes a stair create preview");
+        DungeonEditorPreview.StairCreatePreview preview =
+                (DungeonEditorPreview.StairCreatePreview) snapshot.preview();
+        assertEquals(expectedShape, preview.shapeName(), message + " preview shape");
+        assertEquals(expectedQ, preview.anchor().q(), message + " preview anchor q");
+        assertEquals(expectedR, preview.anchor().r(), message + " preview anchor r");
+        assertEquals(expectedLevel, preview.anchor().level(), message + " preview anchor level");
+    }
+
     private static void assertCrossLevelCorridorCreatesEveryCrossedLevelExit(String scenario) {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
@@ -1031,12 +1114,24 @@ final class DungeonEditorStairHarness {
         click(button(controls, "-"));
         click(button(controls, "-"));
         click(button(controls, "Korridor"));
-        Point2D levelZeroDoor = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
+        Point2D levelZeroDoor = doorHandleCenterAt(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                4,
+                2,
+                0,
+                scenario + " lower door");
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(levelZeroDoor.getX()), viewport.sceneToScreenY(levelZeroDoor.getY()), false);
         click(button(controls, "+"));
         click(button(controls, "+"));
-        Point2D levelTwoDoor = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
+        Point2D levelTwoDoor = doorHandleCenterAt(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                4,
+                2,
+                2,
+                scenario + " upper door");
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(levelTwoDoor.getX()), viewport.sceneToScreenY(levelTwoDoor.getY()), false);
 

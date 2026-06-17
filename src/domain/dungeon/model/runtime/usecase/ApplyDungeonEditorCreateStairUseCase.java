@@ -3,7 +3,10 @@ package src.domain.dungeon.model.runtime.usecase;
 import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorCreateStairUseCase {
@@ -35,6 +38,18 @@ public final class ApplyDungeonEditorCreateStairUseCase {
         press(input, StairShape.CIRCULAR);
     }
 
+    public void hover(MainViewInput input) {
+        hover(input, StairShape.STRAIGHT);
+    }
+
+    public void hoverSquare(MainViewInput input) {
+        hover(input, StairShape.SQUARE);
+    }
+
+    public void hoverCircular(MainViewInput input) {
+        hover(input, StairShape.CIRCULAR);
+    }
+
     private void press(MainViewInput input, StairShape shape) {
         if (!workflow.session().hasSelectedMap() || input == null) {
             effectUseCase.publishCurrent();
@@ -51,10 +66,27 @@ public final class ApplyDungeonEditorCreateStairUseCase {
         effectUseCase.publishCurrent();
     }
 
+    private void hover(MainViewInput input, StairShape shape) {
+        if (!workflow.session().hasSelectedMap() || input == null) {
+            workflow.clearPreviewWithStatus("");
+            effectUseCase.publishSessionPreview();
+            return;
+        }
+        Cell anchor = anchor(input);
+        workflow.applyEffect(DungeonEditorMainViewEffect.preview(new DungeonEditorSessionValues.StairCreatePreview(
+                workspaceCell(anchor),
+                shape.name())));
+        effectUseCase.publishSessionPreview();
+    }
+
     private Cell anchor(MainViewInput input) {
         return new Cell(
                 (int) Math.floor(input.canvasX()),
                 (int) Math.floor(input.canvasY()),
                 workflow.session().projectionLevel());
+    }
+
+    private static DungeonEditorWorkspaceValues.Cell workspaceCell(Cell anchor) {
+        return new DungeonEditorWorkspaceValues.Cell(anchor.q(), anchor.r(), anchor.level());
     }
 }

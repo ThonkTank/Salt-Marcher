@@ -30,6 +30,7 @@ import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 import bootstrap.AppBootstrap;
 import javafx.event.ActionEvent;
 import javafx.geometry.Bounds;
@@ -266,9 +267,9 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             HarnessRuntime runtime,
             String mapName
     ) {
-        click(button(controls, "Neu"));
-        textField(controls, "Dungeon-Name").setText(mapName);
-        click(button(controls, "Erstellen"));
+        clickPrimary(splitMenuButton(controls, "Neu"));
+        catalogPopupTextField(controls, "Dungeon-Name").setText(mapName);
+        click(catalogPopupButton(controls, "Erstellen"));
         return selectedMapId(runtime.controlsModel().current(), mapName);
     }
 
@@ -282,6 +283,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
 
     static void selectMap(DungeonEditorControlsView controls, String mapName) {
         selectComboItem(comboBox(controls, "Dungeon auswählen"), mapName);
+        click(button(controls, "Öffnen"));
     }
 
     static void fireMapShortcut(DungeonMapView view, KeyCode keyCode) {
@@ -1072,6 +1074,20 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                 .orElseThrow(() -> new AssertionError(message + " door handle not published"));
     }
 
+    static Point2D doorHandleCenterAt(
+            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonMapContentModel mapContentModel,
+            int cellX,
+            int cellY,
+            int cellZ,
+            String message
+    ) {
+        var handle = firstDoorHandleAt(snapshot, cellX, cellY, cellZ, message);
+        return glyphCenterForRef(
+                mapContentModel,
+                editorTopologyRef(handle.ref().topologyRef()));
+    }
+
     static src.domain.dungeon.published.DungeonEditorHandleSnapshot firstClusterCornerHandleAt(
             DungeonEditorMapSurfaceSnapshot snapshot,
             int cellX,
@@ -1676,6 +1692,14 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         button.fire();
     }
 
+    static void clickPrimary(SplitMenuButton button) {
+        if (button.getOnAction() == null) {
+            button.fire();
+            return;
+        }
+        button.getOnAction().handle(new ActionEvent(button, button));
+    }
+
     static ButtonBase button(Parent parent, String text) {
         return descendantsWithFallback(parent).stream()
                 .filter(ButtonBase.class::isInstance)
@@ -1695,7 +1719,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
     }
 
     static SplitMenuButton splitMenuButton(Parent parent, String text) {
-        return descendants(parent).stream()
+        return descendantsWithFallback(parent).stream()
                 .filter(SplitMenuButton.class::isInstance)
                 .map(SplitMenuButton.class::cast)
                 .filter(button -> text.equals(button.getText()))
@@ -1721,6 +1745,33 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                 .filter(field -> accessibleText.equals(field.getAccessibleText()))
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("TextField not found: " + accessibleText));
+    }
+
+    static TextField catalogPopupTextField(Parent parent, String accessibleText) {
+        return descendants(catalogPopupContent(parent)).stream()
+                .filter(TextField.class::isInstance)
+                .map(TextField.class::cast)
+                .filter(field -> accessibleText.equals(field.getAccessibleText()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Catalog popup TextField not found: " + accessibleText));
+    }
+
+    static ButtonBase catalogPopupButton(Parent parent, String text) {
+        return descendants(catalogPopupContent(parent)).stream()
+                .filter(ButtonBase.class::isInstance)
+                .map(ButtonBase.class::cast)
+                .filter(button -> text.equals(button.getText()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Catalog popup button not found: " + text));
+    }
+
+    static ButtonBase catalogPopupButtonWithAccessibleText(Parent parent, String accessibleText) {
+        return descendants(catalogPopupContent(parent)).stream()
+                .filter(ButtonBase.class::isInstance)
+                .map(ButtonBase.class::cast)
+                .filter(button -> accessibleText.equals(button.getAccessibleText()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Catalog popup button not found: " + accessibleText));
     }
 
     static boolean textFieldPresent(Parent parent, String accessibleText) {
@@ -1882,6 +1933,19 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         return wrapperNodes;
     }
 
+    private static Parent catalogPopupContent(Parent parent) {
+        CatalogCrudControlsView catalogControls = descendantsWithFallback(parent).stream()
+                .filter(CatalogCrudControlsView.class::isInstance)
+                .map(CatalogCrudControlsView.class::cast)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("CatalogCrudControlsView not found."));
+        Object content = catalogControls.getProperties().get(CatalogCrudControlsView.OPERATION_CONTENT_PROPERTY);
+        if (content instanceof Parent popupContent) {
+            return popupContent;
+        }
+        throw new IllegalStateException("Catalog popup content metadata not found.");
+    }
+
     static <T extends Node> T descendant(Parent parent, Class<T> type) {
         return descendants(parent).stream()
                 .filter(type::isInstance)
@@ -2009,6 +2073,22 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         return elapsedMillis;
     }
 
+    static PreviewLatencyStats assertPreviewLatencyStreamWithinBudget(String message, Runnable... samples) {
+        assertTrue(samples != null && samples.length > 0, message + " has latency samples");
+        long[] elapsedMillis = new long[samples.length];
+        for (int index = 0; index < samples.length; index++) {
+            long startedNanos = System.nanoTime();
+            samples[index].run();
+            elapsedMillis[index] = elapsedMillis(startedNanos);
+        }
+        PreviewLatencyStats stats = PreviewLatencyStats.from(elapsedMillis);
+        assertTrue(stats.maxMillis() <= PREVIEW_LATENCY_BUDGET_MS
+                        && stats.p95Millis() <= PREVIEW_LATENCY_BUDGET_MS
+                        && stats.p99Millis() <= PREVIEW_LATENCY_BUDGET_MS,
+                message + " stays within stream latency budget: " + stats);
+        return stats;
+    }
+
     static void assertEquals(long expected, long actual, String message) {
         if (expected != actual) {
             throw new AssertionError(message + " expected=" + expected + " actual=" + actual);
@@ -2025,6 +2105,29 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         double tolerance = 0.000_001;
         if (Math.abs(expected - actual) > tolerance) {
             throw new AssertionError(message + " expected=" + expected + " actual=" + actual);
+        }
+    }
+
+    record PreviewLatencyStats(long maxMillis, long p95Millis, long p99Millis, long sampleCount) {
+        private static PreviewLatencyStats from(long[] elapsedMillis) {
+            long[] sorted = elapsedMillis.clone();
+            java.util.Arrays.sort(sorted);
+            return new PreviewLatencyStats(
+                    sorted[sorted.length - 1],
+                    percentile(sorted, 0.95),
+                    percentile(sorted, 0.99),
+                    sorted.length);
+        }
+
+        private static long percentile(long[] sorted, double percentile) {
+            int index = (int) Math.ceil(percentile * sorted.length) - 1;
+            return sorted[Math.max(0, Math.min(sorted.length - 1, index))];
+        }
+
+        @Override
+        public String toString() {
+            return "max=%dms p95=%dms p99=%dms samples=%d"
+                    .formatted(maxMillis, p95Millis, p99Millis, sampleCount);
         }
     }
 

@@ -10,7 +10,6 @@ import src.domain.dungeon.published.DungeonEditorPreviewDiff;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 
 final class DungeonMapPreviewDiffContentPartModel {
-    private static final String ROOM_LABEL_KIND = "ROOM_LABEL";
     private static final String FEATURE_LABEL_KIND = "FEATURE_LABEL";
 
     void addPreviewDiff(
@@ -19,7 +18,8 @@ final class DungeonMapPreviewDiffContentPartModel {
             List<DungeonMapContentModel.DungeonMapRenderState.Label> labels,
             List<DungeonMapContentModel.DungeonMapRenderState.Marker> markers,
             DungeonEditorPreviewDiff previewDiff,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorStateSnapshot.Selection selection,
+            DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel
     ) {
         DungeonEditorPreviewDiff safePreviewDiff = previewDiff == null
                 ? DungeonEditorPreviewDiff.empty()
@@ -27,8 +27,8 @@ final class DungeonMapPreviewDiffContentPartModel {
         if (safePreviewDiff.isEmpty()) {
             return;
         }
-        addPreviewAreaDiff(cells, labels, safePreviewDiff.changedAreas(), selection, false);
-        addPreviewAreaDiff(cells, labels, safePreviewDiff.removedAreas(), selection, true);
+        addPreviewAreaDiff(cells, labels, safePreviewDiff.changedAreas(), selection, roomLabelPlacementContentPartModel, false);
+        addPreviewAreaDiff(cells, labels, safePreviewDiff.removedAreas(), selection, roomLabelPlacementContentPartModel, true);
         addPreviewBoundaryDiff(edges, safePreviewDiff.changedBoundaries(), selection);
         addPreviewBoundaryDiff(edges, safePreviewDiff.removedBoundaries(), selection);
         addPreviewHandleDiff(markers, safePreviewDiff.changedHandles(), selection);
@@ -42,10 +42,11 @@ final class DungeonMapPreviewDiffContentPartModel {
             List<DungeonMapContentModel.DungeonMapRenderState.Label> labels,
             List<DungeonEditorMapSnapshot.Area> areas,
             DungeonEditorStateSnapshot.Selection selection,
+            DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel,
             boolean destructive
     ) {
         for (DungeonEditorMapSnapshot.Area area : areas) {
-            addPreviewArea(cells, labels, area, selection, destructive);
+            addPreviewArea(cells, labels, area, selection, roomLabelPlacementContentPartModel, destructive);
         }
     }
 
@@ -129,6 +130,7 @@ final class DungeonMapPreviewDiffContentPartModel {
             List<DungeonMapContentModel.DungeonMapRenderState.Label> labels,
             DungeonEditorMapSnapshot.Area area,
             DungeonEditorStateSnapshot.Selection selection,
+            DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel,
             boolean destructive
     ) {
         boolean selected = DungeonMapContentModel.EditorSelectionFacts.selectedArea(area, selection);
@@ -140,20 +142,12 @@ final class DungeonMapPreviewDiffContentPartModel {
         if (previewCells.isEmpty()) {
             return;
         }
-        DungeonMapContentModel.EditorProjectionFacts.CellCenter center =
-                DungeonMapContentModel.EditorProjectionFacts.centerOfCells(previewCells);
-        labels.add(new DungeonMapContentModel.DungeonMapRenderState.Label(
-                area.label(),
-                center.q(),
-                center.r(),
-                previewCells.getFirst().z(),
-                area.id(),
-                DungeonMapContentModel.EditorProjectionFacts.clusterId(area),
-                DungeonMapContentModel.EditorProjectionFacts.areaTopologyRef(area),
-                ROOM_LABEL_KIND,
+        labels.add(DungeonMapContentModel.EditorRenderElements.roomLabel(
+                area,
+                previewCells,
+                roomLabelPlacementContentPartModel,
                 selected,
-                true,
-                DungeonMapContentModel.EditorProjectionFacts.roomLabelRotationDegrees(previewCells)));
+                true));
     }
 
     private void addPreviewFeature(
@@ -186,6 +180,7 @@ final class DungeonMapPreviewDiffContentPartModel {
                 FEATURE_LABEL_KIND,
                 selected,
                 true,
+                0.0,
                 0.0));
         markers.add(DungeonMapContentModel.EditorRenderElements.featureMarker(
                 feature,

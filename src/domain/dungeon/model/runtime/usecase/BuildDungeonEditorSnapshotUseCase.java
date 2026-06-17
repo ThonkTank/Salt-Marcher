@@ -57,6 +57,14 @@ public final class BuildDungeonEditorSnapshotUseCase {
         return snapshotData(safeState, maps, resolvedMapId);
     }
 
+    public DungeonEditorSessionSnapshot.SnapshotData executeSessionPreview(@Nullable DungeonEditorSession state) {
+        DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
+        List<MapSummary> maps = currentDungeonFacts.currentFacts(null, safeState.selection(), safeState.preview()).maps();
+        @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState, maps);
+        previewOperationUseCase.execute(resolvedMapId, safeState.preview());
+        return snapshotData(safeState, maps, resolvedMapId);
+    }
+
     private DungeonEditorSessionSnapshot.SnapshotData snapshotData(
             DungeonEditorSession safeState,
             List<MapSummary> maps,

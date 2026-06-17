@@ -159,59 +159,44 @@ final class SessionPlannerIntentHandler {
         if (event == null) {
             return;
         }
-        if (consumeCatalogSelection(event)) {
+        String stagedItemId = event.selectedItemId();
+        String openItemId = event.openItemId();
+        if (!stagedItemId.isBlank() || !openItemId.isBlank()) {
+            String itemId = stagedItemId.isBlank() ? openItemId : stagedItemId;
+            catalogContentModel.selectItem(itemId);
+            if (!openItemId.isBlank()) {
+                selectSession(parsePositiveLong(openItemId));
+            }
             return;
         }
-        if (consumeCatalogSubmit(event)) {
-            return;
-        }
-        consumeCatalogEditor(event);
+        consumeCatalogMutation(event);
     }
 
-    private boolean consumeCatalogSelection(CatalogCrudControlsViewInputEvent event) {
-        if (!event.selectedItemId().isBlank()) {
-            catalogContentModel.selectItem(event.selectedItemId());
-            selectSession(parsePositiveLong(event.selectedItemId()));
-            return true;
-        }
-        return false;
-    }
-
-    private boolean consumeCatalogSubmit(CatalogCrudControlsViewInputEvent event) {
+    private void consumeCatalogMutation(CatalogCrudControlsViewInputEvent event) {
         if (!event.createDraftName().isBlank()) {
             catalogContentModel.closeOperation();
             planner.createSession(new SessionPlannerCatalogCommand.CreateSessionCommand(event.createDraftName()));
-            return true;
-        }
-        if (!event.renameItemId().isBlank() && !event.renameDraftName().isBlank()) {
+        } else if (!event.renameItemId().isBlank() && !event.renameDraftName().isBlank()) {
             catalogContentModel.closeOperation();
             planner.renameSession(new SessionPlannerCatalogCommand.RenameSessionCommand(
                     parsePositiveLong(event.renameItemId()),
                     event.renameDraftName()));
-            return true;
-        }
-        if (!event.deleteConfirmItemId().isBlank()) {
+        } else if (!event.deleteConfirmItemId().isBlank()) {
             catalogContentModel.closeOperation();
             planner.deleteSession(new SessionPlannerCatalogCommand.DeleteSessionCommand(parsePositiveLong(event.deleteConfirmItemId())));
-            return true;
+        } else {
+            consumeCatalogEditor(event);
         }
-        return false;
     }
 
     private void consumeCatalogEditor(CatalogCrudControlsViewInputEvent event) {
         if (event.createEditorOpened()) {
             catalogContentModel.openCreate();
-            return;
-        }
-        if (!event.renameEditorItemId().isBlank()) {
+        } else if (!event.renameEditorItemId().isBlank()) {
             catalogContentModel.openRename(event.renameEditorItemId());
-            return;
-        }
-        if (!event.deleteRequestItemId().isBlank()) {
+        } else if (!event.deleteRequestItemId().isBlank()) {
             catalogContentModel.openDelete(event.deleteRequestItemId());
-            return;
-        }
-        if (event.dismissed()) {
+        } else if (event.dismissed()) {
             catalogContentModel.closeOperation();
         }
     }

@@ -131,6 +131,8 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-LABEL-003 render scene publishes uppercase default room label text");
         assertTrue(Math.abs(roomLabelCenter.r() - 2.5) > 0.3 || Math.abs(roomLabelCenter.q() - 2.5) > 0.3,
                 "DE-LABEL-004 default room label moves off the cluster centroid toward a wall-adjacent floor span");
+        assertTrue(roomLabelCenter.r() > 2.5,
+                "DE-LABEL-004 equal-length room label placement prefers the south wall before other walls");
         assertEquals("CELL", binding.mapContentModel()
                         .resolvePointerTarget(roomLabelCenter.q(), roomLabelCenter.r())
                         .targetKind()
@@ -205,6 +207,14 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-LABEL-004 room label renders as subdued floor text without label box fill");
         assertTrue(roomLabelText.style().alpha() < 1.0,
                 "DE-LABEL-004 room label text uses subdued opacity");
+        assertTrue(roomLabelText.textColor().red() < 200 && roomLabelText.textColor().alphaUnit() < 1.0,
+                "DE-LABEL-004 room label text color is a subtle grey instead of bright label text");
+        assertTrue(roomLabelText.typography().fontFamily().equals("Monospaced")
+                        && roomLabelText.typography().bold()
+                        && roomLabelText.typography().fontSizePixels() > 13.0,
+                "DE-LABEL-004 room label uses blockier bold typography scaled from available wall space");
+        assertTrue(roomLabelText.width() > 56.0 / 32.0,
+                "DE-LABEL-004 room label consumes more than the legacy minimum label width when wall space allows");
         assertRoomLabelHitAndEditorPresentation(binding, runtime, roomIds, roomLabelCenter, roomLabelText);
         runtime.context().services()
                 .require(DungeonEditorLabelNameApplicationService.class)
@@ -538,14 +548,14 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-HANDLE-001 standalone authored door handle preserves room identity");
         assertEquals("HANDLE",
                 binding.mapContentModel()
-                        .resolvePointerTarget(standaloneDoor.markerQ(), standaloneDoor.markerR())
+                        .resolvePointerTarget(doorHandleCenterQ(standaloneDoor), doorHandleCenterR(standaloneDoor))
                         .targetKind()
                         .name(),
                 "DE-HANDLE-001 standalone door handle is visible and hittable through the shared handle route");
         assertDoorHandlePillPresentation(
                 binding.mapContentModel(),
-                standaloneDoor.markerQ(),
-                standaloneDoor.markerR(),
+                doorHandleCenterQ(standaloneDoor),
+                doorHandleCenterR(standaloneDoor),
                 sourceEdgeIsHorizontal(standaloneDoor),
                 "DE-HANDLE-001 standalone door");
 
@@ -574,12 +584,15 @@ final class DungeonEditorClusterLabelHandleHarness {
                 firstHandle(snapshot, DungeonEditorHandleKind.CORRIDOR_ANCHOR, "DE-HANDLE-001 corridor anchor");
         DungeonEditorHandleSnapshot corridorWaypoint =
                 firstHandle(snapshot, DungeonEditorHandleKind.CORRIDOR_WAYPOINT, "DE-HANDLE-001 corridor waypoint");
-        assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(doorHandle.markerQ(), doorHandle.markerR()).targetKind().name(),
+        assertEquals("HANDLE", binding.mapContentModel()
+                        .resolvePointerTarget(doorHandleCenterQ(doorHandle), doorHandleCenterR(doorHandle))
+                        .targetKind()
+                        .name(),
                 "DE-HANDLE-001 door handle ref is a canvas drag handle");
         assertDoorHandlePillPresentation(
                 binding.mapContentModel(),
-                doorHandle.markerQ(),
-                doorHandle.markerR(),
+                doorHandleCenterQ(doorHandle),
+                doorHandleCenterR(doorHandle),
                 sourceEdgeIsHorizontal(doorHandle),
                 "DE-HANDLE-001 corridor-bound door");
         assertNotHandleTarget(binding.mapContentModel(), corridorAnchor.markerQ(), corridorAnchor.markerR(),
@@ -608,7 +621,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 firstDoorHandleAt(standaloneSnapshot, 4, 2, 0, "DE-DOOR-004 standalone door");
         assertEquals("HANDLE",
                 standaloneBinding.mapContentModel()
-                        .resolvePointerTarget(standaloneDoor.markerQ(), standaloneDoor.markerR())
+                        .resolvePointerTarget(doorHandleCenterQ(standaloneDoor), doorHandleCenterR(standaloneDoor))
                         .targetKind()
                         .name(),
                 "DE-DOOR-004 standalone door handle resolves as canvas drag handle");
@@ -635,12 +648,15 @@ final class DungeonEditorClusterLabelHandleHarness {
         DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
         DungeonEditorHandleSnapshot doorHandle =
                 firstDoorHandleForDirection(snapshot, "EAST", "DE-DOOR-004 door");
-        assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(doorHandle.markerQ(), doorHandle.markerR()).targetKind().name(),
+        assertEquals("HANDLE", binding.mapContentModel()
+                        .resolvePointerTarget(doorHandleCenterQ(doorHandle), doorHandleCenterR(doorHandle))
+                        .targetKind()
+                        .name(),
                 "DE-DOOR-004 door handle resolves as canvas drag handle");
         assertDoorHandlePillPresentation(
                 binding.mapContentModel(),
-                doorHandle.markerQ(),
-                doorHandle.markerR(),
+                doorHandleCenterQ(doorHandle),
+                doorHandleCenterR(doorHandle),
                 sourceEdgeIsHorizontal(doorHandle),
                 "DE-DOOR-004 source door");
         assertDoorHandleDrag(runtime, binding, controls, mapView, mapId, doorHandle);
@@ -694,15 +710,15 @@ final class DungeonEditorClusterLabelHandleHarness {
                 mapView,
                 MouseEvent.MOUSE_PRESSED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR()),
+                viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                viewport.sceneToScreenY(doorHandleCenterR(doorHandle)),
                 false);
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_DRAGGED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR() + 4.0),
+                viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 4.0),
                 false);
         assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.MoveHandlePreview,
                 "DE-DOOR-005 invalid still publishes transient drag preview before rejected release");
@@ -711,8 +727,8 @@ final class DungeonEditorClusterLabelHandleHarness {
                 mapView,
                 MouseEvent.MOUSE_RELEASED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR() + 4.0),
+                viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 4.0),
                 false);
 
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
@@ -801,15 +817,36 @@ final class DungeonEditorClusterLabelHandleHarness {
                 viewport.sceneToScreenX(13.0),
                 viewport.sceneToScreenY(11.0),
                 false);
-        long previewStartNanos = System.nanoTime();
-        fireMapMouse(
-                mapView,
-                MouseEvent.MOUSE_DRAGGED,
-                MouseButton.PRIMARY,
-                viewport.sceneToScreenX(14.0),
-                viewport.sceneToScreenY(12.0),
-                false);
-        assertPreviewLatencyWithinBudget(previewStartNanos, "DE-CLUSTER-003 cluster corner drag preview");
+        assertPreviewLatencyStreamWithinBudget(
+                "DE-CLUSTER-003 cluster corner drag preview stream",
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(14.0),
+                        viewport.sceneToScreenY(11.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(14.0),
+                        viewport.sceneToScreenY(12.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(14.0),
+                        viewport.sceneToScreenY(11.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(14.0),
+                        viewport.sceneToScreenY(12.0),
+                        false));
 
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
@@ -917,15 +954,29 @@ final class DungeonEditorClusterLabelHandleHarness {
                 viewport.sceneToScreenX(11.0),
                 viewport.sceneToScreenY(10.0),
                 false);
-        long previewStartNanos = System.nanoTime();
-        fireMapMouse(
-                mapView,
-                MouseEvent.MOUSE_DRAGGED,
-                MouseButton.PRIMARY,
-                viewport.sceneToScreenX(11.0),
-                viewport.sceneToScreenY(9.0),
-                false);
-        assertPreviewLatencyWithinBudget(previewStartNanos, "DE-HANDLE-003 wall-run drag preview");
+        assertPreviewLatencyStreamWithinBudget(
+                "DE-HANDLE-003 wall-run drag preview stream",
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(11.0),
+                        viewport.sceneToScreenY(9.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(11.0),
+                        viewport.sceneToScreenY(8.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(11.0),
+                        viewport.sceneToScreenY(9.0),
+                        false));
 
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
@@ -1168,18 +1219,32 @@ final class DungeonEditorClusterLabelHandleHarness {
                 mapView,
                 MouseEvent.MOUSE_PRESSED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR()),
+                viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                viewport.sceneToScreenY(doorHandleCenterR(doorHandle)),
                 false);
-        long previewStartNanos = System.nanoTime();
-        fireMapMouse(
-                mapView,
-                MouseEvent.MOUSE_DRAGGED,
-                MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR() + 1.0),
-                false);
-        assertPreviewLatencyWithinBudget(previewStartNanos, "DE-HANDLE-006 door drag preview");
+        assertPreviewLatencyStreamWithinBudget(
+                "DE-HANDLE-006 door drag preview stream",
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                        viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 1.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                        viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 2.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                        viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 1.0),
+                        false));
 
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
@@ -1194,7 +1259,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-HANDLE-006 render scene keeps door preview markers on the handle affordance path without a D glyph: "
                         + renderedDoorMarkers(binding.mapContentModel()));
         assertEquals(0L,
-                countDoorMarkersAt(binding.mapContentModel(), doorHandle.markerQ(), doorHandle.markerR()),
+                countDoorMarkersAt(binding.mapContentModel(), doorHandleCenterQ(doorHandle), doorHandleCenterR(doorHandle)),
                 "DE-HANDLE-006 render scene hides stale source door marker during drag preview: "
                         + renderedDoorMarkers(binding.mapContentModel()));
         assertTrue(previewSurface.surface().previewMap() != null,
@@ -1226,8 +1291,8 @@ final class DungeonEditorClusterLabelHandleHarness {
                 mapView,
                 MouseEvent.MOUSE_RELEASED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR() + 1.0),
+                viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 1.0),
                 false);
 
         assertEquals(0L, runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST"),
@@ -1284,18 +1349,32 @@ final class DungeonEditorClusterLabelHandleHarness {
                 mapView,
                 MouseEvent.MOUSE_PRESSED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR()),
+                viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                viewport.sceneToScreenY(doorHandleCenterR(doorHandle)),
                 false);
-        long previewStartNanos = System.nanoTime();
-        fireMapMouse(
-                mapView,
-                MouseEvent.MOUSE_DRAGGED,
-                MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR() + 1.0),
-                false);
-        assertPreviewLatencyWithinBudget(previewStartNanos, "DE-HANDLE-006 standalone door drag preview");
+        assertPreviewLatencyStreamWithinBudget(
+                "DE-HANDLE-006 standalone door drag preview stream",
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                        viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 1.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                        viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 2.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                        viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 1.0),
+                        false));
 
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveHandlePreview,
@@ -1312,7 +1391,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-HANDLE-006 standalone render scene keeps door preview markers on the handle affordance path "
                         + "without a D glyph: " + renderedDoorMarkers(binding.mapContentModel()));
         assertEquals(0L,
-                countDoorMarkersAt(binding.mapContentModel(), doorHandle.markerQ(), doorHandle.markerR()),
+                countDoorMarkersAt(binding.mapContentModel(), doorHandleCenterQ(doorHandle), doorHandleCenterR(doorHandle)),
                 "DE-HANDLE-006 standalone render scene hides the stale source door marker during drag preview: "
                         + renderedDoorMarkers(binding.mapContentModel()));
         assertTrue(previewSurface.surface().previewMap() != null,
@@ -1344,8 +1423,8 @@ final class DungeonEditorClusterLabelHandleHarness {
                 mapView,
                 MouseEvent.MOUSE_RELEASED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR() + 1.0),
+                viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 1.0),
                 false);
 
         List<String> doorRowsAfter = runtime.database().doorBoundaryState(mapId);
@@ -1411,15 +1490,15 @@ final class DungeonEditorClusterLabelHandleHarness {
                 mapView,
                 MouseEvent.MOUSE_PRESSED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR()),
+                viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                viewport.sceneToScreenY(doorHandleCenterR(doorHandle)),
                 false);
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_DRAGGED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR() + 4.0),
+                viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 4.0),
                 false);
         assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.MoveHandlePreview,
                 "DE-DOOR-005 standalone invalid still publishes transient drag preview before rejected release");
@@ -1428,8 +1507,8 @@ final class DungeonEditorClusterLabelHandleHarness {
                 mapView,
                 MouseEvent.MOUSE_RELEASED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(doorHandle.markerQ()),
-                viewport.sceneToScreenY(doorHandle.markerR() + 4.0),
+                viewport.sceneToScreenX(doorHandleCenterQ(doorHandle)),
+                viewport.sceneToScreenY(doorHandleCenterR(doorHandle) + 4.0),
                 false);
 
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
@@ -1883,7 +1962,12 @@ final class DungeonEditorClusterLabelHandleHarness {
     private static LabelText labelText(DungeonMapContentModel mapContentModel, String text, String message) {
         return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
                 .filter(label -> text.equals(label.text()))
-                .map(label -> new LabelText(label.width(), label.rotationDegrees(), label.style()))
+                .map(label -> new LabelText(
+                        label.width(),
+                        label.rotationDegrees(),
+                        label.typography(),
+                        label.style(),
+                        label.textColor()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError(message + " label not rendered: " + text));
     }
@@ -2017,6 +2101,22 @@ final class DungeonEditorClusterLabelHandleHarness {
         return !"EAST".equals(direction) && !"WEST".equals(direction);
     }
 
+    private static double doorHandleCenterQ(DungeonEditorHandleSnapshot handle) {
+        DungeonEdgeRef sourceEdge = handle.ref().sourceEdge();
+        if (sourceEdge != null) {
+            return (sourceEdge.from().q() + sourceEdge.to().q()) / 2.0;
+        }
+        return handle.markerQ();
+    }
+
+    private static double doorHandleCenterR(DungeonEditorHandleSnapshot handle) {
+        DungeonEdgeRef sourceEdge = handle.ref().sourceEdge();
+        if (sourceEdge != null) {
+            return (sourceEdge.from().r() + sourceEdge.to().r()) / 2.0;
+        }
+        return handle.markerR();
+    }
+
     private static DungeonEditorHandleSnapshot firstClusterWallRunHandleAt(
             DungeonEditorMapSurfaceSnapshot snapshot,
             int cellQ,
@@ -2098,6 +2198,12 @@ final class DungeonEditorClusterLabelHandleHarness {
     private record LabelCenter(double q, double r) {
     }
 
-    private record LabelText(double width, double rotationDegrees, DungeonMapContentModel.PaintStyle style) {
+    private record LabelText(
+            double width,
+            double rotationDegrees,
+            DungeonMapContentModel.LabelTypography typography,
+            DungeonMapContentModel.PaintStyle style,
+            DungeonMapContentModel.RenderColor textColor
+    ) {
     }
 }

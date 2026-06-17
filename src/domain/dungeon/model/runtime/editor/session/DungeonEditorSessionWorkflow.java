@@ -49,7 +49,7 @@ public final class DungeonEditorSessionWorkflow {
     }
 
     public void shiftProjectionLevel(int projectionLevelDelta) {
-        session.replace(session.current().shiftProjectionLevel(projectionLevelDelta).withStatusText(""));
+        session.replace(session.current().shiftProjectionLevel(projectionLevelDelta).clearPreview().withStatusText(""));
     }
 
     public void setOverlay(
@@ -70,7 +70,7 @@ public final class DungeonEditorSessionWorkflow {
             return null;
         }
         if (effect.projectionLevelDelta() != 0) {
-            session.replace(session.current().shiftProjectionLevel(effect.projectionLevelDelta()));
+            session.replace(session.current().shiftProjectionLevel(effect.projectionLevelDelta()).clearPreview());
         }
         if (effect.statusText() != null) {
             session.replace(session.current().withStatusText(effect.statusText()));

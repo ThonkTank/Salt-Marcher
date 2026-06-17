@@ -5,6 +5,7 @@ import java.util.List;
 public sealed interface DungeonEditorPreview permits DungeonEditorPreview.NonePreview,
         DungeonEditorPreview.RoomRectanglePreview,
         DungeonEditorPreview.ClusterBoundariesPreview,
+        DungeonEditorPreview.StairCreatePreview,
         DungeonEditorPreview.MoveHandlePreview,
         DungeonEditorPreview.MoveBoundaryStretchPreview {
 
@@ -37,6 +38,16 @@ public sealed interface DungeonEditorPreview permits DungeonEditorPreview.NonePr
             clusterId = Math.max(0L, clusterId);
             edges = edges == null ? List.of() : List.copyOf(edges);
             boundaryKind = boundaryKind == null || boundaryKind.isBlank() ? "WALL" : boundaryKind.trim();
+        }
+    }
+
+    record StairCreatePreview(
+            DungeonCellRef anchor,
+            String shapeName
+    ) implements DungeonEditorPreview {
+        public StairCreatePreview {
+            anchor = anchor == null ? new DungeonCellRef(0, 0, 0) : anchor;
+            shapeName = shapeName == null || shapeName.isBlank() ? "STRAIGHT" : shapeName.trim();
         }
     }
 

@@ -196,6 +196,7 @@ public final class DungeonEditorContributionModel {
                             viewModeLabel,
                             selectedToolLabel,
                             safeSource.selectedTool(),
+                            clampedProjectionLevel,
                             overlayProjection));
         }
 
@@ -323,6 +324,7 @@ public final class DungeonEditorContributionModel {
             String currentViewModeKey,
             String currentSelectedToolLabel,
             DungeonEditorTool currentSelectedTool,
+            int currentProjectionLevel,
             OverlayProjection currentOverlayProjection
     ) {
         InteractionState {
@@ -334,6 +336,7 @@ public final class DungeonEditorContributionModel {
             currentSelectedTool = currentSelectedTool == null
                     ? DungeonEditorTool.SELECT
                     : currentSelectedTool;
+            currentProjectionLevel = Math.max(0, currentProjectionLevel);
             currentOverlayProjection = currentOverlayProjection == null
                     ? OverlayProjection.from(DungeonOverlaySettings.defaults())
                     : currentOverlayProjection;
@@ -345,6 +348,7 @@ public final class DungeonEditorContributionModel {
                     DungeonEditorControlsContentModel.gridViewLabel(),
                     DungeonEditorControlsContentModel.defaultToolLabel(),
                     DungeonEditorTool.SELECT,
+                    0,
                     OverlayProjection.from(DungeonOverlaySettings.defaults()));
         }
     }

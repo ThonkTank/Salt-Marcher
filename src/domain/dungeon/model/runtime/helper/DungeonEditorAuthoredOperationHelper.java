@@ -39,6 +39,7 @@ public interface DungeonEditorAuthoredOperationHelper {
                             edges(boundaries.edges()),
                             boundaryKind(boundaries.boundaryKind()),
                             boundaries.deleteMode());
+            case DungeonEditorSessionValues.StairCreatePreview ignored -> null;
             case DungeonEditorSessionValues.CorridorCreatePreview corridor ->
                     DungeonEditorAuthoredOperation.createCorridor(
                             corridorEndpoint(corridor.start()),

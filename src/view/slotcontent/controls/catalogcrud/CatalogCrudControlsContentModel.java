@@ -20,6 +20,7 @@ public final class CatalogCrudControlsContentModel {
     private final List<Item> items = new ArrayList<>();
     private final ReadOnlyStringWrapper title = new ReadOnlyStringWrapper("Catalog");
     private final ReadOnlyStringWrapper selectorAccessibleText = new ReadOnlyStringWrapper("Catalog auswaehlen");
+    private final ReadOnlyStringWrapper selectorPromptText = new ReadOnlyStringWrapper("Keine Auswahl");
     private final ReadOnlyStringWrapper emptyText = new ReadOnlyStringWrapper("Keine Eintraege verfuegbar.");
     private final ReadOnlyStringWrapper statusText = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper draftName = new ReadOnlyStringWrapper("");
@@ -30,9 +31,14 @@ public final class CatalogCrudControlsContentModel {
     private final ReadOnlyStringWrapper targetItemId = new ReadOnlyStringWrapper("");
     private final ReadOnlyIntegerWrapper selectedIndex = new ReadOnlyIntegerWrapper(-1);
     private final ReadOnlyBooleanWrapper selectorDisabled = new ReadOnlyBooleanWrapper(true);
+    private final ReadOnlyBooleanWrapper openDisabled = new ReadOnlyBooleanWrapper(true);
+    private final ReadOnlyBooleanWrapper openVisible = new ReadOnlyBooleanWrapper(true);
     private final ReadOnlyBooleanWrapper createDisabled = new ReadOnlyBooleanWrapper(true);
     private final ReadOnlyBooleanWrapper renameDisabled = new ReadOnlyBooleanWrapper(true);
     private final ReadOnlyBooleanWrapper deleteDisabled = new ReadOnlyBooleanWrapper(true);
+    private final ReadOnlyBooleanWrapper createVisible = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyBooleanWrapper renameVisible = new ReadOnlyBooleanWrapper(false);
+    private final ReadOnlyBooleanWrapper deleteVisible = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper reloadVisible = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper reloadDisabled = new ReadOnlyBooleanWrapper(true);
     private final ReadOnlyBooleanWrapper emptyVisible = new ReadOnlyBooleanWrapper(true);
@@ -55,6 +61,10 @@ public final class CatalogCrudControlsContentModel {
 
     public ReadOnlyStringProperty selectorAccessibleTextProperty() {
         return selectorAccessibleText.getReadOnlyProperty();
+    }
+
+    public ReadOnlyStringProperty selectorPromptTextProperty() {
+        return selectorPromptText.getReadOnlyProperty();
     }
 
     public ReadOnlyStringProperty emptyTextProperty() {
@@ -97,6 +107,14 @@ public final class CatalogCrudControlsContentModel {
         return selectorDisabled.getReadOnlyProperty();
     }
 
+    public ReadOnlyBooleanProperty openDisabledProperty() {
+        return openDisabled.getReadOnlyProperty();
+    }
+
+    public ReadOnlyBooleanProperty openVisibleProperty() {
+        return openVisible.getReadOnlyProperty();
+    }
+
     public ReadOnlyBooleanProperty createDisabledProperty() {
         return createDisabled.getReadOnlyProperty();
     }
@@ -107,6 +125,18 @@ public final class CatalogCrudControlsContentModel {
 
     public ReadOnlyBooleanProperty deleteDisabledProperty() {
         return deleteDisabled.getReadOnlyProperty();
+    }
+
+    public ReadOnlyBooleanProperty createVisibleProperty() {
+        return createVisible.getReadOnlyProperty();
+    }
+
+    public ReadOnlyBooleanProperty renameVisibleProperty() {
+        return renameVisible.getReadOnlyProperty();
+    }
+
+    public ReadOnlyBooleanProperty deleteVisibleProperty() {
+        return deleteVisible.getReadOnlyProperty();
     }
 
     public ReadOnlyBooleanProperty reloadVisibleProperty() {
@@ -139,6 +169,7 @@ public final class CatalogCrudControlsContentModel {
 
     public void showCatalog(CatalogState state) {
         CatalogState safeState = state == null ? CatalogState.empty() : state;
+        String stagedItemId = selectedItemId;
         title.set(safeState.title());
         selectorAccessibleText.set(safeState.selectorAccessibleText());
         emptyText.set(safeState.emptyText());
@@ -147,10 +178,17 @@ public final class CatalogCrudControlsContentModel {
         busy = safeState.busy();
         items.clear();
         items.addAll(safeState.items());
+        selectedIndex.set(-1);
         itemIds.setAll(items.stream().map(Item::id).toList());
         int readbackSelectionIndex = indexOf(safeState.selectedItemId());
-        selectedItemId = readbackSelectionIndex < 0 ? "" : safeState.selectedItemId();
-        selectedIndex.set(readbackSelectionIndex);
+        int stagedSelectionIndex = indexOf(stagedItemId);
+        if (stagedSelectionIndex >= 0) {
+            selectedItemId = stagedItemId;
+            selectedIndex.set(stagedSelectionIndex);
+        } else {
+            selectedItemId = readbackSelectionIndex < 0 ? "" : safeState.selectedItemId();
+            selectedIndex.set(readbackSelectionIndex);
+        }
         refreshPreparedState();
     }
 
@@ -248,16 +286,22 @@ public final class CatalogCrudControlsContentModel {
         boolean hasItems = !items.isEmpty();
         boolean operationOpen = mode != Mode.CLOSED;
         selectorDisabled.set(busy || !hasItems || operationOpen);
+        openDisabled.set(busy || !hasItems || operationOpen || selectedItemId.isBlank());
+        openVisible.set(hasItems);
+        selectorPromptText.set(hasItems ? "Keine Auswahl" : emptyText.get());
         emptyVisible.set(!hasItems);
     }
 
     private void updateActionState() {
         boolean hasSelection = !selectedItemId.isBlank();
+        createVisible.set(actions.createVisible());
+        renameVisible.set(actions.renameVisible());
+        deleteVisible.set(actions.deleteVisible());
+        reloadVisible.set(actions.reloadVisible());
         createDisabled.set(busy || !actions.createEnabled());
         renameDisabled.set(busy || !actions.renameEnabled() || !hasSelection);
         deleteDisabled.set(busy || !actions.deleteEnabled() || !hasSelection);
-        reloadVisible.set(actions.reloadEnabled());
-        reloadDisabled.set(busy || !hasSelection);
+        reloadDisabled.set(busy || !actions.reloadEnabled() || !hasSelection);
     }
 
     private void updateOperationState() {
@@ -362,11 +406,36 @@ public final class CatalogCrudControlsContentModel {
             boolean createEnabled,
             boolean renameEnabled,
             boolean deleteEnabled,
-            boolean reloadEnabled
+            boolean reloadEnabled,
+            boolean createVisible,
+            boolean renameVisible,
+            boolean deleteVisible,
+            boolean reloadVisible
     ) {
+
+        public Actions(
+                boolean createEnabled,
+                boolean renameEnabled,
+                boolean deleteEnabled,
+                boolean reloadEnabled
+        ) {
+            this(
+                    createEnabled,
+                    renameEnabled,
+                    deleteEnabled,
+                    reloadEnabled,
+                    true,
+                    true,
+                    true,
+                    reloadEnabled);
+        }
 
         public static Actions readOnly() {
             return new Actions(false, false, false, false);
+        }
+
+        public static Actions hiddenReadOnly() {
+            return new Actions(false, false, false, false, false, false, false, false);
         }
     }
 

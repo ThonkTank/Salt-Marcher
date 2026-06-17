@@ -69,7 +69,7 @@ public final class DungeonTravelContributionModel {
                 mapList.maps().stream()
                         .map(DungeonTravelContributionModel::catalogItem)
                         .toList(),
-                CatalogCrudControlsContentModel.Actions.readOnly(),
+                CatalogCrudControlsContentModel.Actions.hiddenReadOnly(),
                 false,
                 ""));
     }
@@ -79,7 +79,7 @@ public final class DungeonTravelContributionModel {
                 Long.toString(summary.mapId().value()),
                 summary.mapName(),
                 "",
-                summary.revision(),
+                0L,
                 true);
     }
 

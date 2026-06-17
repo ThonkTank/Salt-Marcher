@@ -42,13 +42,13 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
                         safeUseCases.corridor().delete().pressAndHoverOnly());
         registeredWorkflows.put(
                 ToolInput.STAIR_CREATE,
-                safeUseCases.stairCreate().pressOnly());
+                safeUseCases.stairCreate().pressAndHoverOnly());
         registeredWorkflows.put(
                 ToolInput.STAIR_CREATE_SQUARE,
-                safeUseCases.stairCreateSquare().pressOnly());
+                safeUseCases.stairCreateSquare().pressAndHoverOnly());
         registeredWorkflows.put(
                 ToolInput.STAIR_CREATE_CIRCULAR,
-                safeUseCases.stairCreateCircular().pressOnly());
+                safeUseCases.stairCreateCircular().pressAndHoverOnly());
         registeredWorkflows.put(
                 ToolInput.STAIR_DELETE,
                 safeUseCases.stairDelete().pressOnly());

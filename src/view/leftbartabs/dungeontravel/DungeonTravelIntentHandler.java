@@ -13,7 +13,6 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 final class DungeonTravelIntentHandler {
     private static final double SCROLL_DELTA_ZERO = 0.0;
 
-
     private final DungeonTravelContributionModel presentationModel;
     private final CatalogCrudControlsContentModel catalogContentModel;
     private final DungeonMapContentModel mapContentModel;
@@ -64,11 +63,19 @@ final class DungeonTravelIntentHandler {
     }
 
     void consume(CatalogCrudControlsViewInputEvent event) {
-        if (event == null || event.selectedItemId().isBlank()) {
+        if (event == null) {
             return;
         }
-        catalogContentModel.selectItem(event.selectedItemId());
-        travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.selectMap(parseMapId(event.selectedItemId())));
+        String stagedItemId = event.selectedItemId();
+        if (!stagedItemId.isBlank()) {
+            catalogContentModel.selectItem(stagedItemId);
+            return;
+        }
+        String openItemId = event.openItemId();
+        if (!openItemId.isBlank()) {
+            catalogContentModel.selectItem(openItemId);
+            travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.selectMap(parseMapId(openItemId)));
+        }
     }
 
     void consume(DungeonTravelStateViewInputEvent event) {

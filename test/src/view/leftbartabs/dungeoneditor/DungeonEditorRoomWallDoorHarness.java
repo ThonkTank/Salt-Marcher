@@ -767,13 +767,36 @@ final class DungeonEditorRoomWallDoorHarness {
         assertTrue(runtime.stateModel().current().selection().clusterSelection(),
                 "DE-SEL-009 selection is cluster-wide before drag");
 
-        fireMapMouse(
-                mapView,
-                MouseEvent.MOUSE_DRAGGED,
-                MouseButton.PRIMARY,
-                viewport.sceneToScreenX(labelCenter.getX() + 2.0),
-                viewport.sceneToScreenY(labelCenter.getY() + 1.0),
-                false);
+        assertPreviewLatencyStreamWithinBudget(
+                "DE-SEL-009 cluster-label drag preview stream",
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(labelCenter.getX() + 1.0),
+                        viewport.sceneToScreenY(labelCenter.getY() + 1.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(labelCenter.getX() + 2.0),
+                        viewport.sceneToScreenY(labelCenter.getY() + 1.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(labelCenter.getX() + 1.0),
+                        viewport.sceneToScreenY(labelCenter.getY() + 1.0),
+                        false),
+                () -> fireMapMouse(
+                        mapView,
+                        MouseEvent.MOUSE_DRAGGED,
+                        MouseButton.PRIMARY,
+                        viewport.sceneToScreenX(labelCenter.getX() + 2.0),
+                        viewport.sceneToScreenY(labelCenter.getY() + 1.0),
+                        false));
 
         DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
@@ -801,7 +824,7 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-SEL-009 preview map translates the selected cluster cells");
         assertTrue(renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(3, 2, 5, 4, 0)),
                 "DE-SEL-009 render scene shows preview cells at translated coordinates");
-        assertTrue(renderHasTextAt(binding.mapContentModel(), roomRef, 4.5, 3.5, true),
+        assertTrue(renderHasTextAt(binding.mapContentModel(), roomRef, 4.5, 4.66, true),
                 "DE-SEL-009 render scene shows preview label at translated coordinates");
 
         fireMapMouse(
@@ -837,8 +860,11 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-SEL-009 published map exposes translated cluster cells");
         assertTrue(renderHasSelectedSurfacePrimitive(binding.mapContentModel(), roomRef),
                 "DE-SEL-009 render scene keeps the moved cluster selected");
-        assertTrue(renderHasTextAt(binding.mapContentModel(), roomRef, 4.5, 3.5, false),
-                "DE-SEL-009 render scene shows committed label at translated coordinates");
+        Point2D committedLabelCenter = labelCenterForRef(binding.mapContentModel(), roomRef);
+        assertDoubleEquals(4.5, committedLabelCenter.getX(),
+                "DE-SEL-009 committed label stays centered on the translated room span");
+        assertTrue(committedLabelCenter.getY() >= 2.0 && committedLabelCenter.getY() <= 5.0,
+                "DE-SEL-009 render scene shows committed label within translated room bounds");
         assertCanvasPaintedAtScene(mapView, 4.5, 3.5,
                 "DE-SEL-009 rendered canvas paints the moved cluster coordinates");
 
@@ -1367,6 +1393,15 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-PREVIEW-001 render scene contains preview cells at expected coordinates");
         assertEquals(cellRect(1, 1, 3, 3, 0), renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()),
                 "DE-PREVIEW-001 preview render layer contains only the painted room cells");
+        DungeonMapContentModel.TextPrimitive previewRoomLabel =
+                previewRoomLabel(binding.mapContentModel(), "DE-PREVIEW-001");
+        assertTrue(previewRoomLabel.centerY() > 3.0,
+                "DE-PREVIEW-001 preview room label uses the shared south-wall placement instead of cell centroid");
+        assertTrue(previewRoomLabel.width() > 56.0 / 32.0,
+                "DE-PREVIEW-001 preview room label uses shared wall-width sizing");
+        assertTrue(previewRoomLabel.typography().fontFamily().equals("Monospaced")
+                        && previewRoomLabel.typography().bold(),
+                "DE-PREVIEW-001 preview room label uses shared room-label typography");
         assertCanvasPaintedAtScene(mapView, 2.0, 2.0, "DE-PREVIEW-001 rendered canvas paints preview area");
 
         results.add("DE-PREVIEW-001 Ready: DungeonMapView room drag -> SQLite unchanged -> live room preview");
@@ -2385,6 +2420,18 @@ final class DungeonEditorRoomWallDoorHarness {
         assertVisiblePlaceholder(mapView, "DE-PREVIEW-002");
 
         results.add("DE-PREVIEW-002 Ready: DungeonMapView room preview + Esc -> SQLite unchanged -> preview cleared");
+    }
+
+    private static DungeonMapContentModel.TextPrimitive previewRoomLabel(
+            DungeonMapContentModel mapContentModel,
+            String message
+    ) {
+        return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
+                .filter(label -> label.typography().fontFamily().equals("Monospaced")
+                        && label.typography().bold()
+                        && label.style().fill() != null)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + " preview room label not rendered"));
     }
 
 }

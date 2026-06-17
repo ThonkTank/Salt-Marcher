@@ -136,13 +136,7 @@ final class DungeonEditorIntentHandler {
     }
 
     void consume(CatalogCrudControlsViewInputEvent event) {
-        if (event == null) {
-            return;
-        }
-        if (consumeCatalogSelection(event)) {
-            return;
-        }
-        if (consumeCatalogSubmit(event)) {
+        if (event == null || consumeCatalogSelection(event) || consumeCatalogSubmit(event)) {
             return;
         }
         consumeCatalogEditor(event);
@@ -151,7 +145,11 @@ final class DungeonEditorIntentHandler {
     private boolean consumeCatalogSelection(CatalogCrudControlsViewInputEvent event) {
         if (!event.selectedItemId().isBlank()) {
             catalogContentModel.selectItem(event.selectedItemId());
-            handleMapSelection(parseLongOrZero(event.selectedItemId()));
+            return true;
+        }
+        if (!event.openItemId().isBlank()) {
+            catalogContentModel.selectItem(event.openItemId());
+            handleMapSelection(parseLongOrZero(event.openItemId()));
             return true;
         }
         if (!event.reloadItemId().isBlank()) {
@@ -477,7 +475,7 @@ final class DungeonEditorIntentHandler {
         if (suppressedRepeatedHover(event, pointerTool, pointerTarget)) {
             return;
         }
-        applyToolWorkflow(event, pointerSample(event, pointerTarget), pointerTool);
+        applyToolWorkflow(event, pointerSample(event, pointerTarget, pointerTool), pointerTool);
     }
 
     private boolean beginInlineLabelEdit(
@@ -721,14 +719,15 @@ final class DungeonEditorIntentHandler {
 
     private DungeonEditorPointerSample pointerSample(
             DungeonMapViewInputEvent event,
-            DungeonMapContentModel.PointerTarget target
+            DungeonMapContentModel.PointerTarget target,
+            DungeonEditorTool tool
     ) {
         return new DungeonEditorPointerSample(
                 sceneX(event),
                 sceneY(event),
                 event.buttons().primaryButtonDown(),
                 event.buttons().secondaryButtonDown(),
-                DungeonEditorPointerTargetTranslator.toPublishedPointerTarget(target));
+                DungeonEditorPointerTargetTranslator.toPublishedPointerTarget(target, tool));
     }
 
     private boolean suppressedRepeatedHover(
@@ -745,6 +744,7 @@ final class DungeonEditorIntentHandler {
                 target,
                 sceneX(event),
                 sceneY(event),
+                presentationModel.currentInteractionState().currentProjectionLevel(),
                 0.22);
         if (lastHoverSample.filter(nextSample::matches).isPresent()) {
             return true;
@@ -1071,6 +1071,7 @@ final class DungeonEditorIntentHandler {
 
     private static final class HoverSample {
         private final DungeonEditorTool tool;
+        private final int projectionLevel;
         private final int cellQ;
         private final int cellR;
         private final boolean vertexPresent;
@@ -1080,6 +1081,7 @@ final class DungeonEditorIntentHandler {
 
         private HoverSample(
                 DungeonEditorTool tool,
+                int projectionLevel,
                 int cellQ,
                 int cellR,
                 boolean vertexPresent,
@@ -1088,6 +1090,7 @@ final class DungeonEditorIntentHandler {
                 DungeonMapContentModel.PointerTarget target
         ) {
             this.tool = tool;
+            this.projectionLevel = projectionLevel;
             this.cellQ = cellQ;
             this.cellR = cellR;
             this.vertexPresent = vertexPresent;
@@ -1101,6 +1104,7 @@ final class DungeonEditorIntentHandler {
                 DungeonMapContentModel.PointerTarget target,
                 double sceneX,
                 double sceneY,
+                int projectionLevel,
                 double vertexSnapDistance
         ) {
             int vertexQ = (int) Math.round(sceneX);
@@ -1108,6 +1112,7 @@ final class DungeonEditorIntentHandler {
             boolean vertexPresent = Math.hypot(sceneX - vertexQ, sceneY - vertexR) <= vertexSnapDistance;
             return new HoverSample(
                     tool == null ? DungeonEditorTool.SELECT : tool,
+                    projectionLevel,
                     (int) Math.floor(sceneX),
                     (int) Math.floor(sceneY),
                     vertexPresent,
@@ -1119,6 +1124,7 @@ final class DungeonEditorIntentHandler {
         private boolean matches(HoverSample other) {
             return other != null
                     && tool == other.tool
+                    && projectionLevel == other.projectionLevel
                     && cellQ == other.cellQ
                     && cellR == other.cellR
                     && vertexPresent == other.vertexPresent
@@ -1130,29 +1136,62 @@ final class DungeonEditorIntentHandler {
 
     private interface DungeonEditorPointerTargetTranslator {
 
-        static DungeonEditorPointerTarget toPublishedPointerTarget(DungeonMapContentModel.PointerTarget target) {
+        static DungeonEditorPointerTarget toPublishedPointerTarget(
+                DungeonMapContentModel.PointerTarget target,
+                @Nullable DungeonEditorTool tool
+        ) {
             DungeonMapContentModel.PointerTarget safeTarget = target == null
                     ? DungeonMapContentModel.PointerTarget.empty()
                     : target;
-            return switch (safeTarget.targetKind()) {
+            DungeonEditorPointerTarget doorDeleteTarget = doorDeleteBoundaryTarget(safeTarget, tool);
+            return doorDeleteTarget == null ? pointerTarget(safeTarget) : doorDeleteTarget;
+        }
+
+        private static @Nullable DungeonEditorPointerTarget doorDeleteBoundaryTarget(
+                DungeonMapContentModel.PointerTarget target,
+                @Nullable DungeonEditorTool tool
+        ) {
+            if (tool != DungeonEditorTool.DOOR_DELETE || !target.isHandleTarget()) {
+                return null;
+            }
+            DungeonMapContentModel.HandleTarget handle = target.handleRef();
+            if (handle.kind() == null || !handle.kind().isDoor() || !handle.sourceEdgeTarget().present()) {
+                return null;
+            }
+            return DungeonEditorPointerTarget.boundary(doorBoundaryRef(handle));
+        }
+
+        private static DungeonEditorPointerTarget pointerTarget(DungeonMapContentModel.PointerTarget target) {
+            return switch (target.targetKind()) {
                 case EMPTY -> DungeonEditorPointerTarget.empty();
                 case CELL -> DungeonEditorPointerTarget.cell(
-                        topologyElementKind(safeTarget.elementKind()),
-                        safeTarget.ownerId(),
-                        safeTarget.clusterId(),
-                        topologyRef(safeTarget.topologyKind(), safeTarget.topologyId()));
+                        topologyElementKind(target.elementKind()),
+                        target.ownerId(),
+                        target.clusterId(),
+                        topologyRef(target.topologyKind(), target.topologyId()));
                 case LABEL -> DungeonEditorPointerTarget.label(
-                        safeTarget.ownerId(),
-                        safeTarget.clusterId(),
-                        topologyRef(safeTarget.topologyKind(), safeTarget.topologyId()),
-                        safeTarget.labelKind());
+                        target.ownerId(),
+                        target.clusterId(),
+                        topologyRef(target.topologyKind(), target.topologyId()),
+                        target.labelKind());
                 case GRAPH_NODE -> DungeonEditorPointerTarget.graphNode(
-                        safeTarget.ownerId(),
-                        safeTarget.clusterId(),
-                        topologyRef(safeTarget.topologyKind(), safeTarget.topologyId()));
-                case HANDLE -> DungeonEditorPointerTarget.handle(handleRef(safeTarget.handleRef()));
-                case BOUNDARY -> DungeonEditorPointerTarget.boundary(boundaryRef(safeTarget.boundaryRef()));
+                        target.ownerId(),
+                        target.clusterId(),
+                        topologyRef(target.topologyKind(), target.topologyId()));
+                case HANDLE -> DungeonEditorPointerTarget.handle(handleRef(target.handleRef()));
+                case BOUNDARY -> DungeonEditorPointerTarget.boundary(boundaryRef(target.boundaryRef()));
             };
+        }
+
+        private static DungeonEditorBoundaryTargetRef doorBoundaryRef(DungeonMapContentModel.HandleTarget handle) {
+            DungeonMapContentModel.HandleTarget.SourceEdgeTarget sourceEdge = handle.sourceEdgeTarget();
+            return new DungeonEditorBoundaryTargetRef(
+                    DungeonBoundaryKind.DOOR,
+                    "",
+                    handle.ownerId(),
+                    topologyRef(handle.topologyKind(), handle.topologyId()),
+                    cellRef(sourceEdge.startQ(), sourceEdge.startR(), sourceEdge.startLevel()),
+                    cellRef(sourceEdge.endQ(), sourceEdge.endR(), sourceEdge.endLevel()));
         }
 
         private static DungeonTopologyElementRef topologyRef(String kind, long id) {

@@ -212,6 +212,7 @@ public final class DungeonEditorSessionValues {
     public sealed interface Preview permits NoPreview,
             RoomRectanglePreview,
             ClusterBoundariesPreview,
+            StairCreatePreview,
             CorridorCreatePreview,
             DeleteCorridorPreview,
             MoveHandlePreview,
@@ -296,6 +297,16 @@ public final class DungeonEditorSessionValues {
         @Override
         public List<DungeonEditorWorkspaceValues.Edge> edges() {
             return List.copyOf(edges);
+        }
+    }
+
+    public record StairCreatePreview(
+            DungeonEditorWorkspaceValues.Cell anchor,
+            String shapeName
+    ) implements Preview {
+        public StairCreatePreview {
+            anchor = anchor == null ? DungeonEditorWorkspaceValues.Cell.empty() : anchor;
+            shapeName = shapeName == null || shapeName.isBlank() ? "STRAIGHT" : shapeName.trim();
         }
     }
 

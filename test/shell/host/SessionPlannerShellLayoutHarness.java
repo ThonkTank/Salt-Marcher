@@ -80,6 +80,16 @@ public final class SessionPlannerShellLayoutHarness {
                 "planner scroll controls stay inside the shell controls panel");
         assertTrue(plannerControls.getVbarPolicy() != ScrollPane.ScrollBarPolicy.NEVER,
                 "planner controls keep vertical scrolling available");
+
+        ScrollPane stateScroll = descendants(workspace).stream()
+                .filter(ScrollPane.class::isInstance)
+                .map(ScrollPane.class::cast)
+                .filter(node -> node.getStyleClass().contains("shell-state-scroll"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Shell state scroll pane not found."));
+        assertTrue(stateScroll.getVbarPolicy() == ScrollPane.ScrollBarPolicy.AS_NEEDED,
+                "shell state panel keeps vertical scrolling globally available");
+        assertTrue(stateScroll.isFitToWidth(), "shell state panel scroll content fits available width");
     }
 
     private static ServiceRegistry services() {

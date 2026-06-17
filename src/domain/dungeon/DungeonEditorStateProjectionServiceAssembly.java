@@ -57,6 +57,10 @@ final class DungeonEditorStateProjectionServiceAssembly {
                             edges(boundaries.edges()),
                             boundaries.boundaryKind().name(),
                             boundaries.deleteMode());
+            case DungeonEditorSessionValues.StairCreatePreview stair ->
+                    new src.domain.dungeon.published.DungeonEditorPreview.StairCreatePreview(
+                            DungeonEditorValueProjectionServiceAssembly.cell(stair.anchor()),
+                            stair.shapeName());
             case DungeonEditorSessionValues.MoveHandlePreview moveHandle ->
                     new src.domain.dungeon.published.DungeonEditorPreview.MoveHandlePreview(
                             DungeonEditorValueProjectionServiceAssembly.handleRef(moveHandle.handleRef()),
