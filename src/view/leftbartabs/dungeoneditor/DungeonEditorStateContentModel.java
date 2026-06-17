@@ -25,6 +25,7 @@ final class DungeonEditorStateContentModel {
     private static final String STAIR_KIND = "STAIR";
     private static final String CLUSTER_KIND = "CLUSTER";
     private static final String ROOM_KIND = "ROOM";
+    private static final String OVERWORLD_TILE_DESTINATION = "OVERWORLD_TILE";
     private static final String TRANSITION_CREATE_TOOL = "TRANSITION_CREATE";
 
     private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
@@ -38,6 +39,7 @@ final class DungeonEditorStateContentModel {
             new HashMap<>();
     private final Map<StairGeometryDraftKey, StairGeometryDraft> stairGeometryDrafts = new HashMap<>();
     private StateProjectionContext currentContext = StateProjectionContext.empty();
+    private TransitionDestinationDraft currentTransitionDestinationBaseline = TransitionDestinationDraft.defaultDraft();
     private @Nullable DungeonEditorHandleRef currentEditableCorridorHandle;
     private long currentSelectedTransitionId;
 
@@ -65,12 +67,16 @@ final class DungeonEditorStateContentModel {
                 safeSnapshot.inspector());
         TransitionDestinationProjection transitionDestination = transitionDestinationProjection(
                 safeContext,
-                safeSnapshot.selection());
+                safeSnapshot.selection(),
+                safeSnapshot.inspector());
         NameTarget visibleNameTarget = nameTarget(safeSnapshot.selection());
         StairGeometryProjection stairGeometry = stairGeometryProjection(
                 safeContext.selectedMapIdValue(),
                 safeSnapshot.selection(),
                 safeSnapshot.inspector());
+        currentTransitionDestinationBaseline = transitionDestination == null
+                ? TransitionDestinationDraft.defaultDraft()
+                : TransitionDestinationDraft.fromProjection(transitionDestination);
         currentEditableCorridorHandle = editableCorridorHandle;
         currentSelectedTransitionId = selectedTransitionId(safeSnapshot.selection());
         pruneDrafts(
@@ -213,7 +219,7 @@ final class DungeonEditorStateContentModel {
     private TransitionDestinationDraft currentTransitionDestinationDraft() {
         return transitionDestinationDrafts.getOrDefault(
                 transitionDestinationDraftKey(currentContext.selectedMapIdValue(), currentSelectedTransitionId),
-                TransitionDestinationDraft.defaultDraft());
+                currentTransitionDestinationBaseline);
     }
 
     void updateStairGeometryDraft(
@@ -438,7 +444,8 @@ final class DungeonEditorStateContentModel {
 
     private @Nullable TransitionDestinationProjection transitionDestinationProjection(
             StateProjectionContext context,
-            DungeonEditorStateSnapshot.Selection selection
+            DungeonEditorStateSnapshot.Selection selection,
+            @Nullable DungeonInspectorSnapshot inspector
     ) {
         if (context.selectedMapIdValue() <= NO_SELECTED_MAP_ID) {
             return null;
@@ -447,11 +454,12 @@ final class DungeonEditorStateContentModel {
         if (!TRANSITION_CREATE_TOOL.equals(context.selectedToolKey()) && selectedTransitionId <= NO_TRANSITION_ID) {
             return null;
         }
+        TransitionDestinationDraft baseline = TransitionDestinationDraft.fromInspector(inspector);
         TransitionDestinationDraft draft = transitionDestinationDrafts.getOrDefault(
                 transitionDestinationDraftKey(context.selectedMapIdValue(), selectedTransitionId),
-                TransitionDestinationDraft.defaultDraft());
+                baseline);
         return new TransitionDestinationProjection(
-                selectedTransitionId > NO_TRANSITION_ID ? "Übergang-Verknüpfung" : "Übergang-Ziel",
+                selectedTransitionId > NO_TRANSITION_ID ? "Übergang-Ziel / Eingangslink" : "Übergang-Ziel",
                 selectedTransitionId,
                 draft.destinationType(),
                 draft.mapId(),
@@ -798,7 +806,31 @@ final class DungeonEditorStateContentModel {
         }
 
         static TransitionDestinationDraft defaultDraft() {
-            return new TransitionDestinationDraft("OVERWORLD_TILE", "", "", "", true);
+            return new TransitionDestinationDraft(OVERWORLD_TILE_DESTINATION, "", "", "", true);
+        }
+
+        static TransitionDestinationDraft fromInspector(@Nullable DungeonInspectorSnapshot inspector) {
+            if (inspector == null || inspector.facts().isEmpty()) {
+                return defaultDraft();
+            }
+            Map<String, String> facts = factMap(inspector.facts());
+            return new TransitionDestinationDraft(
+                    facts.getOrDefault("destinationtype", OVERWORLD_TILE_DESTINATION),
+                    facts.getOrDefault("destinationmapid", ""),
+                    facts.getOrDefault("destinationtileid", ""),
+                    facts.getOrDefault("destinationtransitionid", ""),
+                    true);
+        }
+
+        static TransitionDestinationDraft fromProjection(TransitionDestinationProjection projection) {
+            return projection == null
+                    ? defaultDraft()
+                    : new TransitionDestinationDraft(
+                            projection.destinationType(),
+                            projection.mapId(),
+                            projection.tileId(),
+                            projection.transitionId(),
+                            projection.bidirectional());
         }
     }
 
@@ -823,13 +855,7 @@ final class DungeonEditorStateContentModel {
         }
 
         private static @Nullable StairGeometryDraft fromFacts(List<String> facts) {
-            Map<String, String> values = new HashMap<>();
-            for (String fact : facts == null ? List.<String>of() : facts) {
-                int separator = fact.indexOf(':');
-                if (separator > 0) {
-                    values.put(fact.substring(0, separator).strip(), fact.substring(separator + 1).strip());
-                }
-            }
+            Map<String, String> values = factMap(facts);
             String shape = values.get("shape");
             String direction = values.get("direction");
             String dimension1 = values.get("dimension1");
@@ -841,12 +867,25 @@ final class DungeonEditorStateContentModel {
         }
     }
 
+    private static Map<String, String> factMap(List<String> facts) {
+        Map<String, String> values = new HashMap<>();
+        for (String fact : facts == null ? List.<String>of() : facts) {
+            int separator = fact.indexOf(':');
+            if (separator > 0) {
+                values.put(
+                        fact.substring(0, separator).strip().toLowerCase(Locale.ROOT),
+                        fact.substring(separator + 1).strip());
+            }
+        }
+        return values;
+    }
+
     private static String transitionDestinationType(String value) {
         String normalized = value == null ? "" : value.strip().toUpperCase(Locale.ROOT);
         if (normalized.isBlank()) {
-            return "OVERWORLD_TILE";
+            return OVERWORLD_TILE_DESTINATION;
         }
-        if ("DUNGEON_MAP".equals(normalized) || "OVERWORLD_TILE".equals(normalized)) {
+        if ("DUNGEON_MAP".equals(normalized) || OVERWORLD_TILE_DESTINATION.equals(normalized)) {
             return normalized;
         }
         return normalized;

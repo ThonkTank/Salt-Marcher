@@ -67,7 +67,8 @@ public final class DungeonFeatureReadProjection {
                     transition.label(),
                     List.of(transition.anchor()),
                     transitionDescription(transition),
-                    destinationLabel(destination)));
+                    destinationLabel(destination),
+                    transitionFacts(destination)));
             relations.add(transitionRelation(transition, destination));
             if (transition.linkedTransitionId() != null) {
                 relations.add(new DungeonRelationGraph.FeatureRelation(
@@ -122,6 +123,22 @@ public final class DungeonFeatureReadProjection {
 
     private static String destinationLabel(TransitionDestination destination) {
         return destination == null ? "" : destination.label();
+    }
+
+    private static List<String> transitionFacts(TransitionDestination destination) {
+        if (destination == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("destinationType: " + destination.type().name());
+        facts.add("destinationMapId: " + destination.mapId());
+        if (destination.isOverworldTile()) {
+            facts.add("destinationTileId: " + destination.tileId());
+        }
+        if (destination.transitionId() != null) {
+            facts.add("destinationTransitionId: " + destination.transitionId());
+        }
+        return List.copyOf(facts);
     }
 
     private static DungeonRelationGraph.FeatureRelation transitionRelation(

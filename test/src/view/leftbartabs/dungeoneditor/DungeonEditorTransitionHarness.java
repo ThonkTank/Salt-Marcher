@@ -175,25 +175,38 @@ final class DungeonEditorTransitionHarness {
                 viewport.sceneToScreenY(sourceCenter.getY()),
                 false);
         assertEquals(sourceRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
-                "DE-TRN-003 state route selects source transition before linking");
-        assertTrue(buttonWithAccessibleText(stateView, "Übergang-Verknüpfung speichern").isVisible(),
-                "DE-TRN-003 state route exposes transition link save button for selected source");
+                "DE-TRN-003 entrance-link route selects source transition before linking");
+        assertTransitionEntranceLinkCard(stateView);
 
         List<String> sourceRowsBefore = runtime.database().transitionStableState(sourceMapId);
         List<String> targetRowsBefore = runtime.database().transitionStableState(targetMapId);
-        submitTransitionLink(stateView, targetMapId + 1000L, targetTransitionId, true);
+        submitTransitionEntranceLink(stateView, targetMapId + 1000L, targetTransitionId, true);
         assertEquals(sourceRowsBefore, runtime.database().transitionStableState(sourceMapId),
-                "DE-TRN-003 invalid target map leaves source transitions unchanged");
+                "DE-TRN-003 invalid entrance-link target map leaves source transitions unchanged");
         assertEquals(targetRowsBefore, runtime.database().transitionStableState(targetMapId),
-                "DE-TRN-003 invalid target map leaves target transitions unchanged");
+                "DE-TRN-003 invalid entrance-link target map leaves target transitions unchanged");
+        assertEquals(sourceRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
+                "DE-TRN-003 invalid entrance-link target map keeps source selected");
+        assertTransitionEntranceLinkDraft(
+                stateView,
+                targetMapId + 1000L,
+                targetTransitionId,
+                "DE-TRN-003 invalid target-map rejection keeps entrance-link draft visible");
 
-        submitTransitionLink(stateView, targetMapId, targetTransitionId + 1000L, true);
+        submitTransitionEntranceLink(stateView, targetMapId, targetTransitionId + 1000L, true);
         assertEquals(sourceRowsBefore, runtime.database().transitionStableState(sourceMapId),
-                "DE-TRN-003 invalid target transition leaves source transitions unchanged");
+                "DE-TRN-003 invalid entrance-link target transition leaves source transitions unchanged");
         assertEquals(targetRowsBefore, runtime.database().transitionStableState(targetMapId),
-                "DE-TRN-003 invalid target transition leaves target transitions unchanged");
+                "DE-TRN-003 invalid entrance-link target transition leaves target transitions unchanged");
+        assertEquals(sourceRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
+                "DE-TRN-003 invalid entrance-link target transition keeps source selected");
+        assertTransitionEntranceLinkDraft(
+                stateView,
+                targetMapId,
+                targetTransitionId + 1000L,
+                "DE-TRN-003 invalid target-transition rejection keeps entrance-link draft visible");
 
-        submitTransitionLink(stateView, targetMapId, targetTransitionId, true);
+        submitTransitionEntranceLink(stateView, targetMapId, targetTransitionId, true);
         assertTransitionRowContains(
                 runtime.database().transitionStableState(sourceMapId),
                 sourceTransitionId,
@@ -218,9 +231,9 @@ final class DungeonEditorTransitionHarness {
         String destinationLabel = "Dungeon " + targetMapId + " / Übergang " + targetTransitionId;
         DungeonEditorMapSurfaceSnapshot sourceSurface = runtime.mapSurfaceModel().current();
         assertEquals(sourceRef, sourceSurface.selection().topologyRef(),
-                "DE-TRN-003 source selection remains after save");
+                "DE-TRN-003 entrance-link source selection remains after save");
         assertEquals(DungeonEditorPreview.none(), sourceSurface.preview(),
-                "DE-TRN-003 source save clears preview");
+                "DE-TRN-003 entrance-link save clears preview");
         assertTransitionCreatedInSnapshot(
                 sourceSurface,
                 binding.mapContentModel(),
@@ -231,7 +244,7 @@ final class DungeonEditorTransitionHarness {
                 5.5,
                 2.5,
                 destinationLabel,
-                "DE-TRN-003 committed source link");
+                "DE-TRN-003 committed entrance link");
 
         selectMap(controls, "Transition Link Reload Hop");
         selectMap(controls, "Transition Link Source Map");
@@ -245,7 +258,7 @@ final class DungeonEditorTransitionHarness {
                 5.5,
                 2.5,
                 destinationLabel,
-                "DE-TRN-003 reloaded source link");
+                "DE-TRN-003 reloaded entrance link");
 
         selectMap(controls, "Transition Link Target Map");
         DungeonEditorTopologyElementRef targetRef =
@@ -271,7 +284,8 @@ final class DungeonEditorTransitionHarness {
                 targetViewport.sceneToScreenY(targetCenter.getY()),
                 false);
         assertEquals(targetRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
-                "DE-TRN-003 target marker remains selectable");
+                "DE-TRN-003 target entrance remains selectable");
+        assertSelectedTransitionKeepsOverworldDestinationSurface(stateView);
 
         List<String> protectedTargetRowsBefore = runtime.database().transitionStableState(targetMapId);
         click(button(controls, "Übergang"));
@@ -284,10 +298,105 @@ final class DungeonEditorTransitionHarness {
         assertEquals(protectedTargetRowsBefore, runtime.database().transitionStableState(targetMapId),
                 "DE-TRN-003 linked target delete protection leaves target transition rows unchanged");
         assertTrue(renderHasGlyphAt(binding.mapContentModel(), targetRef, 6.5, 2.5, false),
-                "DE-TRN-003 linked target marker remains rendered after protected delete");
+                "DE-TRN-003 linked target entrance remains rendered after protected delete");
 
-        results.add("DE-TRN-003 Ready: DungeonEditorStateView bidirectional link save -> SQLite source/target"
-                + " -> snapshot/render/reload/delete protection");
+        results.add("DE-TRN-003 Ready: DungeonEditorStateView entrance-link save -> SQLite source/target"
+                + " persisted destination/link fields -> snapshot/render/reload/delete protection");
+    }
+
+    private static void assertTransitionEntranceLinkCard(DungeonEditorStateView stateView) {
+        assertTransitionStateTextPresent(stateView, "Übergang-Ziel / Eingangslink");
+        assertTransitionStateTextPresent(stateView, "Quelle: ausgewaehlter Übergang");
+        assertTransitionStateTextPresent(stateView, "Eingangslink: Zieltyp DUNGEON_MAP und Ziel-Eingang wählen");
+        assertTransitionStateTextPresent(stateView, "Ziel-Eingang");
+        assertTrue(button(stateView, "Eingangslink speichern").isVisible(),
+                "DE-TRN-003 entrance-link route exposes the selected-source save button");
+        assertTrue(buttonWithAccessibleText(stateView, "Übergang-Ziel / Eingangslink speichern").isVisible(),
+                "DE-TRN-003 entrance-link route exposes the selected-source accessible save action");
+        ComboBox<?> destinationType = comboBox(stateView, "Eingangslink Zieltyp");
+        assertTrue(destinationType.isVisible(),
+                "DE-TRN-003 entrance-link route keeps target type visible for honest selected-transition readback");
+        assertTrue(comboBoxContainsDisplayText(destinationType, "OVERWORLD_TILE"),
+                "DE-TRN-003 entrance-link route exposes overworld destination option");
+        assertTrue(comboBoxContainsDisplayText(destinationType, "DUNGEON_MAP"),
+                "DE-TRN-003 entrance-link route exposes dungeon destination option");
+        assertTrue(textField(stateView, "Eingangslink Zielkarte").isVisible(),
+                "DE-TRN-003 entrance-link route exposes the target-map field");
+        assertTrue(textField(stateView, "Eingangslink Zielkachel").isVisible(),
+                "DE-TRN-003 entrance-link route keeps overworld tile target input visible");
+        assertTrue(textField(stateView, "Eingangslink Zieluebergang").isVisible(),
+                "DE-TRN-003 entrance-link route exposes the target-transition field");
+        assertTrue(checkBox(stateView, "Ruecklink zum ausgewaehlten Eingang speichern").isVisible(),
+                "DE-TRN-003 entrance-link route exposes the reverse-link toggle");
+    }
+
+    private static void assertTransitionEntranceLinkDraft(
+            DungeonEditorStateView stateView,
+            long targetMapId,
+            long targetTransitionId,
+            String message
+    ) {
+        assertTransitionEntranceLinkCard(stateView);
+        assertEquals("DUNGEON_MAP", String.valueOf(comboBox(stateView, "Eingangslink Zieltyp").getValue()),
+                message + " target type");
+        assertEquals(Long.toString(targetMapId), textField(stateView, "Eingangslink Zielkarte").getText(),
+                message + " target map");
+        assertEquals(Long.toString(targetTransitionId), textField(stateView, "Eingangslink Zieluebergang").getText(),
+                message + " target transition");
+    }
+
+    private static void assertSelectedTransitionKeepsOverworldDestinationSurface(DungeonEditorStateView stateView) {
+        assertTransitionStateTextPresent(stateView, "Übergang-Ziel / Eingangslink");
+        assertTransitionStateTextAbsent(stateView, "Dungeon-Eingangslink");
+        ComboBox<?> destinationType = comboBox(stateView, "Eingangslink Zieltyp");
+        assertTrue(destinationType.isVisible(),
+                "DE-TRN-003 selected overworld-backed transition keeps visible target type");
+        assertEquals("OVERWORLD_TILE", String.valueOf(destinationType.getValue()),
+                "DE-TRN-003 selected overworld-backed transition does not masquerade as dungeon map");
+        assertEquals("77", textField(stateView, "Eingangslink Zielkarte").getText(),
+                "DE-TRN-003 selected overworld-backed transition reads persisted overworld map");
+        assertEquals("88", textField(stateView, "Eingangslink Zielkachel").getText(),
+                "DE-TRN-003 selected overworld-backed transition reads persisted overworld tile");
+        assertEquals("", textField(stateView, "Eingangslink Zieluebergang").getText(),
+                "DE-TRN-003 selected overworld-backed transition has no dungeon target transition");
+        assertTrue(textField(stateView, "Eingangslink Zielkachel").isVisible(),
+                "DE-TRN-003 selected overworld-backed transition keeps tile target field visible");
+        assertTrue(textField(stateView, "Eingangslink Zielkarte").isDisabled(),
+                "DE-TRN-003 selected overworld-backed transition map readback is not an unsaveable edit");
+        assertTrue(textField(stateView, "Eingangslink Zielkachel").isDisabled(),
+                "DE-TRN-003 selected overworld-backed transition tile readback is not an unsaveable edit");
+    }
+
+    private static void submitTransitionEntranceLink(
+            DungeonEditorStateView stateView,
+            long targetMapId,
+            long targetTransitionId,
+            boolean bidirectional
+    ) {
+        selectComboItem(comboBox(stateView, "Eingangslink Zieltyp"), "DUNGEON_MAP");
+        textField(stateView, "Eingangslink Zielkarte").setText(Long.toString(targetMapId));
+        textField(stateView, "Eingangslink Zieluebergang").setText(Long.toString(targetTransitionId));
+        CheckBox bidirectionalBox = checkBox(stateView, "Ruecklink zum ausgewaehlten Eingang speichern");
+        if (bidirectionalBox.isSelected() != bidirectional) {
+            click(bidirectionalBox);
+        }
+        click(button(stateView, "Eingangslink speichern"));
+    }
+
+    private static void assertTransitionStateTextPresent(Parent parent, String expectedText) {
+        boolean found = descendants(parent).stream()
+                .filter(Label.class::isInstance)
+                .map(Label.class::cast)
+                .anyMatch(label -> expectedText.equals(label.getText()) && label.isVisible());
+        assertTrue(found, "Visible state-panel text present: " + expectedText);
+    }
+
+    private static void assertTransitionStateTextAbsent(Parent parent, String unexpectedText) {
+        boolean found = descendants(parent).stream()
+                .filter(Label.class::isInstance)
+                .map(Label.class::cast)
+                .anyMatch(label -> unexpectedText.equals(label.getText()) && label.isVisible());
+        assertTrue(!found, "Visible state-panel text absent: " + unexpectedText);
     }
 
 

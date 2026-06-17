@@ -22,25 +22,6 @@ public record DungeonFeatureFacts(
             String label,
             List<Cell> cells,
             String description,
-            String destinationLabel
-    ) {
-        this(
-                kind == null ? DungeonFeatureType.STAIR : kind,
-                Math.max(1L, id),
-                label,
-                cells,
-                description,
-                destinationLabel,
-                List.of(),
-                defaultTopologyRef(kind, id));
-    }
-
-    public DungeonFeatureFacts(
-            DungeonFeatureType kind,
-            long id,
-            String label,
-            List<Cell> cells,
-            String description,
             String destinationLabel,
             List<String> facts
     ) {
