@@ -20,7 +20,6 @@ public final class CatalogCrudControlsContentModel {
 
     private final ObservableList<String> itemIds = FXCollections.observableArrayList();
     private final List<Item> items = new ArrayList<>();
-    private final ReadOnlyStringWrapper title = new ReadOnlyStringWrapper("Catalog");
     private final ReadOnlyStringWrapper selectorAccessibleText = new ReadOnlyStringWrapper("Catalog auswaehlen");
     private final ReadOnlyStringWrapper selectorPromptText = new ReadOnlyStringWrapper("Keine Auswahl");
     private final ReadOnlyStringWrapper selectorPlaceholderText = new ReadOnlyStringWrapper(DEFAULT_EMPTY_TEXT);
@@ -59,10 +58,6 @@ public final class CatalogCrudControlsContentModel {
 
     public ObservableList<String> itemIds() {
         return FXCollections.unmodifiableObservableList(itemIds);
-    }
-
-    public ReadOnlyStringProperty titleProperty() {
-        return title.getReadOnlyProperty();
     }
 
     public ReadOnlyStringProperty selectorAccessibleTextProperty() {
@@ -184,7 +179,6 @@ public final class CatalogCrudControlsContentModel {
     public void showCatalog(CatalogState state) {
         CatalogState safeState = state == null ? CatalogState.empty() : state;
         String stagedItemId = selectedItemId;
-        title.set(safeState.title());
         selectorAccessibleText.set(safeState.selectorAccessibleText());
         emptyText.set(safeState.emptyText());
         statusText.set(safeState.statusText());
@@ -417,10 +411,7 @@ public final class CatalogCrudControlsContentModel {
 
     private boolean shouldShowStatusText(boolean hasItems) {
         String normalizedStatus = normalize(statusText.get());
-        if (normalizedStatus.isBlank()) {
-            return false;
-        }
-        return hasItems || !normalizedStatus.equals(normalize(emptyText.get()));
+        return !normalizedStatus.isBlank() && hasItems;
     }
 
     public record Item(

@@ -6,7 +6,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Platform;
-import javafx.event.ActionEvent;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -14,8 +13,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -68,10 +67,12 @@ public final class CatalogCrudControlsHarness {
         view.layout();
 
         ComboBox<?> selector = descendant(view, ComboBox.class);
-        SplitMenuButton actionButton = actionButton(view);
+        Button createButton = button(view, "Neu");
+        MenuButton actionMenuButton = actionMenuButton(view);
         TextField filterField = textField(view, "Auswahl filtern");
-        assertEquals("Neu", actionButton.getText(), "split action keeps shared primary create affordance");
-        assertControlRowOrder(view, filterField, selector, button(view, "Öffnen"), actionButton);
+        assertEquals("Mehr", actionMenuButton.getText(), "secondary actions live behind a separate menu");
+        assertControlRowOrder(view, filterField, selector, button(view, "Öffnen"), createButton, actionMenuButton);
+        assertNoVisibleLabel(view, "Maps", "shared embedded catalog omits the title header");
         events.clear();
         @SuppressWarnings("unchecked")
         ComboBox<String> stringSelector = (ComboBox<String>) selector;
@@ -143,9 +144,9 @@ public final class CatalogCrudControlsHarness {
         assertTrue(open.selectedItemId().isBlank(), "open button does not emit staged selection");
 
         events.clear();
-        firePrimaryAction(view);
+        createButton.fire();
         CatalogCrudControlsViewInputEvent createOpen = last(events);
-        assertTrue(createOpen.createEditorOpened(), "primary action opens create editor");
+        assertTrue(createOpen.createEditorOpened(), "visible Neu button opens create editor");
         assertTrue(filterField.isDisabled(), "operation popup disables filter editing");
         assertEquals("", filterField.getText(), "operation popup clears stale filter text");
         assertEquals(1L, descendants(view).stream().filter(TextField.class::isInstance).count(),
@@ -157,8 +158,8 @@ public final class CatalogCrudControlsHarness {
         assertFalse(selector.isDisabled(), "external popup hide restores selector");
         assertFalse(filterField.isDisabled(), "external popup hide restores filter editing");
         events.clear();
-        firePrimaryAction(view);
-        assertTrue(last(events).createEditorOpened(), "primary action reopens create editor after external hide");
+        createButton.fire();
+        assertTrue(last(events).createEditorOpened(), "visible Neu button reopens create editor after external hide");
         popupTextField(view).setText("Gamma");
         popupButton(view, "Erstellen").fire();
         CatalogCrudControlsViewInputEvent create = last(events);
@@ -197,7 +198,8 @@ public final class CatalogCrudControlsHarness {
         assertTrue(selector.getSelectionModel().isEmpty(), "catalog without readback selection keeps selector empty");
         assertEquals("Keine Auswahl", selector.getPromptText(), "catalog without selection shows default prompt");
         assertTrue(button(view, "Öffnen").isDisabled(), "catalog without selection disables open");
-        assertFalse(actionButton(view).isDisabled(), "catalog without selection still allows create");
+        assertFalse(button(view, "Neu").isDisabled(), "catalog without selection still allows create");
+        assertTrue(actionMenuButton(view).isDisabled(), "catalog without selection disables secondary selected-item actions");
         assertTrue(menuItem(view, "Umbenennen").isDisable(), "catalog without selection disables rename");
         assertTrue(menuItem(view, "Löschen").isDisable(), "catalog without selection disables delete");
         assertTrue(menuItem(view, "Neu laden").isDisable(), "catalog without selection disables reload");
@@ -217,7 +219,8 @@ public final class CatalogCrudControlsHarness {
         events.clear();
         assertTrue(selector.getSelectionModel().isEmpty(), "catalog with invalid readback selection keeps selector empty");
         assertTrue(button(view, "Öffnen").isDisabled(), "catalog with invalid selection disables open");
-        assertFalse(actionButton(view).isDisabled(), "catalog with invalid selection still allows create");
+        assertFalse(button(view, "Neu").isDisabled(), "catalog with invalid selection still allows create");
+        assertTrue(actionMenuButton(view).isDisabled(), "catalog with invalid selection disables secondary selected-item actions");
         assertTrue(menuItem(view, "Umbenennen").isDisable(), "catalog with invalid selection disables rename");
         assertTrue(menuItem(view, "Löschen").isDisable(), "catalog with invalid selection disables delete");
         assertTrue(menuItem(view, "Neu laden").isDisable(), "catalog with invalid selection disables reload");
@@ -244,14 +247,15 @@ public final class CatalogCrudControlsHarness {
                 List.of(),
                 CatalogCrudControlsContentModel.Actions.readOnly(),
                 false,
-                "Keine Karten."));
+                "Katalog leer."));
         view.applyCss();
         view.layout();
         events.clear();
         assertTrue(selector.isDisabled(), "empty read-only catalog disables selector");
         assertTrue(filterField.isDisabled(), "empty read-only catalog disables filter");
         assertEquals("", filterField.getText(), "empty read-only catalog clears stale filter text");
-        assertTrue(actionButton.isDisabled(), "empty read-only catalog disables management action");
+        assertTrue(createButton.isDisabled(), "empty read-only catalog disables create action");
+        assertTrue(actionMenuButton.isDisabled(), "empty read-only catalog disables secondary actions");
         assertTrue(menuItem(view, "Umbenennen").isDisable(), "empty read-only catalog disables rename");
         assertTrue(menuItem(view, "Löschen").isDisable(), "empty read-only catalog disables delete");
         assertEquals("Keine Karten.", selector.getPromptText(), "empty catalog prompt carries the empty message");
@@ -262,8 +266,9 @@ public final class CatalogCrudControlsHarness {
                         .filter(label -> "Keine Karten.".equals(label.getText()))
                         .filter(Node::isVisible)
                         .count(),
-                "duplicate lower empty status is suppressed");
-        firePrimaryAction(view);
+                "empty message is only visible as selector placeholder");
+        assertVisibleLabelCount(view, "Katalog leer.", 0L, "empty catalog suppresses lower status text");
+        createButton.fire();
         menuItem(view, "Umbenennen").fire();
         menuItem(view, "Löschen").fire();
         assertTrue(events.isEmpty(), "empty read-only catalog blocks invalid actions");
@@ -275,8 +280,10 @@ public final class CatalogCrudControlsHarness {
                 false));
         view.applyCss();
         view.layout();
-        assertFalse(actionButton.isVisible(), "hidden read-only catalog hides management action");
-        assertFalse(actionButton.isManaged(), "hidden read-only catalog removes management action from layout");
+        assertFalse(createButton.isVisible(), "hidden read-only catalog hides create action");
+        assertFalse(createButton.isManaged(), "hidden read-only catalog removes create action from layout");
+        assertFalse(actionMenuButton.isVisible(), "hidden read-only catalog hides secondary actions");
+        assertFalse(actionMenuButton.isManaged(), "hidden read-only catalog removes secondary actions from layout");
         assertFalse(menuItem(view, "Umbenennen").isVisible(), "hidden read-only catalog hides rename");
         assertFalse(menuItem(view, "Löschen").isVisible(), "hidden read-only catalog hides delete");
         assertFalse(menuItem(view, "Neu laden").isVisible(), "hidden read-only catalog hides reload");
@@ -302,7 +309,8 @@ public final class CatalogCrudControlsHarness {
         assertTrue(filterField.isDisabled(), "busy catalog disables filter");
         assertEquals("", filterField.getText(), "busy catalog clears stale filter text");
         assertTrue(button(view, "Öffnen").isDisabled(), "busy catalog disables open");
-        assertTrue(actionButton.isDisabled(), "busy catalog disables management action");
+        assertTrue(createButton.isDisabled(), "busy catalog disables create action");
+        assertTrue(actionMenuButton.isDisabled(), "busy catalog disables secondary actions");
         assertTrue(menuItem(view, "Umbenennen").isDisable(), "busy catalog disables rename");
         assertTrue(menuItem(view, "Löschen").isDisable(), "busy catalog disables delete");
         assertTrue(menuItem(view, "Neu laden").isDisable(), "busy catalog disables reload");
@@ -426,8 +434,8 @@ public final class CatalogCrudControlsHarness {
                 .orElseThrow(() -> new AssertionError("TextField not found in popup content."));
     }
 
-    private static SplitMenuButton actionButton(Parent parent) {
-        return descendant(parent, SplitMenuButton.class);
+    private static MenuButton actionMenuButton(Parent parent) {
+        return descendant(parent, MenuButton.class);
     }
 
     private static void assertControlRowOrder(
@@ -435,7 +443,8 @@ public final class CatalogCrudControlsHarness {
             TextField filterField,
             ComboBox<?> selector,
             Button openButton,
-            SplitMenuButton actionButton
+            Button createButton,
+            MenuButton actionMenuButton
     ) {
         HBox row = descendants(parent).stream()
                 .filter(HBox.class::isInstance)
@@ -449,8 +458,9 @@ public final class CatalogCrudControlsHarness {
         if (selectorSurface == null) {
             throw new AssertionError("Selector surface row not found.");
         }
-        assertEquals(List.of(openButton, actionButton), List.of(row.getChildren().get(1), row.getChildren().get(2)),
-                "shared control row keeps open and create after the selector surface");
+        assertEquals(List.of(openButton, createButton, actionMenuButton),
+                List.of(row.getChildren().get(1), row.getChildren().get(2), row.getChildren().get(3)),
+                "shared control row keeps open, create, and secondary actions after the selector surface");
         assertEquals(List.of(filterField, selector), List.copyOf(selectorSurface.getChildren()),
                 "selector surface keeps filter input and dropdown on one line");
     }
@@ -472,16 +482,8 @@ public final class CatalogCrudControlsHarness {
                 .orElseThrow(() -> new AssertionError("TextField not found: " + accessibleText));
     }
 
-    private static void firePrimaryAction(Parent parent) {
-        SplitMenuButton button = actionButton(parent);
-        if (button.getOnAction() == null) {
-            throw new AssertionError("Primary action handler is not installed.");
-        }
-        button.getOnAction().handle(new ActionEvent(button, button));
-    }
-
     private static MenuItem menuItem(Parent parent, String text) {
-        return actionButton(parent).getItems().stream()
+        return actionMenuButton(parent).getItems().stream()
                 .filter(item -> text.equals(item.getText()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Menu item not found: " + text));
@@ -509,6 +511,20 @@ public final class CatalogCrudControlsHarness {
             throw new AssertionError("Catalog operation popup metadata not found.");
         }
         contextMenu.getOnHidden().handle(new WindowEvent(contextMenu, WindowEvent.WINDOW_HIDDEN));
+    }
+
+    private static void assertNoVisibleLabel(Parent parent, String text, String message) {
+        assertVisibleLabelCount(parent, text, 0L, message);
+    }
+
+    private static void assertVisibleLabelCount(Parent parent, String text, long expectedCount, String message) {
+        assertEquals(expectedCount, descendants(parent).stream()
+                        .filter(Label.class::isInstance)
+                        .map(Label.class::cast)
+                        .filter(label -> text.equals(label.getText()))
+                        .filter(Node::isVisible)
+                        .count(),
+                message);
     }
 
     private static List<Node> descendants(Node node) {

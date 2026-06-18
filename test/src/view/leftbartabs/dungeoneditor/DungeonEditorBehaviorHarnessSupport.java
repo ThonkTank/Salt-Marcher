@@ -32,7 +32,6 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 import bootstrap.AppBootstrap;
-import javafx.event.ActionEvent;
 import javafx.geometry.Bounds;
 import javafx.geometry.Point2D;
 import javafx.scene.Node;
@@ -44,10 +43,10 @@ import javafx.scene.control.ButtonBase;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
-import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
@@ -267,7 +266,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             HarnessRuntime runtime,
             String mapName
     ) {
-        clickPrimary(splitMenuButton(controls, "Neu"));
+        click(button(controls, "Neu"));
         catalogPopupTextField(controls, "Dungeon-Name").setText(mapName);
         click(catalogPopupButton(controls, "Erstellen"));
         return selectedMapId(runtime.controlsModel().current(), mapName);
@@ -1737,14 +1736,6 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         button.fire();
     }
 
-    static void clickPrimary(SplitMenuButton button) {
-        if (button.getOnAction() == null) {
-            button.fire();
-            return;
-        }
-        button.getOnAction().handle(new ActionEvent(button, button));
-    }
-
     static ButtonBase button(Parent parent, String text) {
         return descendantsWithFallback(parent).stream()
                 .filter(ButtonBase.class::isInstance)
@@ -1763,16 +1754,16 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                 .orElseThrow(() -> new IllegalStateException("Button not found: " + accessibleText));
     }
 
-    static SplitMenuButton splitMenuButton(Parent parent, String text) {
+    static MenuButton menuButton(Parent parent, String text) {
         return descendantsWithFallback(parent).stream()
-                .filter(SplitMenuButton.class::isInstance)
-                .map(SplitMenuButton.class::cast)
+                .filter(MenuButton.class::isInstance)
+                .map(MenuButton.class::cast)
                 .filter(button -> text.equals(button.getText()))
                 .findFirst()
-                .orElseThrow(() -> new IllegalStateException("SplitMenuButton not found: " + text));
+                .orElseThrow(() -> new IllegalStateException("MenuButton not found: " + text));
     }
 
-    static MenuItem menuItem(SplitMenuButton button, String text) {
+    static MenuItem menuItem(MenuButton button, String text) {
         return button.getItems().stream()
                 .filter(item -> text.equals(item.getText()))
                 .findFirst()

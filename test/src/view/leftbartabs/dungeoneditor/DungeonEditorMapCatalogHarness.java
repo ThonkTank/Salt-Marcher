@@ -68,7 +68,7 @@ final class DungeonEditorMapCatalogHarness {
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
 
-        clickPrimary(splitMenuButton(controls, "Neu"));
+        click(button(controls, "Neu"));
         catalogPopupTextField(controls, "Dungeon-Name").setText("Gamma");
         click(catalogPopupButton(controls, "Erstellen"));
 
@@ -104,7 +104,7 @@ final class DungeonEditorMapCatalogHarness {
         selectMap(controls, "Alpha");
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(alphaMapId);
 
-        click(menuItem(splitMenuButton(controls, "Neu"), "Umbenennen"));
+        click(menuItem(menuButton(controls, "Mehr"), "Umbenennen"));
         TextField mapNameField = catalogPopupTextField(controls, "Dungeon-Name");
         mapNameField.setText("Alpha Prime");
         click(catalogPopupButton(controls, "Speichern"));
@@ -155,7 +155,7 @@ final class DungeonEditorMapCatalogHarness {
         assertTrue(renderSurfaceCellOrigins(binding.mapContentModel()).contains("10,10"),
                 "DE-MAP-003 Beta renders before delete");
 
-        click(menuItem(splitMenuButton(controls, "Neu"), "Löschen"));
+        click(menuItem(menuButton(controls, "Mehr"), "Löschen"));
         click(catalogPopupButtonWithAccessibleText(controls, "Löschen bestätigen"));
 
         assertEquals(0L, runtime.database().countMapIdWithName(betaMapId, "Beta"),
@@ -319,7 +319,7 @@ final class DungeonEditorMapCatalogHarness {
         assertTrue(!renderSurfaceCellOrigins(binding.mapContentModel()).contains("10,10"),
                 "DE-MAP-005 render scene is not refreshed before reload");
 
-        click(menuItem(splitMenuButton(controls, "Neu"), "Neu laden"));
+        click(menuItem(menuButton(controls, "Mehr"), "Neu laden"));
 
         assertEquals(authoredStateAfterExternalChange, runtime.database().authoredGeometryState(mapId),
                 "DE-MAP-005 reload does not add authored DB rows beyond the external persisted change");

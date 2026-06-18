@@ -5,14 +5,15 @@ import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
-import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -33,11 +34,11 @@ public final class CatalogCrudControlsView extends VBox {
     private static final String PROGRAMMATIC_FILTER_KEY = "catalogCrudProgrammaticFilter";
     private static final String FILTER_REFRESH_KEY = "catalogCrudFilterRefresh";
 
-    private final Label titleLabel = label("");
     private final TextField filterField = new TextField();
     private final ComboBox<String> selector = new ComboBox<>();
     private final Button openButton = button("Öffnen", STYLE_COMPACT, STYLE_ACCENT);
-    private final SplitMenuButton actionButton = new SplitMenuButton();
+    private final Button createButton = button("Neu", STYLE_COMPACT, STYLE_ACCENT);
+    private final MenuButton actionMenuButton = new MenuButton("Mehr");
     private final MenuItem renameMenuItem = new MenuItem("Umbenennen");
     private final MenuItem deleteMenuItem = new MenuItem("Löschen");
     private final MenuItem reloadMenuItem = new MenuItem("Neu laden");
@@ -55,6 +56,8 @@ public final class CatalogCrudControlsView extends VBox {
     private final HBox deleteActions = new HBox(6, confirmDeleteButton, cancelButton);
 
     private Consumer<CatalogCrudControlsViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Node operationAnchor = createButton;
+
     public CatalogCrudControlsView() {
         super(8);
         filterField.setPromptText("Auswahl filtern");
@@ -62,9 +65,9 @@ public final class CatalogCrudControlsView extends VBox {
         selector.setMaxWidth(Double.MAX_VALUE);
         selector.setPlaceholder(selectorPlaceholderLabel);
         openButton.setMinWidth(USE_PREF_SIZE);
-        actionButton.setText("Neu");
-        actionButton.getStyleClass().addAll(STYLE_COMPACT, STYLE_ACCENT);
-        actionButton.getItems().setAll(renameMenuItem, deleteMenuItem, reloadMenuItem);
+        createButton.setMinWidth(USE_PREF_SIZE);
+        actionMenuButton.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
+        actionMenuButton.getItems().setAll(renameMenuItem, deleteMenuItem, reloadMenuItem);
         draftField.setAccessibleText("Dungeon-Name");
         confirmDeleteButton.setAccessibleText("Löschen bestätigen");
         operationBox.getStyleClass().addAll("dropdown-window", "catalog-crud-popup");
@@ -79,7 +82,6 @@ public final class CatalogCrudControlsView extends VBox {
         getProperties().put(OPERATION_CONTENT_PROPERTY, operationBox);
         getProperties().put(OPERATION_POPUP_PROPERTY, operationPopup);
         getChildren().setAll(
-                headerRow(),
                 selectorRow(),
                 statusLabel);
     }
@@ -119,7 +121,6 @@ public final class CatalogCrudControlsView extends VBox {
                 setText(empty ? "" : contentModel.labelOf(itemId));
             }
         });
-        titleLabel.textProperty().bind(contentModel.titleProperty());
         selector.promptTextProperty().bind(contentModel.selectorPromptTextProperty());
         selector.accessibleTextProperty().bind(contentModel.selectorAccessibleTextProperty());
         selector.disableProperty().bind(contentModel.selectorDisabledProperty());
@@ -131,15 +132,16 @@ public final class CatalogCrudControlsView extends VBox {
         statusLabel.textProperty().bind(contentModel.statusTextProperty());
         statusLabel.visibleProperty().bind(contentModel.statusVisibleProperty());
         statusLabel.managedProperty().bind(statusLabel.visibleProperty());
-        actionButton.disableProperty().bind(contentModel.createDisabledProperty()
-                .and(contentModel.renameDisabledProperty())
+        createButton.disableProperty().bind(contentModel.createDisabledProperty());
+        createButton.visibleProperty().bind(contentModel.createVisibleProperty());
+        createButton.managedProperty().bind(createButton.visibleProperty());
+        actionMenuButton.disableProperty().bind(contentModel.renameDisabledProperty()
                 .and(contentModel.deleteDisabledProperty())
                 .and(contentModel.reloadDisabledProperty()));
-        actionButton.visibleProperty().bind(contentModel.createVisibleProperty()
-                .or(contentModel.renameVisibleProperty())
+        actionMenuButton.visibleProperty().bind(contentModel.renameVisibleProperty()
                 .or(contentModel.deleteVisibleProperty())
                 .or(contentModel.reloadVisibleProperty()));
-        actionButton.managedProperty().bind(actionButton.visibleProperty());
+        actionMenuButton.managedProperty().bind(actionMenuButton.visibleProperty());
         renameMenuItem.disableProperty().bind(contentModel.renameDisabledProperty());
         deleteMenuItem.disableProperty().bind(contentModel.deleteDisabledProperty());
         reloadMenuItem.disableProperty().bind(contentModel.reloadDisabledProperty());
@@ -229,8 +231,9 @@ public final class CatalogCrudControlsView extends VBox {
     }
 
     private void installEditorHandlers(CatalogCrudControlsContentModel contentModel) {
-        actionButton.setOnAction(event -> {
+        createButton.setOnAction(event -> {
             if (!contentModel.createDisabledProperty().get()) {
+                operationAnchor = createButton;
                 publish(createEditorOpenedEvent());
             }
         });
@@ -238,6 +241,7 @@ public final class CatalogCrudControlsView extends VBox {
             if (renameMenuItem.isDisable()) {
                 return;
             }
+            operationAnchor = actionMenuButton;
             String targetItemId = selectedOrCurrentItemId(contentModel);
             publish(renameEditorOpenedEvent(targetItemId));
         });
@@ -245,6 +249,7 @@ public final class CatalogCrudControlsView extends VBox {
             if (deleteMenuItem.isDisable()) {
                 return;
             }
+            operationAnchor = actionMenuButton;
             String targetItemId = selectedOrCurrentItemId(contentModel);
             publish(deleteRequestedEvent(targetItemId));
         });
@@ -337,10 +342,11 @@ public final class CatalogCrudControlsView extends VBox {
             operationPopup.hide();
             return;
         }
-        if (!operationPopup.isShowing() && actionButton.getScene() != null && actionButton.isShowing()) {
-            Bounds buttonBounds = actionButton.localToScreen(actionButton.getBoundsInLocal());
+        Node anchor = operationAnchor == null ? createButton : operationAnchor;
+        if (!operationPopup.isShowing() && anchor.getScene() != null && anchor.isVisible()) {
+            Bounds buttonBounds = anchor.localToScreen(anchor.getBoundsInLocal());
             if (buttonBounds != null) {
-                operationPopup.show(actionButton, buttonBounds.getMinX(), buttonBounds.getMaxY());
+                operationPopup.show(anchor, buttonBounds.getMinX(), buttonBounds.getMaxY());
             }
         }
     }
@@ -400,12 +406,6 @@ public final class CatalogCrudControlsView extends VBox {
                 "", filterField.getText(), "", false, "", "", "", "", "", "", false, "");
     }
 
-    private HBox headerRow() {
-        HBox row = new HBox(6, titleLabel);
-        row.setAlignment(Pos.CENTER_LEFT);
-        return row;
-    }
-
     private HBox selectorRow() {
         HBox selectorSurface = new HBox(4, filterField, selector);
         selectorSurface.getStyleClass().add("catalog-crud-selector-surface");
@@ -414,7 +414,7 @@ public final class CatalogCrudControlsView extends VBox {
         selectorSurface.setMaxWidth(Double.MAX_VALUE);
         HBox.setHgrow(selector, Priority.ALWAYS);
         HBox.setHgrow(selectorSurface, Priority.ALWAYS);
-        HBox row = new HBox(6, selectorSurface, openButton, actionButton);
+        HBox row = new HBox(6, selectorSurface, openButton, createButton, actionMenuButton);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
