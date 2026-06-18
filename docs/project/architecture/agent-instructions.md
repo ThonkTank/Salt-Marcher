@@ -239,8 +239,8 @@ An implementation pass log must include:
   status with reason, and same-run Main disposition for each finding
 - planner escalation outcome when systemic review, architecture-check,
   behavior-harness, or proof feedback shaped the project-health plan
-- `LEGACY_REMOVE_ON_TOUCH` markers found in the write set and whether they were
-  removed or reported as blockers
+- active delete signals found, retire actions completed, temporary adapters
+  left with owner/removal condition, and surfaces excluded as future baseline
 - verification commands and literal results
 - wait-time observations for recurring long-running processes, including
   recommended first-poll intervals for future comparable runs
@@ -260,8 +260,8 @@ A review pass log must include:
 - selected review panel or unavailable nested-review blocker
 - findings and fix outcomes
 - trend observations, including repeated reversals, looped implementation,
-  growing complexity, recurring smells, architecture loopholes, or repeated
-  governance/check misses
+  growing complexity, recurring smells, architecture loopholes, normalized
+  delete signals, or repeated governance/check misses
 - escalation recommendations when systemic governance, skill, check, or
   architecture changes may prevent recurrence
 - final clean, blocked, or WIP status

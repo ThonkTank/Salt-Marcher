@@ -26,7 +26,8 @@ Before changing repo-tracked files in SaltMarcher:
 6. For production-code, check/enforcement, or dependency work, search the
    planned write set and directly owning adapters for `LEGACY_REMOVE_ON_TOUCH`.
    Any hit must be removed in the same pass or reported as an explicit blocker;
-   do not grow marked support.
+   do not grow marked support or treat marked surfaces as implementation
+   precedent.
 7. Identify the required verification surface before editing and report the
    literal result before handoff.
 
@@ -108,8 +109,11 @@ document exists.
   fitting solution shape, not for the shortest immediate unblocker. Systemic
   blockers include unclear root cause, repeated fix cycles, architecture or
   harness mismatch, cross-owner repair, or likely edits across multiple
-  packages, documents, checks, or generated surfaces. Small local blockers with
-  an obvious one-file fix do not require this planner escalation.
+  packages, documents, checks, or generated surfaces. Adapter stacks,
+  ownership-subverting seams, self-confirming harnesses, and
+  `LEGACY_REMOVE_ON_TOUCH` hits are Clean-Break signals when their scope is
+  larger than an obvious local deletion. Small local blockers with an obvious
+  one-file fix do not require this planner escalation.
 - Work that runs, plans, changes, or reviews the SaltMarcher
   process-autoresearch loop must use the repo-owned
   `autodev-process-optimizer` skill. The process optimizer tunes implementer
