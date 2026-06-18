@@ -90,10 +90,10 @@ dependencies {
     pmd("net.sourceforge.pmd:pmd-java:7.23.0")
     pmd("saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
     spotbugsPlugins("com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.1.0")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.0")
 }
 
 pmd {
