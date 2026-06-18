@@ -13,7 +13,7 @@ public final class AddSessionLootPlaceholderUseCase {
         this.saveCurrentSessionPlanUseCase = saveCurrentSessionPlanUseCase;
     }
 
-    public void execute() {
-        saveCurrentSessionPlanUseCase.execute(loadCurrentSessionPlanUseCase.execute().addLootPlaceholder());
+    public void execute(long encounterId) {
+        saveCurrentSessionPlanUseCase.execute(loadCurrentSessionPlanUseCase.execute().addLootPlaceholder(encounterId));
     }
 }

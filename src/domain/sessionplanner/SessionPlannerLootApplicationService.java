@@ -3,8 +3,8 @@ package src.domain.sessionplanner;
 import java.util.Objects;
 import src.domain.sessionplanner.model.session.usecase.AddSessionLootPlaceholderUseCase;
 import src.domain.sessionplanner.model.session.usecase.RemoveSessionLootPlaceholderUseCase;
+import src.domain.sessionplanner.published.AddSessionLootPlaceholderCommand;
 import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
-import src.domain.sessionplanner.published.SessionPlannerActionCommand;
 
 public final class SessionPlannerLootApplicationService {
 
@@ -25,9 +25,9 @@ public final class SessionPlannerLootApplicationService {
                 "removeLootPlaceholderUseCase");
     }
 
-    public void addLootPlaceholder(SessionPlannerActionCommand command) {
+    public void addLootPlaceholder(AddSessionLootPlaceholderCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
-        addLootPlaceholderUseCase.execute();
+        addLootPlaceholderUseCase.execute(command.encounterId());
     }
 
     public void removeLootPlaceholder(RemoveSessionLootPlaceholderCommand command) {

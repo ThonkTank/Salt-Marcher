@@ -8,10 +8,10 @@ import src.domain.sessionplanner.SessionPlannerEncounterApplicationService;
 import src.domain.sessionplanner.SessionPlannerLootApplicationService;
 import src.domain.sessionplanner.SessionPlannerParticipantApplicationService;
 import src.domain.sessionplanner.SessionPlannerRestApplicationService;
+import src.domain.sessionplanner.published.AddSessionLootPlaceholderCommand;
 import src.domain.sessionplanner.published.AttachSessionEncounterCommand;
 import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
 import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
-import src.domain.sessionplanner.published.SessionPlannerActionCommand;
 import src.domain.sessionplanner.published.SessionPlannerCatalogCommand;
 import src.domain.sessionplanner.published.SessionPlannerEncounterAllocationCommand;
 import src.domain.sessionplanner.published.SessionPlannerEncounterCommand;
@@ -60,8 +60,9 @@ final class SessionPlannerIntentHandler {
         if (!controlsContentModel.hasCurrentSession()) {
             return;
         }
-        if (hasPositiveId(event.participantToAddId())) {
-            addParticipant(event.participantToAddId());
+        long participantToAddId = selectedPartyMemberId(event.participantToAddValue());
+        if (hasPositiveId(participantToAddId)) {
+            addParticipant(participantToAddId);
         }
         if (hasPositiveId(event.participantToRemoveId())) {
             removeParticipant(event.participantToRemoveId());
@@ -110,8 +111,8 @@ final class SessionPlannerIntentHandler {
     }
 
     private void consumeTimelineLoot(SessionPlannerTimelineMainViewInputEvent event) {
-        if (event.addLootPlaceholderRequested()) {
-            addLootPlaceholder();
+        if (hasPositiveId(event.lootEncounterTokenToAdd())) {
+            addLootPlaceholder(event.lootEncounterTokenToAdd());
         }
         if (hasPositiveId(event.lootTokenToRemove())) {
             removeLootPlaceholder(event.lootTokenToRemove());
@@ -210,6 +211,21 @@ final class SessionPlannerIntentHandler {
         participants.addParticipant(SessionPlannerParticipantCommand.add(characterId));
     }
 
+    private static long selectedPartyMemberId(String value) {
+        if (value == null) {
+            return 0L;
+        }
+        int separator = value.lastIndexOf('\t');
+        if (separator < 0 || separator + 1 >= value.length()) {
+            return 0L;
+        }
+        try {
+            return Long.parseLong(value.substring(separator + 1));
+        } catch (NumberFormatException exception) {
+            return 0L;
+        }
+    }
+
     private void removeParticipant(long characterId) {
         participants.removeParticipant(SessionPlannerParticipantCommand.remove(characterId));
     }
@@ -252,8 +268,8 @@ final class SessionPlannerIntentHandler {
         rests.setRestGap(SetSessionRestGapCommand.fromKey(leftEncounterId, rightEncounterId, restKind));
     }
 
-    private void addLootPlaceholder() {
-        loot.addLootPlaceholder(SessionPlannerActionCommand.addLootPlaceholder());
+    private void addLootPlaceholder(long encounterToken) {
+        loot.addLootPlaceholder(new AddSessionLootPlaceholderCommand(encounterToken));
     }
 
     private void removeLootPlaceholder(long lootToken) {

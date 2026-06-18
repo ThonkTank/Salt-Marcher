@@ -9,6 +9,7 @@ public final class SessionPlannerPersistenceSchema {
     public static final String SESSION_ENCOUNTERS_TABLE = "session_planner_encounters";
     public static final String SESSION_RESTS_TABLE = "session_planner_rests";
     public static final String SESSION_LOOT_PLACEHOLDERS_TABLE = "session_planner_loot_placeholders";
+    public static final String SESSION_LOOT_ENCOUNTER_ID_COLUMN = "encounter_id";
     private static final String CREATE_TABLE_IF_NOT_EXISTS = "CREATE TABLE IF NOT EXISTS ";
     private static final String REQUIRED_SESSION_REFERENCE =
             "session_id INTEGER NOT NULL REFERENCES "
@@ -67,6 +68,7 @@ public final class SessionPlannerPersistenceSchema {
             CREATE_TABLE_IF_NOT_EXISTS + SESSION_LOOT_PLACEHOLDERS_TABLE + " ("
                     + REQUIRED_SESSION_REFERENCE
                     + "loot_id INTEGER NOT NULL, "
+                    + SESSION_LOOT_ENCOUNTER_ID_COLUMN + " INTEGER NOT NULL DEFAULT 0, "
                     + "label TEXT NOT NULL, "
                     + SORT_ORDER_COLUMN_DECLARATION
                     + "PRIMARY KEY(session_id, loot_id)"

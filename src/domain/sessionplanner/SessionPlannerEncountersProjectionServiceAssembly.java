@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import src.domain.sessionplanner.model.session.SessionEncounter;
 import src.domain.sessionplanner.model.session.SessionEncounterPlanFact;
+import src.domain.sessionplanner.model.session.SessionLootPlaceholder;
 import src.domain.sessionplanner.model.session.SessionPlan;
 import src.domain.sessionplanner.model.session.SessionRestPlacement;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
@@ -40,12 +41,7 @@ final class SessionPlannerEncountersProjectionServiceAssembly {
                         context.scaledBudgetXp(),
                         context.loadedEncounters(),
                         encounterFactsRepository),
-                buildRestGaps(session),
-                session.lootPlaceholders().stream()
-                        .map(loot -> new SessionPlannerEncountersProjection.LootPlaceholder(
-                                loot.lootId(),
-                                loot.label()))
-                        .toList());
+                buildRestGaps(session));
     }
 
     static List<SessionPlannerEncountersProjection.PlannedEncounter> buildPlannedEncounters(
@@ -75,9 +71,22 @@ final class SessionPlannerEncountersProjectionServiceAssembly {
                     detail.difficultyLabel(),
                     encounter.allocation().budgetPercentage(),
                     targetXp,
-                    session.selectedEncounterId() == encounter.encounterId()));
+                    session.selectedEncounterId() == encounter.encounterId(),
+                    lootForEncounter(session.lootPlaceholders(), encounter.encounterId())));
         }
         return List.copyOf(plannedEncounters);
+    }
+
+    private static List<SessionPlannerEncountersProjection.LootPlaceholder> lootForEncounter(
+            List<SessionLootPlaceholder> lootPlaceholders,
+            long encounterId
+    ) {
+        return lootPlaceholders.stream()
+                .filter(loot -> loot.encounterId() == encounterId)
+                .map(loot -> new SessionPlannerEncountersProjection.LootPlaceholder(
+                        loot.lootId(),
+                        loot.label()))
+                .toList();
     }
 
     private static List<SessionPlannerEncountersProjection.RestGap> buildRestGaps(SessionPlan session) {

@@ -24,20 +24,16 @@ public final class SessionPlannerTimelineMainContentModel {
 
     record Projection(
             List<Projection.EncounterModel> encounters,
-            List<Projection.RestGapModel> restGaps,
-            List<Projection.LootModel> lootPlaceholders,
-            String lootEmptyMessage
+            List<Projection.RestGapModel> restGaps
     ) {
 
         Projection {
             encounters = safeCopy(encounters);
             restGaps = safeCopy(restGaps);
-            lootPlaceholders = safeCopy(lootPlaceholders);
-            lootEmptyMessage = safeText(lootEmptyMessage);
         }
 
         static Projection empty() {
-            return new Projection(List.of(), List.of(), List.of(), "Keine Loot-Platzhalter angelegt.");
+            return new Projection(List.of(), List.of());
         }
 
         static Projection from(SessionPlannerEncountersProjection projection) {
@@ -52,11 +48,7 @@ public final class SessionPlannerTimelineMainContentModel {
                                     gap.rightEncounterId(),
                                     restLabel(gap.restKind()),
                                     gap.restKind() != null && gap.restKind() != SessionPlannerRestKind.NONE))
-                            .toList(),
-                    safe.lootPlaceholders().stream()
-                            .map(loot -> new LootModel(loot.token(), loot.label()))
-                            .toList(),
-                    "Keine Loot-Platzhalter angelegt.");
+                            .toList());
         }
 
         private static List<EncounterModel> mapEncounters(
@@ -84,7 +76,10 @@ public final class SessionPlannerTimelineMainContentModel {
                                 comparison,
                                 encounter.selected(),
                                 index > 0,
-                                index < safe.size() - 1);
+                                index < safe.size() - 1,
+                                encounter.lootPlaceholders().stream()
+                                        .map(loot -> new LootModel(loot.token(), loot.label()))
+                                        .toList());
                     })
                     .toList();
         }
@@ -126,7 +121,8 @@ public final class SessionPlannerTimelineMainContentModel {
                 String comparisonText,
                 boolean selected,
                 boolean canMoveUp,
-                boolean canMoveDown
+                boolean canMoveDown,
+                List<LootModel> lootPlaceholders
         ) {
 
             EncounterModel {
@@ -137,6 +133,7 @@ public final class SessionPlannerTimelineMainContentModel {
                 budgetPercentageText = safeText(budgetPercentageText);
                 targetXpText = safeText(targetXpText);
                 comparisonText = safeText(comparisonText);
+                lootPlaceholders = safeCopy(lootPlaceholders);
             }
         }
 

@@ -1,5 +1,7 @@
 package src.view.leftbartabs.sessionplanner;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -12,7 +14,7 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
-import javafx.scene.control.SplitMenuButton;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -23,9 +25,17 @@ import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.data.sessionplanner.mapper.SessionPlanMapper;
+import src.data.sessionplanner.model.SessionEncounterRecord;
+import src.data.sessionplanner.model.SessionLootPlaceholderRecord;
+import src.data.sessionplanner.model.SessionPlanRecord;
+import src.data.sessionplanner.model.SessionPlanSnapshotRecord;
+import src.domain.sessionplanner.model.session.EncounterDays;
+import src.domain.sessionplanner.model.session.SessionPlan;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCatalogSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
+import src.domain.sessionplanner.published.SessionPlannerEncountersProjection;
 import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 
 public final class SessionPlannerCatalogHarness {
@@ -64,6 +74,8 @@ public final class SessionPlannerCatalogHarness {
         stage.show();
         layout(root);
 
+        assertControlsUseCompactPartySelector(controls);
+        assertEncounterLootTargetsEncounterCards();
         assertCatalogSize(catalog.current(), 0, "initial catalog is empty");
         assertTrue(!hasLabel(controls, "Session #0"), "initial controls do not show default Session #0");
         assertTrue(hasLabel(controls, "Keine Session"), "initial controls show empty session state");
@@ -153,6 +165,84 @@ public final class SessionPlannerCatalogHarness {
         layout(controls);
     }
 
+    private static void assertControlsUseCompactPartySelector(Parent controls) {
+        long selectorCount = descendants(controls).stream()
+                .filter(ComboBox.class::isInstance)
+                .count();
+        assertTrue(selectorCount >= 2L, "controls expose catalog selector and compact party selector");
+        assertTrue(button(controls, "Hinzufuegen").isDisabled(), "compact party add button starts disabled");
+    }
+
+    private static void assertEncounterLootTargetsEncounterCards() {
+        SessionPlan plan = SessionPlan.seeded(77L, List.of(), EncounterDays.one())
+                .attachEncounter(101L)
+                .attachEncounter(202L)
+                .addLootPlaceholder(1L)
+                .addLootPlaceholder(2L)
+                .addLootPlaceholder(1L);
+        assertEquals(Integer.valueOf(3), Integer.valueOf(plan.lootPlaceholders().size()),
+                "loot placeholders are stored on the session plan");
+        assertEquals(Long.valueOf(1L), Long.valueOf(plan.lootPlaceholders().get(0).encounterId()),
+                "first loot placeholder stores its encounter target");
+        assertEquals(Long.valueOf(2L), Long.valueOf(plan.lootPlaceholders().get(1).encounterId()),
+                "second loot placeholder stores its encounter target");
+
+        SessionPlan afterRemoval = plan.removeEncounter(1L);
+        assertEquals(Integer.valueOf(1), Integer.valueOf(afterRemoval.lootPlaceholders().size()),
+                "removing an encounter prunes its loot placeholders");
+        assertEquals(Long.valueOf(2L), Long.valueOf(afterRemoval.lootPlaceholders().getFirst().encounterId()),
+                "remaining loot placeholder keeps the surviving encounter target");
+        assertLegacyLootLoadsIntoFirstEncounter();
+
+        SessionPlannerEncountersProjection projection = new SessionPlannerEncountersProjection(
+                List.of(new SessionPlannerEncountersProjection.PlannedEncounter(
+                        1L,
+                        101L,
+                        "Crypt",
+                        "",
+                        2,
+                        100,
+                        150,
+                        1.5,
+                        "Medium",
+                        BigDecimal.valueOf(50L),
+                        200,
+                        false,
+                        List.of(new SessionPlannerEncountersProjection.LootPlaceholder(10L, "Cache")))),
+                List.of());
+        SessionPlannerTimelineMainContentModel contentModel = new SessionPlannerTimelineMainContentModel();
+        contentModel.applyEncounters(projection);
+        assertEquals(Integer.valueOf(1), Integer.valueOf(
+                        contentModel.projectionProperty().get().encounters().getFirst().lootPlaceholders().size()),
+                "timeline model keeps loot inside the encounter card");
+
+        SessionPlannerTimelineMainView view = new SessionPlannerTimelineMainView();
+        List<SessionPlannerTimelineMainViewInputEvent> events = new ArrayList<>();
+        view.onViewInputEvent(events::add);
+        view.bind(contentModel);
+        Stage stage = new Stage();
+        stage.setScene(new Scene(view, 520.0, 420.0));
+        stage.show();
+        layout(view);
+        assertTrue(hasLabel(view, "Cache"), "timeline view renders encounter loot");
+        button(view, "Loot-Platzhalter").fire();
+        assertEquals(Integer.valueOf(1), Integer.valueOf(events.size()), "loot add button publishes one event");
+        assertEquals(Long.valueOf(1L), Long.valueOf(events.getFirst().lootEncounterTokenToAdd()),
+                "loot add event targets the encounter card");
+        stage.hide();
+    }
+
+    private static void assertLegacyLootLoadsIntoFirstEncounter() {
+        SessionPlan loaded = SessionPlanMapper.toDomain(new SessionPlanSnapshotRecord(
+                new SessionPlanRecord(88L, "Legacy", "1.0", 1L, "", 3L, 2L),
+                List.of(),
+                List.of(new SessionEncounterRecord(1L, 101L, "100", 0)),
+                List.of(),
+                List.of(new SessionLootPlaceholderRecord(1L, 0L, "Legacy Cache", 0))));
+        assertEquals(Long.valueOf(1L), Long.valueOf(loaded.lootPlaceholders().getFirst().encounterId()),
+                "legacy loot without encounter id loads into the first encounter");
+    }
+
     private static TextField encounterDaysField(Parent controls) {
         return descendants(controls).stream()
                 .filter(TextField.class::isInstance)
@@ -206,20 +296,16 @@ public final class SessionPlannerCatalogHarness {
     }
 
     private static void firePrimaryAction(Parent parent) {
-        SplitMenuButton button = actionButton(parent);
-        if (button.getOnAction() == null) {
-            throw new AssertionError("SplitMenuButton primary action missing: Neu");
-        }
-        button.getOnAction().handle(new javafx.event.ActionEvent(button, button));
+        button(parent, "Neu").fire();
     }
 
-    private static SplitMenuButton actionButton(Parent parent) {
+    private static MenuButton actionButton(Parent parent) {
         return descendants(parent).stream()
-                .filter(SplitMenuButton.class::isInstance)
-                .map(SplitMenuButton.class::cast)
-                .filter(button -> "Neu".equals(button.getText()))
+                .filter(MenuButton.class::isInstance)
+                .map(MenuButton.class::cast)
+                .filter(button -> "Mehr".equals(button.getText()))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("SplitMenuButton not found: Neu"));
+                .orElseThrow(() -> new AssertionError("MenuButton not found: Mehr"));
     }
 
     private static javafx.scene.control.MenuItem actionMenuItem(Parent parent, String text) {

@@ -39,6 +39,12 @@ public final class SessionPlanMapper {
 
     public static SessionPlan toDomain(SessionPlanSnapshotRecord snapshot) {
         SessionPlanRecord plan = snapshot.plan();
+        List<SessionEncounter> encounters = snapshot.encounters().stream()
+                .map(record -> new SessionEncounter(
+                        record.encounterId(),
+                        record.encounterPlanId(),
+                        new SessionEncounterAllocation(parseDecimal(record.budgetPercentage()))))
+                .toList();
         return new SessionPlan(
                 plan.sessionId(),
                 plan.displayName(),
@@ -46,21 +52,14 @@ public final class SessionPlanMapper {
                         .map(SessionParticipantRecord::characterId)
                         .toList(),
                 new EncounterDays(parseDecimal(plan.encounterDays())),
-                snapshot.encounters().stream()
-                        .map(record -> new SessionEncounter(
-                                record.encounterId(),
-                                record.encounterPlanId(),
-                                new SessionEncounterAllocation(parseDecimal(record.budgetPercentage()))))
-                        .toList(),
+                encounters,
                 snapshot.rests().stream()
                         .map(record -> SessionRestPlacement.fromPersistence(
                                 record.leftEncounterId(),
                                 record.rightEncounterId(),
                                 record.restKind()))
                         .toList(),
-                snapshot.lootPlaceholders().stream()
-                        .map(record -> new SessionLootPlaceholder(record.lootId(), record.label()))
-                        .toList(),
+                toDomainLoot(snapshot.lootPlaceholders(), encounters),
                 plan.selectedEncounterId(),
                 plan.statusText(),
                 plan.nextEncounterId(),
@@ -92,8 +91,22 @@ public final class SessionPlanMapper {
     private static List<SessionLootPlaceholderRecord> toLootRecords(SessionPlan plan) {
         return mapIndexed(plan.lootPlaceholders(), (placeholder, index) -> new SessionLootPlaceholderRecord(
                 placeholder.lootId(),
+                placeholder.encounterId(),
                 placeholder.label(),
                 index));
+    }
+
+    private static List<SessionLootPlaceholder> toDomainLoot(
+            List<SessionLootPlaceholderRecord> records,
+            List<SessionEncounter> encounters
+    ) {
+        long fallbackEncounterId = encounters.isEmpty() ? 0L : encounters.getFirst().encounterId();
+        return records.stream()
+                .map(record -> new SessionLootPlaceholder(
+                        record.lootId(),
+                        record.encounterId() > 0L ? record.encounterId() : fallbackEncounterId,
+                        record.label()))
+                .toList();
     }
 
     private static BigDecimal parseDecimal(String value) {

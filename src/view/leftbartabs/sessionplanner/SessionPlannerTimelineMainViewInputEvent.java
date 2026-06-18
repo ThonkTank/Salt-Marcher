@@ -12,7 +12,7 @@ public record SessionPlannerTimelineMainViewInputEvent(
         long restLeftEncounterId,
         long restRightEncounterId,
         String restSelection,
-        boolean addLootPlaceholderRequested,
+        long lootEncounterTokenToAdd,
         long lootTokenToRemove
 ) {
 
@@ -28,6 +28,7 @@ public record SessionPlannerTimelineMainViewInputEvent(
         restLeftEncounterId = Math.max(0L, restLeftEncounterId);
         restRightEncounterId = Math.max(0L, restRightEncounterId);
         restSelection = restSelection == null ? "" : restSelection.trim();
+        lootEncounterTokenToAdd = Math.max(0L, lootEncounterTokenToAdd);
         lootTokenToRemove = Math.max(0L, lootTokenToRemove);
     }
 }

@@ -5,14 +5,12 @@ import java.util.List;
 
 public record SessionPlannerEncountersProjection(
         List<PlannedEncounter> plannedEncounters,
-        List<RestGap> restGaps,
-        List<LootPlaceholder> lootPlaceholders
+        List<RestGap> restGaps
 ) {
 
     public SessionPlannerEncountersProjection {
         plannedEncounters = copy(plannedEncounters);
         restGaps = copy(restGaps);
-        lootPlaceholders = copy(lootPlaceholders);
     }
 
     @Override
@@ -25,13 +23,8 @@ public record SessionPlannerEncountersProjection(
         return List.copyOf(restGaps);
     }
 
-    @Override
-    public List<LootPlaceholder> lootPlaceholders() {
-        return List.copyOf(lootPlaceholders);
-    }
-
     public static SessionPlannerEncountersProjection empty() {
-        return new SessionPlannerEncountersProjection(List.of(), List.of(), List.of());
+        return new SessionPlannerEncountersProjection(List.of(), List.of());
     }
 
     public record PlannedEncounter(
@@ -46,7 +39,8 @@ public record SessionPlannerEncountersProjection(
             String difficultyLabel,
             BigDecimal budgetPercentage,
             int targetXp,
-            boolean selected
+            boolean selected,
+            List<LootPlaceholder> lootPlaceholders
     ) {
 
         public PlannedEncounter {
@@ -61,6 +55,12 @@ public record SessionPlannerEncountersProjection(
             difficultyLabel = difficultyLabel == null ? "" : difficultyLabel.trim();
             budgetPercentage = budgetPercentage == null ? BigDecimal.ZERO : budgetPercentage;
             targetXp = Math.max(0, targetXp);
+            lootPlaceholders = copy(lootPlaceholders);
+        }
+
+        @Override
+        public List<LootPlaceholder> lootPlaceholders() {
+            return List.copyOf(lootPlaceholders);
         }
     }
 

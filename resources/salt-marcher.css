@@ -1397,36 +1397,72 @@
     -fx-font-weight: bold;
     -fx-text-fill: #e5c06f;
 }
-.session-planner-controls-scroll,
-.session-planner-main-scroll,
-.session-planner-controls-scroll > .viewport,
+.session-planner-controls-scroll {
+    -fx-background-color: transparent;
+}
+.session-planner-main-scroll {
+    -fx-background-color: transparent;
+}
+.session-planner-controls-scroll > .viewport {
+    -fx-background-color: transparent;
+}
 .session-planner-main-scroll > .viewport {
     -fx-background-color: transparent;
 }
-.session-planner-controls,
+.session-planner-controls {
+    -fx-background-color: transparent;
+}
 .session-planner-main {
     -fx-background-color: transparent;
 }
 .session-planner-status {
     -fx-padding: 0 0 4 0;
 }
-.session-planner-card,
-.session-planner-encounter-card,
-.session-planner-gap-card,
-.session-planner-loot-card,
+.session-planner-card {
+    -fx-background-color: rgba(255, 255, 255, 0.04);
+    -fx-background-radius: 8;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 8;
+}
+.session-planner-encounter-card {
+    -fx-background-color: rgba(255, 255, 255, 0.04);
+    -fx-background-radius: 8;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 8;
+}
+.session-planner-gap-card {
+    -fx-background-color: rgba(255, 255, 255, 0.04);
+    -fx-background-radius: 8;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 8;
+}
+.session-planner-loot-card {
+    -fx-background-color: rgba(255, 255, 255, 0.04);
+    -fx-background-radius: 8;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 8;
+}
 .session-planner-plan-card {
     -fx-background-color: rgba(255, 255, 255, 0.04);
     -fx-background-radius: 8;
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 8;
 }
-.session-planner-card-title,
-.session-planner-encounter-title,
-.session-planner-gap-title,
+.session-planner-card-title {
+    -fx-font-weight: bold;
+}
+.session-planner-encounter-title {
+    -fx-font-weight: bold;
+}
+.session-planner-gap-title {
+    -fx-font-weight: bold;
+}
 .session-planner-plan-name {
     -fx-font-weight: bold;
 }
-.session-planner-budget-summary,
+.session-planner-budget-summary {
+    -fx-text-fill: -sm-text-primary;
+}
 .session-planner-encounter-budget {
     -fx-text-fill: -sm-text-primary;
 }

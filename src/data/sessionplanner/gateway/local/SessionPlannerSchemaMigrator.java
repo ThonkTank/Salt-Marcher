@@ -18,6 +18,16 @@ final class SessionPlannerSchemaMigrator {
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_LOOT_PLACEHOLDERS_SQL);
             if (!SqliteSchemaColumnSupport.hasColumn(
                     connection,
+                    SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE,
+                    SessionPlannerPersistenceSchema.SESSION_LOOT_ENCOUNTER_ID_COLUMN)) {
+                statement.execute("ALTER TABLE "
+                        + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
+                        + " ADD COLUMN "
+                        + SessionPlannerPersistenceSchema.SESSION_LOOT_ENCOUNTER_ID_COLUMN
+                        + " INTEGER NOT NULL DEFAULT 0");
+            }
+            if (!SqliteSchemaColumnSupport.hasColumn(
+                    connection,
                     SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE,
                     "display_name")) {
                 statement.execute("ALTER TABLE "

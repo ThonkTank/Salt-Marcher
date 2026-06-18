@@ -1,14 +1,14 @@
 package src.view.leftbartabs.sessionplanner;
 
 public record SessionPlannerControlsViewInputEvent(
-        long participantToAddId,
+        String participantToAddValue,
         long participantToRemoveId,
         String encounterDaysText,
         long planIdToAttach
 ) {
 
     public SessionPlannerControlsViewInputEvent {
-        participantToAddId = Math.max(0L, participantToAddId);
+        participantToAddValue = participantToAddValue == null ? "" : participantToAddValue;
         participantToRemoveId = Math.max(0L, participantToRemoveId);
         encounterDaysText = encounterDaysText == null ? "" : encounterDaysText.trim();
         planIdToAttach = Math.max(0L, planIdToAttach);

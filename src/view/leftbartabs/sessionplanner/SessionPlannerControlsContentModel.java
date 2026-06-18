@@ -53,6 +53,7 @@ public final class SessionPlannerControlsContentModel {
             Projection.RestAdviceModel restAdvice,
             Projection.GoldModel goldBudget,
             List<Projection.AvailablePlanModel> availablePlans,
+            List<String> partyMemberSelectorValues,
             List<Projection.PartyMemberModel> activePartyMembers,
             List<Projection.SessionParticipantModel> sessionParticipants
     ) {
@@ -65,6 +66,7 @@ public final class SessionPlannerControlsContentModel {
             restAdvice = restAdvice == null ? RestAdviceModel.empty() : restAdvice;
             goldBudget = goldBudget == null ? GoldModel.placeholder() : goldBudget;
             availablePlans = safeCopy(availablePlans);
+            partyMemberSelectorValues = safeCopy(partyMemberSelectorValues);
             activePartyMembers = safeCopy(activePartyMembers);
             sessionParticipants = safeCopy(sessionParticipants);
         }
@@ -77,6 +79,7 @@ public final class SessionPlannerControlsContentModel {
                     BudgetModel.empty(),
                     RestAdviceModel.empty(),
                     GoldModel.placeholder(),
+                    List.of(),
                     List.of(),
                     List.of(),
                     List.of());
@@ -94,6 +97,10 @@ public final class SessionPlannerControlsContentModel {
             Set<Long> participantIds = safeProjection.participants().stream()
                     .map(SessionPlannerParticipantsProjection.SessionParticipant::characterId)
                     .collect(Collectors.toSet());
+            List<PartyMemberModel> selectablePartyMembers = safeProjection.activePartyMembers().stream()
+                    .filter(member -> hasCurrentSession && !participantIds.contains(member.characterId()))
+                    .map(member -> mapPartyMember(member, false, true))
+                    .toList();
             return new Projection(
                     safeSnapshot.status(),
                     mapSession(safeSnapshot.session()),
@@ -104,12 +111,10 @@ public final class SessionPlannerControlsContentModel {
                     safeSnapshot.availableEncounterPlans().stream()
                             .map(plan -> mapAvailablePlan(plan, hasCurrentSession))
                             .toList(),
-                    safeProjection.activePartyMembers().stream()
-                            .map(member -> mapPartyMember(
-                                    member,
-                                    participantIds.contains(member.characterId()),
-                                    hasCurrentSession))
+                    selectablePartyMembers.stream()
+                            .map(PartyMemberModel::selectorValue)
                             .toList(),
+                    selectablePartyMembers,
                     safeProjection.participants().stream()
                             .map(Projection::mapSessionParticipant)
                             .toList());
@@ -211,6 +216,7 @@ public final class SessionPlannerControlsContentModel {
                     member.name(),
                     member.level(),
                     alreadyInSession,
+                    selectorValue(member.characterId(), member.name(), member.level()),
                     "Level " + member.level(),
                     alreadyInSession ? "Schon in Session" : "Hinzufuegen",
                     actionDisabled ? "flat" : "accent",
@@ -245,6 +251,10 @@ public final class SessionPlannerControlsContentModel {
         private static String formatXp(int value) {
             NumberFormat format = NumberFormat.getIntegerInstance(Locale.GERMANY);
             return format.format(Math.max(0, value));
+        }
+
+        private static String selectorValue(long characterId, String name, int level) {
+            return safeText(name).replace('\t', ' ') + " - Level " + Math.max(0, level) + "\t" + characterId;
         }
 
         private static <T> List<T> safeCopy(List<T> values) {
@@ -406,6 +416,7 @@ public final class SessionPlannerControlsContentModel {
                 String name,
                 int level,
                 boolean alreadyInSession,
+                String selectorValue,
                 String detailText,
                 String actionText,
                 String actionStyleClass,
@@ -414,6 +425,7 @@ public final class SessionPlannerControlsContentModel {
 
             PartyMemberModel {
                 name = safeText(name);
+                selectorValue = safeText(selectorValue);
                 detailText = safeText(detailText);
                 actionText = safeText(actionText);
                 actionStyleClass = safeText(actionStyleClass);

@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
+
 public record SessionPlan(
         long sessionId,
         String displayName,
@@ -59,11 +60,29 @@ public record SessionPlan(
     }
 
     public SessionPlan clearStatus() {
-        return copy(participantRefs, encounterDays, encounters, restPlacements, lootPlaceholders, selectedEncounterId, "", nextEncounterId, nextLootId);
+        return copy(
+                participantRefs,
+                encounterDays,
+                encounters,
+                restPlacements,
+                lootPlaceholders,
+                selectedEncounterId,
+                "",
+                nextEncounterId,
+                nextLootId);
     }
 
     public SessionPlan withStatus(String statusText) {
-        return copy(participantRefs, encounterDays, encounters, restPlacements, lootPlaceholders, selectedEncounterId, statusText, nextEncounterId, nextLootId);
+        return copy(
+                participantRefs,
+                encounterDays,
+                encounters,
+                restPlacements,
+                lootPlaceholders,
+                selectedEncounterId,
+                statusText,
+                nextEncounterId,
+                nextLootId);
     }
 
     public SessionPlan rename(String nextDisplayName) {
@@ -140,8 +159,16 @@ public record SessionPlan(
                     ? 0L
                     : normalized.get(Math.min(index, normalized.size() - 1)).encounterId();
         }
-        return copy(participantRefs, encounterDays, normalized, nextRestPlacements, lootPlaceholders, nextSelected,
-                "Encounter entfernt.", nextEncounterId, nextLootId);
+        return copy(
+                participantRefs,
+                encounterDays,
+                normalized,
+                nextRestPlacements,
+                pruneLootPlaceholders(encounterId),
+                nextSelected,
+                "Encounter entfernt.",
+                nextEncounterId,
+                nextLootId);
     }
 
     public SessionPlan moveEncounterUp(long encounterId) {
@@ -226,13 +253,25 @@ public record SessionPlan(
                 : this;
     }
 
-    public SessionPlan addLootPlaceholder() {
+    public SessionPlan addLootPlaceholder(long encounterId) {
+        if (encounterIndex(encounters, encounterId) < 0) {
+            return this;
+        }
         List<SessionLootPlaceholder> nextLootPlaceholders = new ArrayList<>(lootPlaceholders);
         nextLootPlaceholders.add(new SessionLootPlaceholder(
                 nextLootId,
-                "Loot-Platzhalter " + (lootPlaceholders.size() + 1)));
-        return copy(participantRefs, encounterDays, encounters, restPlacements, nextLootPlaceholders, selectedEncounterId,
-                "Loot-Platzhalter hinzugefuegt.", nextEncounterId, nextLootId + 1);
+                encounterId,
+                "Loot-Platzhalter " + (lootCountForEncounter(encounterId) + 1)));
+        return copy(
+                participantRefs,
+                encounterDays,
+                encounters,
+                restPlacements,
+                nextLootPlaceholders,
+                selectedEncounterId,
+                "Loot-Platzhalter hinzugefuegt.",
+                nextEncounterId,
+                nextLootId + 1);
     }
 
     public SessionPlan removeLootPlaceholder(long lootId) {
@@ -330,6 +369,18 @@ public record SessionPlan(
             }
         }
         return nextRestPlacements;
+    }
+
+    private List<SessionLootPlaceholder> pruneLootPlaceholders(long encounterId) {
+        List<SessionLootPlaceholder> nextLootPlaceholders = new ArrayList<>(lootPlaceholders);
+        nextLootPlaceholders.removeIf(placeholder -> placeholder.encounterId() == encounterId);
+        return nextLootPlaceholders;
+    }
+
+    private long lootCountForEncounter(long encounterId) {
+        return lootPlaceholders.stream()
+                .filter(placeholder -> placeholder.encounterId() == encounterId)
+                .count();
     }
 
     private static List<SessionEncounter> rebalanceAllocationsEvenly(List<SessionEncounter> encounters) {

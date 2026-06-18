@@ -10,7 +10,9 @@ import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListCell;
 import javafx.scene.control.ProgressBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
@@ -18,6 +20,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import javafx.util.StringConverter;
 
 public final class SessionPlannerControlsView extends ScrollPane {
 
@@ -38,8 +41,13 @@ public final class SessionPlannerControlsView extends ScrollPane {
             "flat");
     private final Label partyHeadlineLabel = label("");
     private final Label partyDetailLabel = label("", STYLE_TEXT_SECONDARY);
+    private final ComboBox<String> partyMemberSelector = new ComboBox<>();
+    private final Button addPartyMemberButton = button(
+            "Hinzufuegen",
+            this::publishSelectedParticipant,
+            STYLE_COMPACT,
+            "accent");
     private final VBox sessionParticipantsRows = new VBox(6);
-    private final VBox activePartyRows = new VBox(6);
     private final Label totalBudgetLabel = label("");
     private final Label plannedXpLabel = label("");
     private final Label remainingXpLabel = label("");
@@ -47,11 +55,10 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private final Label summaryLabel = label("", "session-planner-budget-summary");
     private final Label milestonesLabel = label("", STYLE_TEXT_SECONDARY);
     private final Label restAdviceLabel = label("");
-    private final Label goldHeadlineLabel = label("");
-    private final Label goldDetailLabel = label("", STYLE_TEXT_SECONDARY);
     private final VBox plansBox = new VBox(6);
 
     public SessionPlannerControlsView() {
+        configurePartyMemberSelector();
         setContent(content());
         getStyleClass().add("session-planner-controls-scroll");
         setFitToWidth(true);
@@ -77,12 +84,6 @@ public final class SessionPlannerControlsView extends ScrollPane {
                 content,
                 sessionSection(),
                 statusLabel,
-                sectionCard("Session-Ueberblick", partyHeadlineLabel, partyDetailLabel),
-                sectionCard("Session-Teilnehmer", sessionParticipantsRows),
-                sectionCard("Aktive Party", activePartyRows),
-                budgetSection(),
-                sectionCard("Rastempfehlung", restAdviceLabel),
-                sectionCard("Gold & Loot", goldHeadlineLabel, goldDetailLabel),
                 sectionCard("Gespeicherte Encounter", plansBox));
         return content;
     }
@@ -93,24 +94,32 @@ public final class SessionPlannerControlsView extends ScrollPane {
                 10,
                 headerRow(label("SESSION PLANNER", "section-header", "text-muted")),
                 sectionCard(
-                        "Session",
+                        "Session-Setup",
                         sessionIdLabel,
                         selectionLabel,
                         new GrowingFieldRow(
                                 label("Encounter Days", "session-planner-card-title"),
                                 encounterDaysField,
-                                applyDaysButton)));
+                                applyDaysButton),
+                        partyHeadlineLabel,
+                        partyDetailLabel,
+                        partySelectorRow(),
+                        sessionParticipantsRows,
+                        budgetSection(),
+                        restAdviceLabel));
     }
 
     private VBox budgetSection() {
-        return sectionCard(
-                "XP-Budget",
+        VBox budget = new VBox(
+                4,
                 totalBudgetLabel,
                 plannedXpLabel,
                 remainingXpLabel,
                 budgetBar,
                 summaryLabel,
                 milestonesLabel);
+        addStyles(budget, "session-planner-budget-summary");
+        return budget;
     }
 
     private void show(SessionPlannerControlsContentModel.Projection projection) {
@@ -123,12 +132,9 @@ public final class SessionPlannerControlsView extends ScrollPane {
         partyHeadlineLabel.setText(party.headline());
         partyDetailLabel.setText(party.detail());
         showParticipants(projection.sessionParticipants());
-        showMembers(projection.activePartyMembers());
+        showMembers(projection.partyMemberSelectorValues(), projection.session().sessionActionsDisabled());
         showBudget(projection.budget());
         restAdviceLabel.setText(projection.restAdvice().summaryText());
-        var gold = projection.goldBudget();
-        goldHeadlineLabel.setText(gold.headline());
-        goldDetailLabel.setText(gold.detail());
         showPlans(projection.availablePlans());
     }
 
@@ -180,40 +186,58 @@ public final class SessionPlannerControlsView extends ScrollPane {
         return row;
     }
 
-    private void showMembers(List<SessionPlannerControlsContentModel.Projection.PartyMemberModel> members) {
-        if (members.isEmpty()) {
-            setNodes(activePartyRows, label(
-                    "Keine aktiven Party-Mitglieder verfuegbar.",
-                    STYLE_TEXT_SECONDARY,
-                    "session-planner-empty"));
+    private void showMembers(
+            List<String> selectableMembers,
+            boolean sessionActionsDisabled
+    ) {
+        String selected = partyMemberSelector.getValue();
+        partyMemberSelector.getItems().setAll(selectableMembers);
+        restoreSelection(selected, selectableMembers);
+        boolean disabled = sessionActionsDisabled || selectableMembers.isEmpty();
+        partyMemberSelector.setDisable(disabled);
+        addPartyMemberButton.setDisable(disabled || partyMemberSelector.getValue() == null);
+    }
+
+    private void configurePartyMemberSelector() {
+        partyMemberSelector.setMaxWidth(Double.MAX_VALUE);
+        partyMemberSelector.setPromptText("Spieler auswaehlen");
+        partyMemberSelector.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(String value) {
+                return partyMemberLabel(value);
+            }
+
+            @Override
+            public String fromString(String text) {
+                return text == null ? "" : text;
+            }
+        });
+        partyMemberSelector.setButtonCell(new PartyMemberCell());
+        partyMemberSelector.setCellFactory(ignored -> new PartyMemberCell());
+        partyMemberSelector.valueProperty().addListener((ignored, before, after) ->
+                addPartyMemberButton.setDisable(after == null || partyMemberSelector.isDisabled()));
+    }
+
+    private Node partySelectorRow() {
+        ActionRow row = new ActionRow(6);
+        HBox.setHgrow(partyMemberSelector, Priority.ALWAYS);
+        row.addAllNodes(label("Party", "session-planner-card-title"), partyMemberSelector, addPartyMemberButton);
+        return row;
+    }
+
+    private void restoreSelection(
+            String selected,
+            List<String> selectableMembers
+    ) {
+        if (selectableMembers.isEmpty()) {
+            partyMemberSelector.setValue(null);
             return;
         }
-        activePartyRows.getChildren().setAll(memberRows(members));
-    }
-
-    private List<Node> memberRows(List<SessionPlannerControlsContentModel.Projection.PartyMemberModel> members) {
-        List<Node> rows = new ArrayList<>();
-        for (var member : members) {
-            rows.add(memberRow(member));
+        if (selected != null && selectableMembers.contains(selected)) {
+            partyMemberSelector.setValue(selected);
+            return;
         }
-        return rows;
-    }
-
-    private Node memberRow(SessionPlannerControlsContentModel.Projection.PartyMemberModel member) {
-        Button addButton = button(
-                member.actionText(),
-                this::publishAddParticipant,
-                STYLE_COMPACT,
-                member.actionStyleClass());
-        addButton.setUserData(Long.valueOf(member.characterId()));
-        addButton.setDisable(member.actionDisabled());
-        VBox labels = new VBox(
-                label(member.name(), "session-planner-plan-name"),
-                label(member.detailText(), STYLE_TEXT_SECONDARY));
-        ActionRow row = new ActionRow(8);
-        row.addAllNodes(labels, spacer(), addButton);
-        row.addStyles("session-planner-plan-card");
-        return row;
+        partyMemberSelector.setValue(selectableMembers.getFirst());
     }
 
     private void showBudget(SessionPlannerControlsContentModel.Projection.BudgetModel model) {
@@ -263,12 +287,8 @@ public final class SessionPlannerControlsView extends ScrollPane {
         return card;
     }
 
-    private void publishAddParticipant(ActionEvent event) {
-        long participantId = 0L;
-        if (event.getSource() instanceof Button button && button.getUserData() instanceof Number id) {
-            participantId = id.longValue();
-        }
-        publish(new SessionPlannerControlsViewInputEvent(participantId, 0L, "", 0L));
+    private void publishSelectedParticipant(ActionEvent event) {
+        publish(new SessionPlannerControlsViewInputEvent(partyMemberSelector.getValue(), 0L, "", 0L));
     }
 
     private void publishRemoveParticipant(ActionEvent event) {
@@ -276,7 +296,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         if (event.getSource() instanceof Button button && button.getUserData() instanceof Number id) {
             participantId = id.longValue();
         }
-        publish(new SessionPlannerControlsViewInputEvent(0L, participantId, "", 0L));
+        publish(new SessionPlannerControlsViewInputEvent("", participantId, "", 0L));
     }
 
     private void publishAttachPlan(ActionEvent event) {
@@ -284,7 +304,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         if (event.getSource() instanceof Button button && button.getUserData() instanceof Number id) {
             planId = id.longValue();
         }
-        publish(new SessionPlannerControlsViewInputEvent(0L, 0L, "", planId));
+        publish(new SessionPlannerControlsViewInputEvent("", 0L, "", planId));
     }
 
     private void publishEncounterDays() {
@@ -292,7 +312,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
             return;
         }
         publish(new SessionPlannerControlsViewInputEvent(
-                0L,
+                "",
                 0L,
                 encounterDaysField.getText(),
                 0L));
@@ -361,6 +381,14 @@ public final class SessionPlannerControlsView extends ScrollPane {
         node.getStyleClass().addAll(styleClasses);
     }
 
+    private static String partyMemberLabel(String value) {
+        if (value == null) {
+            return "";
+        }
+        int separator = value.indexOf('\t');
+        return separator < 0 ? value : value.substring(0, separator);
+    }
+
     private void showBudgetStyle(String styleClass) {
         budgetBar.getStyleClass().removeAll(STYLE_BUDGET_OK, STYLE_BUDGET_OVER);
         budgetBar.getStyleClass().add(styleClass);
@@ -387,6 +415,15 @@ public final class SessionPlannerControlsView extends ScrollPane {
         private GrowingFieldRow(Node label, TextField field, Button button) {
             super(6, label, field, button);
             setHgrow(field, Priority.ALWAYS);
+        }
+    }
+
+    private static final class PartyMemberCell extends ListCell<String> {
+
+        @Override
+        protected void updateItem(String item, boolean empty) {
+            super.updateItem(item, empty);
+            setText(empty ? "" : partyMemberLabel(item));
         }
     }
 

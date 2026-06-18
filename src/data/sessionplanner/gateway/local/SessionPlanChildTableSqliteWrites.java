@@ -97,12 +97,13 @@ final class SessionPlanChildTableSqliteWrites {
                 INSERT_INTO
                         + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
                         + " "
-                        + "(session_id, loot_id, label, sort_order) VALUES (?, ?, ?, ?)")) {
+                        + "(session_id, loot_id, encounter_id, label, sort_order) VALUES (?, ?, ?, ?, ?)")) {
             for (SessionLootPlaceholderRecord record : lootPlaceholders) {
                 insert.setLong(1, sessionId);
                 insert.setLong(2, record.lootId());
-                insert.setString(3, record.label());
-                insert.setInt(4, record.sortOrder());
+                insert.setLong(3, record.encounterId());
+                insert.setString(4, record.label());
+                insert.setInt(5, record.sortOrder());
                 insert.addBatch();
             }
             insert.executeBatch();

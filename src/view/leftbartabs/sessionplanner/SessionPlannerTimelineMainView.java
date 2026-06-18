@@ -25,16 +25,13 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     private static final String REST_LONG = "LONG_REST";
 
     private final VBox rows = new VBox(8);
-    private final VBox lootRows = new VBox(6);
     private Consumer<SessionPlannerTimelineMainViewInputEvent> viewInputEventHandler = ignored -> { };
 
     public SessionPlannerTimelineMainView() {
         VBox content = new VBox(
                 12,
                 label("Abenteuerablauf", "section-header", "text-muted"),
-                rows,
-                lootHeader(),
-                lootRows);
+                rows);
         addStyles(content, "session-planner-main");
         setContent(content);
         getStyleClass().add("session-planner-main-scroll");
@@ -59,13 +56,13 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             return;
         }
         clearNodes(rows);
-        showLoot(projection.lootPlaceholders(), projection.lootEmptyMessage());
         if (projection.encounters().isEmpty()) {
             addNode(rows, label("Noch keine Encounter importiert.", STYLE_TEXT_SECONDARY, "session-planner-empty"));
             return;
         }
         for (int index = 0; index < projection.encounters().size(); index++) {
-            SessionPlannerTimelineMainContentModel.Projection.EncounterModel encounter = projection.encounters().get(index);
+            SessionPlannerTimelineMainContentModel.Projection.EncounterModel encounter =
+                    projection.encounters().get(index);
             addNode(rows, encounterCard(encounter, index + 1));
             if (index < projection.restGaps().size()) {
                 addNode(rows, restGapCard(projection.restGaps().get(index), index + 1, index + 2));
@@ -78,11 +75,15 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             int position
     ) {
         Label title = label(position + ". " + encounter.name(), "session-planner-encounter-title");
-        Label meta = label(encounter.creatureCount() + " Kreaturen" + generatedLabelSuffix(encounter), STYLE_TEXT_SECONDARY);
+        Label meta = label(
+                encounter.creatureCount() + " Kreaturen" + generatedLabelSuffix(encounter),
+                STYLE_TEXT_SECONDARY);
         Label budget = label(
                 encounter.budgetPercentageText() + " Budget · Ziel " + encounter.targetXpText() + " XP",
                 "session-planner-encounter-budget");
-        Label comparison = label(encounter.comparisonText() + " · " + encounter.difficultyLabel(), STYLE_TEXT_SECONDARY);
+        Label comparison = label(
+                encounter.comparisonText() + " · " + encounter.difficultyLabel(),
+                STYLE_TEXT_SECONDARY);
         Label multiplier = label(
                 "Base " + encounter.totalBaseXp()
                         + " XP · Multiplikator x"
@@ -131,28 +132,30 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 multiplier,
                 stateHint,
                 actionRow(select, decreaseAllocation, increaseAllocation),
-                actionRow(up, down, remove));
+                actionRow(up, down, remove),
+                lootSection(encounter));
         addStyles(card, "session-planner-encounter-card");
         return card;
     }
 
-    private Node lootHeader() {
+    private Node lootSection(SessionPlannerTimelineMainContentModel.Projection.EncounterModel encounter) {
         Button addButton = actionButton("Loot-Platzhalter", this::publishAddLoot, "accent");
-        return new ActionRow(8, label("Loot-Platzhalter", "section-header", "text-muted"), addButton);
-    }
-
-    private void showLoot(
-            List<SessionPlannerTimelineMainContentModel.Projection.LootModel> lootPlaceholders,
-            String emptyMessage
-    ) {
-        clearNodes(lootRows);
-        if (lootPlaceholders.isEmpty()) {
-            addNode(lootRows, label(emptyMessage, STYLE_TEXT_SECONDARY, "session-planner-empty"));
-            return;
+        addButton.setUserData(Long.valueOf(encounter.token()));
+        VBox rows = new VBox(6);
+        if (encounter.lootPlaceholders().isEmpty()) {
+            addNode(rows, label(
+                    "Keine Loot-Platzhalter fuer diesen Encounter.",
+                    STYLE_TEXT_SECONDARY,
+                    "session-planner-empty"));
+        } else {
+            for (SessionPlannerTimelineMainContentModel.Projection.LootModel loot : encounter.lootPlaceholders()) {
+                addNode(rows, lootCard(loot));
+            }
         }
-        for (SessionPlannerTimelineMainContentModel.Projection.LootModel loot : lootPlaceholders) {
-            addNode(lootRows, lootCard(loot));
-        }
+        return new VBox(
+                6,
+                new ActionRow(8, label("Loot", "session-planner-gap-title"), addButton),
+                rows);
     }
 
     private Node lootCard(SessionPlannerTimelineMainContentModel.Projection.LootModel loot) {
@@ -214,7 +217,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L,
                 0L,
                 "",
-                false,
+                0L,
                 0L));
     }
 
@@ -239,7 +242,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L,
                 0L,
                 "",
-                false,
+                0L,
                 0L));
     }
 
@@ -264,7 +267,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L,
                 0L,
                 "",
-                false,
+                0L,
                 0L));
     }
 
@@ -283,7 +286,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L,
                 0L,
                 "",
-                false,
+                0L,
                 0L));
     }
 
@@ -312,11 +315,15 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 left,
                 right,
                 restSelection,
-                false,
+                0L,
                 0L));
     }
 
     private void publishAddLoot(ActionEvent event) {
+        long encounterToken = 0L;
+        if (event.getSource() instanceof Button button && button.getUserData() instanceof Number token) {
+            encounterToken = token.longValue();
+        }
         publish(new SessionPlannerTimelineMainViewInputEvent(
                 0L,
                 0L,
@@ -327,7 +334,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L,
                 0L,
                 "",
-                true,
+                encounterToken,
                 0L));
     }
 
@@ -346,7 +353,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L,
                 0L,
                 "",
-                false,
+                0L,
                 lootToken));
     }
 
