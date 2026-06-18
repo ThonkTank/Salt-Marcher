@@ -42,7 +42,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
       - run: tools/gradle/run-observable-gradle.sh ckjmMain
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ckjm-report
           path: build/reports/ckjm
@@ -79,7 +79,7 @@ jobs:
           CODESCENE_BASE_URL: ${{ vars.CODESCENE_BASE_URL }}
           CODESCENE_PROJECT_ID: ${{ vars.CODESCENE_PROJECT_ID }}
       - if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: codescene-report
           path: build/reports/codescene
