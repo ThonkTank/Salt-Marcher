@@ -75,8 +75,12 @@ public record DungeonFeatureFacts(
     }
 
     private static DungeonTopologyElementKind topologyKind(DungeonFeatureType kind) {
-        return kind == DungeonFeatureType.TRANSITION
-                ? DungeonTopologyElementKind.TRANSITION
-                : DungeonTopologyElementKind.STAIR;
+        if (kind == DungeonFeatureType.TRANSITION) {
+            return DungeonTopologyElementKind.TRANSITION;
+        }
+        if (kind != null && kind.isMarker()) {
+            return DungeonTopologyElementKind.FEATURE_MARKER;
+        }
+        return DungeonTopologyElementKind.STAIR;
     }
 }

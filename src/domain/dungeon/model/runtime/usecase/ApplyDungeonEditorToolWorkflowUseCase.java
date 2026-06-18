@@ -58,6 +58,18 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
         registeredWorkflows.put(
                 ToolInput.TRANSITION_DELETE,
                 safeUseCases.transitionDelete().pressOnly());
+        registeredWorkflows.put(
+                ToolInput.FEATURE_POI_CREATE,
+                safeUseCases.featurePoiCreate().pressOnly());
+        registeredWorkflows.put(
+                ToolInput.FEATURE_OBJECT_CREATE,
+                safeUseCases.featureObjectCreate().pressOnly());
+        registeredWorkflows.put(
+                ToolInput.FEATURE_ENCOUNTER_CREATE,
+                safeUseCases.featureEncounterCreate().pressOnly());
+        registeredWorkflows.put(
+                ToolInput.FEATURE_DELETE,
+                safeUseCases.featureDelete().pressOnly());
         workflows = Map.copyOf(registeredWorkflows);
     }
 
@@ -121,6 +133,10 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
         STAIR_DELETE,
         TRANSITION_CREATE,
         TRANSITION_DELETE,
+        FEATURE_POI_CREATE,
+        FEATURE_OBJECT_CREATE,
+        FEATURE_ENCOUNTER_CREATE,
+        FEATURE_DELETE,
         UNSUPPORTED;
 
         public static ToolInput fromName(String name) {
@@ -182,7 +198,11 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
             PointerToolUseCase stairCreateCircular,
             PointerToolUseCase stairDelete,
             PointerToolUseCase transitionCreate,
-            PointerToolUseCase transitionDelete
+            PointerToolUseCase transitionDelete,
+            PointerToolUseCase featurePoiCreate,
+            PointerToolUseCase featureObjectCreate,
+            PointerToolUseCase featureEncounterCreate,
+            PointerToolUseCase featureDelete
     ) {
         public ToolWorkflowUseCases {
             selection = Objects.requireNonNull(selection, "selection");
@@ -196,6 +216,10 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
             stairDelete = Objects.requireNonNull(stairDelete, "stairDelete");
             transitionCreate = Objects.requireNonNull(transitionCreate, "transitionCreate");
             transitionDelete = Objects.requireNonNull(transitionDelete, "transitionDelete");
+            featurePoiCreate = Objects.requireNonNull(featurePoiCreate, "featurePoiCreate");
+            featureObjectCreate = Objects.requireNonNull(featureObjectCreate, "featureObjectCreate");
+            featureEncounterCreate = Objects.requireNonNull(featureEncounterCreate, "featureEncounterCreate");
+            featureDelete = Objects.requireNonNull(featureDelete, "featureDelete");
         }
     }
 

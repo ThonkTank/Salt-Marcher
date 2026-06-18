@@ -95,6 +95,16 @@ final class DungeonEditorPointerApplicationServiceAssembly {
                         runtime.workflow(),
                         runtime.authoredUseCases().deleteTransitionUseCase(),
                         runtime.effectUseCase());
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateFeatureMarkerUseCase createFeatureMarker =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateFeatureMarkerUseCase(
+                        runtime.workflow(),
+                        runtime.authoredUseCases().createFeatureMarkerUseCase(),
+                        runtime.effectUseCase());
+        src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteFeatureMarkerUseCase deleteFeatureMarker =
+                new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteFeatureMarkerUseCase(
+                        runtime.workflow(),
+                        runtime.authoredUseCases().deleteFeatureMarkerUseCase(),
+                        runtime.effectUseCase());
         return new src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase(
                 new ToolWorkflowUseCases(
                         pointer(selection::press, selection::drag, selection::release, selection::hover),
@@ -115,7 +125,11 @@ final class DungeonEditorPointerApplicationServiceAssembly {
                         pointer(createStair::pressCircular, null, null, createStair::hoverCircular),
                         pointer(deleteStair::press, null, null, null),
                         pointer(createTransition::press, null, null, null),
-                        pointer(deleteTransition::press, null, null, null)));
+                        pointer(deleteTransition::press, null, null, null),
+                        pointer(createFeatureMarker::pressPoi, null, null, null),
+                        pointer(createFeatureMarker::pressObject, null, null, null),
+                        pointer(createFeatureMarker::pressEncounter, null, null, null),
+                        pointer(deleteFeatureMarker::press, null, null, null)));
     }
 
     private static PointerToolUseCase pointer(

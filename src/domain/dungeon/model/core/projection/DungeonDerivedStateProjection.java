@@ -15,10 +15,22 @@ public final class DungeonDerivedStateProjection {
 
     public DungeonDerivedState project(DungeonMap dungeonMap) {
         SpatialTopology topology = dungeonMap == null ? SpatialTopology.empty() : dungeonMap.topology();
-        if (dungeonMap != null && !dungeonMap.rooms().rooms().isEmpty() && topology.hasAuthoredRooms()) {
+        if (hasAuthoredContent(dungeonMap, topology)) {
             return authoredState(dungeonMap, topology);
         }
         return emptyState(topology);
+    }
+
+    private static boolean hasAuthoredContent(DungeonMap dungeonMap, SpatialTopology topology) {
+        if (dungeonMap == null) {
+            return false;
+        }
+        return !dungeonMap.rooms().rooms().isEmpty()
+                || !dungeonMap.corridors().isEmpty()
+                || !dungeonMap.stairs().stairs().isEmpty()
+                || !dungeonMap.transitionCatalog().transitions().isEmpty()
+                || !dungeonMap.featureMarkers().markers().isEmpty()
+                || topology.hasAuthoredRooms();
     }
 
     private DungeonDerivedState authoredState(DungeonMap dungeonMap, SpatialTopology topology) {
@@ -36,7 +48,8 @@ public final class DungeonDerivedStateProjection {
                 roomProjection.boundaryIdsByKey());
         DungeonFeatureReadProjection.Result featureProjection = new DungeonFeatureReadProjection().project(
                 dungeonMap.stairs(),
-                dungeonMap.transitionCatalog().transitions());
+                dungeonMap.transitionCatalog().transitions(),
+                dungeonMap.featureMarkers().markers());
         features.addAll(featureProjection.features());
         featureRelations.addAll(featureProjection.relations());
 

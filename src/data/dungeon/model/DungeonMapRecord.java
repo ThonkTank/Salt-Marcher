@@ -15,7 +15,8 @@ public record DungeonMapRecord(
         List<DungeonTopologyElementRecord> topologyElements,
         List<DungeonCorridorRecord> corridors,
         List<DungeonStairRecord> stairs,
-        List<DungeonTransitionRecord> transitions
+        List<DungeonTransitionRecord> transitions,
+        List<DungeonFeatureMarkerRecord> featureMarkers
 ) {
 
     public DungeonMapRecord(
@@ -24,7 +25,8 @@ public record DungeonMapRecord(
             long revision,
             DungeonGridBoundsRecord gridBounds
     ) {
-        this(mapId, name, revision, gridBounds, List.of(), List.of(), List.of(), List.of(), List.of(), List.of());
+        this(mapId, name, revision, gridBounds, List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),
+                List.of());
     }
 
     public DungeonMapRecord {
@@ -37,5 +39,6 @@ public record DungeonMapRecord(
         corridors = corridors == null ? List.of() : List.copyOf(corridors);
         stairs = stairs == null ? List.of() : List.copyOf(stairs);
         transitions = transitions == null ? List.of() : List.copyOf(transitions);
+        featureMarkers = featureMarkers == null ? List.of() : List.copyOf(featureMarkers);
     }
 }

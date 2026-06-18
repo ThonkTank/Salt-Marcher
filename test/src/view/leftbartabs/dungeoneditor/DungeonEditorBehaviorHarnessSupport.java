@@ -1005,6 +1005,51 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                 message + " render scene shows committed transition marker");
     }
 
+    static void assertFeatureMarkerCreatedInSnapshot(
+            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonMapContentModel mapContentModel,
+            String kind,
+            long markerId,
+            int q,
+            int r,
+            int level,
+            String message
+    ) {
+        DungeonEditorTopologyElementRef ref = new DungeonEditorTopologyElementRef("FEATURE_MARKER", markerId);
+        assertTrue(snapshot.surface().map().features().stream()
+                        .filter(feature -> kind.equals(feature.kind()))
+                        .filter(feature -> feature.id() == markerId)
+                        .filter(feature -> feature.topologyRef().equals(ref))
+                        .anyMatch(feature -> feature.cells().stream()
+                                .anyMatch(cell -> cell.q() == q && cell.r() == r && cell.level() == level)),
+                message + " published feature exposes " + kind + " marker cell: "
+                        + snapshot.surface().map().features());
+        assertTrue(snapshot.surface().map().editorHandles().stream().noneMatch(handle ->
+                        handle.ref().topologyRef().equals(ref)),
+                message + " marker remains non-handle-indexed");
+        assertTrue(renderSurfaceCellOriginsWithZ(mapContentModel).contains(q + "," + r + "," + level),
+                message + " render scene contains active-level feature marker cell");
+        assertTrue(renderHasGlyphAt(mapContentModel, ref, q + 0.5, r + 0.5, false),
+                message + " render scene shows committed feature marker glyph");
+    }
+
+    static void assertFeatureMarkerAbsentFromSnapshotAndRender(
+            DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonMapContentModel mapContentModel,
+            DungeonEditorTopologyElementRef ref,
+            Point2D formerCenter,
+            String message
+    ) {
+        assertTrue(snapshot.surface().map().features().stream().noneMatch(feature ->
+                        feature.id() == ref.id() && "FEATURE_MARKER".equals(feature.topologyRef().kind())),
+                message + " published feature list omits the deleted feature marker");
+        assertTrue(snapshot.surface().map().editorHandles().stream().noneMatch(handle ->
+                        handle.ref().topologyRef().equals(ref)),
+                message + " published handle list still omits feature-marker handles");
+        assertTrue(!renderHasGlyphAt(mapContentModel, ref, formerCenter.getX(), formerCenter.getY(), false),
+                message + " render scene omits the deleted feature marker glyph");
+    }
+
     static void assertTransitionRowContains(
             List<String> rows,
             long transitionId,

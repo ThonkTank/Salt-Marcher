@@ -4,6 +4,7 @@ import java.util.List;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapAuthoring;
+import src.domain.dungeon.model.core.structure.DungeonMapAuthoring.AuthoredContent;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
@@ -68,12 +69,14 @@ final class DungeonStairInvariantHarness {
         return DungeonMapAuthoring.authored(
                 base.metadata().mapId(),
                 base.metadata().mapName(),
-                base.topology(),
-                base.topologyIndex(),
-                base.rooms(),
-                List.of(corridor),
-                new StairCollection(List.of(boundStair)),
-                base.transitionCatalog().transitions(),
+                new AuthoredContent(
+                        base.topology(),
+                        base.topologyIndex(),
+                        base.rooms(),
+                        List.of(corridor),
+                        new StairCollection(List.of(boundStair)),
+                        base.transitionCatalog().transitions(),
+                        base.featureMarkers()),
                 base.revision());
     }
 

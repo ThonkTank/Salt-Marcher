@@ -1126,6 +1126,62 @@ class DungeonEditorHarnessPersistenceSupport {
             }
         }
 
+        List<String> featureMarkerStableState(long mapId) {
+            try (Connection connection = open()) {
+                List<String> state = new ArrayList<>();
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_feature_markers",
+                        "SELECT feature_marker_id, dungeon_map_id, marker_kind, cell_x, cell_y, level_z,"
+                                + " label, description"
+                                + " FROM dungeon_feature_markers WHERE dungeon_map_id=?"
+                                + " ORDER BY feature_marker_id",
+                        mapId);
+                appendRows(
+                        connection,
+                        state,
+                        "dungeon_topology_elements",
+                        "SELECT dungeon_map_id, element_kind, element_id, label"
+                                + " FROM dungeon_topology_elements"
+                                + " WHERE dungeon_map_id=? AND element_kind='FEATURE_MARKER'"
+                                + " ORDER BY element_kind, element_id",
+                        mapId);
+                return state;
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to snapshot feature-marker DB state.", exception);
+            }
+        }
+
+        long featureMarkerIdAt(long mapId, String kind, int cellX, int cellY, int level) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT feature_marker_id FROM dungeon_feature_markers"
+                                 + " WHERE dungeon_map_id=? AND marker_kind=?"
+                                 + " AND cell_x=? AND cell_y=? AND level_z=?")) {
+                bind(statement, mapId, kind, cellX, cellY, level);
+                return scalar(statement);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to find feature marker by cell.", exception);
+            }
+        }
+
+        long countFeatureMarkerById(long mapId, long markerId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_feature_markers"
+                            + " WHERE dungeon_map_id=? AND feature_marker_id=?",
+                    mapId,
+                    markerId);
+        }
+
+        long countFeatureMarkerTopologyElementById(long mapId, long markerId) {
+            return count(
+                    "SELECT COUNT(*) FROM dungeon_topology_elements"
+                            + " WHERE dungeon_map_id=? AND element_kind='FEATURE_MARKER' AND element_id=?",
+                    mapId,
+                    markerId);
+        }
+
         List<String> stairPathState(long mapId) {
             try (Connection connection = open()) {
                 List<String> state = new ArrayList<>();

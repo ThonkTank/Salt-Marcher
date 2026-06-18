@@ -8,6 +8,7 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.feature.FeatureMarkerCatalog;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
@@ -28,6 +29,7 @@ public record DungeonMap(
         List<Corridor> corridors,
         StairCollection stairs,
         TransitionCatalog transitionCatalog,
+        FeatureMarkerCatalog featureMarkers,
         long revision
 ) {
     private static final long NO_TRANSITION_ID = 0L;
@@ -43,7 +45,7 @@ public record DungeonMap(
             TransitionCatalog transitionCatalog,
             long revision
     ) {
-        this(metadata, topology, null, rooms, corridors, stairs, transitionCatalog, revision);
+        this(metadata, topology, null, rooms, corridors, stairs, transitionCatalog, FeatureMarkerCatalog.empty(), revision);
     }
 
     public DungeonMap(
@@ -56,12 +58,28 @@ public record DungeonMap(
             TransitionCatalog transitionCatalog,
             long revision
     ) {
+        this(metadata, topology, topologyIndex, rooms, corridors, stairs, transitionCatalog,
+                FeatureMarkerCatalog.empty(), revision);
+    }
+
+    public DungeonMap(
+            DungeonMapMetadata metadata,
+            SpatialTopology topology,
+            @Nullable DungeonMapTopology topologyIndex,
+            RoomCatalog rooms,
+            List<Corridor> corridors,
+            StairCollection stairs,
+            TransitionCatalog transitionCatalog,
+            FeatureMarkerCatalog featureMarkers,
+            long revision
+    ) {
         this.metadata = metadata;
         this.topology = topology == null ? SpatialTopology.empty() : topology;
         this.rooms = rooms == null ? RoomCatalog.empty() : rooms;
         this.corridors = corridors == null ? List.of() : List.copyOf(corridors);
         this.stairs = stairs == null ? new StairCollection(List.of()) : stairs;
         this.transitionCatalog = transitionCatalog == null ? new TransitionCatalog(List.of()) : transitionCatalog;
+        this.featureMarkers = featureMarkers == null ? FeatureMarkerCatalog.empty() : featureMarkers;
         this.topologyIndex = DungeonMapTopology.merge(
                 topologyIndex,
                 DungeonMapTopology.from(
@@ -69,7 +87,8 @@ public record DungeonMap(
                         this.rooms,
                         this.corridors,
                         this.stairs.stairs(),
-                        this.transitionCatalog.transitions()));
+                        this.transitionCatalog.transitions(),
+                        this.featureMarkers.topologyBindings()));
         this.revision = Math.max(0L, revision);
     }
 
@@ -188,6 +207,7 @@ public record DungeonMap(
                         corridors,
                         stairs,
                         transitionCatalog,
+                        featureMarkers,
                         revision + 1L)
                 : this;
     }
@@ -216,6 +236,7 @@ public record DungeonMap(
                         corridors,
                         stairs,
                         transitionCatalog,
+                        featureMarkers,
                         revision + 1L)
                 : this;
     }
@@ -234,6 +255,7 @@ public record DungeonMap(
                         corridors,
                         stairs,
                         transitionCatalog,
+                        featureMarkers,
                         revision + 1L)
                 : this;
     }
@@ -257,6 +279,21 @@ public record DungeonMap(
             return this;
         }
         return withTransitionCatalog(transitionCatalog.withoutTransition(transitionId), null);
+    }
+
+    public long nextFeatureMarkerId() {
+        return featureMarkers.nextMarkerId();
+    }
+
+    public boolean canDeleteFeatureMarker(long markerId) {
+        return featureMarkers.canDelete(markerId);
+    }
+
+    public DungeonMap deleteFeatureMarker(long markerId) {
+        if (!canDeleteFeatureMarker(markerId)) {
+            return this;
+        }
+        return withFeatureMarkers(featureMarkers.withoutMarker(markerId));
     }
 
     public boolean canDeleteStair(long stairId) {
@@ -351,6 +388,26 @@ public record DungeonMap(
                 corridors,
                 nextStairs,
                 transitionCatalog,
+                featureMarkers,
+                revision + 1L);
+    }
+
+    public DungeonMap withFeatureMarkers(FeatureMarkerCatalog nextFeatureMarkers) {
+        FeatureMarkerCatalog resolvedFeatureMarkers = nextFeatureMarkers == null
+                ? FeatureMarkerCatalog.empty()
+                : nextFeatureMarkers;
+        if (resolvedFeatureMarkers.equals(featureMarkers)) {
+            return this;
+        }
+        return new DungeonMap(
+                metadata,
+                topology,
+                null,
+                rooms,
+                corridors,
+                stairs,
+                transitionCatalog,
+                resolvedFeatureMarkers,
                 revision + 1L);
     }
 
@@ -376,6 +433,7 @@ public record DungeonMap(
                             corridors,
                             stairs,
                             resolvedTransitions,
+                            featureMarkers,
                             revision);
         }
         return new DungeonMap(
@@ -386,6 +444,7 @@ public record DungeonMap(
                 corridors,
                 stairs,
                 resolvedTransitions,
+                featureMarkers,
                 revision + 1L);
     }
 

@@ -351,13 +351,17 @@ public final class DungeonEditorWorkspaceValues {
             cells = cells == null ? List.of() : List.copyOf(cells);
             description = description == null ? "" : description.trim();
             destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
-            topologyRef = topologyRef == null ? defaultTopologyRef(kind.isTransition(), id) : topologyRef;
+            topologyRef = topologyRef == null ? defaultTopologyRef(kind, id) : topologyRef;
         }
 
-        private static DungeonTopologyRef defaultTopologyRef(boolean transition, long id) {
-            return new DungeonTopologyRef(
-                    transition ? DungeonTopologyElementKind.TRANSITION : DungeonTopologyElementKind.STAIR,
-                    id);
+        private static DungeonTopologyRef defaultTopologyRef(DungeonFeatureType kind, long id) {
+            if (kind != null && kind.isTransition()) {
+                return new DungeonTopologyRef(DungeonTopologyElementKind.TRANSITION, id);
+            }
+            if (kind != null && kind.isMarker()) {
+                return new DungeonTopologyRef(DungeonTopologyElementKind.FEATURE_MARKER, id);
+            }
+            return new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, id);
         }
     }
 

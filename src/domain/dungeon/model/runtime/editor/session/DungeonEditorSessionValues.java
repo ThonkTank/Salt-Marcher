@@ -58,6 +58,10 @@ public final class DungeonEditorSessionValues {
         public static final Tool STAIR_DELETE = new Tool("STAIR_DELETE");
         public static final Tool TRANSITION_CREATE = new Tool("TRANSITION_CREATE");
         public static final Tool TRANSITION_DELETE = new Tool("TRANSITION_DELETE");
+        public static final Tool FEATURE_POI_CREATE = new Tool("FEATURE_POI_CREATE");
+        public static final Tool FEATURE_OBJECT_CREATE = new Tool("FEATURE_OBJECT_CREATE");
+        public static final Tool FEATURE_ENCOUNTER_CREATE = new Tool("FEATURE_ENCOUNTER_CREATE");
+        public static final Tool FEATURE_DELETE = new Tool("FEATURE_DELETE");
 
         private static final Tool[] VALUES = {
                 SELECT,
@@ -74,7 +78,11 @@ public final class DungeonEditorSessionValues {
                 STAIR_CREATE_CIRCULAR,
                 STAIR_DELETE,
                 TRANSITION_CREATE,
-                TRANSITION_DELETE
+                TRANSITION_DELETE,
+                FEATURE_POI_CREATE,
+                FEATURE_OBJECT_CREATE,
+                FEATURE_ENCOUNTER_CREATE,
+                FEATURE_DELETE
         };
 
         private final String name;
@@ -120,7 +128,8 @@ public final class DungeonEditorSessionValues {
                     || this == DOOR_DELETE
                     || this == CORRIDOR_DELETE
                     || this == STAIR_DELETE
-                    || this == TRANSITION_DELETE;
+                    || this == TRANSITION_DELETE
+                    || this == FEATURE_DELETE;
         }
 
         @Override

@@ -14,5 +14,6 @@ final class DungeonSqliteConnectionPersistence {
         DungeonSqliteCorridorPersistence.persist(connection, record);
         DungeonSqliteStairPersistence.persist(connection, record);
         DungeonSqliteTransitionPersistence.persist(connection, record);
+        DungeonSqliteFeatureMarkerPersistence.persist(connection, record);
     }
 }

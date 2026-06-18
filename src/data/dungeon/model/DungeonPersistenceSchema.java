@@ -23,6 +23,7 @@ public final class DungeonPersistenceSchema {
     public static final String STAIR_PATH_NODES_TABLE = "dungeon_stair_path_nodes";
     public static final String STAIR_EXITS_TABLE = "dungeon_stair_exits";
     public static final String TRANSITIONS_TABLE = "dungeon_transitions";
+    public static final String FEATURE_MARKERS_TABLE = "dungeon_feature_markers";
 
     public static final String CREATE_DUNGEON_MAPS_TABLE_SQL =
             "CREATE TABLE IF NOT EXISTS dungeon_maps ("
@@ -214,6 +215,19 @@ public final class DungeonPersistenceSchema {
                     + "linked_transition_id     INTEGER REFERENCES dungeon_transitions(transition_id) ON DELETE SET NULL"
                     + ")";
 
+    public static final String CREATE_DUNGEON_FEATURE_MARKERS_TABLE_SQL =
+            "CREATE TABLE IF NOT EXISTS dungeon_feature_markers ("
+                    + "feature_marker_id INTEGER NOT NULL,"
+                    + "dungeon_map_id     INTEGER NOT NULL REFERENCES dungeon_maps(dungeon_map_id) ON DELETE CASCADE,"
+                    + "marker_kind        TEXT NOT NULL,"
+                    + "cell_x             INTEGER NOT NULL,"
+                    + "cell_y             INTEGER NOT NULL,"
+                    + "level_z            INTEGER NOT NULL DEFAULT 0,"
+                    + "label              TEXT,"
+                    + "description        TEXT,"
+                    + "PRIMARY KEY (dungeon_map_id, feature_marker_id)"
+                    + ")";
+
     public static final List<String> CREATE_TABLE_SQL = List.of(
             CREATE_DUNGEON_MAPS_TABLE_SQL,
             CREATE_DUNGEON_ROOM_CLUSTERS_TABLE_SQL,
@@ -232,7 +246,8 @@ public final class DungeonPersistenceSchema {
             CREATE_DUNGEON_STAIRS_TABLE_SQL,
             CREATE_DUNGEON_STAIR_PATH_NODES_TABLE_SQL,
             CREATE_DUNGEON_STAIR_EXITS_TABLE_SQL,
-            CREATE_DUNGEON_TRANSITIONS_TABLE_SQL
+            CREATE_DUNGEON_TRANSITIONS_TABLE_SQL,
+            CREATE_DUNGEON_FEATURE_MARKERS_TABLE_SQL
     );
 
     private DungeonPersistenceSchema() {

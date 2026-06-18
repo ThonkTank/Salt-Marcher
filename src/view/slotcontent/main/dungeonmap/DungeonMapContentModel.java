@@ -1582,7 +1582,7 @@ public final class DungeonMapContentModel {
             for (DungeonMapRenderState.Cell cell : displayModel.cells()) {
                 if (LevelFilter.includeLevel(displayModel, cell.z())) {
                     targets.put(SceneIdentity.cellHitRef(cell), PointerTarget.cell(
-                            cell.kind().name(),
+                            pointerElementKind(cell.kind()),
                             cell.ownerId(),
                             cell.clusterId(),
                             cell.topologyRef()));
@@ -1596,6 +1596,13 @@ public final class DungeonMapContentModel {
                     targets.put(SceneIdentity.edgeHitRef(edge), PointerTarget.boundary(edgeBoundaryTarget(edge)));
                 }
             }
+        }
+
+        private static String pointerElementKind(DungeonMapRenderState.CellKind kind) {
+            return switch (kind) {
+                case FEATURE_POI, FEATURE_OBJECT, FEATURE_ENCOUNTER -> "FEATURE_MARKER";
+                default -> kind.name();
+            };
         }
 
         private static BoundaryTarget edgeBoundaryTarget(DungeonMapRenderState.Edge edge) {
@@ -2308,6 +2315,9 @@ public final class DungeonMapContentModel {
                 case CORRIDOR -> ScenePalette.CORRIDOR_FILL;
                 case STAIR -> ScenePalette.STAIR_FILL;
                 case TRANSITION -> ScenePalette.TRANSITION_FILL;
+                case FEATURE_POI -> ScenePalette.FEATURE_POI_FILL;
+                case FEATURE_OBJECT -> ScenePalette.FEATURE_OBJECT_FILL;
+                case FEATURE_ENCOUNTER -> ScenePalette.FEATURE_ENCOUNTER_FILL;
             };
         }
 
@@ -2316,6 +2326,9 @@ public final class DungeonMapContentModel {
                 case ROOM -> ScenePalette.ROOM_CELL_STROKE;
                 case CORRIDOR, STAIR -> ScenePalette.CORRIDOR_STROKE;
                 case TRANSITION -> ScenePalette.TRANSITION_STROKE;
+                case FEATURE_POI -> ScenePalette.FEATURE_POI_STROKE;
+                case FEATURE_OBJECT -> ScenePalette.FEATURE_OBJECT_STROKE;
+                case FEATURE_ENCOUNTER -> ScenePalette.FEATURE_ENCOUNTER_STROKE;
             };
         }
     }
@@ -2365,6 +2378,7 @@ public final class DungeonMapContentModel {
     }
 
     private static final class MarkerStyler {
+        private static final Map<DungeonMapRenderState.MarkerKind, RenderColor> MARKER_STROKES = markerStrokes();
 
         private static PaintStyle style(
                 DungeonMapRenderState.Marker marker,
@@ -2410,6 +2424,9 @@ public final class DungeonMapContentModel {
                 case STAIR -> ScenePalette.STAIR_FILL;
                 case TRANSITION -> ScenePalette.TRANSITION_FILL;
                 case WAYPOINT -> ScenePalette.PREVIEW_FILL;
+                case FEATURE_POI -> ScenePalette.FEATURE_POI_FILL;
+                case FEATURE_OBJECT -> ScenePalette.FEATURE_OBJECT_FILL;
+                case FEATURE_ENCOUNTER -> ScenePalette.FEATURE_ENCOUNTER_FILL;
             };
         }
 
@@ -2417,13 +2434,21 @@ public final class DungeonMapContentModel {
             if (marker.selected()) {
                 return ScenePalette.HIGHLIGHT_STROKE;
             }
-            return switch (marker.kind()) {
-                case DOOR -> ScenePalette.DOOR_STROKE;
-                case STAIR -> ScenePalette.CORRIDOR_STROKE;
-                case TRANSITION -> ScenePalette.TRANSITION_STROKE;
-                case WAYPOINT -> ScenePalette.PREVIEW_STROKE;
-                case CLUSTER -> ScenePalette.LABEL_BORDER;
-            };
+            return MARKER_STROKES.get(marker.kind());
+        }
+
+        private static Map<DungeonMapRenderState.MarkerKind, RenderColor> markerStrokes() {
+            Map<DungeonMapRenderState.MarkerKind, RenderColor> strokes =
+                    new EnumMap<>(DungeonMapRenderState.MarkerKind.class);
+            strokes.put(DungeonMapRenderState.MarkerKind.DOOR, ScenePalette.DOOR_STROKE);
+            strokes.put(DungeonMapRenderState.MarkerKind.STAIR, ScenePalette.CORRIDOR_STROKE);
+            strokes.put(DungeonMapRenderState.MarkerKind.TRANSITION, ScenePalette.TRANSITION_STROKE);
+            strokes.put(DungeonMapRenderState.MarkerKind.WAYPOINT, ScenePalette.PREVIEW_STROKE);
+            strokes.put(DungeonMapRenderState.MarkerKind.CLUSTER, ScenePalette.LABEL_BORDER);
+            strokes.put(DungeonMapRenderState.MarkerKind.FEATURE_POI, ScenePalette.FEATURE_POI_STROKE);
+            strokes.put(DungeonMapRenderState.MarkerKind.FEATURE_OBJECT, ScenePalette.FEATURE_OBJECT_STROKE);
+            strokes.put(DungeonMapRenderState.MarkerKind.FEATURE_ENCOUNTER, ScenePalette.FEATURE_ENCOUNTER_STROKE);
+            return Map.copyOf(strokes);
         }
     }
 
@@ -2486,6 +2511,12 @@ public final class DungeonMapContentModel {
         private static final RenderColor STAIR_FILL = color(0x4b, 0x3a, 0x6e, 0.95);
         private static final RenderColor TRANSITION_FILL = color(0x6f, 0x3f, 0x28, 0.95);
         private static final RenderColor TRANSITION_STROKE = color(0xe0, 0xa3, 0x6a, 1.0);
+        private static final RenderColor FEATURE_POI_FILL = color(0x2f, 0x65, 0x4d, 0.95);
+        private static final RenderColor FEATURE_POI_STROKE = color(0xa8, 0xde, 0xbf, 1.0);
+        private static final RenderColor FEATURE_OBJECT_FILL = color(0x6a, 0x53, 0x24, 0.95);
+        private static final RenderColor FEATURE_OBJECT_STROKE = color(0xf0, 0xce, 0x88, 1.0);
+        private static final RenderColor FEATURE_ENCOUNTER_FILL = color(0x6c, 0x2f, 0x3d, 0.95);
+        private static final RenderColor FEATURE_ENCOUNTER_STROKE = color(0xf0, 0xb0, 0xbe, 1.0);
         private static final RenderColor DOOR_STROKE = color(0xc6, 0xe2, 0xff, 1.0);
         private static final RenderColor GRAPH_LINK = color(0x88, 0x96, 0xa1, 0.9);
         private static final RenderColor GRAPH_NODE_FILL = color(0x21, 0x29, 0x2f, 1.0);
@@ -2583,7 +2614,64 @@ public final class DungeonMapContentModel {
         labels.put(DungeonEditorTool.STAIR_DELETE, "Treppe löschen");
         labels.put(DungeonEditorTool.TRANSITION_CREATE, "Übergang erstellen");
         labels.put(DungeonEditorTool.TRANSITION_DELETE, "Übergang löschen");
+        labels.put(DungeonEditorTool.FEATURE_POI_CREATE, "POI erstellen");
+        labels.put(DungeonEditorTool.FEATURE_OBJECT_CREATE, "Objekt erstellen");
+        labels.put(DungeonEditorTool.FEATURE_ENCOUNTER_CREATE, "Encounter erstellen");
+        labels.put(DungeonEditorTool.FEATURE_DELETE, "Feature löschen");
         return labels;
+    }
+
+    private static DungeonMapRenderState.CellKind featureCellKind(DungeonFeatureKind kind) {
+        return switch (kind == null ? DungeonFeatureKind.STAIR : kind) {
+            case TRANSITION -> DungeonMapRenderState.CellKind.TRANSITION;
+            case STAIR -> DungeonMapRenderState.CellKind.STAIR;
+            case OBJECT -> DungeonMapRenderState.CellKind.FEATURE_OBJECT;
+            case ENCOUNTER -> DungeonMapRenderState.CellKind.FEATURE_ENCOUNTER;
+            case POI -> DungeonMapRenderState.CellKind.FEATURE_POI;
+        };
+    }
+
+    private static DungeonMapRenderState.CellKind featureCellKind(String kind) {
+        return featureCellKind(featureKind(kind));
+    }
+
+    private static DungeonMapRenderState.MarkerKind featureMarkerKind(DungeonFeatureKind kind) {
+        return switch (kind == null ? DungeonFeatureKind.STAIR : kind) {
+            case TRANSITION -> DungeonMapRenderState.MarkerKind.WAYPOINT;
+            case STAIR -> DungeonMapRenderState.MarkerKind.STAIR;
+            case OBJECT -> DungeonMapRenderState.MarkerKind.FEATURE_OBJECT;
+            case ENCOUNTER -> DungeonMapRenderState.MarkerKind.FEATURE_ENCOUNTER;
+            case POI -> DungeonMapRenderState.MarkerKind.FEATURE_POI;
+        };
+    }
+
+    private static DungeonMapRenderState.MarkerKind featureMarkerKind(String kind) {
+        return featureMarkerKind(featureKind(kind));
+    }
+
+    private static String featureMarkerLabel(DungeonFeatureKind kind) {
+        return switch (kind == null ? DungeonFeatureKind.STAIR : kind) {
+            case TRANSITION -> "->";
+            case STAIR -> "z";
+            case OBJECT -> "O";
+            case ENCOUNTER -> "E";
+            case POI -> "P";
+        };
+    }
+
+    private static String featureMarkerLabel(String kind) {
+        return featureMarkerLabel(featureKind(kind));
+    }
+
+    private static DungeonFeatureKind featureKind(String kind) {
+        if (kind == null || kind.isBlank()) {
+            return DungeonFeatureKind.STAIR;
+        }
+        try {
+            return DungeonFeatureKind.valueOf(kind.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException ignored) {
+            return DungeonFeatureKind.STAIR;
+        }
     }
 }
 
@@ -2637,9 +2725,7 @@ public final class DungeonMapContentModel {
                         cell.r(),
                         cell.level(),
                         feature.label(),
-                        feature.kind() == DungeonFeatureKind.TRANSITION
-                                ? DungeonMapRenderState.CellKind.TRANSITION
-                                : DungeonMapRenderState.CellKind.STAIR,
+                        DungeonMapSnapshotMapper.featureCellKind(feature.kind()),
                         feature.id(),
                         0L,
                         topologyRef(feature.topologyRef()),
@@ -2749,18 +2835,19 @@ public final class DungeonMapContentModel {
         List<DungeonMapRenderState.Marker> markers = new ArrayList<>();
         for (DungeonFeatureSnapshot feature : features) {
             CellCenter center = centerOf(feature.cells());
-            boolean transition = feature.kind() == DungeonFeatureKind.TRANSITION;
             markers.add(new DungeonMapRenderState.Marker(
-                    transition ? "->" : "z",
+                    DungeonMapSnapshotMapper.featureMarkerLabel(feature.kind()),
                     center.q(),
                     center.r(),
                     center.level(),
-                    transition ? DungeonMapRenderState.MarkerKind.WAYPOINT : DungeonMapRenderState.MarkerKind.STAIR,
+                    DungeonMapSnapshotMapper.featureMarkerKind(feature.kind()),
                     false,
                     new DungeonMapRenderState.MarkerHandle(
-                            transition
+                            feature.kind() == DungeonFeatureKind.TRANSITION
                                     ? DungeonEditorHandleKind.CORRIDOR_WAYPOINT
-                                    : DungeonEditorHandleKind.STAIR_ANCHOR,
+                                    : feature.kind() == DungeonFeatureKind.STAIR
+                                    ? DungeonEditorHandleKind.STAIR_ANCHOR
+                                    : null,
                             topologyRef(feature.topologyRef()),
                             feature.id(),
                             0L,
@@ -3116,7 +3203,7 @@ public final class DungeonMapContentModel {
                 cell.r(),
                 cell.level(),
                 feature.label(),
-                EditorElementKinds.featureKind(feature),
+                DungeonMapSnapshotMapper.featureCellKind(feature.kind()),
                 feature.id(),
                 0L,
                 EditorProjectionFacts.featureTopologyRef(feature),
@@ -3165,18 +3252,19 @@ public final class DungeonMapContentModel {
             boolean selected,
             boolean preview
     ) {
-        boolean transition = EditorElementKinds.transitionFeature(feature);
         return new DungeonMapRenderState.Marker(
-                transition ? "->" : "z",
+                DungeonMapSnapshotMapper.featureMarkerLabel(feature.kind()),
                 center.q(),
                 center.r(),
                 level,
-                transition ? DungeonMapRenderState.MarkerKind.WAYPOINT : DungeonMapRenderState.MarkerKind.STAIR,
+                DungeonMapSnapshotMapper.featureMarkerKind(feature.kind()),
                 selected,
                 new DungeonMapRenderState.MarkerHandle(
-                        transition
+                        EditorElementKinds.transitionFeature(feature)
                                 ? DungeonEditorHandleKind.CORRIDOR_WAYPOINT
-                                : DungeonEditorHandleKind.STAIR_ANCHOR,
+                                : "STAIR".equalsIgnoreCase(feature.kind())
+                                ? DungeonEditorHandleKind.STAIR_ANCHOR
+                                : null,
                         EditorProjectionFacts.featureTopologyRef(feature),
                         feature.id(),
                         0L,
@@ -3360,12 +3448,6 @@ public final class DungeonMapContentModel {
         return "CORRIDOR".equalsIgnoreCase(area.kind())
                 ? DungeonMapRenderState.CellKind.CORRIDOR
                 : DungeonMapRenderState.CellKind.ROOM;
-    }
-
-    static DungeonMapRenderState.CellKind featureKind(DungeonEditorMapSnapshot.Feature feature) {
-        return transitionFeature(feature)
-                ? DungeonMapRenderState.CellKind.TRANSITION
-                : DungeonMapRenderState.CellKind.STAIR;
     }
 
     static boolean transitionFeature(DungeonEditorMapSnapshot.Feature feature) {
@@ -3979,7 +4061,10 @@ public final class DungeonMapContentModel {
         ROOM,
         CORRIDOR,
         STAIR,
-        TRANSITION;
+        TRANSITION,
+        FEATURE_POI,
+        FEATURE_OBJECT,
+        FEATURE_ENCOUNTER;
     }
 
     enum EdgeKind {
@@ -3992,7 +4077,10 @@ public final class DungeonMapContentModel {
         STAIR,
         TRANSITION,
         WAYPOINT,
-        CLUSTER;
+        CLUSTER,
+        FEATURE_POI,
+        FEATURE_OBJECT,
+        FEATURE_ENCOUNTER;
     }
 
     enum Heading {

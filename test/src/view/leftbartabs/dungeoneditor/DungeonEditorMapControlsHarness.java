@@ -205,7 +205,15 @@ final class DungeonEditorMapControlsHarness {
         String selectedControlsToolBefore = runtime.controlsModel().current().selectedTool().name();
         String selectedMapToolBefore = runtime.mapSurfaceModel().current().selectedTool().name();
 
-        List<String> familyLabels = List.of("Auswahl", "Raum", "Wand", "Tür", "Korridor", "Treppe", "Übergang");
+        List<String> familyLabels = List.of(
+                "Auswahl",
+                "Raum",
+                "Wand",
+                "Tür",
+                "Korridor",
+                "Feature",
+                "Treppe",
+                "Übergang");
         for (String label : List.of(
                 "Raum malen",
                 "Raum löschen",
@@ -215,6 +223,10 @@ final class DungeonEditorMapControlsHarness {
                 "Tür löschen",
                 "Korridor erstellen",
                 "Korridor löschen",
+                "POI",
+                "Objekt",
+                "Encounter",
+                "Feature löschen",
                 "Treppe erstellen",
                 "Treppe löschen",
                 "Übergang erstellen",

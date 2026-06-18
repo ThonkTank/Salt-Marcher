@@ -23,6 +23,8 @@ Context Name: Dungeon
 - authored committed snapshots, authored operation results, authored selection
   inspectors, and runtime travel session surfaces are projections over the same
   authored dungeon write model
+- authored feature markers are tiny committed map annotations for object,
+  encounter, and point-of-interest authoring
 - render-oriented display models are not dungeon-owned output
 
 ## Published Language
@@ -144,6 +146,23 @@ constrains selected-stair shape and direction to supported values and proves
 rejection of invalid dimensions and room-interior crossings without mutating
 authored truth.
 
+## Feature Marker Domain Truth
+
+`DungeonMap` owns authored feature markers as tiny committed annotation facts.
+A feature marker has only:
+
+- stable marker id and map-owned `FEATURE_MARKER` topology ref
+- optional map id for future projection or persistence mapping
+- marker kind: `OBJECT`, `ENCOUNTER`, or `POI`
+- anchor cell
+- label
+- description
+
+Feature markers do not own encounter rosters, creatures, inventory, scripts,
+hex coordinates, transition destinations, or travel actions. They may publish
+as feature facts for editor selection and authored readback. Runtime travel
+surfaces still treat only stairs and transitions as travel features.
+
 ## Domain-Owned External Boundaries
 
 - `DungeonMapRepository`
@@ -174,6 +193,8 @@ Active root boundaries:
 
 - authored dungeon truth has one aggregate owner per map
 - stable topology refs identify selectable and mutable map elements
+- authored feature markers use `FEATURE_MARKER` topology refs and do not reuse
+  stair or transition identity
 - preview state never mutates authored truth
 - target room geometry authority comes from reusable floor-cell and
   boundary-segment component ownership; boundary-corner and wall-run handle

@@ -281,6 +281,7 @@ public final class BuildDungeonEditorMainViewInputUseCase {
         public static final TopologyKindInput WALL = new TopologyKindInput("WALL");
         public static final TopologyKindInput STAIR = new TopologyKindInput("STAIR");
         public static final TopologyKindInput TRANSITION = new TopologyKindInput("TRANSITION");
+        public static final TopologyKindInput FEATURE_MARKER = new TopologyKindInput("FEATURE_MARKER");
         private static final TopologyKindInput[] VALUES = {
                 EMPTY,
                 ROOM,
@@ -289,7 +290,8 @@ public final class BuildDungeonEditorMainViewInputUseCase {
                 DOOR,
                 WALL,
                 STAIR,
-                TRANSITION
+                TRANSITION,
+                FEATURE_MARKER
         };
 
         private final String name;

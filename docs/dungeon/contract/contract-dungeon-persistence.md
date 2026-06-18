@@ -29,6 +29,7 @@ Persisted authored truth includes:
 - authored topology-backed geometry
 - stable topology identity and semantic bindings
 - authored room, room-cluster, connection, stair, and transition facts
+- authored feature marker facts
 - authored room and room-cluster names
 - authored room narration
 
@@ -148,6 +149,25 @@ inputs. New editor-authored stair creation is governed by the requirements-owned
 visible shapes and must not require a schema change to avoid those older enum
 values.
 
+## Feature Marker Storage Semantics
+
+`dungeon_feature_markers` stores authored feature marker facts for one dungeon
+map:
+
+- `feature_marker_id` stores the stable map-owned marker id
+- `dungeon_map_id` stores the owning authored map
+- `marker_kind` stores the domain marker kind: `OBJECT`, `ENCOUNTER`, or `POI`
+- `cell_x`, `cell_y`, and `level_z` store the anchor cell coordinates
+- `label` stores the authored marker label
+- `description` stores the authored marker description
+
+SQLite adapters MUST map these rows into the domain-owned
+`FeatureMarkerCatalog` and MUST persist the domain-provided catalog back to the
+same table. Obsolete marker rows for the saved map MUST be removed when a save
+omits their ids. The table is source-local storage only; it MUST NOT own marker
+defaults, marker validation, encounter/object foreign-key semantics, preview
+state, render state, or travel behavior.
+
 ## Validation And Error Behavior
 
 - authored persistence writes MUST reject incomplete identity, topology, or
@@ -160,6 +180,9 @@ values.
 - stair persistence writes MUST reject a stair record graph whose scalar spec,
   path nodes, exits, or corridor binding is incomplete for the domain-authored
   stair being saved
+- feature marker persistence writes MUST reject incomplete marker identity,
+  kind, anchor, label, or description payloads instead of storing preview or
+  render-derived substitutes
 
 ## Migration And Stability Rules
 

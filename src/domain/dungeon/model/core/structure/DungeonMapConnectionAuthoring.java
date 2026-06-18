@@ -144,6 +144,7 @@ final class DungeonMapConnectionAuthoring {
                 baseMap.corridors(),
                 baseMap.stairs(),
                 baseMap.transitionCatalog(),
+                baseMap.featureMarkers(),
                 revision);
     }
 }

@@ -39,32 +39,21 @@ final class DungeonPublishedMapProjectionServiceAssembly {
                         boundary.kind(),
                         boundary.id(),
                         boundary.label(),
-                        edge(boundary.edge()),
-                        topologyRef(boundary.topologyRef()))).toList(),
+                        PublishedProjectionSupport.edge(boundary.edge()),
+                        PublishedProjectionSupport.topologyRef(boundary.topologyRef()))).toList(),
                 safeFacts.features().stream().map(feature -> new src.domain.dungeon.published.DungeonFeatureSnapshot(
                         src.domain.dungeon.published.DungeonFeatureKind.valueOf(feature.kind().name()),
                         feature.id(),
                         feature.label(),
-                        feature.cells().stream().map(DungeonPublishedMapProjectionServiceAssembly::cell).toList(),
+                        feature.cells().stream().map(PublishedProjectionSupport::cell).toList(),
                         feature.description(),
                         feature.destinationLabel(),
-                        topologyRef(feature.topologyRef()))).toList(),
-                safeHandles.stream().map(DungeonPublishedMapProjectionServiceAssembly::handle).toList());
+                        PublishedProjectionSupport.topologyRef(feature.topologyRef()))).toList(),
+                safeHandles.stream().map(PublishedProjectionSupport::handle).toList());
     }
 
     static src.domain.dungeon.published.DungeonCellRef cell(src.domain.dungeon.model.core.geometry.Cell cell) {
-        src.domain.dungeon.model.core.geometry.Cell safeCell =
-                cell == null ? new src.domain.dungeon.model.core.geometry.Cell(0, 0, 0) : cell;
-        return new src.domain.dungeon.published.DungeonCellRef(safeCell.q(), safeCell.r(), safeCell.level());
-    }
-
-    static src.domain.dungeon.published.DungeonTopologyElementRef topologyRef(DungeonTopologyRef ref) {
-        if (ref == null) {
-            return src.domain.dungeon.published.DungeonTopologyElementRef.empty();
-        }
-        return new src.domain.dungeon.published.DungeonTopologyElementRef(
-                src.domain.dungeon.published.DungeonTopologyElementKind.valueOf(ref.kind().name()),
-                ref.id());
+        return PublishedProjectionSupport.cell(cell);
     }
 
     static int revision(long revision) {
@@ -84,37 +73,73 @@ final class DungeonPublishedMapProjectionServiceAssembly {
                 area.id(),
                 area.clusterId(),
                 area.label(),
-                area.cells().stream().map(DungeonPublishedMapProjectionServiceAssembly::cell).toList(),
-                topologyRef(area.topologyRef()));
+                area.cells().stream().map(PublishedProjectionSupport::cell).toList(),
+                PublishedProjectionSupport.topologyRef(area.topologyRef()));
     }
 
-    private static src.domain.dungeon.published.DungeonEditorHandleSnapshot handle(DungeonEditorHandleProjection handle) {
-        return new src.domain.dungeon.published.DungeonEditorHandleSnapshot(
-                handleRef(handle),
-                handle.label(),
-                cell(handle.cell()),
-                handle.markerQ(),
-                handle.markerR());
-    }
+    private static final class PublishedProjectionSupport {
 
-    private static src.domain.dungeon.published.DungeonEditorHandleRef handleRef(DungeonEditorHandleProjection handle) {
-        return new src.domain.dungeon.published.DungeonEditorHandleRef(
-                src.domain.dungeon.published.DungeonEditorHandleKind.valueOf(handle.kind().name()),
-                topologyRef(handle.topologyRef()),
-                handle.ownerId(),
-                handle.clusterId(),
-                handle.corridorId(),
-                handle.roomId(),
-                handle.index(),
-                cell(handle.cell()),
-                handle.direction().name(),
-                handle.sourceEdge() == null ? null : edge(handle.sourceEdge()));
-    }
-
-    private static src.domain.dungeon.published.DungeonEdgeRef edge(src.domain.dungeon.model.core.geometry.Edge edge) {
-        if (edge == null) {
-            return new src.domain.dungeon.published.DungeonEdgeRef(cell(null), cell(null));
+        private static src.domain.dungeon.published.DungeonEditorHandleSnapshot handle(
+                DungeonEditorHandleProjection handle
+        ) {
+            return new src.domain.dungeon.published.DungeonEditorHandleSnapshot(
+                    handleRef(handle),
+                    handle.label(),
+                    cell(handle.cell()),
+                    handle.markerQ(),
+                    handle.markerR());
         }
-        return new src.domain.dungeon.published.DungeonEdgeRef(cell(edge.from()), cell(edge.to()));
+
+        private static src.domain.dungeon.published.DungeonCellRef cell(
+                src.domain.dungeon.model.core.geometry.Cell cell
+        ) {
+            src.domain.dungeon.model.core.geometry.Cell safeCell =
+                    cell == null ? new src.domain.dungeon.model.core.geometry.Cell(0, 0, 0) : cell;
+            return new src.domain.dungeon.published.DungeonCellRef(safeCell.q(), safeCell.r(), safeCell.level());
+        }
+
+        private static src.domain.dungeon.published.DungeonTopologyElementRef topologyRef(DungeonTopologyRef ref) {
+            if (ref == null) {
+                return src.domain.dungeon.published.DungeonTopologyElementRef.empty();
+            }
+            return new src.domain.dungeon.published.DungeonTopologyElementRef(
+                    publishedTopologyKind(ref),
+                    ref.id());
+        }
+
+        private static src.domain.dungeon.published.DungeonEdgeRef edge(
+                src.domain.dungeon.model.core.geometry.Edge edge
+        ) {
+            if (edge == null) {
+                return new src.domain.dungeon.published.DungeonEdgeRef(cell(null), cell(null));
+            }
+            return new src.domain.dungeon.published.DungeonEdgeRef(cell(edge.from()), cell(edge.to()));
+        }
+
+        private static src.domain.dungeon.published.DungeonEditorHandleRef handleRef(
+                DungeonEditorHandleProjection handle
+        ) {
+            return new src.domain.dungeon.published.DungeonEditorHandleRef(
+                    src.domain.dungeon.published.DungeonEditorHandleKind.valueOf(handle.kind().name()),
+                    topologyRef(handle.topologyRef()),
+                    handle.ownerId(),
+                    handle.clusterId(),
+                    handle.corridorId(),
+                    handle.roomId(),
+                    handle.index(),
+                    cell(handle.cell()),
+                    handle.direction().name(),
+                    handle.sourceEdge() == null ? null : edge(handle.sourceEdge()));
+        }
+
+        private static src.domain.dungeon.published.DungeonTopologyElementKind publishedTopologyKind(
+                DungeonTopologyRef ref
+        ) {
+            try {
+                return src.domain.dungeon.published.DungeonTopologyElementKind.valueOf(ref.kind().name());
+            } catch (IllegalArgumentException exception) {
+                return src.domain.dungeon.published.DungeonTopologyElementKind.EMPTY;
+            }
+        }
     }
 }

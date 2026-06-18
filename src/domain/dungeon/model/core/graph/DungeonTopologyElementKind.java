@@ -9,6 +9,7 @@ public final class DungeonTopologyElementKind {
     public static final DungeonTopologyElementKind WALL = new DungeonTopologyElementKind("WALL");
     public static final DungeonTopologyElementKind STAIR = new DungeonTopologyElementKind("STAIR");
     public static final DungeonTopologyElementKind TRANSITION = new DungeonTopologyElementKind("TRANSITION");
+    public static final DungeonTopologyElementKind FEATURE_MARKER = new DungeonTopologyElementKind("FEATURE_MARKER");
 
     private final String name;
 
@@ -25,6 +26,7 @@ public final class DungeonTopologyElementKind {
             case "WALL" -> WALL;
             case "STAIR" -> STAIR;
             case "TRANSITION" -> TRANSITION;
+            case "FEATURE_MARKER" -> FEATURE_MARKER;
             default -> EMPTY;
         };
     }

@@ -31,6 +31,10 @@ final class DungeonSqliteRetainedIdCleanup {
             DELETE_FROM + DungeonPersistenceSchema.TRANSITIONS_TABLE + WHERE_DUNGEON_MAP_ID_AND_RETAINED_SQL
                     + EMPTY_RETAINED_IDS_COUNT_SQL + TEMP_RETAINED_IDS_TABLE + EMPTY_RETAINED_IDS_SUFFIX_SQL
                     + "OR transition_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
+    private static final String DELETE_OBSOLETE_FEATURE_MARKERS_SQL =
+            DELETE_FROM + DungeonPersistenceSchema.FEATURE_MARKERS_TABLE + WHERE_DUNGEON_MAP_ID_AND_RETAINED_SQL
+                    + EMPTY_RETAINED_IDS_COUNT_SQL + TEMP_RETAINED_IDS_TABLE + EMPTY_RETAINED_IDS_SUFFIX_SQL
+                    + "OR feature_marker_id NOT IN (SELECT id FROM " + TEMP_RETAINED_IDS_TABLE + "))";
     private static final String DELETE_OBSOLETE_ROOMS_SQL =
             DELETE_FROM + DungeonPersistenceSchema.ROOMS_TABLE + WHERE_DUNGEON_MAP_ID_AND_RETAINED_SQL
                     + EMPTY_RETAINED_IDS_COUNT_SQL + TEMP_RETAINED_IDS_TABLE + EMPTY_RETAINED_IDS_SUFFIX_SQL
@@ -53,6 +57,11 @@ final class DungeonSqliteRetainedIdCleanup {
 
     static void deleteObsoleteTransitions(Connection connection, long mapId, Set<Long> retainedIds) throws SQLException {
         deleteObsoleteRecords(connection, mapId, retainedIds, DELETE_OBSOLETE_TRANSITIONS_SQL);
+    }
+
+    static void deleteObsoleteFeatureMarkers(Connection connection, long mapId, Set<Long> retainedIds)
+            throws SQLException {
+        deleteObsoleteRecords(connection, mapId, retainedIds, DELETE_OBSOLETE_FEATURE_MARKERS_SQL);
     }
 
     static void deleteObsoleteRooms(Connection connection, long mapId, Set<Long> retainedIds) throws SQLException {

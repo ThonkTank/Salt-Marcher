@@ -63,7 +63,18 @@ public record DungeonFeatureSnapshot(
     private static DungeonTopologyElementKind featureTopologyKind(DungeonFeatureKind kind) {
         return kind == DungeonFeatureKind.TRANSITION
                 ? DungeonTopologyElementKind.TRANSITION
-                : DungeonTopologyElementKind.STAIR;
+                : defaultNonTransitionTopologyKind(kind);
+    }
+
+    private static DungeonTopologyElementKind defaultNonTransitionTopologyKind(DungeonFeatureKind kind) {
+        if (kind == DungeonFeatureKind.STAIR) {
+            return DungeonTopologyElementKind.STAIR;
+        }
+        return isMarker(kind) ? DungeonTopologyElementKind.FEATURE_MARKER : DungeonTopologyElementKind.EMPTY;
+    }
+
+    private static boolean isMarker(DungeonFeatureKind kind) {
+        return kind == DungeonFeatureKind.OBJECT || kind == DungeonFeatureKind.ENCOUNTER || kind == DungeonFeatureKind.POI;
     }
 
     private static DungeonTopologyElementRef defaultTopologyRef(DungeonFeatureKind kind, long id) {

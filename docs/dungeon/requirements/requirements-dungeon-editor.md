@@ -1,8 +1,7 @@
 Status: Draft
 Owner: SaltMarcher Team
 Last Reviewed: 2026-06-07
-Source of Truth: Editor-facing dungeon behavior, visible states, and acceptance
-criteria.
+Source of Truth: Editor-facing dungeon behavior, visible states, and acceptance criteria.
 
 # Dungeon Editor Requirements
 
@@ -139,6 +138,7 @@ commit supported mutations without inventing a second authored state source.
 - stair create and delete flows with visible shape and exit configuration
 - transition create and delete flows with description, destination, and
   bidirectional-link options
+- committed object, encounter, or point-of-interest feature markers must remain selectable by stable marker topology ref and must not create travel actions
 - custom cluster name editing through state-panel fields and direct map-label
   editing; custom room name editing through state-panel fields
 - grid and graph projection modes
@@ -312,6 +312,7 @@ Delete and corridor binding behavior:
 - Preview, cancel, rejection, and invalid edits never persist authored truth;
   supported commits persist, publish, render, and reload the same authored
   result.
+- Authored object, encounter, and point-of-interest markers publish with marker category and stable marker identity; travel affordances still include only stairs and transitions.
 - Map CRUD, selection clearing, room paint/delete/merge/adjacency, room
   narration, door create/delete/protected-delete, and transition link save
   preserve the behavior described above without partial mutation.

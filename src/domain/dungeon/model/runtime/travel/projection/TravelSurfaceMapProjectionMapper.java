@@ -6,6 +6,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonFeatureFacts;
+import src.domain.dungeon.model.core.projection.DungeonFeatureType;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
@@ -78,11 +79,16 @@ final class TravelSurfaceMapProjectionMapper {
         }
         List<TravelDungeonSessionSurface.FeatureData> result = new ArrayList<>();
         for (DungeonFeatureFacts feature : features) {
-            if (feature != null) {
+            if (isTravelFeature(feature)) {
                 result.add(toRuntimeFeature(feature));
             }
         }
         return List.copyOf(result);
+    }
+
+    private static boolean isTravelFeature(DungeonFeatureFacts feature) {
+        return feature != null
+                && (feature.kind() == DungeonFeatureType.STAIR || feature.kind() == DungeonFeatureType.TRANSITION);
     }
 
     private static TravelDungeonSessionSurface.FeatureData toRuntimeFeature(DungeonFeatureFacts feature) {

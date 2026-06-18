@@ -98,6 +98,8 @@ public final class DungeonEditorBehaviorSuiteHarness {
         add(result, "stairs", List.of("selection", "stair-core"), runner(DungeonEditorStairHarness::run));
         add(result, "transitions", List.of("selection", "transition-core"),
                 runner(DungeonEditorTransitionHarness::run));
+        add(result, "features", List.of("selection"),
+                runner(DungeonEditorFeatureMarkerHarness::run));
         add(result, "corridors", List.of("selection", "corridor-core"), runner(DungeonEditorCorridorHarness::run));
         add(result, "labels", List.of("selection", "cluster-core"),
                 runner(DungeonEditorClusterLabelHandleHarness::runLabels));
@@ -135,6 +137,7 @@ public final class DungeonEditorBehaviorSuiteHarness {
                 "selection",
                 "stairs",
                 "transitions",
+                "features",
                 "corridors",
                 "labels",
                 "shared-handles",

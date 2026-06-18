@@ -12,6 +12,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
+import javafx.scene.control.OverrunStyle;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextField;
@@ -22,6 +23,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
 
@@ -291,6 +293,7 @@ public final class DungeonEditorControlsView extends VBox {
         private final Button wallButton;
         private final Button doorButton;
         private final Button corridorButton;
+        private final Button featureButton;
         private final Button stairButton;
         private final Button transitionButton;
 
@@ -300,6 +303,7 @@ public final class DungeonEditorControlsView extends VBox {
             wallButton = toolButton(toolControls.wall().label());
             doorButton = toolButton(toolControls.door().label());
             corridorButton = toolButton(toolControls.corridor().label());
+            featureButton = toolButton(toolControls.feature().label());
             stairButton = toolButton(toolControls.stair().label());
             transitionButton = toolButton(toolControls.transition().label());
             optionMenu.setAutoHide(true);
@@ -313,6 +317,7 @@ public final class DungeonEditorControlsView extends VBox {
                     wallButton,
                     doorButton,
                     corridorButton,
+                    featureButton,
                     stairButton,
                     transitionButton);
             configureToolControls(toolControls);
@@ -436,6 +441,7 @@ public final class DungeonEditorControlsView extends VBox {
             bindFamilyButton(wallButton, selectedTool, currentToolControls.wall(), selectToolKey);
             bindFamilyButton(doorButton, selectedTool, currentToolControls.door(), selectToolKey);
             bindFamilyButton(corridorButton, selectedTool, currentToolControls.corridor(), selectToolKey);
+            bindFamilyButton(featureButton, selectedTool, currentToolControls.feature(), selectToolKey);
             bindFamilyButton(stairButton, selectedTool, currentToolControls.stair(), selectToolKey);
             bindFamilyButton(transitionButton, selectedTool, currentToolControls.transition(), selectToolKey);
         }
@@ -568,14 +574,21 @@ public final class DungeonEditorControlsView extends VBox {
 
     private static ToggleButton toolToggle(String text) {
         ToggleButton button = styled(new ToggleButton(text), "tool-btn");
-        button.setMinWidth(USE_PREF_SIZE);
+        configureToolButton(button);
         return button;
     }
 
     private static Button toolButton(String text) {
         Button button = styled(new Button(text), "tool-btn");
-        button.setMinWidth(USE_PREF_SIZE);
+        configureToolButton(button);
         return button;
+    }
+
+    private static void configureToolButton(javafx.scene.control.ButtonBase button) {
+        button.setMinWidth(0.0);
+        button.setMaxWidth(Double.MAX_VALUE);
+        button.setTextOverrun(OverrunStyle.ELLIPSIS);
+        HBox.setHgrow(button, Priority.ALWAYS);
     }
 
     private static Label mutedLabel(String text) {

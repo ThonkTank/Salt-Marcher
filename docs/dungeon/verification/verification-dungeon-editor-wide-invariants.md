@@ -67,6 +67,7 @@ Use these focused Gradle entrypoints during investigation:
 | `dungeonEditorCorridorBehaviorHarness` | Corridor route behavior and declared corridor/core dependencies. |
 | `dungeonEditorStairBehaviorHarness` | Stair route behavior and declared stair/core dependencies. |
 | `dungeonEditorTransitionBehaviorHarness` | Transition route behavior and declared transition/core dependencies. |
+| `dungeonEditorFeatureBehaviorHarness` | Feature-marker controls, create/delete, hit, and reload behavior plus declared editor-route dependencies. |
 | `dungeonEditorCoreBehaviorHarness` | Model-only `DGI-*` core invariant suites. |
 | `dungeonEditorRouteBehaviorHarness` | All editor real-route suites through the same registry. |
 | `dungeonEditorBehaviorHarness` | Complete Dungeon Editor behavior proof aggregate. |
@@ -117,6 +118,7 @@ run.
 - [Corridors](verification-dungeon-editor-corridors.md)
 - [Stairs](verification-dungeon-editor-stairs.md)
 - [Transitions](verification-dungeon-editor-transitions.md)
+- [Features](verification-dungeon-editor-features.md)
 - [Handles](verification-dungeon-editor-handles.md)
 - [Labels](verification-dungeon-editor-labels.md)
 

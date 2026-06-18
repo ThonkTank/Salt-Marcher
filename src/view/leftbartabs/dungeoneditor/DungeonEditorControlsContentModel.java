@@ -415,6 +415,7 @@ final class DungeonEditorControlsContentModel {
             ToolFamilyButton wall,
             ToolFamilyButton door,
             ToolFamilyButton corridor,
+            ToolFamilyButton feature,
             ToolFamilyButton stair,
             ToolFamilyButton transition
     ) {
@@ -428,6 +429,7 @@ final class DungeonEditorControlsContentModel {
                     ToolFamily.WALL.toButton(selectedFamilyOptionKeys),
                     ToolFamily.DOOR.toButton(selectedFamilyOptionKeys),
                     ToolFamily.CORRIDOR.toButton(selectedFamilyOptionKeys),
+                    ToolFamily.FEATURE.toButton(selectedFamilyOptionKeys),
                     ToolFamily.STAIR.toButton(selectedFamilyOptionKeys),
                     ToolFamily.TRANSITION.toButton(selectedFamilyOptionKeys));
         }
@@ -493,6 +495,25 @@ final class DungeonEditorControlsContentModel {
                         true)),
         DOOR("DOOR", "Tür", DungeonEditorTool.DOOR_CREATE),
         CORRIDOR("CORRIDOR", "Korridor", DungeonEditorTool.CORRIDOR_CREATE),
+        FEATURE(
+                "FEATURE",
+                "Feature",
+                DungeonEditorTool.FEATURE_POI_CREATE,
+                new ToolOptionSpec(
+                        "FEATURE_POI",
+                        "POI",
+                        DungeonEditorTool.FEATURE_POI_CREATE,
+                        true),
+                new ToolOptionSpec(
+                        "FEATURE_OBJECT",
+                        "Objekt",
+                        DungeonEditorTool.FEATURE_OBJECT_CREATE,
+                        true),
+                new ToolOptionSpec(
+                        "FEATURE_ENCOUNTER",
+                        "Encounter",
+                        DungeonEditorTool.FEATURE_ENCOUNTER_CREATE,
+                        true)),
         STAIR(
                 "STAIR",
                 "Treppe",
@@ -567,11 +588,10 @@ final class DungeonEditorControlsContentModel {
             if (optionSpecs.isEmpty()) {
                 return List.of(toToolButton(primaryTool));
             }
-            String selectedLabel = labelOf(primaryTool);
             return optionSpecs.stream()
                     .map(option -> new ToolButton(
                             option.label(),
-                            selectedLabel,
+                            labelOf(DungeonEditorTool.valueOf(option.toolKey())),
                             option.key(),
                             option.toolKey(),
                             option.enabled()))
@@ -695,6 +715,10 @@ final class DungeonEditorControlsContentModel {
                 case DOOR_DELETE -> "Tür löschen";
                 case CORRIDOR_CREATE -> "Korridor erstellen";
                 case CORRIDOR_DELETE -> "Korridor löschen";
+                case FEATURE_POI_CREATE -> "POI erstellen";
+                case FEATURE_OBJECT_CREATE -> "Objekt erstellen";
+                case FEATURE_ENCOUNTER_CREATE -> "Encounter erstellen";
+                case FEATURE_DELETE -> "Feature löschen";
                 default -> "";
             };
         }

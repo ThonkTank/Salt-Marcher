@@ -23,6 +23,15 @@ import src.domain.dungeon.model.core.structure.transition.Transition;
 public record DungeonMapTopology(
         List<DungeonTopologyBinding> bindings
 ) {
+    private static final Map<String, String> ELEMENT_LABELS = Map.of(
+            DungeonTopologyElementKind.DOOR.name(), "Door",
+            DungeonTopologyElementKind.WALL.name(), "Wall",
+            DungeonTopologyElementKind.ROOM.name(), "Room",
+            DungeonTopologyElementKind.CORRIDOR.name(), "Corridor",
+            DungeonTopologyElementKind.CORRIDOR_ANCHOR.name(), "Corridor Anchor",
+            DungeonTopologyElementKind.STAIR.name(), "Stair",
+            DungeonTopologyElementKind.TRANSITION.name(), "Transition",
+            DungeonTopologyElementKind.FEATURE_MARKER.name(), "Feature Marker");
 
     public DungeonMapTopology {
         bindings = bindings == null ? List.of() : List.copyOf(bindings);
@@ -33,15 +42,27 @@ public record DungeonMapTopology(
             RoomCatalog rooms,
             List<Corridor> corridors,
             List<Stair> stairs,
-            List<Transition> transitions
+            List<Transition> transitions,
+            List<DungeonTopologyBinding> featureMarkerBindings
     ) {
         List<DungeonTopologyBinding> result = new ArrayList<>();
         appendRoomBindings(result, rooms);
         appendCorridorBindings(result, corridors);
         appendStairBindings(result, stairs);
         appendTransitionBindings(result, transitions);
+        appendFeatureMarkerBindings(result, featureMarkerBindings);
         appendBoundaryBindings(result, topology);
         return new DungeonMapTopology(result);
+    }
+
+    public static DungeonMapTopology from(
+            SpatialTopology topology,
+            RoomCatalog rooms,
+            List<Corridor> corridors,
+            List<Stair> stairs,
+            List<Transition> transitions
+    ) {
+        return from(topology, rooms, corridors, stairs, transitions, List.of());
     }
 
     private static void appendRoomBindings(List<DungeonTopologyBinding> result, RoomCatalog rooms) {
@@ -113,6 +134,18 @@ public record DungeonMapTopology(
         }
     }
 
+    private static void appendFeatureMarkerBindings(
+            List<DungeonTopologyBinding> result,
+            List<DungeonTopologyBinding> markerBindings
+    ) {
+        for (DungeonTopologyBinding markerBinding
+                : markerBindings == null ? List.<DungeonTopologyBinding>of() : markerBindings) {
+            if (markerBinding != null && markerBinding.ref().present()) {
+                result.add(markerBinding);
+            }
+        }
+    }
+
     private static void appendBoundaryBindings(List<DungeonTopologyBinding> result, SpatialTopology topology) {
         for (DungeonRoomCluster cluster : topology == null ? List.<DungeonRoomCluster>of() : topology.roomClusters()) {
             for (DungeonClusterBoundary boundary : cluster.orderedAuthoredBoundaries()) {
@@ -163,28 +196,7 @@ public record DungeonMapTopology(
 
     private static String labelFor(DungeonTopologyElementKind kind) {
         DungeonTopologyElementKind resolvedKind = kind == null ? DungeonTopologyElementKind.EMPTY : kind;
-        if (resolvedKind == DungeonTopologyElementKind.DOOR) {
-            return "Door";
-        }
-        if (resolvedKind == DungeonTopologyElementKind.WALL) {
-            return "Wall";
-        }
-        if (resolvedKind == DungeonTopologyElementKind.ROOM) {
-            return "Room";
-        }
-        if (resolvedKind == DungeonTopologyElementKind.CORRIDOR) {
-            return "Corridor";
-        }
-        if (resolvedKind == DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
-            return "Corridor Anchor";
-        }
-        if (resolvedKind == DungeonTopologyElementKind.STAIR) {
-            return "Stair";
-        }
-        if (resolvedKind == DungeonTopologyElementKind.TRANSITION) {
-            return "Transition";
-        }
-        return "";
+        return ELEMENT_LABELS.getOrDefault(resolvedKind.name(), "");
     }
 
     public record DungeonTopologyBinding(

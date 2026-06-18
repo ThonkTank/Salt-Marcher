@@ -911,7 +911,10 @@
 }
 .dungeon-control-tool-row {
     -fx-padding: 0 0 2 0;
-    -fx-spacing: 6;
+    -fx-spacing: 4;
+}
+.dungeon-control-tool-row .tool-btn {
+    -fx-padding: 5 7;
 }
 .dungeon-control-scroll {
     -fx-background-color: transparent;

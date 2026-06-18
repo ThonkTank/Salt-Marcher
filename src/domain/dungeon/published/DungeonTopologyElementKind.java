@@ -8,5 +8,6 @@ public enum DungeonTopologyElementKind {
     DOOR,
     WALL,
     STAIR,
-    TRANSITION
+    TRANSITION,
+    FEATURE_MARKER
 }

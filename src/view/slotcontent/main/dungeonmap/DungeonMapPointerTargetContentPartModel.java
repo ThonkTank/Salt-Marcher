@@ -7,6 +7,7 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTarget
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTargetKind;
 
 final class DungeonMapPointerTargetContentPartModel {
+    private static final String FEATURE_MARKER_ELEMENT_KIND = "FEATURE_MARKER";
     private static final String ROOM_ELEMENT_KIND = "ROOM";
 
     PointerTarget choosePrimary(List<CanvasHit> hits, Map<String, PointerTarget> pointerTargets) {
@@ -31,7 +32,7 @@ final class DungeonMapPointerTargetContentPartModel {
         return switch (safeTarget.targetKind()) {
             case HANDLE -> 0;
             case BOUNDARY -> 3;
-            case CELL -> roomCell(safeTarget) ? 4 : 6;
+            case CELL -> roomCell(safeTarget) ? 4 : featureCell(safeTarget) ? 5 : 6;
             case GRAPH_NODE -> 7;
             default -> Integer.MAX_VALUE;
         };
@@ -39,6 +40,10 @@ final class DungeonMapPointerTargetContentPartModel {
 
     private boolean roomCell(PointerTarget target) {
         return ROOM_ELEMENT_KIND.equals(target.elementKind());
+    }
+
+    private boolean featureCell(PointerTarget target) {
+        return FEATURE_MARKER_ELEMENT_KIND.equals(target.elementKind());
     }
 
     private int labelPriority(PointerTarget target) {

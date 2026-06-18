@@ -635,6 +635,9 @@ final class DungeonEditorIntentHandler {
         registerDeleteTool(tools, DungeonEditorTool.STAIR_CREATE_SQUARE, DungeonEditorTool.STAIR_DELETE);
         registerDeleteTool(tools, DungeonEditorTool.STAIR_CREATE_CIRCULAR, DungeonEditorTool.STAIR_DELETE);
         registerDeleteTool(tools, DungeonEditorTool.TRANSITION_CREATE, DungeonEditorTool.TRANSITION_DELETE);
+        registerDeleteTool(tools, DungeonEditorTool.FEATURE_POI_CREATE, DungeonEditorTool.FEATURE_DELETE);
+        registerDeleteTool(tools, DungeonEditorTool.FEATURE_OBJECT_CREATE, DungeonEditorTool.FEATURE_DELETE);
+        registerDeleteTool(tools, DungeonEditorTool.FEATURE_ENCOUNTER_CREATE, DungeonEditorTool.FEATURE_DELETE);
         return Map.copyOf(tools);
     }
 

@@ -260,6 +260,12 @@ registerDungeonEditorBehaviorHarnessTask(
     listOf("transitions")
 )
 
+registerDungeonEditorBehaviorHarnessTask(
+    "dungeonEditorFeatureBehaviorHarness",
+    "Run Feature-marker behavior plus declared editor-route dependencies.",
+    listOf("features")
+)
+
 tasks.register<JavaExec>("dungeonEditorBehaviorHarnessSuites") {
     group = LifecycleBasePlugin.VERIFICATION_GROUP
     description = "Print the available Dungeon Editor behavior suite ids."

@@ -7,6 +7,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapAuthoring;
+import src.domain.dungeon.model.core.structure.DungeonMapAuthoring.AuthoredContent;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
@@ -26,12 +27,14 @@ public final class DungeonCorridorDeletionOwnerProbe {
         DungeonMap withCorridor = DungeonMapAuthoring.authored(
                 base.metadata().mapId(),
                 base.metadata().mapName(),
-                base.topology(),
-                base.topologyIndex(),
-                base.rooms(),
-                List.of(corridor),
-                base.stairs(),
-                base.transitionCatalog().transitions(),
+                new AuthoredContent(
+                        base.topology(),
+                        base.topologyIndex(),
+                        base.rooms(),
+                        List.of(corridor),
+                        base.stairs(),
+                        base.transitionCatalog().transitions(),
+                        base.featureMarkers()),
                 base.revision());
 
         DungeonMap rejected = withCorridor.deleteCorridor(

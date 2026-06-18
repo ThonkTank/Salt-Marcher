@@ -177,6 +177,9 @@ public record DungeonEditorMainViewPointerTarget(
         if (elementKind == DungeonTopologyElementKind.TRANSITION) {
             return AuthoredTargetKind.TRANSITION;
         }
+        if (elementKind == DungeonTopologyElementKind.FEATURE_MARKER) {
+            return AuthoredTargetKind.FEATURE_MARKER;
+        }
         return AuthoredTargetKind.EMPTY;
     }
 
@@ -198,6 +201,7 @@ public record DungeonEditorMainViewPointerTarget(
         CORRIDOR(AuthoredTargetCategory.SIMPLE),
         STAIR(AuthoredTargetCategory.SIMPLE),
         TRANSITION(AuthoredTargetCategory.SIMPLE),
+        FEATURE_MARKER(AuthoredTargetCategory.SIMPLE),
         GRAPH_NODE(AuthoredTargetCategory.SIMPLE),
         HANDLE(AuthoredTargetCategory.HANDLE),
         BOUNDARY(AuthoredTargetCategory.BOUNDARY);

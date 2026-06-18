@@ -1,6 +1,7 @@
 package src.data.dungeon.gateway.local;
 
 import src.data.dungeon.model.DungeonClusterBoundaryRecord;
+import src.data.dungeon.model.DungeonFeatureMarkerRecord;
 import src.data.dungeon.model.DungeonGridBoundsRecord;
 import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonPersistenceSchema;
@@ -27,6 +28,8 @@ final class DungeonSqliteMapRecordLoader {
     private static final String COLUMN_DUNGEON_MAP_ID = "dungeon_map_id";
     private static final String COLUMN_CLUSTER_ID = "cluster_id";
     private static final String COLUMN_LEVEL_Z = "level_z";
+    private static final String COLUMN_CELL_X = "cell_x";
+    private static final String COLUMN_CELL_Y = "cell_y";
     private static final String CLUSTER_IDS_FOR_MAP_SUBQUERY = "(SELECT " + COLUMN_CLUSTER_ID + SQL_FROM
             + DungeonPersistenceSchema.ROOM_CLUSTERS_TABLE
             + WHERE_DUNGEON_MAP_ID + ")";
@@ -49,7 +52,8 @@ final class DungeonSqliteMapRecordLoader {
                 DungeonSqliteTopologyElementGateway.load(connection, mapId),
                 DungeonSqliteConnectionLoader.loadCorridors(connection, mapId),
                 DungeonSqliteConnectionLoader.loadStairs(connection, mapId),
-                DungeonSqliteConnectionLoader.loadTransitions(connection, mapId));
+                DungeonSqliteConnectionLoader.loadTransitions(connection, mapId),
+                loadFeatureMarkers(connection, mapId));
     }
 
     private static DungeonGridBoundsRecord gridBounds(Connection connection, long mapId) throws SQLException {
@@ -108,10 +112,11 @@ final class DungeonSqliteMapRecordLoader {
             long mapId
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z + ", cell_x, cell_y"
+                "SELECT " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z + ", " + COLUMN_CELL_X + ", " + COLUMN_CELL_Y
                         + SQL_FROM + DungeonPersistenceSchema.ROOM_CLUSTER_FLOOR_CELLS_TABLE
                         + SQL_WHERE + COLUMN_CLUSTER_ID + " IN " + CLUSTER_IDS_FOR_MAP_SUBQUERY
-                        + " ORDER BY " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z + ", cell_y, cell_x")) {
+                        + " ORDER BY " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z
+                        + ", " + COLUMN_CELL_Y + ", " + COLUMN_CELL_X)) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<Long, List<DungeonRoomClusterFloorCellRecord>> records = new LinkedHashMap<>();
@@ -121,8 +126,8 @@ final class DungeonSqliteMapRecordLoader {
                             .add(new DungeonRoomClusterFloorCellRecord(
                                     clusterId,
                                     resultSet.getInt(COLUMN_LEVEL_Z),
-                                    resultSet.getInt("cell_x"),
-                                    resultSet.getInt("cell_y")));
+                                    resultSet.getInt(COLUMN_CELL_X),
+                                    resultSet.getInt(COLUMN_CELL_Y)));
                 }
                 return DungeonSqliteStatementSupport.copyGrouped(records);
             }
@@ -135,10 +140,11 @@ final class DungeonSqliteMapRecordLoader {
     ) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z
-                        + ", cell_x, cell_y, edge_direction, edge_type, topology_element_id"
+                        + ", " + COLUMN_CELL_X + ", " + COLUMN_CELL_Y + ", edge_direction, edge_type, topology_element_id"
                         + SQL_FROM + DungeonPersistenceSchema.ROOM_CLUSTER_EDGES_TABLE
                         + SQL_WHERE + COLUMN_CLUSTER_ID + " IN " + CLUSTER_IDS_FOR_MAP_SUBQUERY
-                        + " ORDER BY " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z + ", cell_y, cell_x, edge_direction")) {
+                        + " ORDER BY " + COLUMN_CLUSTER_ID + ", " + COLUMN_LEVEL_Z
+                        + ", " + COLUMN_CELL_Y + ", " + COLUMN_CELL_X + ", edge_direction")) {
             statement.setLong(1, mapId);
             try (ResultSet resultSet = statement.executeQuery()) {
                 Map<Long, List<DungeonClusterBoundaryRecord>> records = new LinkedHashMap<>();
@@ -148,8 +154,8 @@ final class DungeonSqliteMapRecordLoader {
                             .add(new DungeonClusterBoundaryRecord(
                                     clusterId,
                                     resultSet.getInt(COLUMN_LEVEL_Z),
-                                    resultSet.getInt("cell_x"),
-                                    resultSet.getInt("cell_y"),
+                                    resultSet.getInt(COLUMN_CELL_X),
+                                    resultSet.getInt(COLUMN_CELL_Y),
                                     resultSet.getString("edge_direction"),
                                     resultSet.getString("edge_type"),
                                     DungeonSqliteStatementSupport.nullableLong(resultSet, "topology_element_id")));
@@ -182,6 +188,32 @@ final class DungeonSqliteMapRecordLoader {
                             resultSet.getInt(COLUMN_LEVEL_Z),
                             floorsByRoom.getOrDefault(roomId, List.of()),
                             exitsByRoom.getOrDefault(roomId, List.of())));
+                }
+                return List.copyOf(records);
+            }
+        }
+    }
+
+    private static List<DungeonFeatureMarkerRecord> loadFeatureMarkers(Connection connection, long mapId)
+            throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT feature_marker_id, dungeon_map_id, marker_kind, "
+                        + COLUMN_CELL_X + ", " + COLUMN_CELL_Y + ", level_z, label, description"
+                        + SQL_FROM + DungeonPersistenceSchema.FEATURE_MARKERS_TABLE
+                        + WHERE_DUNGEON_MAP_ID + " ORDER BY feature_marker_id")) {
+            statement.setLong(1, mapId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<DungeonFeatureMarkerRecord> records = new ArrayList<>();
+                while (resultSet.next()) {
+                    records.add(new DungeonFeatureMarkerRecord(
+                            resultSet.getLong("feature_marker_id"),
+                            resultSet.getLong(COLUMN_DUNGEON_MAP_ID),
+                            resultSet.getString("marker_kind"),
+                            resultSet.getInt(COLUMN_CELL_X),
+                            resultSet.getInt(COLUMN_CELL_Y),
+                            resultSet.getInt(COLUMN_LEVEL_Z),
+                            resultSet.getString("label"),
+                            resultSet.getString("description")));
                 }
                 return List.copyOf(records);
             }

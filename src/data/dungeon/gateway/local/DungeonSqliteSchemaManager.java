@@ -39,6 +39,7 @@ final class DungeonSqliteSchemaManager {
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_STAIR_PATH_NODES_TABLE_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_STAIR_EXITS_TABLE_SQL);
             statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_TRANSITIONS_TABLE_SQL);
+            statement.execute(DungeonPersistenceSchema.CREATE_DUNGEON_FEATURE_MARKERS_TABLE_SQL);
         }
     }
 }
