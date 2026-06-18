@@ -407,10 +407,14 @@ public final class CatalogCrudControlsView extends VBox {
     }
 
     private HBox selectorRow() {
-        VBox selectorColumn = new VBox(4, filterField, selector);
-        selectorColumn.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(selectorColumn, Priority.ALWAYS);
-        HBox row = new HBox(6, selectorColumn, openButton, actionButton);
+        HBox selectorSurface = new HBox(4, filterField, selector);
+        selectorSurface.getStyleClass().add("catalog-crud-selector-surface");
+        filterField.getStyleClass().add("catalog-crud-selector-filter");
+        selector.getStyleClass().add("catalog-crud-selector-combo");
+        selectorSurface.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(selector, Priority.ALWAYS);
+        HBox.setHgrow(selectorSurface, Priority.ALWAYS);
+        HBox row = new HBox(6, selectorSurface, openButton, actionButton);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }

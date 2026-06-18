@@ -32,9 +32,15 @@ Before planning, implementing, refactoring, or reviewing a repo-tracked change:
 6. Inspect relevant available local pass logs under `build/agent-pass-logs/`
    when the task resumes, reviews, or continues a touched scope from prior
    implementation or review work.
-7. Keep only the context that affects the current task. Link to canonical
+7. After an interruption, user correction, resume, or context compaction,
+   treat summaries, pass logs, and remembered skill lists as orientation only.
+   They do not satisfy this skill's trigger-time owner reads for a new
+   repo-tracked edit. Before touching any resumed write surface, reread the
+   nearest current owner and any mandatory surface skill, or state explicitly
+   that no new file edit is being made.
+8. Keep only the context that affects the current task. Link to canonical
    owners instead of copying their rules into new prose.
-8. When condensing or adding instructions, state the target behavior directly.
+9. When condensing or adding instructions, state the target behavior directly.
    Use negative wording only for boundaries that the positive rule does not
    already imply.
 

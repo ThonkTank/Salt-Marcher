@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-16
+Last Reviewed: 2026-06-18
 Source of Truth: Governance for agent instruction surfaces, the mandatory
 global instruction skill, and ownership boundaries between instruction
 artifacts.
@@ -200,6 +200,8 @@ behavior that the proposed tool would inspect. If any active agent can still
 change that surface, defer the tool until the agent result is integrated or the
 agent is cancelled. After an interruption, user correction, resume, or context
 compaction, Main MUST repeat this refresh before continuing the workflow.
+Resume summaries, pass-log summaries, and remembered skill lists are orientation only.
+Before any new repo-tracked edit after interruption, Main MUST rerun `context-hygiene`, read the nearest current owner, or state that no new file edit is being made.
 
 If Main intentionally runs independent work while waiting, it must name the
 independence boundary before starting and must not claim the result as evidence

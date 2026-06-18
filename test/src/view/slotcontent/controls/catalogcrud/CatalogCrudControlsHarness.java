@@ -443,16 +443,16 @@ public final class CatalogCrudControlsHarness {
                 .filter(candidate -> candidate.getChildren().contains(openButton))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Selector row not found."));
-        Parent selectorColumn = row.getChildren().getFirst() instanceof Parent column
-                ? column
+        HBox selectorSurface = row.getChildren().getFirst() instanceof HBox surface
+                ? surface
                 : null;
-        if (selectorColumn == null) {
-            throw new AssertionError("Selector column not found.");
+        if (selectorSurface == null) {
+            throw new AssertionError("Selector surface row not found.");
         }
         assertEquals(List.of(openButton, actionButton), List.of(row.getChildren().get(1), row.getChildren().get(2)),
                 "shared control row keeps open and create after the selector surface");
-        assertTrue(selectorColumn.getChildrenUnmodifiable().contains(filterField), "selector surface includes local filter field");
-        assertTrue(selectorColumn.getChildrenUnmodifiable().contains(selector), "selector surface includes selector dropdown");
+        assertEquals(List.of(filterField, selector), List.copyOf(selectorSurface.getChildren()),
+                "selector surface keeps filter input and dropdown on one line");
     }
 
     private static String placeholderText(ComboBox<?> selector) {

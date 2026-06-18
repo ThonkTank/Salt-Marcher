@@ -976,6 +976,15 @@
     -fx-padding: 10;
     -fx-spacing: 10;
 }
+.catalog-crud-selector-surface {
+    -fx-spacing: 4;
+}
+.catalog-crud-selector-filter {
+    -fx-min-width: 120;
+}
+.catalog-crud-selector-combo {
+    -fx-min-width: 160;
+}
 .dungeon-editor-popup-actions {
     -fx-spacing: 8;
 }
