@@ -10,10 +10,6 @@ public interface ShellBinding {
 
     String title();
 
-    default String navigationLabel() {
-        return "";
-    }
-
     Map<ShellSlot, Node> slotContent();
 
     default void onActivate() {

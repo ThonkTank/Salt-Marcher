@@ -1,6 +1,7 @@
 package shell.host;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -8,16 +9,25 @@ import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.ToggleButton;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
+import shell.api.ShellContributionSpec;
+import shell.api.ShellSlot;
+import shell.api.ShellLeftBarTabSpec;
 import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellLeftBarTabMode;
+import src.view.leftbartabs.catalog.CatalogContribution;
+import src.view.leftbartabs.dungeoneditor.DungeonEditorContribution;
+import src.view.leftbartabs.dungeontravel.DungeonTravelContribution;
+import src.view.leftbartabs.hexmap.HexMapContribution;
 import src.view.leftbartabs.sessionplanner.SessionPlannerContribution;
 import src.view.leftbartabs.sessionplanner.SessionPlannerControlsView;
 
@@ -90,6 +100,55 @@ public final class SessionPlannerShellLayoutHarness {
         assertTrue(stateScroll.getVbarPolicy() == ScrollPane.ScrollBarPolicy.AS_NEEDED,
                 "shell state panel keeps vertical scrolling globally available");
         assertTrue(stateScroll.isFitToWidth(), "shell state panel scroll content fits available width");
+
+        ShellNavigationSidebar sidebar = new ShellNavigationSidebar();
+        registerSidebarTab(
+                sidebar,
+                new DungeonTravelContribution().registrationSpec(),
+                "Dungeon-Reise");
+        registerSidebarTab(
+                sidebar,
+                new SessionPlannerContribution().registrationSpec(),
+                "Session Planner");
+        registerSidebarTab(
+                sidebar,
+                new CatalogContribution().registrationSpec(),
+                "Encounter-Planer");
+        registerSidebarTab(
+                sidebar,
+                new DungeonEditorContribution().registrationSpec(),
+                "Dungeon-Editor");
+        registerSidebarTab(
+                sidebar,
+                new HexMapContribution().registrationSpec(),
+                "Hex-Karte");
+        layout(sidebar);
+
+        List<Node> sidebarChildren = List.copyOf(sidebar.getChildren());
+        long separatorCount = sidebarChildren.stream()
+                .filter(node -> node instanceof Region region && region.getStyleClass().contains("nav-separator"))
+                .count();
+        assertTrue(separatorCount == 2, "sidebar inserts separators at mode boundaries");
+        assertTrue(sidebarChildren.size() == 7, "sidebar renders five tabs and two separators");
+
+        List<ToggleButton> navButtons = sidebarChildren.stream()
+                .filter(ToggleButton.class::isInstance)
+                .map(ToggleButton.class::cast)
+                .toList();
+        assertTrue(navButtons.size() == 5, "sidebar renders five navigation buttons");
+        assertButton(navButtons.get(0), "Session Planner", false);
+        assertButton(navButtons.get(1), "Dungeon-Editor", false);
+        assertButton(navButtons.get(2), "Dungeon-Reise", false);
+        assertButton(navButtons.get(3), "Hex-Karte", false);
+        assertButton(navButtons.get(4), "Encounter-Planer", false);
+        assertTrue(sidebarChildren.get(1).getStyleClass().contains("nav-separator"),
+                "sidebar separates runtime and editor tabs");
+        assertTrue(sidebarChildren.get(3).getStyleClass().contains("nav-separator"),
+                "sidebar separates editor and runtime tabs");
+        Node malformedGraphic = ShellNavigationGraphicLoader.load(
+                shell.api.NavigationGraphicResource.of("/shell/host/malformed-navigation-icon.svg"));
+        assertTrue(malformedGraphic.getStyleClass().contains("nav-icon-missing"),
+                "malformed navigation resource uses missing graphic fallback");
     }
 
     private static ServiceRegistry services() {
@@ -139,6 +198,31 @@ public final class SessionPlannerShellLayoutHarness {
         if (!condition) {
             throw new AssertionError(message);
         }
+    }
+
+    private static void registerSidebarTab(
+            ShellNavigationSidebar sidebar,
+            ShellContributionSpec contributionSpec,
+            String title
+    ) {
+        sidebar.registerLeftBarTab(
+                (ShellLeftBarTabSpec) contributionSpec,
+                new HarnessShellBinding(title),
+                key -> {
+                });
+    }
+
+    private static void assertButton(ToggleButton button, String title, boolean expectMissingGraphic) {
+        assertTrue(button.getContentDisplay() == ContentDisplay.GRAPHIC_ONLY,
+                "sidebar button uses icon-only content display for " + title);
+        assertTrue(title.equals(button.getAccessibleText()),
+                "sidebar button accessible text keeps the bound title for " + title);
+        assertTrue(button.getTooltip() != null && title.equals(button.getTooltip().getText()),
+                "sidebar button tooltip keeps the bound title for " + title);
+        assertTrue(button.getGraphic() != null, "sidebar button graphic is present for " + title);
+        boolean missingGraphic = button.getGraphic().getStyleClass().contains("nav-icon-missing");
+        assertTrue(missingGraphic == expectMissingGraphic,
+                "sidebar button missing-graphic state matches expectation for " + title);
     }
 
     private static void runOnFxThread(ThrowingRunnable action) throws Exception {
@@ -197,6 +281,14 @@ public final class SessionPlannerShellLayoutHarness {
         @Override
         public boolean isShowing(Object entryKey) {
             return false;
+        }
+    }
+
+    private record HarnessShellBinding(String title) implements ShellBinding {
+
+        @Override
+        public Map<ShellSlot, Node> slotContent() {
+            return Map.of();
         }
     }
 }

@@ -9,8 +9,10 @@ import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBase;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
@@ -111,21 +113,28 @@ public final class SessionPlannerCatalogHarness {
         assertEquals(afterDeleteLast.selectedSessionId(), current.current().session().sessionId(),
                 "replacement session is current");
         assertTrue(!"Beta".equals(current.current().session().displayName()), "replacement session is seeded");
+
+        createSession(controls, "Gamma");
+        SessionPlannerCatalogSnapshot afterCreatePostDelete = catalog.current();
+        assertCatalogSize(afterCreatePostDelete, 2, "create after delete-last adds a new session");
+        assertEquals("Gamma", current.current().session().displayName(), "create after delete-last selects Gamma");
+        assertTrue(afterCreatePostDelete.sessions().stream().anyMatch(session -> "Gamma".equals(session.displayName())),
+                "create after delete-last publishes Gamma");
     }
 
     private static void createSession(Parent controls, String name) {
-        button(controls, "Neu").fire();
-        visibleDraftField(controls).setText(name);
-        button(controls, "Erstellen").fire();
+        firePrimaryAction(controls);
+        popupTextField(controls, "Dungeon-Name").setText(name);
+        popupButton(controls, "Erstellen").fire();
         layout(controls);
     }
 
     private static void renameSelectedSession(Parent controls, String name) {
-        button(controls, "Umbenennen").fire();
-        TextField draft = visibleDraftField(controls);
+        actionMenuItem(controls, "Umbenennen").fire();
+        TextField draft = popupTextField(controls, "Dungeon-Name");
         assertTrue(!draft.getText().isBlank(), "rename preloads selected session name");
         draft.setText(name);
-        button(controls, "Speichern").fire();
+        popupButton(controls, "Speichern").fire();
         layout(controls);
     }
 
@@ -134,22 +143,14 @@ public final class SessionPlannerCatalogHarness {
         ComboBox<String> selector = (ComboBox<String>) descendant(controls, ComboBox.class);
         selector.getSelectionModel().select(Long.toString(sessionId));
         layout(controls);
-    }
-
-    private static void deleteSelectedSession(Parent controls) {
-        button(controls, "Löschen").fire();
-        buttonByAccessibleText(controls, "Löschen bestätigen").fire();
+        button(controls, "Öffnen").fire();
         layout(controls);
     }
 
-    private static TextField visibleDraftField(Parent controls) {
-        return descendants(controls).stream()
-                .filter(TextField.class::isInstance)
-                .map(TextField.class::cast)
-                .filter(TextField::isVisible)
-                .filter(field -> !"1.0".equals(field.getPromptText()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Visible session catalog draft field not found."));
+    private static void deleteSelectedSession(Parent controls) {
+        actionMenuItem(controls, "Löschen").fire();
+        popupButtonByAccessibleText(controls, "Löschen bestätigen").fire();
+        layout(controls);
     }
 
     private static TextField encounterDaysField(Parent controls) {
@@ -204,13 +205,69 @@ public final class SessionPlannerCatalogHarness {
                 .orElseThrow(() -> new AssertionError("Button not found: " + text));
     }
 
-    private static Button buttonByAccessibleText(Parent parent, String accessibleText) {
+    private static void firePrimaryAction(Parent parent) {
+        SplitMenuButton button = actionButton(parent);
+        if (button.getOnAction() == null) {
+            throw new AssertionError("SplitMenuButton primary action missing: Neu");
+        }
+        button.getOnAction().handle(new javafx.event.ActionEvent(button, button));
+    }
+
+    private static SplitMenuButton actionButton(Parent parent) {
         return descendants(parent).stream()
-                .filter(Button.class::isInstance)
-                .map(Button.class::cast)
+                .filter(SplitMenuButton.class::isInstance)
+                .map(SplitMenuButton.class::cast)
+                .filter(button -> "Neu".equals(button.getText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("SplitMenuButton not found: Neu"));
+    }
+
+    private static javafx.scene.control.MenuItem actionMenuItem(Parent parent, String text) {
+        return actionButton(parent).getItems().stream()
+                .filter(item -> text.equals(item.getText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("MenuItem not found: " + text));
+    }
+
+    private static ButtonBase popupButton(Parent parent, String text) {
+        return descendants(operationPopupContent(parent)).stream()
+                .filter(ButtonBase.class::isInstance)
+                .map(ButtonBase.class::cast)
+                .filter(button -> text.equals(button.getText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Catalog popup button not found: " + text));
+    }
+
+    private static TextField popupTextField(Parent parent, String accessibleText) {
+        return descendants(operationPopupContent(parent)).stream()
+                .filter(TextField.class::isInstance)
+                .map(TextField.class::cast)
+                .filter(field -> accessibleText.equals(field.getAccessibleText()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Catalog popup TextField not found: " + accessibleText));
+    }
+
+    private static ButtonBase popupButtonByAccessibleText(Parent parent, String accessibleText) {
+        return descendants(operationPopupContent(parent)).stream()
+                .filter(ButtonBase.class::isInstance)
+                .map(ButtonBase.class::cast)
                 .filter(button -> accessibleText.equals(button.getAccessibleText()))
                 .findFirst()
-                .orElseThrow(() -> new AssertionError("Button not found: " + accessibleText));
+                .orElseThrow(() -> new AssertionError("Catalog popup button not found: " + accessibleText));
+    }
+
+    private static Parent operationPopupContent(Parent parent) {
+        Object content = parent.getProperties().get("catalogCrudOperationContent");
+        if (content instanceof Parent popupContent) {
+            return popupContent;
+        }
+        for (Node node : descendants(parent)) {
+            Object nestedContent = node.getProperties().get("catalogCrudOperationContent");
+            if (nestedContent instanceof Parent popupContent) {
+                return popupContent;
+            }
+        }
+        throw new AssertionError("Catalog popup content not found.");
     }
 
     private static boolean hasLabel(Parent parent, String text) {

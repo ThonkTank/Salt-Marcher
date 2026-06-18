@@ -26,7 +26,12 @@ Provide one hex-map workflow that lets a GM:
 
 ## Current State
 
-- SaltMarcher does not yet ship a first-class hex feature surface.
+- SaltMarcher now ships a first-class navigable Hex Map surface under
+  `src/view/leftbartabs/hexmap`. The current `Hex-Karte` tab is an unloaded
+  placeholder that exposes the feature in shell navigation.
+- SaltMarcher does not yet ship loaded hex-map data, party-token travel,
+  compact hex travel context, tile inspection, terrain editing, or map metadata
+  editing.
 - The sibling `salt-marcher` repo provides current user-facing evidence for the
   target state: overworld map display, party-token travel, compact travel
   context, tile inspection, and a terrain-focused hex editor.

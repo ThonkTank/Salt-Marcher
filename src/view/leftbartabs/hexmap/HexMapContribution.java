@@ -1,4 +1,4 @@
-package src.view.leftbartabs.dungeoneditor;
+package src.view.leftbartabs.hexmap;
 
 import java.util.Objects;
 import shell.api.ContributionKey;
@@ -7,25 +7,26 @@ import shell.api.NavigationGroupSpec;
 import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
+import shell.api.ShellRuntimeContext;
 
-public final class DungeonEditorContribution implements ShellContribution {
+public final class HexMapContribution implements ShellContribution {
 
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellLeftBarTabSpec(
-                new ContributionKey("dungeon-editor"),
+                new ContributionKey("hex-map"),
                 new NavigationGroupSpec("world", "World", 20),
-                10,
-                true,
-                NavigationGraphicResource.of("/view/leftbartabs/dungeoneditor/navigation-icon.svg"),
-                ShellLeftBarTabMode.EDITOR);
+                30,
+                false,
+                NavigationGraphicResource.of("/view/leftbartabs/hexmap/navigation-icon.svg"),
+                ShellLeftBarTabMode.RUNTIME);
     }
 
     @Override
     public ShellBinding bind(ShellRuntimeContext runtimeContext) {
-        return new DungeonEditorBinder(Objects.requireNonNull(runtimeContext, "runtimeContext")).bind();
+        Objects.requireNonNull(runtimeContext, "runtimeContext");
+        return new HexMapBinder().bind();
     }
 }

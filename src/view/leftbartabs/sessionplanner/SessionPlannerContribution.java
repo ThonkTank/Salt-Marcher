@@ -2,6 +2,7 @@ package src.view.leftbartabs.sessionplanner;
 
 import java.util.Objects;
 import shell.api.ContributionKey;
+import shell.api.NavigationGraphicResource;
 import shell.api.NavigationGroupSpec;
 import shell.api.ShellBinding;
 import shell.api.ShellContribution;
@@ -19,7 +20,7 @@ public final class SessionPlannerContribution implements ShellContribution {
                 new NavigationGroupSpec("planning", "Planning", 10),
                 15,
                 false,
-                null,
+                NavigationGraphicResource.of("/view/leftbartabs/sessionplanner/navigation-icon.svg"),
                 ShellLeftBarTabMode.RUNTIME);
     }
 

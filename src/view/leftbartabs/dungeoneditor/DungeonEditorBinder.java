@@ -128,11 +128,6 @@ final class DungeonEditorBinder {
         }
 
         @Override
-        public String navigationLabel() {
-            return "Dungeon";
-        }
-
-        @Override
         public Map<ShellSlot, Node> slotContent() {
             return Map.of(
                     ShellSlot.COCKPIT_CONTROLS, controls,

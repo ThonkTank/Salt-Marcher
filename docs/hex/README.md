@@ -31,7 +31,11 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
 ## Current State
 
-- SaltMarcher does not yet ship a first-class hex feature bundle in `src/`.
+- SaltMarcher now ships a first-class navigable Hex Map root under
+  `src/view/leftbartabs/hexmap`. The current `Hex-Karte` surface is an
+  unloaded placeholder that makes the feature reachable from the left sidebar.
+- SaltMarcher does not yet ship loaded hex-map data, interactive hex travel,
+  tile inspection, terrain editing, or a compact hex travel-state readout.
 - The sibling `salt-marcher` repo provides the current user-facing evidence for
   hex travel, compact travel context, tile inspection, and terrain editing.
 

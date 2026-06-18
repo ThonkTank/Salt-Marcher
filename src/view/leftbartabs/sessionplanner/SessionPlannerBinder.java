@@ -97,11 +97,6 @@ final class SessionPlannerBinder {
         }
 
         @Override
-        public String navigationLabel() {
-            return "Planner";
-        }
-
-        @Override
         public Map<ShellSlot, Node> slotContent() {
             return Map.of(
                     ShellSlot.COCKPIT_CONTROLS, controls,

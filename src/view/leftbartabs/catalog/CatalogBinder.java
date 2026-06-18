@@ -151,11 +151,6 @@ final class CatalogBinder {
         }
 
         @Override
-        public String navigationLabel() {
-            return "";
-        }
-
-        @Override
         public Map<ShellSlot, Node> slotContent() {
             return Map.of(
                     ShellSlot.COCKPIT_CONTROLS, controls,

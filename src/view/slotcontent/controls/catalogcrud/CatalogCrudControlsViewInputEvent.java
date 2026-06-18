@@ -2,6 +2,7 @@ package src.view.slotcontent.controls.catalogcrud;
 
 public record CatalogCrudControlsViewInputEvent(
         String selectedItemId,
+        String selectorFilterText,
         String openItemId,
         boolean createEditorOpened,
         String createDraftName,
@@ -16,6 +17,7 @@ public record CatalogCrudControlsViewInputEvent(
 
     public CatalogCrudControlsViewInputEvent {
         selectedItemId = selectedItemId == null ? "" : selectedItemId.trim();
+        selectorFilterText = selectorFilterText == null ? "" : selectorFilterText.trim();
         openItemId = openItemId == null ? "" : openItemId.trim();
         createDraftName = createDraftName == null ? "" : createDraftName.trim();
         renameEditorItemId = renameEditorItemId == null ? "" : renameEditorItemId.trim();

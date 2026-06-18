@@ -136,7 +136,11 @@ final class DungeonEditorIntentHandler {
     }
 
     void consume(CatalogCrudControlsViewInputEvent event) {
-        if (event == null || consumeCatalogSelection(event) || consumeCatalogSubmit(event)) {
+        if (event == null) {
+            return;
+        }
+        catalogContentModel.updateSelectorFilter(event.selectorFilterText());
+        if (consumeCatalogSelection(event) || consumeCatalogSubmit(event)) {
             return;
         }
         consumeCatalogEditor(event);

@@ -2,6 +2,7 @@ package src.view.slotcontent.controls.catalogcrud;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import javafx.beans.property.ReadOnlyBooleanProperty;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyIntegerProperty;
@@ -15,13 +16,16 @@ import org.jspecify.annotations.Nullable;
 public final class CatalogCrudControlsContentModel {
 
     private static final long NO_REVISION = 0L;
+    private static final String DEFAULT_EMPTY_TEXT = "Keine Eintraege verfuegbar.";
 
     private final ObservableList<String> itemIds = FXCollections.observableArrayList();
     private final List<Item> items = new ArrayList<>();
     private final ReadOnlyStringWrapper title = new ReadOnlyStringWrapper("Catalog");
     private final ReadOnlyStringWrapper selectorAccessibleText = new ReadOnlyStringWrapper("Catalog auswaehlen");
     private final ReadOnlyStringWrapper selectorPromptText = new ReadOnlyStringWrapper("Keine Auswahl");
-    private final ReadOnlyStringWrapper emptyText = new ReadOnlyStringWrapper("Keine Eintraege verfuegbar.");
+    private final ReadOnlyStringWrapper selectorPlaceholderText = new ReadOnlyStringWrapper(DEFAULT_EMPTY_TEXT);
+    private final ReadOnlyStringWrapper selectorFilterTextValue = new ReadOnlyStringWrapper("");
+    private final ReadOnlyStringWrapper emptyText = new ReadOnlyStringWrapper(DEFAULT_EMPTY_TEXT);
     private final ReadOnlyStringWrapper statusText = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper draftName = new ReadOnlyStringWrapper("");
     private final ReadOnlyStringWrapper draftPrompt = new ReadOnlyStringWrapper("Name");
@@ -31,6 +35,7 @@ public final class CatalogCrudControlsContentModel {
     private final ReadOnlyStringWrapper targetItemId = new ReadOnlyStringWrapper("");
     private final ReadOnlyIntegerWrapper selectedIndex = new ReadOnlyIntegerWrapper(-1);
     private final ReadOnlyBooleanWrapper selectorDisabled = new ReadOnlyBooleanWrapper(true);
+    private final ReadOnlyBooleanWrapper selectorFilterEnabled = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper openDisabled = new ReadOnlyBooleanWrapper(true);
     private final ReadOnlyBooleanWrapper openVisible = new ReadOnlyBooleanWrapper(true);
     private final ReadOnlyBooleanWrapper createDisabled = new ReadOnlyBooleanWrapper(true);
@@ -41,7 +46,7 @@ public final class CatalogCrudControlsContentModel {
     private final ReadOnlyBooleanWrapper deleteVisible = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper reloadVisible = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper reloadDisabled = new ReadOnlyBooleanWrapper(true);
-    private final ReadOnlyBooleanWrapper emptyVisible = new ReadOnlyBooleanWrapper(true);
+    private final ReadOnlyBooleanWrapper statusVisible = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper operationVisible = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper draftVisible = new ReadOnlyBooleanWrapper(false);
     private final ReadOnlyBooleanWrapper deleteConfirmationVisible = new ReadOnlyBooleanWrapper(false);
@@ -49,6 +54,7 @@ public final class CatalogCrudControlsContentModel {
     private Actions actions = Actions.readOnly();
     private Mode mode = Mode.CLOSED;
     private String selectedItemId = "";
+    private String selectorFilterText = "";
     private boolean busy;
 
     public ObservableList<String> itemIds() {
@@ -67,8 +73,12 @@ public final class CatalogCrudControlsContentModel {
         return selectorPromptText.getReadOnlyProperty();
     }
 
-    public ReadOnlyStringProperty emptyTextProperty() {
-        return emptyText.getReadOnlyProperty();
+    public ReadOnlyStringProperty selectorPlaceholderTextProperty() {
+        return selectorPlaceholderText.getReadOnlyProperty();
+    }
+
+    public ReadOnlyStringProperty selectorFilterTextProperty() {
+        return selectorFilterTextValue.getReadOnlyProperty();
     }
 
     public ReadOnlyStringProperty statusTextProperty() {
@@ -105,6 +115,10 @@ public final class CatalogCrudControlsContentModel {
 
     public ReadOnlyBooleanProperty selectorDisabledProperty() {
         return selectorDisabled.getReadOnlyProperty();
+    }
+
+    public ReadOnlyBooleanProperty selectorFilterEnabledProperty() {
+        return selectorFilterEnabled.getReadOnlyProperty();
     }
 
     public ReadOnlyBooleanProperty openDisabledProperty() {
@@ -147,8 +161,8 @@ public final class CatalogCrudControlsContentModel {
         return reloadDisabled.getReadOnlyProperty();
     }
 
-    public ReadOnlyBooleanProperty emptyVisibleProperty() {
-        return emptyVisible.getReadOnlyProperty();
+    public ReadOnlyBooleanProperty statusVisibleProperty() {
+        return statusVisible.getReadOnlyProperty();
     }
 
     public ReadOnlyBooleanProperty operationVisibleProperty() {
@@ -178,16 +192,12 @@ public final class CatalogCrudControlsContentModel {
         busy = safeState.busy();
         items.clear();
         items.addAll(safeState.items());
-        selectedIndex.set(-1);
-        itemIds.setAll(items.stream().map(Item::id).toList());
         int readbackSelectionIndex = indexOf(safeState.selectedItemId());
         int stagedSelectionIndex = indexOf(stagedItemId);
         if (stagedSelectionIndex >= 0) {
             selectedItemId = stagedItemId;
-            selectedIndex.set(stagedSelectionIndex);
         } else {
-            selectedItemId = readbackSelectionIndex < 0 ? "" : safeState.selectedItemId();
-            selectedIndex.set(readbackSelectionIndex);
+            selectedItemId = readbackSelectionIndex < 0 ? "" : items.get(readbackSelectionIndex).id();
         }
         refreshPreparedState();
     }
@@ -197,8 +207,20 @@ public final class CatalogCrudControlsContentModel {
         if (itemById(normalized) == null) {
             return;
         }
+        if (normalized.equals(selectedItemId) && selectedIndex.get() == indexInFilteredItems(normalized)) {
+            return;
+        }
         selectedItemId = normalized;
-        selectedIndex.set(indexOf(normalized));
+        refreshPreparedState();
+    }
+
+    public void updateSelectorFilter(String nextFilterText) {
+        String normalized = normalize(nextFilterText);
+        if (normalized.equals(selectorFilterText)) {
+            return;
+        }
+        selectorFilterText = normalized;
+        selectorFilterTextValue.set(selectorFilterText);
         refreshPreparedState();
     }
 
@@ -258,42 +280,63 @@ public final class CatalogCrudControlsContentModel {
         refreshPreparedState();
     }
 
-    public String labelOf(String itemId) {
+    String labelOf(String itemId) {
         Item item = itemById(itemId);
         return item == null ? "" : item.displayText();
     }
 
-    public String selectedItemId() {
-        return selectedItemId;
+    String currentSelectableItemId() {
+        return selectedIndex.get() >= 0 ? selectedItemId : "";
     }
 
-    public boolean createMode() {
+    boolean createMode() {
         return mode == Mode.CREATE;
     }
 
-    public boolean renameMode() {
+    boolean renameMode() {
         return mode == Mode.RENAME;
     }
 
     private void refreshPreparedState() {
+        clearSelectorFilterWhenContextUnavailable();
+        rebuildFilteredItems();
         updateSelectorState();
         updateActionState();
         updateOperationState();
         validationVisible.set(!validationText.get().isBlank());
     }
 
+    private void rebuildFilteredItems() {
+        List<String> filteredIds = items.stream()
+                .filter(this::matchesSelectorFilter)
+                .map(Item::id)
+                .toList();
+        itemIds.setAll(filteredIds);
+        selectedIndex.set(indexInFilteredItems(selectedItemId));
+    }
+
     private void updateSelectorState() {
         boolean hasItems = !items.isEmpty();
+        boolean hasFilteredItems = !itemIds.isEmpty();
         boolean operationOpen = mode != Mode.CLOSED;
         selectorDisabled.set(busy || !hasItems || operationOpen);
-        openDisabled.set(busy || !hasItems || operationOpen || selectedItemId.isBlank());
+        selectorFilterEnabled.set(selectorContextAvailable());
+        openDisabled.set(busy || !hasItems || operationOpen || selectedIndex.get() < 0);
         openVisible.set(hasItems);
         selectorPromptText.set(hasItems ? "Keine Auswahl" : emptyText.get());
-        emptyVisible.set(!hasItems);
+        selectorPlaceholderText.set(selectorPlaceholderText(hasItems, hasFilteredItems));
+        statusVisible.set(shouldShowStatusText(hasItems));
+    }
+
+    private String selectorPlaceholderText(boolean hasItems, boolean hasFilteredItems) {
+        if (!hasItems) {
+            return emptyText.get();
+        }
+        return hasFilteredItems ? "" : "Keine Treffer.";
     }
 
     private void updateActionState() {
-        boolean hasSelection = !selectedItemId.isBlank();
+        boolean hasSelection = selectedIndex.get() >= 0;
         createVisible.set(actions.createVisible());
         renameVisible.set(actions.renameVisible());
         deleteVisible.set(actions.deleteVisible());
@@ -311,6 +354,36 @@ public final class CatalogCrudControlsContentModel {
         deleteConfirmationVisible.set(mode == Mode.DELETE_CONFIRMATION);
         draftPrompt.set(mode == Mode.CREATE ? "Name" : "Neuer Name");
         submitText.set(mode == Mode.CREATE ? "Erstellen" : "Speichern");
+    }
+
+    private void clearSelectorFilterWhenContextUnavailable() {
+        if (selectorContextAvailable() || selectorFilterText.isBlank()) {
+            return;
+        }
+        selectorFilterText = "";
+        selectorFilterTextValue.set("");
+    }
+
+    private boolean selectorContextAvailable() {
+        return !items.isEmpty() && !busy && mode == Mode.CLOSED;
+    }
+
+    private boolean matchesSelectorFilter(Item item) {
+        return selectorFilterText.isBlank()
+                || item.label().toLowerCase(Locale.ROOT).contains(selectorFilterText.toLowerCase(Locale.ROOT));
+    }
+
+    private int indexInFilteredItems(String itemId) {
+        String normalized = normalize(itemId);
+        if (normalized.isBlank()) {
+            return -1;
+        }
+        for (int index = 0; index < itemIds.size(); index++) {
+            if (normalized.equals(itemIds.get(index))) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private int indexOf(String itemId) {
@@ -340,6 +413,14 @@ public final class CatalogCrudControlsContentModel {
             return fallback == null ? "" : fallback;
         }
         return value.trim();
+    }
+
+    private boolean shouldShowStatusText(boolean hasItems) {
+        String normalizedStatus = normalize(statusText.get());
+        if (normalizedStatus.isBlank()) {
+            return false;
+        }
+        return hasItems || !normalizedStatus.equals(normalize(emptyText.get()));
     }
 
     public record Item(
@@ -382,7 +463,7 @@ public final class CatalogCrudControlsContentModel {
         public CatalogState {
             title = textOr(title, "Catalog");
             selectorAccessibleText = textOr(selectorAccessibleText, title);
-            emptyText = textOr(emptyText, "Keine Eintraege verfuegbar.");
+            emptyText = textOr(emptyText, DEFAULT_EMPTY_TEXT);
             selectedItemId = normalize(selectedItemId);
             items = items == null ? List.of() : List.copyOf(items);
             actions = actions == null ? Actions.readOnly() : actions;
@@ -393,7 +474,7 @@ public final class CatalogCrudControlsContentModel {
             return new CatalogState(
                     "Catalog",
                     "Catalog auswaehlen",
-                    "Keine Eintraege verfuegbar.",
+                    DEFAULT_EMPTY_TEXT,
                     "",
                     List.of(),
                     Actions.readOnly(),

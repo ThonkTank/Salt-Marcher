@@ -16,7 +16,6 @@ import javafx.scene.control.SplitMenuButton;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
@@ -30,15 +29,19 @@ public final class CatalogCrudControlsView extends VBox {
     private static final String STYLE_ACCENT = "accent";
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
     private static final String PROGRAMMATIC_SELECTION_KEY = "catalogCrudProgrammaticSelection";
+    private static final String SELECTION_PUBLISH_KEY = "catalogCrudSelectionPublish";
+    private static final String PROGRAMMATIC_FILTER_KEY = "catalogCrudProgrammaticFilter";
+    private static final String FILTER_REFRESH_KEY = "catalogCrudFilterRefresh";
 
     private final Label titleLabel = label("");
+    private final TextField filterField = new TextField();
     private final ComboBox<String> selector = new ComboBox<>();
     private final Button openButton = button("Öffnen", STYLE_COMPACT, STYLE_ACCENT);
     private final SplitMenuButton actionButton = new SplitMenuButton();
     private final MenuItem renameMenuItem = new MenuItem("Umbenennen");
     private final MenuItem deleteMenuItem = new MenuItem("Löschen");
     private final MenuItem reloadMenuItem = new MenuItem("Neu laden");
-    private final Label emptyLabel = label("", STYLE_TEXT_SECONDARY);
+    private final Label selectorPlaceholderLabel = label("", STYLE_TEXT_SECONDARY);
     private final Label statusLabel = label("", STYLE_TEXT_SECONDARY);
     private final VBox operationBox = new VBox(6);
     private final ContextMenu operationPopup = new ContextMenu();
@@ -54,8 +57,10 @@ public final class CatalogCrudControlsView extends VBox {
     private Consumer<CatalogCrudControlsViewInputEvent> viewInputEventHandler = ignored -> { };
     public CatalogCrudControlsView() {
         super(8);
+        filterField.setPromptText("Auswahl filtern");
+        filterField.setAccessibleText("Auswahl filtern");
         selector.setMaxWidth(Double.MAX_VALUE);
-        HBox.setHgrow(selector, Priority.ALWAYS);
+        selector.setPlaceholder(selectorPlaceholderLabel);
         openButton.setMinWidth(USE_PREF_SIZE);
         actionButton.setText("Neu");
         actionButton.getStyleClass().addAll(STYLE_COMPACT, STYLE_ACCENT);
@@ -76,7 +81,6 @@ public final class CatalogCrudControlsView extends VBox {
         getChildren().setAll(
                 headerRow(),
                 selectorRow(),
-                emptyLabel,
                 statusLabel);
     }
 
@@ -119,14 +123,13 @@ public final class CatalogCrudControlsView extends VBox {
         selector.promptTextProperty().bind(contentModel.selectorPromptTextProperty());
         selector.accessibleTextProperty().bind(contentModel.selectorAccessibleTextProperty());
         selector.disableProperty().bind(contentModel.selectorDisabledProperty());
+        selectorPlaceholderLabel.textProperty().bind(contentModel.selectorPlaceholderTextProperty());
+        filterField.disableProperty().bind(contentModel.selectorFilterEnabledProperty().not());
         openButton.visibleProperty().bind(contentModel.openVisibleProperty());
         openButton.managedProperty().bind(openButton.visibleProperty());
         openButton.disableProperty().bind(contentModel.openDisabledProperty());
-        emptyLabel.textProperty().bind(contentModel.emptyTextProperty());
-        emptyLabel.visibleProperty().bind(contentModel.emptyVisibleProperty());
-        emptyLabel.managedProperty().bind(emptyLabel.visibleProperty());
         statusLabel.textProperty().bind(contentModel.statusTextProperty());
-        statusLabel.visibleProperty().bind(contentModel.statusTextProperty().isNotEmpty());
+        statusLabel.visibleProperty().bind(contentModel.statusVisibleProperty());
         statusLabel.managedProperty().bind(statusLabel.visibleProperty());
         actionButton.disableProperty().bind(contentModel.createDisabledProperty()
                 .and(contentModel.renameDisabledProperty())
@@ -145,6 +148,7 @@ public final class CatalogCrudControlsView extends VBox {
         reloadMenuItem.visibleProperty().bind(contentModel.reloadVisibleProperty());
         operationBox.visibleProperty().bind(contentModel.operationVisibleProperty());
         installDraftBinding(contentModel);
+        installFilterBinding(contentModel);
         draftField.promptTextProperty().bind(contentModel.draftPromptProperty());
         draftField.visibleProperty().bind(contentModel.draftVisibleProperty());
         draftField.managedProperty().bind(draftField.visibleProperty());
@@ -161,24 +165,27 @@ public final class CatalogCrudControlsView extends VBox {
         validationLabel.visibleProperty().bind(contentModel.validationVisibleProperty());
         validationLabel.managedProperty().bind(validationLabel.visibleProperty());
         contentModel.selectedIndexProperty().addListener((ignored, before, after) ->
-                selectPreparedIndex(after.intValue()));
+                selectPreparedIndex(contentModel, after.intValue()));
         itemIds.addListener((ListChangeListener<String>) ignored ->
-                selectPreparedIndex(contentModel.selectedIndexProperty().get()));
+                selectPreparedIndex(contentModel, contentModel.selectedIndexProperty().get()));
         contentModel.operationVisibleProperty().addListener((ignored, before, after) ->
                 updateOperationPopup(after));
-        selectPreparedIndex(contentModel.selectedIndexProperty().get());
+        selectPreparedIndex(contentModel, contentModel.selectedIndexProperty().get());
         updateOperationPopup(contentModel.operationVisibleProperty().get());
         installHandlers(contentModel);
     }
 
-    private void selectPreparedIndex(int selectedIndex) {
+    private void selectPreparedIndex(CatalogCrudControlsContentModel contentModel, int selectedIndex) {
         selector.getProperties().put(PROGRAMMATIC_SELECTION_KEY, Boolean.TRUE);
         try {
-            if (selectedIndex < 0 || selectedIndex >= selector.getItems().size()) {
+            String selectedItemId = contentModel.currentSelectableItemId();
+            if (selectedItemId.isBlank() || selectedIndex < 0 || selectedIndex >= selector.getItems().size()) {
+                selector.setValue(null);
                 selector.getSelectionModel().clearSelection();
                 return;
             }
-            selector.getSelectionModel().select(selectedIndex);
+            selector.setValue(selectedItemId);
+            selector.getSelectionModel().select(selectedItemId);
         } finally {
             selector.getProperties().remove(PROGRAMMATIC_SELECTION_KEY);
         }
@@ -189,6 +196,11 @@ public final class CatalogCrudControlsView extends VBox {
         contentModel.draftNameProperty().addListener((ignored, before, after) -> setDraftText(after));
     }
 
+    private void installFilterBinding(CatalogCrudControlsContentModel contentModel) {
+        setFilterText(contentModel.selectorFilterTextProperty().get());
+        contentModel.selectorFilterTextProperty().addListener((ignored, before, after) -> setFilterText(after));
+    }
+
     private void setDraftText(String text) {
         String safeText = text == null ? "" : text;
         if (safeText.equals(draftField.getText())) {
@@ -197,10 +209,23 @@ public final class CatalogCrudControlsView extends VBox {
         draftField.setText(safeText);
     }
 
+    private void setFilterText(String text) {
+        String safeText = text == null ? "" : text;
+        if (safeText.equals(filterField.getText())) {
+            return;
+        }
+        filterField.getProperties().put(PROGRAMMATIC_FILTER_KEY, Boolean.TRUE);
+        try {
+            filterField.setText(safeText);
+        } finally {
+            filterField.getProperties().remove(PROGRAMMATIC_FILTER_KEY);
+        }
+    }
+
     private void installHandlers(CatalogCrudControlsContentModel contentModel) {
         installEditorHandlers(contentModel);
         installActionHandlers(contentModel);
-        installSelectorHandler();
+        installSelectorHandler(contentModel);
     }
 
     private void installEditorHandlers(CatalogCrudControlsContentModel contentModel) {
@@ -240,12 +265,45 @@ public final class CatalogCrudControlsView extends VBox {
         cancelButton.setOnAction(event -> publish(dismissedEvent()));
     }
 
-    private void installSelectorHandler() {
+    private void installSelectorHandler(CatalogCrudControlsContentModel contentModel) {
         selector.valueProperty().addListener((ignored, before, after) -> {
-            if (Boolean.TRUE.equals(selector.getProperties().get(PROGRAMMATIC_SELECTION_KEY))) {
+            if (Boolean.TRUE.equals(selector.getProperties().get(SELECTION_PUBLISH_KEY))
+                    || Boolean.TRUE.equals(filterField.getProperties().get(FILTER_REFRESH_KEY))
+                    || Boolean.TRUE.equals(selector.getProperties().get(PROGRAMMATIC_SELECTION_KEY))) {
                 return;
             }
-            publish(selectionEvent(after));
+            if (after == null || after.isBlank()) {
+                return;
+            }
+            selector.getProperties().put(SELECTION_PUBLISH_KEY, Boolean.TRUE);
+            try {
+                String filterText = filterField.getText();
+                if (filterText != null && !filterText.isBlank()) {
+                    filterField.getProperties().put(PROGRAMMATIC_FILTER_KEY, Boolean.TRUE);
+                    try {
+                        filterField.clear();
+                    } finally {
+                        filterField.getProperties().remove(PROGRAMMATIC_FILTER_KEY);
+                    }
+                }
+                publish(selectionEvent(after));
+            } finally {
+                selector.getProperties().remove(SELECTION_PUBLISH_KEY);
+            }
+        });
+        filterField.textProperty().addListener((ignored, before, after) -> {
+            if (Boolean.TRUE.equals(filterField.getProperties().get(PROGRAMMATIC_FILTER_KEY))) {
+                return;
+            }
+            filterField.getProperties().put(FILTER_REFRESH_KEY, Boolean.TRUE);
+            try {
+                publish(filterChangedEvent());
+            } finally {
+                filterField.getProperties().remove(FILTER_REFRESH_KEY);
+            }
+            if (!selector.isShowing() && filterField.isFocused() && !contentModel.itemIds().isEmpty()) {
+                selector.show();
+            }
         });
     }
 
@@ -266,7 +324,7 @@ public final class CatalogCrudControlsView extends VBox {
 
     private String selectedOrCurrentItemId(CatalogCrudControlsContentModel contentModel) {
         String itemId = selectorValue();
-        return itemId.isBlank() ? contentModel.selectedItemId() : itemId;
+        return itemId.isBlank() ? contentModel.currentSelectableItemId() : itemId;
     }
 
     private String selectorValue() {
@@ -287,64 +345,72 @@ public final class CatalogCrudControlsView extends VBox {
         }
     }
 
-    private static CatalogCrudControlsViewInputEvent selectionEvent(String selectedItemId) {
+    private CatalogCrudControlsViewInputEvent selectionEvent(String selectedItemId) {
         return new CatalogCrudControlsViewInputEvent(
-                selectedItemId, "", false, "", "", "", "", "", "", false, "");
+                selectedItemId, filterField.getText(), "", false, "", "", "", "", "", "", false, "");
     }
 
-    private static CatalogCrudControlsViewInputEvent openRequestedEvent(String itemId) {
+    private CatalogCrudControlsViewInputEvent openRequestedEvent(String itemId) {
         return new CatalogCrudControlsViewInputEvent(
-                "", itemId, false, "", "", "", "", "", "", false, "");
+                "", filterField.getText(), itemId, false, "", "", "", "", "", "", false, "");
     }
 
-    private static CatalogCrudControlsViewInputEvent createEditorOpenedEvent() {
+    private CatalogCrudControlsViewInputEvent createEditorOpenedEvent() {
         return new CatalogCrudControlsViewInputEvent(
-                "", "", true, "", "", "", "", "", "", false, "");
+                "", filterField.getText(), "", true, "", "", "", "", "", "", false, "");
     }
 
-    private static CatalogCrudControlsViewInputEvent renameEditorOpenedEvent(String itemId) {
+    private CatalogCrudControlsViewInputEvent renameEditorOpenedEvent(String itemId) {
         return new CatalogCrudControlsViewInputEvent(
-                "", "", false, "", itemId, "", "", "", "", false, "");
+                "", filterField.getText(), "", false, "", itemId, "", "", "", "", false, "");
     }
 
-    private static CatalogCrudControlsViewInputEvent deleteRequestedEvent(String itemId) {
+    private CatalogCrudControlsViewInputEvent deleteRequestedEvent(String itemId) {
         return new CatalogCrudControlsViewInputEvent(
-                "", "", false, "", "", "", "", itemId, "", false, "");
+                "", filterField.getText(), "", false, "", "", "", "", itemId, "", false, "");
     }
 
-    private static CatalogCrudControlsViewInputEvent reloadRequestedEvent(String itemId) {
+    private CatalogCrudControlsViewInputEvent reloadRequestedEvent(String itemId) {
         return new CatalogCrudControlsViewInputEvent(
-                "", "", false, "", "", "", "", "", "", false, itemId);
+                "", filterField.getText(), "", false, "", "", "", "", "", "", false, itemId);
     }
 
-    private static CatalogCrudControlsViewInputEvent deleteConfirmedEvent(String itemId) {
+    private CatalogCrudControlsViewInputEvent deleteConfirmedEvent(String itemId) {
         return new CatalogCrudControlsViewInputEvent(
-                "", "", false, "", "", "", "", "", itemId, false, "");
+                "", filterField.getText(), "", false, "", "", "", "", "", itemId, false, "");
     }
 
-    private static CatalogCrudControlsViewInputEvent dismissedEvent() {
+    private CatalogCrudControlsViewInputEvent dismissedEvent() {
         return new CatalogCrudControlsViewInputEvent(
-                "", "", false, "", "", "", "", "", "", true, "");
+                "", filterField.getText(), "", false, "", "", "", "", "", "", true, "");
     }
 
-    private static CatalogCrudControlsViewInputEvent createSubmittedEvent(String draftName) {
+    private CatalogCrudControlsViewInputEvent createSubmittedEvent(String draftName) {
         return new CatalogCrudControlsViewInputEvent(
-                "", "", false, draftName, "", "", "", "", "", false, "");
+                "", filterField.getText(), "", false, draftName, "", "", "", "", "", false, "");
     }
 
-    private static CatalogCrudControlsViewInputEvent renameSubmittedEvent(String itemId, String draftName) {
+    private CatalogCrudControlsViewInputEvent renameSubmittedEvent(String itemId, String draftName) {
         return new CatalogCrudControlsViewInputEvent(
-                "", "", false, "", "", itemId, draftName, "", "", false, "");
+                "", filterField.getText(), "", false, "", "", itemId, draftName, "", "", false, "");
+    }
+
+    private CatalogCrudControlsViewInputEvent filterChangedEvent() {
+        return new CatalogCrudControlsViewInputEvent(
+                "", filterField.getText(), "", false, "", "", "", "", "", "", false, "");
     }
 
     private HBox headerRow() {
-        HBox row = new HBox(6, titleLabel, spacer(), actionButton);
+        HBox row = new HBox(6, titleLabel);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
 
     private HBox selectorRow() {
-        HBox row = new HBox(6, selector, openButton);
+        VBox selectorColumn = new VBox(4, filterField, selector);
+        selectorColumn.setMaxWidth(Double.MAX_VALUE);
+        HBox.setHgrow(selectorColumn, Priority.ALWAYS);
+        HBox row = new HBox(6, selectorColumn, openButton, actionButton);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
     }
@@ -366,9 +432,4 @@ public final class CatalogCrudControlsView extends VBox {
         return label;
     }
 
-    private static Region spacer() {
-        Region region = new Region();
-        HBox.setHgrow(region, Priority.ALWAYS);
-        return region;
-    }
 }

@@ -2,6 +2,7 @@ package src.view.leftbartabs.dungeontravel;
 
 import java.util.Objects;
 import shell.api.ContributionKey;
+import shell.api.NavigationGraphicResource;
 import shell.api.NavigationGroupSpec;
 import shell.api.ShellBinding;
 import shell.api.ShellContribution;
@@ -19,7 +20,7 @@ public final class DungeonTravelContribution implements ShellContribution {
                 new NavigationGroupSpec("world", "World", 20),
                 20,
                 false,
-                null,
+                NavigationGraphicResource.of("/view/leftbartabs/dungeontravel/navigation-icon.svg"),
                 ShellLeftBarTabMode.RUNTIME);
     }
 

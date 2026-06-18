@@ -97,11 +97,6 @@ final class DungeonTravelBinder {
         }
 
         @Override
-        public String navigationLabel() {
-            return "Reise";
-        }
-
-        @Override
         public Map<ShellSlot, Node> slotContent() {
             return Map.of(
                     ShellSlot.COCKPIT_CONTROLS, controls,

@@ -66,6 +66,7 @@ final class DungeonTravelIntentHandler {
         if (event == null) {
             return;
         }
+        catalogContentModel.updateSelectorFilter(event.selectorFilterText());
         String stagedItemId = event.selectedItemId();
         if (!stagedItemId.isBlank()) {
             catalogContentModel.selectItem(stagedItemId);

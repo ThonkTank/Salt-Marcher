@@ -196,8 +196,26 @@ final class DungeonEditorMapCatalogHarness {
         assertCanvasPaintedAtScene(binding.mapView(), 2.5, 2.5,
                 "DE-MAP-003 rendered canvas paints fallback Alpha room surface");
 
+        long gammaMapId = createMapThroughControls(controls, runtime, "Gamma");
+        assertEquals(1L, runtime.database().countMapIdWithName(gammaMapId, "Gamma"),
+                "DE-MAP-006 primary Neu works after delete and persists Gamma");
+        assertEquals(0L, runtime.database().countAuthoredGeometryRows(gammaMapId),
+                "DE-MAP-006 post-delete Gamma starts without authored geometry rows");
+        DungeonEditorControlsSnapshot afterPostDeleteCreate = runtime.controlsModel().current();
+        assertEquals(gammaMapId, afterPostDeleteCreate.selectedMapId().value(),
+                "DE-MAP-006 post-delete create selects Gamma");
+        assertTrue(afterPostDeleteCreate.maps().stream().anyMatch(map ->
+                        map.mapId().value() == gammaMapId && "Gamma".equals(map.mapName())),
+                "DE-MAP-006 published catalog contains Gamma after delete");
+        DungeonEditorMapSurfaceSnapshot postDeleteCreateSurface = runtime.mapSurfaceModel().current();
+        assertEquals("Gamma", postDeleteCreateSurface.surface().mapName(),
+                "DE-MAP-006 map surface switches to Gamma after delete-then-create");
+        assertVisiblePlaceholder(binding.mapView(), "DE-MAP-006");
+
         results.add(
                 "DE-MAP-003 Ready: DungeonEditorControlsView delete dialog -> SQLite cascade -> name-ordered Alpha fallback");
+        results.add(
+                "DE-MAP-006 Ready: DungeonEditorControlsView primary Neu works after delete fallback");
     }
 
 

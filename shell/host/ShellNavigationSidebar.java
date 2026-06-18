@@ -16,8 +16,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import shell.api.ContributionKey;
-import shell.api.NavigationGroupSpec;
 import shell.api.ShellBinding;
+import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
 
 /**
@@ -52,37 +52,32 @@ final class ShellNavigationSidebar extends VBox {
     private ToggleButton createButton(
             ShellLeftBarTabSpec registrationSpec,
             ShellBinding binding,
-        Consumer<ContributionKey> onSelect) {
-        ToggleButton button = new ToggleButton(binding.navigationLabel());
+            Consumer<ContributionKey> onSelect) {
+        ToggleButton button = new ToggleButton();
         ShellFx.addStyleClass(button, "nav-btn");
         button.setToggleGroup(navGroup);
         button.setTooltip(new Tooltip(binding.title()));
         button.setAccessibleText(binding.title());
         Node graphic = ShellNavigationGraphicLoader.load(registrationSpec.navigationGraphic());
-        if (graphic != null) {
-            button.setGraphic(graphic);
-            button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-            button.setGraphicTextGap(0);
-        }
+        button.setGraphic(graphic);
+        button.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
+        button.setGraphicTextGap(0);
         button.setOnAction(event -> onSelect.accept(registrationSpec.key()));
         return button;
     }
 
     private void rebuild() {
         getChildren().clear();
-        String previousGroupKey = null;
+        ShellLeftBarTabMode previousMode = null;
         for (NavigationItem item : getSortedItems()) {
-            NavigationGroupSpec group = item.registrationSpec().navigationGroup();
-            String currentGroupKey = group.key();
-            if (previousGroupKey != null && !previousGroupKey.equals(currentGroupKey)) {
+            ShellLeftBarTabMode currentMode = item.registrationSpec().mode();
+            if (previousMode != null && previousMode != currentMode) {
                 Region separator = new Region();
                 ShellFx.addStyleClass(separator, "nav-separator");
-                separator.setMinHeight(1);
-                separator.setPrefHeight(1);
                 getChildren().add(separator);
             }
             getChildren().add(item.button());
-            previousGroupKey = currentGroupKey;
+            previousMode = currentMode;
         }
     }
 

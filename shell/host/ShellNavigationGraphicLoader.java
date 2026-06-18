@@ -32,18 +32,18 @@ final class ShellNavigationGraphicLoader {
         throw new AssertionError("No instances");
     }
 
-    static @Nullable Node load(@Nullable NavigationGraphicResource resource) {
+    static Node load(@Nullable NavigationGraphicResource resource) {
         if (resource == null) {
-            return null;
+            return missingGraphic();
         }
         try (InputStream input = ShellNavigationGraphicLoader.class.getResourceAsStream(resource.path())) {
             if (input == null) {
-                return null;
+                return missingGraphic();
             }
             Document document = parse(input);
             return render(document);
-        } catch (IOException | ParserConfigurationException | SAXException exception) {
-            return null;
+        } catch (IllegalArgumentException | IOException | ParserConfigurationException | SAXException exception) {
+            return missingGraphic();
         }
     }
 
@@ -65,66 +65,61 @@ final class ShellNavigationGraphicLoader {
 
     private static Node render(Document document) {
         Element root = document.getDocumentElement();
-        StackPane pane = new StackPane();
+        StackPane pane = iconPane();
         applyStyleClasses(pane, root.getAttribute("class"));
-        ShellFx.addStyleClass(pane, "nav-icon");
-        pane.setMinSize(DEFAULT_SIZE, DEFAULT_SIZE);
-        pane.setPrefSize(DEFAULT_SIZE, DEFAULT_SIZE);
-        pane.setMaxSize(DEFAULT_SIZE, DEFAULT_SIZE);
-        pane.setMouseTransparent(true);
         NodeList nodes = root.getChildNodes();
+        int renderedChildren = 0;
         for (int index = 0; index < nodes.getLength(); index++) {
             org.w3c.dom.Node child = nodes.item(index);
             if (child instanceof Element element) {
-                addSvgElement(pane, element);
+                renderedChildren += addSvgElement(pane, element);
             }
+        }
+        if (renderedChildren == 0) {
+            return missingGraphic();
         }
         return pane;
     }
 
-    private static void addSvgElement(StackPane pane, Element element) {
+    private static int addSvgElement(StackPane pane, Element element) {
         Node graphic = createNode(element);
         if (graphic == null) {
-            return;
+            return 0;
         }
-        applyStyleClasses(graphic, element.getAttribute("class"));
+        String classAttribute = element.getAttribute("class");
+        if (classAttribute == null || classAttribute.isBlank()) {
+            switch (element.getTagName()) {
+                case "line" -> ShellFx.addStyleClass(graphic, "nav-icon-stroke");
+                case "rect", "path" -> ShellFx.addStyleClass(graphic, "nav-icon-fill");
+                default -> {
+                }
+            }
+        } else {
+            applyStyleClasses(graphic, classAttribute);
+        }
         ShellFx.addChild(pane, graphic);
+        return 1;
     }
 
     private static @Nullable Node createNode(Element element) {
         return switch (element.getTagName()) {
-            case "line" -> createLine(element);
-            case "rect" -> createRectangle(element);
-            case "path" -> createPath(element);
+            case "line" -> new Line(
+                    doubleAttribute(element, "x1"),
+                    doubleAttribute(element, "y1"),
+                    doubleAttribute(element, "x2"),
+                    doubleAttribute(element, "y2"));
+            case "rect" -> new Rectangle(
+                    doubleAttribute(element, "x"),
+                    doubleAttribute(element, "y"),
+                    doubleAttribute(element, "width"),
+                    doubleAttribute(element, "height"));
+            case "path" -> {
+                SVGPath path = new SVGPath();
+                path.setContent(element.getAttribute("d"));
+                yield path;
+            }
             default -> null;
         };
-    }
-
-    private static Line createLine(Element element) {
-        Line line = new Line(
-                doubleAttribute(element, "x1"),
-                doubleAttribute(element, "y1"),
-                doubleAttribute(element, "x2"),
-                doubleAttribute(element, "y2"));
-        ShellFx.addStyleClass(line, "nav-icon-stroke");
-        return line;
-    }
-
-    private static Rectangle createRectangle(Element element) {
-        Rectangle rectangle = new Rectangle(
-                doubleAttribute(element, "x"),
-                doubleAttribute(element, "y"),
-                doubleAttribute(element, "width"),
-                doubleAttribute(element, "height"));
-        ShellFx.addStyleClass(rectangle, "nav-icon-fill");
-        return rectangle;
-    }
-
-    private static SVGPath createPath(Element element) {
-        SVGPath path = new SVGPath();
-        path.setContent(element.getAttribute("d"));
-        ShellFx.addStyleClass(path, "nav-icon-fill");
-        return path;
     }
 
     private static double doubleAttribute(Element element, String name) {
@@ -142,5 +137,29 @@ final class ShellNavigationGraphicLoader {
         Arrays.stream(classAttribute.trim().split("\\s+"))
                 .filter(styleClass -> !styleClass.isBlank())
                 .forEach(styleClass -> ShellFx.addStyleClass(node, styleClass));
+    }
+
+    private static StackPane iconPane() {
+        StackPane pane = new StackPane();
+        ShellFx.addStyleClass(pane, "nav-icon");
+        pane.setMinSize(DEFAULT_SIZE, DEFAULT_SIZE);
+        pane.setPrefSize(DEFAULT_SIZE, DEFAULT_SIZE);
+        pane.setMaxSize(DEFAULT_SIZE, DEFAULT_SIZE);
+        pane.setMouseTransparent(true);
+        return pane;
+    }
+
+    private static Node missingGraphic() {
+        StackPane pane = iconPane();
+        ShellFx.addStyleClass(pane, "nav-icon-missing");
+
+        Rectangle frame = new Rectangle(3.0, 3.0, 12.0, 12.0);
+        ShellFx.addStyleClass(frame, "nav-icon-missing-frame");
+        Line slashA = new Line(4.5, 4.5, 13.5, 13.5);
+        ShellFx.addStyleClass(slashA, "nav-icon-missing-stroke");
+        Line slashB = new Line(13.5, 4.5, 4.5, 13.5);
+        ShellFx.addStyleClass(slashB, "nav-icon-missing-stroke");
+        ShellFx.addChildren(pane, frame, slashA, slashB);
+        return pane;
     }
 }

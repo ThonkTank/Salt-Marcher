@@ -159,6 +159,7 @@ final class SessionPlannerIntentHandler {
         if (event == null) {
             return;
         }
+        catalogContentModel.updateSelectorFilter(event.selectorFilterText());
         String stagedItemId = event.selectedItemId();
         String openItemId = event.openItemId();
         if (!stagedItemId.isBlank() || !openItemId.isBlank()) {
