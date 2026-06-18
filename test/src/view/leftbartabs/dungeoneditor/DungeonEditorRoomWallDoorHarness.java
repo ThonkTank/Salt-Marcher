@@ -10,6 +10,7 @@ import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
+import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
@@ -58,6 +59,7 @@ final class DungeonEditorRoomWallDoorHarness {
 
     static void runClusterMovement(List<String> results) throws Exception {
         route(results, () -> verifySelectedStraightWallStretchThroughMapView(results));
+        route(results, () -> verifyWallRunDragMovesEmbeddedDoorThroughMapView(results));
         route(results, () -> verifySelectedStraightWallInwardStretchThroughMapView(results));
         route(results, () -> verifySelectedWallCornerMoveThroughMapView(results));
         route(results, () -> verifySelectedWallCornerInwardMoveThroughMapView(results));
@@ -418,6 +420,165 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-SEL-011 reload render keeps the inward-moved north wall");
 
         results.add("DE-SEL-011 Ready: DungeonMapView inward straight wall drag -> SQLite stretch -> reload");
+    }
+
+    private static void verifyWallRunDragMovesEmbeddedDoorThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Wall Run Door Coupling Map");
+        runtime.database().seedF15ComplexCluster(mapId);
+        createMapThroughControls(controls, runtime, "Wall Run Door Coupling Reload Hop");
+        selectMap(controls, "Wall Run Door Coupling Map");
+
+        click(button(controls, "Tür"));
+        Point2D northWallMidpoint = boundaryMidpointNear(binding.mapContentModel(), "WALL", 11.5, 10.0);
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        clickMap(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(northWallMidpoint.getX()),
+                viewport.sceneToScreenY(northWallMidpoint.getY()),
+                false);
+
+        DungeonEditorMapSurfaceSnapshot doorSurface = runtime.mapSurfaceModel().current();
+        long clusterId = runtime.database().roomByName(mapId, "R1").clusterId();
+        assertTrue(surfaceHasBoundaryKindAt(
+                        doorSurface,
+                        "door",
+                        new Cell(11, 10, 0),
+                        new Cell(12, 10, 0)),
+                "DE-WALLRUN-DOOR-001 published surface exposes the authored embedded north door");
+        long doorTopologyId = boundaryTopologyIdAt(
+                doorSurface,
+                "DOOR",
+                new Cell(11, 10, 0),
+                new Cell(12, 10, 0),
+                "DE-WALLRUN-DOOR-001 created north door");
+
+        click(button(controls, "Auswahl"));
+        selectClusterForHandles(binding, doorSurface, clusterId, "DE-WALLRUN-DOOR-001");
+        DungeonEditorMapSurfaceSnapshot selectedSurface = runtime.mapSurfaceModel().current();
+        DungeonEditorHandleSnapshot wallRunHandle =
+                wallRunHandleAt(selectedSurface, 11.0, 10.0, "DE-WALLRUN-DOOR-001 selected north wall-run");
+        double handleQ = wallRunHandle.markerQ();
+        double handleR = wallRunHandle.markerR();
+        double handleHitQ = handleQ + 0.22;
+        assertEquals(
+                DungeonEditorHandleKind.CLUSTER_WALL_RUN,
+                binding.mapContentModel().resolvePointerTarget(handleHitQ, handleR).handleRef().kind(),
+                "DE-WALLRUN-DOOR-001 selected wall-run pill resolves as one wall-run drag handle");
+
+        long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
+        List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
+        List<String> doorRowsBefore = runtime.database().doorBoundaryState(mapId);
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(handleHitQ),
+                viewport.sceneToScreenY(handleR),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_DRAGGED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(handleHitQ),
+                viewport.sceneToScreenY(handleR - 1.0),
+                false);
+
+        DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
+        assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveBoundaryStretchPreview,
+                "DE-WALLRUN-DOOR-001 wall-run drag with embedded door publishes boundary-stretch preview: "
+                        + previewSurface.preview().getClass().getName()
+                        + " "
+                        + previewSurface.preview());
+        DungeonEditorPreview.MoveBoundaryStretchPreview preview =
+                (DungeonEditorPreview.MoveBoundaryStretchPreview) previewSurface.preview();
+        assertEquals(
+                Set.of(
+                        edgeKey(new Cell(10, 10, 0), new Cell(11, 10, 0)),
+                        edgeKey(new Cell(11, 10, 0), new Cell(12, 10, 0)),
+                        edgeKey(new Cell(12, 10, 0), new Cell(13, 10, 0))),
+                edgeKeys(preview.sourceEdges()),
+                "DE-WALLRUN-DOOR-001 embedded door does not split the stretched source-edge set");
+        assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-WALLRUN-DOOR-001 preview leaves authored geometry row count unchanged");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-WALLRUN-DOOR-001 preview leaves authored geometry stores unchanged");
+        assertEquals(boundaryRowsBefore, runtime.database().roomBoundaryEdgeState(mapId),
+                "DE-WALLRUN-DOOR-001 preview leaves persisted boundary rows unchanged");
+        assertEquals(doorRowsBefore, runtime.database().doorBoundaryState(mapId),
+                "DE-WALLRUN-DOOR-001 preview leaves persisted door rows unchanged");
+        assertTrue(previewSurface.surface().previewMap() != null,
+                "DE-WALLRUN-DOOR-001 preview publishes a preview map");
+        assertTrue(mapHasBoundaryKindAt(
+                        previewSurface.surface().previewMap(),
+                        "door",
+                        new Cell(11, 9, 0),
+                        new Cell(12, 9, 0)),
+                "DE-WALLRUN-DOOR-001 preview map moves the embedded door with the wall run");
+        assertTrue(previewSurface.surface().previewDiff().changedBoundaries().stream()
+                        .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
+                                && sameEdge(boundary.edge(), new Cell(11, 9, 0), new Cell(12, 9, 0))),
+                "DE-WALLRUN-DOOR-001 structured preview diff carries the moved door boundary");
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(handleHitQ),
+                viewport.sceneToScreenY(handleR - 1.0),
+                false);
+
+        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
+                "DE-WALLRUN-DOOR-001 release clears the wall-run preview");
+        assertTrue(!doorRowsBefore.equals(runtime.database().doorBoundaryState(mapId)),
+                "DE-WALLRUN-DOOR-001 release persists a moved door row with the wall run");
+        assertTrue(!boundaryRowsBefore.equals(runtime.database().roomBoundaryEdgeState(mapId)),
+                "DE-WALLRUN-DOOR-001 release recomputes persisted boundary rows");
+        assertTrue(surfaceHasBoundaryKindAt(
+                        committedSurface,
+                        "door",
+                        new Cell(11, 9, 0),
+                        new Cell(12, 9, 0)),
+                "DE-WALLRUN-DOOR-001 release publishes the moved embedded door");
+        assertEquals(doorTopologyId, boundaryTopologyIdAt(
+                        committedSurface,
+                        "DOOR",
+                        new Cell(11, 9, 0),
+                        new Cell(12, 9, 0),
+                        "DE-WALLRUN-DOOR-001 moved north door"),
+                "DE-WALLRUN-DOOR-001 release preserves the moved door topology ref");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 11.5, 9.0),
+                "DE-WALLRUN-DOOR-001 render scene shows the moved embedded door");
+
+        selectMap(controls, "Wall Run Door Coupling Reload Hop");
+        selectMap(controls, "Wall Run Door Coupling Map");
+        DungeonEditorMapSurfaceSnapshot reloadedSurface = runtime.mapSurfaceModel().current();
+        assertTrue(surfaceHasBoundaryKindAt(
+                        reloadedSurface,
+                        "door",
+                        new Cell(11, 9, 0),
+                        new Cell(12, 9, 0)),
+                "DE-WALLRUN-DOOR-001 reload keeps the moved embedded door");
+        assertEquals(doorTopologyId, boundaryTopologyIdAt(
+                        reloadedSurface,
+                        "DOOR",
+                        new Cell(11, 9, 0),
+                        new Cell(12, 9, 0),
+                        "DE-WALLRUN-DOOR-001 reload north door"),
+                "DE-WALLRUN-DOOR-001 reload keeps the moved door topology ref");
+        assertTrue(renderHasBoundaryNear(binding.mapContentModel(), "DOOR", 11.5, 9.0),
+                "DE-WALLRUN-DOOR-001 reload render keeps the moved embedded door");
+
+        results.add("DE-CLUSTER-005 Ready: selected wall-run drag keeps an embedded authored door in the run,"
+                + " previews the moved door without SQLite changes, and commits/reloads the moved door with the run");
     }
 
 
@@ -1194,6 +1355,72 @@ final class DungeonEditorRoomWallDoorHarness {
                 viewport.sceneToScreenX(label.cell().q() + 0.5),
                 viewport.sceneToScreenY(label.cell().r() + 0.5),
                 false);
+    }
+
+    private static DungeonEditorHandleSnapshot wallRunHandleAt(
+            DungeonEditorMapSurfaceSnapshot snapshot,
+            double markerQ,
+            double markerR,
+            String message
+    ) {
+        return snapshot.surface().map().editorHandles().stream()
+                .filter(handle -> handle.ref().kind() == DungeonEditorHandleKind.CLUSTER_WALL_RUN)
+                .filter(handle -> Double.compare(handle.markerQ(), markerQ) == 0)
+                .filter(handle -> Double.compare(handle.markerR(), markerR) == 0)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + " wall-run handle not published: "
+                        + wallRunHandleSummary(snapshot)));
+    }
+
+    private static Set<String> edgeKeys(List<DungeonEdgeRef> edges) {
+        return edges.stream()
+                .map(edge -> edgeKey(cell(edge.from()), cell(edge.to())))
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    private static String edgeKey(Cell from, Cell to) {
+        return from.q() + "," + from.r() + "," + from.level()
+                + "->"
+                + to.q() + "," + to.r() + "," + to.level();
+    }
+
+    private static Cell cell(src.domain.dungeon.published.DungeonCellRef cell) {
+        return new Cell(cell.q(), cell.r(), cell.level());
+    }
+
+    private static long boundaryTopologyIdAt(
+            DungeonEditorMapSurfaceSnapshot surface,
+            String kind,
+            Cell from,
+            Cell to,
+            String message
+    ) {
+        return surface.surface().map().boundaries().stream()
+                .filter(boundary -> kind.equalsIgnoreCase(boundary.kind()))
+                .filter(boundary -> sameEdge(boundary.edge(), from, to))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + " boundary not published"))
+                .topologyRef().id();
+    }
+
+    private static String wallRunHandleSummary(DungeonEditorMapSurfaceSnapshot snapshot) {
+        return snapshot.surface().map().editorHandles().stream()
+                .filter(handle -> handle.ref().kind() == DungeonEditorHandleKind.CLUSTER_WALL_RUN)
+                .map(handle -> handle.cell().q() + "," + handle.cell().r() + "," + handle.cell().level()
+                        + "@" + handle.markerQ() + "," + handle.markerR())
+                .collect(java.util.stream.Collectors.joining("; "));
+    }
+
+    private static boolean mapHasBoundaryKindAt(
+            DungeonEditorMapSnapshot map,
+            String kind,
+            Cell from,
+            Cell to
+    ) {
+        return map.boundaries().stream()
+                .filter(boundary -> kind.equalsIgnoreCase(boundary.kind()))
+                .map(boundary -> boundary.edge())
+                .anyMatch(edge -> sameEdge(edge, from, to));
     }
 
 

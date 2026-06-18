@@ -96,7 +96,7 @@ public final class BoundaryMap {
                 BoundarySegment segment,
                 int level
         ) {
-            if (segment == null || !BoundaryKind.wall().equals(segment.kind())) {
+            if (segment == null || !wallRunSegment(segment)) {
                 return;
             }
             EdgeKey key = segment.edgeKey();
@@ -156,7 +156,7 @@ public final class BoundaryMap {
         }
 
         private static Set<Cell> splitVertices(Map<EdgeKey, BoundarySegment> segmentsByKey, int level) {
-            return BoundaryCornerDerivation.cornerSetAt(segmentsByKey, level);
+            return WallRunCornerDerivation.cornerSetAt(segmentsByKey, level);
         }
 
         private static Cell vertexAt(RunKey key, int variable) {
@@ -183,6 +183,42 @@ public final class BoundaryMap {
         }
 
         private record WallSegment(EdgeKey edgeKey, RunKey runKey, int start, int end) {
+        }
+    }
+
+    private static boolean wallRunSegment(BoundarySegment segment) {
+        return segment != null && (BoundaryKind.wall().equals(segment.kind()) || BoundaryKind.door().equals(segment.kind()));
+    }
+
+    private static final class WallRunCornerDerivation {
+        private static Set<Cell> cornerSetAt(Map<EdgeKey, BoundarySegment> segmentsByKey, int level) {
+            Map<Cell, BoundaryCornerDerivation.EndpointFacts> endpointFacts = new LinkedHashMap<>();
+            for (BoundarySegment segment : segmentsByKey.values()) {
+                recordSegmentEndpoints(endpointFacts, segment, level);
+            }
+            Set<Cell> corners = new LinkedHashSet<>();
+            for (Map.Entry<Cell, BoundaryCornerDerivation.EndpointFacts> entry : endpointFacts.entrySet()) {
+                if (entry.getValue().corner()) {
+                    corners.add(entry.getKey());
+                }
+            }
+            return Set.copyOf(corners);
+        }
+
+        private static void recordSegmentEndpoints(
+                Map<Cell, BoundaryCornerDerivation.EndpointFacts> endpointFacts,
+                BoundarySegment segment,
+                int level
+        ) {
+            if (!wallRunSegment(segment)) {
+                return;
+            }
+            EdgeKey key = segment.edgeKey();
+            if (key.lower() == null || key.upper() == null || key.lower().level() != level || key.upper().level() != level) {
+                return;
+            }
+            BoundaryCornerDerivation.recordEndpoint(endpointFacts, key.lower(), key);
+            BoundaryCornerDerivation.recordEndpoint(endpointFacts, key.upper(), key);
         }
     }
 

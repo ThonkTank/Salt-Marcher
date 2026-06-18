@@ -47,70 +47,117 @@ final class RoomClusterWallRuns {
     ) {
         List<EdgeKey> currentKeys = new ArrayList<>();
         Direction currentDirection = null;
-        for (EdgeKey edgeKey : edgeKeys == null ? List.<EdgeKey>of() : edgeKeys) {
-            Direction direction = directionForEdge(edgeKey, rowsByKey);
+        List<EdgeKey> safeEdgeKeys = edgeKeys == null ? List.of() : edgeKeys;
+        for (int index = 0; index < safeEdgeKeys.size(); index++) {
+            EdgeKey edgeKey = safeEdgeKeys.get(index);
+            Direction direction = directionForEdge(safeEdgeKeys, index, rowsByKey);
             if (currentDirection != null && direction != currentDirection) {
-                addDirectionalRun(result, currentKeys, currentDirection);
+                addDirectionalRun(result, currentKeys, currentDirection, rowsByKey);
                 currentKeys = new ArrayList<>();
             }
             currentKeys.add(edgeKey);
             currentDirection = direction;
         }
-        addDirectionalRun(result, currentKeys, currentDirection);
+        addDirectionalRun(result, currentKeys, currentDirection, rowsByKey);
     }
 
-    private static Direction directionForEdge(EdgeKey edgeKey, Map<EdgeKey, BoundaryRow> rowsByKey) {
+    private static Direction directionForEdge(List<EdgeKey> edgeKeys, int index, Map<EdgeKey, BoundaryRow> rowsByKey) {
+        EdgeKey edgeKey = edgeKeys.get(index);
         BoundaryRow row = rowsByKey.get(edgeKey);
-        if (row != null && row.kind() == BoundaryKind.WALL && row.direction() != null) {
+        if (row != null && row.kind() != BoundaryKind.DOOR && row.direction() != null) {
             return row.direction();
+        }
+        for (int offset = 1; offset < edgeKeys.size(); offset++) {
+            int before = index - offset;
+            if (before >= 0) {
+                Direction direction = wallDirection(edgeKeys.get(before), rowsByKey);
+                if (direction != null) {
+                    return direction;
+                }
+            }
+            int after = index + offset;
+            if (after < edgeKeys.size()) {
+                Direction direction = wallDirection(edgeKeys.get(after), rowsByKey);
+                if (direction != null) {
+                    return direction;
+                }
+            }
         }
         return Direction.NORTH;
     }
 
-    private static void addDirectionalRun(List<WallRun> result, List<EdgeKey> edgeKeys, Direction direction) {
-        if (edgeKeys == null || edgeKeys.isEmpty()) {
+    private static Direction wallDirection(EdgeKey edgeKey, Map<EdgeKey, BoundaryRow> rowsByKey) {
+        BoundaryRow row = rowsByKey.get(edgeKey);
+        if (row != null && row.kind() != BoundaryKind.DOOR && row.direction() != null) {
+            return row.direction();
+        }
+        return null;
+    }
+
+    private static void addDirectionalRun(
+            List<WallRun> result,
+            List<EdgeKey> edgeKeys,
+            Direction direction,
+            Map<EdgeKey, BoundaryRow> rowsByKey
+    ) {
+        if (edgeKeys == null || edgeKeys.size() < MINIMUM_WALL_RUN_LENGTH) {
             return;
         }
-        EdgeKey first = edgeKeys.getFirst();
-        boolean horizontal = first.lower().r() == first.upper().r();
-        int fixed = horizontal ? first.lower().r() : first.lower().q();
-        int start = Integer.MAX_VALUE;
-        int end = Integer.MIN_VALUE;
-        for (EdgeKey edgeKey : edgeKeys) {
-            int lower = horizontal ? edgeKey.lower().q() : edgeKey.lower().r();
-            int upper = horizontal ? edgeKey.upper().q() : edgeKey.upper().r();
-            start = Math.min(start, Math.min(lower, upper));
-            end = Math.max(end, Math.max(lower, upper));
-        }
-        addRun(result, direction, horizontal, fixed, first.lower().level(), start, end);
+        addRun(result, direction, edgeKeys, rowsByKey);
     }
 
     private static void addRun(
             List<WallRun> result,
             Direction direction,
-            boolean horizontal,
-            int fixed,
-            int level,
-            int start,
-            int end
+            List<EdgeKey> edgeKeys,
+            Map<EdgeKey, BoundaryRow> rowsByKey
     ) {
+        EdgeKey first = edgeKeys.getFirst();
+        EdgeKey last = edgeKeys.getLast();
+        boolean horizontal = first.lower().r() == first.upper().r();
+        int fixed = horizontal ? first.lower().r() : first.lower().q();
+        int start = horizontal
+                ? Math.min(first.lower().q(), first.upper().q())
+                : Math.min(first.lower().r(), first.upper().r());
+        int end = horizontal
+                ? Math.max(last.lower().q(), last.upper().q())
+                : Math.max(last.lower().r(), last.upper().r());
         if (end - start < MINIMUM_WALL_RUN_LENGTH) {
             return;
         }
         double variableMidpoint = (start + end) / 2.0;
         int anchorCoordinate = (int) Math.floor(variableMidpoint);
-        Cell sourceFrom = horizontal
-                ? new Cell(anchorCoordinate, fixed, level)
-                : new Cell(fixed, anchorCoordinate, level);
-        Cell sourceTo = horizontal
-                ? new Cell(anchorCoordinate + 1, fixed, level)
-                : new Cell(fixed, anchorCoordinate + 1, level);
+        EdgeKey sourceEdge = sourceEdge(edgeKeys, rowsByKey);
+        Cell sourceFrom = sourceEdge.lower();
+        Cell sourceTo = sourceEdge.upper();
+        Cell anchorCell = horizontal
+                ? new Cell(anchorCoordinate, fixed, sourceFrom.level())
+                : new Cell(fixed, anchorCoordinate, sourceFrom.level());
         result.add(new WallRun(
-                horizontal ? new src.domain.dungeon.model.core.geometry.Cell(anchorCoordinate, fixed, level)
-                        : new src.domain.dungeon.model.core.geometry.Cell(fixed, anchorCoordinate, level),
+                anchorCell,
                 horizontal ? variableMidpoint : fixed,
                 horizontal ? fixed : variableMidpoint,
                 direction,
                 new Edge(sourceFrom, sourceTo)));
+    }
+
+    private static EdgeKey sourceEdge(List<EdgeKey> edgeKeys, Map<EdgeKey, BoundaryRow> rowsByKey) {
+        int midpointIndex = edgeKeys.size() / 2;
+        for (int offset = 0; offset < edgeKeys.size(); offset++) {
+            int before = midpointIndex - offset;
+            if (before >= 0 && !doorRow(edgeKeys.get(before), rowsByKey)) {
+                return edgeKeys.get(before);
+            }
+            int after = midpointIndex + offset;
+            if (after < edgeKeys.size() && !doorRow(edgeKeys.get(after), rowsByKey)) {
+                return edgeKeys.get(after);
+            }
+        }
+        return edgeKeys.get(midpointIndex);
+    }
+
+    private static boolean doorRow(EdgeKey edgeKey, Map<EdgeKey, BoundaryRow> rowsByKey) {
+        BoundaryRow row = rowsByKey.get(edgeKey);
+        return row != null && row.kind() == BoundaryKind.DOOR;
     }
 }

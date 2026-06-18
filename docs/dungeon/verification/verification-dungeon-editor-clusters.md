@@ -30,6 +30,7 @@ registry. Door creation/deletion rows stay in the door suite.
 | `DE-CLUSTER-002` | Stretch selected true wall run | Select tool plus drag on a selected wall-midpoint handle | `F15_COMPLEX_CLUSTER` | Wall-run drag publishes boundary-stretch preview for the contiguous run, persists a valid move, preserves cluster and room identity, reloads, leaves no duplicate or orphan wall rows, and rejects invalid geometry atomically. | Ready |
 | `DE-CLUSTER-003` | Move selected true wall corner | Select tool plus drag on a true corner handle | `F15_COMPLEX_CLUSTER` | The dragged handle is a real authored wall corner, not a bounding-box corner; preview does not mutate SQLite; release persists the moved boundary corner through adjacent wall rows, keeps reload stable, and leaves no orphan or duplicate wall rows. | Ready |
 | `DE-CLUSTER-004` | Reject exterior wall deletion | Wall delete gesture on cluster exterior wall | `F1_SINGLE_ROOM` | Status reports rejection; authored geometry, topology, preview, and selection remain unchanged. | Ready |
+| `DE-CLUSTER-005` | Stretch wall run with embedded door | Select tool plus drag on a selected wall-run handle spanning an authored door | `F15_COMPLEX_CLUSTER` door variant | A door embedded in a straight wall run does not split the run; preview moves the door with the wall run without SQLite mutation, and release/reload preserve the moved door and topology. | Ready |
 
 ## References
 

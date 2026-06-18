@@ -8,6 +8,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.DungeonEditorLabelNameApplicationService;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
@@ -15,6 +16,7 @@ import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
+import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.SaveDungeonEditorLabelNameCommand;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
@@ -457,6 +459,29 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertNotHandleTarget(binding.mapContentModel(), 11.0, 10.0,
                 "DE-HANDLE-002 plain room floor selection still does not expose cluster wall-run handles");
         selectClusterLabel(runtime, binding, "DE-HANDLE-002");
+        DungeonEditorMapSnapshot.Area selectedRoom = roomAreaByLabel(
+                runtime.mapSurfaceModel().current(),
+                "R1",
+                "DE-LABEL-004 selected cluster");
+        LabelText selectedRoomLabel = labelText(
+                binding.mapContentModel(),
+                displayRoomLabel("R1"),
+                "DE-LABEL-004 selected cluster");
+        DungeonMapContentModel.PaintStyle selectedRoomSurfaceStyle = surfaceStyleForSelectionRef(
+                binding.mapContentModel(),
+                selectedRoom.topologyRef(),
+                "DE-LABEL-004 selected cluster");
+        assertTrue(selectedRoomLabel.style().fill() != null
+                        && selectedRoomLabel.style().fill().alphaUnit() > 0.9,
+                "DE-LABEL-004 selected room label adds an opaque underlay over selected floor feedback");
+        assertTrue(selectedRoomLabel.style().stroke() != null
+                        && selectedRoomLabel.style().stroke().alphaUnit() > 0.85,
+                "DE-LABEL-004 selected room label adds a readable border instead of reusing floor-edge styling");
+        assertTrue(selectedRoomLabel.textColor().red() > 220
+                        && selectedRoomLabel.textColor().alphaUnit() > 0.99,
+                "DE-LABEL-004 selected room label text brightens to stay readable on selected clusters");
+        assertTrue(!selectedRoomLabel.style().fill().equals(selectedRoomSurfaceStyle.fill()),
+                "DE-LABEL-004 selected room label underlay stays visually separate from selected floor fill");
         assertTrue(renderHasWallRunMarkerAt(binding.mapContentModel(), 11.0, 10.0),
                 "DE-CLUSTER-001 cluster-label-selected render scene places a smaller horizontal wall-run handle on the wall line");
         assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(11.0, 10.0).targetKind().name(),
@@ -496,15 +521,12 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-CLUSTER-001 T fixture publishes the horizontal authored branch wall");
         assertTrue(hasHandleAt(snapshot, CLUSTER_CORNER_KIND, 3, 3, 0),
                 "DE-CLUSTER-001 T fixture publishes the authored T-junction corner handle");
-        assertTrue(hasWallRunHandle(snapshot, 3, 2, 0, 3.0, 2.0),
-                "DE-CLUSTER-001 T fixture publishes the upper split vertical run handle: "
-                        + wallRunHandleSummary(snapshot));
-        assertTrue(hasWallRunHandle(snapshot, 3, 4, 0, 3.0, 4.0),
-                "DE-CLUSTER-001 T fixture publishes the lower split vertical run handle: "
-                        + wallRunHandleSummary(snapshot));
-        assertTrue(hasWallRunHandle(snapshot, 4, 3, 0, 4.0, 3.0),
-                "DE-CLUSTER-001 T fixture publishes the horizontal branch run handle: "
-                        + wallRunHandleSummary(snapshot));
+        assertWallRunHandle(snapshot, 3, 2, 0, 3.0, 2.0, new Cell(3, 2, 0), new Cell(3, 3, 0),
+                "DE-CLUSTER-001 T fixture upper split vertical");
+        assertWallRunHandle(snapshot, 3, 4, 0, 3.0, 4.0, new Cell(3, 4, 0), new Cell(3, 5, 0),
+                "DE-CLUSTER-001 T fixture lower split vertical");
+        assertWallRunHandle(snapshot, 4, 3, 0, 4.0, 3.0, new Cell(4, 3, 0), new Cell(5, 3, 0),
+                "DE-CLUSTER-001 T fixture horizontal branch");
         assertTrue(!hasWallRunMarkerAt(snapshot, 3.0, 3.5),
                 "DE-CLUSTER-001 T fixture does not keep one unsplit vertical midpoint through the junction");
         assertNotHandleTarget(binding.mapContentModel(), 3.0, 2.0,
@@ -522,6 +544,31 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-HANDLE-002 selected cluster exposes the horizontal branch run handle");
         assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(3.0, 3.0).targetKind().name(),
                 "DE-HANDLE-002 selected cluster exposes the authored T-junction corner handle");
+        selectMap(controls, mapName + " Reload Hop");
+        selectMap(controls, mapName);
+
+        DungeonEditorMapSurfaceSnapshot reloadedSnapshot = runtime.mapSurfaceModel().current();
+        assertWallRunHandle(reloadedSnapshot, 3, 2, 0, 3.0, 2.0, new Cell(3, 2, 0), new Cell(3, 3, 0),
+                "DE-CLUSTER-001 reload upper split vertical");
+        assertWallRunHandle(reloadedSnapshot, 3, 4, 0, 3.0, 4.0, new Cell(3, 4, 0), new Cell(3, 5, 0),
+                "DE-CLUSTER-001 reload lower split vertical");
+        assertWallRunHandle(reloadedSnapshot, 4, 3, 0, 4.0, 3.0, new Cell(4, 3, 0), new Cell(5, 3, 0),
+                "DE-CLUSTER-001 reload horizontal branch");
+        assertTrue(!hasWallRunMarkerAt(reloadedSnapshot, 3.0, 3.5),
+                "DE-CLUSTER-001 reload does not restore one unsplit vertical midpoint through the junction");
+        assertNotHandleTarget(binding.mapContentModel(), 3.0, 2.0,
+                "DE-HANDLE-002 reload keeps T-split wall-run handle hidden before cluster selection");
+        click(button(controls, "Auswahl"));
+        selectRoomFloorWithoutClusterMode(runtime, binding, 2.5, 2.5, "DE-HANDLE-002 T fixture reload");
+        assertNotHandleTarget(binding.mapContentModel(), 3.0, 2.0,
+                "DE-HANDLE-002 reload keeps T-split wall-run handle hidden after room-floor selection");
+        selectClusterLabel(runtime, binding, "DE-HANDLE-002 T fixture reload");
+        assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(3.0, 2.0).targetKind().name(),
+                "DE-HANDLE-002 reload selected cluster exposes the upper split vertical run handle");
+        assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(3.0, 4.0).targetKind().name(),
+                "DE-HANDLE-002 reload selected cluster exposes the lower split vertical run handle");
+        assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(4.0, 3.0).targetKind().name(),
+                "DE-HANDLE-002 reload selected cluster exposes the horizontal branch run handle");
 
         results.add("DE-CLUSTER-001 Ready: selected authored internal T-junction walls split wall-run handles at the junction");
     }
@@ -775,8 +822,34 @@ final class DungeonEditorClusterLabelHandleHarness {
         firstHandle(snapshot, DungeonEditorHandleKind.CLUSTER_WALL_RUN, "DE-HANDLE-004 wall-run");
         click(button(controls, "Auswahl"));
         selectClusterLabel(runtime, binding, "DE-HANDLE-004");
+        DungeonEditorMapSnapshot.Area selectedRoom = roomAreaByLabel(
+                runtime.mapSurfaceModel().current(),
+                "R1",
+                "DE-HANDLE-004 selected floor");
+        DungeonMapContentModel.PaintStyle selectedRoomSurfaceStyle = surfaceStyleForSelectionRef(
+                binding.mapContentModel(),
+                selectedRoom.topologyRef(),
+                "DE-HANDLE-004 selected floor");
+        DungeonMapContentModel.GlyphPrimitive wallRunGlyph = glyphAt(
+                binding.mapContentModel(),
+                CLUSTER_WALL_RUN_KIND,
+                11.0,
+                10.0,
+                "DE-HANDLE-004 wall-run");
+        DungeonEditorHandleSnapshot doorHandle =
+                firstDoorHandleForDirection(runtime.mapSurfaceModel().current(), "EAST", "DE-HANDLE-004 door");
+        DungeonMapContentModel.GlyphPrimitive doorGlyph = glyphAt(
+                binding.mapContentModel(),
+                DOOR_KIND,
+                doorHandleCenterQ(doorHandle),
+                doorHandleCenterR(doorHandle),
+                "DE-HANDLE-004 door");
         assertTrue(renderHasWallRunMarkerAt(binding.mapContentModel(), 11.0, 10.0),
                 "DE-HANDLE-004 cluster-label-selected F16 wall-run marker remains smaller and less obstructive than a cluster corner");
+        assertTrue(handleGlyphDistinctFromSelectedFloor(wallRunGlyph, selectedRoomSurfaceStyle),
+                "DE-HANDLE-004 selected wall-run handle keeps a distinct fill/stroke role from selected floor cells");
+        assertTrue(handleGlyphDistinctFromSelectedFloor(doorGlyph, selectedRoomSurfaceStyle),
+                "DE-HANDLE-004 door handle keeps a distinct fill/stroke role from selected floor cells");
 
         results.add("DE-HANDLE-004 Ready: F16_HANDLE_VARIETY confirms wall-run handle style stays smaller "
                 + "and less obstructive than cluster corner handles while selected");
@@ -991,8 +1064,13 @@ final class DungeonEditorClusterLabelHandleHarness {
                 (DungeonEditorPreview.MoveBoundaryStretchPreview) previewSurface.preview();
         assertEquals(clusterId, preview.clusterId(),
                 "DE-HANDLE-003 wall-run preview cluster id");
-        assertTrue(preview.sourceEdges().size() > 1,
-                "DE-HANDLE-003 wall-run preview covers the contiguous wall run");
+        assertEquals(
+                Set.of(
+                        edgeKey(new Cell(10, 10, 0), new Cell(11, 10, 0)),
+                        edgeKey(new Cell(11, 10, 0), new Cell(12, 10, 0)),
+                        edgeKey(new Cell(12, 10, 0), new Cell(13, 10, 0))),
+                edgeKeys(preview.sourceEdges()),
+                "DE-HANDLE-003 wall-run preview carries the full contiguous authored run");
         assertEquals(0L, preview.deltaQ(), "DE-CLUSTER-002 preview delta q");
         assertEquals(-1L, preview.deltaR(), "DE-CLUSTER-002 preview delta r");
         assertEquals(0L, preview.deltaLevel(), "DE-CLUSTER-002 preview delta level");
@@ -1001,8 +1079,14 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertTrue(!mapSnapshotCellSet(previewSurface.surface().previewMap())
                         .equals(mapSnapshotCellSet(previewSurface.surface().map())),
                 "DE-HANDLE-003 preview map differs from the committed cluster cells");
-        assertTrue(previewSurface.surface().previewDiff().changedBoundaries().size() > 1,
-                "DE-HANDLE-003 structured preview diff covers the contiguous wall run");
+        assertTrue(previewSurface.surface().previewDiff().changedBoundaries().stream()
+                        .map(boundary -> boundary.edge())
+                        .collect(java.util.stream.Collectors.toSet())
+                        .containsAll(Set.of(
+                                edge(new Cell(10, 9, 0), new Cell(11, 9, 0)),
+                                edge(new Cell(11, 9, 0), new Cell(12, 9, 0)),
+                                edge(new Cell(12, 9, 0), new Cell(13, 9, 0)))),
+                "DE-HANDLE-003 structured preview diff carries every moved segment of the dragged wall run");
         assertTrue(previewSurface.surface().previewDiff().changedAreas().stream().anyMatch(area ->
                         !areaCellSet(area).isEmpty()),
                 "DE-HANDLE-003 structured preview diff carries affected room cells");
@@ -1666,6 +1750,34 @@ final class DungeonEditorClusterLabelHandleHarness {
                 .anyMatch(handle -> handle.markerQ() == markerQ && handle.markerR() == markerR);
     }
 
+    private static void assertWallRunHandle(
+            DungeonEditorMapSurfaceSnapshot snapshot,
+            int cellQ,
+            int cellR,
+            int level,
+            double markerQ,
+            double markerR,
+            Cell sourceFrom,
+            Cell sourceTo,
+            String message
+    ) {
+        DungeonEditorHandleSnapshot handle = snapshot.surface().map().editorHandles().stream()
+                .filter(candidate -> CLUSTER_WALL_RUN_KIND.equals(candidate.ref().kind().name()))
+                .filter(candidate -> candidate.cell().q() == cellQ)
+                .filter(candidate -> candidate.cell().r() == cellR)
+                .filter(candidate -> candidate.cell().level() == level)
+                .filter(candidate -> candidate.markerQ() == markerQ)
+                .filter(candidate -> candidate.markerR() == markerR)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + " handle not published: " + wallRunHandleSummary(snapshot)));
+        assertEquals(sourceFrom.q(), handle.ref().sourceEdge().from().q(), message + " source edge from q");
+        assertEquals(sourceFrom.r(), handle.ref().sourceEdge().from().r(), message + " source edge from r");
+        assertEquals(sourceFrom.level(), handle.ref().sourceEdge().from().level(), message + " source edge from level");
+        assertEquals(sourceTo.q(), handle.ref().sourceEdge().to().q(), message + " source edge to q");
+        assertEquals(sourceTo.r(), handle.ref().sourceEdge().to().r(), message + " source edge to r");
+        assertEquals(sourceTo.level(), handle.ref().sourceEdge().to().level(), message + " source edge to level");
+    }
+
     private static String wallRunHandleSummary(DungeonEditorMapSurfaceSnapshot snapshot) {
         return snapshot.surface().map().editorHandles().stream()
                 .filter(handle -> CLUSTER_WALL_RUN_KIND.equals(handle.ref().kind().name()))
@@ -1686,6 +1798,28 @@ final class DungeonEditorClusterLabelHandleHarness {
                 .filter(boundary -> kind.equalsIgnoreCase(boundary.kind()))
                 .map(DungeonEditorMapSnapshot.Boundary::edge)
                 .anyMatch(edge -> sameEdge(edge, from, to));
+    }
+
+    private static Set<String> edgeKeys(List<DungeonEdgeRef> edges) {
+        return edges.stream()
+                .map(edge -> edgeKey(cell(edge.from()), cell(edge.to())))
+                .collect(java.util.stream.Collectors.toSet());
+    }
+
+    private static String edgeKey(Cell from, Cell to) {
+        return from.q() + "," + from.r() + "," + from.level()
+                + "->"
+                + to.q() + "," + to.r() + "," + to.level();
+    }
+
+    private static DungeonEdgeRef edge(Cell from, Cell to) {
+        return new DungeonEdgeRef(
+                new DungeonCellRef(from.q(), from.r(), from.level()),
+                new DungeonCellRef(to.q(), to.r(), to.level()));
+    }
+
+    private static Cell cell(DungeonCellRef cell) {
+        return new Cell(cell.q(), cell.r(), cell.level());
     }
 
     private static void assertClusterCorners(
@@ -2081,11 +2215,56 @@ final class DungeonEditorClusterLabelHandleHarness {
                 .findFirst();
     }
 
+    private static DungeonMapContentModel.GlyphPrimitive glyphAt(
+            DungeonMapContentModel mapContentModel,
+            String handleKind,
+            double q,
+            double r,
+            String message
+    ) {
+        return mapContentModel.canvasStateProperty()
+                .get()
+                .renderScene()
+                .glyphs()
+                .stream()
+                .filter(glyph -> glyphMatchesHandleKind(glyph, handleKind))
+                .filter(glyph -> Math.abs(glyphCenterQ(glyph) - q) < 0.000_001
+                        && Math.abs(glyphCenterR(glyph) - r) < 0.000_001)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + " glyph not rendered at " + q + "," + r));
+    }
+
+    private static DungeonMapContentModel.PaintStyle surfaceStyleForSelectionRef(
+            DungeonMapContentModel mapContentModel,
+            DungeonEditorTopologyElementRef ref,
+            String message
+    ) {
+        String selectionRef = ref.kind() + ":" + ref.id();
+        return mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
+                .filter(surface -> selectionRef.equals(surface.selectionRef()))
+                .map(DungeonMapContentModel.MapCanvasPolygonPrimitive::style)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + " surface style not rendered for " + selectionRef));
+    }
+
     private static boolean doorGlyphMatchesOrientation(
             DungeonMapContentModel.GlyphPrimitive glyph,
             boolean horizontal
     ) {
         return horizontal ? glyphWidth(glyph) > glyphHeight(glyph) : glyphHeight(glyph) > glyphWidth(glyph);
+    }
+
+    private static boolean handleGlyphDistinctFromSelectedFloor(
+            DungeonMapContentModel.GlyphPrimitive glyph,
+            DungeonMapContentModel.PaintStyle selectedFloorStyle
+    ) {
+        return glyph.style().fill() != null
+                && glyph.style().stroke() != null
+                && selectedFloorStyle.fill() != null
+                && selectedFloorStyle.stroke() != null
+                && !glyph.style().fill().equals(selectedFloorStyle.fill())
+                && !glyph.style().stroke().equals(selectedFloorStyle.stroke())
+                && glyph.style().strokeWidth() != selectedFloorStyle.strokeWidth();
     }
 
     private static double glyphMajorAxis(DungeonMapContentModel.GlyphPrimitive glyph) {

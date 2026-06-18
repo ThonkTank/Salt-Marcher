@@ -2094,7 +2094,9 @@ public final class DungeonMapContentModel {
 
             private static RenderColor textColor(DungeonMapRenderState.Label label) {
                 if (label != null && ROOM_LABEL_KIND.equals(label.labelKind())) {
-                    return ScenePalette.ROOM_LABEL_TEXT;
+                    return label.selected()
+                            ? ScenePalette.SELECTED_ROOM_LABEL_TEXT
+                            : ScenePalette.ROOM_LABEL_TEXT;
                 }
                 return ScenePalette.LABEL_TEXT;
             }
@@ -2396,13 +2398,13 @@ public final class DungeonMapContentModel {
                 return new PaintStyle(
                         fill(marker),
                         stroke(marker),
-                        marker.selected() ? 1.4 / 32.0 : 0.9 / 32.0,
+                        marker.selected() ? 1.8 / 32.0 : 1.2 / 32.0,
                         marker.z() == displayModel.projectionLevel()
-                                ? 0.58
+                                ? 0.92
                                 : SceneGeometry.Overlay.overlayAlpha(
                                         marker.z(),
                                         displayModel.projectionLevel(),
-                                        displayModel.overlaySettings().opacity()) * 0.58,
+                                        displayModel.overlaySettings().opacity()) * 0.92,
                         false);
             }
             return new PaintStyle(
@@ -2460,10 +2462,10 @@ public final class DungeonMapContentModel {
         ) {
             if (ROOM_LABEL_KIND.equals(label.labelKind()) && !label.preview()) {
                 return new PaintStyle(
-                        null,
-                        label.selected() ? ScenePalette.HIGHLIGHT_STROKE : null,
-                        label.selected() ? 1.2 / 32.0 : 0.0,
-                        alpha(label, displayModel) * 0.72,
+                        label.selected() ? ScenePalette.SELECTED_ROOM_LABEL_FILL : null,
+                        label.selected() ? ScenePalette.SELECTED_ROOM_LABEL_BORDER : null,
+                        label.selected() ? 1.0 / 32.0 : 0.0,
+                        label.selected() ? alpha(label, displayModel) * 0.94 : alpha(label, displayModel) * 0.72,
                         false);
             }
             return new PaintStyle(
@@ -2508,6 +2510,9 @@ public final class DungeonMapContentModel {
         private static final RenderColor LABEL_BORDER = color(0x76, 0x84, 0x8d, 1.0);
         private static final RenderColor LABEL_TEXT = color(0xf2, 0xf4, 0xf5, 1.0);
         private static final RenderColor ROOM_LABEL_TEXT = color(0x93, 0x9d, 0xa5, 0.82);
+        private static final RenderColor SELECTED_ROOM_LABEL_FILL = color(0x16, 0x1c, 0x21, 0.94);
+        private static final RenderColor SELECTED_ROOM_LABEL_BORDER = color(0xb8, 0xc7, 0xd0, 0.92);
+        private static final RenderColor SELECTED_ROOM_LABEL_TEXT = color(0xe8, 0xee, 0xf2, 1.0);
         private static final RenderColor STAIR_FILL = color(0x4b, 0x3a, 0x6e, 0.95);
         private static final RenderColor TRANSITION_FILL = color(0x6f, 0x3f, 0x28, 0.95);
         private static final RenderColor TRANSITION_STROKE = color(0xe0, 0xa3, 0x6a, 1.0);

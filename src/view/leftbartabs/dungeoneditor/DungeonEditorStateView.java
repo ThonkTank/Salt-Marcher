@@ -21,6 +21,7 @@ public final class DungeonEditorStateView extends VBox {
     private static final String STATE_CARD_STACK_STYLE = "dungeon-state-card-stack";
     private static final String COORDINATE_ROW_STYLE = "coordinate-row";
     private static final String SAVE_ACTION_SUFFIX = " speichern";
+    private static final String STABLE_STATUS_PLACEHOLDER = " ";
 
     private final Label body = new Label();
     private final VBox corridorPointCards = new VBox();
@@ -145,6 +146,14 @@ public final class DungeonEditorStateView extends VBox {
     private static Label muted(String text) {
         Label label = new MutedLabel(text);
         label.setWrapText(true);
+        return label;
+    }
+
+    private static Label stableStatusLabel(String statusText) {
+        boolean hasStatus = statusText != null && !statusText.isBlank();
+        Label label = muted(hasStatus ? statusText : STABLE_STATUS_PLACEHOLDER);
+        label.setAccessibleText(hasStatus ? statusText : "");
+        label.setOpacity(hasStatus ? 1.0 : 0.0);
         return label;
     }
 
@@ -376,9 +385,7 @@ public final class DungeonEditorStateView extends VBox {
                     transitionDescription.transitionId(),
                     descriptionArea,
                     false));
-            Label status = muted(statusText);
-            status.setVisible(statusText != null && !statusText.isBlank());
-            status.setManaged(status.isVisible());
+            Label status = stableStatusLabel(statusText);
             Button save = new ToolbarActionButton("Speichern");
             save.setAccessibleText(transitionDescription.label() + SAVE_ACTION_SUFFIX);
             save.setDisable(busy);
@@ -449,9 +456,7 @@ public final class DungeonEditorStateView extends VBox {
             Label mapIdLabel = labeled("Zielkarte", mapIdField);
             Label tileIdLabel = labeled("Zielkachel", tileIdField);
             Label transitionIdLabel = labeled("Ziel-Eingang", transitionIdField);
-            Label status = muted(statusText);
-            status.setVisible(statusText != null && !statusText.isBlank());
-            status.setManaged(status.isVisible());
+            Label status = stableStatusLabel(statusText);
             Button save = new ToolbarActionButton("Eingangslink speichern");
             save.setAccessibleText(transitionDestination.label() + SAVE_ACTION_SUFFIX);
             return new TransitionDestinationControls(
@@ -486,9 +491,7 @@ public final class DungeonEditorStateView extends VBox {
             tileIdField.setAccessibleText("Übergang Zielkachel");
             transitionIdField.setAccessibleText("Übergang Zieluebergang");
             bidirectionalBox.setAccessibleText("Übergang bidirektional verknuepfen");
-            Label status = muted(statusText);
-            status.setVisible(statusText != null && !statusText.isBlank());
-            status.setManaged(status.isVisible());
+            Label status = stableStatusLabel(statusText);
             Button save = new ToolbarActionButton("Verknüpfen");
             save.setAccessibleText(transitionDestination.label() + SAVE_ACTION_SUFFIX);
             return new TransitionDestinationControls(
@@ -697,9 +700,7 @@ public final class DungeonEditorStateView extends VBox {
                     labeled("d2", dimension2Field),
                     dimension2Field);
             dimensionRow.getStyleClass().add(COORDINATE_ROW_STYLE);
-            Label status = muted(statusText);
-            status.setVisible(statusText != null && !statusText.isBlank());
-            status.setManaged(status.isVisible());
+            Label status = stableStatusLabel(statusText);
             Button save = new ToolbarActionButton("Treppe aktualisieren");
             save.setAccessibleText(stairGeometry.label() + " Geometrie" + SAVE_ACTION_SUFFIX);
             Runnable updateDisabled = () -> save.setDisable(
@@ -775,9 +776,7 @@ public final class DungeonEditorStateView extends VBox {
                         exitAreas,
                         false));
             }
-            Label status = muted(statusText);
-            status.setVisible(statusText != null && !statusText.isBlank());
-            status.setManaged(status.isVisible());
+            Label status = stableStatusLabel(statusText);
             Button save = new ToolbarActionButton("Speichern");
             save.setAccessibleText("Narration fuer " + card.roomName() + SAVE_ACTION_SUFFIX);
             save.setDisable(busy);

@@ -68,6 +68,9 @@ public final class DungeonEditorBoundaryStretchHelper {
             if (input == null || !input.primaryButtonDown()) {
                 return null;
             }
+            if (input.hitTarget().handleRef().clusterWallRun()) {
+                return DungeonEditorWallRunBoundaryTargetResolver.resolve(input, currentSelection);
+            }
             BoundaryTarget boundaryTarget = input.boundaryTarget();
             if (boundaryTarget == null || !boundaryTarget.present() || boundaryTarget.doorKind()) {
                 return DungeonEditorWallRunBoundaryTargetResolver.resolve(input, currentSelection);
