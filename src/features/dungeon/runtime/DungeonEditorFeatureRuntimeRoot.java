@@ -92,6 +92,14 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     }
 
     @Override
+    public PointerWorkflowIntent pointerWorkflowIntent(
+            String selectedTool,
+            PointerWorkflowGesture gesture
+    ) {
+        return DungeonEditorPointerWorkflowIntentResolver.resolve(selectedTool, gesture);
+    }
+
+    @Override
     public boolean acceptPointerSession(
             PointerAction action,
             String toolKey,

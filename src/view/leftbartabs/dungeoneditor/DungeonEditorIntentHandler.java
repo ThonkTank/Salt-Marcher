@@ -1,8 +1,6 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
@@ -13,6 +11,8 @@ import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerTarget;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerWorkflowGesture;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerWorkflowIntent;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarration;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
@@ -21,13 +21,8 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 
 final class DungeonEditorIntentHandler {
-    private static final Map<String, String> DELETE_TOOLS = deleteTools();
     private static final long NO_TRANSITION_ID = 0L;
     private static final String SELECT_TOOL = "SELECT";
-    private static final String WALL_CREATE_TOOL = "WALL_CREATE";
-    private static final String WALL_DELETE_TOOL = "WALL_DELETE";
-    private static final String DOOR_CREATE_TOOL = "DOOR_CREATE";
-    private static final String DOOR_DELETE_TOOL = "DOOR_DELETE";
 
     private final DungeonEditorContributionModel presentationModel;
     private final DungeonEditorControlsContentModel controlsContentModel;
@@ -439,15 +434,18 @@ final class DungeonEditorIntentHandler {
 
     private void consumePointerToolInput(DungeonMapViewInputEvent event) {
         String selectedTool = presentationModel.currentInteractionState().currentSelectedToolKey();
-        String pointerTool = pointerTool(event, selectedTool);
-        if (pointerTool == null) {
+        PointerAction action = pointerAction(event.input());
+        PointerWorkflowIntent intent = operations.pointerWorkflowIntent(
+                selectedTool,
+                pointerWorkflowGesture(event));
+        if (!intent.workflowAccepted()) {
             mapContentModel.clearHoverTarget();
             operations.clearPointerSession();
             return;
         }
         double sceneX = sceneX(event);
         double sceneY = sceneY(event);
-        DungeonMapContentModel.PointerTarget pointerTarget = boundaryPlacementTool(pointerTool)
+        DungeonMapContentModel.PointerTarget pointerTarget = intent.boundaryTargetsPreferred()
                 ? mapContentModel.resolvePointerTarget(sceneX, sceneY, true)
                 : mapContentModel.resolvePointerTarget(sceneX, sceneY);
         if (beginInlineLabelEdit(event, sceneX, sceneY)) {
@@ -455,10 +453,10 @@ final class DungeonEditorIntentHandler {
         }
         updateHoverTarget(event, pointerTarget);
         PointerSample sample = pointerSample(event, pointerTarget);
-        if (suppressedRepeatedHover(event, pointerTool, sample)) {
+        if (suppressedRepeatedHover(action, intent.effectiveToolKey(), sample)) {
             return;
         }
-        applyToolWorkflow(event, sample, pointerTool);
+        applyToolWorkflow(action, sample, intent);
     }
 
     private void updateHoverTarget(
@@ -593,80 +591,17 @@ final class DungeonEditorIntentHandler {
         }
     }
 
-    private static boolean secondaryOnly(DungeonMapViewInputEvent event) {
-        return event.buttons().secondaryButtonDown()
-                && !event.buttons().primaryButtonDown()
-                && !event.buttons().middleButtonDown()
-                && !event.modifiers().shiftDown();
-    }
-
-    private static String pointerTool(
-            DungeonMapViewInputEvent event,
-            String selectedTool
-    ) {
-        if (shiftSecondary(event)) {
-            return alternateTool(selectedTool);
-        }
-        if (WALL_CREATE_TOOL.equals(selectedTool) && deleteGesture(event)) {
-            return WALL_CREATE_TOOL;
-        }
-        return deleteGesture(event) ? deleteTool(selectedTool) : selectedTool;
-    }
-
-    private static boolean shiftSecondary(DungeonMapViewInputEvent event) {
-        return event.buttons().secondaryButtonDown() && event.modifiers().shiftDown();
-    }
-
-    private static boolean deleteGesture(DungeonMapViewInputEvent event) {
-        return secondaryOnly(event);
-    }
-
-    private static @Nullable String deleteTool(String selectedTool) {
-        return DELETE_TOOLS.get(selectedTool);
-    }
-
-    private static @Nullable String alternateTool(String selectedTool) {
-        return WALL_CREATE_TOOL.equals(selectedTool) ? selectedTool : null;
-    }
-
-    private static Map<String, String> deleteTools() {
-        Map<String, String> tools = new HashMap<>();
-        registerDeleteTool(tools, "ROOM_PAINT", "ROOM_DELETE");
-        registerDeleteTool(tools, WALL_CREATE_TOOL, WALL_DELETE_TOOL);
-        registerDeleteTool(tools, DOOR_CREATE_TOOL, DOOR_DELETE_TOOL);
-        registerDeleteTool(tools, "CORRIDOR_CREATE", "CORRIDOR_DELETE");
-        registerDeleteTool(tools, "STAIR_CREATE", "STAIR_DELETE");
-        registerDeleteTool(tools, "STAIR_CREATE_SQUARE", "STAIR_DELETE");
-        registerDeleteTool(tools, "STAIR_CREATE_CIRCULAR", "STAIR_DELETE");
-        registerDeleteTool(tools, "TRANSITION_CREATE", "TRANSITION_DELETE");
-        registerDeleteTool(tools, "FEATURE_POI_CREATE", "FEATURE_DELETE");
-        registerDeleteTool(tools, "FEATURE_OBJECT_CREATE", "FEATURE_DELETE");
-        registerDeleteTool(tools, "FEATURE_ENCOUNTER_CREATE", "FEATURE_DELETE");
-        return Map.copyOf(tools);
-    }
-
-    private static void registerDeleteTool(
-            Map<String, String> tools,
-            String primary,
-            String delete
-    ) {
-        tools.put(primary, delete);
-        tools.put(delete, delete);
-    }
-
     private void applyToolWorkflow(
-            DungeonMapViewInputEvent event,
+            PointerAction action,
             PointerSample pointerSample,
-            String tool
+            PointerWorkflowIntent intent
     ) {
-        DungeonMapViewInputEvent.CanvasInput input = event.input();
-        PointerAction action = pointerAction(input);
         if (action != null) {
             operations.applyPointer(
                     action,
-                    tool,
+                    intent.effectiveToolKey(),
                     pointerSample,
-                    wallSingleClickMode(event, tool),
+                    intent.wallSingleClickMode(),
                     transitionDestination());
         }
     }
@@ -705,18 +640,6 @@ final class DungeonEditorIntentHandler {
                 stateContentModel.currentTransitionDestinationTransitionId());
     }
 
-    private boolean wallSingleClickMode(DungeonMapViewInputEvent event, String tool) {
-        return WALL_CREATE_TOOL.equals(tool)
-                && (event.modifiers().controlDown() || controlsContentModel.wallSingleClickModeSelected());
-    }
-
-    private static boolean boundaryPlacementTool(String tool) {
-        return WALL_CREATE_TOOL.equals(tool)
-                || WALL_DELETE_TOOL.equals(tool)
-                || DOOR_CREATE_TOOL.equals(tool)
-                || DOOR_DELETE_TOOL.equals(tool);
-    }
-
     private PointerSample pointerSample(
             DungeonMapViewInputEvent event,
             DungeonMapContentModel.PointerTarget target
@@ -730,15 +653,25 @@ final class DungeonEditorIntentHandler {
     }
 
     private boolean suppressedRepeatedHover(
-            DungeonMapViewInputEvent event,
-            String selectedTool,
+            PointerAction action,
+            String tool,
             PointerSample sample
     ) {
         return !operations.acceptPointerSession(
-                pointerAction(event.input()),
-                selectedTool,
+                action,
+                tool,
                 sample,
                 presentationModel.currentInteractionState().currentProjectionLevel());
+    }
+
+    private PointerWorkflowGesture pointerWorkflowGesture(DungeonMapViewInputEvent event) {
+        return new PointerWorkflowGesture(
+                event.buttons().primaryButtonDown(),
+                event.buttons().secondaryButtonDown(),
+                event.buttons().middleButtonDown(),
+                event.modifiers().shiftDown(),
+                event.modifiers().controlDown(),
+                controlsContentModel.wallSingleClickModeSelected());
     }
 
     private static int normalizeLevelDelta(double scrollDeltaY) {

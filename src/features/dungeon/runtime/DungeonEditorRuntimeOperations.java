@@ -26,6 +26,13 @@ public interface DungeonEditorRuntimeOperations {
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination);
 
+    default PointerWorkflowIntent pointerWorkflowIntent(
+            String selectedTool,
+            PointerWorkflowGesture gesture
+    ) {
+        return DungeonEditorPointerWorkflowIntentResolver.resolve(selectedTool, gesture);
+    }
+
     default boolean acceptPointerSession(
             PointerAction action,
             String toolKey,
@@ -67,6 +74,34 @@ public interface DungeonEditorRuntimeOperations {
         DRAGGED,
         RELEASED,
         MOVED
+    }
+
+    record PointerWorkflowGesture(
+            boolean primaryButtonDown,
+            boolean secondaryButtonDown,
+            boolean middleButtonDown,
+            boolean shiftDown,
+            boolean controlDown,
+            boolean wallSingleClickModeSelected
+    ) {
+        public static PointerWorkflowGesture empty() {
+            return new PointerWorkflowGesture(false, false, false, false, false, false);
+        }
+    }
+
+    record PointerWorkflowIntent(
+            boolean workflowAccepted,
+            String effectiveToolKey,
+            boolean boundaryTargetsPreferred,
+            boolean wallSingleClickMode
+    ) {
+        public PointerWorkflowIntent {
+            effectiveToolKey = safeText(effectiveToolKey, "");
+        }
+
+        public static PointerWorkflowIntent ignored() {
+            return new PointerWorkflowIntent(false, "", false, false);
+        }
     }
 
     record PointerSample(
