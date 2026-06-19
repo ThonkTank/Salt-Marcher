@@ -188,11 +188,7 @@ public final class CatalogCrudControlsContentModel {
         items.addAll(safeState.items());
         int readbackSelectionIndex = indexOf(safeState.selectedItemId());
         int stagedSelectionIndex = indexOf(stagedItemId);
-        if (stagedSelectionIndex >= 0) {
-            selectedItemId = stagedItemId;
-        } else {
-            selectedItemId = readbackSelectionIndex < 0 ? "" : items.get(readbackSelectionIndex).id();
-        }
+        selectedItemId = selectedItemId(readbackSelectionIndex, stagedSelectionIndex, stagedItemId);
         refreshPreparedState();
     }
 
@@ -391,6 +387,16 @@ public final class CatalogCrudControlsContentModel {
             }
         }
         return -1;
+    }
+
+    private String selectedItemId(int readbackSelectionIndex, int stagedSelectionIndex, String stagedItemId) {
+        if (readbackSelectionIndex >= 0) {
+            return items.get(readbackSelectionIndex).id();
+        }
+        if (stagedSelectionIndex >= 0) {
+            return stagedItemId;
+        }
+        return "";
     }
 
     private @Nullable Item itemById(String itemId) {

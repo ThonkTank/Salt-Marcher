@@ -393,11 +393,13 @@ final class DungeonEditorIntentHandler {
             return false;
         }
         if (event.input().mouseReleased()) {
+            mapContentModel.clearHoverTarget();
             inlineEditOutsidePressActive = false;
             lastHoverSample = Optional.empty();
             return true;
         }
         if (event.input().mouseDragged() || event.input().mouseMoved()) {
+            mapContentModel.clearHoverTarget();
             lastHoverSample = Optional.empty();
             return true;
         }
@@ -417,6 +419,7 @@ final class DungeonEditorIntentHandler {
             return consumeActiveInlineEditMousePress(event);
         }
         if (passiveInlineEditCanvasInput(event)) {
+            mapContentModel.clearHoverTarget();
             lastHoverSample = Optional.empty();
             return true;
         }
@@ -425,6 +428,7 @@ final class DungeonEditorIntentHandler {
 
     private boolean cancelActiveInlineEdit() {
         mapContentModel.clearInlineLabelEdit();
+        mapContentModel.clearHoverTarget();
         inlineEditOutsidePressActive = false;
         lastHoverSample = Optional.empty();
         return true;
@@ -435,6 +439,7 @@ final class DungeonEditorIntentHandler {
             mapContentModel.clearInlineLabelEdit();
             inlineEditOutsidePressActive = true;
         }
+        mapContentModel.clearHoverTarget();
         lastHoverSample = Optional.empty();
         return true;
     }
@@ -442,6 +447,7 @@ final class DungeonEditorIntentHandler {
     private static boolean passiveInlineEditCanvasInput(DungeonMapViewInputEvent event) {
         return event.input().mouseDragged()
                 || event.input().mouseMoved()
+                || event.input().mouseExited()
                 || event.input().mouseReleased()
                 || event.input().scrolled();
     }
@@ -459,6 +465,7 @@ final class DungeonEditorIntentHandler {
             return false;
         }
         projectionEditor.setTool(new SetDungeonEditorToolCommand(DungeonEditorTool.SELECT));
+        mapContentModel.clearHoverTarget();
         lastHoverSample = Optional.empty();
         return true;
     }
@@ -467,19 +474,43 @@ final class DungeonEditorIntentHandler {
         DungeonEditorTool selectedTool = presentationModel.currentInteractionState().currentSelectedTool();
         DungeonEditorTool pointerTool = pointerTool(event, selectedTool);
         if (pointerTool == null) {
+            mapContentModel.clearHoverTarget();
             lastHoverSample = Optional.empty();
             return;
         }
         double sceneX = sceneX(event);
         double sceneY = sceneY(event);
-        DungeonMapContentModel.PointerTarget pointerTarget = mapContentModel.resolvePointerTarget(sceneX, sceneY);
+        DungeonMapContentModel.PointerTarget pointerTarget = boundaryPlacementTool(pointerTool)
+                ? mapContentModel.resolvePointerTarget(sceneX, sceneY, true)
+                : mapContentModel.resolvePointerTarget(sceneX, sceneY);
         if (beginInlineLabelEdit(event, sceneX, sceneY)) {
             return;
         }
+        updateHoverTarget(event, pointerTarget);
         if (suppressedRepeatedHover(event, pointerTool, pointerTarget)) {
             return;
         }
         applyToolWorkflow(event, pointerSample(event, pointerTarget, pointerTool), pointerTool);
+    }
+
+    private void updateHoverTarget(
+            DungeonMapViewInputEvent event,
+            DungeonMapContentModel.PointerTarget pointerTarget
+    ) {
+        if (event.input().mouseMoved()) {
+            mapContentModel.updateHoverTarget(pointerTarget);
+            return;
+        }
+        if (event.input().mouseExited()) {
+            mapContentModel.clearHoverTarget();
+            return;
+        }
+        if (event.input().mousePressed()
+                || event.input().mouseDragged()
+                || event.input().mouseReleased()
+                || event.input().scrolled()) {
+            mapContentModel.clearHoverTarget();
+        }
     }
 
     private boolean beginInlineLabelEdit(
@@ -499,6 +530,7 @@ final class DungeonEditorIntentHandler {
             return false;
         }
         mapContentModel.beginInlineLabelEdit(editTarget);
+        mapContentModel.clearHoverTarget();
         lastHoverSample = Optional.empty();
         return true;
     }
@@ -722,6 +754,13 @@ final class DungeonEditorIntentHandler {
     private boolean wallSingleClickMode(DungeonMapViewInputEvent event, DungeonEditorTool tool) {
         return tool == DungeonEditorTool.WALL_CREATE
                 && (event.modifiers().controlDown() || controlsContentModel.wallSingleClickModeSelected());
+    }
+
+    private static boolean boundaryPlacementTool(DungeonEditorTool tool) {
+        return tool == DungeonEditorTool.WALL_CREATE
+                || tool == DungeonEditorTool.WALL_DELETE
+                || tool == DungeonEditorTool.DOOR_CREATE
+                || tool == DungeonEditorTool.DOOR_DELETE;
     }
 
     private DungeonEditorPointerSample pointerSample(

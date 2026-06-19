@@ -1,7 +1,6 @@
 package src.view.leftbartabs.sessionplanner;
 
 import java.math.BigDecimal;
-import java.util.List;
 import java.util.Locale;
 import java.util.function.Consumer;
 import javafx.event.ActionEvent;

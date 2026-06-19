@@ -1019,8 +1019,10 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-SEL-009 map surface keeps cluster-wide selection after move");
         assertEquals(cellRect(3, 2, 5, 4, 0), surfaceCellSet(committedSurface),
                 "DE-SEL-009 published map exposes translated cluster cells");
-        assertTrue(renderHasSelectedSurfacePrimitive(binding.mapContentModel(), roomRef),
-                "DE-SEL-009 render scene keeps the moved cluster selected");
+        assertTrue(!renderHasSelectedSurfacePrimitive(binding.mapContentModel(), roomRef),
+                "DE-SEL-009 render scene keeps moved cluster floors unhighlighted");
+        assertClusterCornerHandleAt(committedSurface, 3, 2, 0,
+                "DE-SEL-009 moved cluster selection exposes translated corner handles");
         Point2D committedLabelCenter = labelCenterForRef(binding.mapContentModel(), roomRef);
         assertDoubleEquals(4.5, committedLabelCenter.getX(),
                 "DE-SEL-009 committed label stays centered on the translated room span");
@@ -1286,14 +1288,24 @@ final class DungeonEditorRoomWallDoorHarness {
         click(button(controls, "Tür"));
         assertEquals("DOOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
                 "DE-DOOR-001 door family selects door-create tool");
+        DungeonMapContentModel.PointerTarget nearCornerTarget =
+                binding.mapContentModel().resolvePointerTarget(3.96, 1.20, true);
+        assertEquals("BOUNDARY", nearCornerTarget.targetKind().name(),
+                "DE-DOOR-001 boundary-preferred resolver chooses an authored boundary near a room corner");
+        assertEquals("WALL", nearCornerTarget.boundaryRef().kind(),
+                "DE-DOOR-001 boundary-preferred resolver keeps the wall candidate for door creation");
+        assertEquals(4.0, nearCornerTarget.boundaryRef().startQ(),
+                "DE-DOOR-001 boundary-preferred resolver chooses the nearest east wall start q");
         Point2D wallMidpoint = boundaryMidpointNear(binding.mapContentModel(), "WALL", 4.0, 2.5);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        double nearWallSceneX = wallMidpoint.getX() - 0.04;
+        double nearWallSceneY = wallMidpoint.getY() + 0.03;
 
         clickMap(
                 mapView,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(wallMidpoint.getX()),
-                viewport.sceneToScreenY(wallMidpoint.getY()),
+                viewport.sceneToScreenX(nearWallSceneX),
+                viewport.sceneToScreenY(nearWallSceneY),
                 false);
 
         assertEquals(1L, runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST"),
@@ -1326,7 +1338,7 @@ final class DungeonEditorRoomWallDoorHarness {
         assertCanvasPaintedAtScene(mapView, wallMidpoint.getX(), wallMidpoint.getY(),
                 "DE-DOOR-001 reloaded rendered canvas paints the door boundary coordinates");
 
-        results.add("DE-DOOR-001 Ready: DungeonMapView door click -> SQLite -> live door boundary -> reload");
+        results.add("DE-DOOR-001 Ready: DungeonMapView near-edge door click -> SQLite -> live door boundary -> reload");
     }
 
     private static void selectClusterForHandles(
@@ -1454,12 +1466,14 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-DOOR-002 door family selects the door family tool");
         Point2D doorMidpoint = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        double nearDoorSceneX = doorMidpoint.getX() - 0.04;
+        double nearDoorSceneY = doorMidpoint.getY() + 0.03;
 
         clickMap(
                 mapView,
                 MouseButton.SECONDARY,
-                viewport.sceneToScreenX(doorMidpoint.getX()),
-                viewport.sceneToScreenY(doorMidpoint.getY()),
+                viewport.sceneToScreenX(nearDoorSceneX),
+                viewport.sceneToScreenY(nearDoorSceneY),
                 false);
 
         assertEquals(0L, runtime.database().countDoorBoundariesAt(mapId, 1, 0, "EAST"),
@@ -1520,12 +1534,14 @@ final class DungeonEditorRoomWallDoorHarness {
         click(button(controls, "Tür"));
         Point2D doorMidpoint = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        double nearDoorSceneX = doorMidpoint.getX() - 0.04;
+        double nearDoorSceneY = doorMidpoint.getY() + 0.03;
 
         clickMap(
                 mapView,
                 MouseButton.SECONDARY,
-                viewport.sceneToScreenX(doorMidpoint.getX()),
-                viewport.sceneToScreenY(doorMidpoint.getY()),
+                viewport.sceneToScreenX(nearDoorSceneX),
+                viewport.sceneToScreenY(nearDoorSceneY),
                 false);
 
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
@@ -2072,15 +2088,15 @@ final class DungeonEditorRoomWallDoorHarness {
                 mapView,
                 MouseEvent.MOUSE_PRESSED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(2.0),
-                viewport.sceneToScreenY(1.0),
+                viewport.sceneToScreenX(2.08),
+                viewport.sceneToScreenY(1.06),
                 false);
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_RELEASED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(2.0),
-                viewport.sceneToScreenY(1.0),
+                viewport.sceneToScreenX(2.08),
+                viewport.sceneToScreenY(1.06),
                 false);
 
         assertEquals(boundaryStateBefore, runtime.database().roomBoundaryEdgeState(mapId),
@@ -2108,7 +2124,7 @@ final class DungeonEditorRoomWallDoorHarness {
                 false);
         assertWallPreview(runtime.mapSurfaceModel().current(), 3, false, "DE-WALL-001 follow-up movement");
 
-        results.add("DE-WALL-001 Ready: DungeonEditorControlsView Wand -> DungeonMapView vertex click"
+        results.add("DE-WALL-001 Ready: DungeonEditorControlsView Wand -> DungeonMapView off-vertex click"
                 + " -> armed draft without DB mutation");
     }
 
@@ -2356,8 +2372,8 @@ final class DungeonEditorRoomWallDoorHarness {
         click(button(controls, "Wand"));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D segmentMidpoint = boundaryMidpointNear(binding.mapContentModel(), "WALL", 2.0, 2.5);
-        double segmentScreenX = viewport.sceneToScreenX(segmentMidpoint.getX());
-        double segmentScreenY = viewport.sceneToScreenY(segmentMidpoint.getY());
+        double segmentScreenX = viewport.sceneToScreenX(segmentMidpoint.getX() + 0.05);
+        double segmentScreenY = viewport.sceneToScreenY(segmentMidpoint.getY() - 0.04);
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_PRESSED,
@@ -2654,11 +2670,31 @@ final class DungeonEditorRoomWallDoorHarness {
             String message
     ) {
         return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
-                .filter(label -> label.typography().fontFamily().equals("Monospaced")
+                .filter(label -> label.hitRef().endsWith(":ROOM_LABEL")
+                        && label.typography().fontFamily().equals("Monospaced")
                         && label.typography().bold()
-                        && label.style().fill() != null)
+                        && label.style().fill() == null
+                        && label.style().stroke() == null)
                 .findFirst()
-                .orElseThrow(() -> new AssertionError(message + " preview room label not rendered"));
+                .orElseThrow(() -> new AssertionError(
+                        message + " preview room label not rendered; texts="
+                                + textPrimitiveSummary(mapContentModel)));
+    }
+
+    private static List<String> textPrimitiveSummary(DungeonMapContentModel mapContentModel) {
+        return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
+                .map(label -> label.hitRef()
+                        + "|"
+                        + label.text()
+                        + "|"
+                        + label.typography().fontFamily()
+                        + "|bold="
+                        + label.typography().bold()
+                        + "|fill="
+                        + (label.style().fill() != null)
+                        + "|stroke="
+                        + (label.style().stroke() != null))
+                .toList();
     }
 
 }

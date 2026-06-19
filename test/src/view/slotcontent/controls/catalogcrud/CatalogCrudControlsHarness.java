@@ -1,11 +1,13 @@
 package src.view.slotcontent.controls.catalogcrud;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Platform;
+import javafx.geometry.Bounds;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -51,7 +53,9 @@ public final class CatalogCrudControlsHarness {
         });
         view.bind(model);
         Stage stage = new Stage();
-        stage.setScene(new Scene(view, 720.0, 320.0));
+        Scene scene = new Scene(view, 720.0, 320.0);
+        scene.getStylesheets().add(Path.of("resources", "salt-marcher.css").toUri().toString());
+        stage.setScene(scene);
         stage.show();
         view.applyCss();
         view.layout();
@@ -76,9 +80,18 @@ public final class CatalogCrudControlsHarness {
         events.clear();
         @SuppressWarnings("unchecked")
         ComboBox<String> stringSelector = (ComboBox<String>) selector;
+        assertEquals("Alpha", closedSelectorText(stringSelector), "closed selector renders selected catalog label");
+        assertCatalogRowGeometry(view, actionMenuButton, "initial catalog selector row fits without clipping");
+        double viewHeightBeforeStatus = view.getLayoutBounds().getHeight();
+        Bounds selectorRowBoundsBeforeStatus = selectorRow(view).getBoundsInParent();
         stringSelector.getSelectionModel().select("b");
         CatalogCrudControlsViewInputEvent select = last(events);
         assertEquals("b", select.selectedItemId(), "select emits selected id");
+        stringSelector.show();
+        stringSelector.hide();
+        view.applyCss();
+        view.layout();
+        assertEquals("Beta", closedSelectorText(stringSelector), "closed selector keeps selected label after popup close");
         assertTrue(select.openItemId().isBlank(), "select does not emit open id");
         assertTrue(select.createDraftName().isBlank(), "select emits no draft");
         assertEquals(1L, descendants(view).stream().filter(TextField.class::isInstance).count(),
@@ -133,9 +146,37 @@ public final class CatalogCrudControlsHarness {
                         new CatalogCrudControlsContentModel.Item("a", "Alpha", "", 0L, true),
                         new CatalogCrudControlsContentModel.Item("b", "Beta", "", 0L, true)),
                 new CatalogCrudControlsContentModel.Actions(true, true, true, true),
+                false,
+                "Dungeon-Map gelöscht und Alpha als nächster verfügbarer Eintrag ausgewählt."));
+        view.applyCss();
+        view.layout();
+        assertVisibleLabelCount(
+                view,
+                "Dungeon-Map gelöscht und Alpha als nächster verfügbarer Eintrag ausgewählt.",
+                1L,
+                "non-empty catalog shows status text below selector row");
+        assertEquals("Beta", closedSelectorText(stringSelector), "status text does not clear closed selected label");
+        assertCatalogRowGeometry(view, actionMenuButton, "status text does not expand or clip selector action row");
+        assertStableStatusLayout(
+                view,
+                selectorRowBoundsBeforeStatus,
+                viewHeightBeforeStatus,
+                "status text does not move the selector row or resize the shared control surface");
+
+        model.showCatalog(state(
+                "b",
+                List.of(
+                        new CatalogCrudControlsContentModel.Item("a", "Alpha", "", 0L, true),
+                        new CatalogCrudControlsContentModel.Item("b", "Beta", "", 0L, true)),
+                new CatalogCrudControlsContentModel.Actions(true, true, true, true),
                 false));
         view.applyCss();
         view.layout();
+        assertStableStatusLayout(
+                view,
+                selectorRowBoundsBeforeStatus,
+                viewHeightBeforeStatus,
+                "clearing status text does not move the selector row or resize the shared control surface");
 
         events.clear();
         button(view, "Öffnen").fire();
@@ -260,13 +301,10 @@ public final class CatalogCrudControlsHarness {
         assertTrue(menuItem(view, "Löschen").isDisable(), "empty read-only catalog disables delete");
         assertEquals("Keine Karten.", selector.getPromptText(), "empty catalog prompt carries the empty message");
         assertEquals("Keine Karten.", placeholderText(selector), "empty catalog placeholder carries the empty message");
-        assertEquals(1L, descendants(view).stream()
-                        .filter(Label.class::isInstance)
-                        .map(Label.class::cast)
-                        .filter(label -> "Keine Karten.".equals(label.getText()))
-                        .filter(Node::isVisible)
-                        .count(),
-                "empty message is only visible as selector placeholder");
+        assertTrue(selector.getPlaceholder() instanceof Label placeholder
+                        && "Keine Karten.".equals(placeholder.getText())
+                        && placeholder.isVisible(),
+                "empty message is bound to the selector placeholder node");
         assertVisibleLabelCount(view, "Katalog leer.", 0L, "empty catalog suppresses lower status text");
         createButton.fire();
         menuItem(view, "Umbenennen").fire();
@@ -438,6 +476,51 @@ public final class CatalogCrudControlsHarness {
         return descendant(parent, MenuButton.class);
     }
 
+    private static String closedSelectorText(ComboBox<?> selector) {
+        if (selector.getButtonCell() == null) {
+            return "";
+        }
+        String text = selector.getButtonCell().getText();
+        return text == null ? "" : text;
+    }
+
+    private static void assertCatalogRowGeometry(
+            CatalogCrudControlsView view,
+            MenuButton actionMenuButton,
+            String message
+    ) {
+        HBox row = selectorRow(view);
+        Bounds rowBounds = row.getLayoutBounds();
+        Bounds menuBounds = actionMenuButton.getBoundsInParent();
+        assertTrue(rowBounds.getWidth() <= view.getLayoutBounds().getWidth() + 0.5,
+                message + ": row width stays inside view");
+        assertTrue(menuBounds.getMaxX() <= rowBounds.getMaxX() + 0.5,
+                message + ": action menu stays inside selector row");
+        assertTrue(actionMenuButton.getWidth() >= 64.0,
+                message + ": action menu keeps stable Mehr width");
+    }
+
+    private static void assertStableStatusLayout(
+            CatalogCrudControlsView view,
+            Bounds expectedSelectorRowBounds,
+            double expectedViewHeight,
+            String message
+    ) {
+        Bounds actualSelectorRowBounds = selectorRow(view).getBoundsInParent();
+        assertNear(expectedViewHeight, view.getLayoutBounds().getHeight(), message + ": view height");
+        assertNear(expectedSelectorRowBounds.getMinY(), actualSelectorRowBounds.getMinY(), message + ": row min y");
+        assertNear(expectedSelectorRowBounds.getMaxY(), actualSelectorRowBounds.getMaxY(), message + ": row max y");
+    }
+
+    private static HBox selectorRow(Parent parent) {
+        return descendants(parent).stream()
+                .filter(HBox.class::isInstance)
+                .map(HBox.class::cast)
+                .filter(row -> row.getStyleClass().contains("catalog-crud-selector-row"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Catalog selector row not found."));
+    }
+
     private static void assertControlRowOrder(
             Parent parent,
             TextField filterField,
@@ -544,6 +627,12 @@ public final class CatalogCrudControlsHarness {
 
     private static void assertEquals(Object expected, Object actual, String message) {
         if (!expected.equals(actual)) {
+            throw new AssertionError(message + ": expected=" + expected + ", actual=" + actual);
+        }
+    }
+
+    private static void assertNear(double expected, double actual, String message) {
+        if (Math.abs(expected - actual) > 0.5) {
             throw new AssertionError(message + ": expected=" + expected + ", actual=" + actual);
         }
     }

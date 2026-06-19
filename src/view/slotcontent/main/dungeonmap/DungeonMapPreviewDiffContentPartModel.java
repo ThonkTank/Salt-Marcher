@@ -134,9 +134,18 @@ final class DungeonMapPreviewDiffContentPartModel {
             boolean destructive
     ) {
         boolean selected = DungeonMapContentModel.EditorSelectionFacts.selectedArea(area, selection);
+        boolean surfaceSelected = DungeonMapContentModel.EditorSelectionFacts.selectedAreaSurface(area, selection);
         List<DungeonMapContentModel.DungeonMapRenderState.Cell> previewCells = new ArrayList<>();
         for (DungeonCellRef cell : area.cells()) {
-            previewCells.add(DungeonMapContentModel.EditorRenderElements.cell(area, cell, selected, true, destructive, 0, 0, 0));
+            previewCells.add(DungeonMapContentModel.EditorRenderElements.cell(
+                    area,
+                    cell,
+                    surfaceSelected,
+                    true,
+                    destructive,
+                    0,
+                    0,
+                    0));
         }
         cells.addAll(previewCells);
         if (previewCells.isEmpty()) {

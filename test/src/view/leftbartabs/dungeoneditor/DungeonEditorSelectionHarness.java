@@ -86,6 +86,20 @@ final class DungeonEditorSelectionHarness {
         double roomFloorR = 1.5;
 
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        assertHoverHighlightsSurface(
+                binding.mapContentModel(),
+                mapView,
+                viewport,
+                roomRef,
+                roomFloorQ,
+                roomFloorR,
+                "DE-SEL-006 room floor hover");
+        assertHoverClearsOnEmptyMove(
+                binding.mapContentModel(),
+                mapView,
+                viewport,
+                roomRef,
+                "DE-SEL-006 room floor hover clear");
         fireMapMousePressed(
                 mapView,
                 MouseButton.PRIMARY,
@@ -181,6 +195,13 @@ final class DungeonEditorSelectionHarness {
                 "DE-SEL-002 render hit index resolves the free door segment as a boundary: "
                         + doorPointerTarget);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        assertHoverHighlightsBoundary(
+                binding.mapContentModel(),
+                mapView,
+                viewport,
+                doorSelectionPoint.getX(),
+                doorSelectionPoint.getY(),
+                "DE-SEL-006 door boundary hover");
 
         fireMapMousePressed(
                 mapView,
@@ -256,6 +277,14 @@ final class DungeonEditorSelectionHarness {
 
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D stairCenter = glyphCenterForRef(binding.mapContentModel(), stairRef);
+        assertHoverHighlightsGlyph(
+                binding.mapContentModel(),
+                mapView,
+                viewport,
+                stairRef,
+                stairCenter.getX(),
+                stairCenter.getY(),
+                "DE-SEL-006 stair marker hover");
         fireMapMousePressed(
                 mapView,
                 MouseButton.PRIMARY,
@@ -355,6 +384,127 @@ final class DungeonEditorSelectionHarness {
                 "DE-SEL-004 leaves authored DB state unchanged");
 
         results.add("DE-SEL-004 Ready: DungeonMapView corridor body click -> SQLite unchanged -> corridor selection");
+    }
+
+    private static void assertHoverHighlightsSurface(
+            DungeonMapContentModel mapContentModel,
+            DungeonMapView mapView,
+            DungeonMapContentModel.Viewport viewport,
+            DungeonEditorTopologyElementRef ref,
+            double sceneX,
+            double sceneY,
+            String message
+    ) {
+        String selectionRef = selectionRef(ref);
+        double normalStroke = surfaceStrokeWidth(mapContentModel, selectionRef);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(sceneX),
+                viewport.sceneToScreenY(sceneY),
+                false);
+        double hoverStroke = surfaceStrokeWidth(mapContentModel, selectionRef);
+        assertTrue(hoverStroke > normalStroke && hoverStroke < 2.0 / DEFAULT_GRID_SIZE,
+                message + " uses a hover stroke distinct from normal and selected styling");
+    }
+
+    private static void assertHoverClearsOnEmptyMove(
+            DungeonMapContentModel mapContentModel,
+            DungeonMapView mapView,
+            DungeonMapContentModel.Viewport viewport,
+            DungeonEditorTopologyElementRef ref,
+            String message
+    ) {
+        String selectionRef = selectionRef(ref);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(8.5),
+                viewport.sceneToScreenY(8.5),
+                false);
+        assertTrue(surfaceStrokeWidth(mapContentModel, selectionRef) < 1.5 / DEFAULT_GRID_SIZE,
+                message + " removes hover styling after an empty target move");
+    }
+
+    private static void assertHoverHighlightsBoundary(
+            DungeonMapContentModel mapContentModel,
+            DungeonMapView mapView,
+            DungeonMapContentModel.Viewport viewport,
+            double sceneX,
+            double sceneY,
+            String message
+    ) {
+        DungeonMapContentModel.PointerTarget target = mapContentModel.resolvePointerTarget(sceneX, sceneY);
+        assertEquals("BOUNDARY", target.targetKind().name(), message + " resolves a boundary target");
+        String selectionRef = target.topologyKind() + ":" + target.topologyId();
+        double normalStroke = boundaryStrokeWidth(mapContentModel, selectionRef);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(sceneX),
+                viewport.sceneToScreenY(sceneY),
+                false);
+        double hoverStroke = boundaryStrokeWidth(mapContentModel, selectionRef);
+        assertTrue(hoverStroke > normalStroke && hoverStroke < 4.2 / DEFAULT_GRID_SIZE,
+                message + " uses a boundary hover stroke distinct from normal and selected styling"
+                        + " (normal=" + normalStroke + ", hover=" + hoverStroke + ")");
+    }
+
+    private static void assertHoverHighlightsGlyph(
+            DungeonMapContentModel mapContentModel,
+            DungeonMapView mapView,
+            DungeonMapContentModel.Viewport viewport,
+            DungeonEditorTopologyElementRef ref,
+            double sceneX,
+            double sceneY,
+            String message
+    ) {
+        String selectionRef = selectionRef(ref);
+        double normalStroke = glyphStrokeWidth(mapContentModel, selectionRef);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(sceneX),
+                viewport.sceneToScreenY(sceneY),
+                false);
+        double hoverStroke = glyphStrokeWidth(mapContentModel, selectionRef);
+        assertTrue(hoverStroke > normalStroke && hoverStroke < 2.2 / DEFAULT_GRID_SIZE,
+                message + " uses a glyph hover stroke distinct from normal and selected styling");
+    }
+
+    private static String selectionRef(DungeonEditorTopologyElementRef ref) {
+        return ref.kind() + ":" + ref.id();
+    }
+
+    private static double surfaceStrokeWidth(DungeonMapContentModel mapContentModel, String selectionRef) {
+        return mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
+                .filter(surface -> selectionRef.equals(surface.selectionRef()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Surface primitive not found for " + selectionRef))
+                .style()
+                .strokeWidth();
+    }
+
+    private static double boundaryStrokeWidth(DungeonMapContentModel mapContentModel, String selectionRef) {
+        return mapContentModel.canvasStateProperty().get().renderScene().boundaries().stream()
+                .filter(boundary -> selectionRef.equals(boundary.selectionRef()))
+                .map(DungeonMapContentModel.BoundaryPrimitive::style)
+                .mapToDouble(DungeonMapContentModel.PaintStyle::strokeWidth)
+                .max()
+                .orElseThrow(() -> new AssertionError("Boundary primitive not found for " + selectionRef));
+    }
+
+    private static double glyphStrokeWidth(DungeonMapContentModel mapContentModel, String selectionRef) {
+        return mapContentModel.canvasStateProperty().get().renderScene().glyphs().stream()
+                .filter(glyph -> selectionRef.equals(glyph.selectionRef()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Glyph primitive not found for " + selectionRef))
+                .style()
+                .strokeWidth();
     }
 
 }

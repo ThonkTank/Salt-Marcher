@@ -11,7 +11,9 @@ public record DungeonMapViewInputEvent(
     ) {
 
     public DungeonMapViewInputEvent {
-        input = input == null ? new CanvasInput(false, false, true, false, false, false, false, false, false) : input;
+        input = input == null
+                ? new CanvasInput(false, false, true, false, false, false, false, false, false, false)
+                : input;
         buttons = buttons == null ? new CanvasButtons(false, false, false) : buttons;
         modifiers = modifiers == null ? new CanvasModifiers(false, false, false) : modifiers;
         position = position == null ? new CanvasPosition(0.0, 0.0) : position;
@@ -23,6 +25,7 @@ public record DungeonMapViewInputEvent(
             boolean mousePressed,
             boolean mouseDragged,
             boolean mouseMoved,
+            boolean mouseExited,
             boolean mouseReleased,
             boolean scrolled,
             boolean escapePressed,
@@ -35,6 +38,7 @@ public record DungeonMapViewInputEvent(
             rawEvents += mousePressed ? 1 : 0;
             rawEvents += mouseDragged ? 1 : 0;
             rawEvents += mouseMoved ? 1 : 0;
+            rawEvents += mouseExited ? 1 : 0;
             rawEvents += mouseReleased ? 1 : 0;
             rawEvents += scrolled ? 1 : 0;
             rawEvents += escapePressed ? 1 : 0;

@@ -28,6 +28,7 @@ import javafx.scene.control.ButtonBase;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextArea;
@@ -173,6 +174,11 @@ final class DungeonEditorMapCatalogHarness {
         DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
         assertEquals(alphaMapId, controlsSnapshot.selectedMapId().value(),
                 "DE-MAP-003 selected map falls back to name-ordered Alpha instead of lower-id Zeta");
+        assertCatalogSelectorSurface(
+                controls,
+                "Alpha",
+                "Dungeon-Map gelöscht.",
+                "DE-MAP-003 fallback catalog row keeps status, selected label, and Mehr geometry stable");
         assertTrue(controlsSnapshot.maps().stream().noneMatch(map -> map.mapId().value() == betaMapId),
                 "DE-MAP-003 published catalog omits deleted Beta");
         assertEquals("Dungeon-Map gelöscht.", controlsSnapshot.statusText(),
@@ -236,6 +242,11 @@ final class DungeonEditorMapCatalogHarness {
 
         DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
         assertEquals(betaMapId, controlsSnapshot.selectedMapId().value(), "DE-MAP-004 controls selects Beta");
+        assertCatalogSelectorSurface(
+                controls,
+                "Beta",
+                "",
+                "DE-MAP-004 loaded catalog row keeps selected label and Mehr geometry stable");
         DungeonEditorMapSurfaceSnapshot surfaceSnapshot = runtime.mapSurfaceModel().current();
         assertEquals("Beta", surfaceSnapshot.surface().mapName(), "DE-MAP-004 map surface name");
         assertEquals(
@@ -414,6 +425,50 @@ final class DungeonEditorMapCatalogHarness {
         results.add("DE-START-001 Ready: 56k persisted floor cells with perimeter walls -> "
                 + "AppBootstrap discovered shell catalog startup -> "
                 + "bounded render/input latency startupMillis=" + startupMillis + " inputMillis=" + inputMillis);
+    }
+
+    private static void assertCatalogSelectorSurface(
+            DungeonEditorControlsView controls,
+            String expectedClosedSelectorText,
+            String expectedStatusText,
+            String message
+    ) {
+        controls.applyCss();
+        controls.layout();
+        ComboBox<?> selector = comboBox(controls, "Dungeon auswählen");
+        Parent catalogSurface = controls.getParent() == null ? controls : controls.getParent();
+        selector.show();
+        selector.hide();
+        controls.applyCss();
+        controls.layout();
+        assertEquals(expectedClosedSelectorText, closedSelectorText(selector),
+                message + ": closed selector text");
+        if (!expectedStatusText.isBlank()) {
+            assertTrue(descendants(catalogSurface).stream()
+                            .filter(Label.class::isInstance)
+                            .map(Label.class::cast)
+                            .anyMatch(label -> label.isVisible() && expectedStatusText.equals(label.getText())),
+                    message + ": status text remains visible");
+        }
+        MenuButton actionMenu = menuButton(controls, "Mehr");
+        HBox selectorRow = descendants(catalogSurface).stream()
+                .filter(HBox.class::isInstance)
+                .map(HBox.class::cast)
+                .filter(row -> row.getStyleClass().contains("catalog-crud-selector-row"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + ": selector row not found"));
+        Bounds rowBounds = selectorRow.getLayoutBounds();
+        Bounds menuBounds = actionMenu.getBoundsInParent();
+        assertTrue(actionMenu.getWidth() >= 64.0, message + ": Mehr keeps stable width");
+        assertTrue(menuBounds.getMaxX() <= rowBounds.getMaxX() + 0.5, message + ": Mehr remains inside row");
+    }
+
+    private static String closedSelectorText(ComboBox<?> selector) {
+        if (selector.getButtonCell() == null) {
+            return "";
+        }
+        String text = selector.getButtonCell().getText();
+        return text == null ? "" : text;
     }
 
 }

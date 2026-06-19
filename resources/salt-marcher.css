@@ -976,14 +976,27 @@
     -fx-padding: 10;
     -fx-spacing: 10;
 }
+.catalog-crud-selector-row {
+    -fx-spacing: 6;
+}
 .catalog-crud-selector-surface {
     -fx-spacing: 4;
+    -fx-min-width: 0;
 }
 .catalog-crud-selector-filter {
     -fx-min-width: 120;
 }
 .catalog-crud-selector-combo {
     -fx-min-width: 160;
+}
+.catalog-crud-action-menu {
+    -fx-min-width: 64;
+    -fx-pref-width: 64;
+}
+.catalog-crud-status {
+    -fx-min-width: 0;
+    -fx-min-height: 18;
+    -fx-pref-height: 18;
 }
 .dungeon-editor-popup-actions {
     -fx-spacing: 8;

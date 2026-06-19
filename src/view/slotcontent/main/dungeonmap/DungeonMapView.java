@@ -202,62 +202,48 @@ public class DungeonMapView extends BorderPane {
     }
 
     private static DungeonMapViewInputEvent.CanvasInput rawMousePressedInput() {
-        return rawInput(true, false, false, false, false, false, false, false, false);
+        return new DungeonMapViewInputEvent.CanvasInput(
+                true, false, false, false, false, false, false, false, false, false);
     }
 
     private static DungeonMapViewInputEvent.CanvasInput rawMouseDraggedInput() {
-        return rawInput(false, true, false, false, false, false, false, false, false);
+        return new DungeonMapViewInputEvent.CanvasInput(
+                false, true, false, false, false, false, false, false, false, false);
     }
 
     private static DungeonMapViewInputEvent.CanvasInput rawMouseMovedInput() {
-        return rawInput(false, false, true, false, false, false, false, false, false);
+        return new DungeonMapViewInputEvent.CanvasInput(
+                false, false, true, false, false, false, false, false, false, false);
     }
 
     private static DungeonMapViewInputEvent.CanvasInput rawMouseReleasedInput() {
-        return rawInput(false, false, false, true, false, false, false, false, false);
+        return new DungeonMapViewInputEvent.CanvasInput(
+                false, false, false, false, true, false, false, false, false, false);
     }
 
     private static DungeonMapViewInputEvent.CanvasInput rawScrolledInput() {
-        return rawInput(false, false, false, false, true, false, false, false, false);
+        return new DungeonMapViewInputEvent.CanvasInput(
+                false, false, false, false, false, true, false, false, false, false);
     }
 
     private static DungeonMapViewInputEvent.CanvasInput rawEscapePressedInput() {
-        return rawInput(false, false, false, false, false, true, false, false, false);
+        return new DungeonMapViewInputEvent.CanvasInput(
+                false, false, false, false, false, false, true, false, false, false);
     }
 
     private static DungeonMapViewInputEvent.CanvasInput rawLabelEditCommittedInput() {
-        return rawInput(false, false, false, false, false, false, true, false, false);
+        return new DungeonMapViewInputEvent.CanvasInput(
+                false, false, false, false, false, false, false, true, false, false);
     }
 
     private static DungeonMapViewInputEvent.CanvasInput rawLabelEditCancelledInput() {
-        return rawInput(false, false, false, false, false, false, false, true, false);
+        return new DungeonMapViewInputEvent.CanvasInput(
+                false, false, false, false, false, false, false, false, true, false);
     }
 
     private static DungeonMapViewInputEvent.CanvasInput rawLabelEditTextChangedInput() {
-        return rawInput(false, false, false, false, false, false, false, false, true);
-    }
-
-    private static DungeonMapViewInputEvent.CanvasInput rawInput(
-            boolean mousePressed,
-            boolean mouseDragged,
-            boolean mouseMoved,
-            boolean mouseReleased,
-            boolean scrolled,
-            boolean escapePressed,
-            boolean labelEditCommitted,
-            boolean labelEditCancelled,
-            boolean labelEditTextChanged
-    ) {
         return new DungeonMapViewInputEvent.CanvasInput(
-                mousePressed,
-                mouseDragged,
-                mouseMoved,
-                mouseReleased,
-                scrolled,
-                escapePressed,
-                labelEditCommitted,
-                labelEditCancelled,
-                labelEditTextChanged);
+                false, false, false, false, false, false, false, false, false, true);
     }
 
     private void focusInlineLabelEditor() {
@@ -362,7 +348,8 @@ public class DungeonMapView extends BorderPane {
         static void install(Pane canvasLayer, DungeonMapView view) {
             canvasLayer.setOnMousePressed(event -> handleMousePressed(view, event));
             canvasLayer.setOnMouseDragged(event -> handleMouseDragged(view, event));
-            canvasLayer.setOnMouseMoved(event -> InputSnapshots.emitMouseEvent(view, MOUSE_MOVED_INPUT, event));
+            canvasLayer.setOnMouseMoved(event -> handleMouseMoved(view, event));
+            canvasLayer.setOnMouseExited(event -> handleMouseExited(view, event));
             canvasLayer.setOnMouseReleased(event -> handleMouseReleased(view, event));
             canvasLayer.setOnScroll(event -> handleScroll(view, event));
             canvasLayer.setOnKeyPressed(view::handleKeyPressed);
@@ -433,6 +420,18 @@ public class DungeonMapView extends BorderPane {
         static void handleScroll(DungeonMapView view, ScrollEvent event) {
             InputSnapshots.emitScrollEvent(view, SCROLLED_INPUT, event);
             event.consume();
+        }
+
+        static void handleMouseMoved(DungeonMapView view, MouseEvent event) {
+            InputSnapshots.emitMouseEvent(view, MOUSE_MOVED_INPUT, event);
+        }
+
+        static void handleMouseExited(DungeonMapView view, MouseEvent event) {
+            InputSnapshots.emitMouseEvent(
+                    view,
+                    new DungeonMapViewInputEvent.CanvasInput(
+                            false, false, false, true, false, false, false, false, false, false),
+                    event);
         }
 
     }

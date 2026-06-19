@@ -1,6 +1,7 @@
 package src.view.slotcontent.controls.catalogcrud;
 
 import java.util.function.Consumer;
+import javafx.beans.binding.Bindings;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Bounds;
@@ -29,6 +30,9 @@ public final class CatalogCrudControlsView extends VBox {
     private static final String STYLE_FLAT = "flat";
     private static final String STYLE_ACCENT = "accent";
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
+    private static final String STYLE_SELECTOR_ROW = "catalog-crud-selector-row";
+    private static final String STYLE_ACTION_MENU = "catalog-crud-action-menu";
+    private static final String STYLE_STATUS = "catalog-crud-status";
     private static final String PROGRAMMATIC_SELECTION_KEY = "catalogCrudProgrammaticSelection";
     private static final String SELECTION_PUBLISH_KEY = "catalogCrudSelectionPublish";
     private static final String PROGRAMMATIC_FILTER_KEY = "catalogCrudProgrammaticFilter";
@@ -66,8 +70,10 @@ public final class CatalogCrudControlsView extends VBox {
         selector.setPlaceholder(selectorPlaceholderLabel);
         openButton.setMinWidth(USE_PREF_SIZE);
         createButton.setMinWidth(USE_PREF_SIZE);
-        actionMenuButton.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT);
+        actionMenuButton.getStyleClass().addAll(STYLE_COMPACT, STYLE_FLAT, STYLE_ACTION_MENU);
         actionMenuButton.getItems().setAll(renameMenuItem, deleteMenuItem, reloadMenuItem);
+        statusLabel.getStyleClass().add(STYLE_STATUS);
+        statusLabel.setMaxWidth(Double.MAX_VALUE);
         draftField.setAccessibleText("Dungeon-Name");
         confirmDeleteButton.setAccessibleText("Löschen bestätigen");
         operationBox.getStyleClass().addAll("dropdown-window", "catalog-crud-popup");
@@ -111,7 +117,11 @@ public final class CatalogCrudControlsView extends VBox {
             @Override
             protected void updateItem(String itemId, boolean empty) {
                 super.updateItem(itemId, empty);
-                setText(empty ? "" : contentModel.labelOf(itemId));
+                String displayedItemId = empty ? selectorValue() : itemId;
+                if (displayedItemId.isBlank()) {
+                    displayedItemId = contentModel.currentSelectableItemId();
+                }
+                setText(displayedItemId.isBlank() ? "" : contentModel.labelOf(displayedItemId));
             }
         });
         selector.setCellFactory(ignored -> new ListCell<>() {
@@ -121,6 +131,7 @@ public final class CatalogCrudControlsView extends VBox {
                 setText(empty ? "" : contentModel.labelOf(itemId));
             }
         });
+        selector.setOnHidden(event -> refreshClosedSelectorLabel(contentModel));
         selector.promptTextProperty().bind(contentModel.selectorPromptTextProperty());
         selector.accessibleTextProperty().bind(contentModel.selectorAccessibleTextProperty());
         selector.disableProperty().bind(contentModel.selectorDisabledProperty());
@@ -129,9 +140,12 @@ public final class CatalogCrudControlsView extends VBox {
         openButton.visibleProperty().bind(contentModel.openVisibleProperty());
         openButton.managedProperty().bind(openButton.visibleProperty());
         openButton.disableProperty().bind(contentModel.openDisabledProperty());
-        statusLabel.textProperty().bind(contentModel.statusTextProperty());
-        statusLabel.visibleProperty().bind(contentModel.statusVisibleProperty());
-        statusLabel.managedProperty().bind(statusLabel.visibleProperty());
+        statusLabel.textProperty().bind(Bindings.when(contentModel.statusVisibleProperty())
+                .then(contentModel.statusTextProperty())
+                .otherwise(""));
+        statusLabel.opacityProperty().bind(Bindings.when(contentModel.statusVisibleProperty())
+                .then(1.0)
+                .otherwise(0.0));
         createButton.disableProperty().bind(contentModel.createDisabledProperty());
         createButton.visibleProperty().bind(contentModel.createVisibleProperty());
         createButton.managedProperty().bind(createButton.visibleProperty());
@@ -190,7 +204,19 @@ public final class CatalogCrudControlsView extends VBox {
             selector.getSelectionModel().select(selectedItemId);
         } finally {
             selector.getProperties().remove(PROGRAMMATIC_SELECTION_KEY);
+            refreshClosedSelectorLabel(contentModel);
         }
+    }
+
+    private void refreshClosedSelectorLabel(CatalogCrudControlsContentModel contentModel) {
+        if (selector.getButtonCell() == null) {
+            return;
+        }
+        String selectedItemId = selectorValue();
+        if (selectedItemId.isBlank()) {
+            selectedItemId = contentModel.currentSelectableItemId();
+        }
+        selector.getButtonCell().setText(selectedItemId.isBlank() ? "" : contentModel.labelOf(selectedItemId));
     }
 
     private void installDraftBinding(CatalogCrudControlsContentModel contentModel) {
@@ -412,10 +438,13 @@ public final class CatalogCrudControlsView extends VBox {
         filterField.getStyleClass().add("catalog-crud-selector-filter");
         selector.getStyleClass().add("catalog-crud-selector-combo");
         selectorSurface.setMaxWidth(Double.MAX_VALUE);
+        selectorSurface.setMinWidth(0);
         HBox.setHgrow(selector, Priority.ALWAYS);
         HBox.setHgrow(selectorSurface, Priority.ALWAYS);
         HBox row = new HBox(6, selectorSurface, openButton, createButton, actionMenuButton);
+        row.getStyleClass().add(STYLE_SELECTOR_ROW);
         row.setAlignment(Pos.CENTER_LEFT);
+        row.setMaxWidth(Double.MAX_VALUE);
         return row;
     }
 

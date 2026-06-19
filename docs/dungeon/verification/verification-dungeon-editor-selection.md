@@ -21,6 +21,7 @@ after a target is selected.
 | `DE-SEL-003` | Select stair | `DungeonMapView` primary click on stair handle | `F7_STAIR_ANCHOR` | Selection resolves the stable stair target and leaves authored rows unchanged. | Ready |
 | `DE-SEL-004` | Select corridor anchor | `DungeonMapView` primary click on corridor anchor | `F5_CORRIDOR_WITH_ANCHOR` | Selection resolves the stable corridor-anchor target and leaves authored rows unchanged. | Ready |
 | `DE-SEL-005` | Clear selection | `DungeonMapView` primary click on empty map space | `F1_SINGLE_ROOM` | Selection clears and authored rows remain unchanged. | Ready |
+| `DE-SEL-006` | Hover selectable map target | `OwnerSuite=DungeonEditorSelectionHarness`; `ProofType=RealRoute`; `DungeonMapView` mouse move over room floor, door boundary, marker, cluster label, and empty space | `F1_SINGLE_ROOM` / `F4_WALLED_ROOM_WITH_DOOR` / `F7_STAIR_ANCHOR` | Hover styling is content-model presentation state, remains visually distinct from selected and preview styling, and clears on empty target without authored row changes or room-label interactivity. | Ready |
 
 ## References
 

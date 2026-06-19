@@ -75,6 +75,7 @@ final class DungeonEditorClusterLabelHandleHarness {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
 
         long mapId = createMapThroughControls(controls, runtime, "Default Cluster Label Map");
         runtime.database().seedF1SingleRoom(mapId, "R1", 0, 1, 1);
@@ -92,6 +93,13 @@ final class DungeonEditorClusterLabelHandleHarness {
                         .targetKind()
                         .name(),
                 "DE-LABEL-001 cluster label hit remains a label target");
+        assertHoverHighlightsClusterLabel(
+                binding.mapContentModel(),
+                mapView,
+                label.label(),
+                label.cell().q() + 0.5,
+                label.cell().r() + 0.5,
+                "DE-LABEL-010 cluster label hover");
         results.add("DE-LABEL-001 Ready: F1_SINGLE_ROOM publishes default Cluster <clusterId> label text");
     }
 
@@ -217,6 +225,11 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-LABEL-004 room label uses blockier bold typography scaled from available wall space");
         assertTrue(roomLabelText.width() > 56.0 / 32.0,
                 "DE-LABEL-004 room label consumes more than the legacy minimum label width when wall space allows");
+        assertRoomLabelHoverRemainsPassive(
+                binding,
+                displayRoomLabel("R1"),
+                roomLabelCenter,
+                "DE-LABEL-010 passive room label hover");
         assertRoomLabelHitAndEditorPresentation(binding, runtime, roomIds, roomLabelCenter, roomLabelText);
         runtime.context().services()
                 .require(DungeonEditorLabelNameApplicationService.class)
@@ -471,21 +484,21 @@ final class DungeonEditorClusterLabelHandleHarness {
                 binding.mapContentModel(),
                 selectedRoom.topologyRef(),
                 "DE-LABEL-004 selected cluster");
-        assertTrue(selectedRoomLabel.style().fill() != null
-                        && selectedRoomLabel.style().fill().alphaUnit() > 0.9,
-                "DE-LABEL-004 selected room label adds an opaque underlay over selected floor feedback");
-        assertTrue(selectedRoomLabel.style().stroke() != null
-                        && selectedRoomLabel.style().stroke().alphaUnit() > 0.85,
-                "DE-LABEL-004 selected room label adds a readable border instead of reusing floor-edge styling");
+        assertTrue(selectedRoomSurfaceStyle.strokeWidth() < 2.0 / 32.0,
+                "DE-LABEL-004 selected cluster label does not flood room floor cells with selected styling");
+        assertTrue(selectedRoomLabel.style().fill() == null && selectedRoomLabel.style().stroke() == null,
+                "DE-LABEL-004 selected room label stays text-only without a label background box");
+        assertTrue(selectedRoomLabel.style().alpha() > 0.95,
+                "DE-LABEL-004 selected room label uses full text opacity for contrast");
         assertTrue(selectedRoomLabel.textColor().red() > 220
                         && selectedRoomLabel.textColor().alphaUnit() > 0.99,
                 "DE-LABEL-004 selected room label text brightens to stay readable on selected clusters");
-        assertTrue(!selectedRoomLabel.style().fill().equals(selectedRoomSurfaceStyle.fill()),
-                "DE-LABEL-004 selected room label underlay stays visually separate from selected floor fill");
         assertTrue(renderHasWallRunMarkerAt(binding.mapContentModel(), 11.0, 10.0),
                 "DE-CLUSTER-001 cluster-label-selected render scene places a smaller horizontal wall-run handle on the wall line");
         assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(11.0, 10.0).targetKind().name(),
                 "DE-HANDLE-002 cluster-label-selected wall-run handle resolves as a handle target");
+        assertEquals("BOUNDARY", binding.mapContentModel().resolvePointerTarget(11.0, 10.0, true).targetKind().name(),
+                "DE-HANDLE-002 boundary-preferred resolver chooses the wall under an overlapping handle");
         assertWallRunSourceEdgesPresent(snapshot, "DE-HANDLE-002");
         results.add("DE-CLUSTER-001 Ready: F15_COMPLEX_CLUSTER publishes true corner handles and source-edged wall-run midpoint handles");
     }
@@ -599,8 +612,8 @@ final class DungeonEditorClusterLabelHandleHarness {
                         .targetKind()
                         .name(),
                 "DE-HANDLE-001 standalone door handle is visible and hittable through the shared handle route");
-        assertDoorHandlePillPresentation(
-                binding.mapContentModel(),
+        assertDoorHandleVisibleOnlyOnHover(
+                binding,
                 doorHandleCenterQ(standaloneDoor),
                 doorHandleCenterR(standaloneDoor),
                 sourceEdgeIsHorizontal(standaloneDoor),
@@ -636,8 +649,8 @@ final class DungeonEditorClusterLabelHandleHarness {
                         .targetKind()
                         .name(),
                 "DE-HANDLE-001 door handle ref is a canvas drag handle");
-        assertDoorHandlePillPresentation(
-                binding.mapContentModel(),
+        assertDoorHandleVisibleOnlyOnHover(
+                binding,
                 doorHandleCenterQ(doorHandle),
                 doorHandleCenterR(doorHandle),
                 sourceEdgeIsHorizontal(doorHandle),
@@ -700,8 +713,8 @@ final class DungeonEditorClusterLabelHandleHarness {
                         .targetKind()
                         .name(),
                 "DE-DOOR-004 door handle resolves as canvas drag handle");
-        assertDoorHandlePillPresentation(
-                binding.mapContentModel(),
+        assertDoorHandleVisibleOnlyOnHover(
+                binding,
                 doorHandleCenterQ(doorHandle),
                 doorHandleCenterR(doorHandle),
                 sourceEdgeIsHorizontal(doorHandle),
@@ -838,12 +851,17 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-HANDLE-004 wall-run");
         DungeonEditorHandleSnapshot doorHandle =
                 firstDoorHandleForDirection(runtime.mapSurfaceModel().current(), "EAST", "DE-HANDLE-004 door");
-        DungeonMapContentModel.GlyphPrimitive doorGlyph = glyphAt(
-                binding.mapContentModel(),
-                DOOR_KIND,
+        assertDoorHandleVisibleOnlyOnHover(
+                binding,
                 doorHandleCenterQ(doorHandle),
                 doorHandleCenterR(doorHandle),
+                sourceEdgeIsHorizontal(doorHandle),
                 "DE-HANDLE-004 door");
+        DungeonMapContentModel.GlyphPrimitive doorGlyph = doorGlyphAt(
+                binding.mapContentModel(),
+                doorHandleCenterQ(doorHandle),
+                doorHandleCenterR(doorHandle))
+                .orElseThrow(() -> new AssertionError("DE-HANDLE-004 hovered door glyph not rendered"));
         assertTrue(renderHasWallRunMarkerAt(binding.mapContentModel(), 11.0, 10.0),
                 "DE-HANDLE-004 cluster-label-selected F16 wall-run marker remains smaller and less obstructive than a cluster corner");
         assertTrue(handleGlyphDistinctFromSelectedFloor(wallRunGlyph, selectedRoomSurfaceStyle),
@@ -947,6 +965,12 @@ final class DungeonEditorClusterLabelHandleHarness {
                                 && handle.cell().r() == 12
                                 && handle.cell().level() == 0),
                 "DE-CLUSTER-003 structured preview diff carries the moved corner handle");
+        assertTrue(labelTexts(binding.mapContentModel(), displayRoomLabel("R1")).stream()
+                        .allMatch(label -> label.style().fill() == null
+                                && label.style().stroke() == null
+                                && label.style().alpha() > 0.7
+                                && label.textColor().alphaUnit() > 0.8),
+                "DE-LABEL-004 preview keeps rendered room labels text-only with visible contrast");
 
         fireMapMouse(
                 mapView,
@@ -2094,6 +2118,12 @@ final class DungeonEditorClusterLabelHandleHarness {
     }
 
     private static LabelText labelText(DungeonMapContentModel mapContentModel, String text, String message) {
+        return labelTexts(mapContentModel, text).stream()
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + " label not rendered: " + text));
+    }
+
+    private static List<LabelText> labelTexts(DungeonMapContentModel mapContentModel, String text) {
         return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
                 .filter(label -> text.equals(label.text()))
                 .map(label -> new LabelText(
@@ -2102,8 +2132,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                         label.typography(),
                         label.style(),
                         label.textColor()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError(message + " label not rendered: " + text));
+                .toList();
     }
 
     private static boolean glyphMatchesHandleKind(DungeonMapContentModel.GlyphPrimitive glyph, String handleKind) {
@@ -2165,6 +2194,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 .glyphs()
                 .stream()
                 .filter(glyph -> glyphMatchesHandleKind(glyph, DOOR_KIND))
+                .filter(glyph -> glyph.style().alpha() > 0.001)
                 .filter(glyph -> Math.abs(glyphCenterQ(glyph) - q) < 0.000_001
                         && Math.abs(glyphCenterR(glyph) - r) < 0.000_001)
                 .count();
@@ -2181,6 +2211,40 @@ final class DungeonEditorClusterLabelHandleHarness {
                         + " hit=" + glyph.hitRef()
                         + " label=" + glyph.label())
                 .toList();
+    }
+
+    private static void assertDoorHandleVisibleOnlyOnHover(
+            HarnessBinding binding,
+            double q,
+            double r,
+            boolean horizontal,
+            String message
+    ) {
+        DungeonMapContentModel.GlyphPrimitive hiddenGlyph = doorGlyphAt(binding.mapContentModel(), q, r)
+                .orElseThrow(() -> new AssertionError(message + " door glyph primitive not retained for hit routing"));
+        assertTrue(hiddenGlyph.style().alpha() == 0.0,
+                message + " door glyph is visually hidden before hover proximity");
+        assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(q, r).targetKind().name(),
+                message + " hidden door glyph center remains a shared handle hit target");
+        double hitQ = horizontal ? q : q + 0.14;
+        double hitR = horizontal ? r + 0.14 : r;
+        assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(hitQ, hitR).targetKind().name(),
+                message + " door-specific enlarged proximity hit resolves without global hit tolerance");
+
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        fireMapMouse(
+                binding.mapView(),
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(hitQ),
+                viewport.sceneToScreenY(hitR),
+                false);
+        assertDoorHandlePillPresentation(binding.mapContentModel(), q, r, horizontal, message + " hovered");
+        assertTrue(doorGlyphAt(binding.mapContentModel(), q, r)
+                        .orElseThrow(() -> new AssertionError(message + " hovered door glyph not retained"))
+                        .style()
+                        .alpha() > 0.9,
+                message + " door glyph becomes visible on hover proximity");
     }
 
     private static void assertDoorHandlePillPresentation(
@@ -2372,6 +2436,70 @@ final class DungeonEditorClusterLabelHandleHarness {
                 .max()
                 .orElseThrow();
         return max - min;
+    }
+
+    private static void assertHoverHighlightsClusterLabel(
+            DungeonMapContentModel mapContentModel,
+            DungeonMapView mapView,
+            String label,
+            double q,
+            double r,
+            String message
+    ) {
+        double normalStroke = labelStrokeWidth(mapContentModel, label, q, r);
+        DungeonMapContentModel.Viewport viewport = mapContentModel.currentViewport();
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(q),
+                viewport.sceneToScreenY(r),
+                false);
+        double hoverStroke = labelStrokeWidth(mapContentModel, label, q, r);
+        assertTrue(hoverStroke > normalStroke && hoverStroke < 2.0 / DEFAULT_GRID_SIZE,
+                message + " uses label hover styling distinct from normal and selected styling");
+    }
+
+    private static void assertRoomLabelHoverRemainsPassive(
+            HarnessBinding binding,
+            String label,
+            LabelCenter center,
+            String message
+    ) {
+        LabelText before = labelText(binding.mapContentModel(), label, message + " before");
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        fireMapMouse(
+                binding.mapView(),
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(center.q()),
+                viewport.sceneToScreenY(center.r()),
+                false);
+        LabelText after = labelText(binding.mapContentModel(), label, message + " after");
+        assertTrue(after.style().fill() == null && after.style().stroke() == null,
+                message + " keeps the room label text-only without a hover label target box");
+        assertDoubleEquals(before.style().strokeWidth(), after.style().strokeWidth(),
+                message + " keeps passive room label stroke width unchanged");
+        assertTrue(!binding.mapContentModel()
+                        .resolveRoomLabelPointerTarget(center.q(), center.r())
+                        .isRoomLabelTarget(),
+                message + " does not expose a room-label pointer target");
+    }
+
+    private static double labelStrokeWidth(
+            DungeonMapContentModel mapContentModel,
+            String label,
+            double q,
+            double r
+    ) {
+        return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
+                .filter(text -> label.equals(text.text()))
+                .filter(text -> Math.abs(text.centerX() - q) < 0.01)
+                .filter(text -> Math.abs(text.centerY() - r) < 0.01)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Label primitive not found for " + label))
+                .style()
+                .strokeWidth();
     }
 
     private record LabelCenter(double q, double r) {
