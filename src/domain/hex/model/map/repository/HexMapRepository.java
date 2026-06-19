@@ -15,6 +15,8 @@ public interface HexMapRepository {
 
     Optional<HexMap> loadById(HexMapIdentity mapId);
 
+    Optional<HexMapSummary> loadSummaryById(HexMapIdentity mapId);
+
     List<HexMapSummary> listMaps();
 
     HexMap save(HexMap map);

@@ -30,14 +30,15 @@ Provide one hex-map workflow that lets a GM:
   `src/view/leftbartabs/hexmap`. The current `Hex-Karte` tab can create maps,
   edit map metadata, inspect tiles, paint terrain, and place simple tile-owned
   markers through Hex domain and SQLite persistence routes.
-- SaltMarcher does not yet ship party-token travel or compact hex travel
-  context.
-- Local editor behavior is owned and verified in this SaltMarcher repo;
-  overworld map travel, party-token travel, and compact travel context remain
-  unimplemented future scopes.
+- SaltMarcher now ships party-token Hex readback and movement through the
+  `Hex-Karte` tab. The existing party-owned overworld travel position is
+  interpreted as a Hex coordinate through the Hex stable tile-id convention.
+- SaltMarcher now ships compact Hex travel readback in the runtime `Reise`
+  state tab when the party token points at a valid Hex tile.
 - The project-wide `Reise` state tab owns the shared global state-tab shell and
   placeholder behavior. Hex owns only the feature-specific live travel readback
-  that will replace that placeholder once Hex runtime travel exists.
+  that replaces that placeholder when the party token points at a valid Hex
+  tile.
 
 ## Primary Surfaces
 
@@ -55,10 +56,10 @@ Provide one hex-map workflow that lets a GM:
 
 ### Travel Across The Hex Map
 
-1. The user opens the interactive hex travel surface.
+1. The user opens the `Hex-Karte` surface.
 2. The party token is shown on the current tile.
-3. The user drags the token to a new hex.
-4. The visible travel context updates.
+3. The user selects the `Reisegruppe` tool and clicks a destination hex.
+4. The visible party token and Hex travel readback update.
 
 ### Read Compact Hex Travel State
 
@@ -91,7 +92,7 @@ Provide one hex-map workflow that lets a GM:
   one visible hex-map feature concept rather than disconnected special cases.
 - The current party tile is understandable to the user on the map surface.
 - Tile inspection is visible and understandable when a tile is selected.
-- Hex travel context can be read both from the interactive surface and the
+- Hex travel context can be read from the `Hex-Karte` state panel and the
   compact travel-state surface shown in the runtime `Reise` tab.
 - The compact `Reise` state tab consumes Hex runtime travel readback only; it
   does not infer active travel from editor-only map selection.

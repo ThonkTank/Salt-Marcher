@@ -15,13 +15,15 @@ Canonical documents:
 - [Hex Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/domain/domain-hex-map.md:1)
 - [Hex Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/contract/contract-hex-persistence.md:1)
 - [Hex Editor Verification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/verification/verification-hex-editor.md:1)
+- [Hex Travel Verification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/verification/verification-hex-travel.md:1)
 
 ## Context Role
 
 Context Role: Authored Hex Map Context
 Context Name: Hex
 
-- `hex` owns authored overworld-style hex map truth for the Hex editor.
+- `hex` owns authored overworld-style hex map truth for the Hex editor and
+  the Hex-specific interpretation of party-owned overworld travel positions.
 - `HexMap` is the aggregate root.
 - Detailed write-model ownership and invariants live in the Hex domain model
   document.
@@ -30,19 +32,23 @@ Context Name: Hex
 ## Published Language
 
 `published/` owns public Hex editor commands, identifiers, terrain and marker
-vocabulary, editor snapshots, and the read-only Hex editor observation model.
+vocabulary, editor snapshots, the read-only Hex editor observation model,
+party-token movement commands, and the Hex travel readback model.
 
 Published Hex carriers must not own render layers, display styling, SQL rows,
-Dungeon topology refs, or runtime travel state.
+Dungeon topology refs, party roster truth, campaign clocks, or weather rules.
 
 ## Application Boundary
 
 Application Service: HexEditorApplicationService
+Application Service: HexTravelApplicationService
 
-The root application service coordinates map creation, map selection, metadata
-edits, tile selection, terrain painting, marker persistence, and editor-tool
-state through the Hex domain and repository ownership. Public readback is
-published separately through the exported Hex editor model.
+The editor root application service coordinates map creation, map selection,
+metadata edits, tile selection, terrain painting, marker persistence, and
+editor-tool state through the Hex domain and repository ownership. The travel
+root application service interprets Hex party-token movement commands and
+delegates the foreign party-position update through a Hex-owned repository
+boundary. Public readback is published separately through exported Hex models.
 
 ## Aggregate Model
 
@@ -63,6 +69,7 @@ Commands entering the model are:
 - paint terrain
 - save marker
 - set active editor tool
+- move the existing party token to a Hex tile
 
 Core invariants:
 
@@ -74,20 +81,26 @@ Core invariants:
 - marker name and marker type are required
 - marker note is optional
 - Hex markers do not reuse Dungeon feature-marker semantics
+- party-owned overworld travel tile ids are interpreted through the Hex stable
+  tile-id convention
 
 ## Cross-Context Boundary
 
 - `hex` owns authored Hex editor state independently of Dungeon authored map
-  truth and party travel state.
-- `hex` does not own runtime travel, compact `Reise` tab state, encounter
+  truth.
+- `hex` owns the Hex-specific projection of party-owned overworld travel
+  positions when they reference a valid Hex map and tile id.
+- `hex` does not own party roster truth, Dungeon travel semantics, encounter
   simulation, campaign time, or weather.
+- The compact runtime `Reise` state tab owns its shared shell; Hex owns only
+  the feature-specific readback consumed there.
 
 ## Consistency Model
 
 Only authored map metadata, tile coordinates, terrain overrides, and marker
 state may persist as Hex map truth. Editor readback, visible tool state, and
-future runtime projections must be recomputed from Hex-owned domain state or
-routed through their own canonical owners.
+Hex travel projections are recomputed from Hex-owned map state plus approved
+party-owned travel readback rather than persisted as Hex map truth.
 
 ## Ubiquitous Language
 
@@ -96,6 +109,8 @@ routed through their own canonical owners.
 - `HexTile`: map-scoped axial coordinate.
 - `HexTerrainOverride`: authored terrain choice for one tile.
 - `HexMarker`: simple named place marker owned by one tile.
+- `HexTravelModel`: published readback of an active party-owned overworld
+  travel position when it resolves to a valid Hex tile.
 
 ## References
 
@@ -103,3 +118,4 @@ routed through their own canonical owners.
 - [Hex Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/domain/domain-hex-map.md:1)
 - [Hex Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/contract/contract-hex-persistence.md:1)
 - [Hex Editor Verification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/verification/verification-hex-editor.md:1)
+- [Hex Travel Verification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/verification/verification-hex-travel.md:1)

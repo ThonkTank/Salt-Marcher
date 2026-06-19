@@ -7,12 +7,14 @@ import javafx.scene.layout.VBox;
 public final class HexMapStateView extends VBox {
 
     private static final String TEXT_MUTED = "text-muted";
+    private static final String TEXT_SECONDARY = "text-secondary";
 
     private final Label statusLabel = label("", TEXT_MUTED);
+    private final Label travelLabel = label("", TEXT_SECONDARY);
     private final Label warningLabel = label("", "text-warning");
     private final Label failureLabel = label("", "text-warning");
-    private final Label coordinateLabel = label("", "text-secondary");
-    private final Label terrainLabel = label("", "text-secondary");
+    private final Label coordinateLabel = label("", TEXT_SECONDARY);
+    private final Label terrainLabel = label("", TEXT_SECONDARY);
     private final Label elevationLabel = label("", TEXT_MUTED);
     private final Label biomeLabel = label("", TEXT_MUTED);
     private final Label explorationLabel = label("", TEXT_MUTED);
@@ -22,7 +24,7 @@ public final class HexMapStateView extends VBox {
     public HexMapStateView() {
         getStyleClass().addAll("surface-root", "control-stack");
         getChildren().addAll(
-                section("Status", statusLabel, warningLabel, failureLabel),
+                section("Status", statusLabel, travelLabel, warningLabel, failureLabel),
                 section("Auswahl", coordinateLabel, terrainLabel, elevationLabel,
                         biomeLabel, explorationLabel, notesLabel),
                 section("Marker", markerList));
@@ -41,6 +43,7 @@ public final class HexMapStateView extends VBox {
             return;
         }
         statusLabel.setText(blankFallback(projection.statusText(), "Kein Status"));
+        travelLabel.setText(projection.travelText());
         warningLabel.setText(projection.warningText());
         failureLabel.setText(projection.failureText());
         warningLabel.setVisible(!projection.warningText().isBlank());
@@ -66,7 +69,7 @@ public final class HexMapStateView extends VBox {
     private static Node markerNode(HexMapStateContentModel.MarkerItem marker) {
         VBox box = new VBox(2);
         box.getStyleClass().add("content-card");
-        box.getChildren().add(label(marker.name() + " | " + marker.typeLabel(), "text-secondary"));
+        box.getChildren().add(label(marker.name() + " | " + marker.typeLabel(), TEXT_SECONDARY));
         if (!marker.note().isBlank()) {
             box.getChildren().add(label(marker.note(), TEXT_MUTED));
         }

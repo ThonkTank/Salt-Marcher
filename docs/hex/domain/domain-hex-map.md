@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-18
+Last Reviewed: 2026-06-19
 Source of Truth: Hex authored-map domain vocabulary, write model ownership,
 and invariants.
 
@@ -18,9 +18,10 @@ The Hex context owns authored overworld-style hex maps used by Hex editor and
 future Hex runtime surfaces. A Hex map is an authored map root with metadata,
 hex tiles, terrain overrides, and simple tile-owned markers.
 
-The Hex context does not own Dungeon topology, runtime travel state, compact
-`Reise` tab state, encounter simulation, campaign clocks, weather rules, or
-generic map-canvas rendering contracts.
+The Hex context does not own Dungeon topology, party roster truth, encounter
+simulation, campaign clocks, weather rules, or generic map-canvas rendering
+contracts. It does own the Hex-specific interpretation of party-owned
+overworld travel readback when the party location points at a Hex map.
 
 ## Write Model
 
@@ -44,6 +45,12 @@ truth and must fail visibly instead of being projected.
 A Hex tile belongs to exactly one Hex map. Tile identity is the map identity
 plus axial coordinate `q,r`. V1 Hex maps are single-layer maps; no level or
 Dungeon room coordinate participates in Hex tile identity.
+
+Party-owned overworld travel state carries only `mapId` plus a stable
+`tileId`. Hex translates that `tileId` to and from axial `q,r` through the
+Hex-owned stable tile-id convention. The convention is valid only for the V1
+maximum Hex radius `99`; invalid or out-of-radius ids do not become active Hex
+travel positions.
 
 ### Terrain
 
@@ -84,11 +91,15 @@ The V1 marker types are:
   ownership.
 - Hex markers MUST NOT reuse Dungeon feature-marker kinds, topology refs, or
   runtime travel state.
+- Hex runtime readback MAY interpret party-owned overworld travel positions as
+  Hex coordinates only through the Hex stable tile-id convention.
 
 ## Current State And Target State
 
 Current state: SaltMarcher has a navigable Hex Map editor backed by the Hex
-domain write model.
+domain write model. It also projects party-owned overworld travel readback into
+a Hex-specific runtime snapshot when the party token points at a valid Hex
+tile id on an existing Hex map.
 
 Target state: Hex editor implementation creates and mutates the Hex domain
 write model described here, and adapters translate it to persistence without

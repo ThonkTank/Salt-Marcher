@@ -14,14 +14,13 @@ independent from the navigable Travel left-bar tab.
 
 Current state:
 
-- The tab shows the original static travel placeholder context.
-- Live travel state remains owned by the Travel left-bar tab and dungeon travel
-  runtime work.
-- Hex travel-state readback is not implemented yet. The Hex target behavior is
-  owned by
+- The tab shows the original static travel placeholder context when no approved
+  feature-owned live readback is registered for the active party.
+- Hex travel-state readback is implemented. The Hex behavior is owned by
   `/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/requirements/requirements-hex-travel-state.md:1`
-  and will replace the placeholder only when the shared runtime state-tab
-  surface consumes an approved live travel readback.
+  and replaces the placeholder when the party token points at a valid Hex tile.
+- Other live travel state remains owned by the Travel left-bar tab and later
+  dungeon travel runtime work.
 
 Target state:
 
@@ -56,8 +55,8 @@ Target state:
 - Selected: the lower-right state pane shows the placeholder travel context.
 - Not selected: the global state pane continues to show the currently selected
   state tab instead of the travel placeholder.
-- Placeholder only: live travel mutations remain absent from this parity-step
-  surface.
+- Placeholder only: no approved live readback is available, so the static
+  travel context remains visible.
 - Live context: the lower-right state pane shows compact readback from the
   owning travel feature and keeps movement commands out of the state tab.
 
@@ -67,9 +66,9 @@ Target state:
   the navigable Travel left-bar tab
 - selecting the runtime tab labeled `Reise` swaps the state pane from
   Encounter content to the travel placeholder content
-- the placeholder remains command-free in this parity step
-- live travel state continues to belong to the Travel left-bar tab and later
-  dungeon-travel runtime work rather than to this placeholder surface
+- the placeholder and live compact state remain command-free in this surface
+- non-Hex live travel state continues to belong to the Travel left-bar tab and
+  later dungeon-travel runtime work rather than to this placeholder surface
 - a feature-owned live travel context can replace the placeholder only through
   an approved readback surface and without adding movement commands to this
   state tab

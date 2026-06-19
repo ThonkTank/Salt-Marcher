@@ -13,12 +13,6 @@ import javafx.scene.layout.VBox;
 public final class TravelStateView extends VBox {
 
     private static final String STYLE_TEXT_MUTED = "text-muted";
-    private static final int ICON_SLOT = 0;
-    private static final int LOCATION_SLOT = 1;
-    private static final int STATUS_SLOT = 2;
-    private static final int CONTEXT_SLOT = 3;
-    private static final int SECTION_HEADER_SLOT = 4;
-    private static final int SECTION_VALUE_SLOT = 5;
 
     private final Label iconLabel = label("travel-location-icon");
     private final Label locationLabel = label(STYLE_TEXT_MUTED, "text-italic");
@@ -46,18 +40,15 @@ public final class TravelStateView extends VBox {
     }
 
     public void bind(TravelStateContentModel contentModel) {
-        iconLabel.textProperty().bind(contentModel.textProperty(ICON_SLOT));
-        locationLabel.textProperty().bind(contentModel.textProperty(LOCATION_SLOT));
-        statusLabel.textProperty().bind(contentModel.textProperty(STATUS_SLOT));
-        contextLabel.textProperty().bind(contentModel.textProperty(CONTEXT_SLOT));
-        sectionHeaderLabel.textProperty().bind(contentModel.textProperty(SECTION_HEADER_SLOT));
-        sectionValueLabel.textProperty().bind(contentModel.textProperty(SECTION_VALUE_SLOT));
-        detailKeyOneLabel.textProperty().bind(contentModel.detailKeyProperty(0));
-        detailValueOneLabel.textProperty().bind(contentModel.detailValueProperty(0));
-        detailKeyTwoLabel.textProperty().bind(contentModel.detailKeyProperty(1));
-        detailValueTwoLabel.textProperty().bind(contentModel.detailValueProperty(1));
-        detailKeyThreeLabel.textProperty().bind(contentModel.detailKeyProperty(2));
-        detailValueThreeLabel.textProperty().bind(contentModel.detailValueProperty(2));
+        iconLabel.textProperty().bind(contentModel.iconProperty());
+        locationLabel.textProperty().bind(contentModel.locationProperty());
+        statusLabel.textProperty().bind(contentModel.statusProperty());
+        contextLabel.textProperty().bind(contentModel.contextProperty());
+        sectionHeaderLabel.textProperty().bind(contentModel.sectionHeaderProperty());
+        sectionValueLabel.textProperty().bind(contentModel.sectionValueProperty());
+        bindDetail(detailKeyOneLabel, detailValueOneLabel, contentModel.weather());
+        bindDetail(detailKeyTwoLabel, detailValueTwoLabel, contentModel.timeOfDay());
+        bindDetail(detailKeyThreeLabel, detailValueThreeLabel, contentModel.pace());
     }
 
     private HBox buildLocationRow() {
@@ -93,6 +84,15 @@ public final class TravelStateView extends VBox {
         actionButton.setVisible(false);
         actionButton.setManaged(false);
         return new VBox(4, sectionHeaderLabel, sectionValueLabel, actionItems, actionButton);
+    }
+
+    private static void bindDetail(
+            Label keyLabel,
+            Label valueLabel,
+            TravelStateContentModel.Detail detail
+    ) {
+        keyLabel.textProperty().bind(detail.keyProperty());
+        valueLabel.textProperty().bind(detail.valueProperty());
     }
 
     private static Label label(String... styles) {

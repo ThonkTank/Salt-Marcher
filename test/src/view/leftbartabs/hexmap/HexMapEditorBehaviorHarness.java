@@ -8,6 +8,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -15,23 +16,37 @@ import java.util.concurrent.atomic.AtomicReference;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.control.ToggleButton;
 import javafx.stage.Window;
 import shell.api.ServiceRegistry;
 import src.data.hex.model.HexPersistenceSchema;
 import src.domain.hex.HexEditorApplicationService;
+import src.domain.hex.HexTravelApplicationService;
+import src.domain.hex.model.map.HexCoordinate;
 import src.domain.hex.published.CreateHexMapCommand;
 import src.domain.hex.published.HexEditorModel;
 import src.domain.hex.published.HexEditorSnapshot;
 import src.domain.hex.published.HexMapId;
+import src.domain.hex.published.HexTravelModel;
+import src.domain.hex.published.HexTravelSnapshot;
 import src.domain.hex.published.LoadHexEditorCommand;
 import src.domain.hex.published.PaintHexTerrainCommand;
 import src.domain.hex.published.SaveHexMarkerCommand;
 import src.domain.hex.published.SelectHexTileCommand;
+import src.domain.hex.published.SetHexEditorToolCommand;
 import src.domain.hex.published.UpdateHexMapCommand;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.CreateCharacterCommand;
+import src.domain.party.published.MembershipState;
+import src.domain.party.published.MovePartyCharactersCommand;
+import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
 
 public final class HexMapEditorBehaviorHarness {
 
@@ -75,6 +90,11 @@ public final class HexMapEditorBehaviorHarness {
         runtime.editor().createMap(new CreateHexMapCommand(ORIGINAL_NAME, START_RADIUS));
         HexEditorSnapshot created = runtime.current();
         HexMapId mapId = selectedMapId(created);
+        long authoredTileId = new HexCoordinate(AUTHORED_Q, AUTHORED_R).stableTileId();
+        HexCoordinate decodedAuthoredTile = HexCoordinate.fromStableTileId(authoredTileId)
+                .orElseThrow(() -> new IllegalStateException("HEX-TRAVEL-001 expected tile id decode."));
+        assertEquals(new HexCoordinate(AUTHORED_Q, AUTHORED_R), decodedAuthoredTile,
+                "HEX-TRAVEL-001 stable tile id roundtrip");
         assertEquals(ORIGINAL_NAME, selectedMap(created).displayName(), "HEX-EDITOR-001 created map name");
         assertEquals(START_RADIUS, selectedMap(created).radius(), "HEX-EDITOR-001 created map radius");
         assertEquals(19, selectedMap(created).tileCount(), "HEX-EDITOR-001 created radius-2 tile count");
@@ -90,7 +110,7 @@ public final class HexMapEditorBehaviorHarness {
         HexEditorSnapshot painted = runtime.current();
         assertTileTerrain(painted, AUTHORED_Q, AUTHORED_R, AUTHORED_TERRAIN, "HEX-EDITOR-004 painted snapshot");
         assertEquals(
-                HexMapMainContentModel.terrainLabel(AUTHORED_TERRAIN),
+                HexMapVocabularyContentPartModel.terrainLabel(AUTHORED_TERRAIN),
                 mainTileProjection(painted, AUTHORED_Q, AUTHORED_R).terrainLabel(),
                 "HEX-EDITOR-004 visible terrain label");
         assertEquals(1L, runtime.database().terrainOverrideCount(mapId.value()),
@@ -138,6 +158,36 @@ public final class HexMapEditorBehaviorHarness {
                 "HEX-EDITOR-005 visible marker label");
         assertEquals(1L, runtime.database().markerCount(mapId.value()),
                 "HEX-EDITOR-005 persisted one marker row");
+        runtime.party().createCharacter(new CreateCharacterCommand(
+                new CharacterDraft("Guide", "Player", 3, 12, 14),
+                MembershipState.ACTIVE));
+        runtime.party().moveCharacters(new MovePartyCharactersCommand(
+                List.of(1L),
+                new PartyOverworldTravelLocationSnapshot(mapId.value(), authoredTileId),
+                true));
+        HexTravelSnapshot travel = runtime.travel().current();
+        assertTrue(travel.active(), "HEX-TRAVEL-002 active Hex travel readback");
+        assertEquals(AUTHORED_Q, travel.q(), "HEX-TRAVEL-002 travel q");
+        assertEquals(AUTHORED_R, travel.r(), "HEX-TRAVEL-002 travel r");
+        assertEquals(List.of(1L), travel.partyTokenCharacterIds(), "HEX-TRAVEL-002 party token character ids");
+        assertTrue(mainProjection(markerSaved, travel).partyToken().active(),
+                "HEX-TRAVEL-002 visible party token projection");
+        assertContains(stateProjection(markerSaved, travel).travelText(), "2,0",
+                "HEX-TRAVEL-002 state travel readback");
+        runOnFxThread(() -> assertMainViewTravelOverlayDoesNotRedrawTiles(markerSaved, travel));
+        runtime.editor().setActiveTool(new SetHexEditorToolCommand("MOVE_PARTY", "GRASSLAND"));
+        HexEditorSnapshot moveToolSnapshot = runtime.current();
+        runOnFxThread(() -> assertMainViewUsesToolLabel(moveToolSnapshot));
+        runOnFxThread(() -> assertMarkerDraftPreservedAcrossToolRefresh(markerSaved, moveToolSnapshot));
+        runOnFxThread(() -> assertMovePartyToolMovesPartyToken(runtime, markerSaved, travel));
+        runtime.hexTravel().movePartyToken(new src.domain.hex.published.MoveHexPartyTokenCommand(
+                mapId.value(),
+                99,
+                99,
+                List.of(1L)));
+        HexTravelSnapshot invalidMove = runtime.travel().current();
+        assertEquals(0, invalidMove.q(), "HEX-TRAVEL-004 invalid move keeps previous q");
+        assertEquals(0, invalidMove.r(), "HEX-TRAVEL-004 invalid move keeps previous r");
         runOnFxThread(() -> assertMapSaveDoesNotRouteToMarkerSave(runtime, markerSaved));
         runOnFxThread(() -> assertMarkerSaveDoesNotRouteToMapUpdate(runtime, markerSaved));
 
@@ -190,6 +240,7 @@ public final class HexMapEditorBehaviorHarness {
         HexEditorSnapshot corruptCatalogRadius = runtime.current();
         assertContains(corruptCatalogRadius.failureText(), "radius must be at most",
                 "HEX-EDITOR-002 corrupt catalog radius validation");
+        assertOversizedMapDoesNotRenderCanvasTiles();
 
         results.add("HEX-EDITOR-001 Ready: HexEditorApplicationService createMap -> HexEditorModel readback -> main projection title");
         results.add("HEX-EDITOR-002 Ready: updateMap expands metadata/radius, rejects over-limit stored radius, and blocks destructive shrink with warning before confirmation");
@@ -200,6 +251,14 @@ public final class HexMapEditorBehaviorHarness {
         results.add("HEX-EDITOR-007 Ready: rebuilt services reload metadata, terrain override, and marker from isolated SQLite route");
         results.add("HEX-EDITOR-008 Ready: map save controls event does not route marker draft into marker persistence");
         results.add("HEX-EDITOR-009 Ready: marker save controls event does not route map draft into map metadata update");
+        results.add("HEX-TRAVEL-001 Ready: HexCoordinate stable tile id round-trips q,r for Party overworld travel");
+        results.add("HEX-TRAVEL-002 Ready: Party overworld travel position projects as HexTravelModel and visible party token");
+        results.add("HEX-TRAVEL-003 Ready: MOVE_PARTY Hex tool moves the existing party token through PartyApplicationService");
+        results.add("HEX-TRAVEL-004 Ready: MOVE_PARTY rejects coordinates outside the selected Hex map radius");
+        results.add("HEX-TRAVEL-005 Ready: travel overlay update does not redraw the Hex tile layer");
+        results.add("HEX-TRAVEL-006 Ready: Hex map header shows user-facing Reisegruppe tool label");
+        results.add("HEX-TRAVEL-007 Ready: marker draft survives Reisegruppe tool refresh");
+        results.add("HEX-TRAVEL-008 Ready: oversized Hex map readback does not allocate rendered Canvas tiles");
     }
 
     private static HexEditorSnapshot.MapSnapshot selectedMap(HexEditorSnapshot snapshot) {
@@ -273,6 +332,31 @@ public final class HexMapEditorBehaviorHarness {
                 "HEX-EDITOR-006 controls preserve marker note draft after validation failure");
     }
 
+    private static void assertMarkerDraftPreservedAcrossToolRefresh(
+            HexEditorSnapshot beforeToolRefresh,
+            HexEditorSnapshot afterToolRefresh
+    ) {
+        HexMapControlsContentModel contentModel = new HexMapControlsContentModel();
+        HexMapControlsView view = new HexMapControlsView();
+        view.bind(contentModel);
+        contentModel.applySnapshot(beforeToolRefresh);
+        TextField markerName = markerNameField(view);
+        ComboBox<String> markerType = markerTypeSelector(view);
+        TextArea markerNote = markerNoteArea(view);
+        markerName.setText("Draft Shrine");
+        selectMarkerType(markerType, "DANGER");
+        markerNote.setText("Draft danger note");
+        contentModel.applySnapshot(afterToolRefresh);
+        assertEquals("Draft Shrine", markerName.getText(),
+                "HEX-TRAVEL-007 controls preserve marker name draft across tool refresh");
+        assertEquals("DANGER", markerTypeKey(markerType.getValue()),
+                "HEX-TRAVEL-007 controls preserve marker type draft across tool refresh");
+        assertEquals("Draft danger note", markerNote.getText(),
+                "HEX-TRAVEL-007 controls preserve marker note draft across tool refresh");
+        assertTrue(reisegruppeToolButton(view).isSelected(),
+                "HEX-TRAVEL-007 Reisegruppe tool selected after refresh");
+    }
+
     private static void assertMapSaveDoesNotRouteToMarkerSave(
             RuntimeSurface runtime,
             HexEditorSnapshot snapshot
@@ -303,7 +387,11 @@ public final class HexMapEditorBehaviorHarness {
         assertTrue(!event.saveMarkerRequested(), "HEX-EDITOR-008 map save must not request marker save");
         assertEquals(1L, runtime.database().markerCount(mapId), "HEX-EDITOR-008 marker count before handler");
 
-        HexMapIntentHandler handler = new HexMapIntentHandler(runtime.editor(), contributionModel, controlsModel);
+        HexMapIntentHandler handler = new HexMapIntentHandler(
+                runtime.editor(),
+                runtime.hexTravel(),
+                contributionModel,
+                controlsModel);
         handler.consume(event);
         assertEquals(1L, runtime.database().markerCount(mapId),
                 "HEX-EDITOR-008 map save does not persist marker draft");
@@ -339,7 +427,11 @@ public final class HexMapEditorBehaviorHarness {
         assertTrue(event.saveMarkerRequested(), "HEX-EDITOR-009 marker save requests marker save");
         assertTrue(!event.updateMapRequested(), "HEX-EDITOR-009 marker save must not request map update");
 
-        HexMapIntentHandler handler = new HexMapIntentHandler(runtime.editor(), contributionModel, controlsModel);
+        HexMapIntentHandler handler = new HexMapIntentHandler(
+                runtime.editor(),
+                runtime.hexTravel(),
+                contributionModel,
+                controlsModel);
         handler.consume(event);
         HexEditorSnapshot afterMarkerSave = runtime.current();
         assertEquals(UPDATED_NAME, selectedMap(afterMarkerSave).displayName(),
@@ -347,6 +439,145 @@ public final class HexMapEditorBehaviorHarness {
         assertEquals(2L, runtime.database().markerCount(mapId),
                 "HEX-EDITOR-009 marker save persists marker despite incidental map draft");
         assertMarker(afterMarkerSave, "Draft Camp", "RESOURCE", "Should become a marker", "HEX-EDITOR-009");
+    }
+
+    private static void assertMovePartyToolMovesPartyToken(
+            RuntimeSurface runtime,
+            HexEditorSnapshot snapshot,
+            HexTravelSnapshot travel
+    ) {
+        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
+        HexMapMainContentModel mainModel = new HexMapMainContentModel();
+        HexMapStateContentModel stateModel = new HexMapStateContentModel();
+        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
+        contributionModel.applySnapshot(snapshot);
+        contributionModel.applyTravelSnapshot(travel);
+        HexMapIntentHandler handler = new HexMapIntentHandler(
+                runtime.editor(),
+                runtime.hexTravel(),
+                contributionModel,
+                controlsModel);
+        handler.consume(new HexMapMainViewInputEvent(
+                selectedMapId(snapshot).value(),
+                0,
+                0,
+                "MOVE_PARTY",
+                "GRASSLAND"));
+        HexTravelSnapshot moved = runtime.travel().current();
+        assertTrue(moved.active(), "HEX-TRAVEL-003 moved travel remains active");
+        assertEquals(0, moved.q(), "HEX-TRAVEL-003 moved q");
+        assertEquals(0, moved.r(), "HEX-TRAVEL-003 moved r");
+    }
+
+    private static void assertMainViewTravelOverlayDoesNotRedrawTiles(
+            HexEditorSnapshot snapshot,
+            HexTravelSnapshot travel
+    ) {
+        HexMapMainContentModel contentModel = new HexMapMainContentModel();
+        HexMapMainView view = new HexMapMainView();
+        view.bind(contentModel);
+        contentModel.applySnapshot(snapshot);
+        Canvas tileCanvas = tileCanvas(view);
+        long beforeTravelDraws = tileDrawCount(tileCanvas);
+        contentModel.applyTravelSnapshot(travel);
+        assertEquals(beforeTravelDraws, tileDrawCount(tileCanvas),
+                "HEX-TRAVEL-005 first travel overlay update does not redraw tiles");
+        contentModel.applyTravelSnapshot(new HexTravelSnapshot(
+                true,
+                selectedMapId(snapshot).value(),
+                0,
+                0,
+                "Wave 3 Hex Map Updated 0,0",
+                "Reisend",
+                "nicht verfuegbar",
+                "nicht verfuegbar",
+                "Normal",
+                "Reisegruppe auf der Hex-Karte bewegen",
+                travel.partyTokenCharacterIds()));
+        assertEquals(beforeTravelDraws, tileDrawCount(tileCanvas),
+                "HEX-TRAVEL-005 subsequent travel overlay update does not redraw tiles");
+    }
+
+    private static void assertMainViewUsesToolLabel(HexEditorSnapshot snapshot) {
+        HexMapMainContentModel contentModel = new HexMapMainContentModel();
+        HexMapMainView view = new HexMapMainView();
+        view.bind(contentModel);
+        contentModel.applySnapshot(snapshot);
+        List<String> labels = labels(view).stream()
+                .map(Label::getText)
+                .toList();
+        assertTrue(labels.stream().anyMatch(text -> text.contains("Werkzeug: Reisegruppe")),
+                "HEX-TRAVEL-006 expected Reisegruppe tool label");
+        assertTrue(labels.stream().noneMatch(text -> text.contains("MOVE_PARTY")),
+                "HEX-TRAVEL-006 must not show internal MOVE_PARTY key");
+    }
+
+    private static void assertOversizedMapDoesNotRenderCanvasTiles() {
+        HexEditorSnapshot oversized = new HexEditorSnapshot(
+                List.of(new HexEditorSnapshot.MapSummary(new HexMapId(77L), "Oversized", 21)),
+                Optional.of(new HexEditorSnapshot.MapSnapshot(new HexMapId(77L), "Oversized", 21, 1_387)),
+                List.of(new HexEditorSnapshot.TileSnapshot(0, 0, "GRASSLAND", false, List.of())),
+                Optional.empty(),
+                "SELECT",
+                "GRASSLAND",
+                "Oversized loaded.",
+                "",
+                "");
+        HexMapMainContentModel model = new HexMapMainContentModel();
+        model.applySnapshot(oversized);
+        assertTrue(!model.projectionProperty().get().mapLoaded(),
+                "HEX-TRAVEL-008 oversized map hides Canvas projection");
+        assertContains(model.projectionProperty().get().emptyText(), "zu gross",
+                "HEX-TRAVEL-008 oversized map explains render cap");
+        assertEquals(0, model.tileLayerProperty().get().tiles().size(),
+                "HEX-TRAVEL-008 oversized map does not project rendered tiles");
+        assertEquals(0, model.tileLayerProperty().get().hits().size(),
+                "HEX-TRAVEL-008 oversized map does not project hit data");
+    }
+
+    private static Canvas tileCanvas(Parent parent) {
+        if (parent instanceof javafx.scene.control.ScrollPane scrollPane
+                && scrollPane.getContent() instanceof Parent content) {
+            return tileCanvas(content);
+        }
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            if (child instanceof Canvas canvas && canvas.getProperties().containsKey(HexMapMainView.KEY_TILE_DRAW_COUNT)) {
+                return canvas;
+            }
+            if (child instanceof Parent childParent) {
+                try {
+                    return tileCanvas(childParent);
+                } catch (IllegalStateException ignored) {
+                    // Continue scanning sibling branches.
+                }
+            }
+        }
+        throw new IllegalStateException("Expected Hex tile canvas.");
+    }
+
+    private static long tileDrawCount(Canvas canvas) {
+        Object count = canvas.getProperties().get(HexMapMainView.KEY_TILE_DRAW_COUNT);
+        return count instanceof Number number ? number.longValue() : 0L;
+    }
+
+    private static List<Label> labels(Parent parent) {
+        List<Label> labels = new ArrayList<>();
+        collectLabels(parent, labels);
+        return labels;
+    }
+
+    private static void collectLabels(Node node, List<Label> labels) {
+        if (node instanceof Label label) {
+            labels.add(label);
+        }
+        if (node instanceof javafx.scene.control.ScrollPane scrollPane && scrollPane.getContent() != null) {
+            collectLabels(scrollPane.getContent(), labels);
+        }
+        if (node instanceof Parent parent) {
+            for (Node child : parent.getChildrenUnmodifiable()) {
+                collectLabels(child, labels);
+            }
+        }
     }
 
     private static TextField markerNameField(Parent parent) {
@@ -367,6 +598,10 @@ public final class HexMapEditorBehaviorHarness {
 
     private static Button markerSaveButton(Parent parent) {
         return buttonDescendant(parent, "Marker speichern");
+    }
+
+    private static ToggleButton reisegruppeToolButton(Parent parent) {
+        return toggleButtonDescendant(parent, "Reisegruppe");
     }
 
     private static ComboBox<String> markerTypeSelector(Parent parent) {
@@ -450,6 +685,22 @@ public final class HexMapEditorBehaviorHarness {
         throw new IllegalStateException("Expected button " + text + ".");
     }
 
+    private static ToggleButton toggleButtonDescendant(Parent parent, String text) {
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            if (child instanceof ToggleButton button && text.equals(button.getText())) {
+                return button;
+            }
+            if (child instanceof Parent childParent) {
+                try {
+                    return toggleButtonDescendant(childParent, text);
+                } catch (IllegalStateException ignored) {
+                    // Continue scanning sibling branches.
+                }
+            }
+        }
+        throw new IllegalStateException("Expected toggle button " + text + ".");
+    }
+
     private static String prompt(Node node) {
         if (node instanceof TextField textField) {
             return textField.getPromptText();
@@ -466,12 +717,24 @@ public final class HexMapEditorBehaviorHarness {
         return model.projectionProperty().get();
     }
 
+    private static HexMapMainContentModel.Projection mainProjection(
+            HexEditorSnapshot snapshot,
+            HexTravelSnapshot travel
+    ) {
+        HexMapMainContentModel model = new HexMapMainContentModel();
+        model.applySnapshot(snapshot);
+        model.applyTravelSnapshot(travel);
+        return model.projectionProperty().get();
+    }
+
     private static HexMapMainContentModel.TileItem mainTileProjection(
             HexEditorSnapshot snapshot,
             int q,
             int r
     ) {
-        return mainProjection(snapshot).tiles().stream()
+        HexMapMainContentModel model = new HexMapMainContentModel();
+        model.applySnapshot(snapshot);
+        return model.tileLayerProperty().get().tiles().stream()
                 .filter(candidate -> candidate.q() == q && candidate.r() == r)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Expected projected Hex tile " + q + "," + r + "."));
@@ -480,6 +743,16 @@ public final class HexMapEditorBehaviorHarness {
     private static HexMapStateContentModel.Projection stateProjection(HexEditorSnapshot snapshot) {
         HexMapStateContentModel model = new HexMapStateContentModel();
         model.applySnapshot(snapshot);
+        return model.projectionProperty().get();
+    }
+
+    private static HexMapStateContentModel.Projection stateProjection(
+            HexEditorSnapshot snapshot,
+            HexTravelSnapshot travel
+    ) {
+        HexMapStateContentModel model = new HexMapStateContentModel();
+        model.applySnapshot(snapshot);
+        model.applyTravelSnapshot(travel);
         return model.projectionProperty().get();
     }
 
@@ -547,16 +820,24 @@ public final class HexMapEditorBehaviorHarness {
     private record RuntimeSurface(
             HexEditorApplicationService editor,
             HexEditorModel model,
+            HexTravelModel travel,
+            HexTravelApplicationService hexTravel,
+            PartyApplicationService party,
             DatabaseAssertions database
     ) {
         static RuntimeSurface create() {
             ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
             new src.data.hex.HexServiceContribution().register(builder);
+            new src.data.party.PartyServiceContribution().register(builder);
+            new src.domain.party.PartyServiceContribution().register(builder);
             new src.domain.hex.HexServiceContribution().register(builder);
             ServiceRegistry registry = builder.build();
             return new RuntimeSurface(
                     registry.require(HexEditorApplicationService.class),
                     registry.require(HexEditorModel.class),
+                    registry.require(HexTravelModel.class),
+                    registry.require(HexTravelApplicationService.class),
+                    registry.require(PartyApplicationService.class),
                     new DatabaseAssertions());
         }
 

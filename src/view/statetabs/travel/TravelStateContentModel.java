@@ -2,44 +2,91 @@ package src.view.statetabs.travel;
 
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
+import src.domain.hex.published.HexTravelSnapshot;
 
 final class TravelStateContentModel {
 
-    private static final String[] TEXT_DEFAULTS = {
-        "W",
-        "\u2014 Kein Ort gew\u00e4hlt \u2014",
-        "Reisend",
-        "\u2014",
-        "Interaktion",
-        "Gruppenmarker auf der Karte ziehen"
-    };
-    private static final String[] DETAIL_KEY_DEFAULTS = {"Wetter", "Tageszeit", "Tempo"};
-    private static final String[] DETAIL_VALUE_DEFAULTS = {"Bew\u00f6lkt", "Morgen", "Normal"};
+    private final ReadOnlyStringWrapper icon = new ReadOnlyStringWrapper("W");
+    private final ReadOnlyStringWrapper location = new ReadOnlyStringWrapper("\u2014 Kein Ort gew\u00e4hlt \u2014");
+    private final ReadOnlyStringWrapper status = new ReadOnlyStringWrapper("Reisend");
+    private final ReadOnlyStringWrapper context = new ReadOnlyStringWrapper("\u2014");
+    private final ReadOnlyStringWrapper sectionHeader = new ReadOnlyStringWrapper("Interaktion");
+    private final ReadOnlyStringWrapper sectionValue = new ReadOnlyStringWrapper("Gruppenmarker auf der Karte ziehen");
+    private final Detail weather = new Detail("Wetter", "Bew\u00f6lkt");
+    private final Detail timeOfDay = new Detail("Tageszeit", "Morgen");
+    private final Detail pace = new Detail("Tempo", "Normal");
 
-    private final ReadOnlyStringWrapper[] textProperties = new ReadOnlyStringWrapper[TEXT_DEFAULTS.length];
-    private final ReadOnlyStringWrapper[] detailKeyProperties = new ReadOnlyStringWrapper[DETAIL_KEY_DEFAULTS.length];
-    private final ReadOnlyStringWrapper[] detailValueProperties =
-            new ReadOnlyStringWrapper[DETAIL_VALUE_DEFAULTS.length];
+    ReadOnlyStringProperty iconProperty() {
+        return icon.getReadOnlyProperty();
+    }
 
-    TravelStateContentModel() {
-        for (int index = 0; index < TEXT_DEFAULTS.length; index++) {
-            textProperties[index] = new ReadOnlyStringWrapper(TEXT_DEFAULTS[index]);
+    ReadOnlyStringProperty locationProperty() {
+        return location.getReadOnlyProperty();
+    }
+
+    ReadOnlyStringProperty statusProperty() {
+        return status.getReadOnlyProperty();
+    }
+
+    ReadOnlyStringProperty contextProperty() {
+        return context.getReadOnlyProperty();
+    }
+
+    ReadOnlyStringProperty sectionHeaderProperty() {
+        return sectionHeader.getReadOnlyProperty();
+    }
+
+    ReadOnlyStringProperty sectionValueProperty() {
+        return sectionValue.getReadOnlyProperty();
+    }
+
+    Detail weather() {
+        return weather;
+    }
+
+    Detail timeOfDay() {
+        return timeOfDay;
+    }
+
+    Detail pace() {
+        return pace;
+    }
+
+    void applyHexTravelSnapshot(HexTravelSnapshot snapshot) {
+        HexTravelSnapshot safeSnapshot = snapshot == null
+                ? HexTravelSnapshot.empty("Keine Hex-Reiseposition ausgewaehlt.")
+                : snapshot;
+        icon.set(safeSnapshot.active() ? "H" : "W");
+        location.set(safeSnapshot.locationText());
+        status.set(safeSnapshot.statusText());
+        context.set(safeSnapshot.active() ? "Hex-Reise" : "\u2014");
+        sectionHeader.set("Interaktion");
+        sectionValue.set(safeSnapshot.hintText());
+        weather.setValue(safeSnapshot.weatherText());
+        timeOfDay.setValue(safeSnapshot.timeOfDayText());
+        pace.setValue(safeSnapshot.paceText());
+    }
+
+    static final class Detail {
+
+        private final ReadOnlyStringWrapper key;
+        private final ReadOnlyStringWrapper value;
+
+        private Detail(String key, String value) {
+            this.key = new ReadOnlyStringWrapper(key);
+            this.value = new ReadOnlyStringWrapper(value);
         }
-        for (int index = 0; index < DETAIL_KEY_DEFAULTS.length; index++) {
-            detailKeyProperties[index] = new ReadOnlyStringWrapper(DETAIL_KEY_DEFAULTS[index]);
-            detailValueProperties[index] = new ReadOnlyStringWrapper(DETAIL_VALUE_DEFAULTS[index]);
+
+        ReadOnlyStringProperty keyProperty() {
+            return key.getReadOnlyProperty();
         }
-    }
 
-    ReadOnlyStringProperty textProperty(int index) {
-        return textProperties[index].getReadOnlyProperty();
-    }
+        ReadOnlyStringProperty valueProperty() {
+            return value.getReadOnlyProperty();
+        }
 
-    ReadOnlyStringProperty detailKeyProperty(int index) {
-        return detailKeyProperties[index].getReadOnlyProperty();
-    }
-
-    ReadOnlyStringProperty detailValueProperty(int index) {
-        return detailValueProperties[index].getReadOnlyProperty();
+        void setValue(String nextValue) {
+            value.set(nextValue == null ? "" : nextValue.trim());
+        }
     }
 }

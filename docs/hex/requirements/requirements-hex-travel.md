@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
+Last Reviewed: 2026-06-19
 Source of Truth: Travel-facing hex-map behavior, visible states, and acceptance
 criteria.
 
@@ -20,21 +20,24 @@ party-owned runtime position.
 
 ## Current State
 
-- SaltMarcher does not yet ship a dedicated hex travel surface.
-- The sibling `salt-marcher` repo shows the visible target-state surface:
-  overworld hex map display, party token on the map, and token drag as the
-  primary travel gesture.
-- The same repo also shows that the visible travel context should include
-  location, status, weather, time of day, pace, and a concise interaction
-  hint.
+- SaltMarcher ships Hex travel inside the `Hex-Karte` surface rather than as a
+  separate left-bar tab.
+- The Hex map shows the party token when the party-owned overworld travel
+  position points at a valid Hex tile id on the selected Hex map.
+- The `Reisegruppe` tool moves the existing party token to a clicked Hex tile
+  through the party-owned travel-position service.
+- Visible travel context currently includes the active Hex location on the
+  `Hex-Karte` state panel and compact location, status, pace, and hint
+  readback in the runtime `Reise` state tab. Weather and time of day remain
+  unavailable until a later travel-context source publishes them.
 
 ## Visible Structure
 
-- controls or context content that identify current overworld travel state
-- main content as the shared hex map surface in runtime mode
+- controls that include the `Reisegruppe` movement tool
+- main content as the shared `Hex-Karte` map surface
 - one visible party token on the active hex
-- compact travel context such as location, weather, time of day, pace, and
-  status
+- compact travel context in the runtime `Reise` state tab, including location,
+  weather, time of day, pace, and status
 
 ## Visible States
 
@@ -47,7 +50,7 @@ party-owned runtime position.
 
 - the travel surface MUST load a visible hex map and current party position
 - the surface MUST show the party token on the current tile when one exists
-- travel MUST support direct token movement across the hex map
+- travel MUST support direct party-token movement across the hex map
 - the surface MUST communicate current location or context plus visible travel
   status
 - the surface MUST communicate visible overworld travel context such as
@@ -61,9 +64,10 @@ party-owned runtime position.
 ## Acceptance Criteria
 
 - A user can identify the current party tile on the map.
-- Dragging the token updates visible travel context when the move resolves.
+- Using the `Reisegruppe` tool to choose a destination tile updates visible
+  travel context when the move resolves.
 - The travel surface stays focused on interactive map travel rather than
-  turning into the full editor.
+  adding movement commands to the compact runtime `Reise` state tab.
 - Missing location context is shown explicitly.
 
 ## References

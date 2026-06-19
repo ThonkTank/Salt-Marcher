@@ -2,7 +2,9 @@ package src.view.leftbartabs.hexmap;
 
 import java.util.Objects;
 import src.domain.hex.HexEditorApplicationService;
+import src.domain.hex.HexTravelApplicationService;
 import src.domain.hex.published.CreateHexMapCommand;
+import src.domain.hex.published.MoveHexPartyTokenCommand;
 import src.domain.hex.published.PaintHexTerrainCommand;
 import src.domain.hex.published.SaveHexMarkerCommand;
 import src.domain.hex.published.SelectHexMapCommand;
@@ -16,18 +18,22 @@ final class HexMapIntentHandler {
     private static final String SELECT_TOOL = "SELECT";
     private static final String PAINT_TERRAIN_TOOL = "PAINT_TERRAIN";
     private static final String PLACE_MARKER_TOOL = "PLACE_MARKER";
+    private static final String MOVE_PARTY_TOOL = "MOVE_PARTY";
     private static final String DEFAULT_TERRAIN = "GRASSLAND";
 
     private final HexEditorApplicationService editor;
+    private final HexTravelApplicationService travel;
     private final HexMapContributionModel contributionModel;
     private final HexMapControlsContentModel controlsContentModel;
 
     HexMapIntentHandler(
             HexEditorApplicationService editor,
+            HexTravelApplicationService travel,
             HexMapContributionModel contributionModel,
             HexMapControlsContentModel controlsContentModel
     ) {
         this.editor = Objects.requireNonNull(editor, "editor");
+        this.travel = Objects.requireNonNull(travel, "travel");
         this.contributionModel = Objects.requireNonNull(contributionModel, "contributionModel");
         this.controlsContentModel = Objects.requireNonNull(controlsContentModel, "controlsContentModel");
     }
@@ -83,6 +89,10 @@ final class HexMapIntentHandler {
                     terrain(event.activeTerrainKey())));
             return;
         }
+        if (MOVE_PARTY_TOOL.equals(activeTool)) {
+            movePartyToken(event.mapId(), event.q(), event.r());
+            return;
+        }
         editor.selectTile(new SelectHexTileCommand(event.mapId(), event.q(), event.r()));
         if (PLACE_MARKER_TOOL.equals(activeTool)) {
             editor.setActiveTool(new SetHexEditorToolCommand(activeTool, terrain(event.activeTerrainKey())));
@@ -132,6 +142,15 @@ final class HexMapIntentHandler {
                 event.markerNote()));
     }
 
+    private void movePartyToken(long mapId, int q, int r) {
+        java.util.List<Long> characterIds = contributionModel.partyTokenCharacterIds();
+        if (characterIds.isEmpty()) {
+            contributionModel.showLocalFailure("No party token characters are available for Hex travel.");
+            return;
+        }
+        travel.movePartyToken(new MoveHexPartyTokenCommand(mapId, q, r, characterIds));
+    }
+
     private static boolean mapMetadataChanged(
             HexMapControlsViewInputEvent event,
             HexMapControlsContentModel.Projection projection
@@ -153,6 +172,7 @@ final class HexMapIntentHandler {
         return switch (key == null ? "" : key.trim()) {
             case PAINT_TERRAIN_TOOL -> PAINT_TERRAIN_TOOL;
             case PLACE_MARKER_TOOL -> PLACE_MARKER_TOOL;
+            case MOVE_PARTY_TOOL -> MOVE_PARTY_TOOL;
             default -> SELECT_TOOL;
         };
     }

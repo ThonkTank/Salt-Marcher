@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-18
+Last Reviewed: 2026-06-19
 Source of Truth: Hex SQLite persistence contract for authored maps, tiles,
 terrain overrides, and markers.
 
@@ -22,8 +22,8 @@ schema meaning or making adapter row shape the domain owner.
 ## Scope Boundary
 
 This contract owns only authored Hex map persistence. It does not own Dungeon
-tables, generic map-canvas contracts, runtime travel state, compact `Reise`
-travel-state persistence, or migration from external map sources.
+tables, generic map-canvas contracts, party roster persistence, compact
+`Reise` travel-state persistence, or migration from external map sources.
 
 ## Stored Truth
 
@@ -49,6 +49,11 @@ The map table MUST store one row per authored Hex map. A map row MUST include:
 Tile rows MUST be scoped to one map. A tile coordinate is the single-layer
 axial coordinate `q,r`. Stored tile records MUST NOT introduce a Dungeon level,
 room, or topology reference.
+
+Hex runtime travel uses a derived stable tile id for party-owned overworld
+travel positions. That id is not stored in Hex tables; it is computed from the
+Hex axial coordinate and decoded by the Hex runtime readback. Hex persistence
+remains keyed by `map_id`, `q`, and `r`.
 
 ### Terrain Overrides
 
@@ -91,10 +96,11 @@ that absence MUST round-trip as "no note" and MUST NOT change marker identity.
 
 ## Compatibility And Migration
 
-V1 has no compatibility promise with Dungeon feature-marker tables and no
-runtime travel-state payload. Future migrations that rename tables or marker
-types MUST preserve domain meaning or document the incompatible migration in
-this contract before implementation relies on it.
+V1 has no compatibility promise with Dungeon feature-marker tables and no Hex
+runtime travel-state payload. Future migrations that rename tables, marker
+types, or the stable Hex tile-id convention MUST preserve domain meaning or
+document the incompatible migration in this contract before implementation
+relies on it.
 
 ## Verification Notes
 

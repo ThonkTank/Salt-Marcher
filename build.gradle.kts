@@ -88,7 +88,10 @@ val hexMapEditorBehaviorHarness by sourceSets.creating {
         setSrcDirs(listOf("."))
         include("shell/api/**")
         include("src/data/persistencecore/sqlite/**")
+        include("src/data/party/**")
+        include("src/domain/party/**")
         include("test/src/view/leftbartabs/hexmap/**")
+        include("test/src/view/statetabs/travel/**")
     }
     resources {
         setSrcDirs(emptyList<String>())
@@ -342,6 +345,15 @@ tasks.register<JavaExec>("hexMapEditorBehaviorHarness") {
         mkdir(runDataDir.dir("salt-marcher"))
         environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
     }
+}
+
+tasks.register<JavaExec>("hexTravelStateBehaviorHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run the focused Hex travel state behavior harness."
+    dependsOn(tasks.named(hexMapEditorBehaviorHarness.classesTaskName))
+    classpath = hexMapEditorBehaviorHarness.runtimeClasspath
+    mainClass.set("src.view.statetabs.travel.TravelStateHexHarness")
+    outputs.upToDateWhen { false }
 }
 
 tasks.register<JavaExec>("sessionPlannerCatalogHarness") {

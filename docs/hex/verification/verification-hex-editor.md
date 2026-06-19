@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-18
+Last Reviewed: 2026-06-19
 Source of Truth: Hex editor behavior and persistence proof obligations.
 
 # Hex Editor Verification
@@ -59,10 +59,11 @@ the implementation emits source-backed evidence from the production route. A
 proof ID fails when it relies on fixture-only selftests, fake view state,
 Dungeon-owned marker semantics, or direct SQLite rows without domain readback.
 
-## Known Gaps
+## Related Proof
 
-- Interactive hex travel and compact runtime `Reise` travel-state behavior
-  remain separate unimplemented scopes.
+- Interactive Hex travel and compact runtime `Reise` travel-state behavior are
+  covered by
+  `/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/verification/verification-hex-travel.md:1`.
 
 ## References
 
@@ -70,3 +71,4 @@ Dungeon-owned marker semantics, or direct SQLite rows without domain readback.
 - [Hex Editor Requirements](../requirements/requirements-hex-editor.md)
 - [Hex Domain](../domain/domain-hex-map.md)
 - [Hex Persistence Contract](../contract/contract-hex-persistence.md)
+- [Hex Travel Verification](./verification-hex-travel.md)

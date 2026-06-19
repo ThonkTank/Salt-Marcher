@@ -33,6 +33,10 @@ final class SqliteHexMapReader {
                 SqliteHexMapRecordReader.loadMarkers(connection, mapId)));
     }
 
+    static Optional<HexMapRecord> loadSummaryById(Connection connection, long mapId) throws SQLException {
+        return loadMapRecord(connection, mapId);
+    }
+
     static List<HexMapRecord> listMaps(Connection connection) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
                 "SELECT map_id, display_name, radius FROM "

@@ -39,6 +39,12 @@ public final class SqliteHexMapRepository implements HexMapRepository {
     }
 
     @Override
+    public Optional<HexMapSummary> loadSummaryById(HexMapIdentity mapId) {
+        Objects.requireNonNull(mapId, MAP_ID_ARGUMENT);
+        return gateway.loadSummaryById(mapId.value()).map(HexMapMapper::toSummary);
+    }
+
+    @Override
     public List<HexMapSummary> listMaps() {
         return gateway.listMaps().stream()
                 .map(HexMapMapper::toSummary)

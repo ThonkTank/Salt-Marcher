@@ -310,14 +310,14 @@ Rules:
 - `creatures`: Reference Catalog Context.
 - `encounter`: Roster Truth Context.
 - `encountertable`: Reference Catalog Context.
+- `hex`: Authored Hex Map Context.
 - `dungeon`: Authored Dungeon Map Context with `core` truth and runtime.
 - `sessionplanner`: Roster Truth Context.
 
-## Context Relationships <!-- mechanical-domain-dependencies: dungeon=party; encounter=creatures,encountertable,party; sessionplanner=encounter,party -->
+## Context Relationships <!-- mechanical-domain-dependencies: dungeon=party; encounter=creatures,encountertable,party; hex=party; sessionplanner=encounter,party -->
 
 - `party`: `Party Character State Context`; publishes roster, membership, XP,
-  rest cadence, adventuring-day facts, and character travel-position facts to
-  downstream contexts.
+  rest cadence, adventuring-day facts, and travel-position facts.
 - `creatures`: `Reference Catalog Context`; publishes imported creature-catalog
   lookup facts and encounter-candidate reference profiles to downstream policy
   contexts.
@@ -327,6 +327,9 @@ Rules:
 - `encountertable`: `Reference Catalog Context`; consumes creature persistence
   snapshots through layered data access and publishes table summaries and
   weighted candidate rows.
+- `hex`: `Authored Hex Map Context`; owns authored overworld-style hex map
+  truth, metadata, tiles, terrain overrides, tile-owned markers, and the
+  Hex-specific projection of party-owned overworld travel-position facts.
 - `dungeon`: `Authored Dungeon Map Context`; owns authored dungeon map truth
   independently of party, creatures, and encounter. Authored truth lives in
   `core`; editor and travel runtime composition live in `runtime` over the same

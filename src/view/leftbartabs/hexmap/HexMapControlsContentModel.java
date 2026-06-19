@@ -9,21 +9,10 @@ public final class HexMapControlsContentModel {
 
     static final String VALUE_DELIMITER = "\u001f";
     private static final List<ToolOption> TOOL_OPTIONS = List.of(
-            new ToolOption("SELECT", "Auswahl"),
-            new ToolOption("PAINT_TERRAIN", "Terrain"),
-            new ToolOption("PLACE_MARKER", "Marker"));
-    private static final List<TerrainOption> TERRAIN_OPTIONS = List.of(
-            new TerrainOption("GRASSLAND", "Grasland"),
-            new TerrainOption("FOREST", "Wald"),
-            new TerrainOption("MOUNTAINS", "Gebirge"),
-            new TerrainOption("WATER", "Wasser"),
-            new TerrainOption("DESERT", "Wueste"),
-            new TerrainOption("SWAMP", "Sumpf"));
-    private static final List<MarkerTypeOption> MARKER_TYPE_OPTIONS = List.of(
-            new MarkerTypeOption("SETTLEMENT", "Siedlung"),
-            new MarkerTypeOption("LANDMARK", "Landmarke"),
-            new MarkerTypeOption("DANGER", "Gefahr"),
-            new MarkerTypeOption("RESOURCE", "Ressource"));
+            new ToolOption(HexMapToolContentPartModel.SELECT, HexMapToolContentPartModel.label(HexMapToolContentPartModel.SELECT)),
+            new ToolOption(HexMapToolContentPartModel.PAINT_TERRAIN, HexMapToolContentPartModel.label(HexMapToolContentPartModel.PAINT_TERRAIN)),
+            new ToolOption(HexMapToolContentPartModel.PLACE_MARKER, HexMapToolContentPartModel.label(HexMapToolContentPartModel.PLACE_MARKER)),
+            new ToolOption(HexMapToolContentPartModel.MOVE_PARTY, HexMapToolContentPartModel.label(HexMapToolContentPartModel.MOVE_PARTY)));
 
     private final ReadOnlyObjectWrapper<Projection> projection =
             new ReadOnlyObjectWrapper<>(Projection.initial());
@@ -48,9 +37,9 @@ public final class HexMapControlsContentModel {
             boolean mapLoaded,
             List<ToolOption> tools,
             String activeToolKey,
-            List<TerrainOption> terrains,
+            List<HexMapVocabularyContentPartModel.Option> terrains,
             String activeTerrainKey,
-            List<MarkerTypeOption> markerTypes,
+            List<HexMapVocabularyContentPartModel.Option> markerTypes,
             List<MarkerOption> selectedTileMarkers,
             boolean tileSelected,
             int selectedQ,
@@ -84,10 +73,10 @@ public final class HexMapControlsContentModel {
                     2,
                     false,
                     TOOL_OPTIONS,
-                    "SELECT",
-                    TERRAIN_OPTIONS,
-                    "GRASSLAND",
-                    MARKER_TYPE_OPTIONS,
+                    HexMapToolContentPartModel.SELECT,
+                    HexMapVocabularyContentPartModel.TERRAIN_OPTIONS,
+                    HexMapVocabularyContentPartModel.DEFAULT_TERRAIN,
+                    HexMapVocabularyContentPartModel.MARKER_TYPE_OPTIONS,
                     List.of(),
                     false,
                     0,
@@ -130,9 +119,9 @@ public final class HexMapControlsContentModel {
                     safeSnapshot.selectedMap().isPresent(),
                     TOOL_OPTIONS,
                     safeSnapshot.activeTool(),
-                    TERRAIN_OPTIONS,
+                    HexMapVocabularyContentPartModel.TERRAIN_OPTIONS,
                     safeSnapshot.activeTerrain(),
-                    MARKER_TYPE_OPTIONS,
+                    HexMapVocabularyContentPartModel.MARKER_TYPE_OPTIONS,
                     markers,
                     tileSelected,
                     selectedQ,
@@ -200,32 +189,6 @@ public final class HexMapControlsContentModel {
     record ToolOption(String key, String label) {
 
         ToolOption {
-            key = safeText(key);
-            label = safeText(label);
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
-
-    record TerrainOption(String key, String label) {
-
-        TerrainOption {
-            key = safeText(key);
-            label = safeText(label);
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
-
-    record MarkerTypeOption(String key, String label) {
-
-        MarkerTypeOption {
             key = safeText(key);
             label = safeText(label);
         }

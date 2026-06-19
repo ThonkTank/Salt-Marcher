@@ -4,18 +4,36 @@ import java.util.List;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import src.domain.hex.published.HexEditorSnapshot;
+import src.domain.hex.published.HexTravelSnapshot;
 
 public final class HexMapStateContentModel {
 
+    private static final String NO_MAP_STATUS = "Keine Hex-Karte geladen.";
+    private static final String NO_TRAVEL_STATUS = "Keine Hex-Reiseposition ausgewaehlt.";
+
     private final ReadOnlyObjectWrapper<Projection> projection =
             new ReadOnlyObjectWrapper<>(Projection.initial());
+    private HexEditorSnapshot editorSnapshot = HexEditorSnapshot.empty(NO_MAP_STATUS);
+    private HexTravelSnapshot travelSnapshot = HexTravelSnapshot.empty(NO_TRAVEL_STATUS);
 
     ReadOnlyObjectProperty<Projection> projectionProperty() {
         return projection.getReadOnlyProperty();
     }
 
     void applySnapshot(HexEditorSnapshot snapshot) {
-        projection.set(Projection.from(snapshot));
+        editorSnapshot = snapshot == null ? HexEditorSnapshot.empty(NO_MAP_STATUS) : snapshot;
+        refreshProjection();
+    }
+
+    void applyTravelSnapshot(HexTravelSnapshot snapshot) {
+        travelSnapshot = snapshot == null
+                ? HexTravelSnapshot.empty(NO_TRAVEL_STATUS)
+                : snapshot;
+        refreshProjection();
+    }
+
+    private void refreshProjection() {
+        projection.set(Projection.from(editorSnapshot, travelSnapshot));
     }
 
     void showLocalFailure(String failureText) {
@@ -34,6 +52,7 @@ public final class HexMapStateContentModel {
             String biomeText,
             String explorationText,
             String notesText,
+            String travelText,
             List<MarkerItem> markers
     ) {
 
@@ -47,12 +66,13 @@ public final class HexMapStateContentModel {
             biomeText = safeText(biomeText);
             explorationText = safeText(explorationText);
             notesText = safeText(notesText);
+            travelText = safeText(travelText);
             markers = markers == null ? List.of() : List.copyOf(markers);
         }
 
         static Projection initial() {
             return new Projection(
-                    "Keine Hex-Karte geladen.",
+                    NO_MAP_STATUS,
                     "",
                     "",
                     false,
@@ -62,15 +82,19 @@ public final class HexMapStateContentModel {
                     "",
                     "",
                     "",
+                    "Keine Hex-Reiseposition ausgewaehlt.",
                     List.of());
         }
 
-        static Projection from(HexEditorSnapshot snapshot) {
+        static Projection from(HexEditorSnapshot snapshot, HexTravelSnapshot travelSnapshot) {
             HexEditorSnapshot safeSnapshot = snapshot == null
-                    ? HexEditorSnapshot.empty("Keine Hex-Karte geladen.")
+                    ? HexEditorSnapshot.empty(NO_MAP_STATUS)
                     : snapshot;
+            HexTravelSnapshot safeTravel = travelSnapshot == null
+                    ? HexTravelSnapshot.empty(NO_TRAVEL_STATUS)
+                    : travelSnapshot;
             return safeSnapshot.selectedTile()
-                    .map(tile -> fromTile(safeSnapshot, tile))
+                    .map(tile -> fromTile(safeSnapshot, safeTravel, tile))
                     .orElseGet(() -> new Projection(
                             safeSnapshot.statusText(),
                             safeSnapshot.failureText(),
@@ -82,11 +106,13 @@ public final class HexMapStateContentModel {
                             "",
                             "",
                             "",
+                            travelText(safeTravel),
                             List.of()));
         }
 
         private static Projection fromTile(
                 HexEditorSnapshot snapshot,
+                HexTravelSnapshot travelSnapshot,
                 HexEditorSnapshot.TileDetails tile
         ) {
             return new Projection(
@@ -95,11 +121,12 @@ public final class HexMapStateContentModel {
                     snapshot.warningText(),
                     true,
                     tile.q() + "," + tile.r(),
-                    terrainLabel(tile.terrain()),
+                    HexMapVocabularyContentPartModel.terrainLabel(tile.terrain()),
                     fallback(tile.elevation(), "nicht verfuegbar"),
                     fallback(tile.biome(), "nicht verfuegbar"),
                     fallback(tile.explorationState(), "nicht verfuegbar"),
                     fallback(tile.notes(), "keine Notizen"),
+                    travelText(travelSnapshot),
                     tile.markers().stream().map(MarkerItem::from).toList());
         }
 
@@ -112,10 +139,18 @@ public final class HexMapStateContentModel {
                     coordinateText,
                     terrainText,
                     elevationText,
-                    biomeText,
-                    explorationText,
-                    notesText,
-                    markers);
+                biomeText,
+                explorationText,
+                notesText,
+                travelText,
+                markers);
+        }
+
+        private static String travelText(HexTravelSnapshot travelSnapshot) {
+            if (travelSnapshot == null || !travelSnapshot.active()) {
+                return "Reise: keine Hex-Reiseposition";
+            }
+            return "Reise: " + travelSnapshot.locationText();
         }
     }
 
@@ -130,37 +165,12 @@ public final class HexMapStateContentModel {
         static MarkerItem from(HexEditorSnapshot.MarkerSnapshot marker) {
             return new MarkerItem(
                     marker.name(),
-                    markerLabel(marker.type()),
+                    HexMapVocabularyContentPartModel.markerLabel(marker.type()),
                     marker.note());
         }
     }
 
-    private static String terrainLabel(String terrain) {
-        return switch (safeKey(terrain, "GRASSLAND")) {
-            case "FOREST" -> "Wald";
-            case "MOUNTAINS" -> "Gebirge";
-            case "WATER" -> "Wasser";
-            case "DESERT" -> "Wueste";
-            case "SWAMP" -> "Sumpf";
-            default -> "Grasland";
-        };
-    }
-
-    private static String markerLabel(String markerType) {
-        return switch (safeKey(markerType, "LANDMARK")) {
-            case "SETTLEMENT" -> "Siedlung";
-            case "DANGER" -> "Gefahr";
-            case "RESOURCE" -> "Ressource";
-            default -> "Landmarke";
-        };
-    }
-
     private static String fallback(String text, String fallback) {
-        String safeText = safeText(text);
-        return safeText.isBlank() ? fallback : safeText;
-    }
-
-    private static String safeKey(String text, String fallback) {
         String safeText = safeText(text);
         return safeText.isBlank() ? fallback : safeText;
     }

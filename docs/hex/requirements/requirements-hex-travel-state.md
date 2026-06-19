@@ -25,9 +25,11 @@ Define the compact read-mostly travel-state surface shown in the runtime
 - The project-wide `Reise` state-tab requirements now allow a feature-owned
   live travel readback to replace that placeholder while keeping the state tab
   compact and read-mostly.
-- Hex runtime travel readback is not implemented yet. The Hex editor can author
-  maps, terrain, and markers, but no Hex party-token position is published to
-  the global state tab.
+- Hex runtime travel readback is implemented through the party-owned overworld
+  travel position when that position points at a valid Hex tile id.
+- The Hex editor can author maps, terrain, and markers, and the Hex travel
+  readback can publish the active party-token Hex location to the global state
+  tab.
 
 ## Visible Structure
 

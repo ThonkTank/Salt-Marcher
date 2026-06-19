@@ -8,8 +8,10 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.hex.HexEditorApplicationService;
+import src.domain.hex.HexTravelApplicationService;
 import src.domain.hex.published.LoadHexEditorCommand;
 import src.domain.hex.published.HexEditorModel;
+import src.domain.hex.published.HexTravelModel;
 
 final class HexMapBinder {
 
@@ -22,7 +24,9 @@ final class HexMapBinder {
     ShellBinding bind() {
         ServiceRegistry services = runtimeContext.services();
         HexEditorApplicationService editor = services.require(HexEditorApplicationService.class);
+        HexTravelApplicationService travel = services.require(HexTravelApplicationService.class);
         HexEditorModel editorModel = services.require(HexEditorModel.class);
+        HexTravelModel travelModel = services.require(HexTravelModel.class);
         HexMapControlsContentModel controlsContentModel = new HexMapControlsContentModel();
         HexMapMainContentModel mainContentModel = new HexMapMainContentModel();
         HexMapStateContentModel stateContentModel = new HexMapStateContentModel();
@@ -32,6 +36,7 @@ final class HexMapBinder {
                 stateContentModel);
         HexMapIntentHandler intentHandler = new HexMapIntentHandler(
                 editor,
+                travel,
                 contributionModel,
                 controlsContentModel);
         HexMapControlsView controls = new HexMapControlsView();
@@ -44,7 +49,9 @@ final class HexMapBinder {
         controls.onViewInputEvent(intentHandler::consume);
         main.onViewInputEvent(intentHandler::consume);
         editorModel.subscribe(contributionModel::applySnapshot);
+        travelModel.subscribe(contributionModel::applyTravelSnapshot);
         contributionModel.applySnapshot(editorModel.current());
+        contributionModel.applyTravelSnapshot(travelModel.current());
         editor.loadEditor(new LoadHexEditorCommand());
         return new Binding(controls, main, state);
     }

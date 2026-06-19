@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-18
+Last Reviewed: 2026-06-19
 Source of Truth: Routing entrypoint for the hex gameplay and presentation
 documentation bundle.
 
@@ -34,6 +34,7 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 ### Verification
 
 - [Hex Editor Verification](./verification/verification-hex-editor.md)
+- [Hex Travel Verification](./verification/verification-hex-travel.md)
 
 ### Related Maps Docs
 
@@ -43,15 +44,14 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
 ## Current State
 
-- SaltMarcher now ships a first-class navigable Hex Map editor root under
+- SaltMarcher now ships a first-class navigable Hex Map root under
   `src/view/leftbartabs/hexmap`. The `Hex-Karte` surface can create maps,
-  edit map metadata, inspect tiles, paint terrain, and place simple tile-owned
-  markers through Hex domain and SQLite persistence routes.
-- SaltMarcher does not yet ship interactive hex travel or a compact hex
-  travel-state readout.
-- Local editor behavior is owned by this SaltMarcher Hex documentation bundle;
-  interactive hex travel and compact travel-state context remain unimplemented
-  future scopes.
+  edit map metadata, inspect tiles, paint terrain, place simple tile-owned
+  markers, show the party token on the Hex map, and move the existing party
+  token through a Hex-owned `Reisegruppe` tool.
+- The runtime `Reise` state tab consumes compact Hex travel readback when the
+  party token points at a valid Hex tile. Weather and time-of-day values remain
+  unavailable until a later travel-context source publishes them.
 
 ## References
 

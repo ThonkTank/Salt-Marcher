@@ -24,6 +24,7 @@ public final class HexMapControlsView extends VBox {
     private static final String DEFAULT_MARKER_TYPE = "LANDMARK";
     private static final String PAINT_TERRAIN_TOOL = "PAINT_TERRAIN";
     private static final String VALUE_DELIMITER = "\u001f";
+    private static final int MAX_AUTHORED_RADIUS = 20;
     private static final String KEY_TILE_SELECTED = "hex.tileSelected";
     private static final String KEY_Q = "hex.q";
     private static final String KEY_R = "hex.r";
@@ -45,7 +46,7 @@ public final class HexMapControlsView extends VBox {
         }
         ComboBox<String> mapSelector = new ComboBox<>();
         TextField mapNameField = new TextField();
-        Spinner<Integer> radiusSpinner = new Spinner<>(0, 99, 2);
+        Spinner<Integer> radiusSpinner = new Spinner<>(0, MAX_AUTHORED_RADIUS, 2);
         Button selectMapButton = button("Auswaehlen");
         Button createMapButton = button("Neu");
         Button updateMapButton = button("Speichern");
@@ -76,37 +77,32 @@ public final class HexMapControlsView extends VBox {
 
         selectMapButton.setOnAction(event -> {
             if (!updating[0]) {
-                publish(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector, selectedTileLabel,
-                        markerSelector, markerNameField, markerTypeSelector, markerNoteArea, false, rawMapId(mapSelector),
-                        rawTool(toolGroup), false, true, false, false);
+                publishSelectMap(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector,
+                        selectedTileLabel, markerSelector, markerNameField, markerTypeSelector, markerNoteArea);
             }
         });
         createMapButton.setOnAction(event -> {
             if (!updating[0]) {
-                publish(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector, selectedTileLabel,
-                        markerSelector, markerNameField, markerTypeSelector, markerNoteArea, false, 0L,
-                        rawTool(toolGroup), true, false, false, false);
+                publishCreateMap(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector,
+                        selectedTileLabel, markerSelector, markerNameField, markerTypeSelector, markerNoteArea);
             }
         });
         updateMapButton.setOnAction(event -> {
             if (!updating[0]) {
-                publish(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector, selectedTileLabel,
-                        markerSelector, markerNameField, markerTypeSelector, markerNoteArea, false, rawMapId(mapSelector),
-                        rawTool(toolGroup), false, false, true, false);
+                publishUpdateMap(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector,
+                        selectedTileLabel, markerSelector, markerNameField, markerTypeSelector, markerNoteArea, false);
             }
         });
         confirmShrinkButton.setOnAction(event -> {
             if (!updating[0]) {
-                publish(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector, selectedTileLabel,
-                        markerSelector, markerNameField, markerTypeSelector, markerNoteArea, true, rawMapId(mapSelector),
-                        rawTool(toolGroup), false, false, true, false);
+                publishUpdateMap(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector,
+                        selectedTileLabel, markerSelector, markerNameField, markerTypeSelector, markerNoteArea, true);
             }
         });
         terrainSelector.setOnAction(event -> {
             if (!updating[0]) {
-                publish(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector, selectedTileLabel,
-                        markerSelector, markerNameField, markerTypeSelector, markerNoteArea, false, rawMapId(mapSelector),
-                        PAINT_TERRAIN_TOOL, false, false, false, false);
+                publishToolOnly(mapSelector, mapNameField, radiusSpinner, terrainSelector, selectedTileLabel,
+                        markerSelector, markerNameField, markerTypeSelector, markerNoteArea, PAINT_TERRAIN_TOOL);
             }
         });
         markerSelector.setOnAction(event -> {
@@ -116,9 +112,8 @@ public final class HexMapControlsView extends VBox {
         });
         saveMarkerButton.setOnAction(event -> {
             if (!updating[0]) {
-                publish(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector, selectedTileLabel,
-                        markerSelector, markerNameField, markerTypeSelector, markerNoteArea, false, rawMapId(mapSelector),
-                        rawTool(toolGroup), false, false, false, true);
+                publishSaveMarker(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector,
+                        selectedTileLabel, markerSelector, markerNameField, markerTypeSelector, markerNoteArea);
             }
         });
 
@@ -166,9 +161,8 @@ public final class HexMapControlsView extends VBox {
         radiusSpinner.getValueFactory().setValue(projection.selectedMapRadius());
         renderToolButtons(toolGroup, toolButtons, projection, toolKey -> {
             if (!updating[0]) {
-                publish(mapSelector, mapNameField, radiusSpinner, toolGroup, terrainSelector, selectedTileLabel,
-                        markerSelector, markerNameField, markerTypeSelector, markerNoteArea, false, rawMapId(mapSelector),
-                        toolKey, false, false, false, false);
+                publishToolOnly(mapSelector, mapNameField, radiusSpinner, terrainSelector, selectedTileLabel,
+                        markerSelector, markerNameField, markerTypeSelector, markerNoteArea, toolKey);
             }
         });
         terrainSelector.getItems().setAll(projection.terrainValues());
@@ -201,11 +195,96 @@ public final class HexMapControlsView extends VBox {
         updating[0] = false;
     }
 
-    private void publish(
+    private void publishCreateMap(
             ComboBox<String> mapSelector,
             TextField mapNameField,
             Spinner<Integer> radiusSpinner,
             ToggleGroup toolGroup,
+            ComboBox<String> terrainSelector,
+            Label selectedTileLabel,
+            ComboBox<String> markerSelector,
+            TextField markerNameField,
+            ComboBox<String> markerTypeSelector,
+            TextArea markerNoteArea
+    ) {
+        publish(mapSelector, mapNameField, radiusSpinner, terrainSelector, selectedTileLabel, markerSelector,
+                markerNameField, markerTypeSelector, markerNoteArea, false, 0L, rawTool(toolGroup),
+                true, false, false, false);
+    }
+
+    private void publishSelectMap(
+            ComboBox<String> mapSelector,
+            TextField mapNameField,
+            Spinner<Integer> radiusSpinner,
+            ToggleGroup toolGroup,
+            ComboBox<String> terrainSelector,
+            Label selectedTileLabel,
+            ComboBox<String> markerSelector,
+            TextField markerNameField,
+            ComboBox<String> markerTypeSelector,
+            TextArea markerNoteArea
+    ) {
+        publish(mapSelector, mapNameField, radiusSpinner, terrainSelector, selectedTileLabel, markerSelector,
+                markerNameField, markerTypeSelector, markerNoteArea, false, rawMapId(mapSelector), rawTool(toolGroup),
+                false, true, false, false);
+    }
+
+    private void publishUpdateMap(
+            ComboBox<String> mapSelector,
+            TextField mapNameField,
+            Spinner<Integer> radiusSpinner,
+            ToggleGroup toolGroup,
+            ComboBox<String> terrainSelector,
+            Label selectedTileLabel,
+            ComboBox<String> markerSelector,
+            TextField markerNameField,
+            ComboBox<String> markerTypeSelector,
+            TextArea markerNoteArea,
+            boolean confirmShrink
+    ) {
+        publish(mapSelector, mapNameField, radiusSpinner, terrainSelector, selectedTileLabel, markerSelector,
+                markerNameField, markerTypeSelector, markerNoteArea, confirmShrink, rawMapId(mapSelector),
+                rawTool(toolGroup), false, false, true, false);
+    }
+
+    private void publishSaveMarker(
+            ComboBox<String> mapSelector,
+            TextField mapNameField,
+            Spinner<Integer> radiusSpinner,
+            ToggleGroup toolGroup,
+            ComboBox<String> terrainSelector,
+            Label selectedTileLabel,
+            ComboBox<String> markerSelector,
+            TextField markerNameField,
+            ComboBox<String> markerTypeSelector,
+            TextArea markerNoteArea
+    ) {
+        publish(mapSelector, mapNameField, radiusSpinner, terrainSelector, selectedTileLabel, markerSelector,
+                markerNameField, markerTypeSelector, markerNoteArea, false, rawMapId(mapSelector), rawTool(toolGroup),
+                false, false, false, true);
+    }
+
+    private void publishToolOnly(
+            ComboBox<String> mapSelector,
+            TextField mapNameField,
+            Spinner<Integer> radiusSpinner,
+            ComboBox<String> terrainSelector,
+            Label selectedTileLabel,
+            ComboBox<String> markerSelector,
+            TextField markerNameField,
+            ComboBox<String> markerTypeSelector,
+            TextArea markerNoteArea,
+            String toolKey
+    ) {
+        publish(mapSelector, mapNameField, radiusSpinner, terrainSelector, selectedTileLabel, markerSelector,
+                markerNameField, markerTypeSelector, markerNoteArea, false, rawMapId(mapSelector), toolKey,
+                false, false, false, false);
+    }
+
+    private void publish(
+            ComboBox<String> mapSelector,
+            TextField mapNameField,
+            Spinner<Integer> radiusSpinner,
             ComboBox<String> terrainSelector,
             Label selectedTileLabel,
             ComboBox<String> markerSelector,
@@ -287,13 +366,27 @@ public final class HexMapControlsView extends VBox {
             String draftType,
             String draftNote
     ) {
-        if (useSelectedMarker) {
+        if (useSelectedMarker && (selectedMarkerId(markerSelector) > 0L || !hasMarkerDraft(draftName, draftType, draftNote))) {
             applyMarkerDraft(markerSelector, markerNameField, markerTypeSelector, markerNoteArea);
             return;
         }
         markerNameField.setText(draftName);
         markerNoteArea.setText(draftNote);
         selectEncodedByKey(markerTypeSelector, draftType);
+    }
+
+    private static long selectedMarkerId(ComboBox<String> markerSelector) {
+        return rawLongPart(rawParts(markerSelector.getValue()), MARKER_ID_PART);
+    }
+
+    private static boolean hasMarkerDraft(String draftName, String draftType, String draftNote) {
+        return !safeText(draftName).isBlank()
+                || !safeText(draftNote).isBlank()
+                || !safeText(draftType).isBlank() && !DEFAULT_MARKER_TYPE.equals(safeText(draftType));
+    }
+
+    private static String safeText(String text) {
+        return text == null ? "" : text.trim();
     }
 
     private static void selectEncodedById(ComboBox<String> comboBox, long id) {

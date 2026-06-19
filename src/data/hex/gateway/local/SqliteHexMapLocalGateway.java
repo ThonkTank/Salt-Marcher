@@ -42,6 +42,14 @@ public final class SqliteHexMapLocalGateway {
         }
     }
 
+    public Optional<HexMapRecord> loadSummaryById(long mapId) {
+        try (Connection connection = openReadyConnection()) {
+            return SqliteHexMapReader.loadSummaryById(connection, mapId);
+        } catch (SQLException exception) {
+            throw new IllegalStateException("Failed to load Hex map summary from SQLite.", exception);
+        }
+    }
+
     public List<HexMapRecord> listMaps() {
         try (Connection connection = openReadyConnection()) {
             return SqliteHexMapReader.listMaps(connection);
