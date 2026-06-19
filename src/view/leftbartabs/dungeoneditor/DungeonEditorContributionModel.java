@@ -351,6 +351,10 @@ public final class DungeonEditorContributionModel {
                     0,
                     OverlayProjection.from(DungeonOverlaySettings.defaults()));
         }
+
+        String currentSelectedToolKey() {
+            return currentSelectedTool.name();
+        }
     }
 
     record MapSelection(

@@ -2005,10 +2005,6 @@ public final class DungeonMapContentModel {
             return targetKind == PointerTargetKind.LABEL;
         }
 
-        public boolean isHandleTarget() {
-            return targetKind == PointerTargetKind.HANDLE;
-        }
-
         public boolean isClusterLabelTarget() {
             return isLabelTarget() && CLUSTER_LABEL_KIND.equals(labelKind);
         }
@@ -2065,6 +2061,10 @@ public final class DungeonMapContentModel {
 
         public long topologyId() {
             return topologyRef.id();
+        }
+
+        public String kindName() {
+            return kind.name();
         }
 
         public SourceEdgeTarget sourceEdgeTarget() {

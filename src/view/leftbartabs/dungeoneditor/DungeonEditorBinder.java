@@ -7,18 +7,8 @@ import shell.api.ShellBinding;
 import shell.api.ShellControls;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.dungeon.DungeonEditorLabelNameApplicationService;
-import src.domain.dungeon.DungeonEditorMapApplicationService;
-import src.domain.dungeon.DungeonEditorNarrationApplicationService;
-import src.domain.dungeon.DungeonEditorPointerApplicationService;
-import src.domain.dungeon.DungeonEditorProjectionApplicationService;
-import src.domain.dungeon.DungeonEditorStairApplicationService;
-import src.domain.dungeon.DungeonEditorTransitionApplicationService;
-import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
-import src.domain.dungeon.published.DungeonEditorStateModel;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.features.dungeon.shell.DungeonEditorFeatureShellBinding;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
@@ -35,25 +25,7 @@ final class DungeonEditorBinder {
     }
 
     ShellBinding bind() {
-        DungeonEditorMapApplicationService mapEditor =
-                runtimeContext.services().require(DungeonEditorMapApplicationService.class);
-        DungeonEditorProjectionApplicationService projectionEditor =
-                runtimeContext.services().require(DungeonEditorProjectionApplicationService.class);
-        DungeonEditorPointerApplicationService pointerEditor =
-                runtimeContext.services().require(DungeonEditorPointerApplicationService.class);
-        DungeonEditorNarrationApplicationService narrationEditor =
-                runtimeContext.services().require(DungeonEditorNarrationApplicationService.class);
-        DungeonEditorLabelNameApplicationService labelNameEditor =
-                runtimeContext.services().require(DungeonEditorLabelNameApplicationService.class);
-        DungeonEditorTransitionApplicationService transitionEditor =
-                runtimeContext.services().require(DungeonEditorTransitionApplicationService.class);
-        DungeonEditorStairApplicationService stairEditor =
-                runtimeContext.services().require(DungeonEditorStairApplicationService.class);
-        DungeonEditorControlsModel controlsModel = runtimeContext.services().require(DungeonEditorControlsModel.class);
-        DungeonEditorMapSurfaceModel mapSurfaceModel = runtimeContext.services().require(DungeonEditorMapSurfaceModel.class);
-        DungeonEditorStateModel stateModel = runtimeContext.services().require(DungeonEditorStateModel.class);
-        DungeonEditorFeatureShellBinding featureShell =
-                new DungeonEditorFeatureShellBinding(controlsModel, mapSurfaceModel, stateModel);
+        DungeonEditorFeatureShellBinding featureShell = new DungeonEditorFeatureShellBinding(runtimeContext);
         DungeonEditorControlsContentModel controlsContentModel = new DungeonEditorControlsContentModel();
         CatalogCrudControlsContentModel mapCatalogContentModel = new CatalogCrudControlsContentModel();
         DungeonEditorStateContentModel stateContentModel = new DungeonEditorStateContentModel();
@@ -66,14 +38,7 @@ final class DungeonEditorBinder {
                         mapCatalogContentModel,
                         stateContentModel,
                         mapContentModel,
-                        new DungeonEditorIntentHandler.ApplicationServices(
-                                mapEditor,
-                                projectionEditor,
-                                pointerEditor,
-                                narrationEditor,
-                                labelNameEditor,
-                                transitionEditor,
-                                stairEditor));
+                        featureShell.operations());
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
         CatalogCrudControlsView mapCatalog = new CatalogCrudControlsView();
         DungeonMapView main = new DungeonMapView();

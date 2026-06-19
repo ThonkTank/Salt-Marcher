@@ -2,6 +2,7 @@ package saltmarcher.quality.pmd.hygiene;
 
 import net.sourceforge.pmd.lang.java.ast.ASTClassDeclaration;
 import net.sourceforge.pmd.lang.java.ast.ASTMethodDeclaration;
+import net.sourceforge.pmd.lang.java.ast.ASTCompilationUnit;
 import net.sourceforge.pmd.lang.java.ast.ASTTypeDeclaration;
 import net.sourceforge.pmd.lang.java.rule.AbstractJavaRulechainRule;
 
@@ -23,7 +24,9 @@ public final class RoleAwareTooManyMethodsRule extends AbstractJavaRulechainRule
 
     private void checkTypeDeclaration(ASTTypeDeclaration typeDeclaration, Object data) {
         if (RoleAwareMetricSupport.isViewRoleShapeMetricType(typeDeclaration)
-                || RoleAwareMetricSupport.isTopLevelDomainPublishedBoundarySource(typeDeclaration)) {
+                || RoleAwareMetricSupport.isTopLevelDomainPublishedBoundarySource(typeDeclaration)
+                || RoleAwareMetricSupport.isFeatureRuntimeOperationsMetricSource(
+                        (ASTCompilationUnit) typeDeclaration.getRoot())) {
             return;
         }
         int operationCount = typeDeclaration.getOperations()

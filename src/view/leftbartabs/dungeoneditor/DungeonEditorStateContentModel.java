@@ -16,6 +16,7 @@ import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 
 final class DungeonEditorStateContentModel {
     private static final long NO_TRANSITION_ID = 0L;
@@ -133,8 +134,8 @@ final class DungeonEditorStateContentModel {
         exitDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue && key.roomId() == roomId);
     }
 
-    @Nullable DungeonEditorHandleRef currentEditableCorridorHandle() {
-        return currentEditableCorridorHandle;
+    @Nullable HandleTarget currentEditableCorridorHandleTarget() {
+        return toRuntimeHandleTarget(currentEditableCorridorHandle);
     }
 
     void updateNameDraft(String targetKind, long targetId, String name) {
@@ -165,6 +166,39 @@ final class DungeonEditorStateContentModel {
             return;
         }
         corridorPointDrafts.remove(CorridorPointDraftKey.from(currentContext.selectedMapIdValue(), handleRef));
+    }
+
+    void clearCurrentCorridorPointDraft() {
+        clearCorridorPointDraft(currentEditableCorridorHandle);
+    }
+
+    private static @Nullable HandleTarget toRuntimeHandleTarget(@Nullable DungeonEditorHandleRef handleRef) {
+        if (handleRef == null) {
+            return null;
+        }
+        boolean sourceEdgePresent = handleRef.sourceEdge() != null
+                && handleRef.sourceEdge().from() != null
+                && handleRef.sourceEdge().to() != null;
+        return new HandleTarget(
+                handleRef.kind().name(),
+                handleRef.topologyRef().kind().name(),
+                handleRef.topologyRef().id(),
+                handleRef.ownerId(),
+                handleRef.clusterId(),
+                handleRef.corridorId(),
+                handleRef.roomId(),
+                handleRef.index(),
+                handleRef.cell().q(),
+                handleRef.cell().r(),
+                handleRef.cell().level(),
+                handleRef.direction(),
+                sourceEdgePresent,
+                sourceEdgePresent ? handleRef.sourceEdge().from().q() : 0,
+                sourceEdgePresent ? handleRef.sourceEdge().from().r() : 0,
+                sourceEdgePresent ? handleRef.sourceEdge().from().level() : 0,
+                sourceEdgePresent ? handleRef.sourceEdge().to().q() : 0,
+                sourceEdgePresent ? handleRef.sourceEdge().to().r() : 0,
+                sourceEdgePresent ? handleRef.sourceEdge().to().level() : 0);
     }
 
     void updateTransitionDescriptionDraft(long transitionId, String description) {

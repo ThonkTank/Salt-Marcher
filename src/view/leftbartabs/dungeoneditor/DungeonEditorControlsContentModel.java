@@ -677,12 +677,8 @@ final class DungeonEditorControlsContentModel {
         return ToolPresentation.normalizeViewModeKey(viewModeKey);
     }
 
-    static DungeonEditorViewMode toPublishedViewMode(@Nullable String viewModeKey) {
-        return ToolPresentation.toPublishedViewMode(viewModeKey);
-    }
-
-    static DungeonEditorTool toPublishedToolKey(@Nullable String selectedToolKey) {
-        return ToolPresentation.toPublishedToolKey(selectedToolKey);
+    static String normalizedToolKey(@Nullable String selectedToolKey) {
+        return ToolPresentation.toPublishedToolKey(selectedToolKey).name();
     }
 
     private interface ToolPresentation {
@@ -739,10 +735,6 @@ final class DungeonEditorControlsContentModel {
 
         static String normalizeViewModeKey(@Nullable String viewModeKey) {
             return graphViewLabel().equals(viewModeKey) ? graphViewLabel() : gridViewLabel();
-        }
-
-        static DungeonEditorViewMode toPublishedViewMode(@Nullable String viewModeKey) {
-            return graphViewLabel().equals(viewModeKey) ? DungeonEditorViewMode.GRAPH : DungeonEditorViewMode.GRID;
         }
 
         static DungeonEditorTool toPublishedToolKey(@Nullable String selectedToolKey) {

@@ -7,7 +7,8 @@ public final class RoleAwareCouplingBetweenObjectsRule extends CouplingBetweenOb
 
     @Override
     public Object visit(ASTCompilationUnit node, Object data) {
-        if (RoleAwareMetricSupport.isViewRoleShapeMetricSource(node)) {
+        if (RoleAwareMetricSupport.isViewRoleShapeMetricSource(node)
+                || RoleAwareMetricSupport.isFeatureRuntimeOperationsMetricSource(node)) {
             return null;
         }
         return super.visit(node, data);

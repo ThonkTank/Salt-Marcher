@@ -93,7 +93,13 @@ findings blocking and do not create a package-wide `src/view/**` exemption:
 they skip only recognized canonical view role files for role-shape metrics,
 and `TooManyMethods` also skips top-level domain `published/**` boundary
 sources whose many passive accessors are published-language shape rather than
-implementation sprawl.
+implementation sprawl. Feature-runtime operations boundary sources under
+`src/features/**/runtime/*Operations.java` and their narrow legacy shell
+operations adapters under `src/features/**/shell/*Operations.java` are also
+role-aware metric sources: the feature-runtime owner makes typed runtime
+operation boundaries review-owned architecture, and PMD must not force them
+into wrapper-command or data-holder shapes solely to satisfy generic class
+metrics.
 `DataClass` remains blocking for ordinary classes but ignores Java records and
 expected passive carriers for `src/data/**/model/*PersistenceSchema.java`,
 `src/data/**/model/*Record.java`, and `src/domain/**/published/**` source

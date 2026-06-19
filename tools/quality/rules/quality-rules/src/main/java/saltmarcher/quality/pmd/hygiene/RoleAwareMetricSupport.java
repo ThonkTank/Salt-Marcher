@@ -31,6 +31,12 @@ final class RoleAwareMetricSupport {
         return typeDeclaration.isTopLevel() && sourceFacts.isDomainPublishedSource();
     }
 
+    static boolean isFeatureRuntimeOperationsMetricSource(ASTCompilationUnit compilationUnit) {
+        SaltMarcherSourceFacts sourceFacts = SaltMarcherSourceFacts.from(compilationUnit);
+        return sourceFacts.isFeatureRuntimeOperationsBoundarySource()
+                || sourceFacts.isFeatureShellOperationsAdapterSource();
+    }
+
     private static boolean isMetricOwnedViewRole(ViewRole role) {
         return role == ViewRole.BINDER
                 || role == ViewRole.CONTENT_MODEL

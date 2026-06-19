@@ -61,6 +61,20 @@ public final class SaltMarcherSourceFacts {
         return isDomainModelSource() && simpleName.endsWith("Operation");
     }
 
+    public boolean isFeatureRuntimeOperationsBoundarySource() {
+        return startsWith("src", "features")
+                && segments.size() >= 5
+                && segments.get(3).equals("runtime")
+                && simpleName.endsWith("Operations");
+    }
+
+    public boolean isFeatureShellOperationsAdapterSource() {
+        return startsWith("src", "features")
+                && segments.size() >= 5
+                && segments.get(3).equals("shell")
+                && simpleName.endsWith("Operations");
+    }
+
     public boolean isDomainModelCarrierSource() {
         return isDomainModelSource() && (simpleName.endsWith("Data") || simpleName.endsWith("Values"));
     }
