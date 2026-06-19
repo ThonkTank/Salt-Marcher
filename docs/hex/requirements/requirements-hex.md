@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-18
+Last Reviewed: 2026-06-19
 Source of Truth: User-facing behavior, capabilities, and acceptance criteria for
 the hex feature.
 
@@ -35,6 +35,9 @@ Provide one hex-map workflow that lets a GM:
 - Local editor behavior is owned and verified in this SaltMarcher repo;
   overworld map travel, party-token travel, and compact travel context remain
   unimplemented future scopes.
+- The project-wide `Reise` state tab owns the shared global state-tab shell and
+  placeholder behavior. Hex owns only the feature-specific live travel readback
+  that will replace that placeholder once Hex runtime travel exists.
 
 ## Primary Surfaces
 
@@ -90,6 +93,8 @@ Provide one hex-map workflow that lets a GM:
 - Tile inspection is visible and understandable when a tile is selected.
 - Hex travel context can be read both from the interactive surface and the
   compact travel-state surface shown in the runtime `Reise` tab.
+- The compact `Reise` state tab consumes Hex runtime travel readback only; it
+  does not infer active travel from editor-only map selection.
 - Editing terrain or map metadata never requires the user to infer hidden map
   state from implementation details.
 
