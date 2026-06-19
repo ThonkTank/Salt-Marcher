@@ -35,7 +35,6 @@ final class DungeonEditorIntentHandler {
     private final DungeonEditorStateContentModel stateContentModel;
     private final DungeonMapContentModel mapContentModel;
     private final DungeonEditorRuntimeOperations operations;
-    private Optional<HoverSample> lastHoverSample = Optional.empty();
     private double lastCameraDragCanvasX;
     private double lastCameraDragCanvasY;
     private boolean cameraDragActive;
@@ -363,12 +362,12 @@ final class DungeonEditorIntentHandler {
         if (event.input().mouseReleased()) {
             mapContentModel.clearHoverTarget();
             inlineEditOutsidePressActive = false;
-            lastHoverSample = Optional.empty();
+            operations.clearPointerSession();
             return true;
         }
         if (event.input().mouseDragged() || event.input().mouseMoved()) {
             mapContentModel.clearHoverTarget();
-            lastHoverSample = Optional.empty();
+            operations.clearPointerSession();
             return true;
         }
         inlineEditOutsidePressActive = false;
@@ -388,7 +387,7 @@ final class DungeonEditorIntentHandler {
         }
         if (passiveInlineEditCanvasInput(event)) {
             mapContentModel.clearHoverTarget();
-            lastHoverSample = Optional.empty();
+            operations.clearPointerSession();
             return true;
         }
         return false;
@@ -398,7 +397,7 @@ final class DungeonEditorIntentHandler {
         mapContentModel.clearInlineLabelEdit();
         mapContentModel.clearHoverTarget();
         inlineEditOutsidePressActive = false;
-        lastHoverSample = Optional.empty();
+        operations.clearPointerSession();
         return true;
     }
 
@@ -408,7 +407,7 @@ final class DungeonEditorIntentHandler {
             inlineEditOutsidePressActive = true;
         }
         mapContentModel.clearHoverTarget();
-        lastHoverSample = Optional.empty();
+        operations.clearPointerSession();
         return true;
     }
 
@@ -434,7 +433,7 @@ final class DungeonEditorIntentHandler {
         }
         operations.setTool(SELECT_TOOL);
         mapContentModel.clearHoverTarget();
-        lastHoverSample = Optional.empty();
+        operations.clearPointerSession();
         return true;
     }
 
@@ -443,7 +442,7 @@ final class DungeonEditorIntentHandler {
         String pointerTool = pointerTool(event, selectedTool);
         if (pointerTool == null) {
             mapContentModel.clearHoverTarget();
-            lastHoverSample = Optional.empty();
+            operations.clearPointerSession();
             return;
         }
         double sceneX = sceneX(event);
@@ -455,10 +454,11 @@ final class DungeonEditorIntentHandler {
             return;
         }
         updateHoverTarget(event, pointerTarget);
-        if (suppressedRepeatedHover(event, pointerTool, pointerTarget)) {
+        PointerSample sample = pointerSample(event, pointerTarget);
+        if (suppressedRepeatedHover(event, pointerTool, sample)) {
             return;
         }
-        applyToolWorkflow(event, pointerSample(event, pointerTarget, pointerTool), pointerTool);
+        applyToolWorkflow(event, sample, pointerTool);
     }
 
     private void updateHoverTarget(
@@ -499,7 +499,7 @@ final class DungeonEditorIntentHandler {
         }
         mapContentModel.beginInlineLabelEdit(editTarget);
         mapContentModel.clearHoverTarget();
-        lastHoverSample = Optional.empty();
+        operations.clearPointerSession();
         return true;
     }
 
@@ -719,8 +719,7 @@ final class DungeonEditorIntentHandler {
 
     private PointerSample pointerSample(
             DungeonMapViewInputEvent event,
-            DungeonMapContentModel.PointerTarget target,
-            String tool
+            DungeonMapContentModel.PointerTarget target
     ) {
         return new PointerSample(
                 sceneX(event),
@@ -733,24 +732,13 @@ final class DungeonEditorIntentHandler {
     private boolean suppressedRepeatedHover(
             DungeonMapViewInputEvent event,
             String selectedTool,
-            DungeonMapContentModel.PointerTarget target
+            PointerSample sample
     ) {
-        if (!event.input().mouseMoved()) {
-            lastHoverSample = Optional.empty();
-            return false;
-        }
-        HoverSample nextSample = HoverSample.from(
+        return !operations.acceptPointerSession(
+                pointerAction(event.input()),
                 selectedTool,
-                target,
-                sceneX(event),
-                sceneY(event),
-                presentationModel.currentInteractionState().currentProjectionLevel(),
-                0.22);
-        if (lastHoverSample.filter(nextSample::matches).isPresent()) {
-            return true;
-        }
-        lastHoverSample = Optional.of(nextSample);
-        return false;
+                sample,
+                presentationModel.currentInteractionState().currentProjectionLevel());
     }
 
     private static int normalizeLevelDelta(double scrollDeltaY) {
@@ -912,7 +900,7 @@ final class DungeonEditorIntentHandler {
     private void handleToolInput(DungeonEditorControlsViewInputEvent.ToolSnapshot tool) {
         if (tool.dismissControlActivated()) {
             operations.setTool(SELECT_TOOL);
-            lastHoverSample = Optional.empty();
+            operations.clearPointerSession();
             return;
         }
         if (tool.selectedToolKey().isBlank()) {
@@ -1049,71 +1037,6 @@ final class DungeonEditorIntentHandler {
                 exit.level(),
                 exit.direction(),
                 exit.description());
-    }
-
-    private static final class HoverSample {
-        private final String tool;
-        private final int projectionLevel;
-        private final int cellQ;
-        private final int cellR;
-        private final boolean vertexPresent;
-        private final int vertexQ;
-        private final int vertexR;
-        private final DungeonMapContentModel.PointerTarget target;
-
-        private HoverSample(
-                String tool,
-                int projectionLevel,
-                int cellQ,
-                int cellR,
-                boolean vertexPresent,
-                int vertexQ,
-                int vertexR,
-                DungeonMapContentModel.PointerTarget target
-        ) {
-            this.tool = tool;
-            this.projectionLevel = projectionLevel;
-            this.cellQ = cellQ;
-            this.cellR = cellR;
-            this.vertexPresent = vertexPresent;
-            this.vertexQ = vertexQ;
-            this.vertexR = vertexR;
-            this.target = target;
-        }
-
-        private static HoverSample from(
-                String tool,
-                DungeonMapContentModel.PointerTarget target,
-                double sceneX,
-                double sceneY,
-                int projectionLevel,
-                double vertexSnapDistance
-        ) {
-            int vertexQ = (int) Math.round(sceneX);
-            int vertexR = (int) Math.round(sceneY);
-            boolean vertexPresent = Math.hypot(sceneX - vertexQ, sceneY - vertexR) <= vertexSnapDistance;
-            return new HoverSample(
-                    tool == null || tool.isBlank() ? SELECT_TOOL : tool,
-                    projectionLevel,
-                    (int) Math.floor(sceneX),
-                    (int) Math.floor(sceneY),
-                    vertexPresent,
-                    vertexQ,
-                    vertexR,
-                    target == null ? DungeonMapContentModel.PointerTarget.empty() : target);
-        }
-
-        private boolean matches(HoverSample other) {
-            return other != null
-                    && Objects.equals(tool, other.tool)
-                    && projectionLevel == other.projectionLevel
-                    && cellQ == other.cellQ
-                    && cellR == other.cellR
-                    && vertexPresent == other.vertexPresent
-                    && vertexQ == other.vertexQ
-                    && vertexR == other.vertexR
-                    && Objects.equals(target, other.target);
-        }
     }
 
     private static PointerTarget toRuntimePointerTarget(DungeonMapContentModel.PointerTarget target) {

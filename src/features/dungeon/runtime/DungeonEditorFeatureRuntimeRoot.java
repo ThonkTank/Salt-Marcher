@@ -12,6 +12,7 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     private final DungeonEditorMapSurfaceModel mapSurfaceModel;
     private final DungeonEditorStateModel stateModel;
     private final DungeonEditorRuntimeOperations operationOwner;
+    private final DungeonEditorPointerSession pointerSession = new DungeonEditorPointerSession();
 
     public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
         ServiceRegistry safeRegistry = Objects.requireNonNull(registry, "registry");
@@ -65,6 +66,7 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     @Override
     public void setTool(String toolKey) {
+        clearPointerSession();
         operationOwner.setTool(toolKey);
     }
 
@@ -87,6 +89,21 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
             TransitionDestination transitionDestination
     ) {
         operationOwner.applyPointer(action, toolKey, sample, wallSingleClickMode, transitionDestination);
+    }
+
+    @Override
+    public boolean acceptPointerSession(
+            PointerAction action,
+            String toolKey,
+            PointerSample sample,
+            int projectionLevel
+    ) {
+        return pointerSession.accept(action, toolKey, sample, projectionLevel);
+    }
+
+    @Override
+    public void clearPointerSession() {
+        pointerSession.clear();
     }
 
     @Override

@@ -26,6 +26,19 @@ public interface DungeonEditorRuntimeOperations {
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination);
 
+    default boolean acceptPointerSession(
+            PointerAction action,
+            String toolKey,
+            PointerSample sample,
+            int projectionLevel
+    ) {
+        return true;
+    }
+
+    default void clearPointerSession() {
+        // Only stateful runtime roots need to clear hover/session memory.
+    }
+
     void scrollSelection(int levelDelta);
 
     void moveHandle(HandleTarget handle, int q, int r);
