@@ -1638,6 +1638,8 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-PREVIEW-001 preview render layer contains only the painted room cells");
         DungeonMapContentModel.TextPrimitive previewRoomLabel =
                 previewRoomLabel(binding.mapContentModel(), "DE-PREVIEW-001");
+        assertTrue(previewRoomLabel.hitRef().isEmpty(),
+                "DE-PREVIEW-001 preview room label stays passive without a hit ref");
         assertTrue(previewRoomLabel.centerY() > 3.0,
                 "DE-PREVIEW-001 preview room label uses the shared south-wall placement instead of cell centroid");
         assertTrue(previewRoomLabel.width() > 56.0 / 32.0,
@@ -2670,14 +2672,15 @@ final class DungeonEditorRoomWallDoorHarness {
             String message
     ) {
         return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
-                .filter(label -> label.hitRef().endsWith(":ROOM_LABEL")
+                .filter(label -> label.hitRef().isEmpty()
+                        && label.text().startsWith("RAUM ")
                         && label.typography().fontFamily().equals("Monospaced")
                         && label.typography().bold()
                         && label.style().fill() == null
                         && label.style().stroke() == null)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError(
-                        message + " preview room label not rendered; texts="
+                        message + " passive preview room label not rendered; texts="
                                 + textPrimitiveSummary(mapContentModel)));
     }
 
