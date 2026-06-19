@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-08
+Last Reviewed: 2026-06-19
 Source of Truth: System-wide routing summary and entry point into the canonical
 layer-owner standards under `docs/project/architecture/patterns/` and their
 matching mechanical enforcement documents under
@@ -12,9 +12,10 @@ matching mechanical enforcement documents under
 
 SaltMarcher is structured as a passive-shell JavaFX application with feature
 slices under `src/`. The shell exposes fixed cockpit surfaces, registration
-contracts, and shell-owned runtime services. View-layer contributions register
-UI entrypoints, and root-local Binders perform one-time composition and
-wiring without feature-specific bootstrap or shell-host logic.
+contracts, and shell-owned runtime services. Legacy view-layer contributions
+register UI entrypoints, and migrated `src/features/**` packages own their
+feature runtime, render frames, raw-input UI, storage, and shell wiring without
+being forced back through the old view/domain role chain.
 
 This document is a routing summary, not the owner of layer rules. View-layer
 roles, seams, reusable `slotcontent/**` rules, and presentation-state cycles
@@ -26,6 +27,7 @@ are owned only by the
 ```text
 bootstrap/   application startup and generic discovery
 shell/       passive cockpit host and shell contracts
+src/features/ target migrated feature runtime after the layering gate transition
 src/view/    cockpit contributions, Binders, ContributionModels, optional IntentHandlers,
              feature-specific colocated Views, and reusable slotcontent
 src/domain/  hexagonal application core by context
@@ -42,6 +44,11 @@ tools/       build infrastructure, quality platforms, and engineering scripts
 - `shell/` owns passive cockpit surfaces: top-left controls, primary main
   panel, top-right details/history, bottom-right state pane, top-bar dropdown
   windows, navigation, activation, and shared runtime-session state
+- target `src/features/<feature>/` owns migrated feature runtime after the
+  layering gate transition: one feature-owned runtime boundary, typed target
+  resolution, preview, operation dispatch, publication, render frames,
+  raw-input UI, storage, and shell wiring as defined only by the
+  [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
 - `src/view/leftbartabs/<entry>/` owns one left-bar tab contribution, its
   Binder, aggregate `ContributionModel`, optional
   `IntentHandler`, and feature-specific colocated Views
@@ -54,13 +61,16 @@ tools/       build infrastructure, quality platforms, and engineering scripts
 - `src/view/slotcontent/**` owns reusable generic UI units; the internal role
   shape and all reusable-view rules are owned only by the
   [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- `src/domain/<context>/` owns the application core: domain truth, internal
-  models, family-scoped application services, published language, repositories,
-  and ports; detailed role and seam rules are owned only by the
+- `src/domain/<context>/` owns the legacy and non-migrated application core:
+  domain truth, internal models, family-scoped application services, published
+  language, repositories, and ports; detailed role and seam rules are owned only by the
   [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- `src/data/<feature>/` owns outer adapters that satisfy domain-owned
-  repository abstractions and confront concrete sources such as SQLite, files,
-  imports, or remote systems
+- `src/data/<feature>/` owns legacy and non-migrated outer adapters that
+  satisfy domain-owned repository abstractions and confront concrete sources
+  such as SQLite, files, imports, or remote systems
+- target `src/features/<feature>/storage/**` owns migrated feature persistence
+  seams through the Feature Runtime Architecture Standard after the layering
+  gate transition
 
 Feature documentation follows the same ownership model. System-wide canonical
 documents live under `docs/project/<type>/`, feature-owned canonical documents
@@ -73,8 +83,12 @@ Dependencies point inward toward the application core:
 
 - bootstrap depends on shell contracts
 - shell owns generic cockpit hosting and must not import feature code
-- view contributions reach shell public contracts and the documented domain
-  public boundaries; the internal View/Binder/Model/IntentHandler contract is
+- migrated `src/features/**` code reaches shell public contracts and documented
+  persistence/authored-fact seams; the internal feature-runtime contract is owned
+  only by the
+  [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
+- legacy view contributions reach shell public contracts and the documented
+  domain public boundaries; the internal View/Binder/Model/IntentHandler contract is
   owned only by the
   [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
 - domain code owns business rules, internal models, published language,
@@ -82,13 +96,17 @@ Dependencies point inward toward the application core:
 - data code satisfies domain-owned repository abstractions and externalizes
   source and infrastructure details
 
-Below the view layer, the public backend boundary is a context's one-or-more
-family `*ApplicationService` roots.
+Below the legacy `src/view/**` layer, the public backend boundary is a
+context's one-or-more family `*ApplicationService` roots. Migrated
+`src/features/**` packages instead follow the feature-runtime owner and may use
+explicit persistence/authored-fact seams without inheriting the full legacy
+view/domain role stack.
 
 ## Registration Model
 
-The application registers feature UI through UI contributions and exported
-runtime capabilities through service contributions.
+The application registers legacy feature UI through UI contributions, migrated
+feature UI through feature-runtime shell bindings, and exported runtime
+capabilities through service contributions.
 
 - shell public contracts provide registration metadata, fixed surface binding,
   lifecycle hooks, details/history publication, and runtime context
@@ -96,6 +114,8 @@ runtime capabilities through service contributions.
 - `src/view/statetabs/**` contributes global state tabs
 - `src/view/dropdowns/**` contributes top-bar dropdown windows through exactly
   one `*Contribution` per active root
+- `src/features/<feature>/shell/**` binds migrated feature surfaces through the
+  narrow shell seam defined by the Feature Runtime Architecture Standard
 - `shell/api/ServiceContribution` lets data roots register source-backed
   capabilities and domain roots register typed application services/readback
   models into the shared shell service registry
@@ -110,6 +130,7 @@ live only in the dedicated
 ## Canonical Architecture Owners
 
 - [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+- [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
@@ -132,6 +153,9 @@ live only in the dedicated
 - for domain roles, `domain-layer.md` owns the architecture and the split
   `domain-*.md` enforcement files own only role-local gate inventory and
   current mechanical drift
+- feature-runtime architecture for migrated `src/features/**` is currently
+  review-owned; existing view/domain enforcement surfaces do not claim
+  mechanical proof for that root until a later owner names a specific gate
 - the styling package is split between layer-wide centralized styling ownership
   and passive-`View` direct-render styling ownership
 - verification operation and Gradle gate entrypoints live under
@@ -160,6 +184,7 @@ live only in the dedicated
 - [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
 - [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
 - [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+- [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
 - [Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
 - [View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1)
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)

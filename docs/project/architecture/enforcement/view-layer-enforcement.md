@@ -1,18 +1,18 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-13
+Last Reviewed: 2026-06-19
 Source of Truth: Layer-wide enforcement inventory for cross-role topology and
-current mechanical drift in `src/view/**` that is not owned by one specific
-view role document.
+current mechanical drift in legacy `src/view/**` that is not owned by one
+specific view role document.
 
 # View Layer Enforcement
 
 ## Goal
 
-This document owns only the layer-wide enforcement inventory for `src/view/**`
-that is not owned by one specific view role document.
+This document owns only the layer-wide enforcement inventory for legacy
+`src/view/**` that is not owned by one specific view role document.
 
-It answers three questions for `src/view/**`:
+It answers three questions for legacy `src/view/**`:
 
 - what the layer MUST contain
 - what the layer MUST NOT contain
@@ -26,6 +26,11 @@ neighboring `view-*.md` enforcement documents. Repository-wide cross-layer
 rules stay in `layering-architecture-enforcement.md`. This file is a routing
 surface for current layer-wide mechanical coverage and drift only, not a second architecture
 owner.
+
+Migrated `src/features/**` packages are out of scope for this enforcement
+catalog. Their architecture is review-owned under the
+[Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
+until a later canonical owner names a specific gate.
 
 Technical diagnostic route:
 
@@ -131,6 +136,9 @@ architecture claims by themselves.
 
 - whether current layer-wide gate drift has been fully migrated to the owner
   rules in the [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+- whether migrated `src/features/**` packages still depend on a deliberate
+  compatibility seam back to legacy `src/view/**` or whether that seam should
+  be removed in a later runtime wave
 - whether a mechanically legal `*ContentPartModel` split stays an owned
   projection submodel instead of hiding view logic behind generic helper files
 - whether current legacy reusable-slotcontent roles and primitive-only
@@ -144,6 +152,7 @@ architecture claims by themselves.
 ## References
 
 - [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+- [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
 - [View Contribution Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-contribution-enforcement.md:1)

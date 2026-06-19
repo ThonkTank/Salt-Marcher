@@ -1,9 +1,9 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-25
+Last Reviewed: 2026-06-19
 Source of Truth: Complete architecture-enforcement catalog for cross-role
 domain-layer topology, public boundary families, and domain-wide communication
-boundaries in `src/domain/**`.
+boundaries in legacy and non-migrated `src/domain/**`.
 
 # Domain Layer Enforcement
 
@@ -14,7 +14,13 @@ Architectural truth for the domain layer lives only in the
 This document owns only the layer-wide enforcement inventory, focused
 verification surface, and current mechanical drift.
 
-It answers three questions for `src/domain/**` as one layer:
+Migrated `src/features/**` packages are out of scope for this catalog. Their
+architecture is review-owned under the
+[Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
+until a later canonical owner names a specific gate.
+
+It answers three questions for legacy and non-migrated `src/domain/**` as one
+layer:
 
 - which physical topology the layer currently blocks
 - which broad structures the layer MUST NOT contain
@@ -77,6 +83,7 @@ Technical diagnostic route:
 ## References
 
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
+- [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Domain Context Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-context-enforcement.md:1)
 - [Domain ApplicationService Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)

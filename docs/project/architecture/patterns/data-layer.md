@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-08
+Last Reviewed: 2026-06-19
 Source of Truth: Binding data-layer adapter model, source-boundary roles,
 runtime composition placement, and data-layer topology for `src/data/**`.
 
@@ -8,11 +8,16 @@ runtime composition placement, and data-layer topology for `src/data/**`.
 
 ## Goal
 
-SaltMarcher uses `src/data/**` as the outer adapter zone for persistence,
-imports, files, remote systems, and other concrete sources behind domain-owned
-repositories. Data code adapts sources to the domain core; it does not own a
-second business model, public backend layer, or policy language beside
-`src/domain/**`.
+SaltMarcher uses `src/data/**` as the legacy and non-migrated outer adapter
+zone for persistence, imports, files, remote systems, and other concrete sources
+behind domain-owned repositories. Data code adapts sources to the domain core;
+it does not own a second business model, public backend layer, or policy
+language beside `src/domain/**`.
+
+Migrated `src/features/**` persistence seams belong to the
+[Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
+after the feature-runtime layering-enforcement transition for that source root
+lands.
 
 ## Pattern Alignment
 
@@ -54,10 +59,10 @@ real source, mapping, or persistence complexity.
 
 ## Core Principles
 
-- the data layer owns adaptation, not business meaning. Persistence mechanics,
-  connection lifecycle, remote protocol details, schema readiness, and payload
-  translation belong in `src/data/**`; business rules, invariants, and policy
-  decisions do not
+- the data layer owns legacy and non-migrated adaptation, not business meaning.
+  Persistence mechanics, connection lifecycle, remote protocol details, schema
+  readiness, and payload translation belong in `src/data/**` for those flows;
+  business rules, invariants, and policy decisions do not
 - domain-owned repository abstractions remain the stable outbound abstraction
   toward concrete sources. `src/domain/**` defines those abstractions and the
   internal return types they use; `src/data/**` implements them

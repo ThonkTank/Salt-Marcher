@@ -174,6 +174,9 @@ document exists.
 - Work under `src/domain/**` must use the repo-owned `domain-layer` skill and
   follow the canonical domain-layer standard before changes are made or
   reviewed.
+- Work under `src/features/**` or adjacent feature-runtime governance docs must
+  use the repo-owned `feature-runtime` skill and follow the canonical Feature
+  Runtime Architecture standard before changes are made or reviewed.
 - Work under `src/view/**` must use the repo-owned `view-layer-mvvm` skill and
   follow the canonical cockpit view-layer standard before changes are made or
   reviewed.
@@ -183,6 +186,12 @@ document exists.
   `tools/quality/skills/domain-layer/SKILL.md` is the sole operative agent
   guidance. Other docs may only route or summarize; they must not become a
   second source of domain-layer truth.
+- For migrated `src/features/**`,
+  `docs/project/architecture/patterns/feature-runtime.md` is the sole
+  architectural source of truth and
+  `tools/quality/skills/feature-runtime/SKILL.md` is the sole operative agent
+  guidance. Feature-runtime conformance is review-owned unless a later
+  canonical owner names a specific gate.
 - For Dungeon domain work under `src/domain/dungeon/**` or `docs/dungeon/**`,
   start at `docs/dungeon/README.md`. Dungeon-specific architecture lives in
   `docs/dungeon/architecture/architecture-dungeon-domain.md`, domain truth in
@@ -282,9 +291,11 @@ document exists.
 - [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md:1)
 - [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
+- [Feature Runtime Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/feature-runtime/SKILL.md:1)
 - [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)
 - [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
 - [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
+- [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
 - [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)

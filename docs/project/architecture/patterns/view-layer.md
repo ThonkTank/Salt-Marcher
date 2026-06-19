@@ -1,18 +1,23 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-12
+Last Reviewed: 2026-06-19
 Source of Truth: SaltMarcher cockpit view-layer target model, topology, fixed
-shell surfaces, allowed domain/view seams for `src/view/**`, and the two only
-allowed presentation-state mutation paths.
+shell surfaces, allowed domain/view seams for legacy `src/view/**`, and the
+two only allowed presentation-state mutation paths for that root.
 
 # View Layer Standard
 
 ## Goal
 
-SaltMarcher uses a cockpit-specific contribution architecture for the view
-layer.
+SaltMarcher uses a cockpit-specific contribution architecture for legacy
+`src/view/**` code and reusable `slotcontent/**`.
 
-The domain layer remains the `Model`. Each active view root under
+This standard does not govern migrated `src/features/**` packages. Those
+packages follow the
+[Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1).
+
+The domain layer remains the `Model` for legacy `src/view/**` roots. Each
+active view root under
 `src/view/leftbartabs/**`, `src/view/statetabs/**`, or
 `src/view/dropdowns/**` is exactly one shell-hung `Contribution`: one tab or
 one window. That contribution consists only of `*Contribution`, `*Binder`,
@@ -37,9 +42,9 @@ facts their same-root `IntentHandler` needs for interpretation, but none owns
 shell APIs, domain commands, application services, or hidden orchestration
 channels.
 
-The role lists in this standard are exhaustive. Anything not explicitly named
-as allowed content, allowed dependency, or allowed responsibility does not
-belong in that role.
+The role lists in this standard are exhaustive for legacy `src/view/**`.
+Anything not explicitly named as allowed content, allowed dependency, or
+allowed responsibility does not belong in that role.
 
 ## Roles
 

@@ -1,35 +1,29 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-15
-Source of Truth: Binding domain-layer pattern, role ownership, communication seams, context map, and topology for `src/domain/**`.
+Last Reviewed: 2026-06-19
+Source of Truth: Domain-layer role ownership, seams, context map, and topology
+for legacy and non-migrated `src/domain/**`.
 
 # Domain Layer Standard
 
 ## Goal
-SaltMarcher treats `src/domain/**` as the application core. Domain code owns
-business meaning, current work state, workflow orchestration, published domain
-language, cross-context coordination seams, and same-context backend service
-assembly below the view layer. It does not own UI translation, persistence
-mechanics, data-source records, SQL, filesystem, network, or framework
-concerns. Runtime service composition and same-context assembly decomposition
-are legal only in direct context-root `*ServiceContribution` and optional
-package-private `*ServiceAssembly` files.
+SaltMarcher treats legacy and non-migrated `src/domain/**` as the application
+core. Domain code owns business meaning, work state, orchestration, published
+language, cross-context seams, and same-context backend service assembly below
+the view layer. It does not own UI translation, persistence mechanics,
+data-source records, SQL, filesystem, network, or framework concerns.
 
-This document is the sole architectural source of truth for `src/domain/**`.
-The repo-owned `tools/quality/skills/domain-layer/SKILL.md` operationalizes
-this standard for agent work. Domain enforcement documents under
-`docs/project/architecture/enforcement/` may inventory gates, candidate rows,
-review-owned rows, and drift, but must not redefine the pattern.
+This standard does not govern migrated `src/features/**`; those packages follow
+the [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1).
+This document is the sole architectural source of truth for legacy and
+non-migrated `src/domain/**`. Domain enforcement docs may inventory gates,
+candidate rows, review-owned rows, and drift, but must not redefine the pattern.
 
 ## Current State And Target State
-Current state: legacy tactical packages remain; enforcement docs describe drift, not target architecture.
+Current state: legacy tactical packages remain; enforcement docs describe drift.
 Target state: each context uses only the closed role family below. Roots expose
 family `*ApplicationService`, direct-root `*ServiceContribution`, and optional
-package-private `*ServiceAssembly` for composition and same-context publication
-decomposition. `ApplicationService` stays thin, `UseCase` owns one operation,
-`Model` owns work state, and `Published` owns outward language. `Helper` and
-`Constants` own pure support, `Port` consumes foreign published state, and
-`Repository` owns outbound writes, data access, or `*PublishedStateRepository`.
+package-private `*ServiceAssembly`; migrated `src/features/**` is out of scope.
 
 ## Role Family
 The closed architectural role family is:
