@@ -20,7 +20,7 @@ public final class LayeringArchitectureTopologyRules implements ArchitectureRule
     private static final Set<String> ACTIVE_JAVA_ROOT_ALLOWLIST =
             Set.of("bootstrap", "shell", "src", "test", "tools", "salt-marcher");
     private static final Set<String> SRC_DIRECT_CHILD_ALLOWLIST =
-            Set.of("view", "domain", "data");
+            Set.of("features", "view", "domain", "data");
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
@@ -62,8 +62,8 @@ public final class LayeringArchitectureTopologyRules implements ArchitectureRule
             stream.filter(path -> !SRC_DIRECT_CHILD_ALLOWLIST.contains(path.getFileName().toString()))
                     .filter(context::hasRepositoryContent)
                     .forEach(path -> violations.add(context.relativize(path), "repository-src-direct-child-allowlist",
-                            "The src/ root may contain only view/, domain/, and data/ as non-empty direct children."
-                                    + " Active feature code must be added inside one of those layer roots."));
+                            "The src/ root may contain only features/, view/, domain/, and data/ as non-empty direct children."
+                                    + " Migrated feature runtime code must be added under src/features/."));
         } catch (IOException exception) {
             violations.add(context.relativize(srcRoot), "scan-root",
                     "Could not scan src/ direct children: " + exception.getMessage());

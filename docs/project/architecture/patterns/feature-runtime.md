@@ -36,9 +36,9 @@ Current enforcement status:
   unless a later document names a specific mechanical gate.
 - Existing `checkViewEnforcement` and `checkDomainEnforcement` routes do not
   prove feature-runtime conformance for `src/features/**`.
-- Active non-empty `src/features/**` source roots remain blocked by the
-  layering `src/` direct-child allowlist until the feature-runtime layering
-  enforcement transition lands.
+- Active non-empty `src/features/**` source roots are allowed by the layering
+  `src/` direct-child allowlist. Their internal feature-runtime topology
+  remains review-owned until a later document names a specific mechanical gate.
 
 ## Current State And Target State
 

@@ -33,24 +33,27 @@ public final class SourceLayoutRules implements ArchitectureRule {
 
         if (!"src".equals(segments.getFirst())) {
             violations.add(sourceFile.relativePath(), "root-layout",
-                    "Sources must live under bootstrap/, shell/ or src/.");
+                    "Sources must live under bootstrap/, shell/, or src/.");
             return;
         }
 
         if (segments.size() < 3) {
             violations.add(sourceFile.relativePath(), "src-layout",
-                    "Sources under src/ must live in src/view, src/domain or src/data.");
+                    "Sources under src/ must live in src/features, src/view, src/domain, or src/data.");
             return;
         }
 
         switch (segments.get(1)) {
+            case "features" -> {
+                // Feature runtime package topology is review-owned until a dedicated gate exists.
+            }
             case "view" -> validateViewLayout(sourceFile, violations);
             case "domain" -> validateDomainLayout(sourceFile, violations);
             case "data" -> {
                 // Data layer layout and feature-root topology live in the dedicated data-layer bundle.
             }
             default -> violations.add(sourceFile.relativePath(), "src-layout",
-                    "Sources under src/ must live in src/view, src/domain or src/data.");
+                    "Sources under src/ must live in src/features, src/view, src/domain, or src/data.");
         }
     }
 

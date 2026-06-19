@@ -10,16 +10,15 @@ SaltMarcher code.
 ## Goal
 
 SaltMarcher uses one explicit layer architecture across `bootstrap/`,
-`shell/`, legacy `src/view/**`, legacy `src/domain/**`, and `src/data/**`.
-Migrated `src/features/**` is the target feature-runtime source root once the
-layering enforcement transition for that root lands.
+`shell/`, active `src/features/**` feature-runtime roots, legacy
+`src/view/**`, legacy `src/domain/**`, and `src/data/**`.
 
 This standard owns only the cross-layer model: who depends on whom, which
 boundaries are public, and which shortcuts are forbidden. Layer-internal rules
 live only in the dedicated owner documents for bootstrap, shell, view, domain,
 and data.
 
-For target migrated `src/features/**`, this document routes only to the
+For migrated `src/features/**`, this document routes only to the
 [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1).
 For any internal legacy `src/view/**` roles, reusable `slotcontent/**` rules,
 presentation-state cycles, or view/domain seam details, this document routes only to the
@@ -42,11 +41,11 @@ Responsibilities:
   creation
 - `shell/` owns passive cockpit surfaces, shell contracts, lifecycle, and
   shell-scoped runtime services
-- target migrated `src/features/**` owns feature runtime boundaries, transient
-  feature session state, target resolution, preview, operation dispatch,
-  publication, render frames, raw-input UI, storage, and shell wiring after the
-  layering enforcement transition for that root lands; its internal role rules
-  live only in the Feature Runtime Architecture Standard
+- migrated `src/features/**` owns feature runtime boundaries, transient feature
+  session state, target resolution, preview, operation dispatch, publication,
+  render frames, raw-input UI, storage, and shell wiring; its internal topology
+  and role rules live only in the Feature Runtime Architecture Standard and
+  remain review-owned unless a later owner names a mechanical gate
 - `src/view/**` owns the presentation-layer adapters and observable
   presentation state surface for legacy roots; the internal role split is
   owned only by the View Layer Standard
