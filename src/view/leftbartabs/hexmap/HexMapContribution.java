@@ -27,6 +27,6 @@ public final class HexMapContribution implements ShellContribution {
     @Override
     public ShellBinding bind(ShellRuntimeContext runtimeContext) {
         Objects.requireNonNull(runtimeContext, "runtimeContext");
-        return new HexMapBinder().bind();
+        return new HexMapBinder(runtimeContext).bind();
     }
 }

@@ -51,8 +51,8 @@ document.
   adopts a stable central token API or other explicit non-CSS bridge for
   canvas-only styling surfaces
 - widening the direct-render allowlist beyond the currently documented
-  `DungeonMapView` exception without falling back to a broad package-level
-  carve-out
+  `DungeonMapView` and `HexMapMainView` exceptions without falling back to a
+  broad package-level carve-out
 
 ## References
 

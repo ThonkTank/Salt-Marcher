@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
+Last Reviewed: 2026-06-18
 Source of Truth: User-facing behavior, capabilities, and acceptance criteria for
 the hex feature.
 
@@ -26,15 +26,15 @@ Provide one hex-map workflow that lets a GM:
 
 ## Current State
 
-- SaltMarcher now ships a first-class navigable Hex Map surface under
-  `src/view/leftbartabs/hexmap`. The current `Hex-Karte` tab is an unloaded
-  placeholder that exposes the feature in shell navigation.
-- SaltMarcher does not yet ship loaded hex-map data, party-token travel,
-  compact hex travel context, tile inspection, terrain editing, or map metadata
-  editing.
-- The sibling `salt-marcher` repo provides current user-facing evidence for the
-  target state: overworld map display, party-token travel, compact travel
-  context, tile inspection, and a terrain-focused hex editor.
+- SaltMarcher now ships a first-class navigable Hex Map editor surface under
+  `src/view/leftbartabs/hexmap`. The current `Hex-Karte` tab can create maps,
+  edit map metadata, inspect tiles, paint terrain, and place simple tile-owned
+  markers through Hex domain and SQLite persistence routes.
+- SaltMarcher does not yet ship party-token travel or compact hex travel
+  context.
+- Local editor behavior is owned and verified in this SaltMarcher repo;
+  overworld map travel, party-token travel, and compact travel context remain
+  unimplemented future scopes.
 
 ## Primary Surfaces
 
@@ -78,7 +78,9 @@ Provide one hex-map workflow that lets a GM:
 - compact travel context for overworld travel
 - terrain paint workflow
 - map creation and metadata editing
-- destructive shrink warning when radius changes remove tiles
+- simple tile-owned marker placement
+- destructive shrink warning when radius changes would remove authored tile
+  data
 
 ## Acceptance Criteria
 
@@ -96,8 +98,8 @@ Provide one hex-map workflow that lets a GM:
 - Which tile details must always be shown versus only on demand?
 - How much overworld travel context belongs directly on the interactive travel
   surface versus only in the runtime `Reise` tab?
-- Which non-terrain editor capabilities, if any, belong in the first
-  SaltMarcher hex milestone?
+- Which non-marker editor capabilities belong after the first SaltMarcher Hex
+  editor milestone?
 
 ## References
 

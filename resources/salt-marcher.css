@@ -1517,6 +1517,9 @@
 .hex-map-empty {
     -fx-padding: 12 0 0 0;
 }
+.hex-map-canvas {
+    -fx-cursor: hand;
+}
 
 .scroll-bar {
     -fx-background-color: -sm-bg-panel;

@@ -83,6 +83,21 @@ val dungeonEditorBehaviorHarness by sourceSets.creating {
     runtimeClasspath += output + compileClasspath + sourceSets["main"].runtimeClasspath
 }
 
+val hexMapEditorBehaviorHarness by sourceSets.creating {
+    java {
+        setSrcDirs(listOf("."))
+        include("shell/api/**")
+        include("src/data/persistencecore/sqlite/**")
+        include("test/src/view/leftbartabs/hexmap/**")
+    }
+    resources {
+        setSrcDirs(emptyList<String>())
+    }
+    compileClasspath += sourceSets["main"].output
+    compileClasspath += sourceSets["main"].compileClasspath
+    runtimeClasspath += output + compileClasspath + sourceSets["main"].runtimeClasspath
+}
+
 dependencies {
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.xerial:sqlite-jdbc:3.46.1.3")
@@ -277,6 +292,7 @@ tasks.register<JavaExec>("dungeonEditorBehaviorHarnessSuites") {
 
 val catalogInitialLoadHarnessDataDir = layout.buildDirectory.dir("catalog-initial-load-data")
 val catalogCrudControlsHarnessDataDir = layout.buildDirectory.dir("catalog-crud-controls-data")
+val hexMapEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-map-editor-behavior-data")
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
 
@@ -305,6 +321,22 @@ tasks.register<JavaExec>("catalogCrudControlsHarness") {
     outputs.upToDateWhen { false }
     doFirst {
         val runDataDir = catalogCrudControlsHarnessDataDir.get()
+            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+        mkdir(runDataDir)
+        mkdir(runDataDir.dir("salt-marcher"))
+        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+    }
+}
+
+tasks.register<JavaExec>("hexMapEditorBehaviorHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run the focused Hex Map editor behavior harness."
+    dependsOn(tasks.named(hexMapEditorBehaviorHarness.classesTaskName))
+    classpath = hexMapEditorBehaviorHarness.runtimeClasspath
+    mainClass.set("src.view.leftbartabs.hexmap.HexMapEditorBehaviorHarness")
+    outputs.upToDateWhen { false }
+    doFirst {
+        val runDataDir = hexMapEditorBehaviorHarnessDataDir.get()
             .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
         mkdir(runDataDir)
         mkdir(runDataDir.dir("salt-marcher"))

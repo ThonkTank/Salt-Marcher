@@ -123,6 +123,7 @@
                   source.feature = target.feature
                   OR (source.feature = 'catalog' AND target.feature IN ['creatures', 'encounter', 'encountertable'])
                   OR (source.feature = 'encounter' AND target.feature IN ['encounter', 'creatures'])
+                  OR (source.feature = 'hexmap' AND target.feature = 'hex')
                   OR (source.feature = 'adventuringday' AND target.feature = 'party')
                   OR (source.feature IN ['dungeoneditor', 'dungeontravel', 'travel'] AND target.feature = 'dungeon')
                 )

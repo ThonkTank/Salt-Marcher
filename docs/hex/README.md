@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
+Last Reviewed: 2026-06-18
 Source of Truth: Routing entrypoint for the hex gameplay and presentation
 documentation bundle.
 
@@ -23,6 +23,18 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 - [Hex Travel State Requirements](./requirements/requirements-hex-travel-state.md)
 - [Hex Editor Requirements](./requirements/requirements-hex-editor.md)
 
+### Domain
+
+- [Hex Map Domain](./domain/domain-hex-map.md)
+
+### Contract
+
+- [Hex Persistence Contract](./contract/contract-hex-persistence.md)
+
+### Verification
+
+- [Hex Editor Verification](./verification/verification-hex-editor.md)
+
 ### Related Maps Docs
 
 - [Maps Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/README.md:1)
@@ -31,13 +43,15 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
 ## Current State
 
-- SaltMarcher now ships a first-class navigable Hex Map root under
-  `src/view/leftbartabs/hexmap`. The current `Hex-Karte` surface is an
-  unloaded placeholder that makes the feature reachable from the left sidebar.
-- SaltMarcher does not yet ship loaded hex-map data, interactive hex travel,
-  tile inspection, terrain editing, or a compact hex travel-state readout.
-- The sibling `salt-marcher` repo provides the current user-facing evidence for
-  hex travel, compact travel context, tile inspection, and terrain editing.
+- SaltMarcher now ships a first-class navigable Hex Map editor root under
+  `src/view/leftbartabs/hexmap`. The `Hex-Karte` surface can create maps,
+  edit map metadata, inspect tiles, paint terrain, and place simple tile-owned
+  markers through Hex domain and SQLite persistence routes.
+- SaltMarcher does not yet ship interactive hex travel or a compact hex
+  travel-state readout.
+- Local editor behavior is owned by this SaltMarcher Hex documentation bundle;
+  interactive hex travel and compact travel-state context remain unimplemented
+  future scopes.
 
 ## References
 
