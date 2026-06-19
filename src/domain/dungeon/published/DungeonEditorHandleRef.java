@@ -52,25 +52,4 @@ public record DungeonEditorHandleRef(
                 null);
     }
 
-    public static DungeonEditorHandleRef withSourceEdge(
-            DungeonEditorHandleRef base,
-            DungeonCellRef from,
-            DungeonCellRef to
-    ) {
-        DungeonEditorHandleRef safeBase = base == null ? empty() : base;
-        if (from == null || to == null) {
-            return safeBase;
-        }
-        return new DungeonEditorHandleRef(
-                safeBase.kind(),
-                safeBase.topologyRef(),
-                safeBase.ownerId(),
-                safeBase.clusterId(),
-                safeBase.corridorId(),
-                safeBase.roomId(),
-                safeBase.index(),
-                safeBase.cell(),
-                safeBase.direction(),
-                new DungeonEdgeRef(from, to));
-    }
 }

@@ -251,19 +251,10 @@ public final class BuildDungeonEditorMainViewInputUseCase {
         public static final TargetKindInput GRAPH_NODE = new TargetKindInput("GRAPH_NODE");
         public static final TargetKindInput HANDLE = new TargetKindInput("HANDLE");
         public static final TargetKindInput BOUNDARY = new TargetKindInput("BOUNDARY");
-        private static final TargetKindInput[] VALUES = {EMPTY, CELL, LABEL, GRAPH_NODE, HANDLE, BOUNDARY};
-
         private final String name;
 
         private TargetKindInput(String name) {
             this.name = name;
-        }
-
-        public static TargetKindInput fromName(String name) {
-            if (name == null || name.isBlank()) {
-                return EMPTY;
-            }
-            return findByName(VALUES, name.trim(), "target kind");
         }
 
         @Override

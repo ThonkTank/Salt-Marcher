@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-14
+Last Reviewed: 2026-06-18
 Source of Truth: Detailed local gate inventory for SaltMarcher quality
 platforms.
 
@@ -94,12 +94,14 @@ they skip only recognized canonical view role files for role-shape metrics,
 and `TooManyMethods` also skips top-level domain `published/**` boundary
 sources whose many passive accessors are published-language shape rather than
 implementation sprawl. Feature-runtime operations boundary sources under
-`src/features/**/runtime/*Operations.java` and their narrow legacy shell
+`src/features/**/runtime/*Operations.java`, feature-runtime roots under
+`src/features/**/runtime/*RuntimeRoot.java`, feature-runtime composition helpers
+under `src/features/**/runtime/*RuntimeAssembly.java`, and narrow legacy shell
 operations adapters under `src/features/**/shell/*Operations.java` are also
 role-aware metric sources: the feature-runtime owner makes typed runtime
-operation boundaries review-owned architecture, and PMD must not force them
-into wrapper-command or data-holder shapes solely to satisfy generic class
-metrics.
+operation boundaries and runtime composition review-owned architecture, and PMD
+must not force them into wrapper-command, data-holder, split-root, or artificial
+micro-wiring shapes solely to satisfy generic class metrics.
 `DataClass` remains blocking for ordinary classes but ignores Java records and
 expected passive carriers for `src/data/**/model/*PersistenceSchema.java`,
 `src/data/**/model/*Record.java`, and `src/domain/**/published/**` source
@@ -154,8 +156,9 @@ effort `MAX`, and confidence `MEDIUM`. `MAX` is the strongest analysis effort;
 the report to high-confidence-only findings. `spotbugsMain` is active in the
 shared `check` / `production-handoff` lifecycle catalog and blocks the local
 build on reported findings.
-`spotbugsTest` is disabled because behavior-coupled automated tests are not
-part of the project strategy.
+`spotbugsTest` is disabled because generic test-source analysis is not the
+project strategy for behavior proof. Behavior regression coverage belongs in
+focused production-path behavior harnesses and their documented proof routes.
 
 CKJM measures object-oriented class metrics but does not publish official
 blocking defaults. SaltMarcher therefore treats CKJM as a hotspot and

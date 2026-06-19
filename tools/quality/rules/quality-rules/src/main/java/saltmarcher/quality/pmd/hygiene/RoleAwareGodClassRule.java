@@ -7,7 +7,8 @@ public final class RoleAwareGodClassRule extends GodClassRule {
 
     @Override
     public Object visit(ASTClassDeclaration node, Object data) {
-        if (RoleAwareMetricSupport.isTopLevelViewRoleShapeMetricSource(node)) {
+        if (RoleAwareMetricSupport.isTopLevelViewRoleShapeMetricSource(node)
+                || RoleAwareMetricSupport.isTopLevelFeatureRuntimeArchitectureMetricSource(node)) {
             return null;
         }
         return super.visit(node, data);

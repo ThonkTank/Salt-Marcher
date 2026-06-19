@@ -9,7 +9,6 @@ import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.published.DungeonCellRef;
-import src.domain.dungeon.DungeonEditorLabelNameApplicationService;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorPreview;
@@ -18,7 +17,8 @@ import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
-import src.domain.dungeon.published.SaveDungeonEditorLabelNameCommand;
+import src.features.dungeon.runtime.DungeonEditorFeatureRuntimeRoot;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import static src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorHarnessSupport.*;
@@ -231,12 +231,10 @@ final class DungeonEditorClusterLabelHandleHarness {
                 roomLabelCenter,
                 "DE-LABEL-010 passive room label hover");
         assertRoomLabelHitAndEditorPresentation(binding, runtime, roomIds, roomLabelCenter, roomLabelText);
-        runtime.context().services()
-                .require(DungeonEditorLabelNameApplicationService.class)
-                .saveLabelName(new SaveDungeonEditorLabelNameCommand(
-                        SaveDungeonEditorLabelNameCommand.TARGET_ROOM,
-                        roomIds.roomId(),
-                        "   Lantern Room   "));
+        DungeonEditorRuntimeOperations operations =
+                DungeonEditorFeatureRuntimeRoot.create(runtime.context().services()).operations();
+        operations.selectMap(roomMapId);
+        operations.saveLabelName("ROOM", roomIds.roomId(), "   Lantern Room   ");
         assertEquals("Lantern Room", runtime.database().roomName(roomIds.roomId()),
                 "DE-LABEL-006 shared label-name operation trims and saves custom room label");
         assertEquals(roomGeometryRowsBefore, runtime.database().countAuthoredGeometryRows(roomMapId),

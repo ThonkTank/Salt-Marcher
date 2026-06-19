@@ -32,6 +32,9 @@ final class DungeonEditorPublishedStateServiceAssembly implements DungeonEditorS
 
     void registerModels(shell.api.ServiceRegistry.Builder services) {
         services.registerFactory(
+                DungeonEditorSnapshotPublishedStateRepository.class,
+                registry -> this);
+        services.registerFactory(
                 DungeonEditorControlsModel.class,
                 registry -> controlsModel);
         services.registerFactory(

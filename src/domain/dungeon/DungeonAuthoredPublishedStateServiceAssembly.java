@@ -17,10 +17,10 @@ final class DungeonAuthoredPublishedStateServiceAssembly implements src.domain.d
     final src.domain.dungeon.published.DungeonMapCatalogModel mapCatalogModel =
             new src.domain.dungeon.published.DungeonMapCatalogModel(mapCatalog::current, mapCatalog::subscribe);
 
-    void registerModels(
-            shell.api.ServiceRegistry.Builder services,
-            DungeonEditorRuntimeServiceAssembly editorRuntime
-    ) {
+    void registerModels(shell.api.ServiceRegistry.Builder services) {
+        services.registerFactory(
+                src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.class,
+                registry -> this);
         services.registerFactory(
                 src.domain.dungeon.published.DungeonAuthoredReadModel.class,
                 registry -> authoredReadModel);
@@ -29,10 +29,7 @@ final class DungeonAuthoredPublishedStateServiceAssembly implements src.domain.d
                 registry -> authoredMutationModel);
         services.registerFactory(
                 src.domain.dungeon.published.DungeonMapCatalogModel.class,
-                registry -> {
-                    editorRuntime.initialize(registry, this);
-                    return mapCatalogModel;
-                });
+                registry -> mapCatalogModel);
     }
 
     @Override

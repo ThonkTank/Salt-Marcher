@@ -8,35 +8,12 @@ final class DungeonServiceAssembly {
             new DungeonEditorPublishedStateServiceAssembly();
     private final DungeonAuthoredPublishedStateServiceAssembly authoredPublishedState =
             new DungeonAuthoredPublishedStateServiceAssembly();
-    private final DungeonEditorRuntimeServiceAssembly editorRuntime =
-            new DungeonEditorRuntimeServiceAssembly(editorPublishedState);
     private final DungeonTravelRuntimeServiceAssembly travelRuntime = new DungeonTravelRuntimeServiceAssembly();
 
     void register(ServiceRegistry.Builder services) {
         services.registerFactory(DungeonTravelRuntimeApplicationService.class, travelRuntime::service);
-        authoredPublishedState.registerModels(services, editorRuntime);
+        authoredPublishedState.registerModels(services);
         services.registerFactory(src.domain.dungeon.published.TravelDungeonModel.class, travelRuntime::travelModel);
-        services.registerFactory(
-                DungeonEditorMapApplicationService.class,
-                registry -> editorRuntime.mapService(registry, authoredPublishedState));
-        services.registerFactory(
-                DungeonEditorProjectionApplicationService.class,
-                registry -> editorRuntime.projectionService(registry, authoredPublishedState));
-        services.registerFactory(
-                DungeonEditorPointerApplicationService.class,
-                registry -> editorRuntime.pointerService(registry, authoredPublishedState));
-        services.registerFactory(
-                DungeonEditorNarrationApplicationService.class,
-                registry -> editorRuntime.narrationService(registry, authoredPublishedState));
-        services.registerFactory(
-                DungeonEditorLabelNameApplicationService.class,
-                registry -> editorRuntime.labelNameService(registry, authoredPublishedState));
-        services.registerFactory(
-                DungeonEditorTransitionApplicationService.class,
-                registry -> editorRuntime.transitionService(registry, authoredPublishedState));
-        services.registerFactory(
-                DungeonEditorStairApplicationService.class,
-                registry -> editorRuntime.stairService(registry, authoredPublishedState));
         editorPublishedState.registerModels(services);
     }
 }

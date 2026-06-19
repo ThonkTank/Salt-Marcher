@@ -8,7 +8,7 @@ public final class RoleAwareExcessiveImportsRule extends ExcessiveImportsRule {
     @Override
     protected boolean isIgnored(ASTCompilationUnit node) {
         return RoleAwareMetricSupport.isViewRoleShapeMetricSource(node)
-                || RoleAwareMetricSupport.isFeatureRuntimeOperationsMetricSource(node)
+                || RoleAwareMetricSupport.isFeatureRuntimeArchitectureMetricSource(node)
                 || super.isIgnored(node);
     }
 }

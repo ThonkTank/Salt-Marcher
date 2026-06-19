@@ -39,18 +39,14 @@ passive-view hit payloads, display styling, SQL rows, or adapter mechanics.
 
 ## Application Boundary
 
-Application Service: DungeonEditorMapApplicationService
-Application Service: DungeonEditorProjectionApplicationService
-Application Service: DungeonEditorPointerApplicationService
-Application Service: DungeonEditorNarrationApplicationService
-Application Service: DungeonEditorLabelNameApplicationService
-Application Service: DungeonEditorStairApplicationService
-Application Service: DungeonEditorTransitionApplicationService
+Feature Runtime Boundary: DungeonEditorFeatureRuntimeRoot
 Application Service: DungeonTravelRuntimeApplicationService
 
-Application services coordinate load, mutate, save, search, editor-session,
-and travel-runtime work through the canonical Dungeon domain and architecture
-owners. They do not define model-family placement in this mirror.
+The feature-runtime authored operations provider coordinates editor load,
+mutate, save, search, and editor-session work through the canonical Dungeon
+domain and architecture owners. The travel application service coordinates
+travel-runtime work. These boundaries do not define model-family placement in
+this mirror.
 
 ## Aggregate Model
 

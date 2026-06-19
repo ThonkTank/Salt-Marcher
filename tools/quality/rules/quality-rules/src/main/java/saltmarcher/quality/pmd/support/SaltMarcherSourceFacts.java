@@ -68,6 +68,20 @@ public final class SaltMarcherSourceFacts {
                 && simpleName.endsWith("Operations");
     }
 
+    public boolean isFeatureRuntimeAssemblySource() {
+        return startsWith("src", "features")
+                && segments.size() >= 5
+                && segments.get(3).equals("runtime")
+                && simpleName.endsWith("RuntimeAssembly");
+    }
+
+    public boolean isFeatureRuntimeRootSource() {
+        return startsWith("src", "features")
+                && segments.size() >= 5
+                && segments.get(3).equals("runtime")
+                && simpleName.endsWith("RuntimeRoot");
+    }
+
     public boolean isFeatureShellOperationsAdapterSource() {
         return startsWith("src", "features")
                 && segments.size() >= 5

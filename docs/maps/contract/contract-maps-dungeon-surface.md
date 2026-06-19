@@ -16,11 +16,9 @@ the generic maps feature.
 
 Owners:
 
-- provider: `DungeonEditorMapApplicationService`,
-  `DungeonEditorProjectionApplicationService`,
-  `DungeonEditorPointerApplicationService`,
-  `DungeonEditorNarrationApplicationService`,
-  and `DungeonTravelRuntimeApplicationService`
+- provider: `DungeonEditorFeatureRuntimeRoot`, which owns the dungeon editor
+  feature-runtime authored operations provider, and
+  `DungeonTravelRuntimeApplicationService`
 - consumers: dungeon editor and travel view roots,
   and any future runtime-workspace context that needs authored dungeon map
   facts
@@ -43,8 +41,8 @@ Owners:
 
 ### Editor Authored Read
 
-- `SelectDungeonEditorMapCommand`
-- `ApplyDungeonEditorPointerCommand`
+- feature-runtime map selection input
+- feature-runtime pointer input
 
 Required context:
 
@@ -58,9 +56,10 @@ Optional context:
 
 ### Editor Authored Mutation
 
-- `ApplyDungeonEditorPointerCommand` for pointer-driven editor operations
-- focused editor commands for map selection, projection, overlay, tool, and
-  room narration work
+- feature-runtime pointer and handle inputs for pointer-driven editor
+  operations
+- feature-runtime operation methods for map selection, projection, overlay,
+  tool, narration, label, stair, and transition work
 
 Editor preview and apply share the same authored map operation vocabulary in
 `DungeonEditorAuthoredOperation`. Public published command carriers no longer
@@ -68,10 +67,7 @@ reconstruct a second authored edit body.
 
 ### Map Catalog
 
-- `DungeonMapCatalogCommand.Search`
-- `DungeonMapCatalogCommand.CreateMap`
-- `DungeonMapCatalogCommand.RenameMap`
-- `DungeonMapCatalogCommand.DeleteMap`
+- feature-runtime catalog search, create, rename, and delete operations
 
 ### Travel
 

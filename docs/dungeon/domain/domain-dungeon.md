@@ -180,13 +180,9 @@ party roster truth or persisted party travel position.
 
 Active root boundaries:
 
-- `DungeonEditorMapApplicationService`
-- `DungeonEditorProjectionApplicationService`
-- `DungeonEditorPointerApplicationService`
-- `DungeonEditorNarrationApplicationService`
-- `DungeonEditorLabelNameApplicationService`
-- `DungeonEditorStairApplicationService`
-- `DungeonEditorTransitionApplicationService`
+- `DungeonEditorFeatureRuntimeRoot` owns the feature-runtime authored editor
+  operations provider for map catalog, projection, pointer, narration, label,
+  stair, and transition writes over authored dungeon truth
 - `DungeonTravelRuntimeApplicationService`
 
 ## Invariants

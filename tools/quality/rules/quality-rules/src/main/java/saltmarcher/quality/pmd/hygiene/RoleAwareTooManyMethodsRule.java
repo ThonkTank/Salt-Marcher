@@ -25,7 +25,7 @@ public final class RoleAwareTooManyMethodsRule extends AbstractJavaRulechainRule
     private void checkTypeDeclaration(ASTTypeDeclaration typeDeclaration, Object data) {
         if (RoleAwareMetricSupport.isViewRoleShapeMetricType(typeDeclaration)
                 || RoleAwareMetricSupport.isTopLevelDomainPublishedBoundarySource(typeDeclaration)
-                || RoleAwareMetricSupport.isFeatureRuntimeOperationsMetricSource(
+                || RoleAwareMetricSupport.isFeatureRuntimeArchitectureMetricSource(
                         (ASTCompilationUnit) typeDeclaration.getRoot())) {
             return;
         }
