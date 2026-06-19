@@ -20,6 +20,7 @@ import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateModel;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
+import src.features.dungeon.shell.DungeonEditorFeatureShellBinding;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
@@ -51,6 +52,8 @@ final class DungeonEditorBinder {
         DungeonEditorControlsModel controlsModel = runtimeContext.services().require(DungeonEditorControlsModel.class);
         DungeonEditorMapSurfaceModel mapSurfaceModel = runtimeContext.services().require(DungeonEditorMapSurfaceModel.class);
         DungeonEditorStateModel stateModel = runtimeContext.services().require(DungeonEditorStateModel.class);
+        DungeonEditorFeatureShellBinding featureShell =
+                new DungeonEditorFeatureShellBinding(controlsModel, mapSurfaceModel, stateModel);
         DungeonEditorControlsContentModel controlsContentModel = new DungeonEditorControlsContentModel();
         CatalogCrudControlsContentModel mapCatalogContentModel = new CatalogCrudControlsContentModel();
         DungeonEditorStateContentModel stateContentModel = new DungeonEditorStateContentModel();
@@ -86,34 +89,31 @@ final class DungeonEditorBinder {
         state.onViewInputEvent(intentHandler::consume);
         contributionModel.bindControlsContentModel(controlsContentModel);
         contributionModel.bindMapCatalogContentModel(controlsContentModel, mapCatalogContentModel);
-        controlsModel.subscribe(snapshot -> applyControls(snapshot, contributionModel));
-        mapSurfaceModel.subscribe(snapshot -> applyMapSurface(snapshot, mapContentModel));
-        stateModel.subscribe(snapshot -> applyState(snapshot, contributionModel));
-        applyControls(controlsModel.current(), contributionModel);
-        applyMapSurface(mapSurfaceModel.current(), mapContentModel);
-        applyState(stateModel.current(), contributionModel);
+        featureShell.subscribe((controlsSnapshot, mapSurfaceSnapshot, stateSnapshot) -> applyFrame(
+                controlsSnapshot,
+                mapSurfaceSnapshot,
+                stateSnapshot,
+                contributionModel,
+                mapContentModel));
+        featureShell.publishCurrent((controlsSnapshot, mapSurfaceSnapshot, stateSnapshot) -> applyFrame(
+                controlsSnapshot,
+                mapSurfaceSnapshot,
+                stateSnapshot,
+                contributionModel,
+                mapContentModel));
         return new Binding(ShellControls.stack(mapCatalog, controls), main, state);
     }
 
-    private static void applyControls(
-            DungeonEditorControlsSnapshot snapshot,
-            DungeonEditorContributionModel contributionModel
-    ) {
-        contributionModel.applyControls(snapshot);
-    }
-
-    private static void applyMapSurface(
-            DungeonEditorMapSurfaceSnapshot snapshot,
+    private static void applyFrame(
+            DungeonEditorControlsSnapshot controlsSnapshot,
+            DungeonEditorMapSurfaceSnapshot mapSurfaceSnapshot,
+            DungeonEditorStateSnapshot stateSnapshot,
+            DungeonEditorContributionModel contributionModel,
             DungeonMapContentModel mapContentModel
     ) {
-        mapContentModel.applyEditorSurfaceSnapshot(snapshot);
-    }
-
-    private static void applyState(
-            DungeonEditorStateSnapshot snapshot,
-            DungeonEditorContributionModel contributionModel
-    ) {
-        contributionModel.applyState(snapshot);
+        contributionModel.applyControls(controlsSnapshot);
+        mapContentModel.applyEditorSurfaceSnapshot(mapSurfaceSnapshot);
+        contributionModel.applyState(stateSnapshot);
     }
 
     private record Binding(
