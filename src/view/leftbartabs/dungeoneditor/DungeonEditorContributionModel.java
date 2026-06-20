@@ -27,12 +27,13 @@ public final class DungeonEditorContributionModel {
                         src.domain.dungeon.published.DungeonEditorControlsSnapshot.empty(""),
                         src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot.empty(),
                         DungeonEditorStateSnapshot.empty(""),
-                        DungeonEditorPreparedFrameFacts.empty())
+                        DungeonEditorPreparedFrameFacts.empty(),
+                        null)
                 : frame;
         DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
         interactionState = InteractionState.from(facts);
         controlsProjection.set(ControlsProjection.from(facts));
-        stateContentModel.apply(safeFrame.state(), stateContext(facts));
+        stateContentModel.apply(safeFrame.state(), stateContext(safeFrame));
     }
 
     InteractionState currentInteractionState() {
@@ -140,10 +141,16 @@ public final class DungeonEditorContributionModel {
         catalogContentModel.showValidationError(safeEditor.errorText());
     }
 
-    private static DungeonEditorStateContentModel.StateProjectionContext stateContext(
-            DungeonEditorPreparedFrameFacts facts
-    ) {
-        DungeonEditorPreparedFrameFacts safeFacts = facts == null ? DungeonEditorPreparedFrameFacts.empty() : facts;
+    private static DungeonEditorStateContentModel.StateProjectionContext stateContext(DungeonEditorRenderFrame frame) {
+        DungeonEditorRenderFrame safeFrame = frame == null
+                ? new DungeonEditorRenderFrame(
+                        src.domain.dungeon.published.DungeonEditorControlsSnapshot.empty(""),
+                        src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot.empty(),
+                        DungeonEditorStateSnapshot.empty(""),
+                        DungeonEditorPreparedFrameFacts.empty(),
+                        null)
+                : frame;
+        DungeonEditorPreparedFrameFacts safeFacts = safeFrame.preparedFacts();
         return new DungeonEditorStateContentModel.StateProjectionContext(
                 safeFacts.selectedMapIdValue(),
                 safeFacts.statusText(),
@@ -152,7 +159,8 @@ public final class DungeonEditorContributionModel {
                 safeFacts.selectedToolKey(),
                 safeFacts.viewModeLabel(),
                 safeFacts.projectionLevel(),
-                safeFacts.overlay().overlayLabel());
+                safeFacts.overlay().overlayLabel(),
+                safeFrame.statePanelLabelNameDraft());
     }
 
     record ControlsProjection(

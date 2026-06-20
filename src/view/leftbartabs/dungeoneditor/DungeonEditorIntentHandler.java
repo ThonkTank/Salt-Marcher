@@ -254,14 +254,13 @@ final class DungeonEditorIntentHandler {
     }
 
     private void consumeLabelNameInput(DungeonEditorStateViewInputEvent event) {
-        stateContentModel.updateNameDraft(
+        operations.updateStatePanelLabelNameDraft(
                 event.nameTargetKind(),
                 event.nameTargetId(),
                 event.labelName());
         if (!event.labelNameSaveRequested() || event.nameTargetId() <= 0L || event.labelName().isBlank()) {
             return;
         }
-        stateContentModel.clearNameDraft(event.nameTargetKind(), event.nameTargetId());
         operations.saveLabelName(
                 event.nameTargetKind(),
                 event.nameTargetId(),

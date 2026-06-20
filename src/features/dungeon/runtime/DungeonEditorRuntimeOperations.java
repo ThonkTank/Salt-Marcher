@@ -54,6 +54,10 @@ public interface DungeonEditorRuntimeOperations {
 
     void saveRoomNarration(RoomNarration narration);
 
+    default void updateStatePanelLabelNameDraft(String targetKind, long targetId, String name) {
+        // Only feature-runtime roots own state-panel draft session state.
+    }
+
     void saveLabelName(String targetKind, long targetId, String name);
 
     void saveTransitionLink(

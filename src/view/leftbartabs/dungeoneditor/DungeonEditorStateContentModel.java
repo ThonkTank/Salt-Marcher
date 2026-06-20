@@ -16,16 +16,14 @@ import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
+import src.features.dungeon.runtime.DungeonEditorStatePanelLabelNameDrafts;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 
 final class DungeonEditorStateContentModel {
     private static final long NO_TRANSITION_ID = 0L;
     private static final long NO_STAIR_ID = 0L;
-    private static final long NO_LABEL_TARGET_ID = 0L;
     private static final long NO_SELECTED_MAP_ID = 0L;
     private static final String STAIR_KIND = "STAIR";
-    private static final String CLUSTER_KIND = "CLUSTER";
-    private static final String ROOM_KIND = "ROOM";
     private static final String OVERWORLD_TILE_DESTINATION = "OVERWORLD_TILE";
     private static final String TRANSITION_CREATE_TOOL = "TRANSITION_CREATE";
 
@@ -34,7 +32,6 @@ final class DungeonEditorStateContentModel {
     private final Map<VisualDraftKey, String> visualDrafts = new HashMap<>();
     private final Map<ExitDraftKey, String> exitDrafts = new HashMap<>();
     private final Map<CorridorPointDraftKey, CorridorPointDraft> corridorPointDrafts = new HashMap<>();
-    private final Map<NameDraftKey, String> nameDrafts = new HashMap<>();
     private final Map<TransitionDraftKey, String> transitionDrafts = new HashMap<>();
     private final Map<TransitionDestinationDraftKey, TransitionDestinationDraft> transitionDestinationDrafts =
             new HashMap<>();
@@ -70,7 +67,6 @@ final class DungeonEditorStateContentModel {
                 safeContext,
                 safeSnapshot.selection(),
                 safeSnapshot.inspector());
-        NameTarget visibleNameTarget = nameTarget(safeSnapshot.selection());
         StairGeometryProjection stairGeometry = stairGeometryProjection(
                 safeContext.selectedMapIdValue(),
                 safeSnapshot.selection(),
@@ -85,14 +81,13 @@ final class DungeonEditorStateContentModel {
                 narrationCards,
                 editableCorridorHandle,
                 transitionDescription,
-                visibleNameTarget,
                 stairGeometry);
         stateProjection.set(new StateProjection(
                 ProjectionTextSupport.stateTextFor(safeSnapshot, safeContext),
                 safeContext.statusText(),
                 safeContext.busy(),
                 applyDrafts(safeContext.selectedMapIdValue(), narrationCards),
-                nameProjection(safeContext.selectedMapIdValue(), safeSnapshot.selection(), safeSnapshot.inspector()),
+                nameProjection(safeSnapshot.inspector()),
                 corridorPointProjection(safeContext.selectedMapIdValue(), editableCorridorHandle),
                 transitionDestination,
                 transitionDescription,
@@ -136,19 +131,6 @@ final class DungeonEditorStateContentModel {
 
     @Nullable HandleTarget currentEditableCorridorHandleTarget() {
         return toRuntimeHandleTarget(currentEditableCorridorHandle);
-    }
-
-    void updateNameDraft(String targetKind, long targetId, String name) {
-        if (targetId <= NO_LABEL_TARGET_ID) {
-            return;
-        }
-        nameDrafts.put(
-                new NameDraftKey(currentContext.selectedMapIdValue(), targetKind, targetId),
-                name == null ? "" : name);
-    }
-
-    void clearNameDraft(String targetKind, long targetId) {
-        nameDrafts.remove(new NameDraftKey(currentContext.selectedMapIdValue(), targetKind, targetId));
     }
 
     void updateCorridorPointDraft(String q, String r) {
@@ -320,7 +302,6 @@ final class DungeonEditorStateContentModel {
             List<RoomNarrationCardProjection> cards,
             @Nullable DungeonEditorHandleRef corridorHandle,
             @Nullable TransitionDescriptionProjection transitionDescription,
-            NameTarget visibleNameTarget,
             @Nullable StairGeometryProjection stairGeometry
     ) {
         Set<VisualDraftKey> visibleVisuals = new HashSet<>();
@@ -345,7 +326,6 @@ final class DungeonEditorStateContentModel {
                 : new TransitionDraftKey(selectedMapIdValue, transitionDescription.transitionId());
         transitionDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
                 && !key.equals(visibleTransition));
-        pruneNameDrafts(selectedMapIdValue, visibleNameTarget);
         StairGeometryDraftKey visibleStair = stairGeometry == null
                 ? null
                 : new StairGeometryDraftKey(selectedMapIdValue, stairGeometry.stairId());
@@ -355,58 +335,21 @@ final class DungeonEditorStateContentModel {
                 && !key.equals(transitionDestinationDraftKey(selectedMapIdValue, currentSelectedTransitionId)));
     }
 
-    private void pruneNameDrafts(long selectedMapIdValue, NameTarget visibleNameTarget) {
-        NameDraftKey visibleName = visibleNameTarget == null || !visibleNameTarget.present()
-                ? null
-                : new NameDraftKey(selectedMapIdValue, visibleNameTarget.kind(), visibleNameTarget.id());
-        nameDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
-                && !key.equals(visibleName));
-    }
-
-    private @Nullable NameProjection nameProjection(
-            long selectedMapIdValue,
-            DungeonEditorStateSnapshot.Selection selection,
-            @Nullable DungeonInspectorSnapshot inspector
-    ) {
-        DungeonEditorStateSnapshot.Selection safeSelection = selection == null
-                ? DungeonEditorStateSnapshot.Selection.empty()
-                : selection;
-        NameTarget target = nameTarget(safeSelection);
-        if (!target.present()) {
+    private @Nullable NameProjection nameProjection(@Nullable DungeonInspectorSnapshot inspector) {
+        DungeonEditorStatePanelLabelNameDrafts.Draft target = currentContext.statePanelLabelNameDraft();
+        if (!target.targetPresent()) {
             return null;
         }
         String fallbackName = target.fallbackName();
         String currentName = inspector == null || inspector.title().isBlank() ? fallbackName : inspector.title();
-        String draft = nameDrafts.getOrDefault(
-                new NameDraftKey(selectedMapIdValue, target.kind(), target.id()),
-                currentName);
+        String draft = target.present()
+                ? target.name()
+                : currentName;
         return new NameProjection(
-                target.kind(),
-                target.id(),
+                target.targetKind(),
+                target.targetId(),
                 target.label(),
                 draft);
-    }
-
-    private static NameTarget nameTarget(DungeonEditorStateSnapshot.Selection selection) {
-        if (clusterNameTarget(selection)) {
-            return new NameTarget(CLUSTER_KIND, selection.clusterId());
-        }
-        DungeonEditorTopologyElementRef topologyRef = selection.topologyRef();
-        return ROOM_KIND.equals(topologyRef.kind())
-                ? new NameTarget(ROOM_KIND, topologyRef.id())
-                : NameTarget.empty();
-    }
-
-    private static boolean clusterNameTarget(DungeonEditorStateSnapshot.Selection selection) {
-        return clusterLabelSelection(selection) || clusterOnlySelection(selection);
-    }
-
-    private static boolean clusterLabelSelection(DungeonEditorStateSnapshot.Selection selection) {
-        return selection.handleRef() != null && DungeonEditorHandleKind.CLUSTER_LABEL == selection.handleRef().kind();
-    }
-
-    private static boolean clusterOnlySelection(DungeonEditorStateSnapshot.Selection selection) {
-        return selection.clusterSelection() && !ROOM_KIND.equals(selection.topologyRef().kind());
     }
 
     private @Nullable CorridorPointProjection corridorPointProjection(
@@ -568,24 +511,6 @@ final class DungeonEditorStateContentModel {
         }
     }
 
-    private record NameTarget(String kind, long id) {
-        private static NameTarget empty() {
-            return new NameTarget("", NO_LABEL_TARGET_ID);
-        }
-
-        private boolean present() {
-            return id > NO_LABEL_TARGET_ID && (CLUSTER_KIND.equals(kind) || ROOM_KIND.equals(kind));
-        }
-
-        private String fallbackName() {
-            return CLUSTER_KIND.equals(kind) ? "Cluster " + id : "Raum " + id;
-        }
-
-        private String label() {
-            return CLUSTER_KIND.equals(kind) ? "Cluster-Name" : "Raum-Name";
-        }
-    }
-
     record StateProjectionContext(
             long selectedMapIdValue,
             String statusText,
@@ -594,7 +519,8 @@ final class DungeonEditorStateContentModel {
             String selectedToolKey,
             String viewModeLabel,
             int projectionLevel,
-            String overlayLabel
+            String overlayLabel,
+            DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft
     ) {
         StateProjectionContext {
             selectedMapIdValue = Math.max(0L, selectedMapIdValue);
@@ -604,6 +530,9 @@ final class DungeonEditorStateContentModel {
             viewModeLabel = normalizeViewModeKey(viewModeLabel);
             projectionLevel = Math.max(0, projectionLevel);
             overlayLabel = overlayLabel == null ? "" : overlayLabel;
+            statePanelLabelNameDraft = statePanelLabelNameDraft == null
+                    ? DungeonEditorStatePanelLabelNameDrafts.Draft.empty()
+                    : statePanelLabelNameDraft;
         }
 
         static StateProjectionContext empty() {
@@ -615,7 +544,8 @@ final class DungeonEditorStateContentModel {
                     "",
                     "Grid",
                     0,
-                    "");
+                    "",
+                    DungeonEditorStatePanelLabelNameDrafts.Draft.empty());
         }
     }
 
@@ -800,14 +730,6 @@ final class DungeonEditorStateContentModel {
                     handleRef.topologyRef().id(),
                     handleRef.corridorId(),
                     handleRef.index());
-        }
-    }
-
-    private record NameDraftKey(long selectedMapIdValue, String targetKind, long targetId) {
-        NameDraftKey {
-            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
-            targetKind = targetKind == null ? "" : targetKind.trim().toUpperCase(Locale.ROOT);
-            targetId = Math.max(0L, targetId);
         }
     }
 

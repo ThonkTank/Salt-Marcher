@@ -1,13 +1,18 @@
 package src.features.dungeon.runtime;
 
+import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 import shell.api.ServiceRegistry;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
+import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorStateModel;
+import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTool;
+import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapSummary;
@@ -19,6 +24,9 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     private final DungeonEditorStateModel stateModel;
     private final DungeonEditorAuthoredRuntimeOperations operationOwner;
     private final DungeonEditorPointerSession pointerSession = new DungeonEditorPointerSession();
+    private final DungeonEditorStatePanelLabelNameDrafts statePanelLabelNameDrafts =
+            new DungeonEditorStatePanelLabelNameDrafts();
+    private final List<Consumer<DungeonEditorRuntimePublication>> subscribers = new CopyOnWriteArrayList<>();
 
     public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
         ServiceRegistry safeRegistry = Objects.requireNonNull(registry, "registry");
@@ -39,6 +47,7 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
         this.mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
         this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
         this.operationOwner = Objects.requireNonNull(operationOwner, "operationOwner");
+        this.stateModel.subscribe(ignored -> publishCurrentToSubscribers());
     }
 
     public DungeonEditorRuntimeOperations operations() {
@@ -88,7 +97,7 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     }
 
     @Override
-    public void setOverlay(String modeKey, int levelRange, double opacity, java.util.List<Integer> selectedLevels) {
+    public void setOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
         operationOwner.setOverlay(modeKey, levelRange, opacity, selectedLevels);
     }
 
@@ -170,7 +179,14 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     }
 
     @Override
+    public void updateStatePanelLabelNameDraft(String targetKind, long targetId, String name) {
+        statePanelLabelNameDrafts.update(currentSelectedMapIdValue(), targetKind, targetId, name);
+        publishCurrentToSubscribers();
+    }
+
+    @Override
     public void saveLabelName(String targetKind, long targetId, String name) {
+        statePanelLabelNameDrafts.clear(currentSelectedMapIdValue(), targetKind, targetId);
         operationOwner.saveLabelName(targetKind, targetId, name);
     }
 
@@ -207,16 +223,34 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     public Runnable subscribe(Consumer<DungeonEditorRuntimePublication> subscriber) {
         Consumer<DungeonEditorRuntimePublication> safeSubscriber =
                 Objects.requireNonNull(subscriber, "subscriber");
-        return stateModel.subscribe(ignored -> safeSubscriber.accept(currentPublication()));
+        subscribers.add(safeSubscriber);
+        return () -> subscribers.remove(safeSubscriber);
+    }
+
+    private void publishCurrentToSubscribers() {
+        DungeonEditorRuntimePublication publication = currentPublication();
+        subscribers.forEach(subscriber -> subscriber.accept(publication));
     }
 
     private DungeonEditorRenderFrame currentFrame() {
         DungeonEditorControlsSnapshot controls = controlsModel.current();
+        DungeonEditorStateSnapshot state = stateModel.current();
         return new DungeonEditorRenderFrame(
                 controls,
                 mapSurfaceModel.current(),
-                stateModel.current(),
-                preparedFacts(controls));
+                state,
+                preparedFacts(controls),
+                prepareStatePanelLabelNameDraft(controls, state));
+    }
+
+    private DungeonEditorStatePanelLabelNameDrafts.Draft prepareStatePanelLabelNameDraft(
+            DungeonEditorControlsSnapshot controls,
+            DungeonEditorStateSnapshot state
+    ) {
+        LabelNameTarget target = labelNameTarget(state == null ? null : state.selection());
+        long selectedMapIdValue = selectedMapIdValue(controls);
+        statePanelLabelNameDrafts.retainOnlyVisibleDraftForMap(selectedMapIdValue, target.kind(), target.id());
+        return statePanelLabelNameDrafts.current(selectedMapIdValue, target.kind(), target.id());
     }
 
     private static DungeonEditorPreparedFrameFacts preparedFacts(DungeonEditorControlsSnapshot controlsSnapshot) {
@@ -269,7 +303,54 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
         return mapId == null ? "" : Long.toString(mapId.value());
     }
 
-    private static int clampProjectionLevel(java.util.List<Integer> reachableLevels, int projectionLevel) {
+    private long currentSelectedMapIdValue() {
+        return selectedMapIdValue(controlsModel.current());
+    }
+
+    private static long selectedMapIdValue(DungeonEditorControlsSnapshot controls) {
+        if (controls == null || controls.selectedMapId() == null) {
+            return 0L;
+        }
+        return controls.selectedMapId().value();
+    }
+
+    private static LabelNameTarget labelNameTarget(DungeonEditorStateSnapshot.Selection selection) {
+        DungeonEditorStateSnapshot.Selection safeSelection = selection == null
+                ? DungeonEditorStateSnapshot.Selection.empty()
+                : selection;
+        if (clusterNameTarget(safeSelection)) {
+            return new LabelNameTarget("CLUSTER", safeSelection.clusterId());
+        }
+        DungeonEditorTopologyElementRef topologyRef = safeSelection.topologyRef();
+        return "ROOM".equals(topologyRef.kind())
+                ? new LabelNameTarget("ROOM", topologyRef.id())
+                : LabelNameTarget.empty();
+    }
+
+    private static boolean clusterNameTarget(DungeonEditorStateSnapshot.Selection selection) {
+        return clusterLabelSelection(selection) || clusterOnlySelection(selection);
+    }
+
+    private static boolean clusterLabelSelection(DungeonEditorStateSnapshot.Selection selection) {
+        return selection.handleRef() != null && DungeonEditorHandleKind.CLUSTER_LABEL == selection.handleRef().kind();
+    }
+
+    private static boolean clusterOnlySelection(DungeonEditorStateSnapshot.Selection selection) {
+        return selection.clusterSelection() && !"ROOM".equals(selection.topologyRef().kind());
+    }
+
+    private record LabelNameTarget(String kind, long id) {
+        LabelNameTarget {
+            kind = kind == null ? "" : kind;
+            id = Math.max(0L, id);
+        }
+
+        static LabelNameTarget empty() {
+            return new LabelNameTarget("", 0L);
+        }
+    }
+
+    private static int clampProjectionLevel(List<Integer> reachableLevels, int projectionLevel) {
         if (reachableLevels == null || reachableLevels.isEmpty()) {
             return Math.max(0, projectionLevel);
         }
@@ -278,7 +359,7 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     private static String statusTextFor(
             DungeonEditorControlsSnapshot controls,
-            java.util.List<DungeonEditorPreparedFrameFacts.MapEntry> mapEntries
+            List<DungeonEditorPreparedFrameFacts.MapEntry> mapEntries
     ) {
         if (controls.surfaceLoaded()) {
             return controls.statusText();

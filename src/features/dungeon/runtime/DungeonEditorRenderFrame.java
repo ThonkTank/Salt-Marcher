@@ -9,12 +9,16 @@ public record DungeonEditorRenderFrame(
         DungeonEditorControlsSnapshot controls,
         DungeonEditorMapSurfaceSnapshot mapSurface,
         DungeonEditorStateSnapshot state,
-        DungeonEditorPreparedFrameFacts preparedFacts
+        DungeonEditorPreparedFrameFacts preparedFacts,
+        DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft
 ) {
     public DungeonEditorRenderFrame {
         controls = Objects.requireNonNull(controls, "controls");
         mapSurface = Objects.requireNonNull(mapSurface, "mapSurface");
         state = Objects.requireNonNull(state, "state");
         preparedFacts = Objects.requireNonNull(preparedFacts, "preparedFacts");
+        statePanelLabelNameDraft = statePanelLabelNameDraft == null
+                ? DungeonEditorStatePanelLabelNameDrafts.Draft.empty()
+                : statePanelLabelNameDraft;
     }
 }

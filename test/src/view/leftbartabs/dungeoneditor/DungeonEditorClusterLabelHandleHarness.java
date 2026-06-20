@@ -178,6 +178,13 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertClusterLabelSelection(runtime, clusterId, "DE-LABEL-007 cluster label selection target");
         TextField clusterName = textField(binding.stateView(), "Cluster-Name");
         clusterName.setText("   West Wing   ");
+        TextField republishedClusterName = textField(binding.stateView(), "Cluster-Name");
+        assertTrue(republishedClusterName != clusterName,
+                "DE-LABEL-005 state panel draft is projected through a fresh runtime publication");
+        assertEquals("   West Wing   ", republishedClusterName.getText(),
+                "DE-LABEL-005 state panel publishes unsaved cluster name draft before save");
+        assertEquals("", runtime.database().clusterName(clusterId),
+                "DE-LABEL-005 unsaved cluster name draft does not persist before save");
         click(buttonWithAccessibleText(binding.stateView(), "Cluster-Name speichern"));
         assertEquals("West Wing", runtime.database().clusterName(clusterId),
                 "DE-LABEL-005 state panel trims and saves custom cluster label");
@@ -288,6 +295,13 @@ final class DungeonEditorClusterLabelHandleHarness {
                 roomBoundaryRowsBefore);
         TextField roomName = textField(binding.stateView(), "Raum-Name");
         roomName.setText("   Gallery Room   ");
+        TextField republishedRoomName = textField(binding.stateView(), "Raum-Name");
+        assertTrue(republishedRoomName != roomName,
+                "DE-LABEL-006 state panel draft is projected through a fresh runtime publication");
+        assertEquals("   Gallery Room   ", republishedRoomName.getText(),
+                "DE-LABEL-006 state panel publishes unsaved room name draft before save");
+        assertEquals("R2", runtime.database().roomName(secondaryRoomIds.roomId()),
+                "DE-LABEL-006 unsaved room name draft does not persist before save");
         click(buttonWithAccessibleText(binding.stateView(), "Raum-Name speichern"));
         assertEquals("Gallery Room", runtime.database().roomName(secondaryRoomIds.roomId()),
                 "DE-LABEL-006 state-panel room selection trims and saves custom room label");
