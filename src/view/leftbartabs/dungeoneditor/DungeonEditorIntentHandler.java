@@ -208,12 +208,13 @@ final class DungeonEditorIntentHandler {
 
     private void consumeTransitionDestinationWhenPresent(DungeonEditorStateViewInputEvent event) {
         if (event.transitionDestinationInputObserved()) {
-            stateContentModel.updateTransitionDestinationDraft(
-                    event.transitionDestinationType(),
-                    event.transitionDestinationMapId(),
-                    event.transitionDestinationTileId(),
-                    event.transitionDestinationTransitionId(),
-                    event.transitionDestinationBidirectional());
+            operations.updateStatePanelTransitionDestinationDraft(
+                    new DungeonEditorRuntimeOperations.TransitionDestinationDraftInput(
+                            event.transitionDestinationType(),
+                            event.transitionDestinationMapId(),
+                            event.transitionDestinationTileId(),
+                            event.transitionDestinationTransitionId(),
+                            event.transitionDestinationBidirectional()));
             if (event.transitionDestinationSaveRequested()) {
                 consumeTransitionLinkSave(event);
             }

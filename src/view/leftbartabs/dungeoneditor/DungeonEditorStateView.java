@@ -25,6 +25,7 @@ public final class DungeonEditorStateView extends VBox {
     private static final String CONTENT_CARD_STYLE = "content-card";
     private static final String STATE_CARD_STACK_STYLE = "dungeon-state-card-stack";
     private static final String COORDINATE_ROW_STYLE = "coordinate-row";
+    private static final String COORDINATE_FIELD_STYLE = "coordinate-field";
     private static final String SAVE_ACTION_SUFFIX = " speichern";
     private static final String STABLE_STATUS_PLACEHOLDER = " ";
 
@@ -36,6 +37,7 @@ public final class DungeonEditorStateView extends VBox {
     private final VBox narrationCards = new VBox();
     private final VBox nameCards = new VBox();
     private final TextField corridorPointFocusState = new TextField();
+    private final TextField transitionDestinationFocusState = new TextField();
     private final TextArea transitionDescriptionFocusState = new TextArea();
     private Consumer<DungeonEditorStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
@@ -130,6 +132,9 @@ public final class DungeonEditorStateView extends VBox {
             boolean busy,
             String statusText
     ) {
+        if (!transitionDestinationFocusPending()) {
+            rememberCurrentTransitionDestinationFocus();
+        }
         transitionDestinationCards.getChildren().clear();
         if (transitionDestination != null) {
             transitionDestinationCards.getChildren().add(new TransitionDestinationCard(
@@ -137,6 +142,8 @@ public final class DungeonEditorStateView extends VBox {
                     busy,
                     statusText));
         }
+        restoreTransitionDestinationFocus();
+        clearTransitionDestinationFocus();
     }
 
     private void showStairGeometry(
@@ -183,14 +190,14 @@ public final class DungeonEditorStateView extends VBox {
 
     private static TextField coordinateField(String text) {
         TextField field = new TextField(text == null ? "" : text);
-        field.getStyleClass().add("coordinate-field");
+        field.getStyleClass().add(COORDINATE_FIELD_STYLE);
         field.setTextFormatter(new TextFormatter<>(integerTextFilter()));
         return field;
     }
 
     private static TextField textField(String text) {
         TextField field = new TextField(text == null ? "" : text);
-        field.getStyleClass().add("coordinate-field");
+        field.getStyleClass().add(COORDINATE_FIELD_STYLE);
         return field;
     }
 
@@ -357,7 +364,7 @@ public final class DungeonEditorStateView extends VBox {
 
     private TextField corridorPointCoordinateField(String text, String accessibleText) {
         TextField field = new TextField(text == null ? "" : text);
-        field.getStyleClass().add("coordinate-field");
+        field.getStyleClass().add(COORDINATE_FIELD_STYLE);
         field.setAccessibleText(accessibleText);
         field.setTextFormatter(new TextFormatter<>(corridorPointIntegerTextFilter(accessibleText)));
         return field;
@@ -379,6 +386,18 @@ public final class DungeonEditorStateView extends VBox {
         return change -> {
             if (change.getControl().isFocused()) {
                 rememberTransitionDescriptionFocus(change.getCaretPosition());
+            }
+            return change;
+        };
+    }
+
+    private UnaryOperator<TextFormatter.Change> transitionDestinationIntegerTextFilter(String accessibleText) {
+        return change -> {
+            if (!integerFieldText(change.getControlNewText())) {
+                return null;
+            }
+            if (change.getControl().isFocused()) {
+                rememberTransitionDestinationFocus(accessibleText, change.getCaretPosition());
             }
             return change;
         };
@@ -486,6 +505,95 @@ public final class DungeonEditorStateView extends VBox {
 
     private @org.jspecify.annotations.Nullable TextArea transitionDescriptionArea() {
         return findTextArea(transitionCards, TRANSITION_DESCRIPTION_ACCESSIBLE);
+    }
+
+    private void rememberCurrentTransitionDestinationFocus() {
+        Node control = focusedTransitionDestinationControl(transitionDestinationCards);
+        if (control instanceof TextField field) {
+            rememberTransitionDestinationFocus(field.getAccessibleText(), field.getCaretPosition());
+            return;
+        }
+        if (control != null) {
+            rememberTransitionDestinationFocus(control.getAccessibleText(), 0);
+            return;
+        }
+        clearTransitionDestinationFocus();
+    }
+
+    private void rememberTransitionDestinationFocus(String accessibleText, int caretPosition) {
+        if (accessibleText == null || accessibleText.isBlank()) {
+            clearTransitionDestinationFocus();
+            return;
+        }
+        int clampedCaret = Math.max(caretPosition, 0);
+        transitionDestinationFocusState.setAccessibleText(accessibleText);
+        transitionDestinationFocusState.setText(" ".repeat(clampedCaret));
+        transitionDestinationFocusState.positionCaret(clampedCaret);
+    }
+
+    private boolean transitionDestinationFocusPending() {
+        String accessibleText = transitionDestinationFocusState.getAccessibleText();
+        return accessibleText != null && !accessibleText.isBlank();
+    }
+
+    private void restoreTransitionDestinationFocus() {
+        String accessibleText = transitionDestinationFocusState.getAccessibleText();
+        if (accessibleText == null || accessibleText.isBlank()) {
+            return;
+        }
+        Node control = findTransitionDestinationControl(transitionDestinationCards, accessibleText);
+        if (control != null) {
+            control.requestFocus();
+        }
+        if (control instanceof TextField field) {
+            field.positionCaret(Math.min(transitionDestinationFocusState.getCaretPosition(), field.getLength()));
+        }
+    }
+
+    private void clearTransitionDestinationFocus() {
+        transitionDestinationFocusState.setAccessibleText("");
+        transitionDestinationFocusState.clear();
+    }
+
+    private static @org.jspecify.annotations.Nullable Node focusedTransitionDestinationControl(Node node) {
+        if (supportedTransitionDestinationControl(node) && node.isFocused()) {
+            return node;
+        }
+        if (!(node instanceof Parent parent)) {
+            return null;
+        }
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            Node found = focusedTransitionDestinationControl(child);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private static @org.jspecify.annotations.Nullable Node findTransitionDestinationControl(
+            Node node,
+            String accessibleText
+    ) {
+        if (supportedTransitionDestinationControl(node) && accessibleText.equals(node.getAccessibleText())) {
+            return node;
+        }
+        if (!(node instanceof Parent parent)) {
+            return null;
+        }
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            Node found = findTransitionDestinationControl(child, accessibleText);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private static boolean supportedTransitionDestinationControl(Node node) {
+        return node instanceof TextField
+                || node instanceof ComboBox<?>
+                || node instanceof CheckBox;
     }
 
     private static @org.jspecify.annotations.Nullable TextArea findTextArea(Node node, String accessibleText) {
@@ -605,15 +713,16 @@ public final class DungeonEditorStateView extends VBox {
         ) {
             ComboBox<String> destinationTypeBox =
                     comboBox(List.of("OVERWORLD_TILE", "DUNGEON_MAP"), transitionDestination.destinationType());
-            TextField mapIdField = coordinateField(transitionDestination.mapId());
-            TextField tileIdField = coordinateField(transitionDestination.tileId());
-            TextField transitionIdField = coordinateField(transitionDestination.transitionId());
+            TextField mapIdField = transitionDestinationField(transitionDestination.mapId(), "Eingangslink Zielkarte");
+            TextField tileIdField = transitionDestinationField(
+                    transitionDestination.tileId(),
+                    "Eingangslink Zielkachel");
+            TextField transitionIdField = transitionDestinationField(
+                    transitionDestination.transitionId(),
+                    "Eingangslink Zieluebergang");
             CheckBox bidirectionalBox = new CheckBox("Ruecklink zum ausgewaehlten Eingang speichern");
             bidirectionalBox.setSelected(transitionDestination.bidirectional());
             destinationTypeBox.setAccessibleText("Eingangslink Zieltyp");
-            mapIdField.setAccessibleText("Eingangslink Zielkarte");
-            tileIdField.setAccessibleText("Eingangslink Zielkachel");
-            transitionIdField.setAccessibleText("Eingangslink Zieluebergang");
             bidirectionalBox.setAccessibleText("Ruecklink zum ausgewaehlten Eingang speichern");
             Label sourceLabel = muted("Quelle: ausgewaehlter Übergang");
             Label targetHintLabel = muted("Eingangslink: Zieltyp DUNGEON_MAP und Ziel-Eingang wählen");
@@ -646,15 +755,14 @@ public final class DungeonEditorStateView extends VBox {
         ) {
             ComboBox<String> destinationTypeBox =
                     comboBox(List.of("OVERWORLD_TILE", "DUNGEON_MAP"), transitionDestination.destinationType());
-            TextField mapIdField = coordinateField(transitionDestination.mapId());
-            TextField tileIdField = coordinateField(transitionDestination.tileId());
-            TextField transitionIdField = coordinateField(transitionDestination.transitionId());
+            TextField mapIdField = transitionDestinationField(transitionDestination.mapId(), "Übergang Zielkarte");
+            TextField tileIdField = transitionDestinationField(transitionDestination.tileId(), "Übergang Zielkachel");
+            TextField transitionIdField = transitionDestinationField(
+                    transitionDestination.transitionId(),
+                    "Übergang Zieluebergang");
             CheckBox bidirectionalBox = new CheckBox("Bidirektional");
             bidirectionalBox.setSelected(transitionDestination.bidirectional());
             destinationTypeBox.setAccessibleText("Übergang Zieltyp");
-            mapIdField.setAccessibleText("Übergang Zielkarte");
-            tileIdField.setAccessibleText("Übergang Zielkachel");
-            transitionIdField.setAccessibleText("Übergang Zieluebergang");
             bidirectionalBox.setAccessibleText("Übergang bidirektional verknuepfen");
             Label status = stableStatusLabel(statusText);
             Button save = new ToolbarActionButton("Verknüpfen");
@@ -757,6 +865,7 @@ public final class DungeonEditorStateView extends VBox {
                 Runnable updateDestinationMode
         ) {
             controls.destinationTypeBox().valueProperty().addListener((ignored, before, after) -> {
+                rememberTransitionDestinationFocus(controls.destinationTypeBox().getAccessibleText(), 0);
                 emitTransitionDestinationInput(controls, false);
                 updateDestinationMode.run();
             });
@@ -772,8 +881,10 @@ public final class DungeonEditorStateView extends VBox {
                 emitTransitionDestinationInput(controls, false);
                 updateDestinationMode.run();
             });
-            controls.bidirectionalBox().selectedProperty().addListener((ignored, before, after) ->
-                    emitTransitionDestinationInput(controls, false));
+            controls.bidirectionalBox().selectedProperty().addListener((ignored, before, after) -> {
+                rememberTransitionDestinationFocus(controls.bidirectionalBox().getAccessibleText(), 0);
+                emitTransitionDestinationInput(controls, false);
+            });
         }
 
         private void configureLinkControls(boolean linkMode, TransitionDestinationControls controls) {
@@ -818,6 +929,14 @@ public final class DungeonEditorStateView extends VBox {
             Label label = muted(text);
             label.setLabelFor(field);
             return label;
+        }
+
+        private TextField transitionDestinationField(String text, String accessibleText) {
+            TextField field = new TextField(text == null ? "" : text);
+            field.getStyleClass().add(COORDINATE_FIELD_STYLE);
+            field.setAccessibleText(accessibleText);
+            field.setTextFormatter(new TextFormatter<>(transitionDestinationIntegerTextFilter(accessibleText)));
+            return field;
         }
 
         private record TransitionDestinationControls(

@@ -203,7 +203,37 @@ final class DungeonEditorTransitionHarness {
                 targetTransitionId,
                 "DE-TRN-003 invalid target-map rejection keeps entrance-link draft visible");
 
-        submitTransitionEntranceLink(stateView, targetMapId, targetTransitionId + 1000L, true);
+        ComboBox<?> entranceDestinationType = comboBox(stateView, "Eingangslink Zieltyp");
+        entranceDestinationType.requestFocus();
+        selectComboItem(entranceDestinationType, "DUNGEON_MAP");
+        entranceDestinationType = comboBox(stateView, "Eingangslink Zieltyp");
+        assertTrue(entranceDestinationType.isFocused(),
+                "DE-TRN-003 runtime draft publication keeps entrance-link destination-type focus");
+        assertEquals("DUNGEON_MAP", String.valueOf(entranceDestinationType.getValue()),
+                "DE-TRN-003 runtime draft publication keeps entrance-link destination type");
+        textField(stateView, "Eingangslink Zielkarte").setText(Long.toString(targetMapId));
+        TextField targetTransitionField = textField(stateView, "Eingangslink Zieluebergang");
+        targetTransitionField.requestFocus();
+        targetTransitionField.selectAll();
+        targetTransitionField.replaceSelection(Long.toString(targetTransitionId + 1000L));
+        targetTransitionField = textField(stateView, "Eingangslink Zieluebergang");
+        assertTrue(targetTransitionField.isFocused(),
+                "DE-TRN-003 runtime draft publication keeps entrance-link transition focus");
+        assertEquals(Long.toString(targetTransitionId + 1000L), targetTransitionField.getText(),
+                "DE-TRN-003 runtime draft publication keeps entrance-link transition text");
+        assertEquals(Long.toString(targetTransitionId + 1000L).length(), targetTransitionField.getCaretPosition(),
+                "DE-TRN-003 runtime draft publication keeps entrance-link transition caret");
+        CheckBox bidirectionalBox = checkBox(stateView, "Ruecklink zum ausgewaehlten Eingang speichern");
+        bidirectionalBox.requestFocus();
+        if (!bidirectionalBox.isSelected()) {
+            click(bidirectionalBox);
+        }
+        bidirectionalBox = checkBox(stateView, "Ruecklink zum ausgewaehlten Eingang speichern");
+        assertTrue(bidirectionalBox.isFocused(),
+                "DE-TRN-003 runtime draft publication keeps entrance-link bidirectional focus");
+        assertTrue(bidirectionalBox.isSelected(),
+                "DE-TRN-003 runtime draft publication keeps entrance-link bidirectional value");
+        click(button(stateView, "Eingangslink speichern"));
         assertEquals(sourceRowsBefore, runtime.database().transitionStableState(sourceMapId),
                 "DE-TRN-003 invalid entrance-link target transition leaves source transitions unchanged");
         assertEquals(targetRowsBefore, runtime.database().transitionStableState(targetMapId),
@@ -434,9 +464,33 @@ final class DungeonEditorTransitionHarness {
                 "DE-TRN-001 destination surface exposes overworld destination option");
         assertTrue(comboBoxContainsDisplayText(destinationType, "DUNGEON_MAP"),
                 "DE-TRN-001 destination surface exposes dungeon destination option");
+        destinationType.requestFocus();
+        selectComboItem(destinationType, "DUNGEON_MAP");
+        destinationType = comboBox(stateView, "Übergang Zieltyp");
+        assertTrue(destinationType.isFocused(),
+                "DE-TRN-001 runtime draft publication keeps create destination-type focus");
+        assertEquals("DUNGEON_MAP", String.valueOf(destinationType.getValue()),
+                "DE-TRN-001 runtime draft publication keeps create destination type");
         selectComboItem(destinationType, "OVERWORLD_TILE");
-        textField(stateView, "Übergang Zielkarte").setText("77");
+        destinationType = comboBox(stateView, "Übergang Zieltyp");
+        assertTrue(destinationType.isFocused(),
+                "DE-TRN-001 runtime draft publication keeps create destination-type focus after second change");
+        assertEquals("OVERWORLD_TILE", String.valueOf(destinationType.getValue()),
+                "DE-TRN-001 runtime draft publication keeps create overworld destination type");
+        TextField destinationMapField = textField(stateView, "Übergang Zielkarte");
+        destinationMapField.requestFocus();
+        destinationMapField.positionCaret(0);
+        destinationMapField.replaceSelection("77");
+        destinationMapField = textField(stateView, "Übergang Zielkarte");
+        assertTrue(destinationMapField.isFocused(),
+                "DE-TRN-001 runtime draft publication keeps create target-map focus");
+        assertEquals("77", destinationMapField.getText(),
+                "DE-TRN-001 runtime draft publication keeps create target-map text");
+        assertEquals(2, destinationMapField.getCaretPosition(),
+                "DE-TRN-001 runtime draft publication keeps create target-map caret");
         textField(stateView, "Übergang Zielkachel").setText("88");
+        assertEquals("88", textField(stateView, "Übergang Zielkachel").getText(),
+                "DE-TRN-001 runtime draft publication keeps create target-tile text");
         textField(stateView, "Übergang Zieluebergang").setText("");
 
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();

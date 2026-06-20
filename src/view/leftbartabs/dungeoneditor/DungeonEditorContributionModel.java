@@ -30,6 +30,7 @@ public final class DungeonEditorContributionModel {
                         DungeonEditorPreparedFrameFacts.empty(),
                         null,
                         null,
+                        null,
                         null)
                 : frame;
         DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
@@ -152,6 +153,7 @@ public final class DungeonEditorContributionModel {
                         DungeonEditorPreparedFrameFacts.empty(),
                         null,
                         null,
+                        null,
                         null)
                 : frame;
         DungeonEditorPreparedFrameFacts safeFacts = safeFrame.preparedFacts();
@@ -166,7 +168,8 @@ public final class DungeonEditorContributionModel {
                 safeFacts.overlay().overlayLabel(),
                 safeFrame.statePanelLabelNameDraft(),
                 safeFrame.statePanelCorridorPointDraft(),
-                safeFrame.statePanelTransitionDescriptionDraft());
+                safeFrame.statePanelTransitionDescriptionDraft(),
+                safeFrame.statePanelTransitionDestinationDraft());
     }
 
     record ControlsProjection(

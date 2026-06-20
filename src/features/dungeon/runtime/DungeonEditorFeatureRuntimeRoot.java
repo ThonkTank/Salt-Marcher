@@ -30,6 +30,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
             new DungeonEditorStatePanelCorridorPointDrafts();
     private final DungeonEditorStatePanelTransitionDescriptionDrafts statePanelTransitionDescriptionDrafts =
             new DungeonEditorStatePanelTransitionDescriptionDrafts();
+    private final DungeonEditorStatePanelTransitionDestinationDrafts statePanelTransitionDestinationDrafts =
+            new DungeonEditorStatePanelTransitionDestinationDrafts();
     private final List<Consumer<DungeonEditorRuntimePublication>> subscribers = new CopyOnWriteArrayList<>();
 
     public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
@@ -201,6 +203,21 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     }
 
     @Override
+    public void updateStatePanelTransitionDestinationDraft(TransitionDestinationDraftInput input) {
+        TransitionDestinationDraftInput safeInput = input == null
+                ? new TransitionDestinationDraftInput("", "", "", "", true)
+                : input;
+        long selectedMapIdValue = currentSelectedMapIdValue();
+        DungeonEditorStatePanelTransitionDestinationDrafts.Target target = statePanelTransitionDestinationTarget();
+        statePanelTransitionDestinationDrafts.update(
+                selectedMapIdValue,
+                target.visible(),
+                target.sourceTransitionId(),
+                safeInput);
+        publishCurrentToSubscribers();
+    }
+
+    @Override
     public void saveLabelName(String targetKind, long targetId, String name) {
         statePanelLabelNameDrafts.clear(currentSelectedMapIdValue(), targetKind, targetId);
         operationOwner.saveLabelName(targetKind, targetId, name);
@@ -213,7 +230,12 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
             long targetTransitionId,
             boolean bidirectional
     ) {
+        long selectedMapIdValue = currentSelectedMapIdValue();
         operationOwner.saveTransitionLink(sourceTransitionId, targetMapId, targetTransitionId, bidirectional);
+        if (transitionLinkCommitted(sourceTransitionId, targetMapId, targetTransitionId)) {
+            statePanelTransitionDestinationDrafts.clear(selectedMapIdValue, sourceTransitionId);
+            publishCurrentToSubscribers();
+        }
     }
 
     @Override
@@ -259,7 +281,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 preparedFacts(controls),
                 prepareStatePanelLabelNameDraft(controls, state),
                 prepareStatePanelCorridorPointDraft(controls, state),
-                prepareStatePanelTransitionDescriptionDraft(controls, state));
+                prepareStatePanelTransitionDescriptionDraft(controls, state),
+                prepareStatePanelTransitionDestinationDraft(controls, state));
     }
 
     private DungeonEditorStatePanelLabelNameDrafts.Draft prepareStatePanelLabelNameDraft(
@@ -294,9 +317,39 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
         return statePanelTransitionDescriptionDrafts.current(selectedMapIdValue, transitionId);
     }
 
+    private DungeonEditorStatePanelTransitionDestinationDrafts.Draft prepareStatePanelTransitionDestinationDraft(
+            DungeonEditorControlsSnapshot controls,
+            DungeonEditorStateSnapshot state
+    ) {
+        long selectedMapIdValue = selectedMapIdValue(controls);
+        DungeonEditorStatePanelTransitionDestinationDrafts.Target target =
+                DungeonEditorStatePanelTransitionDestinationDrafts.target(controls, state);
+        statePanelTransitionDestinationDrafts.retainOnlyVisibleDraftForMap(
+                selectedMapIdValue,
+                target.visible(),
+                target.sourceTransitionId());
+        return statePanelTransitionDestinationDrafts.current(
+                selectedMapIdValue,
+                target.visible(),
+                target.sourceTransitionId());
+    }
+
     private DungeonEditorStateSnapshot.Selection currentStateSelection() {
         DungeonEditorStateSnapshot state = stateModel.current();
         return state == null ? DungeonEditorStateSnapshot.Selection.empty() : state.selection();
+    }
+
+    private DungeonEditorStatePanelTransitionDestinationDrafts.Target statePanelTransitionDestinationTarget() {
+        return DungeonEditorStatePanelTransitionDestinationDrafts.target(controlsModel.current(), stateModel.current());
+    }
+
+    private boolean transitionLinkCommitted(long sourceTransitionId, long targetMapId, long targetTransitionId) {
+        DungeonEditorStateSnapshot state = stateModel.current();
+        return selectedTransitionId(state == null ? null : state.selection()) == sourceTransitionId
+                && DungeonEditorTransitionLinkCommitEvidence.matches(
+                state == null ? null : state.inspector(),
+                targetMapId,
+                targetTransitionId);
     }
 
     private static DungeonEditorPreparedFrameFacts preparedFacts(DungeonEditorControlsSnapshot controlsSnapshot) {
@@ -360,6 +413,13 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
         return controls.selectedMapId().value();
     }
 
+    private static long selectedTransitionId(DungeonEditorStateSnapshot.Selection selection) {
+        DungeonEditorTopologyElementRef topologyRef = selection == null
+                ? DungeonEditorTopologyElementRef.empty()
+                : selection.topologyRef();
+        return "TRANSITION".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
+    }
+
     private static LabelNameTarget labelNameTarget(DungeonEditorStateSnapshot.Selection selection) {
         DungeonEditorStateSnapshot.Selection safeSelection = selection == null
                 ? DungeonEditorStateSnapshot.Selection.empty()
@@ -383,14 +443,6 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     private static boolean clusterOnlySelection(DungeonEditorStateSnapshot.Selection selection) {
         return selection.clusterSelection() && !"ROOM".equals(selection.topologyRef().kind());
-    }
-
-    private static long selectedTransitionId(DungeonEditorStateSnapshot.Selection selection) {
-        DungeonEditorStateSnapshot.Selection safeSelection = selection == null
-                ? DungeonEditorStateSnapshot.Selection.empty()
-                : selection;
-        DungeonEditorTopologyElementRef topologyRef = safeSelection.topologyRef();
-        return "TRANSITION".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
     }
 
     private record LabelNameTarget(String kind, long id) {

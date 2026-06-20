@@ -68,6 +68,10 @@ public interface DungeonEditorRuntimeOperations {
         // Only feature-runtime roots own state-panel draft session state.
     }
 
+    default void updateStatePanelTransitionDestinationDraft(TransitionDestinationDraftInput input) {
+        // Only feature-runtime roots own state-panel draft session state.
+    }
+
     void saveLabelName(String targetKind, long targetId, String name);
 
     void saveTransitionLink(
@@ -129,6 +133,21 @@ public interface DungeonEditorRuntimeOperations {
     ) {
         public PointerSample {
             target = target == null ? PointerTarget.empty() : target;
+        }
+    }
+
+    record TransitionDestinationDraftInput(
+            String destinationType,
+            String mapId,
+            String tileId,
+            String transitionId,
+            boolean bidirectional
+    ) {
+        public TransitionDestinationDraftInput {
+            destinationType = safeText(destinationType, "");
+            mapId = safeText(mapId, "");
+            tileId = safeText(tileId, "");
+            transitionId = safeText(transitionId, "");
         }
     }
 

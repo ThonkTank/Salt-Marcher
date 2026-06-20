@@ -7,7 +7,8 @@ public final class RoleAwareCyclomaticComplexityRule extends CyclomaticComplexit
 
     @Override
     public Object visitTypeDecl(ASTTypeDeclaration node, Object data) {
-        if (RoleAwareMetricSupport.isTopLevelViewRoleShapeMetricSource(node)) {
+        if (RoleAwareMetricSupport.isTopLevelViewRoleShapeMetricSource(node)
+                || RoleAwareMetricSupport.isTopLevelFeatureRuntimeArchitectureMetricSource(node)) {
             return null;
         }
         return super.visitTypeDecl(node, data);

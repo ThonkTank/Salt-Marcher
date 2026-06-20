@@ -16,6 +16,7 @@ import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.features.dungeon.runtime.DungeonEditorStatePanelCorridorPointDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelLabelNameDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelTransitionDescriptionDrafts;
+import src.features.dungeon.runtime.DungeonEditorStatePanelTransitionDestinationDrafts;
 
 final class DungeonEditorStateContentModel {
     private static final long NO_TRANSITION_ID = 0L;
@@ -29,11 +30,8 @@ final class DungeonEditorStateContentModel {
             new ReadOnlyObjectWrapper<>(StateProjection.initial());
     private final Map<VisualDraftKey, String> visualDrafts = new HashMap<>();
     private final Map<ExitDraftKey, String> exitDrafts = new HashMap<>();
-    private final Map<TransitionDestinationDraftKey, TransitionDestinationDraft> transitionDestinationDrafts =
-            new HashMap<>();
     private final Map<StairGeometryDraftKey, StairGeometryDraft> stairGeometryDrafts = new HashMap<>();
     private StateProjectionContext currentContext = StateProjectionContext.empty();
-    private TransitionDestinationDraft currentTransitionDestinationBaseline = TransitionDestinationDraft.defaultDraft();
     private long currentSelectedTransitionId;
 
     ReadOnlyObjectProperty<StateProjection> stateProjectionProperty() {
@@ -64,9 +62,6 @@ final class DungeonEditorStateContentModel {
                 safeContext.selectedMapIdValue(),
                 safeSnapshot.selection(),
                 safeSnapshot.inspector());
-        currentTransitionDestinationBaseline = transitionDestination == null
-                ? TransitionDestinationDraft.defaultDraft()
-                : TransitionDestinationDraft.fromProjection(transitionDestination);
         currentSelectedTransitionId = selectedTransitionId(safeSnapshot.selection());
         pruneDrafts(
                 safeContext.selectedMapIdValue(),
@@ -120,46 +115,31 @@ final class DungeonEditorStateContentModel {
         exitDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue && key.roomId() == roomId);
     }
 
-    void updateTransitionDestinationDraft(
-            String destinationType,
-            String mapId,
-            String tileId,
-            String transitionId,
-            boolean bidirectional
-    ) {
-        long selectedMapIdValue = currentContext.selectedMapIdValue();
-        if (selectedMapIdValue <= NO_SELECTED_MAP_ID) {
-            return;
-        }
-        transitionDestinationDrafts.put(
-                transitionDestinationDraftKey(selectedMapIdValue, currentSelectedTransitionId),
-                new TransitionDestinationDraft(destinationType, mapId, tileId, transitionId, bidirectional));
-    }
-
     String currentTransitionDestinationType() {
-        return currentTransitionDestinationDraft().destinationType();
+        return currentTransitionDestinationProjection().destinationType();
     }
 
     long currentTransitionDestinationMapId() {
-        return positiveLong(currentTransitionDestinationDraft().mapId());
+        return positiveLong(currentTransitionDestinationProjection().mapId());
     }
 
     long currentTransitionDestinationTileId() {
-        return positiveLong(currentTransitionDestinationDraft().tileId());
+        return positiveLong(currentTransitionDestinationProjection().tileId());
     }
 
     long currentTransitionDestinationTransitionId() {
-        return positiveLong(currentTransitionDestinationDraft().transitionId());
+        return positiveLong(currentTransitionDestinationProjection().transitionId());
     }
 
     long currentSelectedTransitionId() {
         return currentSelectedTransitionId;
     }
 
-    private TransitionDestinationDraft currentTransitionDestinationDraft() {
-        return transitionDestinationDrafts.getOrDefault(
-                transitionDestinationDraftKey(currentContext.selectedMapIdValue(), currentSelectedTransitionId),
-                currentTransitionDestinationBaseline);
+    private TransitionDestinationProjection currentTransitionDestinationProjection() {
+        StateProjection currentProjection = stateProjection.get();
+        return currentProjection == null || currentProjection.transitionDestination() == null
+                ? new TransitionDestinationProjection("Übergang-Ziel", 0L, OVERWORLD_TILE_DESTINATION, "", "", "", true)
+                : currentProjection.transitionDestination();
     }
 
     void updateStairGeometryDraft(
@@ -244,8 +224,6 @@ final class DungeonEditorStateContentModel {
                 : new StairGeometryDraftKey(selectedMapIdValue, stairGeometry.stairId());
         stairGeometryDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
                 && !key.equals(visibleStair));
-        transitionDestinationDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
-                && !key.equals(transitionDestinationDraftKey(selectedMapIdValue, currentSelectedTransitionId)));
     }
 
     private @Nullable NameProjection nameProjection(@Nullable DungeonInspectorSnapshot inspector) {
@@ -312,13 +290,18 @@ final class DungeonEditorStateContentModel {
         if (!TRANSITION_CREATE_TOOL.equals(context.selectedToolKey()) && selectedTransitionId <= NO_TRANSITION_ID) {
             return null;
         }
+        DungeonEditorStatePanelTransitionDestinationDrafts.Draft runtimeDraft =
+                context.statePanelTransitionDestinationDraft();
+        if (!runtimeDraft.targetPresent()) {
+            return null;
+        }
         TransitionDestinationDraft baseline = TransitionDestinationDraft.fromInspector(inspector);
-        TransitionDestinationDraft draft = transitionDestinationDrafts.getOrDefault(
-                transitionDestinationDraftKey(context.selectedMapIdValue(), selectedTransitionId),
-                baseline);
+        TransitionDestinationDraft draft = runtimeDraft.present()
+                ? TransitionDestinationDraft.fromRuntimeDraft(runtimeDraft)
+                : baseline;
         return new TransitionDestinationProjection(
-                selectedTransitionId > NO_TRANSITION_ID ? "Übergang-Ziel / Eingangslink" : "Übergang-Ziel",
-                selectedTransitionId,
+                runtimeDraft.sourceTransitionId() > NO_TRANSITION_ID ? "Übergang-Ziel / Eingangslink" : "Übergang-Ziel",
+                runtimeDraft.sourceTransitionId(),
                 draft.destinationType(),
                 draft.mapId(),
                 draft.tileId(),
@@ -403,7 +386,8 @@ final class DungeonEditorStateContentModel {
             String overlayLabel,
             DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft,
             DungeonEditorStatePanelCorridorPointDrafts.Draft statePanelCorridorPointDraft,
-            DungeonEditorStatePanelTransitionDescriptionDrafts.Draft statePanelTransitionDescriptionDraft
+            DungeonEditorStatePanelTransitionDescriptionDrafts.Draft statePanelTransitionDescriptionDraft,
+            DungeonEditorStatePanelTransitionDestinationDrafts.Draft statePanelTransitionDestinationDraft
     ) {
         StateProjectionContext {
             selectedMapIdValue = Math.max(0L, selectedMapIdValue);
@@ -422,6 +406,9 @@ final class DungeonEditorStateContentModel {
             statePanelTransitionDescriptionDraft = statePanelTransitionDescriptionDraft == null
                     ? DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty()
                     : statePanelTransitionDescriptionDraft;
+            statePanelTransitionDestinationDraft = statePanelTransitionDestinationDraft == null
+                    ? DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty()
+                    : statePanelTransitionDestinationDraft;
         }
 
         static StateProjectionContext empty() {
@@ -436,7 +423,8 @@ final class DungeonEditorStateContentModel {
                     "",
                     DungeonEditorStatePanelLabelNameDrafts.Draft.empty(),
                     DungeonEditorStatePanelCorridorPointDrafts.Draft.empty(),
-                    DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty());
+                    DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty(),
+                    DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty());
         }
     }
 
@@ -577,13 +565,6 @@ final class DungeonEditorStateContentModel {
         }
     }
 
-    private record TransitionDestinationDraftKey(long selectedMapIdValue, long sourceTransitionId) {
-        TransitionDestinationDraftKey {
-            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
-            sourceTransitionId = Math.max(0L, sourceTransitionId);
-        }
-    }
-
     private record TransitionDestinationDraft(
             String destinationType,
             String mapId,
@@ -615,15 +596,17 @@ final class DungeonEditorStateContentModel {
                     true);
         }
 
-        static TransitionDestinationDraft fromProjection(TransitionDestinationProjection projection) {
-            return projection == null
-                    ? defaultDraft()
-                    : new TransitionDestinationDraft(
-                            projection.destinationType(),
-                            projection.mapId(),
-                            projection.tileId(),
-                            projection.transitionId(),
-                            projection.bidirectional());
+        static TransitionDestinationDraft fromRuntimeDraft(
+                DungeonEditorStatePanelTransitionDestinationDrafts.Draft draft
+        ) {
+            DungeonEditorStatePanelTransitionDestinationDrafts.Draft safeDraft =
+                    draft == null ? DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty() : draft;
+            return new TransitionDestinationDraft(
+                    safeDraft.destinationType(),
+                    safeDraft.mapId(),
+                    safeDraft.tileId(),
+                    safeDraft.transitionId(),
+                    safeDraft.bidirectional());
         }
     }
 
@@ -693,13 +676,6 @@ final class DungeonEditorStateContentModel {
         } catch (NumberFormatException ignored) {
             return 0L;
         }
-    }
-
-    private static TransitionDestinationDraftKey transitionDestinationDraftKey(
-            long selectedMapIdValue,
-            long sourceTransitionId
-    ) {
-        return new TransitionDestinationDraftKey(selectedMapIdValue, Math.max(0L, sourceTransitionId));
     }
 
     private static final class ProjectionTextSupport {
