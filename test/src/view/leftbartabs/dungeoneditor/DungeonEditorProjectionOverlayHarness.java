@@ -51,6 +51,7 @@ final class DungeonEditorProjectionOverlayHarness {
         route(results, () -> verifyProjectionLevelButtonsThroughControlsView(results));
         route(results, () -> verifyProjectionLevelShortcutsThroughMapView(results));
         route(results, () -> verifyViewModeControlsThroughControlsView(results));
+        route(results, () -> verifyViewModeClearsActiveInteractionSession(results));
         route(results, () -> verifyOverlayControlsThroughControlsView(results));
         route(results, () -> verifyOverlayPopupThroughControlsView(results));
     }
@@ -191,6 +192,65 @@ final class DungeonEditorProjectionOverlayHarness {
 
         results.add("DE-VIEW-001 Ready: DungeonEditorControlsView Graph toggle -> SQLite unchanged -> GRAPH");
         results.add("DE-VIEW-002 Ready: DungeonEditorControlsView Grid toggle -> SQLite unchanged -> GRID");
+    }
+
+
+    private static void verifyViewModeClearsActiveInteractionSession(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "View Mode Clears Draft Map");
+        List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
+        click(button(controls, "Raum"));
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        double dragEndX = viewport.sceneToScreenX(3.5);
+        double dragEndY = viewport.sceneToScreenY(3.5);
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(1.5),
+                viewport.sceneToScreenY(1.5),
+                false);
+        fireMapMouse(mapView, MouseEvent.MOUSE_DRAGGED, MouseButton.PRIMARY, dragEndX, dragEndY, false);
+
+        assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.RoomRectanglePreview,
+                "DE-VIEW-003 starts from a live room preview before view-mode change");
+        assertTrue(renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(1, 1, 3, 3, 0)),
+                "DE-VIEW-003 preview render is visible before view-mode change");
+
+        click(button(controls, "Graph"));
+
+        DungeonEditorMapSurfaceSnapshot graphSurface = runtime.mapSurfaceModel().current();
+        assertEquals(DungeonEditorViewMode.GRAPH, graphSurface.viewMode(), "DE-VIEW-003 map surface view mode");
+        assertEquals(DungeonEditorPreview.none(), graphSurface.preview(),
+                "DE-VIEW-003 view-mode change clears active room preview");
+        assertTrue(renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()).isEmpty(),
+                "DE-VIEW-003 view-mode change clears preview render");
+        assertEquals(0L, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-VIEW-003 view-mode change writes no authored geometry");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-VIEW-003 view-mode change leaves authored DB state unchanged");
+
+        fireMapMouse(mapView, MouseEvent.MOUSE_RELEASED, MouseButton.PRIMARY, dragEndX, dragEndY, false);
+
+        DungeonEditorMapSurfaceSnapshot releasedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(DungeonEditorViewMode.GRAPH, releasedSurface.viewMode(),
+                "DE-VIEW-003 stale release keeps graph view mode");
+        assertEquals(DungeonEditorPreview.none(), releasedSurface.preview(),
+                "DE-VIEW-003 stale release keeps preview cleared");
+        assertTrue(renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()).isEmpty(),
+                "DE-VIEW-003 stale release keeps preview render cleared");
+        assertEquals(0L, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-VIEW-003 stale release writes no authored geometry");
+        assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
+                "DE-VIEW-003 stale release leaves authored DB state unchanged");
+
+        results.add("DE-VIEW-003 Ready: active room draft + view-mode switch"
+                + " -> interaction reset -> stale release writes nothing");
     }
 
 

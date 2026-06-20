@@ -32,10 +32,10 @@ public final class InterpretDungeonEditorMainViewInputUseCase {
             new InterpretDungeonEditorMainViewHoverUseCase();
     private final InterpretDungeonEditorMainViewScrollUseCase scrollUseCase =
             new InterpretDungeonEditorMainViewScrollUseCase();
-    private final DungeonEditorMainViewInteractionState state = new DungeonEditorMainViewInteractionState();
+    private final DungeonEditorMainViewInteractionState state;
 
-    public void clear() {
-        state.clear();
+    public InterpretDungeonEditorMainViewInputUseCase(DungeonEditorMainViewInteractionState state) {
+        this.state = java.util.Objects.requireNonNull(state, "state");
     }
 
     public DungeonEditorMainViewEffect selection(

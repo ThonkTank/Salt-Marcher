@@ -22,6 +22,7 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     private final DungeonEditorControlsModel controlsModel;
     private final DungeonEditorMapSurfaceModel mapSurfaceModel;
     private final DungeonEditorStateModel stateModel;
+    private final DungeonEditorInteractionSession interactionSession;
     private final DungeonEditorAuthoredRuntimeOperations operationOwner;
     private final DungeonEditorPointerSession pointerSession = new DungeonEditorPointerSession();
     private final DungeonEditorStatePanelLabelNameDrafts statePanelLabelNameDrafts =
@@ -42,22 +43,26 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
         ServiceRegistry safeRegistry = Objects.requireNonNull(registry, "registry");
+        DungeonEditorInteractionSession interactionSession = new DungeonEditorInteractionSession();
         return new DungeonEditorFeatureRuntimeRoot(
                 safeRegistry.require(DungeonEditorControlsModel.class),
                 safeRegistry.require(DungeonEditorMapSurfaceModel.class),
                 safeRegistry.require(DungeonEditorStateModel.class),
-                DungeonEditorAuthoredRuntimeAssembly.create(safeRegistry));
+                interactionSession,
+                DungeonEditorAuthoredRuntimeAssembly.create(safeRegistry, interactionSession));
     }
 
     private DungeonEditorFeatureRuntimeRoot(
             DungeonEditorControlsModel controlsModel,
             DungeonEditorMapSurfaceModel mapSurfaceModel,
             DungeonEditorStateModel stateModel,
+            DungeonEditorInteractionSession interactionSession,
             DungeonEditorAuthoredRuntimeOperations operationOwner
     ) {
         this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
         this.mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
         this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
+        this.interactionSession = Objects.requireNonNull(interactionSession, "interactionSession");
         this.operationOwner = Objects.requireNonNull(operationOwner, "operationOwner");
         this.stateModel.subscribe(ignored -> publishCurrentToSubscribers());
     }
@@ -68,12 +73,14 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     @Override
     public void selectMap(long mapIdValue) {
+        clearInteractionSession();
         clearInlineLabelEditSession();
         operationOwner.selectMap(mapIdValue);
     }
 
     @Override
     public void createMap(String mapName) {
+        clearInteractionSession();
         operationOwner.createMap(mapName);
     }
 
@@ -84,16 +91,19 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     @Override
     public void deleteMap(long mapIdValue) {
+        clearInteractionSession();
         operationOwner.deleteMap(mapIdValue);
     }
 
     @Override
     public void setViewMode(String viewModeKey) {
+        clearInteractionSession();
         operationOwner.setViewMode(viewModeKey);
     }
 
     @Override
     public void setTool(String toolKey) {
+        clearInteractionSession();
         clearPointerSession();
         clearInlineLabelEditSession();
         operationOwner.setTool(toolKey);
@@ -101,6 +111,7 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     @Override
     public void cancelActivePreviewSession() {
+        clearInteractionSession();
         clearPointerSession();
         clearInlineLabelEditSession();
         operationOwner.cancelActivePreviewSession();
@@ -350,6 +361,10 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     private void clearInlineLabelEditSession() {
         inlineLabelEditSession = DungeonEditorInlineLabelEditSession.inactive();
+    }
+
+    private void clearInteractionSession() {
+        interactionSession.clear();
     }
 
     private DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts prepareStatePanelRoomNarrationDrafts(

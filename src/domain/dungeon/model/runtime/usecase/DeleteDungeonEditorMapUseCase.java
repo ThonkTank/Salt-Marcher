@@ -3,7 +3,6 @@ package src.domain.dungeon.model.runtime.usecase;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
@@ -14,22 +13,17 @@ public final class DeleteDungeonEditorMapUseCase {
     private final DeleteDungeonEditorMapCatalogUseCase deleteMapUseCase;
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
     private final PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase;
-    private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
     public DeleteDungeonEditorMapUseCase(
             DungeonEditorSessionWorkflow workflow,
             DeleteDungeonEditorMapCatalogUseCase deleteMapUseCase,
-            DungeonEditorDungeonState dungeonState,
             BuildDungeonEditorSnapshotUseCase snapshotBuilder,
-            InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
             PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase
     ) {
         this.workflow = Objects.requireNonNull(workflow, "workflow");
         this.deleteMapUseCase = Objects.requireNonNull(deleteMapUseCase, "deleteMapUseCase");
-        Objects.requireNonNull(dungeonState, "dungeonState");
         this.snapshotBuilder = Objects.requireNonNull(snapshotBuilder, "snapshotBuilder");
         this.snapshotPublicationUseCase =
                 Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
-        this.mainViewInterpreter = Objects.requireNonNull(mainViewInterpreter, "mainViewInterpreter");
     }
 
     public void execute(long mapId) {
@@ -38,7 +32,6 @@ public final class DeleteDungeonEditorMapUseCase {
         }
         DungeonEditorSessionSnapshot.SnapshotData refreshedSnapshot = snapshotBuilder.execute(workflow.session());
         DungeonEditorWorkspaceValues.MapId nextMapId = firstMapId(refreshedSnapshot.maps());
-        mainViewInterpreter.clear();
         workflow.applyMapLifecycle(DungeonEditorSessionWorkflow.MAP_DELETED, nextMapId);
         snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
     }

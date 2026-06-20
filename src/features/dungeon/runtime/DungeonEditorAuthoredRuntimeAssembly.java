@@ -66,8 +66,13 @@ final class DungeonEditorAuthoredRuntimeAssembly {
     private DungeonEditorAuthoredRuntimeAssembly() {
     }
 
-    static DungeonEditorAuthoredRuntimeOperations create(ServiceRegistry registry) {
+    static DungeonEditorAuthoredRuntimeOperations create(
+            ServiceRegistry registry,
+            DungeonEditorInteractionSession interactionSession
+    ) {
         ServiceRegistry safeRegistry = Objects.requireNonNull(registry, "registry");
+        DungeonEditorInteractionSession safeInteractionSession =
+                Objects.requireNonNull(interactionSession, "interactionSession");
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         DungeonAuthoredPublishedStateRepository authoredPublishedState =
                 safeRegistry.require(DungeonAuthoredPublishedStateRepository.class);
@@ -76,7 +81,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
         AuthoredUseCases authored = authoredUseCases(safeRegistry, authoredPublishedState, dungeonState);
         DungeonEditorSessionWorkflow workflow = new DungeonEditorSessionWorkflow();
         InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter =
-                new InterpretDungeonEditorMainViewInputUseCase();
+                new InterpretDungeonEditorMainViewInputUseCase(safeInteractionSession.state());
         BuildDungeonEditorSnapshotUseCase snapshotBuilder = new BuildDungeonEditorSnapshotUseCase(
                 authored.searchMapsUseCase(),
                 authored.loadMapUseCase(),
@@ -120,14 +125,12 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 new SelectDungeonEditorMapUseCase(
                         runtime.workflow(),
                         runtime.snapshotBuilder(),
-                        runtime.mainViewInterpreter(),
                         runtime.snapshotPublicationUseCase()),
                 new CreateDungeonEditorMapUseCase(
                         runtime.workflow(),
                         runtime.authored().createMapUseCase(),
                         runtime.dungeonState(),
                         runtime.snapshotBuilder(),
-                        runtime.mainViewInterpreter(),
                         runtime.snapshotPublicationUseCase()),
                 new RenameDungeonEditorMapUseCase(
                         runtime.workflow(),
@@ -138,9 +141,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 new DeleteDungeonEditorMapUseCase(
                         runtime.workflow(),
                         runtime.authored().deleteMapUseCase(),
-                        runtime.dungeonState(),
                         runtime.snapshotBuilder(),
-                        runtime.mainViewInterpreter(),
                         runtime.snapshotPublicationUseCase()));
     }
 
@@ -151,11 +152,9 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 new SetDungeonEditorViewModeUseCase(
                         runtime.workflow(),
                         runtime.snapshotBuilder(),
-                        runtime.mainViewInterpreter(),
                         runtime.snapshotPublicationUseCase()),
                 new SetDungeonEditorToolUseCase(
                         runtime.workflow(),
-                        runtime.mainViewInterpreter(),
                         runtime.snapshotPublicationUseCase()),
                 new ShiftDungeonEditorProjectionLevelUseCase(
                         runtime.workflow(),

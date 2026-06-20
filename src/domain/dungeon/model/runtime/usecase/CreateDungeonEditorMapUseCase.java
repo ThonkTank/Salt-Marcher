@@ -11,13 +11,11 @@ public final class CreateDungeonEditorMapUseCase {
     private final DungeonEditorDungeonState dungeonState;
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
     private final PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase;
-    private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
     public CreateDungeonEditorMapUseCase(
             DungeonEditorSessionWorkflow workflow,
             CreateDungeonEditorMapCatalogUseCase createMapUseCase,
             DungeonEditorDungeonState dungeonState,
             BuildDungeonEditorSnapshotUseCase snapshotBuilder,
-            InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
             PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase
     ) {
         this.workflow = Objects.requireNonNull(workflow, "workflow");
@@ -26,7 +24,6 @@ public final class CreateDungeonEditorMapUseCase {
         this.snapshotBuilder = Objects.requireNonNull(snapshotBuilder, "snapshotBuilder");
         this.snapshotPublicationUseCase =
                 Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
-        this.mainViewInterpreter = Objects.requireNonNull(mainViewInterpreter, "mainViewInterpreter");
     }
 
     public void execute(String mapName) {
@@ -35,7 +32,6 @@ public final class CreateDungeonEditorMapUseCase {
                 workflow.session().selectedMapId(),
                 workflow.session().selection(),
                 workflow.session().preview()).mutationMapId();
-        mainViewInterpreter.clear();
         workflow.applyMapLifecycle(DungeonEditorSessionWorkflow.MAP_CREATED, nextMapId);
         snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
     }
