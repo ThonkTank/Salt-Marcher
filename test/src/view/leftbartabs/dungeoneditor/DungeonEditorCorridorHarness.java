@@ -222,8 +222,18 @@ final class DungeonEditorCorridorHarness {
         assertTrue(!textFieldPresent(stateView, "Korridorpunkt z"),
                 "DE-STATE-004 state panel does not expose z as a freeform coordinate field");
 
+        TextField originalQField = qField;
+        TextField originalRField = rField;
         qField.setText("");
         rField.setText("");
+        qField = textField(stateView, "Korridorpunkt q");
+        rField = textField(stateView, "Korridorpunkt r");
+        assertTrue(qField != originalQField,
+                "DE-STATE-004 projection refresh publishes blank q draft through a fresh field");
+        assertTrue(rField != originalRField,
+                "DE-STATE-004 projection refresh publishes blank r draft through a fresh field");
+        assertEquals("", qField.getText(), "DE-STATE-004 runtime projection publishes blank q draft");
+        assertEquals("", rField.getText(), "DE-STATE-004 runtime projection publishes blank r draft");
         ButtonBase moveButton = buttonWithAccessibleText(stateView, "Korridor-Anker verschieben");
         assertTrue(moveButton.isDisabled(), "DE-STATE-004 incomplete blank q/r draft keeps move disabled");
         fireMapMousePressed(
@@ -236,7 +246,27 @@ final class DungeonEditorCorridorHarness {
         rField = textField(stateView, "Korridorpunkt r");
         assertEquals("", qField.getText(), "DE-STATE-004 projection refresh preserves blank q draft");
         assertEquals("", rField.getText(), "DE-STATE-004 projection refresh preserves blank r draft");
+        qField.requestFocus();
+        qField.replaceSelection("1");
+        qField = textField(stateView, "Korridorpunkt q");
+        assertTrue(qField.isFocused(), "DE-STATE-004 keeps focus on q after first runtime draft publish");
+        assertEquals("1", qField.getText(), "DE-STATE-004 keyboard q draft keeps first typed digit");
+        assertEquals(1, qField.getCaretPosition(), "DE-STATE-004 keeps q caret after first typed digit");
+        qField.replaceSelection("2");
+        qField = textField(stateView, "Korridorpunkt q");
+        assertTrue(qField.isFocused(), "DE-STATE-004 keeps focus on q after second runtime draft publish");
+        assertEquals("12", qField.getText(), "DE-STATE-004 keyboard q draft keeps multi-digit input");
+        assertEquals(2, qField.getCaretPosition(), "DE-STATE-004 keeps q caret after multi-digit input");
+        qField.positionCaret(1);
+        qField.replaceSelection("3");
+        qField = textField(stateView, "Korridorpunkt q");
+        assertTrue(qField.isFocused(), "DE-STATE-004 keeps focus on q after middle runtime draft publish");
+        assertEquals("132", qField.getText(), "DE-STATE-004 keyboard q draft keeps middle insertion");
+        assertEquals(2, qField.getCaretPosition(), "DE-STATE-004 keeps q caret after middle insertion");
         qField.setText("6");
+        qField = textField(stateView, "Korridorpunkt q");
+        assertTrue(qField.isFocused(), "DE-STATE-004 keeps q focus after correcting draft");
+        rField = textField(stateView, "Korridorpunkt r");
         rField.setText("4");
         click(buttonWithAccessibleText(stateView, "Korridor-Anker verschieben"));
 

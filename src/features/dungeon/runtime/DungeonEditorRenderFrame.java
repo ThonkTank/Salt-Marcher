@@ -10,7 +10,8 @@ public record DungeonEditorRenderFrame(
         DungeonEditorMapSurfaceSnapshot mapSurface,
         DungeonEditorStateSnapshot state,
         DungeonEditorPreparedFrameFacts preparedFacts,
-        DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft
+        DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft,
+        DungeonEditorStatePanelCorridorPointDrafts.Draft statePanelCorridorPointDraft
 ) {
     public DungeonEditorRenderFrame {
         controls = Objects.requireNonNull(controls, "controls");
@@ -20,5 +21,8 @@ public record DungeonEditorRenderFrame(
         statePanelLabelNameDraft = statePanelLabelNameDraft == null
                 ? DungeonEditorStatePanelLabelNameDrafts.Draft.empty()
                 : statePanelLabelNameDraft;
+        statePanelCorridorPointDraft = statePanelCorridorPointDraft == null
+                ? DungeonEditorStatePanelCorridorPointDrafts.Draft.empty()
+                : statePanelCorridorPointDraft;
     }
 }

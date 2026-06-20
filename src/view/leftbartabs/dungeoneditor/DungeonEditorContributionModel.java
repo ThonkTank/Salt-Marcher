@@ -28,6 +28,7 @@ public final class DungeonEditorContributionModel {
                         src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot.empty(),
                         DungeonEditorStateSnapshot.empty(""),
                         DungeonEditorPreparedFrameFacts.empty(),
+                        null,
                         null)
                 : frame;
         DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
@@ -148,6 +149,7 @@ public final class DungeonEditorContributionModel {
                         src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot.empty(),
                         DungeonEditorStateSnapshot.empty(""),
                         DungeonEditorPreparedFrameFacts.empty(),
+                        null,
                         null)
                 : frame;
         DungeonEditorPreparedFrameFacts safeFacts = safeFrame.preparedFacts();
@@ -160,7 +162,8 @@ public final class DungeonEditorContributionModel {
                 safeFacts.viewModeLabel(),
                 safeFacts.projectionLevel(),
                 safeFacts.overlay().overlayLabel(),
-                safeFrame.statePanelLabelNameDraft());
+                safeFrame.statePanelLabelNameDraft(),
+                safeFrame.statePanelCorridorPointDraft());
     }
 
     record ControlsProjection(

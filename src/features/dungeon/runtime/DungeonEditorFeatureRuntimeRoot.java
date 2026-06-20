@@ -26,6 +26,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     private final DungeonEditorPointerSession pointerSession = new DungeonEditorPointerSession();
     private final DungeonEditorStatePanelLabelNameDrafts statePanelLabelNameDrafts =
             new DungeonEditorStatePanelLabelNameDrafts();
+    private final DungeonEditorStatePanelCorridorPointDrafts statePanelCorridorPointDrafts =
+            new DungeonEditorStatePanelCorridorPointDrafts();
     private final List<Consumer<DungeonEditorRuntimePublication>> subscribers = new CopyOnWriteArrayList<>();
 
     public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
@@ -169,11 +171,6 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     }
 
     @Override
-    public void moveHandle(HandleTarget handle, int q, int r) {
-        operationOwner.moveHandle(handle, q, r);
-    }
-
-    @Override
     public void saveRoomNarration(RoomNarration narration) {
         operationOwner.saveRoomNarration(narration);
     }
@@ -182,6 +179,17 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     public void updateStatePanelLabelNameDraft(String targetKind, long targetId, String name) {
         statePanelLabelNameDrafts.update(currentSelectedMapIdValue(), targetKind, targetId, name);
         publishCurrentToSubscribers();
+    }
+
+    @Override
+    public void updateStatePanelCorridorPointDraft(String q, String r) {
+        statePanelCorridorPointDrafts.update(currentSelectedMapIdValue(), currentStateSelection(), q, r);
+        publishCurrentToSubscribers();
+    }
+
+    @Override
+    public void moveStatePanelCorridorPoint(int q, int r) {
+        statePanelCorridorPointDrafts.move(currentSelectedMapIdValue(), currentStateSelection(), q, r, operationOwner);
     }
 
     @Override
@@ -240,7 +248,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 mapSurfaceModel.current(),
                 state,
                 preparedFacts(controls),
-                prepareStatePanelLabelNameDraft(controls, state));
+                prepareStatePanelLabelNameDraft(controls, state),
+                prepareStatePanelCorridorPointDraft(controls, state));
     }
 
     private DungeonEditorStatePanelLabelNameDrafts.Draft prepareStatePanelLabelNameDraft(
@@ -251,6 +260,23 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
         long selectedMapIdValue = selectedMapIdValue(controls);
         statePanelLabelNameDrafts.retainOnlyVisibleDraftForMap(selectedMapIdValue, target.kind(), target.id());
         return statePanelLabelNameDrafts.current(selectedMapIdValue, target.kind(), target.id());
+    }
+
+    private DungeonEditorStatePanelCorridorPointDrafts.Draft prepareStatePanelCorridorPointDraft(
+            DungeonEditorControlsSnapshot controls,
+            DungeonEditorStateSnapshot state
+    ) {
+        long selectedMapIdValue = selectedMapIdValue(controls);
+        DungeonEditorStateSnapshot.Selection selection = state == null
+                ? DungeonEditorStateSnapshot.Selection.empty()
+                : state.selection();
+        statePanelCorridorPointDrafts.retainOnlyVisibleDraftForMap(selectedMapIdValue, selection);
+        return statePanelCorridorPointDrafts.current(selectedMapIdValue, selection);
+    }
+
+    private DungeonEditorStateSnapshot.Selection currentStateSelection() {
+        DungeonEditorStateSnapshot state = stateModel.current();
+        return state == null ? DungeonEditorStateSnapshot.Selection.empty() : state.selection();
     }
 
     private static DungeonEditorPreparedFrameFacts preparedFacts(DungeonEditorControlsSnapshot controlsSnapshot) {

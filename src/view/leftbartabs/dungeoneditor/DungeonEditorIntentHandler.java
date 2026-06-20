@@ -268,7 +268,7 @@ final class DungeonEditorIntentHandler {
     }
 
     private void consumeCorridorPointInput(DungeonEditorStateViewInputEvent event) {
-        stateContentModel.updateCorridorPointDraft(
+        operations.updateStatePanelCorridorPointDraft(
                 event.corridorPointQ(),
                 event.corridorPointR());
         if (event.corridorPointSubmitRequested()) {
@@ -904,17 +904,12 @@ final class DungeonEditorIntentHandler {
     }
 
     private void submitCorridorPointMove(DungeonEditorStateViewInputEvent event) {
-        HandleTarget handle = stateContentModel.currentEditableCorridorHandleTarget();
-        if (handle == null) {
-            return;
-        }
         Optional<Integer> q = parseInteger(event.corridorPointQ());
         Optional<Integer> r = parseInteger(event.corridorPointR());
         if (q.isEmpty() || r.isEmpty()) {
             return;
         }
-        operations.moveHandle(handle, q.orElseThrow(), r.orElseThrow());
-        stateContentModel.clearCurrentCorridorPointDraft();
+        operations.moveStatePanelCorridorPoint(q.orElseThrow(), r.orElseThrow());
     }
 
     private static Optional<Integer> parseInteger(@Nullable String raw) {

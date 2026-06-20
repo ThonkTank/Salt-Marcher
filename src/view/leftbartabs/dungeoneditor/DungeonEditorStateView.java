@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
+import javafx.scene.Node;
+import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
@@ -15,6 +17,8 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 public final class DungeonEditorStateView extends VBox {
+    private static final String CORRIDOR_POINT_Q_ACCESSIBLE = "Korridorpunkt q";
+    private static final String CORRIDOR_POINT_R_ACCESSIBLE = "Korridorpunkt r";
     private static final String INCOMPLETE_NEGATIVE_TEXT = "-";
     private static final String CARD_SURFACE_STYLE = "card-surface";
     private static final String CONTENT_CARD_STYLE = "content-card";
@@ -30,6 +34,7 @@ public final class DungeonEditorStateView extends VBox {
     private final VBox stairGeometryCards = new VBox();
     private final VBox narrationCards = new VBox();
     private final VBox nameCards = new VBox();
+    private final TextField corridorPointFocusState = new TextField();
     private Consumer<DungeonEditorStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonEditorStateView() {
@@ -88,10 +93,15 @@ public final class DungeonEditorStateView extends VBox {
             DungeonEditorStateContentModel.CorridorPointProjection corridorPoint,
             boolean busy
     ) {
+        if (!corridorPointFocusPending()) {
+            rememberCurrentCorridorPointFocus();
+        }
         corridorPointCards.getChildren().clear();
         if (corridorPoint != null) {
             corridorPointCards.getChildren().add(new CorridorPointCard(corridorPoint, busy));
         }
+        restoreCorridorPointFocus();
+        clearCorridorPointFocus();
     }
 
     private void showTransitionDescription(
@@ -300,12 +310,10 @@ public final class DungeonEditorStateView extends VBox {
                 DungeonEditorStateContentModel.CorridorPointProjection corridorPoint,
                 boolean busy
         ) {
-            TextField qField = coordinateField(corridorPoint.q());
-            TextField rField = coordinateField(corridorPoint.r());
+            TextField qField = corridorPointCoordinateField(corridorPoint.q(), CORRIDOR_POINT_Q_ACCESSIBLE);
+            TextField rField = corridorPointCoordinateField(corridorPoint.r(), CORRIDOR_POINT_R_ACCESSIBLE);
             Label levelValue = muted(corridorPoint.level());
             levelValue.getStyleClass().add("coordinate-value");
-            qField.setAccessibleText("Korridorpunkt q");
-            rField.setAccessibleText("Korridorpunkt r");
             levelValue.setAccessibleText("Korridorpunkt z");
             HBox row = new HBox(
                     coordinateLabel("q", qField),
@@ -333,11 +341,94 @@ public final class DungeonEditorStateView extends VBox {
             getStyleClass().addAll(CARD_SURFACE_STYLE, CONTENT_CARD_STYLE);
         }
 
-        private Label coordinateLabel(String text, javafx.scene.Node field) {
+        private Label coordinateLabel(String text, Node field) {
             Label label = muted(text);
             label.setLabelFor(field);
             return label;
         }
+    }
+
+    private TextField corridorPointCoordinateField(String text, String accessibleText) {
+        TextField field = new TextField(text == null ? "" : text);
+        field.getStyleClass().add("coordinate-field");
+        field.setAccessibleText(accessibleText);
+        field.setTextFormatter(new TextFormatter<>(corridorPointIntegerTextFilter(accessibleText)));
+        return field;
+    }
+
+    private UnaryOperator<TextFormatter.Change> corridorPointIntegerTextFilter(String accessibleText) {
+        return change -> {
+            if (!integerFieldText(change.getControlNewText())) {
+                return null;
+            }
+            if (change.getControl().isFocused()) {
+                rememberCorridorPointFocus(accessibleText, change.getCaretPosition());
+            }
+            return change;
+        };
+    }
+
+    private void rememberCurrentCorridorPointFocus() {
+        TextField qField = corridorPointField(CORRIDOR_POINT_Q_ACCESSIBLE);
+        if (qField != null && qField.isFocused()) {
+            rememberCorridorPointFocus(qField.getAccessibleText(), qField.getCaretPosition());
+            return;
+        }
+        TextField rField = corridorPointField(CORRIDOR_POINT_R_ACCESSIBLE);
+        if (rField != null && rField.isFocused()) {
+            rememberCorridorPointFocus(rField.getAccessibleText(), rField.getCaretPosition());
+            return;
+        }
+        clearCorridorPointFocus();
+    }
+
+    private void rememberCorridorPointFocus(String accessibleText, int caretPosition) {
+        int clampedCaret = Math.max(caretPosition, 0);
+        corridorPointFocusState.setAccessibleText(accessibleText);
+        corridorPointFocusState.setText(" ".repeat(clampedCaret));
+        corridorPointFocusState.positionCaret(clampedCaret);
+    }
+
+    private boolean corridorPointFocusPending() {
+        String accessibleText = corridorPointFocusState.getAccessibleText();
+        return accessibleText != null && !accessibleText.isBlank();
+    }
+
+    private void restoreCorridorPointFocus() {
+        String accessibleText = corridorPointFocusState.getAccessibleText();
+        if (accessibleText == null || accessibleText.isBlank()) {
+            return;
+        }
+        TextField field = corridorPointField(accessibleText);
+        if (field != null) {
+            field.requestFocus();
+            field.positionCaret(Math.min(corridorPointFocusState.getCaretPosition(), field.getLength()));
+        }
+    }
+
+    private void clearCorridorPointFocus() {
+        corridorPointFocusState.setAccessibleText("");
+        corridorPointFocusState.clear();
+    }
+
+    private @org.jspecify.annotations.Nullable TextField corridorPointField(String accessibleText) {
+        return findTextField(corridorPointCards, accessibleText);
+    }
+
+    private static @org.jspecify.annotations.Nullable TextField findTextField(Node node, String accessibleText) {
+        if (node instanceof TextField field && accessibleText.equals(field.getAccessibleText())) {
+            return field;
+        }
+        if (!(node instanceof Parent parent)) {
+            return null;
+        }
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            TextField found = findTextField(child, accessibleText);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
     }
 
     private final class NameCard extends VBox {
@@ -361,7 +452,7 @@ public final class DungeonEditorStateView extends VBox {
             getStyleClass().addAll(CARD_SURFACE_STYLE, CONTENT_CARD_STYLE);
         }
 
-        private Label labeled(String text, javafx.scene.Node field) {
+        private Label labeled(String text, Node field) {
             Label label = muted(text);
             label.setLabelFor(field);
             return label;
@@ -649,7 +740,7 @@ public final class DungeonEditorStateView extends VBox {
                     saveRequested);
         }
 
-        private Label labeled(String text, javafx.scene.Node field) {
+        private Label labeled(String text, Node field) {
             Label label = muted(text);
             label.setLabelFor(field);
             return label;
@@ -741,7 +832,7 @@ public final class DungeonEditorStateView extends VBox {
             getStyleClass().addAll(CARD_SURFACE_STYLE, CONTENT_CARD_STYLE);
         }
 
-        private Label labeled(String text, javafx.scene.Node field) {
+        private Label labeled(String text, Node field) {
             Label label = muted(text);
             label.setLabelFor(field);
             return label;

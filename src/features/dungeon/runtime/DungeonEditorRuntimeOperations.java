@@ -50,11 +50,17 @@ public interface DungeonEditorRuntimeOperations {
 
     void scrollSelection(int levelDelta);
 
-    void moveHandle(HandleTarget handle, int q, int r);
-
     void saveRoomNarration(RoomNarration narration);
 
     default void updateStatePanelLabelNameDraft(String targetKind, long targetId, String name) {
+        // Only feature-runtime roots own state-panel draft session state.
+    }
+
+    default void updateStatePanelCorridorPointDraft(String q, String r) {
+        // Only feature-runtime roots own state-panel draft session state.
+    }
+
+    default void moveStatePanelCorridorPoint(int q, int r) {
         // Only feature-runtime roots own state-panel draft session state.
     }
 

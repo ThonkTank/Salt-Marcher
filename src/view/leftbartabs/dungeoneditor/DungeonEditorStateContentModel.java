@@ -9,15 +9,12 @@ import java.util.Set;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonEditorHandleKind;
-import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
-import src.domain.dungeon.published.DungeonTopologyElementKind;
+import src.features.dungeon.runtime.DungeonEditorStatePanelCorridorPointDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelLabelNameDrafts;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 
 final class DungeonEditorStateContentModel {
     private static final long NO_TRANSITION_ID = 0L;
@@ -31,14 +28,12 @@ final class DungeonEditorStateContentModel {
             new ReadOnlyObjectWrapper<>(StateProjection.initial());
     private final Map<VisualDraftKey, String> visualDrafts = new HashMap<>();
     private final Map<ExitDraftKey, String> exitDrafts = new HashMap<>();
-    private final Map<CorridorPointDraftKey, CorridorPointDraft> corridorPointDrafts = new HashMap<>();
     private final Map<TransitionDraftKey, String> transitionDrafts = new HashMap<>();
     private final Map<TransitionDestinationDraftKey, TransitionDestinationDraft> transitionDestinationDrafts =
             new HashMap<>();
     private final Map<StairGeometryDraftKey, StairGeometryDraft> stairGeometryDrafts = new HashMap<>();
     private StateProjectionContext currentContext = StateProjectionContext.empty();
     private TransitionDestinationDraft currentTransitionDestinationBaseline = TransitionDestinationDraft.defaultDraft();
-    private @Nullable DungeonEditorHandleRef currentEditableCorridorHandle;
     private long currentSelectedTransitionId;
 
     ReadOnlyObjectProperty<StateProjection> stateProjectionProperty() {
@@ -58,7 +53,6 @@ final class DungeonEditorStateContentModel {
         currentContext = safeContext;
         List<RoomNarrationCardProjection> narrationCards =
                 ProjectionTextSupport.toNarrationCards(safeSnapshot.inspector());
-        DungeonEditorHandleRef editableCorridorHandle = editableCorridorHandle(safeSnapshot.selection());
         TransitionDescriptionProjection transitionDescription = transitionDescriptionProjection(
                 safeContext.selectedMapIdValue(),
                 safeSnapshot.selection(),
@@ -74,12 +68,10 @@ final class DungeonEditorStateContentModel {
         currentTransitionDestinationBaseline = transitionDestination == null
                 ? TransitionDestinationDraft.defaultDraft()
                 : TransitionDestinationDraft.fromProjection(transitionDestination);
-        currentEditableCorridorHandle = editableCorridorHandle;
         currentSelectedTransitionId = selectedTransitionId(safeSnapshot.selection());
         pruneDrafts(
                 safeContext.selectedMapIdValue(),
                 narrationCards,
-                editableCorridorHandle,
                 transitionDescription,
                 stairGeometry);
         stateProjection.set(new StateProjection(
@@ -88,7 +80,7 @@ final class DungeonEditorStateContentModel {
                 safeContext.busy(),
                 applyDrafts(safeContext.selectedMapIdValue(), narrationCards),
                 nameProjection(safeSnapshot.inspector()),
-                corridorPointProjection(safeContext.selectedMapIdValue(), editableCorridorHandle),
+                corridorPointProjection(),
                 transitionDestination,
                 transitionDescription,
                 stairGeometry));
@@ -127,60 +119,6 @@ final class DungeonEditorStateContentModel {
         long selectedMapIdValue = currentContext.selectedMapIdValue();
         visualDrafts.remove(new VisualDraftKey(selectedMapIdValue, roomId));
         exitDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue && key.roomId() == roomId);
-    }
-
-    @Nullable HandleTarget currentEditableCorridorHandleTarget() {
-        return toRuntimeHandleTarget(currentEditableCorridorHandle);
-    }
-
-    void updateCorridorPointDraft(String q, String r) {
-        DungeonEditorHandleRef handleRef = currentEditableCorridorHandle;
-        if (handleRef == null) {
-            return;
-        }
-        corridorPointDrafts.put(
-                CorridorPointDraftKey.from(currentContext.selectedMapIdValue(), handleRef),
-                new CorridorPointDraft(q, r));
-    }
-
-    void clearCorridorPointDraft(DungeonEditorHandleRef handleRef) {
-        if (handleRef == null) {
-            return;
-        }
-        corridorPointDrafts.remove(CorridorPointDraftKey.from(currentContext.selectedMapIdValue(), handleRef));
-    }
-
-    void clearCurrentCorridorPointDraft() {
-        clearCorridorPointDraft(currentEditableCorridorHandle);
-    }
-
-    private static @Nullable HandleTarget toRuntimeHandleTarget(@Nullable DungeonEditorHandleRef handleRef) {
-        if (handleRef == null) {
-            return null;
-        }
-        boolean sourceEdgePresent = handleRef.sourceEdge() != null
-                && handleRef.sourceEdge().from() != null
-                && handleRef.sourceEdge().to() != null;
-        return new HandleTarget(
-                handleRef.kind().name(),
-                handleRef.topologyRef().kind().name(),
-                handleRef.topologyRef().id(),
-                handleRef.ownerId(),
-                handleRef.clusterId(),
-                handleRef.corridorId(),
-                handleRef.roomId(),
-                handleRef.index(),
-                handleRef.cell().q(),
-                handleRef.cell().r(),
-                handleRef.cell().level(),
-                handleRef.direction(),
-                sourceEdgePresent,
-                sourceEdgePresent ? handleRef.sourceEdge().from().q() : 0,
-                sourceEdgePresent ? handleRef.sourceEdge().from().r() : 0,
-                sourceEdgePresent ? handleRef.sourceEdge().from().level() : 0,
-                sourceEdgePresent ? handleRef.sourceEdge().to().q() : 0,
-                sourceEdgePresent ? handleRef.sourceEdge().to().r() : 0,
-                sourceEdgePresent ? handleRef.sourceEdge().to().level() : 0);
     }
 
     void updateTransitionDescriptionDraft(long transitionId, String description) {
@@ -300,7 +238,6 @@ final class DungeonEditorStateContentModel {
     private void pruneDrafts(
             long selectedMapIdValue,
             List<RoomNarrationCardProjection> cards,
-            @Nullable DungeonEditorHandleRef corridorHandle,
             @Nullable TransitionDescriptionProjection transitionDescription,
             @Nullable StairGeometryProjection stairGeometry
     ) {
@@ -316,11 +253,6 @@ final class DungeonEditorStateContentModel {
                 && !visibleVisuals.contains(key));
         exitDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
                 && !visibleExits.contains(key));
-        CorridorPointDraftKey visibleCorridorPoint = corridorHandle == null
-                ? null
-                : CorridorPointDraftKey.from(selectedMapIdValue, corridorHandle);
-        corridorPointDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
-                && !key.equals(visibleCorridorPoint));
         TransitionDraftKey visibleTransition = transitionDescription == null
                 ? null
                 : new TransitionDraftKey(selectedMapIdValue, transitionDescription.transitionId());
@@ -352,50 +284,16 @@ final class DungeonEditorStateContentModel {
                 draft);
     }
 
-    private @Nullable CorridorPointProjection corridorPointProjection(
-            long selectedMapIdValue,
-            @Nullable DungeonEditorHandleRef handleRef
-    ) {
-        if (handleRef == null) {
+    private @Nullable CorridorPointProjection corridorPointProjection() {
+        DungeonEditorStatePanelCorridorPointDrafts.Draft draft = currentContext.statePanelCorridorPointDraft();
+        if (!draft.targetPresent()) {
             return null;
         }
-        CorridorPointDraftKey draftKey = CorridorPointDraftKey.from(selectedMapIdValue, handleRef);
-        CorridorPointDraft draft = corridorPointDrafts.getOrDefault(
-                draftKey,
-                CorridorPointDraft.from(handleRef));
         return new CorridorPointProjection(
-                corridorPointLabel(handleRef.kind()),
+                draft.label(),
                 draft.q(),
                 draft.r(),
-                Integer.toString(handleRef.cell().level()));
-    }
-
-    private static @Nullable DungeonEditorHandleRef editableCorridorHandle(
-            DungeonEditorStateSnapshot.Selection selection
-    ) {
-        DungeonEditorStateSnapshot.Selection safeSelection = selection == null
-                ? DungeonEditorStateSnapshot.Selection.empty()
-                : selection;
-        DungeonEditorHandleRef handleRef = safeSelection.handleRef();
-        if (handleRef == null || !isEditableCorridorPoint(handleRef)) {
-            return null;
-        }
-        return handleRef;
-    }
-
-    private static boolean isEditableCorridorPoint(DungeonEditorHandleRef handleRef) {
-        DungeonEditorHandleKind kind = handleRef.kind();
-        DungeonTopologyElementKind topologyKind = handleRef.topologyRef().kind();
-        return (kind == DungeonEditorHandleKind.CORRIDOR_ANCHOR
-                || kind == DungeonEditorHandleKind.CORRIDOR_WAYPOINT)
-                && (topologyKind == DungeonTopologyElementKind.CORRIDOR
-                        || topologyKind == DungeonTopologyElementKind.CORRIDOR_ANCHOR);
-    }
-
-    private static String corridorPointLabel(DungeonEditorHandleKind kind) {
-        return kind == DungeonEditorHandleKind.CORRIDOR_WAYPOINT
-                ? "Korridor-Wegpunkt"
-                : "Korridor-Anker";
+                draft.level());
     }
 
     private @Nullable TransitionDescriptionProjection transitionDescriptionProjection(
@@ -520,7 +418,8 @@ final class DungeonEditorStateContentModel {
             String viewModeLabel,
             int projectionLevel,
             String overlayLabel,
-            DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft
+            DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft,
+            DungeonEditorStatePanelCorridorPointDrafts.Draft statePanelCorridorPointDraft
     ) {
         StateProjectionContext {
             selectedMapIdValue = Math.max(0L, selectedMapIdValue);
@@ -533,6 +432,9 @@ final class DungeonEditorStateContentModel {
             statePanelLabelNameDraft = statePanelLabelNameDraft == null
                     ? DungeonEditorStatePanelLabelNameDrafts.Draft.empty()
                     : statePanelLabelNameDraft;
+            statePanelCorridorPointDraft = statePanelCorridorPointDraft == null
+                    ? DungeonEditorStatePanelCorridorPointDrafts.Draft.empty()
+                    : statePanelCorridorPointDraft;
         }
 
         static StateProjectionContext empty() {
@@ -545,7 +447,8 @@ final class DungeonEditorStateContentModel {
                     "Grid",
                     0,
                     "",
-                    DungeonEditorStatePanelLabelNameDrafts.Draft.empty());
+                    DungeonEditorStatePanelLabelNameDrafts.Draft.empty(),
+                    DungeonEditorStatePanelCorridorPointDrafts.Draft.empty());
         }
     }
 
@@ -683,53 +586,6 @@ final class DungeonEditorStateContentModel {
                     safeExit.r(),
                     safeExit.level(),
                     safeExit.direction());
-        }
-    }
-
-    private record CorridorPointDraft(String q, String r) {
-        CorridorPointDraft {
-            q = q == null ? "" : q.strip();
-            r = r == null ? "" : r.strip();
-        }
-
-        static CorridorPointDraft from(DungeonEditorHandleRef handleRef) {
-            if (handleRef == null) {
-                return new CorridorPointDraft("0", "0");
-            }
-            return new CorridorPointDraft(
-                    Integer.toString(handleRef.cell().q()),
-                    Integer.toString(handleRef.cell().r()));
-        }
-    }
-
-    private record CorridorPointDraftKey(
-            long selectedMapIdValue,
-            String kind,
-            String topologyKind,
-            long topologyId,
-            long corridorId,
-            int index
-    ) {
-        CorridorPointDraftKey {
-            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
-            kind = kind == null ? "" : kind;
-            topologyKind = topologyKind == null ? "" : topologyKind;
-            topologyId = Math.max(0L, topologyId);
-            corridorId = Math.max(0L, corridorId);
-            index = Math.max(0, index);
-        }
-
-        static CorridorPointDraftKey from(long selectedMapIdValue, DungeonEditorHandleRef handleRef) {
-            if (handleRef == null) {
-                return new CorridorPointDraftKey(selectedMapIdValue, "", "", 0L, 0L, 0);
-            }
-            return new CorridorPointDraftKey(
-                    selectedMapIdValue,
-                    handleRef.kind().name(),
-                    handleRef.topologyRef().kind().name(),
-                    handleRef.topologyRef().id(),
-                    handleRef.corridorId(),
-                    handleRef.index());
         }
     }
 
