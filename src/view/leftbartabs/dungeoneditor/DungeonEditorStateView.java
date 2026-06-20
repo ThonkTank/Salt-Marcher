@@ -19,6 +19,7 @@ import javafx.scene.layout.VBox;
 public final class DungeonEditorStateView extends VBox {
     private static final String CORRIDOR_POINT_Q_ACCESSIBLE = "Korridorpunkt q";
     private static final String CORRIDOR_POINT_R_ACCESSIBLE = "Korridorpunkt r";
+    private static final String TRANSITION_DESCRIPTION_ACCESSIBLE = "Übergang Beschreibung";
     private static final String INCOMPLETE_NEGATIVE_TEXT = "-";
     private static final String CARD_SURFACE_STYLE = "card-surface";
     private static final String CONTENT_CARD_STYLE = "content-card";
@@ -35,6 +36,7 @@ public final class DungeonEditorStateView extends VBox {
     private final VBox narrationCards = new VBox();
     private final VBox nameCards = new VBox();
     private final TextField corridorPointFocusState = new TextField();
+    private final TextArea transitionDescriptionFocusState = new TextArea();
     private Consumer<DungeonEditorStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonEditorStateView() {
@@ -109,6 +111,9 @@ public final class DungeonEditorStateView extends VBox {
             boolean busy,
             String statusText
     ) {
+        if (!transitionDescriptionFocusPending()) {
+            rememberCurrentTransitionDescriptionFocus();
+        }
         transitionCards.getChildren().clear();
         if (transitionDescription != null) {
             transitionCards.getChildren().add(new TransitionDescriptionCard(
@@ -116,6 +121,8 @@ public final class DungeonEditorStateView extends VBox {
                     busy,
                     statusText));
         }
+        restoreTransitionDescriptionFocus();
+        clearTransitionDescriptionFocus();
     }
 
     private void showTransitionDestination(
@@ -368,6 +375,15 @@ public final class DungeonEditorStateView extends VBox {
         };
     }
 
+    private UnaryOperator<TextFormatter.Change> transitionDescriptionTextFilter() {
+        return change -> {
+            if (change.getControl().isFocused()) {
+                rememberTransitionDescriptionFocus(change.getCaretPosition());
+            }
+            return change;
+        };
+    }
+
     private void rememberCurrentCorridorPointFocus() {
         TextField qField = corridorPointField(CORRIDOR_POINT_Q_ACCESSIBLE);
         if (qField != null && qField.isFocused()) {
@@ -431,6 +447,63 @@ public final class DungeonEditorStateView extends VBox {
         return null;
     }
 
+    private void rememberCurrentTransitionDescriptionFocus() {
+        TextArea area = transitionDescriptionArea();
+        if (area != null && area.isFocused()) {
+            rememberTransitionDescriptionFocus(area.getCaretPosition());
+            return;
+        }
+        clearTransitionDescriptionFocus();
+    }
+
+    private void rememberTransitionDescriptionFocus(int caretPosition) {
+        int clampedCaret = Math.max(caretPosition, 0);
+        transitionDescriptionFocusState.setAccessibleText(TRANSITION_DESCRIPTION_ACCESSIBLE);
+        transitionDescriptionFocusState.setText(" ".repeat(clampedCaret));
+        transitionDescriptionFocusState.positionCaret(clampedCaret);
+    }
+
+    private boolean transitionDescriptionFocusPending() {
+        String accessibleText = transitionDescriptionFocusState.getAccessibleText();
+        return accessibleText != null && !accessibleText.isBlank();
+    }
+
+    private void restoreTransitionDescriptionFocus() {
+        if (!transitionDescriptionFocusPending()) {
+            return;
+        }
+        TextArea area = transitionDescriptionArea();
+        if (area != null) {
+            area.requestFocus();
+            area.positionCaret(Math.min(transitionDescriptionFocusState.getCaretPosition(), area.getLength()));
+        }
+    }
+
+    private void clearTransitionDescriptionFocus() {
+        transitionDescriptionFocusState.setAccessibleText("");
+        transitionDescriptionFocusState.clear();
+    }
+
+    private @org.jspecify.annotations.Nullable TextArea transitionDescriptionArea() {
+        return findTextArea(transitionCards, TRANSITION_DESCRIPTION_ACCESSIBLE);
+    }
+
+    private static @org.jspecify.annotations.Nullable TextArea findTextArea(Node node, String accessibleText) {
+        if (node instanceof TextArea area && accessibleText.equals(area.getAccessibleText())) {
+            return area;
+        }
+        if (!(node instanceof Parent parent)) {
+            return null;
+        }
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            TextArea found = findTextArea(child, accessibleText);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
     private final class NameCard extends VBox {
 
         private NameCard(DungeonEditorStateContentModel.NameProjection name, boolean busy) {
@@ -464,10 +537,11 @@ public final class DungeonEditorStateView extends VBox {
         private TransitionDescriptionCard(
                 DungeonEditorStateContentModel.TransitionDescriptionProjection transitionDescription,
                 boolean busy,
-                String statusText
+            String statusText
         ) {
             TextArea descriptionArea = textArea(transitionDescription.description());
-            descriptionArea.setAccessibleText("Übergang Beschreibung");
+            descriptionArea.setAccessibleText(TRANSITION_DESCRIPTION_ACCESSIBLE);
+            descriptionArea.setTextFormatter(new TextFormatter<>(transitionDescriptionTextFilter()));
             getChildren().addAll(
                     new PanelTitle(transitionDescription.label()),
                     narrationLabel("Beschreibung", descriptionArea),

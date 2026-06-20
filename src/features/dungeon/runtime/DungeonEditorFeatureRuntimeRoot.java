@@ -28,6 +28,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
             new DungeonEditorStatePanelLabelNameDrafts();
     private final DungeonEditorStatePanelCorridorPointDrafts statePanelCorridorPointDrafts =
             new DungeonEditorStatePanelCorridorPointDrafts();
+    private final DungeonEditorStatePanelTransitionDescriptionDrafts statePanelTransitionDescriptionDrafts =
+            new DungeonEditorStatePanelTransitionDescriptionDrafts();
     private final List<Consumer<DungeonEditorRuntimePublication>> subscribers = new CopyOnWriteArrayList<>();
 
     public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
@@ -193,6 +195,12 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     }
 
     @Override
+    public void updateStatePanelTransitionDescriptionDraft(long transitionId, String description) {
+        statePanelTransitionDescriptionDrafts.update(currentSelectedMapIdValue(), transitionId, description);
+        publishCurrentToSubscribers();
+    }
+
+    @Override
     public void saveLabelName(String targetKind, long targetId, String name) {
         statePanelLabelNameDrafts.clear(currentSelectedMapIdValue(), targetKind, targetId);
         operationOwner.saveLabelName(targetKind, targetId, name);
@@ -210,6 +218,7 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     @Override
     public void saveTransitionDescription(long transitionId, String description) {
+        statePanelTransitionDescriptionDrafts.clear(currentSelectedMapIdValue(), transitionId);
         operationOwner.saveTransitionDescription(transitionId, description);
     }
 
@@ -249,7 +258,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 state,
                 preparedFacts(controls),
                 prepareStatePanelLabelNameDraft(controls, state),
-                prepareStatePanelCorridorPointDraft(controls, state));
+                prepareStatePanelCorridorPointDraft(controls, state),
+                prepareStatePanelTransitionDescriptionDraft(controls, state));
     }
 
     private DungeonEditorStatePanelLabelNameDrafts.Draft prepareStatePanelLabelNameDraft(
@@ -272,6 +282,16 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 : state.selection();
         statePanelCorridorPointDrafts.retainOnlyVisibleDraftForMap(selectedMapIdValue, selection);
         return statePanelCorridorPointDrafts.current(selectedMapIdValue, selection);
+    }
+
+    private DungeonEditorStatePanelTransitionDescriptionDrafts.Draft prepareStatePanelTransitionDescriptionDraft(
+            DungeonEditorControlsSnapshot controls,
+            DungeonEditorStateSnapshot state
+    ) {
+        long selectedMapIdValue = selectedMapIdValue(controls);
+        long transitionId = selectedTransitionId(state == null ? null : state.selection());
+        statePanelTransitionDescriptionDrafts.retainOnlyVisibleDraftForMap(selectedMapIdValue, transitionId);
+        return statePanelTransitionDescriptionDrafts.current(selectedMapIdValue, transitionId);
     }
 
     private DungeonEditorStateSnapshot.Selection currentStateSelection() {
@@ -363,6 +383,14 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     private static boolean clusterOnlySelection(DungeonEditorStateSnapshot.Selection selection) {
         return selection.clusterSelection() && !"ROOM".equals(selection.topologyRef().kind());
+    }
+
+    private static long selectedTransitionId(DungeonEditorStateSnapshot.Selection selection) {
+        DungeonEditorStateSnapshot.Selection safeSelection = selection == null
+                ? DungeonEditorStateSnapshot.Selection.empty()
+                : selection;
+        DungeonEditorTopologyElementRef topologyRef = safeSelection.topologyRef();
+        return "TRANSITION".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
     }
 
     private record LabelNameTarget(String kind, long id) {

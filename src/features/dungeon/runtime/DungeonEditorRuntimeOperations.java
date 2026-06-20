@@ -64,6 +64,10 @@ public interface DungeonEditorRuntimeOperations {
         // Only feature-runtime roots own state-panel draft session state.
     }
 
+    default void updateStatePanelTransitionDescriptionDraft(long transitionId, String description) {
+        // Only feature-runtime roots own state-panel draft session state.
+    }
+
     void saveLabelName(String targetKind, long targetId, String name);
 
     void saveTransitionLink(

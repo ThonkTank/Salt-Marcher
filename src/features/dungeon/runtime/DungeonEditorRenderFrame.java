@@ -11,7 +11,8 @@ public record DungeonEditorRenderFrame(
         DungeonEditorStateSnapshot state,
         DungeonEditorPreparedFrameFacts preparedFacts,
         DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft,
-        DungeonEditorStatePanelCorridorPointDrafts.Draft statePanelCorridorPointDraft
+        DungeonEditorStatePanelCorridorPointDrafts.Draft statePanelCorridorPointDraft,
+        DungeonEditorStatePanelTransitionDescriptionDrafts.Draft statePanelTransitionDescriptionDraft
 ) {
     public DungeonEditorRenderFrame {
         controls = Objects.requireNonNull(controls, "controls");
@@ -24,5 +25,8 @@ public record DungeonEditorRenderFrame(
         statePanelCorridorPointDraft = statePanelCorridorPointDraft == null
                 ? DungeonEditorStatePanelCorridorPointDrafts.Draft.empty()
                 : statePanelCorridorPointDraft;
+        statePanelTransitionDescriptionDraft = statePanelTransitionDescriptionDraft == null
+                ? DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty()
+                : statePanelTransitionDescriptionDraft;
     }
 }

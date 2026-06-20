@@ -97,6 +97,16 @@ final class DungeonEditorTransitionHarness {
         TextArea descriptionArea = textArea(stateView, "Übergang Beschreibung");
         assertEquals("Initial transition.", descriptionArea.getText(),
                 "DE-TRN-004 state panel exposes transition description");
+        descriptionArea.requestFocus();
+        descriptionArea.positionCaret("Initial ".length());
+        descriptionArea.replaceSelection("draft ");
+        descriptionArea = textArea(stateView, "Übergang Beschreibung");
+        assertTrue(descriptionArea.isFocused(),
+                "DE-TRN-004 runtime draft publication keeps transition description focus");
+        assertEquals("Initial draft transition.", descriptionArea.getText(),
+                "DE-TRN-004 runtime draft publication keeps middle insertion text");
+        assertEquals("Initial draft ".length(), descriptionArea.getCaretPosition(),
+                "DE-TRN-004 runtime draft publication keeps transition description caret");
         descriptionArea.setText("Hidden stairwell to the cistern.");
         click(buttonWithAccessibleText(stateView, "Übergang " + transitionId + " speichern"));
 

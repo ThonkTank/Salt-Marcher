@@ -279,14 +279,13 @@ final class DungeonEditorIntentHandler {
     private void consumeTransitionDescriptionInput(
             DungeonEditorStateViewInputEvent event
     ) {
-        stateContentModel.updateTransitionDescriptionDraft(
+        operations.updateStatePanelTransitionDescriptionDraft(
                 event.transitionId(),
                 event.transitionDescription());
         if (!event.transitionDescriptionSaveRequested()) {
             return;
         }
         if (event.transitionId() > NO_TRANSITION_ID) {
-            stateContentModel.clearTransitionDescriptionDraft(event.transitionId());
             operations.saveTransitionDescription(
                     event.transitionId(),
                     event.transitionDescription());
