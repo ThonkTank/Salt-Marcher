@@ -19,6 +19,8 @@ import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorViewModeUseCase;
 import src.domain.dungeon.model.runtime.usecase.ShiftDungeonEditorProjectionLevelUseCase;
 
 final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRuntimeOperations {
+    private static final String SELECTION_TOOL = "SELECT";
+
     private final SelectDungeonEditorMapUseCase selectMapUseCase;
     private final CreateDungeonEditorMapUseCase createMapUseCase;
     private final RenameDungeonEditorMapUseCase renameMapUseCase;
@@ -97,6 +99,11 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
     @Override
     public void setTool(String toolKey) {
         setToolUseCase.execute(DungeonEditorRuntimeInputTranslator.toolName(toolKey));
+    }
+
+    @Override
+    public void cancelActivePreviewSession() {
+        setToolUseCase.execute(SELECTION_TOOL);
     }
 
     @Override

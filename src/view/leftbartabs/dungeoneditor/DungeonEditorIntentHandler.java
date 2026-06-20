@@ -22,7 +22,6 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 
 final class DungeonEditorIntentHandler {
     private static final long NO_TRANSITION_ID = 0L;
-    private static final String SELECT_TOOL = "SELECT";
 
     private final DungeonEditorContributionModel presentationModel;
     private final DungeonEditorControlsContentModel controlsContentModel;
@@ -426,9 +425,8 @@ final class DungeonEditorIntentHandler {
         if (!event.input().escapePressed()) {
             return false;
         }
-        operations.setTool(SELECT_TOOL);
+        operations.cancelActivePreviewSession();
         mapContentModel.clearHoverTarget();
-        operations.clearPointerSession();
         return true;
     }
 
@@ -832,8 +830,7 @@ final class DungeonEditorIntentHandler {
 
     private void handleToolInput(DungeonEditorControlsViewInputEvent.ToolSnapshot tool) {
         if (tool.dismissControlActivated()) {
-            operations.setTool(SELECT_TOOL);
-            operations.clearPointerSession();
+            operations.cancelActivePreviewSession();
             return;
         }
         if (tool.selectedToolKey().isBlank()) {

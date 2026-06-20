@@ -15,6 +15,8 @@ public interface DungeonEditorRuntimeOperations {
 
     void setTool(String toolKey);
 
+    void cancelActivePreviewSession();
+
     void shiftProjectionLevel(int levelShift);
 
     void setOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels);

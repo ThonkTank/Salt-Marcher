@@ -71,6 +71,12 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     }
 
     @Override
+    public void cancelActivePreviewSession() {
+        clearPointerSession();
+        operationOwner.cancelActivePreviewSession();
+    }
+
+    @Override
     public void shiftProjectionLevel(int levelShift) {
         operationOwner.shiftProjectionLevel(levelShift);
     }
