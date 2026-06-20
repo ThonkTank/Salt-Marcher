@@ -105,6 +105,16 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                     transitionDestination);
             return;
         }
+        DungeonEditorTool corridorTool = DungeonEditorCorridorDraftRuntimeOperation.corridorTool(toolKey);
+        if (corridorTool != null) {
+            operationOwner.applyCorridorDraft(
+                    action,
+                    corridorTool,
+                    sample,
+                    wallSingleClickMode,
+                    transitionDestination);
+            return;
+        }
         operationOwner.applyPointer(action, toolKey, sample, wallSingleClickMode, transitionDestination);
     }
 

@@ -29,12 +29,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
                 ToolInput.DOOR_DELETE,
                         safeUseCases.door().delete().workflow());
         registeredWorkflows.put(
-                ToolInput.CORRIDOR_CREATE,
-                        safeUseCases.corridor().primary().pressAndHoverOnly());
-        registeredWorkflows.put(
-                ToolInput.CORRIDOR_DELETE,
-                        safeUseCases.corridor().delete().pressAndHoverOnly());
-        registeredWorkflows.put(
                 ToolInput.STAIR_CREATE,
                 safeUseCases.stairCreate().pressAndHoverOnly());
         registeredWorkflows.put(
@@ -117,8 +111,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
         ROOM_DELETE,
         DOOR_CREATE,
         DOOR_DELETE,
-        CORRIDOR_CREATE,
-        CORRIDOR_DELETE,
         STAIR_CREATE,
         STAIR_CREATE_SQUARE,
         STAIR_CREATE_CIRCULAR,
@@ -183,7 +175,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
             PointerToolUseCase selection,
             PairedToolUseCases room,
             PairedToolUseCases door,
-            PairedToolUseCases corridor,
             PointerToolUseCase stairCreate,
             PointerToolUseCase stairCreateSquare,
             PointerToolUseCase stairCreateCircular,
@@ -199,7 +190,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
             selection = Objects.requireNonNull(selection, "selection");
             room = Objects.requireNonNull(room, "room");
             door = Objects.requireNonNull(door, "door");
-            corridor = Objects.requireNonNull(corridor, "corridor");
             stairCreate = Objects.requireNonNull(stairCreate, "stairCreate");
             stairCreateSquare = Objects.requireNonNull(stairCreateSquare, "stairCreateSquare");
             stairCreateCircular = Objects.requireNonNull(stairCreateCircular, "stairCreateCircular");

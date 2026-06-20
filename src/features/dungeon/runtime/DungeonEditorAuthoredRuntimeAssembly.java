@@ -108,6 +108,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 projectionUseCases(runtime),
                 DungeonEditorAuthoredToolWorkflowUseCases.create(runtime, selection),
                 new DungeonEditorWallBoundaryDraftRuntimeOperation(runtime),
+                new DungeonEditorCorridorDraftRuntimeOperation(runtime),
                 selection,
                 new MoveDungeonEditorHandleUseCase(runtime.workflow(), runtime.effectUseCase()),
                 detailUseCases(runtime)));

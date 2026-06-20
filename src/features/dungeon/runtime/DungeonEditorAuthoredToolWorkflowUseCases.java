@@ -1,11 +1,9 @@
 package src.features.dungeon.runtime;
 
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateCorridorUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateDoorUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateFeatureMarkerUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateStairUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateTransitionUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteCorridorUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteDoorUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteFeatureMarkerUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteRoomUseCase;
@@ -45,16 +43,6 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
                         runtime.effectUseCase());
         ApplyDungeonEditorDeleteDoorUseCase deleteDoor =
                 new ApplyDungeonEditorDeleteDoorUseCase(
-                        runtime.workflow(),
-                        runtime.mainViewInterpreter(),
-                        runtime.effectUseCase());
-        ApplyDungeonEditorCreateCorridorUseCase createCorridor =
-                new ApplyDungeonEditorCreateCorridorUseCase(
-                        runtime.workflow(),
-                        runtime.mainViewInterpreter(),
-                        runtime.effectUseCase());
-        ApplyDungeonEditorDeleteCorridorUseCase deleteCorridor =
-                new ApplyDungeonEditorDeleteCorridorUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.effectUseCase());
@@ -99,9 +87,6 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
         PairedToolUseCases doorTools = paired(
                 workflowFor(createDoor::press, createDoor::drag, createDoor::release, createDoor::hover),
                 workflowFor(deleteDoor::press, deleteDoor::drag, deleteDoor::release, deleteDoor::hover));
-        PairedToolUseCases corridorTools = paired(
-                workflowFor(createCorridor::press, null, null, createCorridor::hover),
-                workflowFor(deleteCorridor::press, null, null, deleteCorridor::hover));
         PointerToolUseCase straightStairTools = workflowFor(createStair::press, null, null, createStair::hover);
         PointerToolUseCase squareStairTools = workflowFor(createStair::pressSquare, null, null, createStair::hoverSquare);
         PointerToolUseCase circularStairTools = workflowFor(
@@ -120,7 +105,6 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
                 selectionTools,
                 roomTools,
                 doorTools,
-                corridorTools,
                 straightStairTools,
                 squareStairTools,
                 circularStairTools,
