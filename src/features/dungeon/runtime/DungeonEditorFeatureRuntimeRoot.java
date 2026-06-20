@@ -6,12 +6,13 @@ import shell.api.ServiceRegistry;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorStateModel;
+import src.domain.dungeon.published.DungeonEditorTool;
 
 public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRuntimeOperations {
     private final DungeonEditorControlsModel controlsModel;
     private final DungeonEditorMapSurfaceModel mapSurfaceModel;
     private final DungeonEditorStateModel stateModel;
-    private final DungeonEditorRuntimeOperations operationOwner;
+    private final DungeonEditorAuthoredRuntimeOperations operationOwner;
     private final DungeonEditorPointerSession pointerSession = new DungeonEditorPointerSession();
 
     public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
@@ -27,7 +28,7 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
             DungeonEditorControlsModel controlsModel,
             DungeonEditorMapSurfaceModel mapSurfaceModel,
             DungeonEditorStateModel stateModel,
-            DungeonEditorRuntimeOperations operationOwner
+            DungeonEditorAuthoredRuntimeOperations operationOwner
     ) {
         this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
         this.mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
@@ -94,6 +95,16 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
+        DungeonEditorTool wallTool = DungeonEditorWallBoundaryDraftRuntimeOperation.wallTool(toolKey);
+        if (wallTool != null) {
+            operationOwner.applyWallBoundaryDraft(
+                    action,
+                    wallTool,
+                    sample,
+                    wallSingleClickMode,
+                    transitionDestination);
+            return;
+        }
         operationOwner.applyPointer(action, toolKey, sample, wallSingleClickMode, transitionDestination);
     }
 
@@ -182,4 +193,5 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 mapSurfaceModel.current(),
                 stateModel.current());
     }
+
 }

@@ -23,12 +23,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
                 ToolInput.ROOM_DELETE,
                         safeUseCases.room().delete().withoutHover());
         registeredWorkflows.put(
-                ToolInput.WALL_CREATE,
-                        safeUseCases.wall().primary().workflow());
-        registeredWorkflows.put(
-                ToolInput.WALL_DELETE,
-                        safeUseCases.wall().delete().workflow());
-        registeredWorkflows.put(
                 ToolInput.DOOR_CREATE,
                         safeUseCases.door().primary().workflow());
         registeredWorkflows.put(
@@ -121,8 +115,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
         SELECT,
         ROOM_PAINT,
         ROOM_DELETE,
-        WALL_CREATE,
-        WALL_DELETE,
         DOOR_CREATE,
         DOOR_DELETE,
         CORRIDOR_CREATE,
@@ -190,7 +182,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
     public record ToolWorkflowUseCases(
             PointerToolUseCase selection,
             PairedToolUseCases room,
-            PairedToolUseCases wall,
             PairedToolUseCases door,
             PairedToolUseCases corridor,
             PointerToolUseCase stairCreate,
@@ -207,7 +198,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
         public ToolWorkflowUseCases {
             selection = Objects.requireNonNull(selection, "selection");
             room = Objects.requireNonNull(room, "room");
-            wall = Objects.requireNonNull(wall, "wall");
             door = Objects.requireNonNull(door, "door");
             corridor = Objects.requireNonNull(corridor, "corridor");
             stairCreate = Objects.requireNonNull(stairCreate, "stairCreate");

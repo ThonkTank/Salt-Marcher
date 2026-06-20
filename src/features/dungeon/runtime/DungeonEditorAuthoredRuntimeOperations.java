@@ -17,6 +17,7 @@ import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorOverlayUseCase;
 import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorToolUseCase;
 import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorViewModeUseCase;
 import src.domain.dungeon.model.runtime.usecase.ShiftDungeonEditorProjectionLevelUseCase;
+import src.domain.dungeon.published.DungeonEditorTool;
 
 final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRuntimeOperations {
     private static final String SELECTION_TOOL = "SELECT";
@@ -30,6 +31,7 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
     private final ShiftDungeonEditorProjectionLevelUseCase shiftProjectionLevelUseCase;
     private final SetDungeonEditorOverlayUseCase setOverlayUseCase;
     private final ApplyDungeonEditorToolWorkflowUseCase applyToolWorkflowUseCase;
+    private final DungeonEditorWallBoundaryDraftRuntimeOperation wallBoundaryDraftOperation;
     private final ApplyDungeonEditorSelectionUseCase applySelectionUseCase;
     private final MoveDungeonEditorHandleUseCase moveHandleUseCase;
     private final SaveDungeonEditorRoomNarrationUseCase saveRoomNarrationUseCase;
@@ -52,6 +54,9 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
                 "shiftProjectionLevelUseCase");
         setOverlayUseCase = Objects.requireNonNull(safeUseCases.projection().setOverlay(), "setOverlayUseCase");
         applyToolWorkflowUseCase = Objects.requireNonNull(safeUseCases.toolWorkflow(), "applyToolWorkflowUseCase");
+        wallBoundaryDraftOperation = Objects.requireNonNull(
+                safeUseCases.wallBoundaryDraft(),
+                "wallBoundaryDraftOperation");
         applySelectionUseCase = Objects.requireNonNull(safeUseCases.selection(), "applySelectionUseCase");
         moveHandleUseCase = Objects.requireNonNull(safeUseCases.moveHandle(), "moveHandleUseCase");
         saveRoomNarrationUseCase = Objects.requireNonNull(
@@ -130,6 +135,16 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
                 sample,
                 wallSingleClickMode,
                 transitionDestination));
+    }
+
+    void applyWallBoundaryDraft(
+            PointerAction action,
+            DungeonEditorTool wallTool,
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        wallBoundaryDraftOperation.apply(action, wallTool, sample, wallSingleClickMode, transitionDestination);
     }
 
     @Override

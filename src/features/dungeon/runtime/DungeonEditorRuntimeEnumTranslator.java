@@ -1,8 +1,10 @@
 package src.features.dungeon.runtime;
 
 import java.util.Locale;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.ToolInput;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.WorkflowAction;
+import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.BoundaryKindInput;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.HandleKindInput;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.LabelKindInput;
@@ -15,8 +17,8 @@ final class DungeonEditorRuntimeEnumTranslator {
     }
 
     static String toolName(String value) {
-        ToolInput input = tool(value);
-        return input == ToolInput.UNSUPPORTED ? ToolInput.SELECT.name() : input.name();
+        DungeonEditorTool tool = editorTool(value);
+        return tool == null ? DungeonEditorTool.SELECT.name() : tool.name();
     }
 
     static String viewModeName(String value) {
@@ -25,6 +27,14 @@ final class DungeonEditorRuntimeEnumTranslator {
 
     static ToolInput tool(String value) {
         return ToolInput.fromName(normalizedEnumName(value));
+    }
+
+    static @Nullable DungeonEditorTool editorTool(String value) {
+        try {
+            return DungeonEditorTool.valueOf(normalizedEnumName(value));
+        } catch (IllegalArgumentException ignored) {
+            return null;
+        }
     }
 
     static WorkflowAction workflowAction(PointerAction action) {

@@ -5,14 +5,12 @@ import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateDoorUseC
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateFeatureMarkerUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateStairUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateTransitionUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateWallUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteCorridorUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteDoorUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteFeatureMarkerUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteRoomUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteStairUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteTransitionUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteWallUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorPaintRoomUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSelectionUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase;
@@ -37,16 +35,6 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
                         runtime.effectUseCase());
         ApplyDungeonEditorDeleteRoomUseCase deleteRoom =
                 new ApplyDungeonEditorDeleteRoomUseCase(
-                        runtime.workflow(),
-                        runtime.mainViewInterpreter(),
-                        runtime.effectUseCase());
-        ApplyDungeonEditorCreateWallUseCase createWall =
-                new ApplyDungeonEditorCreateWallUseCase(
-                        runtime.workflow(),
-                        runtime.mainViewInterpreter(),
-                        runtime.effectUseCase());
-        ApplyDungeonEditorDeleteWallUseCase deleteWall =
-                new ApplyDungeonEditorDeleteWallUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
                         runtime.effectUseCase());
@@ -108,9 +96,6 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
         PairedToolUseCases roomTools = paired(
                 workflowFor(paintRoom::press, paintRoom::drag, paintRoom::release, null),
                 workflowFor(deleteRoom::press, deleteRoom::drag, deleteRoom::release, null));
-        PairedToolUseCases wallTools = paired(
-                workflowFor(createWall::press, createWall::drag, createWall::release, createWall::hover),
-                workflowFor(deleteWall::press, deleteWall::drag, deleteWall::release, deleteWall::hover));
         PairedToolUseCases doorTools = paired(
                 workflowFor(createDoor::press, createDoor::drag, createDoor::release, createDoor::hover),
                 workflowFor(deleteDoor::press, deleteDoor::drag, deleteDoor::release, deleteDoor::hover));
@@ -134,7 +119,6 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
         return new ApplyDungeonEditorToolWorkflowUseCase(new ToolWorkflowUseCases(
                 selectionTools,
                 roomTools,
-                wallTools,
                 doorTools,
                 corridorTools,
                 straightStairTools,

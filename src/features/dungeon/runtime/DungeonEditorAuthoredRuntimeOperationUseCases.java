@@ -21,6 +21,7 @@ record DungeonEditorAuthoredRuntimeOperationUseCases(
         MapUseCases map,
         ProjectionUseCases projection,
         ApplyDungeonEditorToolWorkflowUseCase toolWorkflow,
+        DungeonEditorWallBoundaryDraftRuntimeOperation wallBoundaryDraft,
         ApplyDungeonEditorSelectionUseCase selection,
         MoveDungeonEditorHandleUseCase moveHandle,
         DetailUseCases detail

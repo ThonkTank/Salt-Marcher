@@ -43,6 +43,30 @@ final class DungeonEditorPointerInputTranslator {
                 mainViewInput(safeSample, wallSingleClickMode, selectedTool, safeDestination));
     }
 
+    static MainViewInput mainViewInput(
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        PointerSample safeSample = sample == null
+                ? new PointerSample(0.0, 0.0, false, false, PointerTarget.empty())
+                : sample;
+        TransitionDestination safeDestination = transitionDestination == null
+                ? TransitionDestination.empty()
+                : transitionDestination;
+        return new MainViewInput(
+                safeSample.sceneX(),
+                safeSample.sceneY(),
+                safeSample.primaryButtonDown(),
+                safeSample.secondaryButtonDown(),
+                wallSingleClickMode,
+                plainPointerTarget(safeSample.target()),
+                safeDestination.destinationType(),
+                safeDestination.targetMapId(),
+                safeDestination.targetTileId(),
+                safeDestination.targetTransitionId());
+    }
+
     private static MainViewInput mainViewInput(
             PointerSample sample,
             boolean wallSingleClickMode,

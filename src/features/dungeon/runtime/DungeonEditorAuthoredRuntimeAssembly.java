@@ -66,7 +66,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
     private DungeonEditorAuthoredRuntimeAssembly() {
     }
 
-    static DungeonEditorRuntimeOperations create(ServiceRegistry registry) {
+    static DungeonEditorAuthoredRuntimeOperations create(ServiceRegistry registry) {
         ServiceRegistry safeRegistry = Objects.requireNonNull(registry, "registry");
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         DungeonAuthoredPublishedStateRepository authoredPublishedState =
@@ -107,6 +107,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 mapUseCases(runtime),
                 projectionUseCases(runtime),
                 DungeonEditorAuthoredToolWorkflowUseCases.create(runtime, selection),
+                new DungeonEditorWallBoundaryDraftRuntimeOperation(runtime),
                 selection,
                 new MoveDungeonEditorHandleUseCase(runtime.workflow(), runtime.effectUseCase()),
                 detailUseCases(runtime)));
