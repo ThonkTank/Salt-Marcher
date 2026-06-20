@@ -33,6 +33,7 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
     private final ApplyDungeonEditorToolWorkflowUseCase applyToolWorkflowUseCase;
     private final DungeonEditorWallBoundaryDraftRuntimeOperation wallBoundaryDraftOperation;
     private final DungeonEditorCorridorDraftRuntimeOperation corridorDraftOperation;
+    private final DungeonEditorSelectionHandlePreviewRuntimeOperation selectionHandlePreviewOperation;
     private final ApplyDungeonEditorSelectionUseCase applySelectionUseCase;
     private final MoveDungeonEditorHandleUseCase moveHandleUseCase;
     private final SaveDungeonEditorRoomNarrationUseCase saveRoomNarrationUseCase;
@@ -61,6 +62,9 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
         corridorDraftOperation = Objects.requireNonNull(
                 safeUseCases.corridorDraft(),
                 "corridorDraftOperation");
+        selectionHandlePreviewOperation = Objects.requireNonNull(
+                safeUseCases.selectionHandlePreview(),
+                "selectionHandlePreviewOperation");
         applySelectionUseCase = Objects.requireNonNull(safeUseCases.selection(), "applySelectionUseCase");
         moveHandleUseCase = Objects.requireNonNull(safeUseCases.moveHandle(), "moveHandleUseCase");
         saveRoomNarrationUseCase = Objects.requireNonNull(
@@ -159,6 +163,15 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
             TransitionDestination transitionDestination
     ) {
         corridorDraftOperation.apply(action, corridorTool, sample, wallSingleClickMode, transitionDestination);
+    }
+
+    void applySelectionHandlePreview(
+            PointerAction action,
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        selectionHandlePreviewOperation.apply(action, sample, wallSingleClickMode, transitionDestination);
     }
 
     @Override

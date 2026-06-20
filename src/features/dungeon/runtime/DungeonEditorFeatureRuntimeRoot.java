@@ -115,6 +115,14 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                     transitionDestination);
             return;
         }
+        if (DungeonEditorTool.SELECT == DungeonEditorRuntimeEnumTranslator.editorTool(toolKey)) {
+            operationOwner.applySelectionHandlePreview(
+                    action,
+                    sample,
+                    wallSingleClickMode,
+                    transitionDestination);
+            return;
+        }
         operationOwner.applyPointer(action, toolKey, sample, wallSingleClickMode, transitionDestination);
     }
 

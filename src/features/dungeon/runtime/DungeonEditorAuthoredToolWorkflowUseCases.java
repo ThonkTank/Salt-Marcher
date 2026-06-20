@@ -10,7 +10,6 @@ import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteRoomUseC
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteStairUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteTransitionUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorPaintRoomUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSelectionUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.PairedToolUseCases;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.PointerAction;
@@ -22,10 +21,7 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
     private DungeonEditorAuthoredToolWorkflowUseCases() {
     }
 
-    static ApplyDungeonEditorToolWorkflowUseCase create(
-            DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime,
-            ApplyDungeonEditorSelectionUseCase selection
-    ) {
+    static ApplyDungeonEditorToolWorkflowUseCase create(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
         ApplyDungeonEditorPaintRoomUseCase paintRoom =
                 new ApplyDungeonEditorPaintRoomUseCase(
                         runtime.workflow(),
@@ -76,11 +72,6 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
                         runtime.workflow(),
                         runtime.authored().deleteFeatureMarkerUseCase(),
                         runtime.effectUseCase());
-        PointerToolUseCase selectionTools = workflowFor(
-                selection::press,
-                selection::drag,
-                selection::release,
-                selection::hover);
         PairedToolUseCases roomTools = paired(
                 workflowFor(paintRoom::press, paintRoom::drag, paintRoom::release, null),
                 workflowFor(deleteRoom::press, deleteRoom::drag, deleteRoom::release, null));
@@ -102,7 +93,6 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
         PointerToolUseCase encounterCreateTools = pressOnly(createFeatureMarker::pressEncounter);
         PointerToolUseCase featureDeleteTools = pressOnly(deleteFeatureMarker::press);
         return new ApplyDungeonEditorToolWorkflowUseCase(new ToolWorkflowUseCases(
-                selectionTools,
                 roomTools,
                 doorTools,
                 straightStairTools,

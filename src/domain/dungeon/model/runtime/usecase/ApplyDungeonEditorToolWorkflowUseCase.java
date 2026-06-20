@@ -14,9 +14,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
         Map<ToolInput, ToolWorkflow> registeredWorkflows = new EnumMap<>(ToolInput.class);
         ToolWorkflowUseCases safeUseCases = Objects.requireNonNull(useCases, "useCases");
         registeredWorkflows.put(
-                ToolInput.SELECT,
-                safeUseCases.selection().workflow());
-        registeredWorkflows.put(
                 ToolInput.ROOM_PAINT,
                         safeUseCases.room().primary().withoutHover());
         registeredWorkflows.put(
@@ -106,7 +103,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
     }
 
     public enum ToolInput {
-        SELECT,
         ROOM_PAINT,
         ROOM_DELETE,
         DOOR_CREATE,
@@ -172,7 +168,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
     }
 
     public record ToolWorkflowUseCases(
-            PointerToolUseCase selection,
             PairedToolUseCases room,
             PairedToolUseCases door,
             PointerToolUseCase stairCreate,
@@ -187,7 +182,6 @@ public final class ApplyDungeonEditorToolWorkflowUseCase {
             PointerToolUseCase featureDelete
     ) {
         public ToolWorkflowUseCases {
-            selection = Objects.requireNonNull(selection, "selection");
             room = Objects.requireNonNull(room, "room");
             door = Objects.requireNonNull(door, "door");
             stairCreate = Objects.requireNonNull(stairCreate, "stairCreate");
