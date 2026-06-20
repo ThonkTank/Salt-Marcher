@@ -36,6 +36,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
             new DungeonEditorStatePanelRoomNarrationDrafts();
     private final DungeonEditorStatePanelStairGeometryDrafts statePanelStairGeometryDrafts =
             new DungeonEditorStatePanelStairGeometryDrafts();
+    private DungeonEditorInlineLabelEditSession inlineLabelEditSession =
+            DungeonEditorInlineLabelEditSession.inactive();
     private final List<Consumer<DungeonEditorRuntimePublication>> subscribers = new CopyOnWriteArrayList<>();
 
     public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
@@ -66,6 +68,7 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     @Override
     public void selectMap(long mapIdValue) {
+        clearInlineLabelEditSession();
         operationOwner.selectMap(mapIdValue);
     }
 
@@ -92,12 +95,14 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     @Override
     public void setTool(String toolKey) {
         clearPointerSession();
+        clearInlineLabelEditSession();
         operationOwner.setTool(toolKey);
     }
 
     @Override
     public void cancelActivePreviewSession() {
         clearPointerSession();
+        clearInlineLabelEditSession();
         operationOwner.cancelActivePreviewSession();
     }
 
@@ -242,6 +247,42 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     }
 
     @Override
+    public void beginInlineLabelEdit(DungeonEditorInlineLabelEditSession session) {
+        DungeonEditorInlineLabelEditSession safeSession = session == null
+                ? DungeonEditorInlineLabelEditSession.inactive()
+                : session;
+        if (!safeSession.active() || safeSession.targetKind().isBlank() || safeSession.targetId() <= 0L) {
+            inlineLabelEditSession = DungeonEditorInlineLabelEditSession.inactive();
+        } else {
+            inlineLabelEditSession = safeSession;
+        }
+        publishCurrentToSubscribers();
+    }
+
+    @Override
+    public void updateInlineLabelEditDraft(String text) {
+        inlineLabelEditSession = inlineLabelEditSession.withDraftText(text);
+        publishCurrentToSubscribers();
+    }
+
+    @Override
+    public void cancelInlineLabelEdit() {
+        clearInlineLabelEditSession();
+        publishCurrentToSubscribers();
+    }
+
+    @Override
+    public void commitInlineLabelEdit(String text) {
+        DungeonEditorInlineLabelEditSession editSession = inlineLabelEditSession;
+        clearInlineLabelEditSession();
+        publishCurrentToSubscribers();
+        if (!editSession.active() || editSession.targetId() <= 0L || text == null || text.isBlank()) {
+            return;
+        }
+        saveLabelName(editSession.targetKind(), editSession.targetId(), text);
+    }
+
+    @Override
     public void saveTransitionLink(
             long sourceTransitionId,
             long targetMapId,
@@ -303,7 +344,12 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 prepareStatePanelCorridorPointDraft(controls, state),
                 prepareStatePanelTransitionDescriptionDraft(controls, state),
                 prepareStatePanelTransitionDestinationDraft(controls, state),
-                prepareStatePanelStairGeometryDraft(controls, state));
+                prepareStatePanelStairGeometryDraft(controls, state),
+                inlineLabelEditSession);
+    }
+
+    private void clearInlineLabelEditSession() {
+        inlineLabelEditSession = DungeonEditorInlineLabelEditSession.inactive();
     }
 
     private DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts prepareStatePanelRoomNarrationDrafts(

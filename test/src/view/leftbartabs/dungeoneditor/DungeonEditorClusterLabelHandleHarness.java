@@ -357,7 +357,35 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertTrue(inlineEditor.isVisible(), "DE-LABEL-008 normal double-click opens inline label editor");
         assertEquals("Cluster " + ids.clusterId(), inlineEditor.getText(),
                 "DE-LABEL-008 normal double-click edits the centered cluster label");
-        inlineEditor.setText("   Inline Cluster   ");
+        inlineEditor.selectRange(0, inlineEditor.getLength());
+        DungeonMapContentModel.CanvasState canvasBeforeDraft = binding.mapContentModel().canvasStateProperty().get();
+        typeInlineEditorTextSequentially(inlineEditor, "   Cancelled Cluster   ");
+        pressInlineEditorKey(inlineEditor, KeyCode.ESCAPE);
+        assertTrue(!inlineEditor.isVisible(), "DE-LABEL-008 Escape cancel hides inline cluster label editor");
+        assertTrue(!binding.mapContentModel().currentInlineLabelEditState().active(),
+                "DE-LABEL-008 Escape cancel clears runtime inline-label projection");
+        assertEquals("", runtime.database().clusterName(ids.clusterId()),
+                "DE-LABEL-008 cancelled inline draft does not persist");
+
+        doubleClickRenderedLabel(binding, clusterLabelCenter, false);
+        assertTrue(inlineEditor.isVisible(), "DE-LABEL-008 normal double-click reopens inline label editor after cancel");
+        assertEquals("Cluster " + ids.clusterId(), inlineEditor.getText(),
+                "DE-LABEL-008 cancel does not replay stale inline draft text");
+        inlineEditor.selectRange(0, inlineEditor.getLength());
+        canvasBeforeDraft = binding.mapContentModel().canvasStateProperty().get();
+        typeInlineEditorTextSequentially(inlineEditor, "   Inline Cluster   ");
+        assertTrue(canvasBeforeDraft == binding.mapContentModel().canvasStateProperty().get(),
+                "DE-LABEL-008 runtime draft publication does not remap or redraw the canvas per keystroke");
+        assertEquals("   Inline Cluster   ", inlineEditor.getText(),
+                "DE-LABEL-008 typed inline draft keeps editor text through runtime publication");
+        assertEquals(inlineEditor.getLength(), inlineEditor.getCaretPosition(),
+                "DE-LABEL-008 typed inline draft preserves caret through runtime publication");
+        assertEquals(inlineEditor.getLength(), inlineEditor.getAnchor(),
+                "DE-LABEL-008 typed inline draft preserves collapsed selection through runtime publication");
+        assertEquals("   Inline Cluster   ", binding.mapContentModel().currentInlineLabelEditState().text(),
+                "DE-LABEL-008 inline draft is projected through runtime publication before commit");
+        assertEquals("", runtime.database().clusterName(ids.clusterId()),
+                "DE-LABEL-008 unsaved inline draft does not persist before Enter commit");
         pressInlineEditorKey(inlineEditor, KeyCode.ENTER);
         assertTrue(!inlineEditor.isVisible(), "DE-LABEL-008 Enter commit hides inline cluster label editor");
         assertEquals("Inline Cluster", runtime.database().clusterName(ids.clusterId()),
@@ -400,7 +428,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-LABEL-009 reload renders inline room name");
 
         results.add("DE-LABEL-008 Ready: DungeonMapView normal double-click on the centered F1 cluster label "
-                + "opens inline editor and saves through shared label-name service");
+                + "opens inline editor, cancels runtime draft safely, and saves through shared label-name service");
         results.add("DE-LABEL-009 Ready: rendered room labels stay passive; room floor selection plus state panel "
                 + "renames the room and reload persistence remains covered");
     }

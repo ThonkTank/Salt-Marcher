@@ -3,8 +3,11 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.List;
 import java.util.Objects;
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
+import src.features.dungeon.runtime.DungeonEditorInlineLabelEditSession;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorRenderFrame;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
@@ -22,19 +25,7 @@ public final class DungeonEditorContributionModel {
     }
 
     public void applyFrame(DungeonEditorRenderFrame frame) {
-        DungeonEditorRenderFrame safeFrame = frame == null
-                ? new DungeonEditorRenderFrame(
-                        src.domain.dungeon.published.DungeonEditorControlsSnapshot.empty(""),
-                        src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot.empty(),
-                        DungeonEditorStateSnapshot.empty(""),
-                        DungeonEditorPreparedFrameFacts.empty(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null)
-                : frame;
+        DungeonEditorRenderFrame safeFrame = safeFrame(frame);
         DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
         interactionState = InteractionState.from(facts);
         controlsProjection.set(ControlsProjection.from(facts));
@@ -147,19 +138,7 @@ public final class DungeonEditorContributionModel {
     }
 
     private static DungeonEditorStateContentModel.StateProjectionContext stateContext(DungeonEditorRenderFrame frame) {
-        DungeonEditorRenderFrame safeFrame = frame == null
-                ? new DungeonEditorRenderFrame(
-                        src.domain.dungeon.published.DungeonEditorControlsSnapshot.empty(""),
-                        src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot.empty(),
-                        DungeonEditorStateSnapshot.empty(""),
-                        DungeonEditorPreparedFrameFacts.empty(),
-                        null,
-                        null,
-                        null,
-                        null,
-                        null,
-                        null)
-                : frame;
+        DungeonEditorRenderFrame safeFrame = safeFrame(frame);
         DungeonEditorPreparedFrameFacts safeFacts = safeFrame.preparedFacts();
         return new DungeonEditorStateContentModel.StateProjectionContext(
                 safeFacts.selectedMapIdValue(),
@@ -176,6 +155,25 @@ public final class DungeonEditorContributionModel {
                 safeFrame.statePanelTransitionDescriptionDraft(),
                 safeFrame.statePanelTransitionDestinationDraft(),
                 safeFrame.statePanelStairGeometryDraft());
+    }
+
+    private static DungeonEditorRenderFrame safeFrame(DungeonEditorRenderFrame frame) {
+        return frame == null ? emptyFrame() : frame;
+    }
+
+    private static DungeonEditorRenderFrame emptyFrame() {
+        return new DungeonEditorRenderFrame(
+                DungeonEditorControlsSnapshot.empty(""),
+                DungeonEditorMapSurfaceSnapshot.empty(),
+                DungeonEditorStateSnapshot.empty(""),
+                DungeonEditorPreparedFrameFacts.empty(),
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                DungeonEditorInlineLabelEditSession.inactive());
     }
 
     record ControlsProjection(

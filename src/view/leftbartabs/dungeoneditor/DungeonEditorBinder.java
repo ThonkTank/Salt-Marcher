@@ -7,6 +7,7 @@ import shell.api.ShellBinding;
 import shell.api.ShellControls;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.features.dungeon.runtime.DungeonEditorInlineLabelEditSession;
 import src.features.dungeon.runtime.DungeonEditorRenderFrame;
 import src.features.dungeon.shell.DungeonEditorFeatureShellBinding;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
@@ -69,7 +70,32 @@ final class DungeonEditorBinder {
             DungeonMapContentModel mapContentModel
     ) {
         contributionModel.applyFrame(frame);
+        mapContentModel.applyInlineLabelEditProjection(inlineLabelProjection(frame.inlineLabelEditSession()));
         mapContentModel.applyEditorSurfaceSnapshot(frame.mapSurface());
+    }
+
+    private static DungeonMapContentModel.InlineLabelEditProjection inlineLabelProjection(
+            DungeonEditorInlineLabelEditSession session
+    ) {
+        DungeonEditorInlineLabelEditSession safeSession = session == null
+                ? DungeonEditorInlineLabelEditSession.inactive()
+                : session;
+        if (!safeSession.active()) {
+            return DungeonMapContentModel.InlineLabelEditProjection.inactive();
+        }
+        return new DungeonMapContentModel.InlineLabelEditProjection(
+                true,
+                safeSession.labelKind(),
+                safeSession.ownerId(),
+                safeSession.clusterId(),
+                safeSession.topologyKind(),
+                safeSession.topologyId(),
+                safeSession.draftText(),
+                safeSession.centerX(),
+                safeSession.centerY(),
+                safeSession.width(),
+                safeSession.height(),
+                safeSession.rotationDegrees());
     }
 
     private record Binding(

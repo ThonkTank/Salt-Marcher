@@ -63,6 +63,8 @@ public final class DungeonMapContentModel {
     private final DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel =
             new DungeonMapRoomLabelPlacementContentPartModel();
     private DungeonMapRenderState renderState;
+    private DungeonEditorMapSurfaceSnapshot currentEditorSurfaceSnapshot = DungeonEditorMapSurfaceSnapshot.empty();
+    private boolean editorSurfaceSnapshotCurrent;
     private PointerTarget currentHoverTarget = PointerTarget.empty();
     private Map<String, PointerTarget> pointerTargets = Map.of();
 
@@ -206,45 +208,43 @@ public final class DungeonMapContentModel {
         return resolveLabelPointerTarget(sceneX, sceneY, CLUSTER_LABEL_KIND);
     }
 
-    public void beginInlineLabelEdit(PointerTarget target) {
+    public Optional<InlineLabelEditCandidate> inlineLabelEditCandidate(PointerTarget target) {
         PointerTarget safeTarget = target == null ? PointerTarget.empty() : target;
         if (safeTarget.targetKind() != PointerTargetKind.LABEL) {
-            clearInlineLabelEdit();
-            return;
+            return Optional.empty();
         }
-        labelForTarget(safeTarget)
-                .map(label -> InlineLabelEditState.active(
-                        safeTarget,
-                        label.label(),
-                        label.q(),
-                        label.r(),
-                        SceneGeometry.Label.labelWidthScene(label),
-                        SceneGeometry.Label.labelHeightScene(label),
-                        label.rotationDegrees()))
-                .ifPresentOrElse(inlineLabelEditState::set, this::clearInlineLabelEdit);
+        return labelForTarget(safeTarget).map(label -> new InlineLabelEditCandidate(
+                safeTarget,
+                label.label(),
+                label.q(),
+                label.r(),
+                SceneGeometry.Label.labelWidthScene(label),
+                SceneGeometry.Label.labelHeightScene(label),
+                label.rotationDegrees()));
     }
 
-    public void updateInlineLabelEditText(String text) {
-        InlineLabelEditState state = inlineLabelEditState.get();
-        if (state == null || !state.active()) {
-            return;
-        }
-        inlineLabelEditState.set(state.withText(text));
-    }
-
-    public void clearInlineLabelEdit() {
-        inlineLabelEditState.set(InlineLabelEditState.inactive());
+    public void applyInlineLabelEditProjection(InlineLabelEditProjection projection) {
+        inlineLabelEditState.set(InlineLabelEditState.fromProjection(projection));
     }
 
     public void applyEditorSurfaceSnapshot(DungeonEditorMapSurfaceSnapshot editorSnapshot) {
+        DungeonEditorMapSurfaceSnapshot safeSnapshot = editorSnapshot == null
+                ? DungeonEditorMapSurfaceSnapshot.empty()
+                : editorSnapshot;
+        if (editorSurfaceSnapshotCurrent && safeSnapshot.equals(currentEditorSurfaceSnapshot)) {
+            return;
+        }
+        currentEditorSurfaceSnapshot = safeSnapshot;
+        editorSurfaceSnapshotCurrent = true;
         showRenderState(DungeonMapSnapshotMapper.mapEditorSurface(
                 placeholderTitle,
-                editorSnapshot,
+                safeSnapshot,
                 roomLabelPlacementContentPartModel,
                 previewDiffContentPartModel));
     }
 
     public void applyTravelSnapshot(TravelDungeonSnapshot travelSnapshot) {
+        editorSurfaceSnapshotCurrent = false;
         showRenderState(DungeonMapSnapshotMapper.mapTravel(
                 placeholderTitle,
                 travelSnapshot,
@@ -253,7 +253,6 @@ public final class DungeonMapContentModel {
 
     private void showRenderState(DungeonMapRenderState nextRenderState) {
         renderState = nextRenderState == null ? renderState : nextRenderState;
-        clearInlineLabelEdit();
         pointerTargets = PointerTargetIndex.from(renderState);
         currentHoverTarget = retainedHoverTarget(currentHoverTarget, pointerTargets);
         showRenderScene(SCENE_PROJECTOR.toScene(renderState, currentHoverTarget));
@@ -434,17 +433,91 @@ public final class DungeonMapContentModel {
             return new InlineLabelEditState(true, target, text, centerX, centerY, width, height, rotationDegrees);
         }
 
-        InlineLabelEditState withText(String nextText) {
-            return new InlineLabelEditState(
-                    active,
-                    target,
-                    nextText,
-                    centerX,
-                    centerY,
-                    width,
-                    height,
-                    rotationDegrees);
+        static InlineLabelEditState fromProjection(InlineLabelEditProjection projection) {
+            InlineLabelEditProjection safeProjection = projection == null
+                    ? InlineLabelEditProjection.inactive()
+                    : projection;
+            if (!safeProjection.active()) {
+                return inactive();
+            }
+            return active(
+                    pointerTargetFromProjection(safeProjection),
+                    safeProjection.text(),
+                    safeProjection.centerX(),
+                    safeProjection.centerY(),
+                    safeProjection.width(),
+                    safeProjection.height(),
+                    safeProjection.rotationDegrees());
         }
+    }
+
+    public record InlineLabelEditProjection(
+            boolean active,
+            String labelKind,
+            long ownerId,
+            long clusterId,
+            String topologyKind,
+            long topologyId,
+            String text,
+            double centerX,
+            double centerY,
+            double width,
+            double height,
+            double rotationDegrees
+    ) {
+        public InlineLabelEditProjection {
+            labelKind = normalizeKind(labelKind, EMPTY_LABEL_KIND);
+            ownerId = Math.max(0L, ownerId);
+            clusterId = Math.max(0L, clusterId);
+            topologyKind = normalizeKind(topologyKind, EMPTY_KIND);
+            topologyId = Math.max(0L, topologyId);
+            text = text == null ? "" : text;
+            width = Math.max(1.0, width);
+            height = Math.max(0.6, height);
+        }
+
+        public static InlineLabelEditProjection inactive() {
+            return new InlineLabelEditProjection(
+                    false,
+                    EMPTY_LABEL_KIND,
+                    0L,
+                    0L,
+                    EMPTY_KIND,
+                    0L,
+                    "",
+                    0.0,
+                    0.0,
+                    1.0,
+                    0.6,
+                    0.0);
+        }
+    }
+
+    public record InlineLabelEditCandidate(
+            PointerTarget target,
+            String text,
+            double centerX,
+            double centerY,
+            double width,
+            double height,
+            double rotationDegrees
+    ) {
+        public InlineLabelEditCandidate {
+            target = target == null ? PointerTarget.empty() : target;
+            text = text == null ? "" : text;
+            width = Math.max(1.0, width);
+            height = Math.max(0.6, height);
+        }
+    }
+
+    private static PointerTarget pointerTargetFromProjection(InlineLabelEditProjection projection) {
+        return PointerTarget.label(
+                projection.labelKind(),
+                projection.ownerId(),
+                projection.clusterId(),
+                new DungeonMapRenderState.TopologyRef(
+                        projection.topologyKind(),
+                        projection.topologyId()));
     }
 
     record InlineLabelEditorPresentation(

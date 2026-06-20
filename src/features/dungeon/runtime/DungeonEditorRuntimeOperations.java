@@ -82,6 +82,22 @@ public interface DungeonEditorRuntimeOperations {
 
     void saveLabelName(String targetKind, long targetId, String name);
 
+    default void beginInlineLabelEdit(DungeonEditorInlineLabelEditSession session) {
+        // Only feature-runtime roots own inline-label edit session state.
+    }
+
+    default void updateInlineLabelEditDraft(String text) {
+        // Only feature-runtime roots own inline-label edit session state.
+    }
+
+    default void cancelInlineLabelEdit() {
+        // Only feature-runtime roots own inline-label edit session state.
+    }
+
+    default void commitInlineLabelEdit(String text) {
+        // Only feature-runtime roots own inline-label edit session state.
+    }
+
     void saveTransitionLink(
             long sourceTransitionId,
             long targetMapId,

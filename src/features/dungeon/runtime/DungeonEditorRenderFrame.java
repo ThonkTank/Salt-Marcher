@@ -15,7 +15,8 @@ public record DungeonEditorRenderFrame(
         DungeonEditorStatePanelCorridorPointDrafts.Draft statePanelCorridorPointDraft,
         DungeonEditorStatePanelTransitionDescriptionDrafts.Draft statePanelTransitionDescriptionDraft,
         DungeonEditorStatePanelTransitionDestinationDrafts.Draft statePanelTransitionDestinationDraft,
-        DungeonEditorStatePanelStairGeometryDrafts.Draft statePanelStairGeometryDraft
+        DungeonEditorStatePanelStairGeometryDrafts.Draft statePanelStairGeometryDraft,
+        DungeonEditorInlineLabelEditSession inlineLabelEditSession
 ) {
     public DungeonEditorRenderFrame {
         controls = Objects.requireNonNull(controls, "controls");
@@ -40,5 +41,8 @@ public record DungeonEditorRenderFrame(
         statePanelStairGeometryDraft = statePanelStairGeometryDraft == null
                 ? DungeonEditorStatePanelStairGeometryDrafts.Draft.empty()
                 : statePanelStairGeometryDraft;
+        inlineLabelEditSession = inlineLabelEditSession == null
+                ? DungeonEditorInlineLabelEditSession.inactive()
+                : inlineLabelEditSession;
     }
 }
