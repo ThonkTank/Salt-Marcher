@@ -4,9 +4,14 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import shell.api.ServiceRegistry;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
+import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorStateModel;
 import src.domain.dungeon.published.DungeonEditorTool;
+import src.domain.dungeon.published.DungeonEditorViewMode;
+import src.domain.dungeon.published.DungeonMapId;
+import src.domain.dungeon.published.DungeonMapSummary;
+import src.domain.dungeon.published.DungeonOverlaySettings;
 
 public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRuntimeOperations {
     private final DungeonEditorControlsModel controlsModel;
@@ -206,10 +211,85 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     }
 
     private DungeonEditorRenderFrame currentFrame() {
+        DungeonEditorControlsSnapshot controls = controlsModel.current();
         return new DungeonEditorRenderFrame(
-                controlsModel.current(),
+                controls,
                 mapSurfaceModel.current(),
-                stateModel.current());
+                stateModel.current(),
+                preparedFacts(controls));
+    }
+
+    private static DungeonEditorPreparedFrameFacts preparedFacts(DungeonEditorControlsSnapshot controlsSnapshot) {
+        DungeonEditorControlsSnapshot safeControls = controlsSnapshot == null
+                ? DungeonEditorControlsSnapshot.empty("")
+                : controlsSnapshot;
+        var mapEntries = safeControls.maps().stream()
+                .map(DungeonEditorFeatureRuntimeRoot::toMapEntry)
+                .toList();
+        DungeonMapId selectedMapId = safeControls.selectedMapId();
+        var reachableLevels = safeControls.reachableLevels();
+        int projectionLevel = clampProjectionLevel(reachableLevels, safeControls.projectionLevel());
+        DungeonOverlaySettings overlaySettings = safeControls.overlaySettings() == null
+                ? DungeonOverlaySettings.defaults()
+                : safeControls.overlaySettings();
+        DungeonEditorViewMode viewMode = safeControls.viewMode() == null
+                ? DungeonEditorViewMode.GRID
+                : safeControls.viewMode();
+        DungeonEditorTool selectedTool = safeControls.selectedTool() == null
+                ? DungeonEditorTool.SELECT
+                : safeControls.selectedTool();
+        return new DungeonEditorPreparedFrameFacts(
+                mapEntries,
+                keyOf(selectedMapId),
+                selectedMapId == null ? 0L : selectedMapId.value(),
+                reachableLevels,
+                false,
+                statusTextFor(safeControls, mapEntries),
+                viewMode.name(),
+                DungeonEditorPreparedFrameFacts.labelForViewMode(viewMode.name()),
+                overlaySettings,
+                DungeonEditorPreparedFrameFacts.OverlayFrame.from(overlaySettings),
+                projectionLevel,
+                selectedTool.name(),
+                DungeonEditorToolFrameLabels.labelFor(selectedTool));
+    }
+
+    private static DungeonEditorPreparedFrameFacts.MapEntry toMapEntry(DungeonMapSummary summary) {
+        DungeonMapSummary safeSummary = summary == null
+                ? new DungeonMapSummary(new DungeonMapId(1L), "Dungeon Map", 0L)
+                : summary;
+        return new DungeonEditorPreparedFrameFacts.MapEntry(
+                keyOf(safeSummary.mapId()),
+                safeSummary.mapId() == null ? 0L : safeSummary.mapId().value(),
+                safeSummary.mapName(),
+                safeSummary.revision());
+    }
+
+    private static String keyOf(DungeonMapId mapId) {
+        return mapId == null ? "" : Long.toString(mapId.value());
+    }
+
+    private static int clampProjectionLevel(java.util.List<Integer> reachableLevels, int projectionLevel) {
+        if (reachableLevels == null || reachableLevels.isEmpty()) {
+            return Math.max(0, projectionLevel);
+        }
+        return Math.max(reachableLevels.getFirst(), Math.min(reachableLevels.getLast(), projectionLevel));
+    }
+
+    private static String statusTextFor(
+            DungeonEditorControlsSnapshot controls,
+            java.util.List<DungeonEditorPreparedFrameFacts.MapEntry> mapEntries
+    ) {
+        if (controls.surfaceLoaded()) {
+            return controls.statusText();
+        }
+        if (mapEntries.isEmpty()) {
+            return "Keine Dungeon-Maps vorhanden.";
+        }
+        if (controls.selectedMapId() == null) {
+            return "Kein Dungeon ausgewählt.";
+        }
+        return controls.statusText();
     }
 
 }

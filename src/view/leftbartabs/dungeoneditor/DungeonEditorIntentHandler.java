@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.BoundaryTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.ExitNarration;
@@ -849,7 +850,7 @@ final class DungeonEditorIntentHandler {
     }
 
     private void handleOverlayInput(DungeonEditorControlsViewInputEvent.OverlaySnapshot overlay) {
-        DungeonEditorContributionModel.OverlayProjection currentOverlay =
+        DungeonEditorPreparedFrameFacts.OverlayFrame currentOverlay =
                 presentationModel.currentInteractionState().currentOverlayProjection();
         Optional<List<Integer>> parsedSelectedLevels = parseLevels(overlay.selectedLevelsText());
         if (parsedSelectedLevels.isEmpty()) {

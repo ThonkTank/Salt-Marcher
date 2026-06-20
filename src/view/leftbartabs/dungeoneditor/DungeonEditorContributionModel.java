@@ -2,16 +2,11 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import javafx.beans.property.ReadOnlyObjectWrapper;
-import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonMapId;
-import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
-import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
-import src.domain.dungeon.published.DungeonEditorTool;
-import src.domain.dungeon.published.DungeonEditorViewMode;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
+import src.features.dungeon.runtime.DungeonEditorRenderFrame;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 
 public final class DungeonEditorContributionModel {
@@ -20,23 +15,24 @@ public final class DungeonEditorContributionModel {
             new ReadOnlyObjectWrapper<>(ControlsProjection.initial());
     private final DungeonEditorStateContentModel stateContentModel;
 
-    private DungeonEditorControlsSnapshot controlsSnapshot = DungeonEditorControlsSnapshot.empty("");
-    private DungeonEditorStateSnapshot stateSnapshot = DungeonEditorStateSnapshot.empty("");
     private InteractionState interactionState = InteractionState.empty();
 
     DungeonEditorContributionModel(DungeonEditorStateContentModel stateContentModel) {
         this.stateContentModel = Objects.requireNonNull(stateContentModel, "stateContentModel");
-        refreshProjection();
     }
 
-    public void applyControls(DungeonEditorControlsSnapshot controlsSnapshot) {
-        this.controlsSnapshot = controlsSnapshot == null ? DungeonEditorControlsSnapshot.empty("") : controlsSnapshot;
-        refreshProjection();
-    }
-
-    public void applyState(DungeonEditorStateSnapshot stateSnapshot) {
-        this.stateSnapshot = stateSnapshot == null ? DungeonEditorStateSnapshot.empty("") : stateSnapshot;
-        refreshProjection();
+    public void applyFrame(DungeonEditorRenderFrame frame) {
+        DungeonEditorRenderFrame safeFrame = frame == null
+                ? new DungeonEditorRenderFrame(
+                        src.domain.dungeon.published.DungeonEditorControlsSnapshot.empty(""),
+                        src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot.empty(),
+                        DungeonEditorStateSnapshot.empty(""),
+                        DungeonEditorPreparedFrameFacts.empty())
+                : frame;
+        DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
+        interactionState = InteractionState.from(facts);
+        controlsProjection.set(ControlsProjection.from(facts));
+        stateContentModel.apply(safeFrame.state(), stateContext(facts));
     }
 
     InteractionState currentInteractionState() {
@@ -144,141 +140,19 @@ public final class DungeonEditorContributionModel {
         catalogContentModel.showValidationError(safeEditor.errorText());
     }
 
-    private void refreshProjection() {
-        var bundle = ProjectionFactory.create(controlsSnapshot);
-        interactionState = bundle.interactionState();
-        controlsProjection.set(bundle.controlsProjection());
-        stateContentModel.apply(stateSnapshot, bundle.stateProjectionContext());
-    }
-
-    private static final class ProjectionFactory {
-        private static ProjectionBundle create(DungeonEditorControlsSnapshot controlsSnapshot) {
-            ProjectionSource safeSource = ProjectionSource.from(controlsSnapshot);
-            List<MapListEntry> mapEntries = safeSource.maps().stream().map(MapListEntry::from).toList();
-            List<Integer> reachableLevels = safeSource.reachableLevels();
-            int clampedProjectionLevel = clampProjectionLevel(reachableLevels, safeSource.projectionLevel());
-            OverlayProjection overlayProjection = OverlayProjection.from(safeSource.overlaySettings());
-            String selectedMapKey = MapSelection.keyOf(safeSource.selectedMapId());
-            String viewModeLabel = DungeonEditorControlsContentModel.labelOf(safeSource.viewMode());
-            String selectedToolLabel = DungeonEditorControlsContentModel.labelOf(safeSource.selectedTool());
-            String statusText = statusTextFor(safeSource, mapEntries);
-            DungeonOverlaySettings overlaySettings = safeSource.overlaySettings() == null
-                    ? DungeonOverlaySettings.defaults()
-                    : safeSource.overlaySettings();
-            long selectedMapIdValue = safeSource.selectedMapId() == null
-                    ? 0L
-                    : safeSource.selectedMapId().value();
-            ControlsProjection controls = new ControlsProjection(
-                    mapEntries,
-                    selectedMapKey,
-                    reachableLevels,
-                    false,
-                    statusText,
-                    viewModeLabel,
-                    overlaySettings,
-                    clampedProjectionLevel,
-                    selectedToolLabel);
-            DungeonEditorStateContentModel.StateProjectionContext stateContext =
-                    new DungeonEditorStateContentModel.StateProjectionContext(
-                            selectedMapIdValue,
-                            statusText,
-                            false,
-                            selectedToolLabel,
-                            safeSource.selectedTool().name(),
-                            viewModeLabel,
-                            clampedProjectionLevel,
-                            overlayProjection.overlayLabel());
-            return new ProjectionBundle(
-                    controls,
-                    stateContext,
-                    new InteractionState(
-                            selectedMapIdValue,
-                            viewModeLabel,
-                            selectedToolLabel,
-                            safeSource.selectedTool(),
-                            clampedProjectionLevel,
-                            overlayProjection));
-        }
-
-        private static int clampProjectionLevel(List<Integer> reachableLevels, int projectionLevel) {
-            if (reachableLevels == null || reachableLevels.isEmpty()) {
-                return Math.max(0, projectionLevel);
-            }
-            return Math.max(reachableLevels.getFirst(), Math.min(reachableLevels.getLast(), projectionLevel));
-        }
-
-        private static String statusTextFor(
-                ProjectionSource source,
-                List<MapListEntry> mapEntries
-        ) {
-            if (source.surfaceLoaded()) {
-                return source.statusText();
-            }
-            if (mapEntries.isEmpty()) {
-                return "Keine Dungeon-Maps vorhanden.";
-            }
-            if (source.selectedMapId() == null) {
-                return "Kein Dungeon ausgewählt.";
-            }
-            return source.statusText();
-        }
-
-    }
-
-    private record ProjectionBundle(
-            ControlsProjection controlsProjection,
-            DungeonEditorStateContentModel.StateProjectionContext stateProjectionContext,
-            InteractionState interactionState
+    private static DungeonEditorStateContentModel.StateProjectionContext stateContext(
+            DungeonEditorPreparedFrameFacts facts
     ) {
-    }
-
-    private record ProjectionSource(
-            List<MapSelection> maps,
-            @Nullable DungeonMapId selectedMapId,
-            boolean surfaceLoaded,
-            String statusText,
-            DungeonEditorViewMode viewMode,
-            DungeonEditorTool selectedTool,
-            DungeonOverlaySettings overlaySettings,
-            int projectionLevel,
-            List<Integer> reachableLevels
-    ) {
-        ProjectionSource {
-            maps = maps == null ? List.of() : List.copyOf(maps);
-            reachableLevels = reachableLevels == null ? List.of(0) : List.copyOf(reachableLevels);
-            statusText = statusText == null ? "" : statusText;
-            viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
-            selectedTool = selectedTool == null ? DungeonEditorTool.SELECT : selectedTool;
-            overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
-            projectionLevel = Math.max(0, projectionLevel);
-        }
-
-        private static ProjectionSource from(@Nullable DungeonEditorControlsSnapshot controlsSnapshot) {
-            DungeonEditorControlsSnapshot safeControls = controlsSnapshot == null
-                    ? DungeonEditorControlsSnapshot.empty("")
-                    : controlsSnapshot;
-            return new ProjectionSource(
-                    safeControls.maps().stream().map(ProjectionSource::toMapSelection).toList(),
-                    safeControls.selectedMapId(),
-                    safeControls.surfaceLoaded(),
-                    safeControls.statusText(),
-                    safeControls.viewMode(),
-                    safeControls.selectedTool(),
-                    safeControls.overlaySettings(),
-                    safeControls.projectionLevel(),
-                    safeControls.reachableLevels());
-        }
-
-        private static MapSelection toMapSelection(@Nullable DungeonMapSummary summary) {
-            DungeonMapSummary safeSummary = summary == null
-                    ? new DungeonMapSummary(new DungeonMapId(1L), defaultMapName(), 0L)
-                    : summary;
-            return new MapSelection(
-                    MapSelection.keyOf(safeSummary.mapId()),
-                    safeSummary.mapId(),
-                    safeSummary.mapName(),
-                    safeSummary.revision());
-        }
+        DungeonEditorPreparedFrameFacts safeFacts = facts == null ? DungeonEditorPreparedFrameFacts.empty() : facts;
+        return new DungeonEditorStateContentModel.StateProjectionContext(
+                safeFacts.selectedMapIdValue(),
+                safeFacts.statusText(),
+                safeFacts.busy(),
+                safeFacts.selectedToolLabel(),
+                safeFacts.selectedToolKey(),
+                safeFacts.viewModeLabel(),
+                safeFacts.projectionLevel(),
+                safeFacts.overlay().overlayLabel());
     }
 
     record ControlsProjection(
@@ -317,15 +191,36 @@ public final class DungeonEditorContributionModel {
                     0,
                     DungeonEditorControlsContentModel.defaultToolLabel());
         }
+
+        static ControlsProjection from(DungeonEditorPreparedFrameFacts facts) {
+            DungeonEditorPreparedFrameFacts safeFacts =
+                    facts == null ? DungeonEditorPreparedFrameFacts.empty() : facts;
+            return new ControlsProjection(
+                    safeFacts.mapEntries().stream()
+                            .map(entry -> new MapListEntry(
+                                    entry.key(),
+                                    entry.mapIdValue(),
+                                    entry.mapName(),
+                                    entry.revision()))
+                            .toList(),
+                    safeFacts.selectedMapKey(),
+                    safeFacts.reachableLevels(),
+                    safeFacts.busy(),
+                    safeFacts.statusText(),
+                    safeFacts.viewModeLabel(),
+                    safeFacts.overlaySettings(),
+                    safeFacts.projectionLevel(),
+                    safeFacts.selectedToolLabel());
+        }
     }
 
     record InteractionState(
             long currentSelectedMapIdValue,
             String currentViewModeKey,
             String currentSelectedToolLabel,
-            DungeonEditorTool currentSelectedTool,
+            String currentSelectedToolKey,
             int currentProjectionLevel,
-            OverlayProjection currentOverlayProjection
+            DungeonEditorPreparedFrameFacts.OverlayFrame currentOverlayProjection
     ) {
         InteractionState {
             currentSelectedMapIdValue = Math.max(0L, currentSelectedMapIdValue);
@@ -333,12 +228,12 @@ public final class DungeonEditorContributionModel {
             currentSelectedToolLabel = currentSelectedToolLabel == null
                     ? DungeonEditorControlsContentModel.defaultToolLabel()
                     : currentSelectedToolLabel;
-            currentSelectedTool = currentSelectedTool == null
-                    ? DungeonEditorTool.SELECT
-                    : currentSelectedTool;
+            currentSelectedToolKey = currentSelectedToolKey == null || currentSelectedToolKey.isBlank()
+                    ? "SELECT"
+                    : currentSelectedToolKey;
             currentProjectionLevel = Math.max(0, currentProjectionLevel);
             currentOverlayProjection = currentOverlayProjection == null
-                    ? OverlayProjection.from(DungeonOverlaySettings.defaults())
+                    ? DungeonEditorPreparedFrameFacts.OverlayFrame.from(DungeonOverlaySettings.defaults())
                     : currentOverlayProjection;
         }
 
@@ -347,30 +242,21 @@ public final class DungeonEditorContributionModel {
                     0L,
                     DungeonEditorControlsContentModel.gridViewLabel(),
                     DungeonEditorControlsContentModel.defaultToolLabel(),
-                    DungeonEditorTool.SELECT,
+                    "SELECT",
                     0,
-                    OverlayProjection.from(DungeonOverlaySettings.defaults()));
+                    DungeonEditorPreparedFrameFacts.OverlayFrame.from(DungeonOverlaySettings.defaults()));
         }
 
-        String currentSelectedToolKey() {
-            return currentSelectedTool.name();
-        }
-    }
-
-    record MapSelection(
-            String key,
-            DungeonMapId mapId,
-            String mapName,
-            long revision
-    ) {
-        MapSelection {
-            key = key == null ? "" : key;
-            mapName = mapName == null || mapName.isBlank() ? defaultMapName() : mapName;
-            revision = Math.max(0L, revision);
-        }
-
-        static String keyOf(@Nullable DungeonMapId mapId) {
-            return mapId == null ? "" : Long.toString(mapId.value());
+        static InteractionState from(DungeonEditorPreparedFrameFacts facts) {
+            DungeonEditorPreparedFrameFacts safeFacts =
+                    facts == null ? DungeonEditorPreparedFrameFacts.empty() : facts;
+            return new InteractionState(
+                    safeFacts.selectedMapIdValue(),
+                    safeFacts.viewModeLabel(),
+                    safeFacts.selectedToolLabel(),
+                    safeFacts.selectedToolKey(),
+                    safeFacts.projectionLevel(),
+                    safeFacts.overlay());
         }
     }
 
@@ -387,59 +273,10 @@ public final class DungeonEditorContributionModel {
             revision = Math.max(0L, revision);
         }
 
-        static MapListEntry from(MapSelection selection) {
-            MapSelection safeSelection = selection == null
-                    ? new MapSelection("", null, defaultMapName(), 0L)
-                    : selection;
-            return new MapListEntry(
-                    safeSelection.key(),
-                    safeSelection.mapId() == null ? 0L : safeSelection.mapId().value(),
-                    safeSelection.mapName(),
-                    safeSelection.revision());
-        }
-
     }
 
     private static String defaultMapName() {
         return "Dungeon Map";
-    }
-
-    record OverlayProjection(
-            String modeKey,
-            int levelRange,
-            double opacity,
-            List<Integer> selectedLevels,
-            String selectedLevelsText
-    ) {
-        OverlayProjection {
-            modeKey = modeKey == null || modeKey.isBlank() ? "OFF" : modeKey;
-            levelRange = Math.max(0, levelRange);
-            opacity = Math.max(0.0, Math.min(1.0, opacity));
-            selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
-            selectedLevelsText = selectedLevelsText == null ? "" : selectedLevelsText.strip();
-        }
-
-        static OverlayProjection from(DungeonOverlaySettings overlaySettings) {
-            DungeonOverlaySettings safeOverlay =
-                    overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
-            List<Integer> selectedLevels = safeOverlay.selectedLevels();
-            return new OverlayProjection(
-                    safeOverlay.modeKey(),
-                    safeOverlay.levelRange(),
-                    safeOverlay.opacity(),
-                    selectedLevels,
-                    selectedLevels == null || selectedLevels.isEmpty()
-                            ? ""
-                            : selectedLevels.stream().map(String::valueOf).collect(Collectors.joining(", ")));
-        }
-
-        String overlayLabel() {
-            return switch (modeKey) {
-                case "NEARBY" -> "Nahe Ebenen";
-                case "SELECTED" -> "Ausgewählte Ebenen";
-                default -> "Overlays aus";
-            };
-        }
     }
 
 }

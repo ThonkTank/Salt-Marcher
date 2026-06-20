@@ -7,9 +7,7 @@ import shell.api.ShellBinding;
 import shell.api.ShellControls;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
-import src.domain.dungeon.published.DungeonEditorStateSnapshot;
+import src.features.dungeon.runtime.DungeonEditorRenderFrame;
 import src.features.dungeon.shell.DungeonEditorFeatureShellBinding;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
@@ -54,31 +52,24 @@ final class DungeonEditorBinder {
         state.onViewInputEvent(intentHandler::consume);
         contributionModel.bindControlsContentModel(controlsContentModel);
         contributionModel.bindMapCatalogContentModel(controlsContentModel, mapCatalogContentModel);
-        featureShell.subscribe((controlsSnapshot, mapSurfaceSnapshot, stateSnapshot) -> applyFrame(
-                controlsSnapshot,
-                mapSurfaceSnapshot,
-                stateSnapshot,
+        featureShell.subscribe(frame -> applyFrame(
+                frame,
                 contributionModel,
                 mapContentModel));
-        featureShell.publishCurrent((controlsSnapshot, mapSurfaceSnapshot, stateSnapshot) -> applyFrame(
-                controlsSnapshot,
-                mapSurfaceSnapshot,
-                stateSnapshot,
+        featureShell.publishCurrent(frame -> applyFrame(
+                frame,
                 contributionModel,
                 mapContentModel));
         return new Binding(ShellControls.stack(mapCatalog, controls), main, state);
     }
 
     private static void applyFrame(
-            DungeonEditorControlsSnapshot controlsSnapshot,
-            DungeonEditorMapSurfaceSnapshot mapSurfaceSnapshot,
-            DungeonEditorStateSnapshot stateSnapshot,
+            DungeonEditorRenderFrame frame,
             DungeonEditorContributionModel contributionModel,
             DungeonMapContentModel mapContentModel
     ) {
-        contributionModel.applyControls(controlsSnapshot);
-        mapContentModel.applyEditorSurfaceSnapshot(mapSurfaceSnapshot);
-        contributionModel.applyState(stateSnapshot);
+        contributionModel.applyFrame(frame);
+        mapContentModel.applyEditorSurfaceSnapshot(frame.mapSurface());
     }
 
     private record Binding(
