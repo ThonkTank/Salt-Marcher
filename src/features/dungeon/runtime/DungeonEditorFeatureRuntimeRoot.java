@@ -34,6 +34,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
             new DungeonEditorStatePanelTransitionDestinationDrafts();
     private final DungeonEditorStatePanelRoomNarrationDrafts statePanelRoomNarrationDrafts =
             new DungeonEditorStatePanelRoomNarrationDrafts();
+    private final DungeonEditorStatePanelStairGeometryDrafts statePanelStairGeometryDrafts =
+            new DungeonEditorStatePanelStairGeometryDrafts();
     private final List<Consumer<DungeonEditorRuntimePublication>> subscribers = new CopyOnWriteArrayList<>();
 
     public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
@@ -228,6 +230,12 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     }
 
     @Override
+    public void updateStatePanelStairGeometryDraft(StairGeometryDraftInput input) {
+        statePanelStairGeometryDrafts.update(currentSelectedMapIdValue(), input);
+        publishCurrentToSubscribers();
+    }
+
+    @Override
     public void saveLabelName(String targetKind, long targetId, String name) {
         statePanelLabelNameDrafts.clear(currentSelectedMapIdValue(), targetKind, targetId);
         operationOwner.saveLabelName(targetKind, targetId, name);
@@ -262,6 +270,7 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
             int dimension1,
             int dimension2
     ) {
+        statePanelStairGeometryDrafts.clear(currentSelectedMapIdValue(), stairId);
         operationOwner.saveStairGeometry(stairId, shapeName, directionName, dimension1, dimension2);
     }
 
@@ -293,7 +302,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 prepareStatePanelLabelNameDraft(controls, state),
                 prepareStatePanelCorridorPointDraft(controls, state),
                 prepareStatePanelTransitionDescriptionDraft(controls, state),
-                prepareStatePanelTransitionDestinationDraft(controls, state));
+                prepareStatePanelTransitionDestinationDraft(controls, state),
+                prepareStatePanelStairGeometryDraft(controls, state));
     }
 
     private DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts prepareStatePanelRoomNarrationDrafts(
@@ -356,6 +366,16 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 selectedMapIdValue,
                 target.visible(),
                 target.sourceTransitionId());
+    }
+
+    private DungeonEditorStatePanelStairGeometryDrafts.Draft prepareStatePanelStairGeometryDraft(
+            DungeonEditorControlsSnapshot controls,
+            DungeonEditorStateSnapshot state
+    ) {
+        long selectedMapIdValue = selectedMapIdValue(controls);
+        long stairId = selectedStairId(state == null ? null : state.selection());
+        statePanelStairGeometryDrafts.retainOnlyVisibleDraftForMap(selectedMapIdValue, stairId);
+        return statePanelStairGeometryDrafts.current(selectedMapIdValue, stairId);
     }
 
     private DungeonEditorStateSnapshot.Selection currentStateSelection() {
@@ -442,6 +462,13 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 ? DungeonEditorTopologyElementRef.empty()
                 : selection.topologyRef();
         return "TRANSITION".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
+    }
+
+    private static long selectedStairId(DungeonEditorStateSnapshot.Selection selection) {
+        DungeonEditorTopologyElementRef topologyRef = selection == null
+                ? DungeonEditorTopologyElementRef.empty()
+                : selection.topologyRef();
+        return "STAIR".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
     }
 
     private static LabelNameTarget labelNameTarget(DungeonEditorStateSnapshot.Selection selection) {

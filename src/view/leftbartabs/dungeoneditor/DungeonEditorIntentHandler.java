@@ -17,6 +17,7 @@ import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerWorkfl
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarrationDraftInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarration;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.ExitNarrationDraftInput;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.StairGeometryDraftInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent;
@@ -297,12 +298,12 @@ final class DungeonEditorIntentHandler {
     private void consumeStairGeometryInput(
             DungeonEditorStateViewInputEvent event
     ) {
-        stateContentModel.updateStairGeometryDraft(
+        operations.updateStatePanelStairGeometryDraft(new StairGeometryDraftInput(
                 event.stairId(),
                 event.stairShapeName(),
                 event.stairDirectionName(),
                 event.stairDimension1(),
-                event.stairDimension2());
+                event.stairDimension2()));
         if (!event.stairGeometrySaveRequested()) {
             return;
         }
@@ -311,7 +312,6 @@ final class DungeonEditorIntentHandler {
         if (dimension1.isEmpty() || dimension2.isEmpty()) {
             return;
         }
-        stateContentModel.clearStairGeometryDraft(event.stairId());
         operations.saveStairGeometry(
                 event.stairId(),
                 event.stairShapeName(),

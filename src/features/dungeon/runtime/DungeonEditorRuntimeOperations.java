@@ -76,6 +76,10 @@ public interface DungeonEditorRuntimeOperations {
         // Only feature-runtime roots own state-panel draft session state.
     }
 
+    default void updateStatePanelStairGeometryDraft(StairGeometryDraftInput input) {
+        // Only feature-runtime roots own state-panel draft session state.
+    }
+
     void saveLabelName(String targetKind, long targetId, String name);
 
     void saveTransitionLink(
@@ -152,6 +156,22 @@ public interface DungeonEditorRuntimeOperations {
             mapId = safeText(mapId, "");
             tileId = safeText(tileId, "");
             transitionId = safeText(transitionId, "");
+        }
+    }
+
+    record StairGeometryDraftInput(
+            long stairId,
+            String shapeName,
+            String directionName,
+            String dimension1,
+            String dimension2
+    ) {
+        public StairGeometryDraftInput {
+            stairId = Math.max(0L, stairId);
+            shapeName = safeText(shapeName, "");
+            directionName = safeText(directionName, "");
+            dimension1 = safeText(dimension1, "");
+            dimension2 = safeText(dimension2, "");
         }
     }
 

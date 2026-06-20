@@ -32,6 +32,7 @@ public final class DungeonEditorContributionModel {
                         null,
                         null,
                         null,
+                        null,
                         null)
                 : frame;
         DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
@@ -156,6 +157,7 @@ public final class DungeonEditorContributionModel {
                         null,
                         null,
                         null,
+                        null,
                         null)
                 : frame;
         DungeonEditorPreparedFrameFacts safeFacts = safeFrame.preparedFacts();
@@ -172,7 +174,8 @@ public final class DungeonEditorContributionModel {
                 safeFrame.statePanelLabelNameDraft(),
                 safeFrame.statePanelCorridorPointDraft(),
                 safeFrame.statePanelTransitionDescriptionDraft(),
-                safeFrame.statePanelTransitionDestinationDraft());
+                safeFrame.statePanelTransitionDestinationDraft(),
+                safeFrame.statePanelStairGeometryDraft());
     }
 
     record ControlsProjection(

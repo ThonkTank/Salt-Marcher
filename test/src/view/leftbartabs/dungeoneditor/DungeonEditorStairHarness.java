@@ -218,8 +218,50 @@ final class DungeonEditorStairHarness {
         List<String> exitRowsBefore = runtime.database().stairExitState(mapId);
         long stairId = stairHandle.ref().topologyRef().id();
         selectComboItem(directionBox, "EAST");
+        shapeBox = comboBox(stateView, "Treppe Form");
+        directionBox = comboBox(stateView, "Treppe Richtung");
+        dimension1Field = textField(stateView, "Treppe Laenge");
+        dimension2Field = textField(stateView, "Treppe Ebenenspanne");
+        assertStairGeometryDraftControls(
+                shapeBox,
+                directionBox,
+                dimension1Field,
+                dimension2Field,
+                "STRAIGHT",
+                "EAST",
+                "3",
+                "1",
+                "DE-STATE-003 runtime publication keeps unsaved direction draft before save");
         dimension1Field.setText("4");
+        shapeBox = comboBox(stateView, "Treppe Form");
+        directionBox = comboBox(stateView, "Treppe Richtung");
+        dimension1Field = textField(stateView, "Treppe Laenge");
+        dimension2Field = textField(stateView, "Treppe Ebenenspanne");
+        assertStairGeometryDraftControls(
+                shapeBox,
+                directionBox,
+                dimension1Field,
+                dimension2Field,
+                "STRAIGHT",
+                "EAST",
+                "4",
+                "1",
+                "DE-STATE-003 runtime publication keeps unsaved dimension1 draft before save");
         dimension2Field.setText("2");
+        shapeBox = comboBox(stateView, "Treppe Form");
+        directionBox = comboBox(stateView, "Treppe Richtung");
+        dimension1Field = textField(stateView, "Treppe Laenge");
+        dimension2Field = textField(stateView, "Treppe Ebenenspanne");
+        assertStairGeometryDraftControls(
+                shapeBox,
+                directionBox,
+                dimension1Field,
+                dimension2Field,
+                "STRAIGHT",
+                "EAST",
+                "4",
+                "2",
+                "DE-STATE-003 runtime publication keeps complete unsaved stair draft before save");
         click(button(stateView, "Treppe aktualisieren"));
 
         List<String> stableRowsAfter = runtime.database().stairStableState(mapId);
@@ -270,10 +312,16 @@ final class DungeonEditorStairHarness {
         shapeBox = comboBox(stateView, "Treppe Form");
         directionBox = comboBox(stateView, "Treppe Richtung");
         selectComboItem(shapeBox, "SQUARE");
+        shapeBox = comboBox(stateView, "Treppe Form");
+        directionBox = comboBox(stateView, "Treppe Richtung");
         selectComboItem(directionBox, "SOUTH");
+        shapeBox = comboBox(stateView, "Treppe Form");
+        directionBox = comboBox(stateView, "Treppe Richtung");
         dimension1Field = textField(stateView, "Treppe Laenge");
         dimension2Field = textField(stateView, "Treppe Ebenenspanne");
         dimension1Field.setText("4");
+        dimension1Field = textField(stateView, "Treppe Laenge");
+        dimension2Field = textField(stateView, "Treppe Ebenenspanne");
         dimension2Field.setText("2");
         click(button(stateView, "Treppe aktualisieren"));
 
@@ -321,10 +369,16 @@ final class DungeonEditorStairHarness {
         shapeBox = comboBox(stateView, "Treppe Form");
         directionBox = comboBox(stateView, "Treppe Richtung");
         selectComboItem(shapeBox, "CIRCULAR");
+        shapeBox = comboBox(stateView, "Treppe Form");
+        directionBox = comboBox(stateView, "Treppe Richtung");
         selectComboItem(directionBox, "NORTH");
+        shapeBox = comboBox(stateView, "Treppe Form");
+        directionBox = comboBox(stateView, "Treppe Richtung");
         dimension1Field = textField(stateView, "Treppe Laenge");
         dimension2Field = textField(stateView, "Treppe Ebenenspanne");
         dimension1Field.setText("4");
+        dimension1Field = textField(stateView, "Treppe Laenge");
+        dimension2Field = textField(stateView, "Treppe Ebenenspanne");
         dimension2Field.setText("1");
         click(button(stateView, "Treppe aktualisieren"));
 
@@ -429,6 +483,22 @@ final class DungeonEditorStairHarness {
         results.add("DE-STATE-003 Ready: DungeonEditorStateView stair card -> shape/direction/dimension recompute");
     }
 
+    private static void assertStairGeometryDraftControls(
+            ComboBox<?> shapeBox,
+            ComboBox<?> directionBox,
+            TextField dimension1Field,
+            TextField dimension2Field,
+            String expectedShape,
+            String expectedDirection,
+            String expectedDimension1,
+            String expectedDimension2,
+            String scenario
+    ) {
+        assertEquals(expectedShape, shapeBox.getValue(), scenario + " shape");
+        assertEquals(expectedDirection, directionBox.getValue(), scenario + " direction");
+        assertEquals(expectedDimension1, dimension1Field.getText(), scenario + " dimension1");
+        assertEquals(expectedDimension2, dimension2Field.getText(), scenario + " dimension2");
+    }
 
     private static void verifyInvalidStairRoomInteriorRecomputeThroughStateView(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();

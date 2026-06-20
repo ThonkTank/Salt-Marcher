@@ -22,6 +22,10 @@ public final class DungeonEditorStateView extends VBox {
     private static final String CORRIDOR_POINT_Q_ACCESSIBLE = "Korridorpunkt q";
     private static final String CORRIDOR_POINT_R_ACCESSIBLE = "Korridorpunkt r";
     private static final String TRANSITION_DESCRIPTION_ACCESSIBLE = "Übergang Beschreibung";
+    private static final String STAIR_SHAPE_ACCESSIBLE = "Treppe Form";
+    private static final String STAIR_DIRECTION_ACCESSIBLE = "Treppe Richtung";
+    private static final String STAIR_DIMENSION_1_ACCESSIBLE = "Treppe Laenge";
+    private static final String STAIR_DIMENSION_2_ACCESSIBLE = "Treppe Ebenenspanne";
     private static final String INCOMPLETE_NEGATIVE_TEXT = "-";
     private static final String CARD_SURFACE_STYLE = "card-surface";
     private static final String CONTENT_CARD_STYLE = "content-card";
@@ -42,6 +46,7 @@ public final class DungeonEditorStateView extends VBox {
     private final TextField transitionDestinationFocusState = new TextField();
     private final TextArea transitionDescriptionFocusState = new TextArea();
     private final TextArea narrationFocusState = new TextArea();
+    private final TextField stairGeometryFocusState = new TextField();
     private Consumer<DungeonEditorStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonEditorStateView() {
@@ -172,10 +177,15 @@ public final class DungeonEditorStateView extends VBox {
             boolean busy,
             String statusText
     ) {
+        if (!stairGeometryFocusPending()) {
+            rememberCurrentStairGeometryFocus();
+        }
         stairGeometryCards.getChildren().clear();
         if (stairGeometry != null) {
             stairGeometryCards.getChildren().add(new StairGeometryCard(stairGeometry, busy, statusText));
         }
+        restoreStairGeometryFocus();
+        clearStairGeometryFocus();
     }
 
     private void showName(
@@ -209,13 +219,6 @@ public final class DungeonEditorStateView extends VBox {
         return area;
     }
 
-    private static TextField coordinateField(String text) {
-        TextField field = new TextField(text == null ? "" : text);
-        field.getStyleClass().add(COORDINATE_FIELD_STYLE);
-        field.setTextFormatter(new TextFormatter<>(integerTextFilter()));
-        return field;
-    }
-
     private static TextField textField(String text) {
         TextField field = new TextField(text == null ? "" : text);
         field.getStyleClass().add(COORDINATE_FIELD_STYLE);
@@ -227,10 +230,6 @@ public final class DungeonEditorStateView extends VBox {
         comboBox.getItems().addAll(values);
         comboBox.getSelectionModel().select(selected == null || selected.isBlank() ? values.getFirst() : selected);
         return comboBox;
-    }
-
-    private static UnaryOperator<TextFormatter.Change> integerTextFilter() {
-        return change -> integerFieldText(change.getControlNewText()) ? change : null;
     }
 
     private static boolean integerFieldText(String text) {
@@ -428,6 +427,18 @@ public final class DungeonEditorStateView extends VBox {
             }
             if (change.getControl().isFocused()) {
                 rememberTransitionDestinationFocus(accessibleText, change.getCaretPosition());
+            }
+            return change;
+        };
+    }
+
+    private UnaryOperator<TextFormatter.Change> stairGeometryIntegerTextFilter(String accessibleText) {
+        return change -> {
+            if (!integerFieldText(change.getControlNewText())) {
+                return null;
+            }
+            if (change.getControl().isFocused()) {
+                rememberStairGeometryFocus(accessibleText, change.getCaretPosition());
             }
             return change;
         };
@@ -640,6 +651,93 @@ public final class DungeonEditorStateView extends VBox {
             }
         }
         return null;
+    }
+
+    private void rememberCurrentStairGeometryFocus() {
+        Node control = focusedStairGeometryControl(stairGeometryCards);
+        if (control instanceof TextField field) {
+            rememberStairGeometryFocus(field.getAccessibleText(), field.getCaretPosition());
+            return;
+        }
+        if (control != null) {
+            rememberStairGeometryFocus(control.getAccessibleText(), 0);
+            return;
+        }
+        clearStairGeometryFocus();
+    }
+
+    private void rememberStairGeometryFocus(String accessibleText, int caretPosition) {
+        if (accessibleText == null || accessibleText.isBlank()) {
+            clearStairGeometryFocus();
+            return;
+        }
+        int clampedCaret = Math.max(caretPosition, 0);
+        stairGeometryFocusState.setAccessibleText(accessibleText);
+        stairGeometryFocusState.setText(" ".repeat(clampedCaret));
+        stairGeometryFocusState.positionCaret(clampedCaret);
+    }
+
+    private boolean stairGeometryFocusPending() {
+        String accessibleText = stairGeometryFocusState.getAccessibleText();
+        return accessibleText != null && !accessibleText.isBlank();
+    }
+
+    private void restoreStairGeometryFocus() {
+        String accessibleText = stairGeometryFocusState.getAccessibleText();
+        if (accessibleText == null || accessibleText.isBlank()) {
+            return;
+        }
+        Node control = findStairGeometryControl(stairGeometryCards, accessibleText);
+        if (control != null) {
+            control.requestFocus();
+        }
+        if (control instanceof TextField field) {
+            field.positionCaret(Math.min(stairGeometryFocusState.getCaretPosition(), field.getLength()));
+        }
+    }
+
+    private void clearStairGeometryFocus() {
+        stairGeometryFocusState.setAccessibleText("");
+        stairGeometryFocusState.clear();
+    }
+
+    private static @org.jspecify.annotations.Nullable Node focusedStairGeometryControl(Node node) {
+        if (supportedStairGeometryControl(node) && node.isFocused()) {
+            return node;
+        }
+        if (!(node instanceof Parent parent)) {
+            return null;
+        }
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            Node found = focusedStairGeometryControl(child);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private static @org.jspecify.annotations.Nullable Node findStairGeometryControl(
+            Node node,
+            String accessibleText
+    ) {
+        if (supportedStairGeometryControl(node) && accessibleText.equals(node.getAccessibleText())) {
+            return node;
+        }
+        if (!(node instanceof Parent parent)) {
+            return null;
+        }
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            Node found = findStairGeometryControl(child, accessibleText);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private static boolean supportedStairGeometryControl(Node node) {
+        return node instanceof TextField || node instanceof ComboBox<?>;
     }
 
     private void rememberCurrentNarrationFocus() {
@@ -1106,12 +1204,10 @@ public final class DungeonEditorStateView extends VBox {
         ) {
             ComboBox<String> shapeBox = comboBox(List.of("STRAIGHT", "SQUARE", "CIRCULAR"), stairGeometry.shapeName());
             ComboBox<String> directionBox = comboBox(List.of("NORTH", "EAST", "SOUTH", "WEST"), stairGeometry.directionName());
-            TextField dimension1Field = coordinateField(stairGeometry.dimension1());
-            TextField dimension2Field = coordinateField(stairGeometry.dimension2());
-            shapeBox.setAccessibleText("Treppe Form");
-            directionBox.setAccessibleText("Treppe Richtung");
-            dimension1Field.setAccessibleText("Treppe Laenge");
-            dimension2Field.setAccessibleText("Treppe Ebenenspanne");
+            TextField dimension1Field = stairGeometryField(stairGeometry.dimension1(), STAIR_DIMENSION_1_ACCESSIBLE);
+            TextField dimension2Field = stairGeometryField(stairGeometry.dimension2(), STAIR_DIMENSION_2_ACCESSIBLE);
+            shapeBox.setAccessibleText(STAIR_SHAPE_ACCESSIBLE);
+            directionBox.setAccessibleText(STAIR_DIRECTION_ACCESSIBLE);
             HBox specRow = new HBox(
                     labeled("Form", shapeBox),
                     shapeBox,
@@ -1131,20 +1227,16 @@ public final class DungeonEditorStateView extends VBox {
                     busy
                             || !completeIntegerText(dimension1Field.getText())
                             || !completeIntegerText(dimension2Field.getText()));
-            shapeBox.valueProperty().addListener((ignored, before, after) -> emitStairGeometryInput(
-                    stairGeometry.stairId(),
-                    shapeBox,
-                    directionBox,
-                    dimension1Field,
-                    dimension2Field,
-                    false));
-            directionBox.valueProperty().addListener((ignored, before, after) -> emitStairGeometryInput(
-                    stairGeometry.stairId(),
-                    shapeBox,
-                    directionBox,
-                    dimension1Field,
-                    dimension2Field,
-                    false));
+            shapeBox.valueProperty().addListener((ignored, before, after) -> {
+                rememberStairGeometryFocus(shapeBox.getAccessibleText(), 0);
+                emitStairGeometryInput(stairGeometry.stairId(), shapeBox, directionBox, dimension1Field,
+                        dimension2Field, false);
+            });
+            directionBox.valueProperty().addListener((ignored, before, after) -> {
+                rememberStairGeometryFocus(directionBox.getAccessibleText(), 0);
+                emitStairGeometryInput(stairGeometry.stairId(), shapeBox, directionBox, dimension1Field,
+                        dimension2Field, false);
+            });
             dimension1Field.textProperty().addListener((ignored, before, after) -> {
                 emitStairGeometryInput(stairGeometry.stairId(), shapeBox, directionBox, dimension1Field, dimension2Field, false);
                 updateDisabled.run();
@@ -1169,6 +1261,14 @@ public final class DungeonEditorStateView extends VBox {
             Label label = muted(text);
             label.setLabelFor(field);
             return label;
+        }
+
+        private TextField stairGeometryField(String text, String accessibleText) {
+            TextField field = new TextField(text == null ? "" : text);
+            field.getStyleClass().add(COORDINATE_FIELD_STYLE);
+            field.setAccessibleText(accessibleText);
+            field.setTextFormatter(new TextFormatter<>(stairGeometryIntegerTextFilter(accessibleText)));
+            return field;
         }
     }
 

@@ -14,12 +14,12 @@ import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.features.dungeon.runtime.DungeonEditorStatePanelCorridorPointDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelLabelNameDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelRoomNarrationDrafts;
+import src.features.dungeon.runtime.DungeonEditorStatePanelStairGeometryDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelTransitionDescriptionDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelTransitionDestinationDrafts;
 
 final class DungeonEditorStateContentModel {
     private static final long NO_TRANSITION_ID = 0L;
-    private static final long NO_STAIR_ID = 0L;
     private static final long NO_SELECTED_MAP_ID = 0L;
     private static final String STAIR_KIND = "STAIR";
     private static final String OVERWORLD_TILE_DESTINATION = "OVERWORLD_TILE";
@@ -27,7 +27,6 @@ final class DungeonEditorStateContentModel {
 
     private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
             new ReadOnlyObjectWrapper<>(StateProjection.initial());
-    private final Map<StairGeometryDraftKey, StairGeometryDraft> stairGeometryDrafts = new HashMap<>();
     private StateProjectionContext currentContext = StateProjectionContext.empty();
     private long currentSelectedTransitionId;
 
@@ -61,13 +60,9 @@ final class DungeonEditorStateContentModel {
                 safeSnapshot.selection(),
                 safeSnapshot.inspector());
         StairGeometryProjection stairGeometry = stairGeometryProjection(
-                safeContext.selectedMapIdValue(),
                 safeSnapshot.selection(),
                 safeSnapshot.inspector());
         currentSelectedTransitionId = selectedTransitionId(safeSnapshot.selection());
-        pruneStairGeometryDrafts(
-                safeContext.selectedMapIdValue(),
-                stairGeometry);
         stateProjection.set(new StateProjection(
                 ProjectionTextSupport.stateTextFor(safeSnapshot, safeContext),
                 safeContext.statusText(),
@@ -119,36 +114,6 @@ final class DungeonEditorStateContentModel {
         return currentProjection == null || currentProjection.transitionDestination() == null
                 ? new TransitionDestinationProjection("Übergang-Ziel", 0L, OVERWORLD_TILE_DESTINATION, "", "", "", true)
                 : currentProjection.transitionDestination();
-    }
-
-    void updateStairGeometryDraft(
-            long stairId,
-            String shapeName,
-            String directionName,
-            String dimension1,
-            String dimension2
-    ) {
-        if (stairId <= NO_STAIR_ID) {
-            return;
-        }
-        stairGeometryDrafts.put(
-                new StairGeometryDraftKey(currentContext.selectedMapIdValue(), stairId),
-                new StairGeometryDraft(shapeName, directionName, dimension1, dimension2));
-    }
-
-    void clearStairGeometryDraft(long stairId) {
-        stairGeometryDrafts.remove(new StairGeometryDraftKey(currentContext.selectedMapIdValue(), stairId));
-    }
-
-    private void pruneStairGeometryDrafts(
-            long selectedMapIdValue,
-            @Nullable StairGeometryProjection stairGeometry
-    ) {
-        StairGeometryDraftKey visibleStair = stairGeometry == null
-                ? null
-                : new StairGeometryDraftKey(selectedMapIdValue, stairGeometry.stairId());
-        stairGeometryDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
-                && !key.equals(visibleStair));
     }
 
     private static List<RoomNarrationCardProjection> narrationCards(
@@ -323,32 +288,54 @@ final class DungeonEditorStateContentModel {
         return "TRANSITION".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
     }
 
-    private @Nullable StairGeometryProjection stairGeometryProjection(
-            long selectedMapIdValue,
-            DungeonEditorStateSnapshot.Selection selection,
-            @Nullable DungeonInspectorSnapshot inspector
-    ) {
+    private static long selectedStairId(DungeonEditorStateSnapshot.Selection selection) {
         DungeonEditorTopologyElementRef topologyRef = selection == null
                 ? DungeonEditorTopologyElementRef.empty()
                 : selection.topologyRef();
-        if (!STAIR_KIND.equals(topologyRef.kind()) || topologyRef.id() <= 0L || inspector == null) {
+        return STAIR_KIND.equals(topologyRef.kind()) ? topologyRef.id() : 0L;
+    }
+
+    private @Nullable StairGeometryProjection stairGeometryProjection(
+            DungeonEditorStateSnapshot.Selection selection,
+            @Nullable DungeonInspectorSnapshot inspector
+    ) {
+        long stairId = selectedStairId(selection);
+        if (stairId <= 0L || inspector == null) {
             return null;
         }
-        StairGeometryDraft model = StairGeometryDraft.fromFacts(inspector.facts());
-        if (model == null) {
+        StairGeometryFacts facts = StairGeometryFacts.from(inspector.facts());
+        if (facts == null) {
             return null;
         }
-        StairGeometryDraft draft = stairGeometryDrafts.getOrDefault(
-                new StairGeometryDraftKey(selectedMapIdValue, topologyRef.id()),
-                model);
-        String label = inspector.title().isBlank() ? "Treppe " + topologyRef.id() : inspector.title();
+        StairGeometryFacts draft = currentStairGeometryFacts(stairId, facts);
+        String label = inspector.title().isBlank() ? "Treppe " + stairId : inspector.title();
         return new StairGeometryProjection(
-                topologyRef.id(),
+                stairId,
                 label,
                 draft.shapeName(),
                 draft.directionName(),
                 draft.dimension1(),
                 draft.dimension2());
+    }
+
+    private StairGeometryFacts currentStairGeometryFacts(long stairId, StairGeometryFacts fallback) {
+        DungeonEditorStatePanelStairGeometryDrafts.Draft runtimeDraft =
+                currentContext.statePanelStairGeometryDraft();
+        if (!runtimeStairDraftMatches(runtimeDraft, stairId)) {
+            return fallback;
+        }
+        return new StairGeometryFacts(
+                runtimeDraft.shapeName(),
+                runtimeDraft.directionName(),
+                runtimeDraft.dimension1(),
+                runtimeDraft.dimension2());
+    }
+
+    private static boolean runtimeStairDraftMatches(
+            DungeonEditorStatePanelStairGeometryDrafts.Draft runtimeDraft,
+            long stairId
+    ) {
+        return runtimeDraft.present() && runtimeDraft.targetPresent() && runtimeDraft.stairId() == stairId;
     }
 
     record StateProjection(
@@ -397,7 +384,8 @@ final class DungeonEditorStateContentModel {
             DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft,
             DungeonEditorStatePanelCorridorPointDrafts.Draft statePanelCorridorPointDraft,
             DungeonEditorStatePanelTransitionDescriptionDrafts.Draft statePanelTransitionDescriptionDraft,
-            DungeonEditorStatePanelTransitionDestinationDrafts.Draft statePanelTransitionDestinationDraft
+            DungeonEditorStatePanelTransitionDestinationDrafts.Draft statePanelTransitionDestinationDraft,
+            DungeonEditorStatePanelStairGeometryDrafts.Draft statePanelStairGeometryDraft
     ) {
         StateProjectionContext {
             selectedMapIdValue = Math.max(0L, selectedMapIdValue);
@@ -422,6 +410,9 @@ final class DungeonEditorStateContentModel {
             statePanelTransitionDestinationDraft = statePanelTransitionDestinationDraft == null
                     ? DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty()
                     : statePanelTransitionDestinationDraft;
+            statePanelStairGeometryDraft = statePanelStairGeometryDraft == null
+                    ? DungeonEditorStatePanelStairGeometryDrafts.Draft.empty()
+                    : statePanelStairGeometryDraft;
         }
 
         static StateProjectionContext empty() {
@@ -438,7 +429,8 @@ final class DungeonEditorStateContentModel {
                     DungeonEditorStatePanelLabelNameDrafts.Draft.empty(),
                     DungeonEditorStatePanelCorridorPointDrafts.Draft.empty(),
                     DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty(),
-                    DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty());
+                    DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty(),
+                    DungeonEditorStatePanelStairGeometryDrafts.Draft.empty());
         }
     }
 
@@ -619,27 +611,20 @@ final class DungeonEditorStateContentModel {
         }
     }
 
-    private record StairGeometryDraftKey(long selectedMapIdValue, long stairId) {
-        StairGeometryDraftKey {
-            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
-            stairId = Math.max(0L, stairId);
-        }
-    }
-
-    private record StairGeometryDraft(
+    private record StairGeometryFacts(
             String shapeName,
             String directionName,
             String dimension1,
             String dimension2
     ) {
-        StairGeometryDraft {
+        StairGeometryFacts {
             shapeName = shapeName == null || shapeName.isBlank() ? "STRAIGHT" : shapeName.strip();
             directionName = directionName == null || directionName.isBlank() ? "NORTH" : directionName.strip();
             dimension1 = dimension1 == null ? "" : dimension1.strip();
             dimension2 = dimension2 == null ? "" : dimension2.strip();
         }
 
-        private static @Nullable StairGeometryDraft fromFacts(List<String> facts) {
+        private static @Nullable StairGeometryFacts from(List<String> facts) {
             Map<String, String> values = factMap(facts);
             String shape = values.get("shape");
             String direction = values.get("direction");
@@ -648,7 +633,7 @@ final class DungeonEditorStateContentModel {
             if (shape == null || direction == null || dimension1 == null || dimension2 == null) {
                 return null;
             }
-            return new StairGeometryDraft(shape, direction, dimension1, dimension2);
+            return new StairGeometryFacts(shape, direction, dimension1, dimension2);
         }
     }
 
