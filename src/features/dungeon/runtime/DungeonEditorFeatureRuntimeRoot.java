@@ -32,6 +32,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
             new DungeonEditorStatePanelTransitionDescriptionDrafts();
     private final DungeonEditorStatePanelTransitionDestinationDrafts statePanelTransitionDestinationDrafts =
             new DungeonEditorStatePanelTransitionDestinationDrafts();
+    private final DungeonEditorStatePanelRoomNarrationDrafts statePanelRoomNarrationDrafts =
+            new DungeonEditorStatePanelRoomNarrationDrafts();
     private final List<Consumer<DungeonEditorRuntimePublication>> subscribers = new CopyOnWriteArrayList<>();
 
     public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
@@ -176,7 +178,15 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     @Override
     public void saveRoomNarration(RoomNarration narration) {
+        RoomNarration safeNarration = narration == null ? new RoomNarration(0L, "", List.of()) : narration;
+        statePanelRoomNarrationDrafts.clear(currentSelectedMapIdValue(), safeNarration.roomId());
         operationOwner.saveRoomNarration(narration);
+    }
+
+    @Override
+    public void updateStatePanelRoomNarrationDraft(RoomNarrationDraftInput input) {
+        statePanelRoomNarrationDrafts.update(currentSelectedMapIdValue(), input);
+        publishCurrentToSubscribers();
     }
 
     @Override
@@ -279,10 +289,24 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 mapSurfaceModel.current(),
                 state,
                 preparedFacts(controls),
+                prepareStatePanelRoomNarrationDrafts(controls, state),
                 prepareStatePanelLabelNameDraft(controls, state),
                 prepareStatePanelCorridorPointDraft(controls, state),
                 prepareStatePanelTransitionDescriptionDraft(controls, state),
                 prepareStatePanelTransitionDestinationDraft(controls, state));
+    }
+
+    private DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts prepareStatePanelRoomNarrationDrafts(
+            DungeonEditorControlsSnapshot controls,
+            DungeonEditorStateSnapshot state
+    ) {
+        long selectedMapIdValue = selectedMapIdValue(controls);
+        statePanelRoomNarrationDrafts.retainOnlyVisibleDraftsForMap(
+                selectedMapIdValue,
+                state == null ? null : state.inspector());
+        return statePanelRoomNarrationDrafts.visibleDrafts(
+                selectedMapIdValue,
+                state == null ? null : state.inspector());
     }
 
     private DungeonEditorStatePanelLabelNameDrafts.Draft prepareStatePanelLabelNameDraft(

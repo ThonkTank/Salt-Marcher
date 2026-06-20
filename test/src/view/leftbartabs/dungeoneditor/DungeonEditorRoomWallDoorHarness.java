@@ -135,9 +135,30 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-STATE-001 inspector publishes a room narration card after room selection");
         List<TextArea> narrationAreas = textAreas(stateView);
         assertTrue(narrationAreas.size() >= 2, "DE-STATE-001 state panel exposes visual and exit text areas");
-        narrationAreas.getFirst().setText("Wet stone walls.");
-        TextArea eastExitArea = narrationAreas.get(1);
-        eastExitArea.setText("Iron-banded door east.");
+        TextArea originalVisualArea = narrationAreas.getFirst();
+        originalVisualArea.requestFocus();
+        originalVisualArea.replaceSelection("Wet stone walls.");
+        TextArea visualArea = textAreas(stateView).getFirst();
+        assertTrue(visualArea == originalVisualArea,
+                "DE-STATE-001 runtime publication keeps the active visual narration editor control");
+        assertTrue(visualArea.isFocused(),
+                "DE-STATE-001 runtime publication keeps visual narration focus");
+        assertEquals("Wet stone walls.", visualArea.getText(),
+                "DE-STATE-001 runtime publication keeps visual narration draft text");
+        assertEquals("Wet stone walls.".length(), visualArea.getCaretPosition(),
+                "DE-STATE-001 runtime publication keeps visual narration caret");
+        TextArea originalEastExitArea = textAreas(stateView).get(1);
+        originalEastExitArea.requestFocus();
+        originalEastExitArea.replaceSelection("Iron-banded door east.");
+        TextArea eastExitArea = textAreas(stateView).get(1);
+        assertTrue(eastExitArea == originalEastExitArea,
+                "DE-STATE-001 runtime publication keeps the active east-exit narration editor control");
+        assertTrue(eastExitArea.isFocused(),
+                "DE-STATE-001 runtime publication keeps east-exit narration focus");
+        assertEquals("Iron-banded door east.", eastExitArea.getText(),
+                "DE-STATE-001 runtime publication keeps east-exit narration draft text");
+        assertEquals("Iron-banded door east.".length(), eastExitArea.getCaretPosition(),
+                "DE-STATE-001 runtime publication keeps east-exit narration caret");
         click(buttonWithAccessibleText(stateView, "Narration fuer R1 speichern"));
 
         assertEquals(1L, runtime.database().countRoomVisualDescription(roomId, "Wet stone walls."),

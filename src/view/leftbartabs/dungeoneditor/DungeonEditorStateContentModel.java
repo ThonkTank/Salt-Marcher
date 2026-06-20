@@ -1,11 +1,9 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
@@ -15,6 +13,7 @@ import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.features.dungeon.runtime.DungeonEditorStatePanelCorridorPointDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelLabelNameDrafts;
+import src.features.dungeon.runtime.DungeonEditorStatePanelRoomNarrationDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelTransitionDescriptionDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelTransitionDestinationDrafts;
 
@@ -28,8 +27,6 @@ final class DungeonEditorStateContentModel {
 
     private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
             new ReadOnlyObjectWrapper<>(StateProjection.initial());
-    private final Map<VisualDraftKey, String> visualDrafts = new HashMap<>();
-    private final Map<ExitDraftKey, String> exitDrafts = new HashMap<>();
     private final Map<StairGeometryDraftKey, StairGeometryDraft> stairGeometryDrafts = new HashMap<>();
     private StateProjectionContext currentContext = StateProjectionContext.empty();
     private long currentSelectedTransitionId;
@@ -49,8 +46,13 @@ final class DungeonEditorStateContentModel {
                 ? StateProjectionContext.empty()
                 : context;
         currentContext = safeContext;
-        List<RoomNarrationCardProjection> narrationCards =
-                ProjectionTextSupport.toNarrationCards(safeSnapshot.inspector());
+        List<RoomNarrationCardProjection> narrationCards = narrationCards(
+                safeSnapshot.inspector(),
+                safeContext.statePanelRoomNarrationDrafts());
+        String narrationRenderStructureKey = narrationRenderStructureKey(
+                narrationCards,
+                safeContext.busy(),
+                safeContext.statusText());
         TransitionDescriptionProjection transitionDescription = transitionDescriptionProjection(
                 safeSnapshot.selection(),
                 safeSnapshot.inspector());
@@ -63,16 +65,15 @@ final class DungeonEditorStateContentModel {
                 safeSnapshot.selection(),
                 safeSnapshot.inspector());
         currentSelectedTransitionId = selectedTransitionId(safeSnapshot.selection());
-        pruneDrafts(
+        pruneStairGeometryDrafts(
                 safeContext.selectedMapIdValue(),
-                narrationCards,
-                transitionDescription,
                 stairGeometry);
         stateProjection.set(new StateProjection(
                 ProjectionTextSupport.stateTextFor(safeSnapshot, safeContext),
                 safeContext.statusText(),
                 safeContext.busy(),
-                applyDrafts(safeContext.selectedMapIdValue(), narrationCards),
+                narrationRenderStructureKey,
+                narrationCards,
                 nameProjection(safeSnapshot.inspector()),
                 corridorPointProjection(),
                 transitionDestination,
@@ -91,28 +92,6 @@ final class DungeonEditorStateContentModel {
             }
         }
         return null;
-    }
-
-    void updateNarrationDraft(long roomId, String visualDescription, List<String> exitDescriptions) {
-        RoomNarrationCardProjection card = currentNarrationCard(roomId);
-        if (card == null) {
-            return;
-        }
-        long selectedMapIdValue = currentContext.selectedMapIdValue();
-        visualDrafts.put(new VisualDraftKey(selectedMapIdValue, card.roomId()),
-                visualDescription == null ? "" : visualDescription);
-        List<String> descriptions = exitDescriptions == null ? List.of() : exitDescriptions;
-        List<RoomExitNarrationProjection> exits = card.exits();
-        for (int index = 0; index < exits.size(); index++) {
-            String description = index < descriptions.size() ? descriptions.get(index) : exits.get(index).description();
-            exitDrafts.put(ExitDraftKey.from(selectedMapIdValue, card.roomId(), exits.get(index)), description);
-        }
-    }
-
-    void clearNarrationDraft(long roomId) {
-        long selectedMapIdValue = currentContext.selectedMapIdValue();
-        visualDrafts.remove(new VisualDraftKey(selectedMapIdValue, roomId));
-        exitDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue && key.roomId() == roomId);
     }
 
     String currentTransitionDestinationType() {
@@ -161,69 +140,97 @@ final class DungeonEditorStateContentModel {
         stairGeometryDrafts.remove(new StairGeometryDraftKey(currentContext.selectedMapIdValue(), stairId));
     }
 
-    String currentVisualDescription(RoomNarrationCardProjection card) {
-        if (card == null) {
-            return "";
-        }
-        return visualDrafts.getOrDefault(
-                new VisualDraftKey(currentContext.selectedMapIdValue(), card.roomId()),
-                card.visualDescription());
-    }
-
-    List<RoomExitNarrationProjection> currentExitsWithDraftDescriptions(RoomNarrationCardProjection card) {
-        if (card == null) {
-            return List.of();
-        }
-        long selectedMapIdValue = currentContext.selectedMapIdValue();
-        return card.exits().stream()
-                .map(exit -> exit.withDescription(exitDrafts.getOrDefault(
-                        ExitDraftKey.from(selectedMapIdValue, card.roomId(), exit),
-                        exit.description())))
-                .toList();
-    }
-
-    private List<RoomNarrationCardProjection> applyDrafts(
+    private void pruneStairGeometryDrafts(
             long selectedMapIdValue,
-            List<RoomNarrationCardProjection> cards
-    ) {
-        return cards.stream()
-                .map(card -> new RoomNarrationCardProjection(
-                        card.roomId(),
-                        card.roomName(),
-                        visualDrafts.getOrDefault(
-                                new VisualDraftKey(selectedMapIdValue, card.roomId()),
-                                card.visualDescription()),
-                        card.exits().stream()
-                                .map(exit -> exit.withDescription(exitDrafts.getOrDefault(
-                                        ExitDraftKey.from(selectedMapIdValue, card.roomId(), exit),
-                                        exit.description())))
-                                .toList()))
-                .toList();
-    }
-
-    private void pruneDrafts(
-            long selectedMapIdValue,
-            List<RoomNarrationCardProjection> cards,
-            @Nullable TransitionDescriptionProjection transitionDescription,
             @Nullable StairGeometryProjection stairGeometry
     ) {
-        Set<VisualDraftKey> visibleVisuals = new HashSet<>();
-        Set<ExitDraftKey> visibleExits = new HashSet<>();
-        for (RoomNarrationCardProjection card : cards) {
-            visibleVisuals.add(new VisualDraftKey(selectedMapIdValue, card.roomId()));
-            for (RoomExitNarrationProjection exit : card.exits()) {
-                visibleExits.add(ExitDraftKey.from(selectedMapIdValue, card.roomId(), exit));
-            }
-        }
-        visualDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
-                && !visibleVisuals.contains(key));
-        exitDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
-                && !visibleExits.contains(key));
         StairGeometryDraftKey visibleStair = stairGeometry == null
                 ? null
                 : new StairGeometryDraftKey(selectedMapIdValue, stairGeometry.stairId());
         stairGeometryDrafts.keySet().removeIf(key -> key.selectedMapIdValue() == selectedMapIdValue
                 && !key.equals(visibleStair));
+    }
+
+    private static List<RoomNarrationCardProjection> narrationCards(
+            @Nullable DungeonInspectorSnapshot inspector,
+            DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts narrationDrafts
+    ) {
+        DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts safeDrafts = narrationDrafts == null
+                ? DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty()
+                : narrationDrafts;
+        Map<Long, DungeonEditorStatePanelRoomNarrationDrafts.RoomDraft> roomDrafts = safeDrafts.rooms().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        DungeonEditorStatePanelRoomNarrationDrafts.RoomDraft::roomId,
+                        draft -> draft,
+                        (first, second) -> second));
+        if (inspector == null) {
+            return List.of();
+        }
+        return inspector.roomNarrations().stream()
+                .map(card -> narrationCard(card, roomDrafts.get(card.roomId())))
+                .toList();
+    }
+
+    private static RoomNarrationCardProjection narrationCard(
+            DungeonInspectorSnapshot.RoomNarrationCard card,
+            DungeonEditorStatePanelRoomNarrationDrafts.RoomDraft roomDraft
+    ) {
+        Map<RoomExitKey, DungeonEditorStatePanelRoomNarrationDrafts.ExitDraft> exitDrafts = roomDraft == null
+                ? Map.of()
+                : roomDraft.exits().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        RoomExitKey::from,
+                        draft -> draft,
+                        (first, second) -> second));
+        return new RoomNarrationCardProjection(
+                card.roomId(),
+                card.roomName(),
+                roomDraft != null && roomDraft.visualPresent()
+                        ? roomDraft.visualDescription()
+                        : card.visualDescription(),
+                card.exits().stream()
+                        .map(exit -> narrationExit(exit, exitDrafts.get(RoomExitKey.from(exit))))
+                        .toList());
+    }
+
+    private static RoomExitNarrationProjection narrationExit(
+            DungeonInspectorSnapshot.RoomExitNarration exit,
+            DungeonEditorStatePanelRoomNarrationDrafts.ExitDraft exitDraft
+    ) {
+        return new RoomExitNarrationProjection(
+                exit.label(),
+                exit.cell().q(),
+                exit.cell().r(),
+                exit.cell().level(),
+                exit.direction(),
+                exitDraft != null && exitDraft.present()
+                        ? exitDraft.description()
+                        : exit.description());
+    }
+
+    private static String narrationRenderStructureKey(
+            List<RoomNarrationCardProjection> cards,
+            boolean busy,
+            String statusText
+    ) {
+        StringBuilder key = new StringBuilder();
+        key.append(busy).append('|').append(statusText == null ? "" : statusText);
+        for (RoomNarrationCardProjection card : cards == null ? List.<RoomNarrationCardProjection>of() : cards) {
+            key.append("|room=").append(card.roomId()).append(':').append(card.roomName());
+            for (RoomExitNarrationProjection exit : card.exits()) {
+                key.append("|exit=")
+                        .append(exit.label())
+                        .append('@')
+                        .append(exit.q())
+                        .append(',')
+                        .append(exit.r())
+                        .append(',')
+                        .append(exit.level())
+                        .append(':')
+                        .append(exit.direction());
+            }
+        }
+        return key.toString();
     }
 
     private @Nullable NameProjection nameProjection(@Nullable DungeonInspectorSnapshot inspector) {
@@ -348,6 +355,7 @@ final class DungeonEditorStateContentModel {
             String stateText,
             String statusText,
             boolean busy,
+            String narrationRenderStructureKey,
             List<RoomNarrationCardProjection> narrationCards,
             @Nullable NameProjection name,
             @Nullable CorridorPointProjection corridorPoint,
@@ -358,11 +366,12 @@ final class DungeonEditorStateContentModel {
         StateProjection {
             stateText = stateText == null ? "" : stateText;
             statusText = statusText == null ? "" : statusText;
+            narrationRenderStructureKey = narrationRenderStructureKey == null ? "" : narrationRenderStructureKey;
             narrationCards = narrationCards == null ? List.of() : List.copyOf(narrationCards);
         }
 
         static StateProjection initial() {
-            return new StateProjection("", "", false, List.of(), null, null, null, null, null);
+            return new StateProjection("", "", false, "", List.of(), null, null, null, null, null);
         }
     }
 
@@ -384,6 +393,7 @@ final class DungeonEditorStateContentModel {
             String viewModeLabel,
             int projectionLevel,
             String overlayLabel,
+            DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts statePanelRoomNarrationDrafts,
             DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft,
             DungeonEditorStatePanelCorridorPointDrafts.Draft statePanelCorridorPointDraft,
             DungeonEditorStatePanelTransitionDescriptionDrafts.Draft statePanelTransitionDescriptionDraft,
@@ -397,6 +407,9 @@ final class DungeonEditorStateContentModel {
             viewModeLabel = normalizeViewModeKey(viewModeLabel);
             projectionLevel = Math.max(0, projectionLevel);
             overlayLabel = overlayLabel == null ? "" : overlayLabel;
+            statePanelRoomNarrationDrafts = statePanelRoomNarrationDrafts == null
+                    ? DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty()
+                    : statePanelRoomNarrationDrafts;
             statePanelLabelNameDraft = statePanelLabelNameDraft == null
                     ? DungeonEditorStatePanelLabelNameDrafts.Draft.empty()
                     : statePanelLabelNameDraft;
@@ -421,6 +434,7 @@ final class DungeonEditorStateContentModel {
                     "Grid",
                     0,
                     "",
+                    DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty(),
                     DungeonEditorStatePanelLabelNameDrafts.Draft.empty(),
                     DungeonEditorStatePanelCorridorPointDrafts.Draft.empty(),
                     DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty(),
@@ -523,40 +537,35 @@ final class DungeonEditorStateContentModel {
         }
     }
 
-    private record VisualDraftKey(long selectedMapIdValue, long roomId) {
-        VisualDraftKey {
-            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
-            roomId = Math.max(0L, roomId);
-        }
-    }
-
-    private record ExitDraftKey(
-            long selectedMapIdValue,
-            long roomId,
+    private record RoomExitKey(
             String label,
             int q,
             int r,
             int level,
             String direction
     ) {
-        ExitDraftKey {
-            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
-            roomId = Math.max(0L, roomId);
+        RoomExitKey {
             label = label == null ? "" : label;
             direction = direction == null ? "" : direction;
         }
 
-        static ExitDraftKey from(
-                long selectedMapIdValue,
-                long roomId,
-                RoomExitNarrationProjection exit
-        ) {
-            RoomExitNarrationProjection safeExit = exit == null
-                    ? new RoomExitNarrationProjection("", 0, 0, 0, "", "")
+        static RoomExitKey from(DungeonInspectorSnapshot.RoomExitNarration exit) {
+            DungeonInspectorSnapshot.RoomExitNarration safeExit = exit == null
+                    ? new DungeonInspectorSnapshot.RoomExitNarration("", null, "", "")
                     : exit;
-            return new ExitDraftKey(
-                    selectedMapIdValue,
-                    roomId,
+            return new RoomExitKey(
+                    safeExit.label(),
+                    safeExit.cell().q(),
+                    safeExit.cell().r(),
+                    safeExit.cell().level(),
+                    safeExit.direction());
+        }
+
+        static RoomExitKey from(DungeonEditorStatePanelRoomNarrationDrafts.ExitDraft exit) {
+            DungeonEditorStatePanelRoomNarrationDrafts.ExitDraft safeExit = exit == null
+                    ? new DungeonEditorStatePanelRoomNarrationDrafts.ExitDraft("", 0, 0, 0, "", "", false)
+                    : exit;
+            return new RoomExitKey(
                     safeExit.label(),
                     safeExit.q(),
                     safeExit.r(),
@@ -689,29 +698,6 @@ final class DungeonEditorStateContentModel {
                     + "\n" + context.overlayLabel()
                     + "\n" + selectionTextFor(SelectionData.from(snapshot.selection()), snapshot.inspector())
                     + "\n" + previewTextFor(snapshot.preview());
-        }
-
-        private static List<RoomNarrationCardProjection> toNarrationCards(
-                @Nullable DungeonInspectorSnapshot inspector
-        ) {
-            if (inspector == null) {
-                return List.of();
-            }
-            return inspector.roomNarrations().stream()
-                    .map(card -> new RoomNarrationCardProjection(
-                            card.roomId(),
-                            card.roomName(),
-                            card.visualDescription(),
-                            card.exits().stream()
-                                    .map(exit -> new RoomExitNarrationProjection(
-                                            exit.label(),
-                                            exit.cell().q(),
-                                            exit.cell().r(),
-                                            exit.cell().level(),
-                                            exit.direction(),
-                                            exit.description()))
-                                    .toList()))
-                    .toList();
         }
 
         private static String selectionTextFor(

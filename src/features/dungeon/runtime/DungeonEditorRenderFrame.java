@@ -10,6 +10,7 @@ public record DungeonEditorRenderFrame(
         DungeonEditorMapSurfaceSnapshot mapSurface,
         DungeonEditorStateSnapshot state,
         DungeonEditorPreparedFrameFacts preparedFacts,
+        DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts statePanelRoomNarrationDrafts,
         DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft,
         DungeonEditorStatePanelCorridorPointDrafts.Draft statePanelCorridorPointDraft,
         DungeonEditorStatePanelTransitionDescriptionDrafts.Draft statePanelTransitionDescriptionDraft,
@@ -20,6 +21,9 @@ public record DungeonEditorRenderFrame(
         mapSurface = Objects.requireNonNull(mapSurface, "mapSurface");
         state = Objects.requireNonNull(state, "state");
         preparedFacts = Objects.requireNonNull(preparedFacts, "preparedFacts");
+        statePanelRoomNarrationDrafts = statePanelRoomNarrationDrafts == null
+                ? DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty()
+                : statePanelRoomNarrationDrafts;
         statePanelLabelNameDraft = statePanelLabelNameDraft == null
                 ? DungeonEditorStatePanelLabelNameDrafts.Draft.empty()
                 : statePanelLabelNameDraft;

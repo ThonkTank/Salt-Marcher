@@ -1,7 +1,9 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import javafx.scene.Node;
@@ -39,6 +41,7 @@ public final class DungeonEditorStateView extends VBox {
     private final TextField corridorPointFocusState = new TextField();
     private final TextField transitionDestinationFocusState = new TextField();
     private final TextArea transitionDescriptionFocusState = new TextArea();
+    private final TextArea narrationFocusState = new TextArea();
     private Consumer<DungeonEditorStateViewInputEvent> viewInputEventHandler = ignored -> {};
 
     public DungeonEditorStateView() {
@@ -74,13 +77,27 @@ public final class DungeonEditorStateView extends VBox {
     private void showNarrationCards(
             List<DungeonEditorStateContentModel.RoomNarrationCardProjection> cards,
             boolean busy,
-            String statusText
+            String statusText,
+            String narrationRenderStructureKey
     ) {
+        List<DungeonEditorStateContentModel.RoomNarrationCardProjection> safeCards =
+                cards == null ? List.of() : cards;
+        String safeRenderStructureKey = narrationRenderStructureKey == null ? "" : narrationRenderStructureKey;
+        if (safeRenderStructureKey.equals(narrationCards.getUserData())
+                && focusedTextArea(narrationCards) != null
+                && synchronizeExistingNarrationCards(safeCards)) {
+            return;
+        }
+        if (!narrationFocusPending()) {
+            rememberCurrentNarrationFocus();
+        }
         narrationCards.getChildren().clear();
-        for (DungeonEditorStateContentModel.RoomNarrationCardProjection card
-                : cards == null ? List.<DungeonEditorStateContentModel.RoomNarrationCardProjection>of() : cards) {
+        for (DungeonEditorStateContentModel.RoomNarrationCardProjection card : safeCards) {
             narrationCards.getChildren().add(new NarrationCard(card, busy, statusText));
         }
+        narrationCards.setUserData(safeRenderStructureKey);
+        restoreNarrationFocus();
+        clearNarrationFocus();
     }
 
     private void showProjection(DungeonEditorStateContentModel.StateProjection projection) {
@@ -89,7 +106,11 @@ public final class DungeonEditorStateView extends VBox {
         showTransitionDestination(projection.transitionDestination(), projection.busy(), projection.statusText());
         showTransitionDescription(projection.transitionDescription(), projection.busy(), projection.statusText());
         showStairGeometry(projection.stairGeometry(), projection.busy(), projection.statusText());
-        showNarrationCards(projection.narrationCards(), projection.busy(), projection.statusText());
+        showNarrationCards(
+                projection.narrationCards(),
+                projection.busy(),
+                projection.statusText(),
+                projection.narrationRenderStructureKey());
         showName(projection.name(), projection.busy());
     }
 
@@ -391,6 +412,15 @@ public final class DungeonEditorStateView extends VBox {
         };
     }
 
+    private UnaryOperator<TextFormatter.Change> narrationTextFilter(String accessibleText) {
+        return change -> {
+            if (change.getControl().isFocused()) {
+                rememberNarrationFocus(accessibleText, change.getCaretPosition());
+            }
+            return change;
+        };
+    }
+
     private UnaryOperator<TextFormatter.Change> transitionDestinationIntegerTextFilter(String accessibleText) {
         return change -> {
             if (!integerFieldText(change.getControlNewText())) {
@@ -605,6 +635,116 @@ public final class DungeonEditorStateView extends VBox {
         }
         for (Node child : parent.getChildrenUnmodifiable()) {
             TextArea found = findTextArea(child, accessibleText);
+            if (found != null) {
+                return found;
+            }
+        }
+        return null;
+    }
+
+    private void rememberCurrentNarrationFocus() {
+        TextArea area = focusedTextArea(narrationCards);
+        if (area == null) {
+            clearNarrationFocus();
+            return;
+        }
+        rememberNarrationFocus(area.getAccessibleText(), area.getCaretPosition());
+    }
+
+    private void rememberNarrationFocus(String accessibleText, int caretPosition) {
+        if (accessibleText == null || accessibleText.isBlank()) {
+            clearNarrationFocus();
+            return;
+        }
+        int clampedCaret = Math.max(caretPosition, 0);
+        narrationFocusState.setAccessibleText(accessibleText);
+        narrationFocusState.setText(" ".repeat(clampedCaret));
+        narrationFocusState.positionCaret(clampedCaret);
+    }
+
+    private boolean narrationFocusPending() {
+        String accessibleText = narrationFocusState.getAccessibleText();
+        return accessibleText != null && !accessibleText.isBlank();
+    }
+
+    private void restoreNarrationFocus() {
+        String accessibleText = narrationFocusState.getAccessibleText();
+        if (accessibleText == null || accessibleText.isBlank()) {
+            return;
+        }
+        TextArea area = findTextArea(narrationCards, accessibleText);
+        if (area != null) {
+            area.requestFocus();
+            area.positionCaret(Math.min(narrationFocusState.getCaretPosition(), area.getLength()));
+        }
+    }
+
+    private void clearNarrationFocus() {
+        narrationFocusState.setAccessibleText("");
+        narrationFocusState.clear();
+    }
+
+    private boolean synchronizeExistingNarrationCards(
+            List<DungeonEditorStateContentModel.RoomNarrationCardProjection> cards
+    ) {
+        Map<String, String> nextTextByAccessibleText = narrationTextByAccessibleText(cards);
+        Map<String, TextArea> existingAreas = narrationTextAreasByAccessibleText();
+        if (nextTextByAccessibleText.isEmpty() || !existingAreas.keySet().equals(nextTextByAccessibleText.keySet())) {
+            return false;
+        }
+        for (Map.Entry<String, String> entry : nextTextByAccessibleText.entrySet()) {
+            TextArea area = existingAreas.get(entry.getKey());
+            if (area != null && !area.isFocused() && !entry.getValue().equals(area.getText())) {
+                area.setText(entry.getValue());
+            }
+        }
+        return true;
+    }
+
+    private static Map<String, String> narrationTextByAccessibleText(
+            List<DungeonEditorStateContentModel.RoomNarrationCardProjection> cards
+    ) {
+        Map<String, String> result = new HashMap<>();
+        for (DungeonEditorStateContentModel.RoomNarrationCardProjection card : cards) {
+            result.put(narrationVisualAccessibleText(card.roomId()), card.visualDescription());
+            for (DungeonEditorStateContentModel.RoomExitNarrationProjection exit : card.exits()) {
+                result.put(narrationExitAccessibleText(card.roomId(), exit), exit.description());
+            }
+        }
+        return result;
+    }
+
+    private Map<String, TextArea> narrationTextAreasByAccessibleText() {
+        Map<String, TextArea> result = new HashMap<>();
+        collectTextAreas(narrationCards, result);
+        return result;
+    }
+
+    private static void collectTextAreas(Node node, Map<String, TextArea> result) {
+        if (node instanceof TextArea area) {
+            String accessibleText = area.getAccessibleText();
+            if (accessibleText != null && !accessibleText.isBlank()) {
+                result.put(accessibleText, area);
+            }
+            return;
+        }
+        if (!(node instanceof Parent parent)) {
+            return;
+        }
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            collectTextAreas(child, result);
+        }
+    }
+
+    private static @org.jspecify.annotations.Nullable TextArea focusedTextArea(Node node) {
+        if (node instanceof TextArea area && area.isFocused()) {
+            return area;
+        }
+        if (!(node instanceof Parent parent)) {
+            return null;
+        }
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            TextArea found = focusedTextArea(child);
             if (found != null) {
                 return found;
             }
@@ -1040,11 +1180,14 @@ public final class DungeonEditorStateView extends VBox {
                 String statusText
         ) {
             TextArea visualArea = textArea(card.visualDescription());
+            visualArea.setAccessibleText(narrationVisualAccessibleText(card.roomId()));
+            visualArea.setTextFormatter(new TextFormatter<>(narrationTextFilter(visualArea.getAccessibleText())));
             List<TextArea> exitAreas = new ArrayList<>();
             getChildren().addAll(new PanelTitle(card.roomName()), narrationLabel("Visueller Eindruck", visualArea), visualArea);
             for (DungeonEditorStateContentModel.RoomExitNarrationProjection exit : card.exits()) {
                 TextArea exitArea = textArea(exit.description());
-                exitArea.setAccessibleText(exit.label());
+                exitArea.setAccessibleText(narrationExitAccessibleText(card.roomId(), exit));
+                exitArea.setTextFormatter(new TextFormatter<>(narrationTextFilter(exitArea.getAccessibleText())));
                 exitAreas.add(exitArea);
                 getChildren().addAll(narrationLabel(exit.label(), exitArea), exitArea);
             }
@@ -1074,6 +1217,27 @@ public final class DungeonEditorStateView extends VBox {
             label.setLabelFor(area);
             return label;
         }
+    }
+
+    private static String narrationVisualAccessibleText(long roomId) {
+        return "Raum " + Math.max(0L, roomId) + " visueller Eindruck";
+    }
+
+    private static String narrationExitAccessibleText(
+            long roomId,
+            DungeonEditorStateContentModel.RoomExitNarrationProjection exit
+    ) {
+        String label = exit == null ? "" : exit.label();
+        int q = exit == null ? 0 : exit.q();
+        int r = exit == null ? 0 : exit.r();
+        int level = exit == null ? 0 : exit.level();
+        String direction = exit == null ? "" : exit.direction();
+        return "Raum " + Math.max(0L, roomId)
+                + " Ausgang " + label
+                + " q=" + q
+                + " r=" + r
+                + " z=" + level
+                + " " + direction;
     }
 
     private static final class StateCard extends VBox {

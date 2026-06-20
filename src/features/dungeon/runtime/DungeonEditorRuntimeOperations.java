@@ -52,6 +52,10 @@ public interface DungeonEditorRuntimeOperations {
 
     void saveRoomNarration(RoomNarration narration);
 
+    default void updateStatePanelRoomNarrationDraft(RoomNarrationDraftInput input) {
+        // Only feature-runtime roots own state-panel draft session state.
+    }
+
     default void updateStatePanelLabelNameDraft(String targetKind, long targetId, String name) {
         // Only feature-runtime roots own state-panel draft session state.
     }
@@ -148,6 +152,33 @@ public interface DungeonEditorRuntimeOperations {
             mapId = safeText(mapId, "");
             tileId = safeText(tileId, "");
             transitionId = safeText(transitionId, "");
+        }
+    }
+
+    record RoomNarrationDraftInput(
+            long roomId,
+            String visualDescription,
+            List<ExitNarrationDraftInput> exits
+    ) {
+        public RoomNarrationDraftInput {
+            roomId = Math.max(0L, roomId);
+            visualDescription = safeText(visualDescription, "");
+            exits = exits == null ? List.of() : List.copyOf(exits);
+        }
+    }
+
+    record ExitNarrationDraftInput(
+            String label,
+            int q,
+            int r,
+            int level,
+            String direction,
+            String description
+    ) {
+        public ExitNarrationDraftInput {
+            label = safeText(label, "");
+            direction = safeText(direction, "");
+            description = safeText(description, "");
         }
     }
 

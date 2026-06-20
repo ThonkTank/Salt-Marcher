@@ -31,6 +31,7 @@ public final class DungeonEditorContributionModel {
                         null,
                         null,
                         null,
+                        null,
                         null)
                 : frame;
         DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
@@ -154,6 +155,7 @@ public final class DungeonEditorContributionModel {
                         null,
                         null,
                         null,
+                        null,
                         null)
                 : frame;
         DungeonEditorPreparedFrameFacts safeFacts = safeFrame.preparedFacts();
@@ -166,6 +168,7 @@ public final class DungeonEditorContributionModel {
                 safeFacts.viewModeLabel(),
                 safeFacts.projectionLevel(),
                 safeFacts.overlay().overlayLabel(),
+                safeFrame.statePanelRoomNarrationDrafts(),
                 safeFrame.statePanelLabelNameDraft(),
                 safeFrame.statePanelCorridorPointDraft(),
                 safeFrame.statePanelTransitionDescriptionDraft(),

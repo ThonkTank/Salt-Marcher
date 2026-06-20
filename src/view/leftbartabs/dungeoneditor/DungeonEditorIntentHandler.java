@@ -14,7 +14,9 @@ import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerWorkflowGesture;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerWorkflowIntent;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarrationDraftInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarration;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.ExitNarrationDraftInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent;
@@ -240,16 +242,15 @@ final class DungeonEditorIntentHandler {
     }
 
     private void consumeNarrationInput(DungeonEditorStateViewInputEvent event) {
-        stateContentModel.updateNarrationDraft(
-                event.roomId(),
-                event.visualDescription(),
-                event.exitDescriptions());
+        RoomNarrationDraftInput draftInput = toRoomNarrationDraftInput(event);
+        if (draftInput != null) {
+            operations.updateStatePanelRoomNarrationDraft(draftInput);
+        }
         if (!event.narrationSaveRequested()) {
             return;
         }
         RoomNarration narration = toRoomNarration(event);
         if (narration != null) {
-            stateContentModel.clearNarrationDraft(event.roomId());
             operations.saveRoomNarration(narration);
         }
     }
@@ -946,16 +947,61 @@ final class DungeonEditorIntentHandler {
         if (card == null) {
             return null;
         }
-        List<DungeonEditorStateContentModel.RoomExitNarrationProjection> exits =
-                stateContentModel.currentExitsWithDraftDescriptions(card);
         return new RoomNarration(
                 card.roomId(),
-                stateContentModel.currentVisualDescription(card),
-                exits.stream().map(DungeonEditorIntentHandler::toExitNarration).toList());
+                event.visualDescription(),
+                narrationExits(card, event.exitDescriptions()).stream()
+                        .map(DungeonEditorIntentHandler::toExitNarration)
+                        .toList());
+    }
+
+    private @Nullable RoomNarrationDraftInput toRoomNarrationDraftInput(
+            DungeonEditorStateViewInputEvent event
+    ) {
+        DungeonEditorStateContentModel.RoomNarrationCardProjection card =
+                stateContentModel.currentNarrationCard(event.roomId());
+        if (card == null) {
+            return null;
+        }
+        return new RoomNarrationDraftInput(
+                card.roomId(),
+                event.visualDescription(),
+                narrationExits(card, event.exitDescriptions()).stream()
+                        .map(DungeonEditorIntentHandler::toExitNarrationDraftInput)
+                        .toList());
+    }
+
+    private static List<DungeonEditorStateContentModel.RoomExitNarrationProjection> narrationExits(
+            DungeonEditorStateContentModel.RoomNarrationCardProjection card,
+            List<String> exitDescriptions
+    ) {
+        List<String> safeDescriptions = exitDescriptions == null ? List.of() : exitDescriptions;
+        List<DungeonEditorStateContentModel.RoomExitNarrationProjection> exits = card.exits();
+        return java.util.stream.IntStream.range(0, exits.size())
+                .mapToObj(index -> {
+                    DungeonEditorStateContentModel.RoomExitNarrationProjection exit = exits.get(index);
+                    String description = index < safeDescriptions.size()
+                            ? safeDescriptions.get(index)
+                            : exit.description();
+                    return exit.withDescription(description);
+                })
+                .toList();
     }
 
     private static ExitNarration toExitNarration(DungeonEditorStateContentModel.RoomExitNarrationProjection exit) {
         return new ExitNarration(
+                exit.label(),
+                exit.q(),
+                exit.r(),
+                exit.level(),
+                exit.direction(),
+                exit.description());
+    }
+
+    private static ExitNarrationDraftInput toExitNarrationDraftInput(
+            DungeonEditorStateContentModel.RoomExitNarrationProjection exit
+    ) {
+        return new ExitNarrationDraftInput(
                 exit.label(),
                 exit.q(),
                 exit.r(),
