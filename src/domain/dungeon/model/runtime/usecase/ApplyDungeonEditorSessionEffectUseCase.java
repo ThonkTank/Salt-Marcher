@@ -2,10 +2,10 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonFacts;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
@@ -59,7 +59,11 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
         return committedSnapshot;
     }
 
-    public void applyEffect(DungeonEditorMainViewEffect effect) {
+    public void applyEffect(DungeonEditorSessionEffect effect) {
+        if (effect == null) {
+            publishCurrent();
+            return;
+        }
         DungeonEditorSessionValues.Preview previousPreview = workflow.session().preview();
         DungeonEditorSessionValues.Preview applyPreview = workflow.applyEffect(effect);
         if (applyPreview != null) {
@@ -68,10 +72,10 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
             }
             workflow.clearPreviewWithStatus(currentFacts().mutationStatusText());
             if (clearsSelectionAfterApply(applyPreview)) {
-                workflow.applyEffect(DungeonEditorMainViewEffect.clearedSelection());
+                workflow.applyEffect(DungeonEditorSessionEffect.clearedSelection());
             }
         }
-        if (applyPreview == null && inMemoryDragPreview(effect.preview())) {
+        if (applyPreview == null && inMemoryDragPreview(effect.getPreview())) {
             if (previousPreview.equals(workflow.session().preview())) {
                 return;
             }

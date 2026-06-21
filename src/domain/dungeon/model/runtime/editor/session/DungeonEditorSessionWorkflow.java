@@ -2,7 +2,6 @@ package src.domain.dungeon.model.runtime.editor.session;
 
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
 
 public final class DungeonEditorSessionWorkflow {
     public static final String MAP_CREATED = "CREATED";
@@ -65,27 +64,27 @@ public final class DungeonEditorSessionWorkflow {
                 selectedLevels)).withStatusText(""));
     }
 
-    public DungeonEditorSessionValues.@Nullable Preview applyEffect(DungeonEditorMainViewEffect effect) {
+    public DungeonEditorSessionValues.@Nullable Preview applyEffect(DungeonEditorSessionEffect effect) {
         if (effect == null) {
             return null;
         }
-        if (effect.projectionLevelDelta() != 0) {
-            session.replace(session.current().shiftProjectionLevel(effect.projectionLevelDelta()).clearPreview());
+        if (effect.getProjectionLevelDelta() != 0) {
+            session.replace(session.current().shiftProjectionLevel(effect.getProjectionLevelDelta()).clearPreview());
         }
-        if (effect.statusText() != null) {
-            session.replace(session.current().withStatusText(effect.statusText()));
+        if (effect.getStatusText() != null) {
+            session.replace(session.current().withStatusText(effect.getStatusText()));
         }
-        if (effect.clearSelection()) {
+        if (effect.isClearSelection()) {
             session.replace(session.current().clearSelection().clearPreview());
-        } else if (effect.selection() != null) {
-            session.replace(session.current().withSelection(effect.selection()).clearPreview());
+        } else if (effect.getSelection() != null) {
+            session.replace(session.current().withSelection(effect.getSelection()).clearPreview());
         }
-        if (effect.clearPreview()) {
+        if (effect.isClearPreview()) {
             session.replace(session.current().clearPreview());
-        } else if (effect.preview() != null) {
-            session.replace(session.current().withPreview(effect.preview()).withStatusText(""));
+        } else if (effect.getPreview() != null) {
+            session.replace(session.current().withPreview(effect.getPreview()).withStatusText(""));
         }
-        return effect.applyPreview();
+        return effect.getApplyPreview();
     }
 
     public void clearPreviewWithStatus(String statusText) {

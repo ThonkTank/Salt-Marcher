@@ -1,27 +1,24 @@
 package src.features.dungeon.runtime;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateCorridorUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteCorridorUseCase;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.published.DungeonEditorTool;
+import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.PointerToolUseCase;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorCorridorDraftRuntimeOperation {
-    private final ApplyDungeonEditorCreateCorridorUseCase createCorridor;
-    private final ApplyDungeonEditorDeleteCorridorUseCase deleteCorridor;
+    private final PointerToolUseCase createCorridor;
+    private final PointerToolUseCase deleteCorridor;
 
     DungeonEditorCorridorDraftRuntimeOperation(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
-        createCorridor = new ApplyDungeonEditorCreateCorridorUseCase(
+        DungeonEditorApplyToolUseCase toolUseCase = new DungeonEditorApplyToolUseCase(
                 runtime.workflow(),
                 runtime.mainViewInterpreter(),
                 runtime.effectUseCase());
-        deleteCorridor = new ApplyDungeonEditorDeleteCorridorUseCase(
-                runtime.workflow(),
-                runtime.mainViewInterpreter(),
-                runtime.effectUseCase());
+        createCorridor = toolUseCase.corridorWorkflow(DungeonEditorSessionValues.Tool.CORRIDOR_CREATE);
+        deleteCorridor = toolUseCase.corridorWorkflow(DungeonEditorSessionValues.Tool.CORRIDOR_DELETE);
     }
 
     static @Nullable DungeonEditorTool corridorTool(String toolKey) {
@@ -36,7 +33,7 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        MainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
+        DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
                 sample,
                 wallSingleClickMode,
                 transitionDestination);
@@ -49,34 +46,35 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
         }
     }
 
-    private void applyCreate(PointerAction action, MainViewInput input) {
-        PointerAction effectiveAction = previewAction(action);
-        if (effectiveAction == PointerAction.PRESSED) {
-            createCorridor.press(input);
-            return;
-        } else if (effectiveAction == PointerAction.MOVED) {
-            createCorridor.hover(input);
-            return;
-        } else if (effectiveAction == PointerAction.DRAGGED || effectiveAction == PointerAction.RELEASED) {
-            // Corridor create currently supports press and hover only.
-            return;
-        }
-        throw new IllegalStateException("Unsupported corridor create pointer action: " + effectiveAction);
+    private void applyCreate(PointerAction action, DungeonEditorMainViewInput input) {
+        applyWorkflow(action, input, createCorridor, "corridor create");
     }
 
-    private void applyDelete(PointerAction action, MainViewInput input) {
+    private void applyDelete(PointerAction action, DungeonEditorMainViewInput input) {
+        applyWorkflow(action, input, deleteCorridor, "corridor delete");
+    }
+
+    private static void applyWorkflow(
+            PointerAction action,
+            DungeonEditorMainViewInput input,
+            PointerToolUseCase workflow,
+            String workflowName
+    ) {
         PointerAction effectiveAction = previewAction(action);
+        ApplyDungeonEditorToolWorkflowUseCase.PointerAction toolAction;
         if (effectiveAction == PointerAction.PRESSED) {
-            deleteCorridor.press(input);
-            return;
+            toolAction = workflow.press();
         } else if (effectiveAction == PointerAction.MOVED) {
-            deleteCorridor.hover(input);
-            return;
+            toolAction = workflow.hover();
         } else if (effectiveAction == PointerAction.DRAGGED || effectiveAction == PointerAction.RELEASED) {
-            // Corridor delete currently supports press and hover only.
             return;
+        } else {
+            throw new IllegalStateException("Unsupported " + workflowName + " pointer action: " + effectiveAction);
         }
-        throw new IllegalStateException("Unsupported corridor delete pointer action: " + effectiveAction);
+        if (toolAction == null) {
+            throw new IllegalStateException("Unsupported " + workflowName + " pointer action: " + effectiveAction);
+        }
+        toolAction.apply(input);
     }
 
     private static PointerAction previewAction(PointerAction action) {

@@ -1,8 +1,6 @@
 package src.features.dungeon.runtime;
 
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.BoundaryInput;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.BoundaryKindInput;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.HandleInput;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.runtime.usecase.MoveDungeonEditorHandleUseCase.HandleMoveInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 
@@ -36,36 +34,32 @@ final class DungeonEditorHandleInputTranslator {
                 r);
     }
 
-    static HandleInput handleInput(HandleTarget handle) {
+    static DungeonEditorWorkspaceValues.HandleRef handleRef(HandleTarget handle) {
         HandleTarget safeHandle = handle == null ? HandleTarget.empty() : handle;
-        return new HandleInput(
-                DungeonEditorRuntimeEnumTranslator.handleKind(safeHandle.kind()),
+        return new DungeonEditorWorkspaceValues.HandleRef(
+                DungeonEditorRuntimeEnumTranslator.handleType(safeHandle.kind()),
                 DungeonEditorRuntimeInputValues.topologyRef(safeHandle.topologyKind(), safeHandle.topologyId()),
                 safeHandle.ownerId(),
                 safeHandle.clusterId(),
                 safeHandle.corridorId(),
                 safeHandle.roomId(),
                 safeHandle.orderIndex(),
-                DungeonEditorRuntimeInputValues.cellInput(safeHandle.q(), safeHandle.r(), safeHandle.level()),
+                DungeonEditorRuntimeInputValues.cell(safeHandle.q(), safeHandle.r(), safeHandle.level()),
                 safeHandle.direction(),
-                sourceEdgeInput(safeHandle));
+                sourceEdge(safeHandle));
     }
 
-    private static BoundaryInput sourceEdgeInput(HandleTarget handle) {
+    private static DungeonEditorWorkspaceValues.Edge sourceEdge(HandleTarget handle) {
         return handle.sourceEdgePresent()
-                ? new BoundaryInput(
-                        BoundaryKindInput.WALL,
-                        "",
-                        handle.ownerId(),
-                        DungeonEditorRuntimeInputValues.topologyRef(handle.topologyKind(), handle.topologyId()),
-                        DungeonEditorRuntimeInputValues.cellInput(
+                ? new DungeonEditorWorkspaceValues.Edge(
+                        DungeonEditorRuntimeInputValues.cell(
                                 handle.sourceStartQ(),
                                 handle.sourceStartR(),
                                 handle.sourceStartLevel()),
-                        DungeonEditorRuntimeInputValues.cellInput(
+                        DungeonEditorRuntimeInputValues.cell(
                                 handle.sourceEndQ(),
                                 handle.sourceEndR(),
                                 handle.sourceEndLevel()))
-                : BoundaryInput.empty();
+                : null;
     }
 }

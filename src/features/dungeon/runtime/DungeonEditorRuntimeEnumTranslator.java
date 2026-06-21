@@ -2,13 +2,12 @@ package src.features.dungeon.runtime;
 
 import java.util.Locale;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.ToolInput;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorToolWorkflowUseCase.WorkflowAction;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.published.DungeonEditorTool;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.BoundaryKindInput;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.HandleKindInput;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.LabelKindInput;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.TopologyKindInput;
+import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.ToolInput;
+import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.WorkflowAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 
 final class DungeonEditorRuntimeEnumTranslator {
@@ -49,35 +48,32 @@ final class DungeonEditorRuntimeEnumTranslator {
         };
     }
 
-    static BoundaryKindInput boundaryKind(String value) {
+    static DungeonEditorWorkspaceValues.BoundaryKind boundaryKind(String value) {
         try {
-            return BoundaryKindInput.fromName(normalizedEnumName(value));
+            return DungeonEditorWorkspaceValues.BoundaryKind.fromExternalKind(normalizedEnumName(value));
         } catch (IllegalArgumentException ignored) {
-            return BoundaryKindInput.WALL;
+            return DungeonEditorWorkspaceValues.BoundaryKind.WALL;
         }
     }
 
-    static HandleKindInput handleKind(String value) {
+    static String labelKind(String value) {
+        String normalized = normalizedEnumName(value);
+        return normalized.isBlank() ? "EMPTY" : normalized;
+    }
+
+    static DungeonEditorHandleType handleType(String value) {
         try {
-            return HandleKindInput.fromName(normalizedEnumName(value));
+            return DungeonEditorHandleType.valueOf(normalizedEnumName(value));
         } catch (IllegalArgumentException ignored) {
-            return HandleKindInput.CLUSTER_LABEL;
+            return DungeonEditorHandleType.CLUSTER_LABEL;
         }
     }
 
-    static LabelKindInput labelKind(String value) {
+    static DungeonTopologyElementKind topologyKind(String value) {
         try {
-            return LabelKindInput.fromName(normalizedEnumName(value));
+            return DungeonTopologyElementKind.valueOf(normalizedEnumName(value));
         } catch (IllegalArgumentException ignored) {
-            return LabelKindInput.EMPTY;
-        }
-    }
-
-    static TopologyKindInput topologyKind(String value) {
-        try {
-            return TopologyKindInput.fromName(normalizedEnumName(value));
-        } catch (IllegalArgumentException ignored) {
-            return TopologyKindInput.EMPTY;
+            return DungeonTopologyElementKind.EMPTY;
         }
     }
 

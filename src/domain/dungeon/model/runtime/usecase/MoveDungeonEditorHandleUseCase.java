@@ -5,7 +5,7 @@ import java.util.Optional;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
@@ -39,7 +39,7 @@ public final class MoveDungeonEditorHandleUseCase {
         if (deltaQ == 0 && deltaR == 0) {
             return;
         }
-        effectUseCase.applyEffect(DungeonEditorMainViewEffect.apply(
+        effectUseCase.applyEffect(DungeonEditorSessionEffect.apply(
                 new DungeonEditorSessionValues.MoveHandlePreview(
                         handleRef,
                         deltaQ,

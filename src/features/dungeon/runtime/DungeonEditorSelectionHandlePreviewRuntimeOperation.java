@@ -1,7 +1,5 @@
 package src.features.dungeon.runtime;
 
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSelectionUseCase;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
@@ -21,7 +19,7 @@ final class DungeonEditorSelectionHandlePreviewRuntimeOperation {
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        MainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
+        DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
                 sample,
                 wallSingleClickMode,
                 transitionDestination);

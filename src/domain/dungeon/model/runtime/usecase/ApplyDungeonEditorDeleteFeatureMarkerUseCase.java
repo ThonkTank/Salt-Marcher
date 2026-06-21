@@ -3,10 +3,8 @@ package src.domain.dungeon.model.runtime.usecase;
 import java.util.Objects;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorMainViewPointerTarget;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorDeleteFeatureMarkerUseCase {
     private static final long NO_MARKER_ID = 0L;
@@ -14,8 +12,6 @@ public final class ApplyDungeonEditorDeleteFeatureMarkerUseCase {
     private final DungeonEditorSessionWorkflow workflow;
     private final DeleteDungeonEditorAuthoredFeatureMarkerUseCase deleteFeatureMarkerUseCase;
     private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
-    private final BuildDungeonEditorMainViewInputUseCase inputBuilder =
-            new BuildDungeonEditorMainViewInputUseCase();
 
     public ApplyDungeonEditorDeleteFeatureMarkerUseCase(
             DungeonEditorSessionWorkflow workflow,
@@ -27,29 +23,28 @@ public final class ApplyDungeonEditorDeleteFeatureMarkerUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    public void press(MainViewInput input) {
+    public void press(DungeonTopologyRef target) {
         if (!workflow.session().hasSelectedMap()) {
             effectUseCase.publishCurrent();
             return;
         }
-        long markerId = markerId(input);
+        long markerId = markerId(target);
         if (markerId <= NO_MARKER_ID) {
             effectUseCase.publishCurrent();
             return;
         }
         boolean deleted = deleteFeatureMarkerUseCase.execute(workflow.session().selectedMapId(), markerId);
         if (deleted) {
-            workflow.applyEffect(DungeonEditorMainViewEffect.clearedSelection());
+            workflow.applyEffect(DungeonEditorSessionEffect.clearedSelection());
             workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
         }
         effectUseCase.publishCurrent();
     }
 
-    private long markerId(MainViewInput input) {
-        DungeonEditorMainViewPointerTarget target = inputBuilder.execute(input).target();
-        DungeonTopologyRef topologyRef = target.topologyRef();
-        if (topologyRef.kind() == DungeonTopologyElementKind.FEATURE_MARKER) {
-            return topologyRef.id();
+    private long markerId(DungeonTopologyRef target) {
+        DungeonTopologyRef safeTarget = target == null ? DungeonTopologyRef.empty() : target;
+        if (safeTarget.kind() == DungeonTopologyElementKind.FEATURE_MARKER) {
+            return safeTarget.id();
         }
         return NO_MARKER_ID;
     }

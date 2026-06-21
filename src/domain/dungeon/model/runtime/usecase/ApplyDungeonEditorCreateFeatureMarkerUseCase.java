@@ -5,10 +5,9 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.feature.FeatureMarkerKind;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorCreateFeatureMarkerUseCase {
     private static final String INVALID_FEATURE_MARKER_STATUS = "Feature-Markierung ungueltig.";
@@ -28,24 +27,23 @@ public final class ApplyDungeonEditorCreateFeatureMarkerUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    public void pressPoi(MainViewInput input) {
-        press(input, FeatureMarkerKind.POI);
+    public void pressPoi(Cell anchor) {
+        press(anchor, FeatureMarkerKind.POI);
     }
 
-    public void pressObject(MainViewInput input) {
-        press(input, FeatureMarkerKind.OBJECT);
+    public void pressObject(Cell anchor) {
+        press(anchor, FeatureMarkerKind.OBJECT);
     }
 
-    public void pressEncounter(MainViewInput input) {
-        press(input, FeatureMarkerKind.ENCOUNTER);
+    public void pressEncounter(Cell anchor) {
+        press(anchor, FeatureMarkerKind.ENCOUNTER);
     }
 
-    private void press(MainViewInput input, FeatureMarkerKind kind) {
-        if (!workflow.session().hasSelectedMap() || input == null) {
+    private void press(Cell anchor, FeatureMarkerKind kind) {
+        if (!workflow.session().hasSelectedMap() || anchor == null) {
             effectUseCase.publishCurrent();
             return;
         }
-        Cell anchor = anchor(input);
         if (!createFeatureMarkerUseCase.canExecute(workflow.session().selectedMapId(), kind, anchor)) {
             workflow.clearPreviewWithStatus(INVALID_FEATURE_MARKER_STATUS);
             effectUseCase.publishCurrent();
@@ -57,17 +55,10 @@ public final class ApplyDungeonEditorCreateFeatureMarkerUseCase {
             effectUseCase.publishCurrent();
             return;
         }
-        workflow.applyEffect(DungeonEditorMainViewEffect.select(
+        workflow.applyEffect(DungeonEditorSessionEffect.select(
                 markerSelection(markerId),
                 effectUseCase.currentFacts().mutationStatusText()));
         effectUseCase.publishCurrent();
-    }
-
-    private Cell anchor(MainViewInput input) {
-        return new Cell(
-                (int) Math.floor(input.canvasX()),
-                (int) Math.floor(input.canvasY()),
-                workflow.session().projectionLevel());
     }
 
     private DungeonEditorSessionValues.Selection markerSelection(long markerId) {

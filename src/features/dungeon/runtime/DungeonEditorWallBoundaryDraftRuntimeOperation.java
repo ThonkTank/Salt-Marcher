@@ -1,27 +1,24 @@
 package src.features.dungeon.runtime;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCreateWallUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorDeleteWallUseCase;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.published.DungeonEditorTool;
+import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.PointerToolUseCase;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorWallBoundaryDraftRuntimeOperation {
-    private final ApplyDungeonEditorCreateWallUseCase createWall;
-    private final ApplyDungeonEditorDeleteWallUseCase deleteWall;
+    private final PointerToolUseCase createWall;
+    private final PointerToolUseCase deleteWall;
 
     DungeonEditorWallBoundaryDraftRuntimeOperation(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
-        createWall = new ApplyDungeonEditorCreateWallUseCase(
+        DungeonEditorApplyToolUseCase toolUseCase = new DungeonEditorApplyToolUseCase(
                 runtime.workflow(),
                 runtime.mainViewInterpreter(),
                 runtime.effectUseCase());
-        deleteWall = new ApplyDungeonEditorDeleteWallUseCase(
-                runtime.workflow(),
-                runtime.mainViewInterpreter(),
-                runtime.effectUseCase());
+        createWall = toolUseCase.boundaryWorkflow(DungeonEditorSessionValues.Tool.WALL_CREATE);
+        deleteWall = toolUseCase.boundaryWorkflow(DungeonEditorSessionValues.Tool.WALL_DELETE);
     }
 
     static @Nullable DungeonEditorTool wallTool(String toolKey) {
@@ -36,7 +33,7 @@ final class DungeonEditorWallBoundaryDraftRuntimeOperation {
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        MainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
+        DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
                 sample,
                 wallSingleClickMode,
                 transitionDestination);
@@ -49,34 +46,37 @@ final class DungeonEditorWallBoundaryDraftRuntimeOperation {
         }
     }
 
-    private void applyCreate(PointerAction action, MainViewInput input) {
-        PointerAction effectiveAction = previewAction(action);
-        if (effectiveAction == PointerAction.PRESSED) {
-            createWall.press(input);
-        } else if (effectiveAction == PointerAction.DRAGGED) {
-            createWall.drag(input);
-        } else if (effectiveAction == PointerAction.RELEASED) {
-            createWall.release(input);
-        } else if (effectiveAction == PointerAction.MOVED) {
-            createWall.hover(input);
-        } else {
-            throw new IllegalStateException("Unsupported wall create pointer action: " + effectiveAction);
-        }
+    private void applyCreate(PointerAction action, DungeonEditorMainViewInput input) {
+        applyWorkflow(action, input, createWall, "wall create");
     }
 
-    private void applyDelete(PointerAction action, MainViewInput input) {
+    private void applyDelete(PointerAction action, DungeonEditorMainViewInput input) {
+        applyWorkflow(action, input, deleteWall, "wall delete");
+    }
+
+    private static void applyWorkflow(
+            PointerAction action,
+            DungeonEditorMainViewInput input,
+            PointerToolUseCase workflow,
+            String workflowName
+    ) {
         PointerAction effectiveAction = previewAction(action);
+        ApplyDungeonEditorToolWorkflowUseCase.PointerAction toolAction;
         if (effectiveAction == PointerAction.PRESSED) {
-            deleteWall.press(input);
+            toolAction = workflow.press();
         } else if (effectiveAction == PointerAction.DRAGGED) {
-            deleteWall.drag(input);
+            toolAction = workflow.drag();
         } else if (effectiveAction == PointerAction.RELEASED) {
-            deleteWall.release(input);
+            toolAction = workflow.release();
         } else if (effectiveAction == PointerAction.MOVED) {
-            deleteWall.hover(input);
+            toolAction = workflow.hover();
         } else {
-            throw new IllegalStateException("Unsupported wall delete pointer action: " + effectiveAction);
+            throw new IllegalStateException("Unsupported " + workflowName + " pointer action: " + effectiveAction);
         }
+        if (toolAction == null) {
+            throw new IllegalStateException("Unsupported " + workflowName + " pointer action: " + effectiveAction);
+        }
+        toolAction.apply(input);
     }
 
     private static PointerAction previewAction(PointerAction action) {

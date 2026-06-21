@@ -17,7 +17,6 @@ import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishe
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonAuthoredMutationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSelectionUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.AssembleDungeonSnapshotUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorSnapshotUseCase;
@@ -32,7 +31,6 @@ import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorAuthoredTrans
 import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapCatalogUseCase;
 import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapUseCase;
 import src.domain.dungeon.model.runtime.usecase.InspectDungeonSelectionUseCase;
-import src.domain.dungeon.model.runtime.usecase.InterpretDungeonEditorMainViewInputUseCase;
 import src.domain.dungeon.model.runtime.usecase.LoadDungeonEditorAuthoredMapUseCase;
 import src.domain.dungeon.model.runtime.usecase.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.model.runtime.usecase.MoveDungeonEditorHandleUseCase;
@@ -68,11 +66,11 @@ final class DungeonEditorAuthoredRuntimeAssembly {
 
     static DungeonEditorAuthoredRuntimeOperations create(
             ServiceRegistry registry,
-            DungeonEditorInteractionSession interactionSession
+            DungeonEditorMainViewInteractionState interactionState
     ) {
         ServiceRegistry safeRegistry = Objects.requireNonNull(registry, "registry");
-        DungeonEditorInteractionSession safeInteractionSession =
-                Objects.requireNonNull(interactionSession, "interactionSession");
+        DungeonEditorMainViewInteractionState safeInteractionState =
+                Objects.requireNonNull(interactionState, "interactionState");
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         DungeonAuthoredPublishedStateRepository authoredPublishedState =
                 safeRegistry.require(DungeonAuthoredPublishedStateRepository.class);
@@ -81,7 +79,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
         AuthoredUseCases authored = authoredUseCases(safeRegistry, authoredPublishedState, dungeonState);
         DungeonEditorSessionWorkflow workflow = new DungeonEditorSessionWorkflow();
         InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter =
-                new InterpretDungeonEditorMainViewInputUseCase(safeInteractionSession.state());
+                new InterpretDungeonEditorMainViewInputUseCase(safeInteractionState);
         BuildDungeonEditorSnapshotUseCase snapshotBuilder = new BuildDungeonEditorSnapshotUseCase(
                 authored.searchMapsUseCase(),
                 authored.loadMapUseCase(),

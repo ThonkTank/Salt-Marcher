@@ -3,11 +3,10 @@ package src.domain.dungeon.model.runtime.usecase;
 import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorCreateStairUseCase {
     private static final String INVALID_STAIR_GEOMETRY_STATUS = "Treppengeometrie ungueltig.";
@@ -26,36 +25,35 @@ public final class ApplyDungeonEditorCreateStairUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    public void press(MainViewInput input) {
-        press(input, StairShape.STRAIGHT);
+    public void press(Cell anchor) {
+        press(anchor, StairShape.STRAIGHT);
     }
 
-    public void pressSquare(MainViewInput input) {
-        press(input, StairShape.SQUARE);
+    public void pressSquare(Cell anchor) {
+        press(anchor, StairShape.SQUARE);
     }
 
-    public void pressCircular(MainViewInput input) {
-        press(input, StairShape.CIRCULAR);
+    public void pressCircular(Cell anchor) {
+        press(anchor, StairShape.CIRCULAR);
     }
 
-    public void hover(MainViewInput input) {
-        hover(input, StairShape.STRAIGHT);
+    public void hover(Cell anchor) {
+        hover(anchor, StairShape.STRAIGHT);
     }
 
-    public void hoverSquare(MainViewInput input) {
-        hover(input, StairShape.SQUARE);
+    public void hoverSquare(Cell anchor) {
+        hover(anchor, StairShape.SQUARE);
     }
 
-    public void hoverCircular(MainViewInput input) {
-        hover(input, StairShape.CIRCULAR);
+    public void hoverCircular(Cell anchor) {
+        hover(anchor, StairShape.CIRCULAR);
     }
 
-    private void press(MainViewInput input, StairShape shape) {
-        if (!workflow.session().hasSelectedMap() || input == null) {
+    private void press(Cell anchor, StairShape shape) {
+        if (!workflow.session().hasSelectedMap() || anchor == null) {
             effectUseCase.publishCurrent();
             return;
         }
-        Cell anchor = anchor(input);
         if (!createStairUseCase.canExecute(workflow.session().selectedMapId(), anchor, shape.name())) {
             workflow.clearPreviewWithStatus(INVALID_STAIR_GEOMETRY_STATUS);
             effectUseCase.publishCurrent();
@@ -66,24 +64,16 @@ public final class ApplyDungeonEditorCreateStairUseCase {
         effectUseCase.publishCurrent();
     }
 
-    private void hover(MainViewInput input, StairShape shape) {
-        if (!workflow.session().hasSelectedMap() || input == null) {
+    private void hover(Cell anchor, StairShape shape) {
+        if (!workflow.session().hasSelectedMap() || anchor == null) {
             workflow.clearPreviewWithStatus("");
             effectUseCase.publishSessionPreview();
             return;
         }
-        Cell anchor = anchor(input);
-        workflow.applyEffect(DungeonEditorMainViewEffect.preview(new DungeonEditorSessionValues.StairCreatePreview(
+        workflow.applyEffect(DungeonEditorSessionEffect.preview(new DungeonEditorSessionValues.StairCreatePreview(
                 workspaceCell(anchor),
                 shape.name())));
         effectUseCase.publishSessionPreview();
-    }
-
-    private Cell anchor(MainViewInput input) {
-        return new Cell(
-                (int) Math.floor(input.canvasX()),
-                (int) Math.floor(input.canvasY()),
-                workflow.session().projectionLevel());
     }
 
     private static DungeonEditorWorkspaceValues.Cell workspaceCell(Cell anchor) {

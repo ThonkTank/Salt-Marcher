@@ -22,15 +22,18 @@ Current state:
 
 - `DungeonMap` is the aggregate root and mutation boundary for one authored map.
 - Authored dungeon truth lives under `dungeon/model/core/**`.
-- Editor and travel runtime state live under `dungeon/model/runtime/**`.
+- Neutral editor session/application seams and travel runtime state live under
+  `dungeon/model/runtime/**`; migrated Dungeon Editor interaction/session
+  workflows live under `src/features/dungeon/runtime/**`.
 - Stable topology refs are map-owned and reused by rooms, corridors, doors,
   corridor anchors, stairs, transitions, handles, and labels.
 - Search and write-model persistence are separate outbound contracts.
-- Editor canvas affordance facts for cluster labels, true corners, and
-  wall-run midpoints are owned by runtime editor interaction models derived
-  from `DungeonMap` truth. The view may apply selection-dependent visibility
-  and hit indexing, but it must not reinterpret corridor, door, or cluster
-  geometry facts into new authoritative edit handles.
+- Stable editor handle and projection affordance facts for cluster labels, true
+  corners, and wall-run midpoints remain domain-neutral facts derived from
+  `DungeonMap` truth. Migrated pointer interpretation, draft sessions, and
+  transient interaction workflows are feature-runtime-owned. The view may apply
+  selection-dependent visibility and hit indexing, but it must not reinterpret
+  corridor, door, or cluster geometry facts into new authoritative edit handles.
 
 Target state:
 
@@ -72,12 +75,16 @@ them.
 
 Model family: `runtime`
 
-`runtime` owns transient editor and travel state over core truth:
+`runtime` owns domain-neutral editor/session seams and travel state over core
+truth:
 
-- `model/runtime/editor/session` owns editor session state such as selected
-  tool, view mode, overlay, drafts, and preview state
-- `model/runtime/editor/interaction` owns transient on-map interaction objects
-  such as selection targets, handles, labels, hit targets, and drag intents
+- `model/runtime/editor/session` owns the neutral editor session values and
+  application surface that apply selection, tool, overlay, projection, preview,
+  and published-session effects over authored dungeon facts
+- migrated Dungeon Editor pointer interpretation, transient on-map interaction
+  objects, draft workflows, and runtime composition are owned by
+  `src/features/dungeon/runtime/**`; the domain runtime must not recreate that
+  feature-runtime orchestration under `model/runtime/editor/**`
 - `model/runtime/travel/session` owns travel-session state over core truth and
   party-owned position facts
 - `model/runtime/travel/projection` owns derived travel read facts
@@ -96,8 +103,9 @@ corridors, stairs, transitions, topology, or derived rebuild policy.
   content models; it must not become the source of authored dungeon meaning.
 - Data code owns storage mechanics and adapters; it must not own domain
   topology, recompute, validation, or derived rebuild rules.
-- Runtime state may preview and interpret interactions, but preview state
-  never mutates authored truth before an explicit domain mutation commits.
+- Feature-runtime preview and interaction state may stage editor intent over
+  domain facts, but preview state never mutates authored truth before an
+  explicit domain mutation commits.
 - Do not introduce new `*Logic`, `*Service`, `*Manager`, generic interface, or
   base-class names to preserve old placement. Move behavior to the owning core
   structure, component, runtime state, repository, or use case.

@@ -3,10 +3,8 @@ package src.domain.dungeon.model.runtime.usecase;
 import java.util.Objects;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorMainViewEffect;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorMainViewPointerTarget;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorMainViewInputUseCase.MainViewInput;
 
 public final class ApplyDungeonEditorDeleteTransitionUseCase {
     private static final long NO_TRANSITION_ID = 0L;
@@ -14,8 +12,6 @@ public final class ApplyDungeonEditorDeleteTransitionUseCase {
     private final DungeonEditorSessionWorkflow workflow;
     private final DeleteDungeonEditorAuthoredTransitionUseCase deleteTransitionUseCase;
     private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
-    private final BuildDungeonEditorMainViewInputUseCase inputBuilder =
-            new BuildDungeonEditorMainViewInputUseCase();
 
     public ApplyDungeonEditorDeleteTransitionUseCase(
             DungeonEditorSessionWorkflow workflow,
@@ -27,29 +23,28 @@ public final class ApplyDungeonEditorDeleteTransitionUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    public void press(MainViewInput input) {
+    public void press(DungeonTopologyRef target) {
         if (!workflow.session().hasSelectedMap()) {
             effectUseCase.publishCurrent();
             return;
         }
-        long transitionId = transitionId(input);
+        long transitionId = transitionId(target);
         if (transitionId <= NO_TRANSITION_ID) {
             effectUseCase.publishCurrent();
             return;
         }
         boolean deleted = deleteTransitionUseCase.execute(workflow.session().selectedMapId(), transitionId);
         if (deleted) {
-            workflow.applyEffect(DungeonEditorMainViewEffect.clearedSelection());
+            workflow.applyEffect(DungeonEditorSessionEffect.clearedSelection());
             workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
         }
         effectUseCase.publishCurrent();
     }
 
-    private long transitionId(MainViewInput input) {
-        DungeonEditorMainViewPointerTarget target = inputBuilder.execute(input).target();
-        DungeonTopologyRef topologyRef = target.topologyRef();
-        if (topologyRef.kind() == DungeonTopologyElementKind.TRANSITION) {
-            return topologyRef.id();
+    private long transitionId(DungeonTopologyRef target) {
+        DungeonTopologyRef safeTarget = target == null ? DungeonTopologyRef.empty() : target;
+        if (safeTarget.kind() == DungeonTopologyElementKind.TRANSITION) {
+            return safeTarget.id();
         }
         return NO_TRANSITION_ID;
     }

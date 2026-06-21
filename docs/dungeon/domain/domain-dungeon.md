@@ -17,8 +17,9 @@ Context Role: Authored Dungeon Map Context
 Context Name: Dungeon
 
 - `dungeon` owns authored dungeon map truth in the `core` model family plus
-  transient editor and travel runtime state in the `runtime` model family over
-  that same authored truth
+  neutral editor session/application seams and travel runtime state in the
+  `runtime` model family over that same authored truth; migrated Dungeon Editor
+  interaction/session workflows are feature-runtime-owned
 - `DungeonMap` is the aggregate root for one authored map
 - authored committed snapshots, authored operation results, authored selection
   inspectors, and runtime travel session surfaces are projections over the same
@@ -62,10 +63,11 @@ Derived state must not become a second source of truth. This includes:
 - render overlays
 - runtime party position
 
-Application-owned editor and travel session state may exist outside the
-authored write model when it is not persisted as dungeon truth. That state is
-owned by the explicit dungeon `runtime` model family, not by separate domain
-contexts and not by the authored `core` model.
+Application-owned neutral editor session values/effects and travel session
+state may exist outside the authored write model when they are not persisted as
+dungeon truth. Those domain runtime seams are not authored `core` state.
+Migrated Dungeon Editor pointer interpretation, transient interaction state, and
+draft workflows are feature-runtime-owned.
 
 ## Aggregate Model
 
@@ -216,9 +218,10 @@ Active root boundaries:
   in authored dungeon truth
 - `dungeon/model/core/**` owns authored dungeon truth and the structures
   that mutate it
-- `dungeon/model/runtime/**` owns runtime editor-session composition that
-  combines authored dungeon facts with session-local selection, tool, preview,
-  overlay, projection level, and pointer interpretation
+- `dungeon/model/runtime/**` owns neutral editor session values and session
+  application seams over authored dungeon facts; migrated Dungeon Editor
+  pointer interpretation, transient interaction objects, draft workflows, and
+  runtime composition are owned by `src/features/dungeon/runtime/**`
 - `dungeon/model/runtime/**` owns runtime travel-session composition that
   combines raw dungeon facts with party-owned position state
 - `dungeon` does not own party roster truth or persisted party travel position

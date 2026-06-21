@@ -332,14 +332,14 @@ Rules:
   Hex-specific projection of party-owned overworld travel-position facts.
 - `dungeon`: `Authored Dungeon Map Context`; owns authored dungeon map truth
   independently of party, creatures, and encounter. Authored truth lives in
-  `core`; editor and travel runtime composition live in `runtime` over the same
-  authored map facts.
-  Editor session state, preview, selection, overlay, projection level, pointer
-  interpretation, travel overlay, travel projection level, and overworld fallback
-  remain transient runtime state and never become authored dungeon persistence.
-  Party-owned travel-position facts reach dungeon runtime travel only through
-  dungeon-owned external boundaries over party published state, including runtime
-  repositories for synchronous reads/writes; party truth stays party-owned.
+  `core`; neutral editor session/application seams and travel runtime
+  composition live in `runtime`. Migrated Dungeon Editor pointer
+  interpretation, transient interaction state, draft workflows, and runtime
+  composition are feature-runtime-owned under `src/features/dungeon/runtime/**`.
+  Editor preview/session state, travel overlay, and overworld fallback state stay
+  transient and never become authored persistence. Party-owned travel-position
+  facts reach dungeon travel only through dungeon-owned external boundaries;
+  party truth stays party-owned.
 - `sessionplanner`: `Roster Truth Context`; consumes `party` and `encounter`
   published state through own ports to persist one session plan for participant
   references, encounter order, allocations, rest placement, placeholders, and

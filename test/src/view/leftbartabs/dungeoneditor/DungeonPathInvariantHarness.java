@@ -21,7 +21,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
-import src.domain.dungeon.model.runtime.usecase.DungeonEditorRuntimeDraftOwnerProbe;
+import src.features.dungeon.runtime.DungeonEditorRuntimeDraftOwnerProbe;
 
 final class DungeonPathInvariantHarness {
 

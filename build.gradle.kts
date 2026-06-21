@@ -72,6 +72,7 @@ sourceSets {
 val dungeonEditorBehaviorHarness by sourceSets.creating {
     java {
         setSrcDirs(listOf("test"))
+        include("src/features/dungeon/runtime/**/*.java")
         include("src/view/leftbartabs/dungeoneditor/**")
         include("src/domain/dungeon/**")
     }

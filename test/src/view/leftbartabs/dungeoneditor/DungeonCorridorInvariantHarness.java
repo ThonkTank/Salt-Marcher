@@ -32,7 +32,7 @@ import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
-import src.domain.dungeon.model.runtime.usecase.DungeonEditorRuntimeDraftOwnerProbe;
+import src.features.dungeon.runtime.DungeonEditorRuntimeDraftOwnerProbe;
 import static src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorHarnessSupport.*;
 
 final class DungeonCorridorInvariantHarness {
