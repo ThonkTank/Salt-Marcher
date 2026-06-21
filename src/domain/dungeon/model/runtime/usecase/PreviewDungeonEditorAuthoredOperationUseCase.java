@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorAuthoredOperationHelper;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
@@ -13,6 +14,7 @@ import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 public final class PreviewDungeonEditorAuthoredOperationUseCase {
 
     private final ApplyDungeonAuthoredMutationUseCase mutationUseCase;
+    private final ApplyDungeonRoomWallMutationUseCase roomWallMutationUseCase;
     private final DungeonEditorDungeonState state;
     private final DungeonEditorAuthoredPublicationUseCase publicationUseCase =
             new DungeonEditorAuthoredPublicationUseCase();
@@ -21,15 +23,37 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
 
     public PreviewDungeonEditorAuthoredOperationUseCase(
             ApplyDungeonAuthoredMutationUseCase mutationUseCase,
+            ApplyDungeonRoomWallMutationUseCase roomWallMutationUseCase,
             DungeonEditorDungeonState state
     ) {
         this.mutationUseCase = Objects.requireNonNull(mutationUseCase, "mutationUseCase");
+        this.roomWallMutationUseCase = Objects.requireNonNull(roomWallMutationUseCase, "roomWallMutationUseCase");
         this.state = Objects.requireNonNull(state, "state");
     }
 
     public void execute(MapId mapId, DungeonEditorSessionValues.Preview preview) {
         if (preview instanceof DungeonEditorSessionValues.StairCreatePreview) {
             state.replacePreview(null);
+            return;
+        }
+        if (preview instanceof DungeonEditorSessionValues.RoomRectanglePreview room) {
+            publishPreview(roomWallMutationUseCase.previewRoomRectangle(
+                    domainMapId(mapId),
+                    new ApplyDungeonRoomWallMutationUseCase.RoomRectangleMutation(
+                            DungeonEditorWorkspaceCoreGeometry.cell(room.start()),
+                            DungeonEditorWorkspaceCoreGeometry.cell(room.end()),
+                            room.deleteMode())));
+            return;
+        }
+        if (preview instanceof DungeonEditorSessionValues.ClusterBoundariesPreview boundaries
+                && !boundaries.boundaryKind().isDoor()) {
+            publishPreview(roomWallMutationUseCase.previewClusterBoundaries(
+                    domainMapId(mapId),
+                    new ApplyDungeonRoomWallMutationUseCase.ClusterBoundaryMutation(
+                            boundaries.clusterId(),
+                            DungeonEditorWorkspaceCoreGeometry.edges(boundaries.edges()),
+                            DungeonEditorWorkspaceCoreGeometry.boundaryKind(boundaries.boundaryKind()),
+                            boundaries.deleteMode())));
             return;
         }
         DungeonEditorAuthoredOperation operation =

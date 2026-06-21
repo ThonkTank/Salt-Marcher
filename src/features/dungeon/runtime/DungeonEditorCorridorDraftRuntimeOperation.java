@@ -16,7 +16,8 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
         DungeonEditorApplyToolUseCase toolUseCase = new DungeonEditorApplyToolUseCase(
                 runtime.workflow(),
                 runtime.mainViewInterpreter(),
-                runtime.effectUseCase());
+                runtime.effectUseCase(),
+                runtime.authored().applyOperationUseCase());
         createCorridor = toolUseCase.corridorWorkflow(DungeonEditorSessionValues.Tool.CORRIDOR_CREATE);
         deleteCorridor = toolUseCase.corridorWorkflow(DungeonEditorSessionValues.Tool.CORRIDOR_DELETE);
     }

@@ -2,7 +2,6 @@ package src.domain.dungeon.model.runtime.editor.session;
 
 import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
@@ -22,8 +21,6 @@ public final class DungeonEditorAuthoredOperation {
     }
 
     public sealed interface Variant permits
-            PaintRoomRectangle,
-            DeleteRoomRectangle,
             EditClusterBoundaries,
             CreateCorridor,
             DeleteCorridor,
@@ -31,14 +28,6 @@ public final class DungeonEditorAuthoredOperation {
             MoveBoundaryStretch,
             DungeonEditorSaveLabelNameOperation,
             DungeonEditorSaveRoomNarrationOperation {
-    }
-
-    public static DungeonEditorAuthoredOperation paintRoomRectangle(Cell start, Cell end) {
-        return new DungeonEditorAuthoredOperation(new PaintRoomRectangle(start, end));
-    }
-
-    public static DungeonEditorAuthoredOperation deleteRoomRectangle(Cell start, Cell end) {
-        return new DungeonEditorAuthoredOperation(new DeleteRoomRectangle(start, end));
     }
 
     public static DungeonEditorAuthoredOperation editClusterBoundaries(
@@ -102,42 +91,6 @@ public final class DungeonEditorAuthoredOperation {
     ) {
         return new DungeonEditorAuthoredOperation(
                 new DungeonEditorSaveLabelNameOperation(targetKind, targetId, name));
-    }
-
-    public static final class PaintRoomRectangle implements Variant {
-        private final Cell start;
-        private final Cell end;
-
-        private PaintRoomRectangle(Cell start, Cell end) {
-            this.start = start == null ? new Cell(0, 0, 0) : start;
-            this.end = end == null ? new Cell(0, 0, 0) : end;
-        }
-
-        public Cell start() {
-            return start;
-        }
-
-        public Cell end() {
-            return end;
-        }
-    }
-
-    public static final class DeleteRoomRectangle implements Variant {
-        private final Cell start;
-        private final Cell end;
-
-        private DeleteRoomRectangle(Cell start, Cell end) {
-            this.start = start == null ? new Cell(0, 0, 0) : start;
-            this.end = end == null ? new Cell(0, 0, 0) : end;
-        }
-
-        public Cell start() {
-            return start;
-        }
-
-        public Cell end() {
-            return end;
-        }
     }
 
     public static final class EditClusterBoundaries implements Variant {

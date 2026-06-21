@@ -2,14 +2,15 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.repository.DungeonMapRepository;
+import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.stair.Stair;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMutation;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSaveLabelNameOperation;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSaveRoomNarrationOperation;
-import src.domain.dungeon.model.core.structure.DungeonMap;
-import src.domain.dungeon.model.core.repository.DungeonMapRepository;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMutation;
 
 public final class ApplyDungeonAuthoredMutationUseCase {
     private static final DungeonEditorHandleMutation HANDLE_MUTATION =
@@ -49,16 +50,8 @@ public final class ApplyDungeonAuthoredMutationUseCase {
             return null;
         }
         return switch (operation.variant()) {
-            case DungeonEditorAuthoredOperation.PaintRoomRectangle rectangle ->
-                    current -> current.paintRoomRectangle(rectangle.start(), rectangle.end());
-            case DungeonEditorAuthoredOperation.DeleteRoomRectangle rectangle ->
-                    current -> current.deleteRoomRectangle(rectangle.start(), rectangle.end());
             case DungeonEditorAuthoredOperation.EditClusterBoundaries boundaries ->
-                    current -> current.editClusterBoundaries(
-                            boundaries.clusterId(),
-                            boundaries.edges(),
-                            boundaries.boundaryKind(),
-                            boundaries.deleteMode());
+                    doorBoundaryMutation(boundaries);
             case DungeonEditorAuthoredOperation.CreateCorridor corridor ->
                     current -> current.createCorridor(
                             stairIdForCorridor(current, corridor, reservePersistentIds),
@@ -94,6 +87,19 @@ public final class ApplyDungeonAuthoredMutationUseCase {
             case DungeonEditorSaveRoomNarrationOperation narration ->
                     current -> current.saveRoomNarration(narration.roomId(), narration.narration());
         };
+    }
+
+    private static ApplyDungeonEditorOperationUseCase.Mutation doorBoundaryMutation(
+            DungeonEditorAuthoredOperation.EditClusterBoundaries boundaries
+    ) {
+        if (boundaries.boundaryKind() != BoundaryKind.DOOR) {
+            return current -> current;
+        }
+        return current -> current.editClusterBoundaries(
+                boundaries.clusterId(),
+                boundaries.edges(),
+                boundaries.boundaryKind(),
+                boundaries.deleteMode());
     }
 
     private long stairIdForCorridor(

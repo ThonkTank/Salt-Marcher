@@ -31,7 +31,7 @@ final class ApplyDungeonEditorSelectionUseCase {
                 input,
                 committedSnapshot,
                 workflow.session().selection(),
-                workflow.session().projectionLevel()));
+                workflow.session().projectionLevel()), null);
     }
 
     void drag(DungeonEditorMainViewInput input) {
@@ -41,7 +41,7 @@ final class ApplyDungeonEditorSelectionUseCase {
                     input,
                     null,
                     workflow.session().selection(),
-                    workflow.session().projectionLevel()));
+                    workflow.session().projectionLevel()), null);
         }
     }
 
@@ -52,7 +52,7 @@ final class ApplyDungeonEditorSelectionUseCase {
                     input,
                     null,
                     workflow.session().selection(),
-                    workflow.session().projectionLevel()));
+                    workflow.session().projectionLevel()), null);
         }
     }
 
@@ -62,14 +62,14 @@ final class ApplyDungeonEditorSelectionUseCase {
                 input,
                 null,
                 workflow.session().selection(),
-                workflow.session().projectionLevel()));
+                workflow.session().projectionLevel()), null);
     }
 
     void scroll(int projectionLevelDelta) {
         effectUseCase.applyEffect(mainViewInterpreter.scrollSelection(
                 projectionLevelDelta,
                 workflow.session().projectionLevel(),
-                effectUseCase.loadCommittedSnapshot()));
+                effectUseCase.loadCommittedSnapshot()), null);
     }
 
 }

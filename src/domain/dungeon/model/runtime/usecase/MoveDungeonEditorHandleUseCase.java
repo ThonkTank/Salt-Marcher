@@ -44,7 +44,7 @@ public final class MoveDungeonEditorHandleUseCase {
                         handleRef,
                         deltaQ,
                         deltaR,
-                        deltaLevel)));
+                        deltaLevel)), null);
     }
 
     public record HandleMoveInput(

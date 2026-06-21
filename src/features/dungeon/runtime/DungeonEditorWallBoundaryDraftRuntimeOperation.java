@@ -16,7 +16,8 @@ final class DungeonEditorWallBoundaryDraftRuntimeOperation {
         DungeonEditorApplyToolUseCase toolUseCase = new DungeonEditorApplyToolUseCase(
                 runtime.workflow(),
                 runtime.mainViewInterpreter(),
-                runtime.effectUseCase());
+                runtime.effectUseCase(),
+                runtime.authored().applyOperationUseCase());
         createWall = toolUseCase.boundaryWorkflow(DungeonEditorSessionValues.Tool.WALL_CREATE);
         deleteWall = toolUseCase.boundaryWorkflow(DungeonEditorSessionValues.Tool.WALL_DELETE);
     }

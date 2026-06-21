@@ -5,6 +5,7 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffec
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.PointerToolUseCase;
 import src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction;
@@ -13,15 +14,18 @@ final class DungeonEditorApplyToolUseCase {
     private final DungeonEditorSessionWorkflow workflow;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
     private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
+    private final DungeonEditorRoomWallCommitOperation roomWallCommitOperation;
 
     DungeonEditorApplyToolUseCase(
             DungeonEditorSessionWorkflow workflow,
             InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
-            ApplyDungeonEditorSessionEffectUseCase effectUseCase
+            ApplyDungeonEditorSessionEffectUseCase effectUseCase,
+            ApplyDungeonEditorAuthoredOperationUseCase authoredOperationUseCase
     ) {
         this.workflow = Objects.requireNonNull(workflow, "workflow");
         this.mainViewInterpreter = Objects.requireNonNull(mainViewInterpreter, "mainViewInterpreter");
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
+        roomWallCommitOperation = new DungeonEditorRoomWallCommitOperation(authoredOperationUseCase);
     }
 
     PointerToolUseCase roomWorkflow(DungeonEditorSessionValues.Tool tool) {
@@ -88,8 +92,8 @@ final class DungeonEditorApplyToolUseCase {
         if (effectUseCase.committedGridOrPublishCurrent() == null) {
             return;
         }
-        effectUseCase.applyEffect(
-                effectFactory.create(workflow.session().projectionLevel()));
+        DungeonEditorSessionEffect effect = effectFactory.create(workflow.session().projectionLevel());
+        effectUseCase.applyEffect(effect, roomWallCommitOperation.commitFor(effect));
     }
 
     private void applyCommittedSnapshotEffect(CommittedSnapshotEffect effectFactory) {
@@ -97,8 +101,8 @@ final class DungeonEditorApplyToolUseCase {
         if (committedSnapshot == null) {
             return;
         }
-        effectUseCase.applyEffect(
-                effectFactory.create(committedSnapshot, workflow.session().projectionLevel()));
+        DungeonEditorSessionEffect effect = effectFactory.create(committedSnapshot, workflow.session().projectionLevel());
+        effectUseCase.applyEffect(effect, roomWallCommitOperation.commitFor(effect));
     }
 
     @FunctionalInterface
