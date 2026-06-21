@@ -81,6 +81,24 @@ final class InterpretDungeonEditorMainViewPressUseCase {
         return new DungeonEditorMainViewInterpretation(nextState, boundaryInterpretation.effect());
     }
 
+    DungeonEditorWallBoundaryDraftInterpretation interpretWallBoundaryOperation(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Selection currentSelection,
+            DungeonEditorSessionValues.Tool boundaryTool,
+            InteractionState state
+    ) {
+        DungeonEditorWallBoundaryDraftInterpretation boundaryInterpretation =
+                boundaryDraft.pressWall(input, snapshot, currentSelection, boundaryTool, state);
+        if (boundaryInterpretation.effect().isNoop()) {
+            return boundaryInterpretation;
+        }
+        InteractionState nextState = boundaryInterpretation.nextState()
+                .withDragSession(DragSession.none())
+                .withPaintSession(PaintSession.none());
+        return boundaryInterpretation.withNextState(nextState);
+    }
+
     DungeonEditorMainViewInterpretation interpretCorridor(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,

@@ -36,7 +36,7 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
                 true,
                 DungeonEditorSessionValues.emptyHandleRef());
 
-        DungeonEditorMainViewInterpretation started = useCase.press(
+        DungeonEditorWallBoundaryDraftInterpretation started = useCase.pressOperation(
                 vertexPress(1, 0, true, false),
                 snapshot,
                 selectedCluster,
@@ -45,9 +45,10 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
         assertDraft(started.nextState().boundaryDraft(), new VertexKey(1, 0, 0), Set.of(),
                 "wall draft owner starts session-only state at the first vertex");
         assertNoApply(started.effect(), "wall draft owner first click does not apply authored wall edges");
+        assertTrue(started.commit() == null, "wall draft owner first click does not emit typed wall commit");
 
         EdgeKey firstEdge = EdgeKey.between(new VertexKey(1, 0, 0), new VertexKey(1, 1, 0));
-        DungeonEditorMainViewInterpretation intermediate = useCase.press(
+        DungeonEditorWallBoundaryDraftInterpretation intermediate = useCase.pressOperation(
                 vertexPress(1, 1, true, false),
                 snapshot,
                 selectedCluster,
@@ -56,9 +57,10 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
         assertDraft(intermediate.nextState().boundaryDraft(), new VertexKey(1, 1, 0), Set.of(firstEdge),
                 "wall draft owner accumulates the first intermediate segment");
         assertNoApply(intermediate.effect(), "wall draft owner intermediate click stays preview-only");
+        assertTrue(intermediate.commit() == null, "wall draft owner intermediate click does not emit typed wall commit");
 
         EdgeKey secondEdge = EdgeKey.between(new VertexKey(1, 1, 0), new VertexKey(2, 1, 0));
-        DungeonEditorMainViewInterpretation completed = useCase.press(
+        DungeonEditorWallBoundaryDraftInterpretation completed = useCase.pressOperation(
                 vertexPress(2, 1, false, true),
                 snapshot,
                 selectedCluster,
@@ -72,8 +74,12 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
                 (DungeonEditorSessionValues.ClusterBoundariesPreview) completed.effect().getApplyPreview();
         assertEquals(List.of(firstEdge.toEdgeRef(), secondEdge.toEdgeRef()), applied.edges(),
                 "wall draft owner applies deterministic accumulated segment order");
+        DungeonEditorWallBoundaryDraftInterpretation.WallBoundaryCommit commit = completed.commit();
+        assertTrue(commit != null, "wall draft owner emits typed wall commit on explicit completion");
+        assertEquals(Set.of(firstEdge, secondEdge), commit.edges(),
+                "wall draft owner emits typed wall commit edges");
 
-        DungeonEditorMainViewInterpretation cancelled = useCase.release(
+        DungeonEditorWallBoundaryDraftInterpretation cancelled = useCase.releaseOperation(
                 vertexPress(1, 0, true, false),
                 snapshot,
                 DungeonEditorSessionValues.Tool.WALL_CREATE,
@@ -82,6 +88,7 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
                 "wall draft owner keeps cancel/no-op release as empty draft state");
         assertTrue(cancelled.effect().getApplyPreview() == null,
                 "wall draft owner cancel/no-op does not apply authored wall edges");
+        assertTrue(cancelled.commit() == null, "wall draft owner cancel/no-op does not emit typed wall commit");
     }
 
     public static void assertCorridorDraftSessionOwner() {

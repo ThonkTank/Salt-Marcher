@@ -24,9 +24,24 @@ final class DungeonEditorBoundaryDraftUseCase {
             InteractionState state
     ) {
         if (!selectedTool.isDoorTool()) {
-            return wallDraft.press(input, snapshot, currentSelection, selectedTool, state);
+            return wallDraft.pressOperation(
+                    input,
+                    snapshot,
+                    currentSelection,
+                    selectedTool,
+                    state).asMainViewInterpretation();
         }
         return armDoorBoundary(input, snapshot, selectedTool, state);
+    }
+
+    DungeonEditorWallBoundaryDraftInterpretation pressWall(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Selection currentSelection,
+            DungeonEditorSessionValues.Tool selectedTool,
+            InteractionState state
+    ) {
+        return wallDraft.pressOperation(input, snapshot, currentSelection, selectedTool, state);
     }
 
     DungeonEditorSessionEffect preview(
@@ -58,7 +73,7 @@ final class DungeonEditorBoundaryDraftUseCase {
             InteractionState state
     ) {
         if (!selectedTool.isDoorTool()) {
-            return wallDraft.release(input, snapshot, selectedTool, state);
+            return wallDraft.releaseOperation(input, snapshot, selectedTool, state).asMainViewInterpretation();
         }
         InteractionState nextState = state.withBoundaryDraft(BoundaryDraft.none());
         if (!state.boundaryDraft().present() || input == null) {
@@ -80,6 +95,15 @@ final class DungeonEditorBoundaryDraftUseCase {
                         List.of(edge.toEdgeRef()),
                         DungeonEditorWorkspaceValues.BoundaryKind.DOOR,
                         deleteMode)));
+    }
+
+    DungeonEditorWallBoundaryDraftInterpretation releaseWall(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Tool selectedTool,
+            InteractionState state
+    ) {
+        return wallDraft.releaseOperation(input, snapshot, selectedTool, state);
     }
 
     private DungeonEditorMainViewInterpretation armDoorBoundary(

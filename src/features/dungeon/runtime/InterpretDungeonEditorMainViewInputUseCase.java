@@ -124,6 +124,53 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return interpretation.effect();
     }
 
+    DungeonEditorWallBoundaryDraftInterpretation wallBoundaryOperation(
+            PointerAction action,
+            DungeonEditorMainViewInput input,
+            MapSnapshot snapshot,
+            DungeonEditorSessionValues.Selection selection,
+            DungeonEditorSessionValues.Tool boundaryTool,
+            int projectionLevel
+    ) {
+        DungeonEditorWallBoundaryDraftInterpretation interpretation = switch (action) {
+            case PRESS -> pressUseCase.interpretWallBoundaryOperation(
+                    pointer(input, projectionLevel),
+                    snapshot,
+                    selection,
+                    boundaryTool,
+                    state.interactionState());
+            case DRAG -> DungeonEditorWallBoundaryDraftInterpretation.from(dragUseCase.interpretBoundary(
+                    pointer(input, projectionLevel),
+                    snapshot,
+                    boundaryTool,
+                    state.interactionState()));
+            case RELEASE -> releaseUseCase.interpretWallBoundaryOperation(
+                    pointer(input, projectionLevel),
+                    snapshot,
+                    boundaryTool,
+                    state.interactionState());
+            case HOVER -> hoverWallBoundaryOperation(input, snapshot, boundaryTool, projectionLevel);
+        };
+        state.replace(interpretation.nextState());
+        return interpretation;
+    }
+
+    private DungeonEditorWallBoundaryDraftInterpretation hoverWallBoundaryOperation(
+            DungeonEditorMainViewInput input,
+            MapSnapshot snapshot,
+            DungeonEditorSessionValues.Tool boundaryTool,
+            int projectionLevel
+    ) {
+        return new DungeonEditorWallBoundaryDraftInterpretation(
+                state.interactionState(),
+                hoverUseCase.interpretBoundary(
+                        pointer(input, projectionLevel),
+                        snapshot,
+                        boundaryTool,
+                        state.interactionState()),
+                null);
+    }
+
     DungeonEditorSessionEffect corridor(
             PointerAction action,
             DungeonEditorMainViewInput input,

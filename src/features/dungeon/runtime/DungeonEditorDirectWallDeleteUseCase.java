@@ -36,7 +36,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
         return armDirectWallCellDelete(input, snapshot, state);
     }
 
-    DungeonEditorMainViewInterpretation releaseCorner(
+    DungeonEditorWallBoundaryDraftInterpretation releaseCorner(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             InteractionState currentState,
@@ -44,7 +44,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
     ) {
         return input != null && input.vertexTarget().present()
                 ? applyDirectWallCornerDelete(input, snapshot, currentState, nextState)
-                : draftEffects.clearBoundaryDraftPreview(nextState);
+                : DungeonEditorWallBoundaryDraftInterpretation.from(draftEffects.clearBoundaryDraftPreview(nextState));
     }
 
     private DungeonEditorMainViewInterpretation armDirectWallSegmentDelete(
@@ -86,7 +86,7 @@ final class DungeonEditorDirectWallDeleteUseCase {
         return previewDelete(state, target);
     }
 
-    private DungeonEditorMainViewInterpretation applyDirectWallCornerDelete(
+    private DungeonEditorWallBoundaryDraftInterpretation applyDirectWallCornerDelete(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             InteractionState currentState,
@@ -95,15 +95,15 @@ final class DungeonEditorDirectWallDeleteUseCase {
         VertexTarget vertex = input.vertexTarget();
         long clusterId = currentState.boundaryDraft().clusterId();
         if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
-            return draftEffects.clearBoundaryDraftPreview(nextState);
+            return DungeonEditorWallBoundaryDraftInterpretation.from(draftEffects.clearBoundaryDraftPreview(nextState));
         }
         Set<EdgeKey> edges = wallRuns.cornerRunsForCluster(
                 snapshot,
                 clusterId,
                 new VertexKey(vertex.q(), vertex.r(), vertex.level()));
         return edges.isEmpty()
-                ? draftEffects.clearBoundaryDraftPreview(nextState)
-                : draftEffects.applyBoundaryEdges(nextState, clusterId, edges, true);
+                ? DungeonEditorWallBoundaryDraftInterpretation.from(draftEffects.clearBoundaryDraftPreview(nextState))
+                : draftEffects.applyWallBoundaryEdges(nextState, clusterId, edges, true);
     }
 
     private DungeonEditorMainViewInterpretation previewDelete(

@@ -32,14 +32,16 @@ final class DungeonEditorBoundaryDraftEffectHelper {
                         true)));
     }
 
-    DungeonEditorMainViewInterpretation applyBoundaryEdges(
+    DungeonEditorWallBoundaryDraftInterpretation applyWallBoundaryEdges(
             InteractionState nextState,
             long clusterId,
             Set<EdgeKey> edges,
             boolean deleteMode
     ) {
-        return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorSessionEffect.apply(
-                boundaryPreview(clusterId, edges, deleteMode)));
+        return new DungeonEditorWallBoundaryDraftInterpretation(
+                nextState,
+                DungeonEditorSessionEffect.apply(boundaryPreview(clusterId, edges, deleteMode)),
+                new DungeonEditorWallBoundaryDraftInterpretation.WallBoundaryCommit(clusterId, edges, deleteMode));
     }
 
     DungeonEditorSessionEffect previewBoundaryEdges(
@@ -50,13 +52,13 @@ final class DungeonEditorBoundaryDraftEffectHelper {
         return DungeonEditorSessionEffect.preview(boundaryPreview(clusterId, edges, deleteMode));
     }
 
-    DungeonEditorMainViewInterpretation applyWallDraft(InteractionState state) {
+    DungeonEditorWallBoundaryDraftInterpretation applyWallDraft(InteractionState state) {
         BoundaryDraft current = state.boundaryDraft();
         InteractionState nextState = state.withBoundaryDraft(BoundaryDraft.none());
         if (current.previewEdges().isEmpty()) {
-            return clearBoundaryDraftPreview(nextState);
+            return DungeonEditorWallBoundaryDraftInterpretation.from(clearBoundaryDraftPreview(nextState));
         }
-        return applyBoundaryEdges(nextState, current.clusterId(), current.previewEdges(), current.deleteMode());
+        return applyWallBoundaryEdges(nextState, current.clusterId(), current.previewEdges(), current.deleteMode());
     }
 
     DungeonEditorMainViewInterpretation preserveActiveDraftOrClearState(InteractionState state) {
@@ -89,7 +91,7 @@ final class DungeonEditorBoundaryDraftEffectHelper {
                 deleteMode);
     }
 
-    private static List<DungeonEditorWorkspaceValues.Edge> edgeRefs(Set<EdgeKey> edges) {
+    static List<DungeonEditorWorkspaceValues.Edge> edgeRefs(Set<EdgeKey> edges) {
         List<DungeonEditorWorkspaceValues.Edge> result = new ArrayList<>();
         for (EdgeKey edge : edges) {
             result.add(edge.toEdgeRef());

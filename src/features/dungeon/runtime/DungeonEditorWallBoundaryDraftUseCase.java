@@ -20,7 +20,7 @@ final class DungeonEditorWallBoundaryDraftUseCase {
     private final DungeonEditorBoundaryPathUseCase boundaryPaths = new DungeonEditorBoundaryPathUseCase();
     private final DungeonEditorBoundaryDraftEffectHelper draftEffects = new DungeonEditorBoundaryDraftEffectHelper();
 
-    DungeonEditorMainViewInterpretation press(
+    DungeonEditorWallBoundaryDraftInterpretation pressOperation(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection currentSelection,
@@ -36,12 +36,12 @@ final class DungeonEditorWallBoundaryDraftUseCase {
         }
         DungeonEditorMainViewInterpretation directDelete = directWallDelete.press(input, snapshot, selectedTool, state);
         if (directDelete != null) {
-            return directDelete;
+            return DungeonEditorWallBoundaryDraftInterpretation.from(directDelete);
         }
         return pressVertexBoundary(input, snapshot, currentSelection, selectedTool, state);
     }
 
-    private DungeonEditorMainViewInterpretation pressVertexBoundary(
+    private DungeonEditorWallBoundaryDraftInterpretation pressVertexBoundary(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Selection currentSelection,
@@ -50,19 +50,23 @@ final class DungeonEditorWallBoundaryDraftUseCase {
     ) {
         var vertex = input.vertexTarget();
         if (vertex == null || !vertex.present()) {
-            return draftEffects.preserveActiveDraftOrClearState(state);
+            return DungeonEditorWallBoundaryDraftInterpretation.from(
+                    draftEffects.preserveActiveDraftOrClearState(state));
         }
         boolean deleteMode = selectedTool.deleteMode();
         long clusterId = boundaryClusters.resolveClusterId(input, vertex, deleteMode, snapshot, currentSelection);
         if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
-            return draftEffects.preserveActiveDraftOrClearState(state);
+            return DungeonEditorWallBoundaryDraftInterpretation.from(
+                    draftEffects.preserveActiveDraftOrClearState(state));
         }
         VertexKey nextVertex = new VertexKey(vertex.q(), vertex.r(), vertex.level());
         if (!state.boundaryDraft().present() || state.boundaryDraft().clusterId() != clusterId) {
-            return beginBoundaryDraft(snapshot, clusterId, vertex, deleteMode, nextVertex, state);
+            return DungeonEditorWallBoundaryDraftInterpretation.from(
+                    beginBoundaryDraft(snapshot, clusterId, vertex, deleteMode, nextVertex, state));
         }
         if (state.boundaryDraft().currentVertex().equals(nextVertex)) {
-            return new DungeonEditorMainViewInterpretation(state, preview(input, snapshot, selectedTool, state));
+            return DungeonEditorWallBoundaryDraftInterpretation.from(
+                    new DungeonEditorMainViewInterpretation(state, preview(input, snapshot, selectedTool, state)));
         }
         return advanceBoundaryDraft(input, snapshot, selectedTool, clusterId, deleteMode, nextVertex, state);
     }
@@ -92,7 +96,7 @@ final class DungeonEditorWallBoundaryDraftUseCase {
                 state.boundaryDraft().deleteMode());
     }
 
-    DungeonEditorMainViewInterpretation release(
+    DungeonEditorWallBoundaryDraftInterpretation releaseOperation(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Tool selectedTool,
@@ -103,44 +107,45 @@ final class DungeonEditorWallBoundaryDraftUseCase {
         }
         if (!selectedTool.deleteMode()) {
             if (!state.boundaryDraft().present() || state.boundaryDraft().deleteMode()) {
-                return new DungeonEditorMainViewInterpretation(
+                return DungeonEditorWallBoundaryDraftInterpretation.from(new DungeonEditorMainViewInterpretation(
                         state,
-                        DungeonEditorSessionEffect.clearPreviewIfNeeded(false));
+                        DungeonEditorSessionEffect.clearPreviewIfNeeded(false)));
             }
             if (!input.wallSingleClickMode()) {
-                return new DungeonEditorMainViewInterpretation(state, preview(input, snapshot, selectedTool, state));
+                return DungeonEditorWallBoundaryDraftInterpretation.from(
+                        new DungeonEditorMainViewInterpretation(state, preview(input, snapshot, selectedTool, state)));
             }
             PathResult candidate = boundaryPaths.previewCandidate(input, snapshot, state.boundaryDraft(), false);
             Set<EdgeKey> committedEdges = state.boundaryDraft().completionCandidate(candidate.committedEdges());
             if (committedEdges.isEmpty()) {
-                return new DungeonEditorMainViewInterpretation(
+                return DungeonEditorWallBoundaryDraftInterpretation.from(new DungeonEditorMainViewInterpretation(
                         state,
-                        DungeonEditorSessionEffect.clearPreviewIfNeeded(true));
+                        DungeonEditorSessionEffect.clearPreviewIfNeeded(true)));
             }
             InteractionState nextState = state.withBoundaryDraft(BoundaryDraft.none());
-            return draftEffects.applyBoundaryEdges(nextState, state.boundaryDraft().clusterId(), committedEdges, false);
+            return draftEffects.applyWallBoundaryEdges(nextState, state.boundaryDraft().clusterId(), committedEdges, false);
         }
         return releaseDeleteDraft(input, snapshot, state);
     }
 
-    private DungeonEditorMainViewInterpretation releaseDeleteDraft(
+    private DungeonEditorWallBoundaryDraftInterpretation releaseDeleteDraft(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             InteractionState state
     ) {
         InteractionState nextState = state.withBoundaryDraft(BoundaryDraft.none());
         if (!state.boundaryDraft().present() || !state.boundaryDraft().deleteMode() || input == null) {
-            return draftEffects.clearBoundaryDraftPreview(nextState);
+            return DungeonEditorWallBoundaryDraftInterpretation.from(draftEffects.clearBoundaryDraftPreview(nextState));
         }
         PathResult candidate = boundaryPaths.previewCandidate(input, snapshot, state.boundaryDraft(), true);
         Set<EdgeKey> committedEdges = state.boundaryDraft().completionCandidate(candidate.committedEdges());
         if (committedEdges.isEmpty()) {
             return directWallDelete.releaseCorner(input, snapshot, state, nextState);
         }
-        return draftEffects.applyBoundaryEdges(nextState, state.boundaryDraft().clusterId(), committedEdges, true);
+        return draftEffects.applyWallBoundaryEdges(nextState, state.boundaryDraft().clusterId(), committedEdges, true);
     }
 
-    private DungeonEditorMainViewInterpretation completeActiveCreateDraft(
+    private DungeonEditorWallBoundaryDraftInterpretation completeActiveCreateDraft(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Tool selectedTool,
@@ -149,9 +154,9 @@ final class DungeonEditorWallBoundaryDraftUseCase {
         PathResult candidate = boundaryPaths.previewCandidate(input, snapshot, state.boundaryDraft(), false);
         Set<EdgeKey> committedEdges = state.boundaryDraft().completionCandidate(candidate.committedEdges());
         if (committedEdges.isEmpty()) {
-            return new DungeonEditorMainViewInterpretation(
+            return DungeonEditorWallBoundaryDraftInterpretation.from(new DungeonEditorMainViewInterpretation(
                     state,
-                    DungeonEditorSessionEffect.clearPreviewIfNeeded(true));
+                    DungeonEditorSessionEffect.clearPreviewIfNeeded(true)));
         }
         InteractionState nextState = state.withBoundaryDraft(
                 state.boundaryDraft().completedAt(completionVertex(input, state), committedEdges));
@@ -179,7 +184,7 @@ final class DungeonEditorWallBoundaryDraftUseCase {
         return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorSessionEffect.clearPreviewIfNeeded(true));
     }
 
-    private DungeonEditorMainViewInterpretation advanceBoundaryDraft(
+    private DungeonEditorWallBoundaryDraftInterpretation advanceBoundaryDraft(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Tool selectedTool,
@@ -192,7 +197,10 @@ final class DungeonEditorWallBoundaryDraftUseCase {
                 ? boundaryPaths.path(snapshot, clusterId, state.boundaryDraft().currentVertex(), nextVertex, true)
                 : boundaryPaths.path(snapshot, clusterId, state.boundaryDraft().currentVertex(), nextVertex, false);
         if (!path.hasRoute()) {
-            return new DungeonEditorMainViewInterpretation(state, DungeonEditorSessionEffect.clearPreviewIfNeeded(true));
+            return DungeonEditorWallBoundaryDraftInterpretation.from(
+                    new DungeonEditorMainViewInterpretation(
+                            state,
+                            DungeonEditorSessionEffect.clearPreviewIfNeeded(true)));
         }
         InteractionState nextState = state.withBoundaryDraft(state.boundaryDraft().advancedTo(
                 nextVertex,
@@ -200,7 +208,7 @@ final class DungeonEditorWallBoundaryDraftUseCase {
         return applyBoundaryDraftOrPreview(input, snapshot, selectedTool, nextVertex, nextState, false);
     }
 
-    private DungeonEditorMainViewInterpretation applyBoundaryDraftOrPreview(
+    private DungeonEditorWallBoundaryDraftInterpretation applyBoundaryDraftOrPreview(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             DungeonEditorSessionValues.Tool selectedTool,
@@ -213,7 +221,8 @@ final class DungeonEditorWallBoundaryDraftUseCase {
                 && boundaryVertices.touchesExistingWall(snapshot, state.boundaryDraft().clusterId(), nextVertex)) {
             return draftEffects.applyWallDraft(state);
         }
-        return new DungeonEditorMainViewInterpretation(state, preview(input, snapshot, selectedTool, state));
+        return DungeonEditorWallBoundaryDraftInterpretation.from(
+                new DungeonEditorMainViewInterpretation(state, preview(input, snapshot, selectedTool, state)));
     }
 
 }

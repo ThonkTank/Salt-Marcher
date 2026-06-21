@@ -30,8 +30,7 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
                 new DungeonEditorApplyToolUseCase(
                         runtime.workflow(),
                         runtime.mainViewInterpreter(),
-                        runtime.effectUseCase(),
-                        runtime.authored().applyOperationUseCase());
+                        runtime.effectUseCase());
         ApplyDungeonEditorCreateStairUseCase createStair =
                 new ApplyDungeonEditorCreateStairUseCase(
                         runtime.workflow(),

@@ -45,6 +45,15 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
         return boundaryDraft.release(input, snapshot, boundaryTool, state);
     }
 
+    DungeonEditorWallBoundaryDraftInterpretation interpretWallBoundaryOperation(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Tool boundaryTool,
+            InteractionState state
+    ) {
+        return boundaryDraft.releaseWall(input, snapshot, boundaryTool, state);
+    }
+
     private static DungeonEditorRoomPaintInterpretation releasePaintSessionOperation(
             PointerState input,
             InteractionState state
