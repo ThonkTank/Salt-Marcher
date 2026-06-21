@@ -67,22 +67,27 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return interpretation.effect();
     }
 
-    DungeonEditorSessionEffect room(
+    DungeonEditorRoomPaintInterpretation roomPaintOperation(
             PointerAction action,
             DungeonEditorMainViewInput input,
             DungeonEditorSessionValues.Tool roomTool,
             int projectionLevel
     ) {
-        DungeonEditorMainViewInterpretation interpretation = switch (action) {
-            case PRESS -> pressUseCase.interpretRoom(pointer(input, projectionLevel), roomTool, state.interactionState());
-            case DRAG -> dragUseCase.interpretRoom(pointer(input, projectionLevel), state.interactionState());
-            case RELEASE -> releaseUseCase.interpretRoom(pointer(input, projectionLevel), state.interactionState());
-            case HOVER -> new DungeonEditorMainViewInterpretation(
+        DungeonEditorRoomPaintInterpretation interpretation = switch (action) {
+            case PRESS -> DungeonEditorRoomPaintInterpretation.from(
+                    pressUseCase.interpretRoom(pointer(input, projectionLevel), roomTool, state.interactionState()));
+            case DRAG -> DungeonEditorRoomPaintInterpretation.from(
+                    dragUseCase.interpretRoom(pointer(input, projectionLevel), state.interactionState()));
+            case RELEASE -> releaseUseCase.interpretRoomPaintOperation(
+                    pointer(input, projectionLevel),
+                    state.interactionState());
+            case HOVER -> new DungeonEditorRoomPaintInterpretation(
                     state.interactionState(),
-                    DungeonEditorSessionEffect.none());
+                    DungeonEditorSessionEffect.none(),
+                    null);
         };
         state.replace(interpretation.nextState());
-        return interpretation.effect();
+        return interpretation;
     }
 
     DungeonEditorSessionEffect boundary(

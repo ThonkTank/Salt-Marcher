@@ -25,14 +25,15 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
         return releaseDragSession(input, state);
     }
 
-    DungeonEditorMainViewInterpretation interpretRoom(
+    DungeonEditorRoomPaintInterpretation interpretRoomPaintOperation(
             PointerState input,
             InteractionState state
     ) {
         if (state.paintSession().present()) {
-            return releasePaintSession(input, state);
+            return releasePaintSessionOperation(input, state);
         }
-        return new DungeonEditorMainViewInterpretation(state, DungeonEditorSessionEffect.clearPreviewIfNeeded(false));
+        return DungeonEditorRoomPaintInterpretation.from(
+                new DungeonEditorMainViewInterpretation(state, DungeonEditorSessionEffect.clearPreviewIfNeeded(false)));
     }
 
     DungeonEditorMainViewInterpretation interpretBoundary(
@@ -44,16 +45,17 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
         return boundaryDraft.release(input, snapshot, boundaryTool, state);
     }
 
-    private static DungeonEditorMainViewInterpretation releasePaintSession(
+    private static DungeonEditorRoomPaintInterpretation releasePaintSessionOperation(
             PointerState input,
             InteractionState state
     ) {
         PaintSession released = input == null
                 ? state.paintSession()
                 : state.paintSession().withEnd(input.q(), input.r());
-        return new DungeonEditorMainViewInterpretation(
+        return new DungeonEditorRoomPaintInterpretation(
                 state.withPaintSession(PaintSession.none()),
-                DungeonEditorSessionEffect.apply(released.preview()));
+                DungeonEditorSessionEffect.apply(released.preview()),
+                released);
     }
 
     private static DungeonEditorMainViewInterpretation releaseBoundaryStretchSession(

@@ -62,9 +62,11 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
                         runtime.workflow(),
                         runtime.authored().deleteFeatureMarkerUseCase(),
                         runtime.effectUseCase());
+        DungeonEditorRoomPaintRuntimeOperation roomPaintOperation =
+                new DungeonEditorRoomPaintRuntimeOperation(runtime);
         PairedToolUseCases roomTools = paired(
-                toolUseCase.roomWorkflow(DungeonEditorSessionValues.Tool.ROOM_PAINT),
-                toolUseCase.roomWorkflow(DungeonEditorSessionValues.Tool.ROOM_DELETE));
+                roomPaintOperation.roomWorkflow(DungeonEditorSessionValues.Tool.ROOM_PAINT),
+                roomPaintOperation.roomWorkflow(DungeonEditorSessionValues.Tool.ROOM_DELETE));
         PairedToolUseCases doorTools = paired(
                 toolUseCase.boundaryWorkflow(DungeonEditorSessionValues.Tool.DOOR_CREATE),
                 toolUseCase.boundaryWorkflow(DungeonEditorSessionValues.Tool.DOOR_DELETE));

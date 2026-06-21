@@ -22,13 +22,6 @@ final class DungeonEditorRoomWallCommitOperation {
             return null;
         }
         DungeonEditorSessionValues.Preview preview = effect.getApplyPreview();
-        if (preview instanceof DungeonEditorSessionValues.RoomRectanglePreview room) {
-            return mapId -> authoredOperationUseCase.executeRoomRectangle(
-                    mapId,
-                    DungeonEditorWorkspaceCoreGeometry.cell(room.start()),
-                    DungeonEditorWorkspaceCoreGeometry.cell(room.end()),
-                    room.deleteMode());
-        }
         if (preview instanceof DungeonEditorSessionValues.ClusterBoundariesPreview boundaries
                 && !boundaries.boundaryKind().isDoor()) {
             return mapId -> authoredOperationUseCase.executeClusterBoundaries(

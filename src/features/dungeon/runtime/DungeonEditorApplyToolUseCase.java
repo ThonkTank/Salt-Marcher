@@ -28,14 +28,6 @@ final class DungeonEditorApplyToolUseCase {
         roomWallCommitOperation = new DungeonEditorRoomWallCommitOperation(authoredOperationUseCase);
     }
 
-    PointerToolUseCase roomWorkflow(DungeonEditorSessionValues.Tool tool) {
-        return workflowFor(
-                input -> applyRoom(PointerAction.PRESS, input, tool),
-                input -> applyRoom(PointerAction.DRAG, input, tool),
-                input -> applyRoom(PointerAction.RELEASE, input, tool),
-                null);
-    }
-
     PointerToolUseCase boundaryWorkflow(DungeonEditorSessionValues.Tool tool) {
         return workflowFor(
                 input -> applyBoundary(PointerAction.PRESS, input, tool),
@@ -50,14 +42,6 @@ final class DungeonEditorApplyToolUseCase {
                 null,
                 null,
                 input -> applyCorridor(PointerAction.HOVER, input, tool));
-    }
-
-    private void applyRoom(PointerAction action, DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        applyCommittedEffect(projectionLevel -> mainViewInterpreter.room(
-                action,
-                input,
-                tool,
-                projectionLevel));
     }
 
     private void applyBoundary(PointerAction action, DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
@@ -88,14 +72,6 @@ final class DungeonEditorApplyToolUseCase {
         return new PointerToolUseCase(press, drag, release, hover);
     }
 
-    private void applyCommittedEffect(ProjectionEffect effectFactory) {
-        if (effectUseCase.committedGridOrPublishCurrent() == null) {
-            return;
-        }
-        DungeonEditorSessionEffect effect = effectFactory.create(workflow.session().projectionLevel());
-        effectUseCase.applyEffect(effect, roomWallCommitOperation.commitFor(effect));
-    }
-
     private void applyCommittedSnapshotEffect(CommittedSnapshotEffect effectFactory) {
         MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
         if (committedSnapshot == null) {
@@ -110,8 +86,4 @@ final class DungeonEditorApplyToolUseCase {
         DungeonEditorSessionEffect create(MapSnapshot committedSnapshot, int projectionLevel);
     }
 
-    @FunctionalInterface
-    private interface ProjectionEffect {
-        DungeonEditorSessionEffect create(int projectionLevel);
-    }
 }
