@@ -23,6 +23,8 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMateriali
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryOrdering;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
+import src.domain.dungeon.model.core.structure.room.RoomClusterWallDeleteResolver;
+import src.domain.dungeon.model.core.structure.room.RoomClusterWallDeleteTarget;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.DungeonMap;
@@ -373,19 +375,36 @@ final class DungeonWallInvariantHarness {
         Edge eastTarget = new Edge(new Cell(2, 3, 0), new Cell(3, 3, 0));
         Edge eastSecond = new Edge(new Cell(3, 3, 0), new Cell(4, 3, 0));
         DungeonMap withShape = map.editClusterBoundaries(clusterId, wallShape, BoundaryKind.WALL, false);
+        RoomClusterWallDeleteResolver wallDeleteResolver =
+                RoomClusterWallMap.authoredWallDeleteResolver(wallShape);
+        RoomClusterWallDeleteTarget segmentTarget =
+                wallDeleteResolver.deleteTarget(
+                        roomMapCells(),
+                        northTarget);
+        RoomClusterWallDeleteTarget cornerTarget =
+                wallDeleteResolver.cornerDeleteTarget(
+                        roomMapCells(),
+                        new Cell(2, 3, 0));
         DungeonMap segmentDeleted = withShape.editClusterBoundaries(
                 clusterId,
-                List.of(northTarget),
+                segmentTarget.edges(),
                 BoundaryKind.WALL,
                 true);
         Set<Edge> segmentDeletedWalls = wallEdges(new DungeonDerivedStateProjection().project(segmentDeleted));
         DungeonMap cornerDeleted = withShape.editClusterBoundaries(
                 clusterId,
-                List.of(northTarget, eastTarget),
+                cornerTarget.edges(),
                 BoundaryKind.WALL,
                 true);
         Set<Edge> cornerDeletedWalls = wallEdges(new DungeonDerivedStateProjection().project(cornerDeleted));
 
+        assertTrue(segmentTarget.interiorRun(), "wall owner classifies segment target as eligible interior run");
+        assertEquals(Set.of(northTarget, northSecond), Set.copyOf(segmentTarget.edges()),
+                "wall owner exposes complete straight-run delete target for a segment");
+        assertTrue(cornerTarget.interiorRun(), "wall owner classifies corner target as eligible interior runs");
+        assertEquals(Set.of(northTarget, northSecond, southTarget, eastTarget, eastSecond),
+                Set.copyOf(cornerTarget.edges()),
+                "wall owner exposes every straight-run delete target touching a corner");
         assertFalse(segmentDeletedWalls.contains(northTarget),
                 "wall owner removes the selected segment target");
         assertFalse(segmentDeletedWalls.contains(northSecond),
@@ -402,8 +421,8 @@ final class DungeonWallInvariantHarness {
                 "wall owner removes a second straight run touching the same corner");
         assertFalse(cornerDeletedWalls.contains(eastSecond),
                 "wall owner expands the second corner run to the next corner");
-        assertTrue(cornerDeletedWalls.contains(southTarget),
-                "wall owner keeps the opposite side of the corner unless supplied as a target");
+        assertFalse(cornerDeletedWalls.contains(southTarget),
+                "wall owner removes the opposite straight run that touches the same corner");
     }
 
     private static void assertInvalidShrinkRejected() {
@@ -436,14 +455,30 @@ final class DungeonWallInvariantHarness {
                 List.of(interiorTarget),
                 BoundaryKind.WALL,
                 false);
+        RoomClusterWallDeleteResolver wallDeleteResolver =
+                RoomClusterWallMap.authoredWallDeleteResolver(List.of(exteriorNorth, interiorTarget));
+        RoomClusterWallDeleteTarget protectedTarget =
+                wallDeleteResolver.deleteTarget(
+                        roomMapCells(),
+                        exteriorNorth);
+        RoomClusterWallDeleteTarget cellTarget =
+                wallDeleteResolver.cellDeleteTarget(
+                        roomMapCells(),
+                        new Cell(2, 1, 0));
         Set<Edge> before = wallEdges(new DungeonDerivedStateProjection().project(map));
         DungeonMap rejected = map.editClusterBoundaries(clusterId, List.of(exteriorNorth), BoundaryKind.WALL, true);
         DungeonMap interiorDeleted = withInteriorWall.editClusterBoundaries(
                 clusterId,
-                List.of(interiorTarget),
+                cellTarget.edges(),
                 BoundaryKind.WALL,
                 true);
 
+        assertTrue(protectedTarget.isProtectedExterior(),
+                "wall owner classifies cluster exterior target as protected before delete mutation");
+        assertTrue(cellTarget.interiorRun(),
+                "wall owner classifies cell-side interior wall target as eligible delete");
+        assertEquals(List.of(interiorTarget), cellTarget.edges(),
+                "wall owner exposes the cell-side interior delete edge");
         assertEquals(before, wallEdges(new DungeonDerivedStateProjection().project(rejected)),
                 "wall owner rejects exterior wall delete without changing derived wall facts");
         assertFalse(wallEdges(new DungeonDerivedStateProjection().project(interiorDeleted)).contains(interiorTarget),
@@ -469,6 +504,19 @@ final class DungeonWallInvariantHarness {
                 new Edge(new Cell(2, 3, 0), new Cell(2, 4, 0)),
                 new Edge(new Cell(2, 3, 0), new Cell(3, 3, 0)),
                 new Edge(new Cell(3, 3, 0), new Cell(4, 3, 0)));
+    }
+
+    private static List<Cell> roomMapCells() {
+        return List.of(
+                new Cell(1, 1, 0),
+                new Cell(2, 1, 0),
+                new Cell(3, 1, 0),
+                new Cell(1, 2, 0),
+                new Cell(2, 2, 0),
+                new Cell(3, 2, 0),
+                new Cell(1, 3, 0),
+                new Cell(2, 3, 0),
+                new Cell(3, 3, 0));
     }
 
     private static Set<Edge> wallEdges(DungeonDerivedState derived) {

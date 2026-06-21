@@ -105,4 +105,5 @@ final class DungeonEditorBoundaryEdgesHelper {
             result.add(edge);
         }
     }
+
 }

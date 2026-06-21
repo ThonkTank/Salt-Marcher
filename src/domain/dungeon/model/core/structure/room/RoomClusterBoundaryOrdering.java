@@ -12,7 +12,7 @@ public final class RoomClusterBoundaryOrdering {
     }
 
     public static EdgeKey boundaryKey(Cell center, BoundaryRow row) {
-        return RoomClusterWallMap.keyForRow(center, row);
+        return RoomClusterWallRows.keyForRow(center, row);
     }
 
     public static Map<Integer, List<BoundaryRow>> boundariesByLevel(Iterable<BoundaryRow> rows) {
@@ -20,7 +20,7 @@ public final class RoomClusterBoundaryOrdering {
     }
 
     public static List<BoundaryRow> sortedRows(Iterable<BoundaryRow> rows) {
-        return RoomClusterWallMap.sortedRows(rows);
+        return RoomClusterWallRows.sortedRows(rows);
     }
 
 }

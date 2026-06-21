@@ -13,7 +13,6 @@ import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
-import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 
 final class RoomClusterBoundarySnapshot {
     private final Cell center;
@@ -60,7 +59,7 @@ final class RoomClusterBoundarySnapshot {
         return wallMap.authoredBoundaryVertices(level);
     }
 
-    List<WallRun> authoredWallRuns(int level) {
+    List<RoomClusterWallRun> authoredWallRuns(int level) {
         RoomClusterWallMap wallMap = RoomClusterWallMap.fromKeyedRows(copyRowsByKey(center, orderedBoundaries));
         return wallMap.authoredWallRuns(level);
     }
@@ -112,7 +111,7 @@ final class RoomClusterBoundarySnapshot {
         for (DungeonClusterBoundary boundary : boundaries == null ? List.<DungeonClusterBoundary>of() : boundaries) {
             if (boundary != null) {
                 BoundaryRow row = boundary.toCoreRow();
-                result.putIfAbsent(RoomClusterWallMap.keyForRow(center, row), row);
+                result.putIfAbsent(RoomClusterWallRows.keyForRow(center, row), row);
             }
         }
         return RoomClusterWallRows.copyRowsByKey(result);

@@ -11,7 +11,6 @@ import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.Bound
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.EdgeKey;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.InteractionState;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.PointerState;
-import src.features.dungeon.runtime.DungeonEditorWallRunDeleteUseCase.WallDeleteTarget;
 
 final class DungeonEditorDirectWallDeleteUseCase {
     private final DungeonEditorBoundaryClusterResolutionHelper clusterResolver =
@@ -66,7 +65,8 @@ final class DungeonEditorDirectWallDeleteUseCase {
             InteractionState state
     ) {
         VertexTarget vertex = input.vertexTarget();
-        WallDeleteTarget target = wallRuns.cornerRunDelete(snapshot, new VertexKey(vertex.q(), vertex.r(), vertex.level()));
+        DungeonEditorWallDeleteTarget target =
+                wallRuns.cornerRunDelete(snapshot, new VertexKey(vertex.q(), vertex.r(), vertex.level()));
         if (!DungeonEditorWorkspaceValues.hasId(target.clusterId())) {
             return draftEffects.clearBoundaryDraftPreview(state);
         }
@@ -78,7 +78,8 @@ final class DungeonEditorDirectWallDeleteUseCase {
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
             InteractionState state
     ) {
-        WallDeleteTarget target = wallRuns.cellRunDelete(snapshot, new CellKey(input.q(), input.r(), input.level()));
+        DungeonEditorWallDeleteTarget target =
+                wallRuns.cellRunDelete(snapshot, new CellKey(input.q(), input.r(), input.level()));
         if (!DungeonEditorWorkspaceValues.hasId(target.clusterId())) {
             return null;
         }
@@ -105,7 +106,10 @@ final class DungeonEditorDirectWallDeleteUseCase {
                 : draftEffects.applyBoundaryEdges(nextState, clusterId, edges, true);
     }
 
-    private DungeonEditorMainViewInterpretation previewDelete(InteractionState state, WallDeleteTarget target) {
+    private DungeonEditorMainViewInterpretation previewDelete(
+            InteractionState state,
+            DungeonEditorWallDeleteTarget target
+    ) {
         if (target.protectedExterior()) {
             return draftEffects.rejectExteriorWallDelete(state);
         }

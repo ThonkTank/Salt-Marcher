@@ -1,13 +1,11 @@
 package src.domain.dungeon.model.core.structure.room;
 
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 
@@ -16,106 +14,109 @@ final class RoomClusterWallRunDelete {
     }
 
     static List<Edge> authoredWallDeleteEdges(
-            Iterable<Edge> authoredWallEdges,
+            Map<EdgeKey, Edge> wallsByKey,
             Iterable<Edge> targetEdges
     ) {
-        Map<EdgeKey, Edge> wallsByKey = keyedEdges(authoredWallEdges);
-        Set<EdgeKey> result = new LinkedHashSet<>();
+        Set<EdgeKey> targetKeys = new LinkedHashSet<>();
         for (Edge target : targetEdges == null ? List.<Edge>of() : targetEdges) {
-            EdgeKey targetKey = edgeKey(target);
+            EdgeKey targetKey = RoomClusterWallRunEdges.key(target);
             if (targetKey != null && wallsByKey.containsKey(targetKey)) {
-                result.addAll(maximalStraightRun(targetKey, wallsByKey.keySet()));
+                targetKeys.add(targetKey);
             }
         }
-        List<Edge> edges = new ArrayList<>();
-        for (EdgeKey key : result) {
-            edges.add(wallsByKey.get(key));
-        }
-        return List.copyOf(edges);
+        return RoomClusterWallRunEdges.expanded(wallsByKey, targetKeys);
     }
 
-    private static Map<EdgeKey, Edge> keyedEdges(Iterable<Edge> edges) {
-        Map<EdgeKey, Edge> result = new LinkedHashMap<>();
-        for (Edge edge : edges == null ? List.<Edge>of() : edges) {
-            EdgeKey key = edgeKey(edge);
-            if (key != null) {
-                result.putIfAbsent(key, edge);
-            }
-        }
-        return result;
-    }
-
-    private static @Nullable EdgeKey edgeKey(@Nullable Edge edge) {
-        if (edge == null || edge.from() == null || edge.to() == null) {
-            return null;
-        }
-        return EdgeKey.from(edge);
-    }
-
-    private static Set<EdgeKey> maximalStraightRun(EdgeKey target, Set<EdgeKey> walls) {
-        Set<EdgeKey> result = new LinkedHashSet<>();
-        result.add(target);
-        boolean changed;
-        do {
-            changed = false;
-            for (EdgeKey candidate : walls) {
-                if (!result.contains(candidate)
-                        && sameLine(target, candidate)
-                        && attachesAcrossNonCorner(result, candidate, walls)) {
-                    result.add(candidate);
-                    changed = true;
-                }
-            }
-        } while (changed);
-        return result;
-    }
-
-    private static boolean attachesAcrossNonCorner(
-            Set<EdgeKey> run,
-            EdgeKey candidate,
-            Set<EdgeKey> walls
+    static RoomClusterWallDeleteTarget authoredWallDeleteTarget(
+            Iterable<Cell> clusterCells,
+            Map<EdgeKey, Edge> wallsByKey,
+            Edge targetEdge
     ) {
-        for (EdgeKey edge : run) {
-            Cell shared = sharedVertex(edge, candidate);
-            if (shared != null && !cornerAt(shared, edge, walls)) {
-                return true;
+        EdgeKey targetKey = RoomClusterWallRunEdges.key(targetEdge);
+        if (targetKey == null || !wallsByKey.containsKey(targetKey)) {
+            return RoomClusterWallDeleteTarget.none();
+        }
+        return classifiedTarget(clusterCells, wallsByKey, Set.of(targetKey));
+    }
+
+    static RoomClusterWallDeleteTarget authoredWallCornerDeleteTarget(
+            Iterable<Cell> clusterCells,
+            Map<EdgeKey, Edge> wallsByKey,
+            Cell corner
+    ) {
+        if (corner == null) {
+            return RoomClusterWallDeleteTarget.none();
+        }
+        Set<EdgeKey> touchingTargets = new LinkedHashSet<>();
+        for (EdgeKey edgeKey : wallsByKey.keySet()) {
+            if (edgeKey.lower().equals(corner) || edgeKey.upper().equals(corner)) {
+                touchingTargets.add(edgeKey);
             }
         }
-        return false;
+        if (touchingTargets.isEmpty()) {
+            return RoomClusterWallDeleteTarget.none();
+        }
+        return classifiedTarget(clusterCells, wallsByKey, touchingTargets);
     }
 
-    private static @Nullable Cell sharedVertex(EdgeKey first, EdgeKey second) {
-        Cell firstLower = first.lower();
-        Cell firstUpper = first.upper();
-        if (firstLower.equals(second.lower()) || firstLower.equals(second.upper())) {
-            return first.lower();
+    static RoomClusterWallDeleteTarget authoredWallCellDeleteTarget(
+            Iterable<Cell> clusterCells,
+            Map<EdgeKey, Edge> wallsByKey,
+            Cell cell
+    ) {
+        if (cell == null) {
+            return RoomClusterWallDeleteTarget.none();
         }
-        if (firstUpper.equals(second.lower()) || firstUpper.equals(second.upper())) {
-            return first.upper();
-        }
-        return null;
-    }
-
-    private static boolean cornerAt(Cell vertex, EdgeKey reference, Set<EdgeKey> walls) {
-        for (EdgeKey edge : walls) {
-            boolean touchesVertex = edge.lower().equals(vertex) || edge.upper().equals(vertex);
-            if (!edge.equals(reference) && touchesVertex && !sameLine(reference, edge)) {
-                return true;
+        for (Direction direction : Direction.values()) {
+            EdgeKey targetKey = EdgeKey.from(Edge.sideOf(cell, direction));
+            if (wallsByKey.containsKey(targetKey)) {
+                return classifiedTarget(clusterCells, wallsByKey, Set.of(targetKey));
             }
         }
-        return false;
+        return RoomClusterWallDeleteTarget.none();
     }
 
-    private static boolean sameLine(EdgeKey first, EdgeKey second) {
-        boolean firstHorizontal = first.lower().level() == first.upper().level()
-                && first.lower().r() == first.upper().r();
-        boolean secondHorizontal = second.lower().level() == second.upper().level()
-                && second.lower().r() == second.upper().r();
-        boolean firstVertical = first.lower().level() == first.upper().level()
-                && first.lower().q() == first.upper().q();
-        boolean secondVertical = second.lower().level() == second.upper().level()
-                && second.lower().q() == second.upper().q();
-        return firstHorizontal && secondHorizontal && first.lower().r() == second.lower().r()
-                || firstVertical && secondVertical && first.lower().q() == second.lower().q();
+    private static RoomClusterWallDeleteTarget classifiedTarget(
+            Iterable<Cell> clusterCells,
+            Map<EdgeKey, Edge> wallsByKey,
+            Set<EdgeKey> targetKeys
+    ) {
+        Set<Cell> cells = cellSet(clusterCells);
+        Set<EdgeKey> interiorTargets = new LinkedHashSet<>();
+        boolean exteriorTarget = false;
+        for (EdgeKey targetKey : targetKeys) {
+            if (interiorWall(targetKey, cells)) {
+                interiorTargets.add(targetKey);
+            } else {
+                exteriorTarget = true;
+            }
+        }
+        if (!interiorTargets.isEmpty()) {
+            return RoomClusterWallDeleteTarget.interior(
+                    RoomClusterWallRunEdges.expanded(wallsByKey, interiorTargets));
+        }
+        return exteriorTarget
+                ? RoomClusterWallDeleteTarget.protectedExteriorTarget()
+                : RoomClusterWallDeleteTarget.none();
+    }
+
+    private static Set<Cell> cellSet(Iterable<Cell> cells) {
+        Set<Cell> result = new LinkedHashSet<>();
+        for (Cell cell : cells == null ? List.<Cell>of() : cells) {
+            if (cell != null) {
+                result.add(cell);
+            }
+        }
+        return Set.copyOf(result);
+    }
+
+    private static boolean interiorWall(EdgeKey key, Set<Cell> cells) {
+        if (key == null) {
+            return false;
+        }
+        List<Cell> touchingCells = new Edge(key.lower(), key.upper()).touchingCells();
+        return touchingCells.size() == 2
+                && cells.contains(touchingCells.getFirst())
+                && cells.contains(touchingCells.get(1));
     }
 }

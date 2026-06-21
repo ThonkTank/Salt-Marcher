@@ -13,6 +13,7 @@ import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
+import src.domain.dungeon.model.core.structure.room.RoomClusterWallRun;
 
 final class DungeonClusterInvariantHarness {
 
@@ -91,7 +92,7 @@ final class DungeonClusterInvariantHarness {
                         new Cell(1, 0, 0),
                         Direction.NORTH,
                         RoomClusterBoundaryMaterialization.BoundaryKind.WALL)));
-        List<RoomClusterWallMap.WallRun> runs = wallMap.authoredWallRuns(0);
+        List<RoomClusterWallRun> runs = wallMap.authoredWallRuns(0);
         assertEquals(1, runs.size(), "DGI-CLUSTER-003 derives one contiguous two-segment wall run");
         assertEquals(Direction.NORTH, runs.getFirst().direction(),
                 "DGI-CLUSTER-003 preserves wall-run direction");

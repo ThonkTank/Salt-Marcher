@@ -9,7 +9,6 @@ import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 
 @SuppressWarnings({"PMD.GodClass", "PMD.TooManyMethods"})
 public final class DungeonRoomCluster {
@@ -119,7 +118,7 @@ public final class DungeonRoomCluster {
         return boundarySnapshot().authoredBoundaryVertices(level);
     }
 
-    public List<WallRun> authoredWallRuns(int level) {
+    public List<RoomClusterWallRun> authoredWallRuns(int level) {
         return boundarySnapshot().authoredWallRuns(level);
     }
 

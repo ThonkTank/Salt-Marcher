@@ -10,7 +10,6 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
-import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
 
 final class RoomClusterWallRuns {
     private static final int MINIMUM_WALL_RUN_LENGTH = 2;
@@ -18,12 +17,12 @@ final class RoomClusterWallRuns {
     private RoomClusterWallRuns() {
     }
 
-    static List<WallRun> authoredWallRuns(
+    static List<RoomClusterWallRun> authoredWallRuns(
             BoundaryMap boundaryMap,
             Map<EdgeKey, BoundaryRow> rowsByKey,
             int level
     ) {
-        List<WallRun> result = new ArrayList<>();
+        List<RoomClusterWallRun> result = new ArrayList<>();
         for (src.domain.dungeon.model.core.component.boundary.WallRun wallRun
                 : componentWallRuns(boundaryMap, level)) {
             appendDirectionalRuns(result, wallRun.edgeKeys(), rowsByKey);
@@ -41,7 +40,7 @@ final class RoomClusterWallRuns {
     }
 
     private static void appendDirectionalRuns(
-            List<WallRun> result,
+            List<RoomClusterWallRun> result,
             List<EdgeKey> edgeKeys,
             Map<EdgeKey, BoundaryRow> rowsByKey
     ) {
@@ -95,7 +94,7 @@ final class RoomClusterWallRuns {
     }
 
     private static void addDirectionalRun(
-            List<WallRun> result,
+            List<RoomClusterWallRun> result,
             List<EdgeKey> edgeKeys,
             Direction direction,
             Map<EdgeKey, BoundaryRow> rowsByKey
@@ -107,7 +106,7 @@ final class RoomClusterWallRuns {
     }
 
     private static void addRun(
-            List<WallRun> result,
+            List<RoomClusterWallRun> result,
             Direction direction,
             List<EdgeKey> edgeKeys,
             Map<EdgeKey, BoundaryRow> rowsByKey
@@ -133,7 +132,7 @@ final class RoomClusterWallRuns {
         Cell anchorCell = horizontal
                 ? new Cell(anchorCoordinate, fixed, sourceFrom.level())
                 : new Cell(fixed, anchorCoordinate, sourceFrom.level());
-        result.add(new WallRun(
+        result.add(new RoomClusterWallRun(
                 anchorCell,
                 horizontal ? variableMidpoint : fixed,
                 horizontal ? fixed : variableMidpoint,

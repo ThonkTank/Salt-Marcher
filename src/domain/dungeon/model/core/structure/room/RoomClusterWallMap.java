@@ -7,10 +7,8 @@ import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.boundary.BoundaryMap;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
 
 public final class RoomClusterWallMap {
@@ -52,7 +50,7 @@ public final class RoomClusterWallMap {
         return RoomClusterBoundaryVertices.authored(boundaryMap, level);
     }
 
-    public List<WallRun> authoredWallRuns(int level) {
+    public List<RoomClusterWallRun> authoredWallRuns(int level) {
         return RoomClusterWallRuns.authoredWallRuns(boundaryMap, rowsByKey, level);
     }
 
@@ -60,7 +58,11 @@ public final class RoomClusterWallMap {
             Iterable<Edge> authoredWallEdges,
             Iterable<Edge> targetEdges
     ) {
-        return RoomClusterWallRunDelete.authoredWallDeleteEdges(authoredWallEdges, targetEdges);
+        return authoredWallDeleteResolver(authoredWallEdges).deleteEdges(targetEdges);
+    }
+
+    public static RoomClusterWallDeleteResolver authoredWallDeleteResolver(Iterable<Edge> authoredWallEdges) {
+        return new RoomClusterWallDeleteResolver(RoomClusterWallRunEdges.keyed(authoredWallEdges));
     }
 
     @Override
@@ -75,30 +77,4 @@ public final class RoomClusterWallMap {
         return Objects.hash(boundaryMap, rowsByKey);
     }
 
-    static @Nullable BoundaryRow materializeRow(
-            Iterable<Cell> clusterCells,
-            @Nullable Cell center,
-            long clusterId,
-            @Nullable Edge edge,
-            @Nullable BoundaryKind kind
-    ) {
-        return RoomClusterWallMaterialization.materializeRow(clusterCells, center, clusterId, edge, kind);
-    }
-
-    static List<BoundaryRow> sortedRows(Iterable<BoundaryRow> rows) {
-        return RoomClusterWallRows.sortedRows(rows);
-    }
-
-    static EdgeKey keyForRow(@Nullable Cell center, BoundaryRow row) {
-        return RoomClusterWallRows.keyForRow(center, row);
-    }
-
-    public record WallRun(Cell anchorCell, double markerQ, double markerR, Direction direction, Edge sourceEdge) {
-        public WallRun {
-            anchorCell = anchorCell == null ? new Cell(0, 0, 0) : anchorCell;
-            markerQ = Double.isFinite(markerQ) ? markerQ : anchorCell.q();
-            markerR = Double.isFinite(markerR) ? markerR : anchorCell.r();
-            direction = direction == null ? Direction.NORTH : direction;
-        }
-    }
 }

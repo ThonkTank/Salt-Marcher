@@ -19,7 +19,7 @@ public final class RoomClusterBoundaryMaterialization {
             @Nullable Edge edge,
             @Nullable BoundaryKind kind
     ) {
-        return RoomClusterWallMap.materializeRow(clusterCells, center, clusterId, edge, kind);
+        return RoomClusterWallMaterialization.materializeRow(clusterCells, center, clusterId, edge, kind);
     }
 
     public static @Nullable BoundaryRow openForEdge(

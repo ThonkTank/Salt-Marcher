@@ -13,7 +13,7 @@ import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
-import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap.WallRun;
+import src.domain.dungeon.model.core.structure.room.RoomClusterWallRun;
 
 public final class DungeonEditorAffordanceModel {
 
@@ -113,9 +113,9 @@ public final class DungeonEditorAffordanceModel {
             DungeonRoom room,
             int level
     ) {
-        List<WallRun> wallRuns = cluster.authoredWallRuns(level);
+        List<RoomClusterWallRun> wallRuns = cluster.authoredWallRuns(level);
         for (int index = 0; index < wallRuns.size(); index++) {
-            WallRun wallRun = wallRuns.get(index);
+            RoomClusterWallRun wallRun = wallRuns.get(index);
             result.add(new DungeonEditorHandleProjection(
                     DungeonEditorHandleProjectionKind.CLUSTER_WALL_RUN,
                     new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId()),
