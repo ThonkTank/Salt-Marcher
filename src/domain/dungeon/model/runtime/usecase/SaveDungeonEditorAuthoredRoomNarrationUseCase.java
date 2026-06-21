@@ -1,12 +1,11 @@
 package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorRoomNarrationInput;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.runtime.helper.DungeonEditorAuthoredOperationHelper;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorRoomNarrationInput;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.runtime.helper.DungeonEditorAuthoredOperationHelper;
 
 public final class SaveDungeonEditorAuthoredRoomNarrationUseCase {
 
@@ -25,11 +24,10 @@ public final class SaveDungeonEditorAuthoredRoomNarrationUseCase {
         if (roomNarration == null || !DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
             return;
         }
-        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.apply(
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.applySaveRoomNarration(
                 domainMapId(mapId),
-                DungeonEditorAuthoredOperation.saveRoomNarration(
-                        roomNarration.roomId(),
-                        DungeonEditorAuthoredOperationHelper.roomNarration(roomNarration)));
+                roomNarration.roomId(),
+                DungeonEditorAuthoredOperationHelper.roomNarration(roomNarration));
         publishMutationUseCase.execute(result);
     }
 

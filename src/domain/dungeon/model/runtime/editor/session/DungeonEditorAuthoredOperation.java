@@ -4,7 +4,6 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
-import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
@@ -24,10 +23,7 @@ public final class DungeonEditorAuthoredOperation {
             EditClusterBoundaries,
             CreateCorridor,
             DeleteCorridor,
-            MoveEditorHandle,
-            MoveBoundaryStretch,
-            DungeonEditorSaveLabelNameOperation,
-            DungeonEditorSaveRoomNarrationOperation {
+            MoveEditorHandle {
     }
 
     public static DungeonEditorAuthoredOperation editClusterBoundaries(
@@ -64,33 +60,6 @@ public final class DungeonEditorAuthoredOperation {
             int deltaLevel
     ) {
         return new DungeonEditorAuthoredOperation(new MoveEditorHandle(handle, deltaQ, deltaR, deltaLevel));
-    }
-
-    public static DungeonEditorAuthoredOperation moveBoundaryStretch(
-            long clusterId,
-            List<Edge> sourceEdges,
-            int deltaQ,
-            int deltaR,
-            int deltaLevel
-    ) {
-        return new DungeonEditorAuthoredOperation(
-                new MoveBoundaryStretch(clusterId, sourceEdges, deltaQ, deltaR, deltaLevel));
-    }
-
-    public static DungeonEditorAuthoredOperation saveRoomNarration(
-            long roomId,
-            DungeonRoomNarration narration
-    ) {
-        return new DungeonEditorAuthoredOperation(new DungeonEditorSaveRoomNarrationOperation(roomId, narration));
-    }
-
-    public static DungeonEditorAuthoredOperation saveLabelName(
-            String targetKind,
-            long targetId,
-            String name
-    ) {
-        return new DungeonEditorAuthoredOperation(
-                new DungeonEditorSaveLabelNameOperation(targetKind, targetId, name));
     }
 
     public static final class EditClusterBoundaries implements Variant {
@@ -177,48 +146,6 @@ public final class DungeonEditorAuthoredOperation {
 
         public DungeonEditorHandleMovement handle() {
             return handle;
-        }
-
-        public int deltaQ() {
-            return deltaQ;
-        }
-
-        public int deltaR() {
-            return deltaR;
-        }
-
-        public int deltaLevel() {
-            return deltaLevel;
-        }
-    }
-
-    public static final class MoveBoundaryStretch implements Variant {
-        private final long clusterId;
-        private final List<Edge> sourceEdges;
-        private final int deltaQ;
-        private final int deltaR;
-        private final int deltaLevel;
-
-        private MoveBoundaryStretch(
-                long clusterId,
-                List<Edge> sourceEdges,
-                int deltaQ,
-                int deltaR,
-                int deltaLevel
-        ) {
-            this.clusterId = Math.max(0L, clusterId);
-            this.sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
-            this.deltaQ = deltaQ;
-            this.deltaR = deltaR;
-            this.deltaLevel = deltaLevel;
-        }
-
-        public long clusterId() {
-            return clusterId;
-        }
-
-        public List<Edge> sourceEdges() {
-            return List.copyOf(sourceEdges);
         }
 
         public int deltaQ() {

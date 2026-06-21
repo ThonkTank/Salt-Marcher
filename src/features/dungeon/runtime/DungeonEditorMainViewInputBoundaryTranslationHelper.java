@@ -46,7 +46,7 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
         return switch (safeTarget.targetKind().category()) {
             case EMPTY -> HitTarget.empty();
             case SIMPLE -> simpleTarget(toHitKind(safeTarget.elementKind()), safeTarget);
-            case LABEL -> labelTarget(HitKind.LABEL, safeTarget, safeTarget.targetKind().clusterLabel());
+            case LABEL -> labelTarget(HitKind.LABEL, safeTarget);
             case HANDLE -> handleTarget(safeTarget.handleRef());
             case BOUNDARY -> boundaryTarget(safeTarget);
         };
@@ -64,14 +64,7 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 BoundaryTarget.empty());
     }
 
-    private static HitTarget labelTarget(HitKind kind, DungeonEditorMainViewPointerTarget target, boolean clusterHandle) {
-        HandleTarget handleTarget = clusterHandle
-                ? HandleTarget.clusterLabel(
-                        target.topologyRef().kind().name(),
-                        target.topologyRef().id(),
-                        target.ownerId(),
-                        target.clusterId())
-                : HandleTarget.empty();
+    private static HitTarget labelTarget(HitKind kind, DungeonEditorMainViewPointerTarget target) {
         return new HitTarget(
                 kind,
                 target.ownerId(),
@@ -79,7 +72,7 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 target.topologyRef().kind().name(),
                 target.topologyRef().id(),
                 target.labelKind(),
-                handleTarget,
+                HandleTarget.empty(),
                 BoundaryTarget.empty());
     }
 

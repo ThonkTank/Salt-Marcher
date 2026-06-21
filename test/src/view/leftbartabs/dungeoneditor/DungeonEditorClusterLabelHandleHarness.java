@@ -1160,7 +1160,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 MouseEvent.MOUSE_RELEASED,
                 MouseButton.PRIMARY,
                 viewport.sceneToScreenX(11.0),
-                viewport.sceneToScreenY(9.0),
+                viewport.sceneToScreenY(8.0),
                 false);
 
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
@@ -1176,7 +1176,7 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertEquals(0L, runtime.database().countUnreferencedWallTopologyElements(mapId),
                 "DE-CLUSTER-002 leaves no orphan wall topology rows");
         assertTrue(runtime.database().authoredClusterBoundaryCorners(clusterId).containsAll(Set.of("10,9,0", "13,9,0")),
-                "DE-CLUSTER-002 persists the dragged full wall-run endpoints");
+                "DE-CLUSTER-002 persists the last previewed full wall-run endpoints despite divergent release coordinates");
 
         selectMap(controls, "Complex Cluster Wall Run Move Reload Hop");
         selectMap(controls, "Complex Cluster Wall Run Move Map");

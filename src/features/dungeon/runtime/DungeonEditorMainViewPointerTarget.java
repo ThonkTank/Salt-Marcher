@@ -217,9 +217,6 @@ record DungeonEditorMainViewPointerTarget(
             return category;
         }
 
-        boolean clusterLabel() {
-            return this == CLUSTER_LABEL;
-        }
     }
 
     enum AuthoredTargetCategory {

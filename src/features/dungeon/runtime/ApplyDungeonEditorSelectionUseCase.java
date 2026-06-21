@@ -1,6 +1,7 @@
 package src.features.dungeon.runtime;
 
 import java.util.Objects;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
@@ -26,12 +27,13 @@ final class ApplyDungeonEditorSelectionUseCase {
         if (committedSnapshot == null) {
             return;
         }
-        effectUseCase.applyEffect(mainViewInterpreter.selection(
+        DungeonEditorSessionEffect effect = mainViewInterpreter.selection(
                 PointerAction.PRESS,
                 input,
                 committedSnapshot,
                 workflow.session().selection(),
-                workflow.session().projectionLevel()), null);
+                workflow.session().projectionLevel());
+        effectUseCase.applyEffect(effect, null);
     }
 
     void drag(DungeonEditorMainViewInput input) {
@@ -47,12 +49,13 @@ final class ApplyDungeonEditorSelectionUseCase {
 
     void release(DungeonEditorMainViewInput input) {
         if (effectUseCase.committedGridOrPublishCurrent() != null) {
-            effectUseCase.applyEffect(mainViewInterpreter.selection(
+            DungeonEditorSessionEffect effect = mainViewInterpreter.selection(
                     PointerAction.RELEASE,
                     input,
                     null,
                     workflow.session().selection(),
-                    workflow.session().projectionLevel()), null);
+                    workflow.session().projectionLevel());
+            effectUseCase.applyEffect(effect, effectUseCase.clusterHandleCommitFor(effect.getApplyPreview()));
         }
     }
 

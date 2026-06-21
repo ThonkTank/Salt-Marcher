@@ -31,4 +31,9 @@ final class DungeonEditorSessionPreviewUseCase {
         }
         return preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview;
     }
+
+    static boolean directClusterMoveCommitHandle(DungeonEditorHandleType kind) {
+        return kind == DungeonEditorHandleType.CLUSTER_LABEL
+                || kind == DungeonEditorHandleType.CLUSTER_CORNER;
+    }
 }

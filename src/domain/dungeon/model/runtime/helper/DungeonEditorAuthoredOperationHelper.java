@@ -9,11 +9,11 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovementKind;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceHandleMovement;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
@@ -54,31 +54,8 @@ public interface DungeonEditorAuthoredOperationHelper {
                             corridorDelete.topologyRefId(),
                             corridorDelete.roomId(),
                             corridorDelete.waypointIndex());
-            case DungeonEditorSessionValues.MoveHandlePreview moveHandle ->
-                    DungeonEditorAuthoredOperation.moveEditorHandle(
-                            new DungeonEditorHandleMovement(
-                                    DungeonEditorHandleMovementKind.fromName(moveHandle.handleRef().kind().name()),
-                                    moveHandle.handleRef().topologyRef(),
-                                    moveHandle.handleRef().ownerId(),
-                                    moveHandle.handleRef().clusterId(),
-                                    moveHandle.handleRef().corridorId(),
-                                    moveHandle.handleRef().roomId(),
-                                    moveHandle.handleRef().index(),
-                                    cell(moveHandle.handleRef().cell()),
-                                    Direction.parse(moveHandle.handleRef().direction()),
-                                    moveHandle.handleRef().sourceEdge() == null
-                                            ? null
-                                            : edge(moveHandle.handleRef().sourceEdge())),
-                            moveHandle.deltaQ(),
-                            moveHandle.deltaR(),
-                            moveHandle.deltaLevel());
-            case DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch ->
-                    DungeonEditorAuthoredOperation.moveBoundaryStretch(
-                            stretch.clusterId(),
-                            edges(stretch.sourceEdges()),
-                            stretch.deltaQ(),
-                            stretch.deltaR(),
-                            stretch.deltaLevel());
+            case DungeonEditorSessionValues.MoveHandlePreview moveHandle -> moveEditorHandleOperation(moveHandle);
+            case DungeonEditorSessionValues.MoveBoundaryStretchPreview ignored -> null;
         };
     }
 
@@ -98,14 +75,6 @@ public interface DungeonEditorAuthoredOperationHelper {
             safeEdges.add(edge == null ? new DungeonEditorWorkspaceValues.Edge(null, null) : edge);
         }
         return DungeonEditorWorkspaceCoreGeometry.edges(safeEdges);
-    }
-
-    static Edge edge(DungeonEditorWorkspaceValues.Edge edge) {
-        if (edge == null) {
-            Cell origin = cell(null);
-            return new Edge(origin, origin);
-        }
-        return DungeonEditorWorkspaceCoreGeometry.edge(edge);
     }
 
     static BoundaryKind boundaryKind(
@@ -157,5 +126,24 @@ public interface DungeonEditorAuthoredOperationHelper {
                     safeExit.description()));
         }
         return List.copyOf(result);
+    }
+
+    private static @Nullable DungeonEditorAuthoredOperation moveEditorHandleOperation(
+            DungeonEditorSessionValues.MoveHandlePreview moveHandle
+    ) {
+        if (directRuntimeCommittedHandle(moveHandle.handleRef().kind())) {
+            return null;
+        }
+        return DungeonEditorAuthoredOperation.moveEditorHandle(
+                DungeonEditorWorkspaceHandleMovement.from(moveHandle.handleRef()),
+                moveHandle.deltaQ(),
+                moveHandle.deltaR(),
+                moveHandle.deltaLevel());
+    }
+
+    private static boolean directRuntimeCommittedHandle(DungeonEditorHandleType kind) {
+        return kind == DungeonEditorHandleType.CLUSTER_LABEL
+                || kind == DungeonEditorHandleType.CLUSTER_CORNER
+                || kind == DungeonEditorHandleType.CLUSTER_WALL_RUN;
     }
 }

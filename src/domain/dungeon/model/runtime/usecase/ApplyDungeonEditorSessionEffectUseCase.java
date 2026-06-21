@@ -80,6 +80,19 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
         publishInMemoryPreview();
     }
 
+    public @Nullable AuthoredCommit clusterHandleCommitFor(
+            DungeonEditorSessionValues.@Nullable Preview preview
+    ) {
+        if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview move
+                && DungeonEditorSessionPreviewUseCase.directClusterMoveCommitHandle(move.handleRef().kind())) {
+            return mapId -> applyOperationUseCase.executeClusterHandleMove(mapId, move);
+        }
+        if (preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch) {
+            return mapId -> applyOperationUseCase.executeClusterBoundaryStretch(mapId, stretch);
+        }
+        return null;
+    }
+
     public DungeonEditorDungeonFacts currentFacts() {
         return dungeonState.currentFacts(
                 workflow.session().selectedMapId(),
@@ -108,4 +121,5 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
     public interface AuthoredCommit {
         void apply(DungeonEditorWorkspaceValues.MapId mapId);
     }
+
 }

@@ -17,7 +17,7 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
             InteractionState state
     ) {
         if (state.boundaryStretchSession().present()) {
-            return releaseBoundaryStretchSession(input, state);
+            return releaseBoundaryStretchSession(state);
         }
         if (!state.dragSession().present()) {
             return new DungeonEditorMainViewInterpretation(state, DungeonEditorSessionEffect.clearPreviewIfNeeded(false));
@@ -67,13 +67,8 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
                 released);
     }
 
-    private static DungeonEditorMainViewInterpretation releaseBoundaryStretchSession(
-            PointerState input,
-            InteractionState state
-    ) {
-        BoundaryStretchSession releasedSession = input == null
-                ? state.boundaryStretchSession()
-                : state.boundaryStretchSession().withCurrentPointer(input.q(), input.r());
+    private static DungeonEditorMainViewInterpretation releaseBoundaryStretchSession(InteractionState state) {
+        BoundaryStretchSession releasedSession = state.boundaryStretchSession();
         InteractionState nextState = state.withBoundaryStretchSession(BoundaryStretchSession.none());
         if (!releasedSession.moved()) {
             return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorSessionEffect.select(releasedSession.selection()));

@@ -2,7 +2,6 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 
 public final class SaveDungeonEditorAuthoredLabelNameUseCase {
@@ -21,9 +20,11 @@ public final class SaveDungeonEditorAuthoredLabelNameUseCase {
         if (targetId <= 0L || name == null || name.isBlank()) {
             return;
         }
-        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.apply(
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.applySaveLabelName(
                 domainMapId(mapId),
-                DungeonEditorAuthoredOperation.saveLabelName(targetKind, targetId, name));
+                targetKind,
+                targetId,
+                name);
         publishMutationUseCase.execute(result);
     }
 

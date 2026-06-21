@@ -9,6 +9,9 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMateriali
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceHandleMovement;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorAuthoredOperationHelper;
 
 public final class ApplyDungeonEditorAuthoredOperationUseCase {
@@ -67,7 +70,43 @@ public final class ApplyDungeonEditorAuthoredOperationUseCase {
         publishMutationUseCase.execute(result);
     }
 
+    public void executeClusterHandleMove(
+            MapId mapId,
+            DungeonEditorSessionValues.MoveHandlePreview preview
+    ) {
+        DungeonEditorSessionValues.MoveHandlePreview safePreview =
+                Objects.requireNonNull(preview, "preview");
+        DungeonEditorWorkspaceValues.HandleRef handleRef = safePreview.handleRef();
+        if (!DungeonEditorSessionPreviewUseCase.directClusterMoveCommitHandle(handleRef.kind())) {
+            return;
+        }
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.applyMoveEditorHandle(
+                domainMapId(mapId),
+                DungeonEditorWorkspaceHandleMovement.from(handleRef),
+                safePreview.deltaQ(),
+                safePreview.deltaR(),
+                safePreview.deltaLevel());
+        publishMutationUseCase.execute(result);
+    }
+
+    public void executeClusterBoundaryStretch(
+            MapId mapId,
+            DungeonEditorSessionValues.MoveBoundaryStretchPreview preview
+    ) {
+        DungeonEditorSessionValues.MoveBoundaryStretchPreview safePreview =
+                Objects.requireNonNull(preview, "preview");
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.applyBoundaryStretch(
+                domainMapId(mapId),
+                safePreview.clusterId(),
+                DungeonEditorWorkspaceCoreGeometry.edges(safePreview.sourceEdges()),
+                safePreview.deltaQ(),
+                safePreview.deltaR(),
+                safePreview.deltaLevel());
+        publishMutationUseCase.execute(result);
+    }
+
     private static DungeonMapIdentity domainMapId(MapId mapId) {
         return new DungeonMapIdentity(mapId == null ? 1L : mapId.value());
     }
+
 }
