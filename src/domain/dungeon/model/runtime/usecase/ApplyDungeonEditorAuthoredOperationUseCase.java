@@ -13,6 +13,7 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceVal
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceHandleMovement;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorAuthoredOperationHelper;
+import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper;
 
 public final class ApplyDungeonEditorAuthoredOperationUseCase {
 
@@ -77,7 +78,7 @@ public final class ApplyDungeonEditorAuthoredOperationUseCase {
         DungeonEditorSessionValues.MoveHandlePreview safePreview =
                 Objects.requireNonNull(preview, "preview");
         DungeonEditorWorkspaceValues.HandleRef handleRef = safePreview.handleRef();
-        if (!DungeonEditorSessionPreviewUseCase.directClusterMoveCommitHandle(handleRef.kind())) {
+        if (!DungeonEditorSessionPreviewHelper.directClusterMoveCommitHandle(handleRef.kind())) {
             return;
         }
         ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.applyMoveEditorHandle(

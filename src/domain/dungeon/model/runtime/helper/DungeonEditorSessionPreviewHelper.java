@@ -1,13 +1,10 @@
-package src.domain.dungeon.model.runtime.usecase;
+package src.domain.dungeon.model.runtime.helper;
 
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 
-final class DungeonEditorSessionPreviewUseCase {
-    private DungeonEditorSessionPreviewUseCase() {
-    }
-
+public interface DungeonEditorSessionPreviewHelper {
     static boolean clearsSelectionAfterApply(DungeonEditorSessionValues.Preview preview) {
         return switch (preview) {
             case DungeonEditorSessionValues.RoomRectanglePreview room -> room.deleteMode();

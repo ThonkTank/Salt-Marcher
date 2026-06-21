@@ -8,6 +8,7 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffec
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper;
 
 public final class ApplyDungeonEditorSessionEffectUseCase {
     private final DungeonEditorSessionWorkflow workflow;
@@ -70,7 +71,7 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
             publishCurrent();
             return;
         }
-        if (!DungeonEditorSessionPreviewUseCase.inMemoryDragPreview(effect.getPreview())) {
+        if (!DungeonEditorSessionPreviewHelper.inMemoryDragPreview(effect.getPreview())) {
             publishCurrent();
             return;
         }
@@ -84,7 +85,7 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
             DungeonEditorSessionValues.@Nullable Preview preview
     ) {
         if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview move
-                && DungeonEditorSessionPreviewUseCase.directClusterMoveCommitHandle(move.handleRef().kind())) {
+                && DungeonEditorSessionPreviewHelper.directClusterMoveCommitHandle(move.handleRef().kind())) {
             return mapId -> applyOperationUseCase.executeClusterHandleMove(mapId, move);
         }
         if (preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch) {
@@ -112,7 +113,7 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
             authoredCommit.apply(mapId);
         }
         workflow.clearPreviewWithStatus(currentFacts().mutationStatusText());
-        if (DungeonEditorSessionPreviewUseCase.clearsSelectionAfterApply(applyPreview)) {
+        if (DungeonEditorSessionPreviewHelper.clearsSelectionAfterApply(applyPreview)) {
             workflow.applyEffect(DungeonEditorSessionEffect.clearedSelection());
         }
     }
