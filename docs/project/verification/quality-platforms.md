@@ -106,9 +106,15 @@ complete report, but a violating gate must not produce a successful `check` or
 
 ## Verification Policy
 
-SaltMarcher uses structural and build gates for automated confidence, and
-manual testing for behavior verification.
+SaltMarcher uses structural and build gates for automated confidence,
+production-path behavior harnesses for behavior proof, and manual testing for
+desktop interaction or UI judgment that cannot be mechanically qualified.
 
+- behavior harnesses must exercise real production routes where possible:
+  owning UI route or view input adapter, migrated feature-runtime operation
+  owner where applicable, domain owner APIs for authored mutation, persistence,
+  publication, and render-frame or content-model readback; direct owner-API
+  proof is allowed only for model invariants or as a marked route gap
 - do not add JUnit or similar automated tests for feature behavior, internal
   orchestration, UI helpers, or other change-coupled logic whose assertions
   must be migrated alongside normal behavior changes
