@@ -4,8 +4,11 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
+import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
 
 public record DungeonRoomTopologyClusterWork(
         DungeonRoomCluster cluster,
@@ -37,6 +40,29 @@ public record DungeonRoomTopologyClusterWork(
 
     public DungeonRoomCluster rebuiltClusterWithBoundaries(Map<Integer, List<DungeonClusterBoundary>> boundariesByLevel) {
         return cluster.rebuiltForTopologyWork(cellsByLevel, boundariesByLevel);
+    }
+
+    Optional<StretchSelection> boundaryStretchSelection(
+            List<Edge> sourceEdges,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        return RoomClusterWallStretchSelection.resolve(
+                cluster.boundaryMap(),
+                stretchFloorMap(sourceEdges),
+                safeEdges(sourceEdges),
+                deltaQ,
+                deltaR,
+                deltaLevel);
+    }
+
+    private RoomClusterFloorMap stretchFloorMap(List<Edge> sourceEdges) {
+        List<Edge> safeEdges = safeEdges(sourceEdges);
+        if (safeEdges.isEmpty()) {
+            return RoomClusterFloorMap.fromCells(List.of());
+        }
+        return RoomClusterFloorMap.fromCells(cellsAt(safeEdges.getFirst().from().level()));
     }
 
     public RoomClusterWork toCore() {
@@ -100,5 +126,16 @@ public record DungeonRoomTopologyClusterWork(
             }
         }
         return Map.copyOf(result);
+    }
+
+    private static List<Edge> safeEdges(List<Edge> edges) {
+        List<Edge> result = new ArrayList<>();
+        for (Edge edge : edges == null ? List.<Edge>of() : edges) {
+            if (edge == null) {
+                return List.of();
+            }
+            result.add(edge);
+        }
+        return List.copyOf(result);
     }
 }

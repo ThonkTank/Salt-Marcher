@@ -3,7 +3,6 @@ package src.domain.dungeon.model.core.structure.room;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
@@ -14,8 +13,6 @@ import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 
 public final class RoomClusterBoundaryStretchMutation {
 
-    private static final RoomBoundaryStretchSelection SELECTION =
-            new RoomBoundaryStretchSelection();
     private static final RoomBoundaryStretchMutationStep MUTATION =
             new RoomBoundaryStretchMutationStep();
     private static final RoomTopologyWorkCatalog WORK_CATALOG = new RoomTopologyWorkCatalog();
@@ -35,38 +32,20 @@ public final class RoomClusterBoundaryStretchMutation {
             return Optional.empty();
         }
         List<DungeonRoomTopologyClusterWork> clusters = WORK_CATALOG.workClusters(topology, rooms);
-        DungeonRoomTopologyClusterWork target = targetCluster(clusters, clusterId);
-        if (target == null) {
+        Optional<DungeonRoomTopologyClusterWork> target = WORK_CATALOG.workCluster(topology, rooms, clusterId);
+        if (target.isEmpty()) {
             return Optional.empty();
         }
-        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = target.cluster().boundaryMap();
-        Optional<StretchSelection> stretch = SELECTION.resolveStretch(
-                target,
-                sourceEdges,
-                deltaQ,
-                deltaR,
-                deltaLevel,
-                boundaries);
+        Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = target.get().cluster().boundaryMap();
+        Optional<StretchSelection> stretch = target.get().boundaryStretchSelection(sourceEdges, deltaQ, deltaR, deltaLevel);
         if (stretch.isEmpty() || stretch.get().movement() == 0) {
             return Optional.empty();
         }
-        Optional<StretchMutationResult> mutation = applyStretchMutation(corridors, target, stretch.get(), boundaries);
+        Optional<StretchMutationResult> mutation = applyStretchMutation(corridors, target.get(), stretch.get(), boundaries);
         if (mutation.isEmpty()) {
             return Optional.empty();
         }
-        return rebuiltStretch(topology, rooms, clusters, target, mutation.get());
-    }
-
-    private @Nullable DungeonRoomTopologyClusterWork targetCluster(
-            List<DungeonRoomTopologyClusterWork> clusters,
-            long clusterId
-    ) {
-        for (DungeonRoomTopologyClusterWork work : clusters) {
-            if (work != null && work.cluster().clusterId() == clusterId) {
-                return work;
-            }
-        }
-        return null;
+        return rebuiltStretch(topology, rooms, clusters, target.get(), mutation.get());
     }
 
     private Optional<StretchMutationResult> applyStretchMutation(

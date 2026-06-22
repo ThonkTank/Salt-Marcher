@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.core.structure.room;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -13,7 +12,7 @@ public final class RoomTopologyWorkCatalog {
     private static final RoomCellCoverage CELL_COVERAGE = new RoomCellCoverage();
 
     public List<DungeonRoomTopologyClusterWork> workClusters(SpatialTopology topology, RoomCatalog rooms) {
-        Map<Long, List<DungeonRoom>> roomsByCluster = roomsByCluster(rooms == null ? List.of() : rooms.rooms());
+        Map<Long, List<DungeonRoom>> roomsByCluster = safeRooms(rooms).roomsByCluster();
         List<DungeonRoomTopologyClusterWork> result = new ArrayList<>();
         for (DungeonRoomCluster cluster : safeTopology(topology).roomClusters()) {
             List<DungeonRoom> clusterRooms = roomsByCluster.getOrDefault(cluster.clusterId(), List.of());
@@ -30,7 +29,7 @@ public final class RoomTopologyWorkCatalog {
         if (clusterId <= NO_ID) {
             return Optional.empty();
         }
-        List<DungeonRoom> clusterRooms = roomsInCluster(rooms, clusterId);
+        List<DungeonRoom> clusterRooms = safeRooms(rooms).roomsInCluster(clusterId);
         for (DungeonRoomCluster cluster : safeTopology(topology).roomClusters()) {
             if (cluster != null && cluster.clusterId() == clusterId) {
                 return Optional.of(clusterWork(cluster, clusterRooms));
@@ -47,29 +46,8 @@ public final class RoomTopologyWorkCatalog {
         return topology == null ? SpatialTopology.empty() : topology;
     }
 
-    private Map<Long, List<DungeonRoom>> roomsByCluster(List<DungeonRoom> rooms) {
-        Map<Long, List<DungeonRoom>> result = new LinkedHashMap<>();
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms) {
-            if (room != null) {
-                List<DungeonRoom> clusterRooms = result.get(room.clusterId());
-                if (clusterRooms == null) {
-                    clusterRooms = new ArrayList<>();
-                    result.put(room.clusterId(), clusterRooms);
-                }
-                clusterRooms.add(room);
-            }
-        }
-        return Map.copyOf(result);
-    }
-
-    private static List<DungeonRoom> roomsInCluster(RoomCatalog rooms, long clusterId) {
-        List<DungeonRoom> result = new ArrayList<>();
-        for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms.rooms()) {
-            if (room != null && room.clusterId() == clusterId) {
-                result.add(room);
-            }
-        }
-        return List.copyOf(result);
+    private static RoomCatalog safeRooms(RoomCatalog rooms) {
+        return rooms == null ? RoomCatalog.empty() : rooms;
     }
 
     private static DungeonRoomTopologyClusterWork clusterWork(
@@ -108,13 +86,7 @@ public final class RoomTopologyWorkCatalog {
         }
 
         private static long nextRoomId(RoomCatalog rooms) {
-            long result = 0L;
-            for (DungeonRoom room : rooms == null ? List.<DungeonRoom>of() : rooms.rooms()) {
-                if (room != null && room.roomId() > result) {
-                    result = room.roomId();
-                }
-            }
-            return result + 1L;
+            return safeRooms(rooms).nextRoomId();
         }
 
         public long nextClusterId() {
