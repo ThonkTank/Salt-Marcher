@@ -5,8 +5,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import src.domain.dungeon.model.core.component.CorridorWaypoint;
-import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
@@ -69,7 +67,6 @@ public final class CorridorBindingMovement {
         if (stationary(deltaQ, deltaR, deltaLevel)) {
             return dungeonMap;
         }
-        DungeonTopologyRef safeTopologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
         List<Corridor> movedCorridors = new ArrayList<>();
         boolean changed = false;
         for (Corridor corridor : dungeonMap.corridors()) {
@@ -81,7 +78,7 @@ public final class CorridorBindingMovement {
                     movedCorridors,
                     corridor,
                     bindingIndex,
-                    safeTopologyRef,
+                    topologyRef,
                     deltaQ,
                     deltaR,
                     deltaLevel) || changed;
@@ -132,32 +129,15 @@ public final class CorridorBindingMovement {
             int deltaR,
             int deltaLevel
     ) {
-        List<CorridorDoorBindingState> bindings = new ArrayList<>();
-        boolean changed = false;
-        for (int index = 0; index < corridor.stateBindings().doorBindings().size(); index++) {
-            CorridorDoorBindingState binding = corridor.stateBindings().doorBindings().get(index);
-            if (index == bindingIndex && binding.roomId() == roomId) {
-                bindings.add(new CorridorDoorBindingState(
-                        binding.roomId(),
-                        binding.clusterId(),
-                        movedCell(binding.relativeCell(), deltaQ, deltaR, deltaLevel),
-                        binding.direction(),
-                        binding.topologyRef()));
-                changed = true;
-            } else {
-                bindings.add(binding);
-            }
-        }
-        movedCorridors.add(new Corridor(
-                corridor.corridorId(),
-                corridor.mapId(),
-                corridor.level(),
-                corridor.roomIds(),
-                new CorridorBindingState(
-                        corridor.stateBindings().waypoints(),
-                        bindings,
-                        corridor.stateBindings().anchorBindings(),
-                        corridor.stateBindings().anchorRefs())));
+        CorridorBindingState movedBindings = CorridorBindingStateMovement.moveDoorBinding(
+                corridor.stateBindings(),
+                bindingIndex,
+                roomId,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+        boolean changed = !movedBindings.equals(corridor.stateBindings());
+        movedCorridors.add(changed ? corridor.withStateBindings(movedBindings) : corridor);
         return changed;
     }
 
@@ -170,18 +150,15 @@ public final class CorridorBindingMovement {
             int deltaR,
             int deltaLevel
     ) {
-        List<CorridorAnchorBinding> anchors = new ArrayList<>();
-        boolean changed = false;
-        for (int index = 0; index < corridor.stateBindings().anchorBindings().size(); index++) {
-            CorridorAnchorBinding anchor = corridor.stateBindings().anchorBindings().get(index);
-            if (index == bindingIndex || anchor.topologyRef().equals(topologyRef)) {
-                anchors.add(anchor.withAbsoluteCell(movedCell(anchor.absoluteCell(), deltaQ, deltaR, deltaLevel)));
-                changed = true;
-            } else {
-                anchors.add(anchor);
-            }
-        }
-        movedCorridors.add(corridor.withStateBindings(corridor.stateBindings().replaceAnchorBindings(anchors)));
+        CorridorBindingState movedBindings = CorridorBindingStateMovement.moveAnchorBinding(
+                corridor.stateBindings(),
+                bindingIndex,
+                topologyRef,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+        boolean changed = !movedBindings.equals(corridor.stateBindings());
+        movedCorridors.add(changed ? corridor.withStateBindings(movedBindings) : corridor);
         return changed;
     }
 
@@ -193,28 +170,14 @@ public final class CorridorBindingMovement {
             int deltaR,
             int deltaLevel
     ) {
-        List<CorridorWaypoint> waypoints = new ArrayList<>();
-        boolean changed = false;
-        for (int index = 0; index < corridor.stateBindings().waypoints().size(); index++) {
-            CorridorWaypoint waypoint = corridor.stateBindings().waypoints().get(index);
-            if (index == waypointIndex) {
-                Cell moved = movedCell(waypoint.relativeCell(), deltaQ, deltaR, deltaLevel);
-                waypoints.add(new CorridorWaypoint(waypoint.clusterId(), moved, waypoint.level() + deltaLevel));
-                changed = true;
-            } else {
-                waypoints.add(waypoint);
-            }
-        }
-        movedCorridors.add(new Corridor(
-                corridor.corridorId(),
-                corridor.mapId(),
-                corridor.level(),
-                corridor.roomIds(),
-                new CorridorBindingState(
-                        waypoints,
-                        corridor.stateBindings().doorBindings(),
-                        corridor.stateBindings().anchorBindings(),
-                        corridor.stateBindings().anchorRefs())));
+        CorridorBindingState movedBindings = CorridorBindingStateMovement.moveWaypoint(
+                corridor.stateBindings(),
+                waypointIndex,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+        boolean changed = !movedBindings.equals(corridor.stateBindings());
+        movedCorridors.add(changed ? corridor.withStateBindings(movedBindings) : corridor);
         return changed;
     }
 
@@ -230,11 +193,6 @@ public final class CorridorBindingMovement {
                 movedCorridorIds,
                 nextStairs,
                 dungeonMap.transitionCatalog());
-    }
-
-    private static Cell movedCell(Cell cell, int deltaQ, int deltaR, int deltaLevel) {
-        Cell safeCell = cell == null ? new Cell(0, 0, 0) : cell;
-        return new Cell(safeCell.q() + deltaQ, safeCell.r() + deltaR, safeCell.level() + deltaLevel);
     }
 
     private static boolean stationary(int deltaQ, int deltaR, int deltaLevel) {
