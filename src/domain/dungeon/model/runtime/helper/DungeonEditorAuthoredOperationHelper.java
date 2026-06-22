@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
-import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
@@ -14,7 +13,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValue
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceHandleMovement;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 
 public interface DungeonEditorAuthoredOperationHelper {
@@ -34,17 +32,8 @@ public interface DungeonEditorAuthoredOperationHelper {
             case DungeonEditorSessionValues.RoomRectanglePreview ignored -> null;
             case DungeonEditorSessionValues.ClusterBoundariesPreview ignored -> null;
             case DungeonEditorSessionValues.StairCreatePreview ignored -> null;
-            case DungeonEditorSessionValues.CorridorCreatePreview corridor ->
-                    DungeonEditorAuthoredOperation.createCorridor(
-                            corridorEndpoint(corridor.start()),
-                            corridorEndpoint(corridor.end()));
-            case DungeonEditorSessionValues.DeleteCorridorPreview corridorDelete ->
-                    DungeonEditorAuthoredOperation.deleteCorridor(
-                            corridorDelete.corridorId(),
-                            corridorDelete.targetKind(),
-                            corridorDelete.topologyRefId(),
-                            corridorDelete.roomId(),
-                            corridorDelete.waypointIndex());
+            case DungeonEditorSessionValues.CorridorCreatePreview ignored -> null;
+            case DungeonEditorSessionValues.DeleteCorridorPreview ignored -> null;
             case DungeonEditorSessionValues.MoveHandlePreview moveHandle -> moveEditorHandleOperation(moveHandle);
             case DungeonEditorSessionValues.MoveBoundaryStretchPreview ignored -> null;
         };
@@ -55,29 +44,6 @@ public interface DungeonEditorAuthoredOperationHelper {
                 ? DungeonEditorWorkspaceValues.Cell.empty()
                 : cell;
         return DungeonEditorWorkspaceCoreGeometry.cell(safeCell);
-    }
-
-    static DungeonCorridorEndpoint corridorEndpoint(
-            DungeonEditorWorkspaceValues.CorridorEndpoint endpoint
-    ) {
-        return switch (endpoint) {
-            case DungeonEditorWorkspaceValues.CorridorDoorEndpoint door -> DungeonCorridorEndpoint.door(
-                    door.roomId(),
-                    door.clusterId(),
-                    cell(door.roomCell()),
-                    Direction.parse(door.direction()),
-                    door.topologyRef());
-            case DungeonEditorWorkspaceValues.CorridorAnchorEndpoint anchor -> DungeonCorridorEndpoint.anchor(
-                    anchor.hostCorridorId(),
-                    cell(anchor.anchorCell()),
-                    anchor.topologyRef());
-            case null -> DungeonCorridorEndpoint.door(
-                    0L,
-                    0L,
-                    cell(null),
-                    Direction.NORTH,
-                    DungeonTopologyRef.empty());
-        };
     }
 
     private static List<DungeonRoomExitDescription> roomExits(

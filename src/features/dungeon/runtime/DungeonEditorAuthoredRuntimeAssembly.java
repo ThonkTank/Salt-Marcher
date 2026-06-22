@@ -16,6 +16,7 @@ import src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedState
 import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonAuthoredMutationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCorridorMutationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonRoomWallMutationUseCase;
@@ -227,7 +228,9 @@ final class DungeonEditorAuthoredRuntimeAssembly {
         SnapshotParts snapshotParts = snapshotParts(registry);
         ApplyDungeonEditorOperationUseCase operationUseCase = authoredOperationUseCase(snapshotParts, repository);
         ApplyDungeonAuthoredMutationUseCase mutationUseCase =
-                new ApplyDungeonAuthoredMutationUseCase(operationUseCase, repository);
+                new ApplyDungeonAuthoredMutationUseCase(operationUseCase);
+        ApplyDungeonEditorCorridorMutationUseCase corridorMutationUseCase =
+                new ApplyDungeonEditorCorridorMutationUseCase(operationUseCase, repository);
         ApplyDungeonRoomWallMutationUseCase roomWallMutationUseCase =
                 new ApplyDungeonRoomWallMutationUseCase(operationUseCase);
         PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase =
@@ -243,10 +246,12 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                         new PublishDungeonEditorAuthoredInspectorUseCase(publishedState, dungeonState)),
                 new PreviewDungeonEditorAuthoredOperationUseCase(
                         mutationUseCase,
+                        corridorMutationUseCase,
                         roomWallMutationUseCase,
                         dungeonState),
                 new ApplyDungeonEditorAuthoredOperationUseCase(
                         mutationUseCase,
+                        corridorMutationUseCase,
                         roomWallMutationUseCase,
                         publishMutationUseCase),
                 new SaveDungeonEditorAuthoredRoomNarrationUseCase(mutationUseCase, publishMutationUseCase),

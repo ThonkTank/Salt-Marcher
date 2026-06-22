@@ -18,15 +18,18 @@ import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper
 public final class ApplyDungeonEditorAuthoredOperationUseCase {
 
     private final ApplyDungeonAuthoredMutationUseCase mutationUseCase;
+    private final ApplyDungeonEditorCorridorMutationUseCase corridorMutationUseCase;
     private final ApplyDungeonRoomWallMutationUseCase roomWallMutationUseCase;
     private final PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase;
 
     public ApplyDungeonEditorAuthoredOperationUseCase(
             ApplyDungeonAuthoredMutationUseCase mutationUseCase,
+            ApplyDungeonEditorCorridorMutationUseCase corridorMutationUseCase,
             ApplyDungeonRoomWallMutationUseCase roomWallMutationUseCase,
             PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase
     ) {
         this.mutationUseCase = Objects.requireNonNull(mutationUseCase, "mutationUseCase");
+        this.corridorMutationUseCase = Objects.requireNonNull(corridorMutationUseCase, "corridorMutationUseCase");
         this.roomWallMutationUseCase = Objects.requireNonNull(roomWallMutationUseCase, "roomWallMutationUseCase");
         this.publishMutationUseCase = Objects.requireNonNull(publishMutationUseCase, "publishMutationUseCase");
     }
@@ -84,6 +87,36 @@ public final class ApplyDungeonEditorAuthoredOperationUseCase {
                         edges,
                         BoundaryKind.DOOR,
                         deleteMode));
+        publishMutationUseCase.execute(result);
+    }
+
+    public void executeCreateCorridor(
+            MapId mapId,
+            DungeonEditorWorkspaceValues.CorridorEndpoint start,
+            DungeonEditorWorkspaceValues.CorridorEndpoint end
+    ) {
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = corridorMutationUseCase.applyCreate(
+                domainMapId(mapId),
+                start,
+                end);
+        publishMutationUseCase.execute(result);
+    }
+
+    public void executeDeleteCorridor(
+            MapId mapId,
+            long corridorId,
+            String targetKind,
+            long topologyRefId,
+            long roomId,
+            int waypointIndex
+    ) {
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = corridorMutationUseCase.applyDelete(
+                domainMapId(mapId),
+                corridorId,
+                targetKind,
+                topologyRefId,
+                roomId,
+                waypointIndex);
         publishMutationUseCase.execute(result);
     }
 

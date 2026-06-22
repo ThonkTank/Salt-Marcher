@@ -14,6 +14,7 @@ import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 public final class PreviewDungeonEditorAuthoredOperationUseCase {
 
     private final ApplyDungeonAuthoredMutationUseCase mutationUseCase;
+    private final ApplyDungeonEditorCorridorMutationUseCase corridorMutationUseCase;
     private final ApplyDungeonRoomWallMutationUseCase roomWallMutationUseCase;
     private final DungeonEditorDungeonState state;
     private final DungeonEditorAuthoredPublicationUseCase publicationUseCase =
@@ -23,10 +24,12 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
 
     public PreviewDungeonEditorAuthoredOperationUseCase(
             ApplyDungeonAuthoredMutationUseCase mutationUseCase,
+            ApplyDungeonEditorCorridorMutationUseCase corridorMutationUseCase,
             ApplyDungeonRoomWallMutationUseCase roomWallMutationUseCase,
             DungeonEditorDungeonState state
     ) {
         this.mutationUseCase = Objects.requireNonNull(mutationUseCase, "mutationUseCase");
+        this.corridorMutationUseCase = Objects.requireNonNull(corridorMutationUseCase, "corridorMutationUseCase");
         this.roomWallMutationUseCase = Objects.requireNonNull(roomWallMutationUseCase, "roomWallMutationUseCase");
         this.state = Objects.requireNonNull(state, "state");
     }
@@ -54,6 +57,23 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
                             DungeonEditorWorkspaceCoreGeometry.edges(boundaries.edges()),
                             DungeonEditorWorkspaceCoreGeometry.boundaryKind(boundaries.boundaryKind()),
                             boundaries.deleteMode())));
+            return;
+        }
+        if (preview instanceof DungeonEditorSessionValues.CorridorCreatePreview corridor) {
+            publishPreview(corridorMutationUseCase.previewCreate(
+                    domainMapId(mapId),
+                    corridor.start(),
+                    corridor.end()));
+            return;
+        }
+        if (preview instanceof DungeonEditorSessionValues.DeleteCorridorPreview corridor) {
+            publishPreview(corridorMutationUseCase.previewDelete(
+                    domainMapId(mapId),
+                    corridor.corridorId(),
+                    corridor.targetKind(),
+                    corridor.topologyRefId(),
+                    corridor.roomId(),
+                    corridor.waypointIndex()));
             return;
         }
         DungeonEditorAuthoredOperation operation =
