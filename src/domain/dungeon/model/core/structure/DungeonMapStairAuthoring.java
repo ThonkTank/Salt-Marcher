@@ -11,12 +11,7 @@ final class DungeonMapStairAuthoring {
     }
 
     DungeonMap createStair(DungeonMap dungeonMap, long stairId, Cell anchor, String shapeName) {
-        var nextStairs = dungeonMap.stairs().withAuthoredStair(
-                stairId,
-                dungeonMap.metadata().mapId().value(),
-                anchor,
-                shapeName,
-                stairAuthoring.roomInteriorCells(dungeonMap.topology(), dungeonMap.rooms()));
+        var nextStairs = stairAuthoring.withAuthoredStair(dungeonMap, stairId, anchor, shapeName);
         return nextStairs.equals(dungeonMap.stairs()) ? dungeonMap : dungeonMap.withStairs(nextStairs);
     }
 
@@ -29,23 +24,19 @@ final class DungeonMapStairAuthoring {
             int dimension1,
             int dimension2
     ) {
-        var nextStairs = dungeonMap.stairs().withAuthoredStair(
+        var nextStairs = stairAuthoring.withAuthoredStair(
+                dungeonMap,
                 stairId,
-                dungeonMap.metadata().mapId().value(),
                 anchor,
                 shapeName,
                 directionName,
                 dimension1,
-                dimension2,
-                stairAuthoring.roomInteriorCells(dungeonMap.topology(), dungeonMap.rooms()));
+                dimension2);
         return nextStairs.equals(dungeonMap.stairs()) ? dungeonMap : dungeonMap.withStairs(nextStairs);
     }
 
     boolean canCreateStair(DungeonMap dungeonMap, Cell anchor, String shapeName) {
-        return dungeonMap.stairs().canCreateAuthoredStairGeometry(
-                anchor,
-                shapeName,
-                stairAuthoring.roomInteriorCells(dungeonMap.topology(), dungeonMap.rooms()));
+        return stairAuthoring.canCreateAuthoredStair(dungeonMap, anchor, shapeName);
     }
 
     boolean canCreateStair(
@@ -56,13 +47,13 @@ final class DungeonMapStairAuthoring {
             int dimension1,
             int dimension2
     ) {
-        return dungeonMap.stairs().canCreateAuthoredStairGeometry(
+        return stairAuthoring.canCreateAuthoredStair(
+                dungeonMap,
                 anchor,
                 shapeName,
                 directionName,
                 dimension1,
-                dimension2,
-                stairAuthoring.roomInteriorCells(dungeonMap.topology(), dungeonMap.rooms()));
+                dimension2);
     }
 
     boolean canSaveStairGeometry(
@@ -73,13 +64,13 @@ final class DungeonMapStairAuthoring {
             int dimension1,
             int dimension2
     ) {
-        return dungeonMap.stairs().canRecomputeAuthoredStair(
+        return stairAuthoring.canSaveStairGeometry(
+                dungeonMap,
                 stairId,
                 shapeName,
                 directionName,
                 dimension1,
-                dimension2,
-                stairAuthoring.roomInteriorCells(dungeonMap.topology(), dungeonMap.rooms()));
+                dimension2);
     }
 
     DungeonMap saveStairGeometry(
@@ -90,13 +81,13 @@ final class DungeonMapStairAuthoring {
             int dimension1,
             int dimension2
     ) {
-        var nextStairs = dungeonMap.stairs().withRecomputedAuthoredStair(
+        var nextStairs = stairAuthoring.withSavedStairGeometry(
+                dungeonMap,
                 stairId,
                 shapeName,
                 directionName,
                 dimension1,
-                dimension2,
-                stairAuthoring.roomInteriorCells(dungeonMap.topology(), dungeonMap.rooms()));
+                dimension2);
         return nextStairs.equals(dungeonMap.stairs()) ? dungeonMap : dungeonMap.withStairs(nextStairs);
     }
 }

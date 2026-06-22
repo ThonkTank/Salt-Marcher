@@ -35,8 +35,91 @@ public final class StairMapAuthoring {
                 : copyWithConnections(dungeonMap, dungeonMap.corridors(), nextStairs);
     }
 
-    public Set<Cell> roomInteriorCells(SpatialTopology topology, RoomCatalog rooms) {
-        return roomInteriorQuery.from(topology, rooms);
+    public StairCollection withAuthoredStair(DungeonMap dungeonMap, long stairId, Cell anchor, String shapeName) {
+        return dungeonMap.stairs().withAuthoredStair(
+                stairId,
+                dungeonMap.metadata().mapId().value(),
+                anchor,
+                shapeName,
+                roomInteriorCells(dungeonMap));
+    }
+
+    public StairCollection withAuthoredStair(
+            DungeonMap dungeonMap,
+            long stairId,
+            Cell anchor,
+            String shapeName,
+            String directionName,
+            int dimension1,
+            int dimension2
+    ) {
+        return dungeonMap.stairs().withAuthoredStair(
+                stairId,
+                dungeonMap.metadata().mapId().value(),
+                anchor,
+                shapeName,
+                directionName,
+                dimension1,
+                dimension2,
+                roomInteriorCells(dungeonMap));
+    }
+
+    public boolean canCreateAuthoredStair(DungeonMap dungeonMap, Cell anchor, String shapeName) {
+        return dungeonMap.stairs().canCreateAuthoredStairGeometry(
+                anchor,
+                shapeName,
+                roomInteriorCells(dungeonMap));
+    }
+
+    public boolean canCreateAuthoredStair(
+            DungeonMap dungeonMap,
+            Cell anchor,
+            String shapeName,
+            String directionName,
+            int dimension1,
+            int dimension2
+    ) {
+        return dungeonMap.stairs().canCreateAuthoredStairGeometry(
+                anchor,
+                shapeName,
+                directionName,
+                dimension1,
+                dimension2,
+                roomInteriorCells(dungeonMap));
+    }
+
+    public boolean canSaveStairGeometry(
+            DungeonMap dungeonMap,
+            long stairId,
+            String shapeName,
+            String directionName,
+            int dimension1,
+            int dimension2
+    ) {
+        return dungeonMap.stairs().canRecomputeAuthoredStair(
+                stairId,
+                shapeName,
+                directionName,
+                dimension1,
+                dimension2,
+                roomInteriorCells(dungeonMap));
+    }
+
+    public StairCollection withSavedStairGeometry(
+            DungeonMap dungeonMap,
+            long stairId,
+            String shapeName,
+            String directionName,
+            int dimension1,
+            int dimension2
+    ) {
+        return dungeonMap.stairs().withRecomputedAuthoredStair(
+                stairId,
+                shapeName,
+                directionName,
+                dimension1,
+                dimension2,
+                roomInteriorCells(dungeonMap));
     }
 
     private DungeonMap copyWithConnections(
@@ -49,5 +132,13 @@ public final class StairMapAuthoring {
                 nextCorridors,
                 nextStairs,
                 dungeonMap.transitionCatalog());
+    }
+
+    private Set<Cell> roomInteriorCells(DungeonMap dungeonMap) {
+        return roomInteriorCells(dungeonMap.topology(), dungeonMap.rooms());
+    }
+
+    private Set<Cell> roomInteriorCells(SpatialTopology topology, RoomCatalog rooms) {
+        return roomInteriorQuery.from(topology, rooms);
     }
 }
