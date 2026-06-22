@@ -71,7 +71,7 @@ public final class DungeonEditorHandleMutation {
     private static long clusterId(DungeonMap current, DungeonEditorHandleMovement handle) {
         return handle.clusterId() > 0L
                 ? handle.clusterId()
-                : current.topologyIndex().clusterIdOrZero(handle.topologyRef());
+                : current.clusterIdForTopologyRef(handle.topologyRef());
     }
 
     private static boolean stationary(int deltaQ, int deltaR, int deltaLevel) {

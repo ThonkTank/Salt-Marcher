@@ -96,6 +96,10 @@ public record DungeonMap(
     private static final DungeonMapConnectionAuthoring CONNECTION_AUTHORING = new DungeonMapConnectionAuthoring();
     private static final DungeonMapStairAuthoring STAIR_AUTHORING = new DungeonMapStairAuthoring();
 
+    public long clusterIdForTopologyRef(DungeonTopologyRef topologyRef) {
+        return topologyIndex.clusterIdOrZero(topologyRef);
+    }
+
     public DungeonMap moveCluster(long clusterId, int deltaQ, int deltaR, int deltaLevel) {
         return ROOM_AUTHORING.moveCluster(this, clusterId, deltaQ, deltaR, deltaLevel);
     }

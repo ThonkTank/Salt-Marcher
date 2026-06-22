@@ -37,7 +37,7 @@ public final class ApplyDungeonEditorHandleMutationUseCase {
                     safeMove.topologyRef(),
                     safeMove.clusterId() > 0L
                             ? safeMove.clusterId()
-                            : current.topologyIndex().clusterIdOrZero(safeMove.topologyRef()),
+                            : current.clusterIdForTopologyRef(safeMove.topologyRef()),
                     safeMove.roomId(),
                     safeMove.sourceEdge(),
                     safeMove.deltaQ(),
