@@ -60,7 +60,10 @@ final class DungeonEditorStateProjectionServiceAssembly {
             case DungeonEditorSessionValues.StairCreatePreview stair ->
                     new src.domain.dungeon.published.DungeonEditorPreview.StairCreatePreview(
                             DungeonEditorValueProjectionServiceAssembly.cell(stair.anchor()),
-                            stair.shapeName());
+                            DungeonEditorValueProjectionServiceAssembly.cell(stair.end()),
+                            stair.shapeName(),
+                            stair.valid(),
+                            stair.statusText());
             case DungeonEditorSessionValues.MoveHandlePreview moveHandle ->
                     new src.domain.dungeon.published.DungeonEditorPreview.MoveHandlePreview(
                             DungeonEditorValueProjectionServiceAssembly.handleRef(moveHandle.handleRef()),

@@ -120,6 +120,19 @@ public record StairCollection(List<Stair> stairs) {
         return canCreateAuthoredStairGeometry(editorDefaultSpec(anchor, shapeName), roomCells);
     }
 
+    public boolean canCreateAuthoredStairGeometry(
+            @Nullable Cell anchor,
+            String shapeName,
+            String directionName,
+            int dimension1,
+            int dimension2,
+            @Nullable Set<Cell> roomCells
+    ) {
+        return canCreateAuthoredStairGeometry(
+                editorSpec(anchor, shapeName, directionName, dimension1, dimension2),
+                roomCells);
+    }
+
     public StairCollection withAuthoredStair(
             long stairId,
             long mapId,
@@ -142,6 +155,23 @@ public record StairCollection(List<Stair> stairs) {
             @Nullable Set<Cell> roomCells
     ) {
         return withAuthoredStair(stairId, mapId, editorDefaultSpec(anchor, shapeName), roomCells);
+    }
+
+    public StairCollection withAuthoredStair(
+            long stairId,
+            long mapId,
+            @Nullable Cell anchor,
+            String shapeName,
+            String directionName,
+            int dimension1,
+            int dimension2,
+            @Nullable Set<Cell> roomCells
+    ) {
+        return withAuthoredStair(
+                stairId,
+                mapId,
+                editorSpec(anchor, shapeName, directionName, dimension1, dimension2),
+                roomCells);
     }
 
     public boolean canRecomputeStair(
@@ -251,9 +281,18 @@ public record StairCollection(List<Stair> stairs) {
             int dimension1,
             int dimension2
     ) {
+        return editorSpec(anchorOf(stairId), shapeName, directionName, dimension1, dimension2);
+    }
+
+    private static @Nullable StairGeometrySpec editorSpec(
+            @Nullable Cell anchor,
+            String shapeName,
+            String directionName,
+            int dimension1,
+            int dimension2
+    ) {
         StairShape shape = StairShape.supportedEditorShape(shapeName);
         Direction direction = Direction.supportedCardinal(directionName);
-        Cell anchor = anchorOf(stairId);
         return shape == null || direction == null || anchor == null
                 ? null
                 : new StairGeometrySpec(shape, anchor, direction, dimension1, dimension2);

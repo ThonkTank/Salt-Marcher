@@ -43,11 +43,16 @@ public sealed interface DungeonEditorPreview permits DungeonEditorPreview.NonePr
 
     record StairCreatePreview(
             DungeonCellRef anchor,
-            String shapeName
+            DungeonCellRef end,
+            String shapeName,
+            boolean valid,
+            String statusText
     ) implements DungeonEditorPreview {
         public StairCreatePreview {
             anchor = anchor == null ? new DungeonCellRef(0, 0, 0) : anchor;
+            end = end == null ? anchor : end;
             shapeName = shapeName == null || shapeName.isBlank() ? "STRAIGHT" : shapeName.trim();
+            statusText = statusText == null ? "" : statusText;
         }
     }
 

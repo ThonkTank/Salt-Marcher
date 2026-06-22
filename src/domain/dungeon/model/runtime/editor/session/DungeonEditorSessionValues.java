@@ -311,11 +311,28 @@ public final class DungeonEditorSessionValues {
 
     public record StairCreatePreview(
             DungeonEditorWorkspaceValues.Cell anchor,
-            String shapeName
+            DungeonEditorWorkspaceValues.Cell end,
+            DungeonEditorWorkspaceValues.Cell specAnchor,
+            String shapeName,
+            String directionName,
+            int dimension1,
+            int dimension2,
+            boolean valid,
+            String statusText
     ) implements Preview {
+        public StairCreatePreview(DungeonEditorWorkspaceValues.Cell anchor, String shapeName) {
+            this(anchor, anchor, anchor, shapeName, "NORTH", 0, 0, false, "");
+        }
+
         public StairCreatePreview {
             anchor = anchor == null ? DungeonEditorWorkspaceValues.Cell.empty() : anchor;
+            end = end == null ? anchor : end;
+            specAnchor = specAnchor == null ? anchor : specAnchor;
             shapeName = shapeName == null || shapeName.isBlank() ? "STRAIGHT" : shapeName.trim();
+            directionName = directionName == null || directionName.isBlank() ? "NORTH" : directionName.trim();
+            dimension1 = Math.max(0, dimension1);
+            dimension2 = Math.max(0, dimension2);
+            statusText = statusText == null ? "" : statusText;
         }
     }
 

@@ -178,6 +178,7 @@ final class DungeonMapPreviewDiffContentPartModel {
         }
         DungeonMapContentModel.EditorProjectionFacts.CellCenter center =
                 DungeonMapContentModel.EditorProjectionFacts.centerOfCells(featureCells);
+        addStairPreviewLevelLabels(labels, feature);
         labels.add(new DungeonMapContentModel.DungeonMapRenderState.Label(
                 feature.label(),
                 center.q(),
@@ -197,5 +198,21 @@ final class DungeonMapPreviewDiffContentPartModel {
                 featureCells.getFirst().z(),
                 selected,
                 true));
+    }
+
+    private static void addStairPreviewLevelLabels(
+            List<DungeonMapContentModel.DungeonMapRenderState.Label> labels,
+            DungeonEditorMapSnapshot.Feature feature
+    ) {
+        if (!"STAIR".equalsIgnoreCase(feature.kind())) {
+            return;
+        }
+        for (DungeonCellRef cell : feature.cells()) {
+            DungeonMapStairPreviewLevelLabelContentPartModel.addLevelLabel(
+                    labels,
+                    cell,
+                    feature.id(),
+                    DungeonMapContentModel.EditorProjectionFacts.featureTopologyRef(feature));
+        }
     }
 }

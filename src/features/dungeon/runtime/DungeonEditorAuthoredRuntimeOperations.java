@@ -32,6 +32,7 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
     private final DungeonEditorWallBoundaryDraftRuntimeOperation wallBoundaryDraftOperation;
     private final DungeonEditorDoorBoundaryDraftRuntimeOperation doorBoundaryDraftOperation;
     private final DungeonEditorCorridorDraftRuntimeOperation corridorDraftOperation;
+    private final DungeonEditorStairDraftRuntimeOperation stairDraftOperation;
     private final DungeonEditorSelectionHandlePreviewRuntimeOperation selectionHandlePreviewOperation;
     private final ApplyDungeonEditorSelectionUseCase applySelectionUseCase;
     private final MoveDungeonEditorHandleUseCase moveHandleUseCase;
@@ -64,6 +65,9 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
         corridorDraftOperation = Objects.requireNonNull(
                 safeUseCases.corridorDraft(),
                 "corridorDraftOperation");
+        stairDraftOperation = Objects.requireNonNull(
+                safeUseCases.stairDraft(),
+                "stairDraftOperation");
         selectionHandlePreviewOperation = Objects.requireNonNull(
                 safeUseCases.selectionHandlePreview(),
                 "selectionHandlePreviewOperation");
@@ -88,11 +92,13 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
 
     @Override
     public void selectMap(long mapIdValue) {
+        stairDraftOperation.clear();
         selectMapUseCase.execute(mapIdValue);
     }
 
     @Override
     public void createMap(String mapName) {
+        stairDraftOperation.clear();
         createMapUseCase.execute(mapName);
     }
 
@@ -103,27 +109,32 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
 
     @Override
     public void deleteMap(long mapIdValue) {
+        stairDraftOperation.clear();
         deleteMapUseCase.execute(mapIdValue);
     }
 
     @Override
     public void setViewMode(String viewModeKey) {
+        stairDraftOperation.clear();
         setViewModeUseCase.execute(DungeonEditorRuntimeInputTranslator.viewModeName(viewModeKey));
     }
 
     @Override
     public void setTool(String toolKey) {
+        stairDraftOperation.clear();
         setToolUseCase.execute(DungeonEditorRuntimeInputTranslator.toolName(toolKey));
     }
 
     @Override
     public void cancelActivePreviewSession() {
+        stairDraftOperation.clear();
         setToolUseCase.execute(SELECTION_TOOL);
     }
 
     @Override
     public void shiftProjectionLevel(int levelShift) {
         shiftProjectionLevelUseCase.execute(levelShift);
+        stairDraftOperation.refreshAfterProjectionLevelChanged();
     }
 
     @Override
@@ -175,6 +186,16 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
             TransitionDestination transitionDestination
     ) {
         corridorDraftOperation.apply(action, corridorTool, sample, wallSingleClickMode, transitionDestination);
+    }
+
+    void applyStairDraft(
+            PointerAction action,
+            DungeonEditorTool stairTool,
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        stairDraftOperation.apply(action, stairTool, sample, wallSingleClickMode, transitionDestination);
     }
 
     void applySelectionHandlePreview(

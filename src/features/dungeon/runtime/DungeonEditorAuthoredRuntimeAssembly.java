@@ -117,6 +117,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 new DungeonEditorWallBoundaryDraftRuntimeOperation(runtime),
                 new DungeonEditorDoorBoundaryDraftRuntimeOperation(runtime),
                 new DungeonEditorCorridorDraftRuntimeOperation(runtime),
+                new DungeonEditorStairDraftRuntimeOperation(runtime),
                 new DungeonEditorSelectionHandlePreviewRuntimeOperation(selection),
                 selection,
                 new MoveDungeonEditorHandleUseCase(
@@ -256,6 +257,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                         new PublishDungeonEditorAuthoredSnapshotUseCase(publishedState, dungeonState),
                         new PublishDungeonEditorAuthoredInspectorUseCase(publishedState, dungeonState)),
                 new PreviewDungeonEditorAuthoredOperationUseCase(
+                        operationUseCase,
                         mutationUseCase,
                         corridorMutationUseCase,
                         roomWallMutationUseCase,

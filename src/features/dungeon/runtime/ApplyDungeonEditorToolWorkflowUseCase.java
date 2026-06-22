@@ -20,13 +20,13 @@ final class ApplyDungeonEditorToolWorkflowUseCase {
                         safeUseCases.room().delete().withoutHover());
         registeredWorkflows.put(
                 ToolInput.STAIR_CREATE,
-                safeUseCases.stairCreate().pressAndHoverOnly());
+                safeUseCases.stairCreate().pressOnly());
         registeredWorkflows.put(
                 ToolInput.STAIR_CREATE_SQUARE,
-                safeUseCases.stairCreateSquare().pressAndHoverOnly());
+                safeUseCases.stairCreateSquare().pressOnly());
         registeredWorkflows.put(
                 ToolInput.STAIR_CREATE_CIRCULAR,
-                safeUseCases.stairCreateCircular().pressAndHoverOnly());
+                safeUseCases.stairCreateCircular().pressOnly());
         registeredWorkflows.put(
                 ToolInput.STAIR_DELETE,
                 safeUseCases.stairDelete().pressOnly());
@@ -194,10 +194,6 @@ final class ApplyDungeonEditorToolWorkflowUseCase {
     ) {
         ToolWorkflow withoutHover() {
             return new ToolWorkflow(press, drag, release, null);
-        }
-
-        ToolWorkflow pressAndHoverOnly() {
-            return new ToolWorkflow(press, null, null, hover);
         }
 
         ToolWorkflow pressOnly() {

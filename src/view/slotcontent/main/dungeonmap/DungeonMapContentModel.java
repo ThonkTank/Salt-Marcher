@@ -1915,7 +1915,8 @@ public final class DungeonMapContentModel {
                     handle.r(),
                     handle.level(),
                     handle.direction(),
-                    handle.sourceEdge());
+                    handle.sourceEdge(),
+                    handle.sourceEdges());
         }
 
         private static String boundaryKey(
@@ -2099,7 +2100,8 @@ public final class DungeonMapContentModel {
             int r,
             int level,
             String direction,
-            DungeonEdgeRef sourceEdge
+            DungeonEdgeRef sourceEdge,
+            List<DungeonEdgeRef> sourceEdges
     ) {
         public HandleTarget {
             kind = kind == null ? DungeonEditorHandleKind.CLUSTER_LABEL : kind;
@@ -2110,6 +2112,8 @@ public final class DungeonMapContentModel {
             roomId = Math.max(0L, roomId);
             orderIndex = Math.max(0, orderIndex);
             direction = direction == null ? "" : direction.trim();
+            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
+            sourceEdge = representativeSourceEdge(sourceEdge, sourceEdges);
         }
 
         public static HandleTarget empty() {
@@ -2125,7 +2129,8 @@ public final class DungeonMapContentModel {
                     0,
                     0,
                     "",
-                    null);
+                    null,
+                    List.of());
         }
 
         public String topologyKind() {
@@ -2142,6 +2147,23 @@ public final class DungeonMapContentModel {
 
         public SourceEdgeTarget sourceEdgeTarget() {
             return SourceEdgeTarget.from(sourceEdge);
+        }
+
+        private static DungeonEdgeRef representativeSourceEdge(
+                DungeonEdgeRef sourceEdge,
+                List<DungeonEdgeRef> sourceEdges
+        ) {
+            if (sourceEdges.isEmpty() || sourceEdges.contains(sourceEdge)) {
+                return sourceEdge;
+            }
+            return sourceEdges.get(sourceEdges.size() / 2);
+        }
+
+        public List<SourceEdgeTarget> sourceEdgeTargets() {
+            return sourceEdges.stream()
+                    .map(SourceEdgeTarget::from)
+                    .filter(SourceEdgeTarget::present)
+                    .toList();
         }
 
         public record SourceEdgeTarget(
@@ -3365,34 +3387,16 @@ public final class DungeonMapContentModel {
                 List<DungeonMapRenderState.Marker> markers,
                 DungeonEditorPreview.StairCreatePreview preview
         ) {
+            if (preview.valid()) {
+                return;
+            }
             DungeonCellRef anchor = preview.anchor();
+            DungeonCellRef end = preview.end();
             String label = stairPreviewLabel(preview.shapeName());
-            cells.add(new DungeonMapRenderState.Cell(
-                    anchor.q(),
-                    anchor.r(),
-                    anchor.level(),
-                    label,
-                    DungeonMapRenderState.CellKind.STAIR,
-                    0L,
-                    0L,
-                    DungeonMapRenderState.TopologyRef.empty(),
-                    false,
-                    false,
-                    true,
-                    false));
-            labels.add(new DungeonMapRenderState.Label(
-                    label,
-                    anchor.q() + 0.5,
-                    anchor.r() + 0.5,
-                    anchor.level(),
-                    0L,
-                    0L,
-                    DungeonMapRenderState.TopologyRef.empty(),
-                    FEATURE_LABEL_KIND,
-                    false,
-                    true,
-                    0.0,
-                    0.0));
+            addStairDraftCell(cells, labels, anchor, label);
+            if (!anchor.equals(end)) {
+                addStairDraftCell(cells, labels, end, "Treppen-Ziel");
+            }
             markers.add(new DungeonMapRenderState.Marker(
                     "z",
                     anchor.q() + 0.5,
@@ -3414,6 +3418,32 @@ public final class DungeonMapContentModel {
                             "",
                             null),
                     true));
+        }
+
+        static void addStairDraftCell(
+                List<DungeonMapRenderState.Cell> cells,
+                List<DungeonMapRenderState.Label> labels,
+                DungeonCellRef cell,
+                String label
+        ) {
+            cells.add(new DungeonMapRenderState.Cell(
+                    cell.q(),
+                    cell.r(),
+                    cell.level(),
+                    label,
+                    DungeonMapRenderState.CellKind.STAIR,
+                    0L,
+                    0L,
+                    DungeonMapRenderState.TopologyRef.empty(),
+                    false,
+                    false,
+                    true,
+                    false));
+            DungeonMapStairPreviewLevelLabelContentPartModel.addLevelLabel(
+                    labels,
+                    cell,
+                    0L,
+                    DungeonMapRenderState.TopologyRef.empty());
         }
 
         static String stairPreviewLabel(String shapeName) {
@@ -3694,7 +3724,8 @@ public final class DungeonMapContentModel {
                 r,
                 level,
                 handle.direction(),
-                handle.sourceEdge());
+                handle.sourceEdge(),
+                handle.sourceEdges());
     }
 
 }
@@ -4505,6 +4536,7 @@ public final class DungeonMapContentModel {
         }
     }
 
+    @SuppressWarnings("PMD.ExcessiveParameterList")
     record MarkerHandle(
             @Nullable DungeonEditorHandleKind kind,
             DungeonMapRenderState.TopologyRef topologyRef,
@@ -4517,8 +4549,39 @@ public final class DungeonMapContentModel {
             int r,
             int level,
             String direction,
-            DungeonEdgeRef sourceEdge
+            DungeonEdgeRef sourceEdge,
+            List<DungeonEdgeRef> sourceEdges
     ) {
+        MarkerHandle(
+                @Nullable DungeonEditorHandleKind kind,
+                DungeonMapRenderState.TopologyRef topologyRef,
+                long ownerId,
+                long clusterId,
+                long corridorId,
+                long roomId,
+                int index,
+                int q,
+                int r,
+                int level,
+                String direction,
+                DungeonEdgeRef sourceEdge
+        ) {
+            this(
+                    kind,
+                    topologyRef,
+                    ownerId,
+                    clusterId,
+                    corridorId,
+                    roomId,
+                    index,
+                    q,
+                    r,
+                    level,
+                    direction,
+                    sourceEdge,
+                    sourceEdge == null ? List.of() : List.of(sourceEdge));
+        }
+
         MarkerHandle {
             topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
             ownerId = Math.max(0L, ownerId);
@@ -4527,10 +4590,22 @@ public final class DungeonMapContentModel {
             roomId = Math.max(0L, roomId);
             index = Math.max(0, index);
             direction = direction == null ? "" : direction.trim();
+            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
+            sourceEdge = representativeSourceEdge(sourceEdge, sourceEdges);
         }
 
         String kindName() {
             return kind == null ? emptyKind() : kind.name();
+        }
+
+        private static DungeonEdgeRef representativeSourceEdge(
+                DungeonEdgeRef sourceEdge,
+                List<DungeonEdgeRef> sourceEdges
+        ) {
+            if (sourceEdges.isEmpty() || sourceEdges.contains(sourceEdge)) {
+                return sourceEdge;
+            }
+            return sourceEdges.get(sourceEdges.size() / 2);
         }
     }
 

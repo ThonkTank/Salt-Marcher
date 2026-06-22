@@ -165,6 +165,16 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                     transitionDestination);
             return;
         }
+        DungeonEditorTool stairTool = DungeonEditorStairDraftRuntimeOperation.stairTool(toolKey);
+        if (stairTool != null) {
+            operationOwner.applyStairDraft(
+                    action,
+                    stairTool,
+                    sample,
+                    wallSingleClickMode,
+                    transitionDestination);
+            return;
+        }
         if (DungeonEditorTool.SELECT == DungeonEditorRuntimeEnumTranslator.editorTool(toolKey)) {
             operationOwner.applySelectionHandlePreview(
                     action,

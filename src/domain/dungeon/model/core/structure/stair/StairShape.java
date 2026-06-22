@@ -55,6 +55,28 @@ public enum StairShape {
         return dimension1;
     }
 
+    public int firstEditorDimension1() {
+        return switch (this) {
+            case STRAIGHT -> 1;
+            case SQUARE -> 2;
+            case CIRCULAR -> 3;
+            default -> 0;
+        };
+    }
+
+    public int lastEditorDimension1() {
+        return switch (this) {
+            case STRAIGHT -> 64;
+            case SQUARE -> 16;
+            case CIRCULAR -> 31;
+            default -> -1;
+        };
+    }
+
+    public int nextEditorDimension1(int dimension1) {
+        return this == CIRCULAR ? dimension1 + 2 : dimension1 + 1;
+    }
+
     private boolean supportedEditorDimension1(int dimension1) {
         return switch (this) {
             case STRAIGHT -> dimension1 >= 1 && dimension1 <= 64;

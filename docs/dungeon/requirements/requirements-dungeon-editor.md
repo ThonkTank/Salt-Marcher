@@ -240,15 +240,27 @@ Parameter meanings:
 
 Anchor and direction behavior:
 
-- the anchor is the lower or start cell chosen by the place gesture, selected
-  stair handle, or state-panel coordinate edit
+- the anchor is the lower cell of the generated stair spec; for creation it is
+  derived from the two selected endpoints, while selected stair handles and
+  state-panel coordinate edits preserve the existing lower anchor behavior
 - direction is one cardinal map direction and defines the first horizontal step
   or tangent leaving the anchor
-- creating a stair without explicit parameters uses `STRAIGHT`, `NORTH`,
-  `dimension1=3`, and `dimension2=1`
 - after the stair family dropdown selects a supported shape, a primary map click
-  MUST place the stair according to the selected shape or report a concrete
-  rejection status; the click MUST NOT be ignored silently
+  MUST start a non-authored stair draft at the clicked cell and projection level
+- while a stair draft is active, pointer movement and projection-level changes
+  MUST update the preview from the start cell, current endpoint, selected shape,
+  and derived level span; the draft MUST survive projection-level changes until
+  commit, cancel, tool switch, map switch, or successful commit
+- a second primary map click MUST commit only when the selected shape can derive
+  an exact `StairGeometrySpec` whose generated lower and upper exits match the
+  selected endpoints; invalid endpoints MUST keep the draft active, publish a
+  concrete rejection status, and leave authored state unchanged
+- creating a straight stair from a same-column cross-level endpoint derives
+  `dimension1=1`; creating a straight stair from a cardinal horizontal endpoint
+  derives direction and run length from the lower-to-upper endpoint vector
+- square and circular creation MUST search supported dimensions and directions
+  and accept only exact endpoint matches from generated exits; it MUST NOT
+  silently approximate to a nearby supported footprint
 - a full stair recompute MUST preserve the stair identity and topology ref,
   recompute path cells and exits from the current spec, and reject the edit
   instead of committing a partial path when any parameter is invalid
@@ -267,6 +279,8 @@ Validation and rejection:
   exit cells or at explicitly selected corridor/stair binding cells
 - invalid edits leave the previous stair, path, exits, selection, and preview
   state unchanged
+- invalid creation drafts leave authored state and DB rows unchanged while the
+  visible preview/status identifies the rejection reason
 
 Exit and label behavior:
 
@@ -334,9 +348,11 @@ Delete and corridor binding behavior:
   persisted side effects before commit.
 - Corridor deletion and point deletion preserve unaffected branches and reject
   protected or invalid mutations without partial authored changes.
-- Stair creation after dropdown shape selection responds to the map click with
-  either a valid committed `StairGeometrySpec` or a concrete rejection status;
-  state-panel stair edits preserve identity and recompute deterministically.
+- Stair creation after dropdown shape selection uses a two-point cross-level
+  draft: first click starts, pointer/level changes preview, invalid endpoints
+  report concrete feedback without persistence, and second click commits the
+  exact derived `StairGeometrySpec`; state-panel stair edits preserve identity
+  and recompute deterministically.
 - Advanced tool families stay directly visible even when specific authored
   mutations are still delivered incrementally.
 

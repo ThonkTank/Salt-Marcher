@@ -22,6 +22,7 @@ record DungeonEditorAuthoredRuntimeOperationUseCases(
         DungeonEditorWallBoundaryDraftRuntimeOperation wallBoundaryDraft,
         DungeonEditorDoorBoundaryDraftRuntimeOperation doorBoundaryDraft,
         DungeonEditorCorridorDraftRuntimeOperation corridorDraft,
+        DungeonEditorStairDraftRuntimeOperation stairDraft,
         DungeonEditorSelectionHandlePreviewRuntimeOperation selectionHandlePreview,
         ApplyDungeonEditorSelectionUseCase selection,
         MoveDungeonEditorHandleUseCase moveHandle,

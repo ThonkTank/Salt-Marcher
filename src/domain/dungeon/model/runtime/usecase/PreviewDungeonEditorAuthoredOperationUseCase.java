@@ -10,9 +10,14 @@ import src.domain.dungeon.model.runtime.helper.DungeonEditorAuthoredOperationHel
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
+import src.domain.dungeon.model.core.structure.stair.StairShape;
+import src.domain.dungeon.model.core.geometry.Direction;
 
 public final class PreviewDungeonEditorAuthoredOperationUseCase {
+    private static final long PREVIEW_STAIR_ID = Long.MAX_VALUE;
 
+    private final ApplyDungeonEditorOperationUseCase operationUseCase;
     private final ApplyDungeonAuthoredMutationUseCase mutationUseCase;
     private final ApplyDungeonEditorCorridorMutationUseCase corridorMutationUseCase;
     private final ApplyDungeonRoomWallMutationUseCase roomWallMutationUseCase;
@@ -23,11 +28,13 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
             new PreviewDungeonEditorSurfaceMoveUseCase();
 
     public PreviewDungeonEditorAuthoredOperationUseCase(
+            ApplyDungeonEditorOperationUseCase operationUseCase,
             ApplyDungeonAuthoredMutationUseCase mutationUseCase,
             ApplyDungeonEditorCorridorMutationUseCase corridorMutationUseCase,
             ApplyDungeonRoomWallMutationUseCase roomWallMutationUseCase,
             DungeonEditorDungeonState state
     ) {
+        this.operationUseCase = Objects.requireNonNull(operationUseCase, "operationUseCase");
         this.mutationUseCase = Objects.requireNonNull(mutationUseCase, "mutationUseCase");
         this.corridorMutationUseCase = Objects.requireNonNull(corridorMutationUseCase, "corridorMutationUseCase");
         this.roomWallMutationUseCase = Objects.requireNonNull(roomWallMutationUseCase, "roomWallMutationUseCase");
@@ -35,8 +42,8 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
     }
 
     public void execute(MapId mapId, DungeonEditorSessionValues.Preview preview) {
-        if (preview instanceof DungeonEditorSessionValues.StairCreatePreview) {
-            state.replacePreview(null);
+        if (preview instanceof DungeonEditorSessionValues.StairCreatePreview stair) {
+            publishPreview(stairPreview(mapId, stair));
             return;
         }
         if (preview instanceof DungeonEditorSessionValues.RoomRectanglePreview room) {
@@ -86,6 +93,39 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
                 domainMapId(mapId),
                 operation);
         publishPreview(result);
+    }
+
+    private ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData stairPreview(
+            MapId mapId,
+            DungeonEditorSessionValues.StairCreatePreview stair
+    ) {
+        StairGeometrySpec spec = stairSpec(stair);
+        if (mapId == null || spec == null || !stair.valid()) {
+            return null;
+        }
+        return operationUseCase.preview(
+                domainMapId(mapId),
+                current -> current.createStair(
+                        PREVIEW_STAIR_ID,
+                        spec.anchor(),
+                        spec.shape().name(),
+                        spec.direction().name(),
+                        spec.dimension1(),
+                        spec.dimension2()));
+    }
+
+    private static @Nullable StairGeometrySpec stairSpec(DungeonEditorSessionValues.StairCreatePreview stair) {
+        StairShape shape = StairShape.supportedEditorShape(stair.shapeName());
+        Direction direction = Direction.supportedCardinal(stair.directionName());
+        if (shape == null || direction == null) {
+            return null;
+        }
+        return new StairGeometrySpec(
+                shape,
+                DungeonEditorWorkspaceCoreGeometry.cell(stair.specAnchor()),
+                direction,
+                stair.dimension1(),
+                stair.dimension2());
     }
 
     public void executeInMemory(

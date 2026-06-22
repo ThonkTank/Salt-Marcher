@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
@@ -588,6 +589,7 @@ final class DungeonEditorStairHarness {
 
         long mapId = createMapThroughControls(controls, runtime, "Stair Create Map");
         runtime.database().seedF1SingleRoom(mapId, "R1", 0, 1, 1);
+        runtime.database().seedF1SingleRoom(mapId, "R2", 1, 1, 1);
         long reloadHopMapId = createMapThroughControls(controls, runtime, "Stair Create Reload Hop");
         runtime.database().seedGlobalStairIdentitySentinel(reloadHopMapId);
         long globalStairIdBefore = runtime.database().maxStairId();
@@ -598,63 +600,70 @@ final class DungeonEditorStairHarness {
         assertTrue(stableRowsBefore.isEmpty(), "DE-STAIR-001 fixture starts without stair stable rows");
         assertTrue(pathRowsBefore.isEmpty(), "DE-STAIR-001 fixture starts without stair path rows");
         assertTrue(exitRowsBefore.isEmpty(), "DE-STAIR-001 fixture starts without stair exit rows");
-        Set<String> committedRenderCellsBefore = renderSurfaceCellOriginsWithZ(binding.mapContentModel());
-
         click(button(controls, "Treppe"));
         assertTrue(popupButtonVisible("Gerade"), "DE-STAIR-001 straight stair option is visible");
         click(popupButton("Gerade"));
         assertEquals("STAIR_CREATE", runtime.controlsModel().current().selectedTool().name(),
                 "DE-STAIR-001 input route selects the straight stair creation tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
-        long hoverStartNanos = System.nanoTime();
-        fireMapMouse(
+        long startClickNanos = System.nanoTime();
+        clickMap(
                 mapView,
-                MouseEvent.MOUSE_MOVED,
-                MouseButton.NONE,
+                MouseButton.PRIMARY,
                 viewport.sceneToScreenX(6.5),
                 viewport.sceneToScreenY(6.5),
                 false);
-        assertPreviewLatencyWithinBudget(hoverStartNanos, "DE-STAIR-001 straight stair hover preview");
+        assertPreviewLatencyWithinBudget(startClickNanos, "DE-STAIR-001 straight stair start preview");
         assertStairCreatePreview(
                 runtime.mapSurfaceModel().current(),
                 "STRAIGHT",
                 6,
                 6,
                 0,
-                "DE-STAIR-001 straight stair hover");
+                6,
+                6,
+                0,
+                false,
+                "DE-STAIR-001 straight stair start");
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).contains("6,6,0"),
-                "DE-STAIR-001 render scene exposes the straight stair hover preview cell");
-        List<String> invalidAuthoredRowsBefore = runtime.database().authoredGeometryState(mapId);
-        DungeonEditorMapSurfaceSnapshot invalidCreateSurfaceBefore = runtime.mapSurfaceModel().current();
-        clickMap(
+                "DE-STAIR-001 render scene exposes the straight stair start preview cell");
+        fireMapMouse(
                 mapView,
-                MouseButton.PRIMARY,
-                viewport.sceneToScreenX(2.5),
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(6.5),
                 viewport.sceneToScreenY(4.5),
                 false);
-        assertEquals(invalidAuthoredRowsBefore, runtime.database().authoredGeometryState(mapId),
-                "DE-STAIR-007 room-interior stair create leaves authored DB rows unchanged");
         assertEquals(stableRowsBefore, runtime.database().stairStableState(mapId),
-                "DE-STAIR-007 room-interior stair create leaves stair scalar DB rows unchanged");
+                "DE-STAIR-001 mouse movement after start does not create stair scalar DB rows");
         assertEquals(pathRowsBefore, runtime.database().stairPathState(mapId),
-                "DE-STAIR-007 room-interior stair create leaves path DB rows unchanged");
+                "DE-STAIR-001 mouse movement after start does not create stair path DB rows");
+        click(button(controls, "+"));
+        assertStairCreatePreview(
+                runtime.mapSurfaceModel().current(),
+                "STRAIGHT",
+                6,
+                6,
+                0,
+                6,
+                4,
+                1,
+                true,
+                "DE-STAIR-001 straight stair cross-level preview");
+        assertTrue(previewFeatureCells(runtime.mapSurfaceModel().current()).containsAll(
+                        Set.of("6,6,0", "6,5,0", "6,4,0", "6,4,1")),
+                "DE-STAIR-001 preview map exposes the full generated straight stair path and upper exit");
+        assertEquals(stableRowsBefore, runtime.database().stairStableState(mapId),
+                "DE-STAIR-001 cross-level preview does not create stair scalar DB rows");
+        assertEquals(pathRowsBefore, runtime.database().stairPathState(mapId),
+                "DE-STAIR-001 cross-level preview does not create stair path DB rows");
         assertEquals(exitRowsBefore, runtime.database().stairExitState(mapId),
-                "DE-STAIR-007 room-interior stair create leaves exit DB rows unchanged");
-        assertInvalidStairGeometryLeavesViewState(
-                runtime,
-                binding,
-                invalidCreateSurfaceBefore,
-                committedRenderCellsBefore,
-                "DE-STAIR-007 room-interior stair create");
-        assertEquals("Treppengeometrie ungueltig.", runtime.controlsModel().current().statusText(),
-                "DE-STAIR-007 room-interior stair create publishes rejection status");
-        assertEquals("STAIR_CREATE", runtime.controlsModel().current().selectedTool().name(),
-                "DE-STAIR-007 room-interior rejection keeps straight stair creation selected");
+                "DE-STAIR-001 cross-level preview does not create stair exit DB rows");
         clickMap(
                 mapView,
                 MouseButton.PRIMARY,
                 viewport.sceneToScreenX(6.5),
-                viewport.sceneToScreenY(6.5),
+                viewport.sceneToScreenY(4.5),
                 false);
 
         List<String> stableRowsAfter = runtime.database().stairStableState(mapId);
@@ -684,6 +693,10 @@ final class DungeonEditorStairHarness {
                 "DE-STAIR-001 persists generated lower and upper exits");
 
         DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
+                "DE-STAIR-001 clears preview after commit");
+        click(button(controls, "-"));
+        committedSurface = runtime.mapSurfaceModel().current();
         assertStraightStairCreatedInSnapshot(
                 committedSurface,
                 binding.mapContentModel(),
@@ -691,8 +704,6 @@ final class DungeonEditorStairHarness {
                 6,
                 6,
                 "DE-STAIR-001 committed create");
-        assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
-                "DE-STAIR-001 clears preview after commit");
         click(button(controls, "+"));
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).contains("6,4,1"),
                 "DE-STAIR-001 renders generated upper exit on the crossed level");
@@ -728,6 +739,67 @@ final class DungeonEditorStairHarness {
                 viewport.sceneToScreenX(9.5),
                 viewport.sceneToScreenY(6.5),
                 false);
+        assertEquals(squareStableRowsBefore, runtime.database().stairStableState(mapId),
+                "DE-STAIR-002 first click does not create square stair rows");
+        click(button(controls, "+"));
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(12.5),
+                viewport.sceneToScreenY(6.5),
+                false);
+        assertEquals("Treppengeometrie ungueltig: Zielpunkt passt nicht zur gewaehlten Form.",
+                runtime.controlsModel().current().statusText(),
+                "DE-STAIR-002 invalid square endpoint publishes exact mismatch status");
+        assertEquals(squareStableRowsBefore, runtime.database().stairStableState(mapId),
+                "DE-STAIR-002 invalid square preview does not create stair rows");
+        clickMap(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(12.5),
+                viewport.sceneToScreenY(6.5),
+                false);
+        assertEquals("Treppengeometrie ungueltig: Zielpunkt passt nicht zur gewaehlten Form.",
+                runtime.controlsModel().current().statusText(),
+                "DE-STAIR-002 invalid square second click keeps exact mismatch status");
+        assertEquals(squareStableRowsBefore, runtime.database().stairStableState(mapId),
+                "DE-STAIR-002 invalid square second click does not create stair rows");
+        assertStairCreatePreview(
+                runtime.mapSurfaceModel().current(),
+                "SQUARE",
+                9,
+                6,
+                0,
+                12,
+                6,
+                1,
+                false,
+                "DE-STAIR-002 invalid square second click keeps draft active");
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(10.5),
+                viewport.sceneToScreenY(5.5),
+                false);
+        assertStairCreatePreview(
+                runtime.mapSurfaceModel().current(),
+                "SQUARE",
+                9,
+                6,
+                0,
+                10,
+                5,
+                1,
+                true,
+                "DE-STAIR-002 square stair cross-level preview");
+        clickMap(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(10.5),
+                viewport.sceneToScreenY(5.5),
+                false);
 
         List<String> squareStableRowsAfter = runtime.database().stairStableState(mapId);
         long squareStairId = singleNewStairId(squareStableRowsBefore, squareStableRowsAfter, "DE-STAIR-002");
@@ -758,6 +830,7 @@ final class DungeonEditorStairHarness {
                         .flatMap(feature -> feature.cells().stream())
                         .anyMatch(cell -> cell.q() == 10 && cell.r() == 5 && cell.level() == 1),
                 "DE-STAIR-002 published feature exposes square upper exit");
+        click(button(controls, "-"));
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(expectedSquarePath),
                 "DE-STAIR-002 render state exposes square active-level path");
         click(button(controls, "+"));
@@ -786,6 +859,33 @@ final class DungeonEditorStairHarness {
                 mapView,
                 MouseButton.PRIMARY,
                 viewport.sceneToScreenX(12.5),
+                viewport.sceneToScreenY(6.5),
+                false);
+        assertEquals(circularStableRowsBefore, runtime.database().stairStableState(mapId),
+                "DE-STAIR-003 first click does not create circular stair rows");
+        click(button(controls, "+"));
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(13.5),
+                viewport.sceneToScreenY(6.5),
+                false);
+        assertStairCreatePreview(
+                runtime.mapSurfaceModel().current(),
+                "CIRCULAR",
+                12,
+                6,
+                0,
+                13,
+                6,
+                1,
+                true,
+                "DE-STAIR-003 circular stair cross-level preview");
+        clickMap(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(13.5),
                 viewport.sceneToScreenY(6.5),
                 false);
 
@@ -818,6 +918,7 @@ final class DungeonEditorStairHarness {
                         .flatMap(feature -> feature.cells().stream())
                         .anyMatch(cell -> cell.q() == 13 && cell.r() == 6 && cell.level() == 1),
                 "DE-STAIR-003 published feature exposes circular upper exit");
+        click(button(controls, "-"));
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(expectedCircularPath),
                 "DE-STAIR-003 render state exposes circular active-level path");
         click(button(controls, "+"));
@@ -997,34 +1098,41 @@ final class DungeonEditorStairHarness {
         fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
                 viewport.sceneToScreenX(4.5), viewport.sceneToScreenY(2.5), false);
         assertPreviewLatencyWithinBudget(hoverStartNanos,
-                "DE-STAIR-001 cross-level straight stair hover preview");
+                "DE-STAIR-001 pre-start straight stair hover");
+        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
+                "DE-STAIR-001 pre-start stair hover stays passive");
+        clickMap(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(4.5),
+                viewport.sceneToScreenY(2.5),
+                false);
         assertStairCreatePreview(
                 runtime.mapSurfaceModel().current(),
                 "STRAIGHT",
                 4,
                 2,
                 0,
-                "DE-STAIR-001 cross-level straight stair hover");
+                4,
+                2,
+                0,
+                false,
+                "DE-STAIR-001 cross-level straight stair start");
         click(button(controls, "+"));
         assertEquals(1, runtime.mapSurfaceModel().current().projectionLevel(),
                 "DE-STAIR-001 level shift publishes the next projection level");
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
-                "DE-STAIR-001 level shift clears stale straight stair hover preview");
-        long levelHoverStartNanos = System.nanoTime();
-        fireMapMouse(mapView, MouseEvent.MOUSE_MOVED, MouseButton.NONE,
-                viewport.sceneToScreenX(4.5), viewport.sceneToScreenY(2.5), false);
-        assertPreviewLatencyWithinBudget(levelHoverStartNanos,
-                "DE-STAIR-001 same-position stair hover preview after level shift");
         assertStairCreatePreview(
                 runtime.mapSurfaceModel().current(),
                 "STRAIGHT",
                 4,
                 2,
+                0,
+                4,
+                2,
                 1,
-                "DE-STAIR-001 same-position stair hover after level shift");
+                true,
+                "DE-STAIR-001 same-position stair preview after level shift");
         click(button(controls, "-"));
-        assertEquals(DungeonEditorPreview.none(), runtime.mapSurfaceModel().current().preview(),
-                "DE-STAIR-001 level shift back clears cross-level stair hover preview");
 
         click(button(controls, "Tür"));
         Point2D levelZeroWall = boundaryMidpointNear(binding.mapContentModel(), "WALL", 4.0, 2.5);
@@ -1153,6 +1261,49 @@ final class DungeonEditorStairHarness {
         assertEquals(expectedQ, preview.anchor().q(), message + " preview anchor q");
         assertEquals(expectedR, preview.anchor().r(), message + " preview anchor r");
         assertEquals(expectedLevel, preview.anchor().level(), message + " preview anchor level");
+    }
+
+    private static void assertStairCreatePreview(
+            DungeonEditorMapSurfaceSnapshot snapshot,
+            String expectedShape,
+            int expectedStartQ,
+            int expectedStartR,
+            int expectedStartLevel,
+            int expectedEndQ,
+            int expectedEndR,
+            int expectedEndLevel,
+            boolean expectedValid,
+            String message
+    ) {
+        assertStairCreatePreview(
+                snapshot,
+                expectedShape,
+                expectedStartQ,
+                expectedStartR,
+                expectedStartLevel,
+                message);
+        DungeonEditorPreview.StairCreatePreview preview =
+                (DungeonEditorPreview.StairCreatePreview) snapshot.preview();
+        assertEquals(expectedEndQ, preview.end().q(), message + " preview end q");
+        assertEquals(expectedEndR, preview.end().r(), message + " preview end r");
+        assertEquals(expectedEndLevel, preview.end().level(), message + " preview end level");
+        assertEquals(expectedValid, preview.valid(), message + " preview validity");
+    }
+
+    private static Set<String> previewFeatureCells(DungeonEditorMapSurfaceSnapshot snapshot) {
+        if (snapshot == null || snapshot.surface() == null || snapshot.surface().previewMap() == null) {
+            return Set.of();
+        }
+        Set<String> cells = new LinkedHashSet<>();
+        snapshot.surface().previewMap().features().stream()
+                .flatMap(feature -> feature.cells().stream())
+                .map(DungeonEditorStairHarness::cellKey)
+                .forEach(cells::add);
+        return cells;
+    }
+
+    private static String cellKey(DungeonCellRef cell) {
+        return cell.q() + "," + cell.r() + "," + cell.level();
     }
 
     private static void assertCrossLevelCorridorCreatesEveryCrossedLevelExit(String scenario) {
