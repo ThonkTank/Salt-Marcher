@@ -90,40 +90,6 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return interpretation;
     }
 
-    DungeonEditorSessionEffect boundary(
-            PointerAction action,
-            DungeonEditorMainViewInput input,
-            MapSnapshot snapshot,
-            DungeonEditorSessionValues.Selection selection,
-            DungeonEditorSessionValues.Tool boundaryTool,
-            int projectionLevel
-    ) {
-        if (action == PointerAction.HOVER) {
-            return hoverUseCase.interpretBoundary(pointer(input, projectionLevel), snapshot, boundaryTool, state.interactionState());
-        }
-        DungeonEditorMainViewInterpretation interpretation = switch (action) {
-            case PRESS -> pressUseCase.interpretBoundary(
-                    pointer(input, projectionLevel),
-                    snapshot,
-                    selection,
-                    boundaryTool,
-                    state.interactionState());
-            case DRAG -> dragUseCase.interpretBoundary(
-                    pointer(input, projectionLevel),
-                    snapshot,
-                    boundaryTool,
-                    state.interactionState());
-            case RELEASE -> releaseUseCase.interpretBoundary(
-                    pointer(input, projectionLevel),
-                    snapshot,
-                    boundaryTool,
-                    state.interactionState());
-            case HOVER -> throw new IllegalStateException("handled above");
-        };
-        state.replace(interpretation.nextState());
-        return interpretation.effect();
-    }
-
     DungeonEditorWallBoundaryDraftInterpretation wallBoundaryOperation(
             PointerAction action,
             DungeonEditorMainViewInput input,
@@ -155,6 +121,35 @@ final class InterpretDungeonEditorMainViewInputUseCase {
         return interpretation;
     }
 
+    DungeonEditorDoorBoundaryDraftInterpretation doorBoundaryOperation(
+            PointerAction action,
+            DungeonEditorMainViewInput input,
+            MapSnapshot snapshot,
+            DungeonEditorSessionValues.Tool boundaryTool,
+            int projectionLevel
+    ) {
+        DungeonEditorDoorBoundaryDraftInterpretation interpretation = switch (action) {
+            case PRESS -> pressUseCase.interpretDoorBoundaryOperation(
+                    pointer(input, projectionLevel),
+                    snapshot,
+                    boundaryTool,
+                    state.interactionState());
+            case DRAG -> DungeonEditorDoorBoundaryDraftInterpretation.from(dragUseCase.interpretBoundary(
+                    pointer(input, projectionLevel),
+                    snapshot,
+                    boundaryTool,
+                    state.interactionState()));
+            case RELEASE -> releaseUseCase.interpretDoorBoundaryOperation(
+                    pointer(input, projectionLevel),
+                    snapshot,
+                    boundaryTool,
+                    state.interactionState());
+            case HOVER -> hoverDoorBoundaryOperation(input, snapshot, boundaryTool, projectionLevel);
+        };
+        state.replace(interpretation.nextState());
+        return interpretation;
+    }
+
     private DungeonEditorWallBoundaryDraftInterpretation hoverWallBoundaryOperation(
             DungeonEditorMainViewInput input,
             MapSnapshot snapshot,
@@ -162,6 +157,22 @@ final class InterpretDungeonEditorMainViewInputUseCase {
             int projectionLevel
     ) {
         return new DungeonEditorWallBoundaryDraftInterpretation(
+                state.interactionState(),
+                hoverUseCase.interpretBoundary(
+                        pointer(input, projectionLevel),
+                        snapshot,
+                        boundaryTool,
+                        state.interactionState()),
+                null);
+    }
+
+    private DungeonEditorDoorBoundaryDraftInterpretation hoverDoorBoundaryOperation(
+            DungeonEditorMainViewInput input,
+            MapSnapshot snapshot,
+            DungeonEditorSessionValues.Tool boundaryTool,
+            int projectionLevel
+    ) {
+        return new DungeonEditorDoorBoundaryDraftInterpretation(
                 state.interactionState(),
                 hoverUseCase.interpretBoundary(
                         pointer(input, projectionLevel),

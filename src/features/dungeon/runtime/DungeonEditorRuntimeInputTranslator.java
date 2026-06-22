@@ -41,6 +41,19 @@ final class DungeonEditorRuntimeInputTranslator {
                 transitionDestination);
     }
 
+    static DungeonEditorMainViewInput mainViewInput(
+            String toolKey,
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        return DungeonEditorPointerInputTranslator.mainViewInput(
+                toolKey,
+                sample,
+                wallSingleClickMode,
+                transitionDestination);
+    }
+
     static HandleMoveInput handleMoveInput(HandleTarget handle, int q, int r) {
         return DungeonEditorHandleInputTranslator.handleMoveInput(handle, q, r);
     }

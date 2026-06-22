@@ -145,6 +145,16 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                     transitionDestination);
             return;
         }
+        DungeonEditorTool doorTool = DungeonEditorDoorBoundaryDraftRuntimeOperation.doorTool(toolKey);
+        if (doorTool != null) {
+            operationOwner.applyDoorBoundaryDraft(
+                    action,
+                    doorTool,
+                    sample,
+                    wallSingleClickMode,
+                    transitionDestination);
+            return;
+        }
         DungeonEditorTool corridorTool = DungeonEditorCorridorDraftRuntimeOperation.corridorTool(toolKey);
         if (corridorTool != null) {
             operationOwner.applyCorridorDraft(

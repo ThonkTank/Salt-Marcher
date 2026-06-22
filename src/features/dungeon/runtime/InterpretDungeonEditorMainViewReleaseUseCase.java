@@ -36,15 +36,6 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
                 new DungeonEditorMainViewInterpretation(state, DungeonEditorSessionEffect.clearPreviewIfNeeded(false)));
     }
 
-    DungeonEditorMainViewInterpretation interpretBoundary(
-            PointerState input,
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Tool boundaryTool,
-            InteractionState state
-    ) {
-        return boundaryDraft.release(input, snapshot, boundaryTool, state);
-    }
-
     DungeonEditorWallBoundaryDraftInterpretation interpretWallBoundaryOperation(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
@@ -52,6 +43,15 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
             InteractionState state
     ) {
         return boundaryDraft.releaseWall(input, snapshot, boundaryTool, state);
+    }
+
+    DungeonEditorDoorBoundaryDraftInterpretation interpretDoorBoundaryOperation(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Tool boundaryTool,
+            InteractionState state
+    ) {
+        return boundaryDraft.releaseDoor(input, snapshot, boundaryTool, state);
     }
 
     private static DungeonEditorRoomPaintInterpretation releasePaintSessionOperation(

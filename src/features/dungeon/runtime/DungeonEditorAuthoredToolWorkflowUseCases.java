@@ -26,11 +26,6 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
     }
 
     static ApplyDungeonEditorToolWorkflowUseCase create(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
-        DungeonEditorApplyToolUseCase toolUseCase =
-                new DungeonEditorApplyToolUseCase(
-                        runtime.workflow(),
-                        runtime.mainViewInterpreter(),
-                        runtime.effectUseCase());
         ApplyDungeonEditorCreateStairUseCase createStair =
                 new ApplyDungeonEditorCreateStairUseCase(
                         runtime.workflow(),
@@ -66,9 +61,6 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
         PairedToolUseCases roomTools = paired(
                 roomPaintOperation.roomWorkflow(DungeonEditorSessionValues.Tool.ROOM_PAINT),
                 roomPaintOperation.roomWorkflow(DungeonEditorSessionValues.Tool.ROOM_DELETE));
-        PairedToolUseCases doorTools = paired(
-                toolUseCase.boundaryWorkflow(DungeonEditorSessionValues.Tool.DOOR_CREATE),
-                toolUseCase.boundaryWorkflow(DungeonEditorSessionValues.Tool.DOOR_DELETE));
         PointerToolUseCase straightStairTools = workflowFor(
                 input -> createStair.press(anchor(runtime.workflow(), input)),
                 null,
@@ -100,7 +92,6 @@ final class DungeonEditorAuthoredToolWorkflowUseCases {
                 input -> deleteFeatureMarker.press(targetRef(input, DungeonTopologyElementKind.FEATURE_MARKER)));
         return new ApplyDungeonEditorToolWorkflowUseCase(new ToolWorkflowUseCases(
                 roomTools,
-                doorTools,
                 straightStairTools,
                 squareStairTools,
                 circularStairTools,

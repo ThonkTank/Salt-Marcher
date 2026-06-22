@@ -1,10 +1,7 @@
 package src.domain.dungeon.model.runtime.editor.session;
 
-import java.util.List;
 import java.util.Objects;
-import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
 public final class DungeonEditorAuthoredOperation {
@@ -20,19 +17,9 @@ public final class DungeonEditorAuthoredOperation {
     }
 
     public sealed interface Variant permits
-            EditClusterBoundaries,
             CreateCorridor,
             DeleteCorridor,
             MoveEditorHandle {
-    }
-
-    public static DungeonEditorAuthoredOperation editClusterBoundaries(
-            long clusterId,
-            List<Edge> edges,
-            BoundaryKind boundaryKind,
-            boolean deleteMode
-    ) {
-        return new DungeonEditorAuthoredOperation(new EditClusterBoundaries(clusterId, edges, boundaryKind, deleteMode));
     }
 
     public static DungeonEditorAuthoredOperation createCorridor(
@@ -60,41 +47,6 @@ public final class DungeonEditorAuthoredOperation {
             int deltaLevel
     ) {
         return new DungeonEditorAuthoredOperation(new MoveEditorHandle(handle, deltaQ, deltaR, deltaLevel));
-    }
-
-    public static final class EditClusterBoundaries implements Variant {
-        private final long clusterId;
-        private final List<Edge> edges;
-        private final BoundaryKind boundaryKind;
-        private final boolean deleteMode;
-
-        private EditClusterBoundaries(
-                long clusterId,
-                List<Edge> edges,
-                BoundaryKind boundaryKind,
-                boolean deleteMode
-        ) {
-            this.clusterId = Math.max(0L, clusterId);
-            this.edges = edges == null ? List.of() : List.copyOf(edges);
-            this.boundaryKind = boundaryKind == null ? BoundaryKind.WALL : boundaryKind;
-            this.deleteMode = deleteMode;
-        }
-
-        public long clusterId() {
-            return clusterId;
-        }
-
-        public List<Edge> edges() {
-            return List.copyOf(edges);
-        }
-
-        public BoundaryKind boundaryKind() {
-            return boundaryKind;
-        }
-
-        public boolean deleteMode() {
-            return deleteMode;
-        }
     }
 
     public static final class CreateCorridor implements Variant {

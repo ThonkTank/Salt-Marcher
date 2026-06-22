@@ -56,6 +56,22 @@ final class DungeonEditorPointerInputTranslator {
                 safeDestination);
     }
 
+    static DungeonEditorMainViewInput mainViewInput(
+            String toolKey,
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        PointerSample safeSample = sample == null
+                ? new PointerSample(0.0, 0.0, false, false, PointerTarget.empty())
+                : sample;
+        ToolInput selectedTool = DungeonEditorRuntimeEnumTranslator.tool(toolKey);
+        TransitionDestination safeDestination = transitionDestination == null
+                ? TransitionDestination.empty()
+                : transitionDestination;
+        return mainViewInput(safeSample, wallSingleClickMode, selectedTool, safeDestination);
+    }
+
     private static DungeonEditorMainViewInput mainViewInput(
             PointerSample sample,
             boolean wallSingleClickMode,

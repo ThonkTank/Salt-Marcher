@@ -9,7 +9,6 @@ import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMutation;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
@@ -110,8 +109,6 @@ public final class ApplyDungeonAuthoredMutationUseCase {
             return null;
         }
         return switch (operation.variant()) {
-            case DungeonEditorAuthoredOperation.EditClusterBoundaries boundaries ->
-                    doorBoundaryMutation(boundaries);
             case DungeonEditorAuthoredOperation.CreateCorridor corridor ->
                     current -> current.createCorridor(
                             stairIdForCorridor(current, corridor, reservePersistentIds),
@@ -132,19 +129,6 @@ public final class ApplyDungeonAuthoredMutationUseCase {
                             move.deltaR(),
                             move.deltaLevel());
         };
-    }
-
-    private static ApplyDungeonEditorOperationUseCase.Mutation doorBoundaryMutation(
-            DungeonEditorAuthoredOperation.EditClusterBoundaries boundaries
-    ) {
-        if (boundaries.boundaryKind() != BoundaryKind.DOOR) {
-            return current -> current;
-        }
-        return current -> current.editClusterBoundaries(
-                boundaries.clusterId(),
-                boundaries.edges(),
-                boundaries.boundaryKind(),
-                boundaries.deleteMode());
     }
 
     private long stairIdForCorridor(

@@ -20,6 +20,7 @@ record DungeonEditorAuthoredRuntimeOperationUseCases(
         ProjectionUseCases projection,
         ApplyDungeonEditorToolWorkflowUseCase toolWorkflow,
         DungeonEditorWallBoundaryDraftRuntimeOperation wallBoundaryDraft,
+        DungeonEditorDoorBoundaryDraftRuntimeOperation doorBoundaryDraft,
         DungeonEditorCorridorDraftRuntimeOperation corridorDraft,
         DungeonEditorSelectionHandlePreviewRuntimeOperation selectionHandlePreview,
         ApplyDungeonEditorSelectionUseCase selection,

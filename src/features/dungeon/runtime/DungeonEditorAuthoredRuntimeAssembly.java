@@ -112,6 +112,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 projectionUseCases(runtime),
                 DungeonEditorAuthoredToolWorkflowUseCases.create(runtime),
                 new DungeonEditorWallBoundaryDraftRuntimeOperation(runtime),
+                new DungeonEditorDoorBoundaryDraftRuntimeOperation(runtime),
                 new DungeonEditorCorridorDraftRuntimeOperation(runtime),
                 new DungeonEditorSelectionHandlePreviewRuntimeOperation(selection),
                 selection,

@@ -71,6 +71,22 @@ public final class ApplyDungeonEditorAuthoredOperationUseCase {
         publishMutationUseCase.execute(result);
     }
 
+    public void executeDoorBoundary(
+            MapId mapId,
+            long clusterId,
+            List<Edge> edges,
+            boolean deleteMode
+    ) {
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = roomWallMutationUseCase.applyClusterBoundaries(
+                domainMapId(mapId),
+                new ApplyDungeonRoomWallMutationUseCase.ClusterBoundaryMutation(
+                        clusterId,
+                        edges,
+                        BoundaryKind.DOOR,
+                        deleteMode));
+        publishMutationUseCase.execute(result);
+    }
+
     public void executeClusterHandleMove(
             MapId mapId,
             DungeonEditorSessionValues.MoveHandlePreview preview

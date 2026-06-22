@@ -24,30 +24,12 @@ final class DungeonEditorApplyToolUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    PointerToolUseCase boundaryWorkflow(DungeonEditorSessionValues.Tool tool) {
-        return workflowFor(
-                input -> applyBoundary(PointerAction.PRESS, input, tool),
-                input -> applyBoundary(PointerAction.DRAG, input, tool),
-                input -> applyBoundary(PointerAction.RELEASE, input, tool),
-                input -> applyBoundary(PointerAction.HOVER, input, tool));
-    }
-
     PointerToolUseCase corridorWorkflow(DungeonEditorSessionValues.Tool tool) {
         return workflowFor(
                 input -> applyCorridor(PointerAction.PRESS, input, tool),
                 null,
                 null,
                 input -> applyCorridor(PointerAction.HOVER, input, tool));
-    }
-
-    private void applyBoundary(PointerAction action, DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
-        applyCommittedSnapshotEffect((committedSnapshot, projectionLevel) -> mainViewInterpreter.boundary(
-                action,
-                input,
-                committedSnapshot,
-                workflow.session().selection(),
-                tool,
-                projectionLevel));
     }
 
     private void applyCorridor(PointerAction action, DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {

@@ -19,12 +19,6 @@ final class ApplyDungeonEditorToolWorkflowUseCase {
                 ToolInput.ROOM_DELETE,
                         safeUseCases.room().delete().withoutHover());
         registeredWorkflows.put(
-                ToolInput.DOOR_CREATE,
-                        safeUseCases.door().primary().workflow());
-        registeredWorkflows.put(
-                ToolInput.DOOR_DELETE,
-                        safeUseCases.door().delete().workflow());
-        registeredWorkflows.put(
                 ToolInput.STAIR_CREATE,
                 safeUseCases.stairCreate().pressAndHoverOnly());
         registeredWorkflows.put(
@@ -168,7 +162,6 @@ final class ApplyDungeonEditorToolWorkflowUseCase {
 
     record ToolWorkflowUseCases(
             PairedToolUseCases room,
-            PairedToolUseCases door,
             PointerToolUseCase stairCreate,
             PointerToolUseCase stairCreateSquare,
             PointerToolUseCase stairCreateCircular,
@@ -182,7 +175,6 @@ final class ApplyDungeonEditorToolWorkflowUseCase {
     ) {
         ToolWorkflowUseCases {
             room = Objects.requireNonNull(room, "room");
-            door = Objects.requireNonNull(door, "door");
             stairCreate = Objects.requireNonNull(stairCreate, "stairCreate");
             stairCreateSquare = Objects.requireNonNull(stairCreateSquare, "stairCreateSquare");
             stairCreateCircular = Objects.requireNonNull(stairCreateCircular, "stairCreateCircular");
@@ -202,10 +194,6 @@ final class ApplyDungeonEditorToolWorkflowUseCase {
             @Nullable PointerAction release,
             @Nullable PointerAction hover
     ) {
-        ToolWorkflow workflow() {
-            return new ToolWorkflow(press, drag, release, hover);
-        }
-
         ToolWorkflow withoutHover() {
             return new ToolWorkflow(press, drag, release, null);
         }

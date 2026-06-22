@@ -30,6 +30,7 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
     private final SetDungeonEditorOverlayUseCase setOverlayUseCase;
     private final ApplyDungeonEditorToolWorkflowUseCase applyToolWorkflowUseCase;
     private final DungeonEditorWallBoundaryDraftRuntimeOperation wallBoundaryDraftOperation;
+    private final DungeonEditorDoorBoundaryDraftRuntimeOperation doorBoundaryDraftOperation;
     private final DungeonEditorCorridorDraftRuntimeOperation corridorDraftOperation;
     private final DungeonEditorSelectionHandlePreviewRuntimeOperation selectionHandlePreviewOperation;
     private final ApplyDungeonEditorSelectionUseCase applySelectionUseCase;
@@ -57,6 +58,9 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
         wallBoundaryDraftOperation = Objects.requireNonNull(
                 safeUseCases.wallBoundaryDraft(),
                 "wallBoundaryDraftOperation");
+        doorBoundaryDraftOperation = Objects.requireNonNull(
+                safeUseCases.doorBoundaryDraft(),
+                "doorBoundaryDraftOperation");
         corridorDraftOperation = Objects.requireNonNull(
                 safeUseCases.corridorDraft(),
                 "corridorDraftOperation");
@@ -151,6 +155,16 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
             TransitionDestination transitionDestination
     ) {
         wallBoundaryDraftOperation.apply(action, wallTool, sample, wallSingleClickMode, transitionDestination);
+    }
+
+    void applyDoorBoundaryDraft(
+            PointerAction action,
+            DungeonEditorTool doorTool,
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        doorBoundaryDraftOperation.apply(action, doorTool, sample, wallSingleClickMode, transitionDestination);
     }
 
     void applyCorridorDraft(

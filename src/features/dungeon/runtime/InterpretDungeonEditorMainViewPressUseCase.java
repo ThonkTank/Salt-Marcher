@@ -63,24 +63,6 @@ final class InterpretDungeonEditorMainViewPressUseCase {
                 point);
     }
 
-    DungeonEditorMainViewInterpretation interpretBoundary(
-            PointerState input,
-            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
-            DungeonEditorSessionValues.Selection currentSelection,
-            DungeonEditorSessionValues.Tool boundaryTool,
-            InteractionState state
-    ) {
-        DungeonEditorMainViewInterpretation boundaryInterpretation =
-                boundaryDraft.press(input, snapshot, currentSelection, boundaryTool, state);
-        if (boundaryInterpretation.effect().isNoop()) {
-            return boundaryInterpretation;
-        }
-        InteractionState nextState = boundaryInterpretation.nextState()
-                .withDragSession(DragSession.none())
-                .withPaintSession(PaintSession.none());
-        return new DungeonEditorMainViewInterpretation(nextState, boundaryInterpretation.effect());
-    }
-
     DungeonEditorWallBoundaryDraftInterpretation interpretWallBoundaryOperation(
             PointerState input,
             DungeonEditorWorkspaceValues.MapSnapshot snapshot,
@@ -90,6 +72,23 @@ final class InterpretDungeonEditorMainViewPressUseCase {
     ) {
         DungeonEditorWallBoundaryDraftInterpretation boundaryInterpretation =
                 boundaryDraft.pressWall(input, snapshot, currentSelection, boundaryTool, state);
+        if (boundaryInterpretation.effect().isNoop()) {
+            return boundaryInterpretation;
+        }
+        InteractionState nextState = boundaryInterpretation.nextState()
+                .withDragSession(DragSession.none())
+                .withPaintSession(PaintSession.none());
+        return boundaryInterpretation.withNextState(nextState);
+    }
+
+    DungeonEditorDoorBoundaryDraftInterpretation interpretDoorBoundaryOperation(
+            PointerState input,
+            DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+            DungeonEditorSessionValues.Tool boundaryTool,
+            InteractionState state
+    ) {
+        DungeonEditorDoorBoundaryDraftInterpretation boundaryInterpretation =
+                boundaryDraft.pressDoor(input, snapshot, boundaryTool, state);
         if (boundaryInterpretation.effect().isNoop()) {
             return boundaryInterpretation;
         }
