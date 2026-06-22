@@ -9,7 +9,6 @@ import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMutation;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 
 public final class ApplyDungeonAuthoredMutationUseCase {
     private static final String CLUSTER_KIND = "CLUSTER";
@@ -26,21 +25,7 @@ public final class ApplyDungeonAuthoredMutationUseCase {
                 Objects.requireNonNull(applyDungeonEditorOperationUseCase, "applyDungeonEditorOperationUseCase");
     }
 
-    public ApplyDungeonEditorOperationUseCase.OperationResultData apply(
-            @Nullable DungeonMapIdentity mapId,
-            @Nullable DungeonEditorAuthoredOperation operation
-    ) {
-        return applyDungeonEditorOperationUseCase.execute(mapId, mutation(operation));
-    }
-
-    public ApplyDungeonEditorOperationUseCase.OperationResultData preview(
-            @Nullable DungeonMapIdentity mapId,
-            @Nullable DungeonEditorAuthoredOperation operation
-    ) {
-        return applyDungeonEditorOperationUseCase.preview(mapId, mutation(operation));
-    }
-
-    public ApplyDungeonEditorOperationUseCase.OperationResultData applyMoveEditorHandle(
+    public ApplyDungeonEditorOperationUseCase.OperationResultData applyHandleMovement(
             @Nullable DungeonMapIdentity mapId,
             DungeonEditorHandleMovement handle,
             int deltaQ,
@@ -48,6 +33,18 @@ public final class ApplyDungeonAuthoredMutationUseCase {
             int deltaLevel
     ) {
         return applyDungeonEditorOperationUseCase.execute(
+                mapId,
+                current -> HANDLE_MUTATION.apply(current, handle, deltaQ, deltaR, deltaLevel));
+    }
+
+    public ApplyDungeonEditorOperationUseCase.OperationResultData previewHandleMovement(
+            @Nullable DungeonMapIdentity mapId,
+            DungeonEditorHandleMovement handle,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        return applyDungeonEditorOperationUseCase.preview(
                 mapId,
                 current -> HANDLE_MUTATION.apply(current, handle, deltaQ, deltaR, deltaLevel));
     }
@@ -93,23 +90,6 @@ public final class ApplyDungeonAuthoredMutationUseCase {
         return applyDungeonEditorOperationUseCase.execute(
                 mapId,
                 current -> current.saveRoomNarration(roomId, narration));
-    }
-
-    private ApplyDungeonEditorOperationUseCase.@Nullable Mutation mutation(
-            @Nullable DungeonEditorAuthoredOperation operation
-    ) {
-        if (operation == null) {
-            return null;
-        }
-        return switch (operation.variant()) {
-            case DungeonEditorAuthoredOperation.MoveEditorHandle move ->
-                    current -> HANDLE_MUTATION.apply(
-                            current,
-                            move.handle(),
-                            move.deltaQ(),
-                            move.deltaR(),
-                            move.deltaLevel());
-        };
     }
 
 }

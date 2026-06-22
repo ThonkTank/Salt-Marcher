@@ -43,14 +43,6 @@ public final class DungeonEditorHandleType {
         return this == CORRIDOR_ANCHOR || this == CORRIDOR_WAYPOINT;
     }
 
-    public boolean isDirectDoorOrCorridorMoveCommit() {
-        return isDirectDoorMoveCommit() || isDirectCorridorMoveCommit();
-    }
-
-    public boolean isDirectRuntimeMoveCommit() {
-        return isDirectClusterMoveCommit() || this == CLUSTER_WALL_RUN || isDirectDoorOrCorridorMoveCommit();
-    }
-
     @Override
     public String toString() {
         return name;

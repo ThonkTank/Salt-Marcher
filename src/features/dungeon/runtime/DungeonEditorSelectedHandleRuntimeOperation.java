@@ -2,6 +2,7 @@ package src.features.dungeon.runtime;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
@@ -163,6 +164,9 @@ final class DungeonEditorSelectedHandleRuntimeOperation {
         }
         if (DungeonEditorSessionPreviewHelper.directCorridorMoveCommitHandle(move.handleRef().kind())) {
             return mapId -> handleOperationUseCase.executeCorridorHandleMove(mapId, move);
+        }
+        if (move.handleRef().kind() == DungeonEditorHandleType.STAIR_ANCHOR) {
+            return mapId -> authoredOperationUseCase.executeStairHandleMove(mapId, move);
         }
         return null;
     }

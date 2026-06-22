@@ -5,14 +5,13 @@ import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceHandleMovement;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
-import src.domain.dungeon.model.runtime.helper.DungeonEditorAuthoredOperationHelper;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper;
 
 public final class ApplyDungeonEditorAuthoredOperationUseCase {
@@ -35,14 +34,9 @@ public final class ApplyDungeonEditorAuthoredOperationUseCase {
     }
 
     public void execute(MapId mapId, DungeonEditorSessionValues.Preview preview) {
-        DungeonEditorAuthoredOperation operation = DungeonEditorAuthoredOperationHelper.authoredOperation(preview);
-        if (operation == null) {
-            return;
+        if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview move) {
+            executeStairHandleMove(mapId, move);
         }
-        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.apply(
-                domainMapId(mapId),
-                operation);
-        publishMutationUseCase.execute(result);
     }
 
     public void executeRoomRectangle(
@@ -130,7 +124,26 @@ public final class ApplyDungeonEditorAuthoredOperationUseCase {
         if (!DungeonEditorSessionPreviewHelper.directClusterMoveCommitHandle(handleRef.kind())) {
             return;
         }
-        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.applyMoveEditorHandle(
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.applyHandleMovement(
+                domainMapId(mapId),
+                DungeonEditorWorkspaceHandleMovement.from(handleRef),
+                safePreview.deltaQ(),
+                safePreview.deltaR(),
+                safePreview.deltaLevel());
+        publishMutationUseCase.execute(result);
+    }
+
+    public void executeStairHandleMove(
+            MapId mapId,
+            DungeonEditorSessionValues.MoveHandlePreview preview
+    ) {
+        DungeonEditorSessionValues.MoveHandlePreview safePreview =
+                Objects.requireNonNull(preview, "preview");
+        DungeonEditorWorkspaceValues.HandleRef handleRef = safePreview.handleRef();
+        if (handleRef.kind() != DungeonEditorHandleType.STAIR_ANCHOR) {
+            return;
+        }
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.applyHandleMovement(
                 domainMapId(mapId),
                 DungeonEditorWorkspaceHandleMovement.from(handleRef),
                 safePreview.deltaQ(),

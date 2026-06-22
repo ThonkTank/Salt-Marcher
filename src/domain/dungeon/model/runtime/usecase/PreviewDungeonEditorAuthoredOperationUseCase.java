@@ -2,13 +2,13 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
-import src.domain.dungeon.model.runtime.helper.DungeonEditorAuthoredOperationHelper;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceHandleMovement;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorAuthoredOperation;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
@@ -83,16 +83,17 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
                     corridor.waypointIndex()));
             return;
         }
-        DungeonEditorAuthoredOperation operation =
-                DungeonEditorAuthoredOperationHelper.authoredOperation(preview);
-        if (operation == null) {
-            state.replacePreview(null);
+        if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview move
+                && move.handleRef().kind() == DungeonEditorHandleType.STAIR_ANCHOR) {
+            publishPreview(mutationUseCase.previewHandleMovement(
+                    domainMapId(mapId),
+                    DungeonEditorWorkspaceHandleMovement.from(move.handleRef()),
+                    move.deltaQ(),
+                    move.deltaR(),
+                    move.deltaLevel()));
             return;
         }
-        ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.preview(
-                domainMapId(mapId),
-                operation);
-        publishPreview(result);
+        state.replacePreview(null);
     }
 
     private ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData stairPreview(
