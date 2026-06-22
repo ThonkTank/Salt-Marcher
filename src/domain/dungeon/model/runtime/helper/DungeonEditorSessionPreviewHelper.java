@@ -41,8 +41,4 @@ public interface DungeonEditorSessionPreviewHelper {
         return kind != null && kind.isDirectCorridorMoveCommit();
     }
 
-    static boolean directDoorOrCorridorMoveCommitHandle(DungeonEditorHandleType kind) {
-        return kind != null && kind.isDirectDoorOrCorridorMoveCommit();
-    }
-
 }

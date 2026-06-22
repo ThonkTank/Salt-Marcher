@@ -2,7 +2,6 @@ package src.features.dungeon.runtime;
 
 import src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorMapUseCase;
 import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapUseCase;
-import src.domain.dungeon.model.runtime.usecase.MoveDungeonEditorHandleUseCase;
 import src.domain.dungeon.model.runtime.usecase.RenameDungeonEditorMapUseCase;
 import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorLabelNameUseCase;
 import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorRoomNarrationUseCase;
@@ -23,9 +22,7 @@ record DungeonEditorAuthoredRuntimeOperationUseCases(
         DungeonEditorDoorBoundaryDraftRuntimeOperation doorBoundaryDraft,
         DungeonEditorCorridorDraftRuntimeOperation corridorDraft,
         DungeonEditorStairDraftRuntimeOperation stairDraft,
-        DungeonEditorSelectionHandlePreviewRuntimeOperation selectionHandlePreview,
-        ApplyDungeonEditorSelectionUseCase selection,
-        MoveDungeonEditorHandleUseCase moveHandle,
+        DungeonEditorSelectedHandleRuntimeOperation selectedHandle,
         DetailUseCases detail
 ) {
     record MapUseCases(

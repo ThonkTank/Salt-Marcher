@@ -1,10 +1,8 @@
 package src.features.dungeon.runtime;
 
 import java.util.List;
-import src.domain.dungeon.model.runtime.usecase.MoveDungeonEditorHandleUseCase.HandleMoveInput;
 import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorRoomNarrationUseCase.ExitInput;
 import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.ToolWorkflowInput;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarration;
@@ -52,10 +50,6 @@ final class DungeonEditorRuntimeInputTranslator {
                 sample,
                 wallSingleClickMode,
                 transitionDestination);
-    }
-
-    static HandleMoveInput handleMoveInput(HandleTarget handle, int q, int r) {
-        return DungeonEditorHandleInputTranslator.handleMoveInput(handle, q, r);
     }
 
     static String toolName(String value) {

@@ -3,7 +3,6 @@ package src.features.dungeon.runtime;
 import java.util.Objects;
 import src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorMapUseCase;
 import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapUseCase;
-import src.domain.dungeon.model.runtime.usecase.MoveDungeonEditorHandleUseCase;
 import src.domain.dungeon.model.runtime.usecase.RenameDungeonEditorMapUseCase;
 import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorLabelNameUseCase;
 import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorRoomNarrationUseCase;
@@ -33,9 +32,7 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
     private final DungeonEditorDoorBoundaryDraftRuntimeOperation doorBoundaryDraftOperation;
     private final DungeonEditorCorridorDraftRuntimeOperation corridorDraftOperation;
     private final DungeonEditorStairDraftRuntimeOperation stairDraftOperation;
-    private final DungeonEditorSelectionHandlePreviewRuntimeOperation selectionHandlePreviewOperation;
-    private final ApplyDungeonEditorSelectionUseCase applySelectionUseCase;
-    private final MoveDungeonEditorHandleUseCase moveHandleUseCase;
+    private final DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation;
     private final SaveDungeonEditorRoomNarrationUseCase saveRoomNarrationUseCase;
     private final SaveDungeonEditorLabelNameUseCase saveLabelNameUseCase;
     private final SaveDungeonEditorTransitionDescriptionUseCase saveTransitionDescriptionUseCase;
@@ -68,11 +65,9 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
         stairDraftOperation = Objects.requireNonNull(
                 safeUseCases.stairDraft(),
                 "stairDraftOperation");
-        selectionHandlePreviewOperation = Objects.requireNonNull(
-                safeUseCases.selectionHandlePreview(),
-                "selectionHandlePreviewOperation");
-        applySelectionUseCase = Objects.requireNonNull(safeUseCases.selection(), "applySelectionUseCase");
-        moveHandleUseCase = Objects.requireNonNull(safeUseCases.moveHandle(), "moveHandleUseCase");
+        selectedHandleOperation = Objects.requireNonNull(
+                safeUseCases.selectedHandle(),
+                "selectedHandleOperation");
         saveRoomNarrationUseCase = Objects.requireNonNull(
                 safeUseCases.detail().saveRoomNarration(),
                 "saveRoomNarrationUseCase");
@@ -204,16 +199,16 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        selectionHandlePreviewOperation.apply(action, sample, wallSingleClickMode, transitionDestination);
+        selectedHandleOperation.apply(action, sample, wallSingleClickMode, transitionDestination);
     }
 
     @Override
     public void scrollSelection(int levelDelta) {
-        applySelectionUseCase.scroll(levelDelta);
+        selectedHandleOperation.scroll(levelDelta);
     }
 
     void moveCorridorPoint(HandleTarget handle, int q, int r) {
-        moveHandleUseCase.execute(DungeonEditorRuntimeInputTranslator.handleMoveInput(handle, q, r));
+        selectedHandleOperation.moveCorridorPoint(handle, q, r);
     }
 
     @Override

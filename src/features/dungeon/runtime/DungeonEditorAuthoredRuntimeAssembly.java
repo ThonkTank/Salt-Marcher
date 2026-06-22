@@ -37,7 +37,6 @@ import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapUseCase;
 import src.domain.dungeon.model.runtime.usecase.InspectDungeonSelectionUseCase;
 import src.domain.dungeon.model.runtime.usecase.LoadDungeonEditorAuthoredMapUseCase;
 import src.domain.dungeon.model.runtime.usecase.LoadDungeonSnapshotUseCase;
-import src.domain.dungeon.model.runtime.usecase.MoveDungeonEditorHandleUseCase;
 import src.domain.dungeon.model.runtime.usecase.PreviewDungeonEditorAuthoredOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorAuthoredInspectorUseCase;
 import src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorAuthoredMutationUseCase;
@@ -109,7 +108,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
     }
 
     private static DungeonEditorAuthoredRuntimeOperations operations(RuntimeUseCases runtime) {
-        ApplyDungeonEditorSelectionUseCase selection = selection(runtime);
+        DungeonEditorSelectedHandleRuntimeOperation selectedHandle = selectedHandle(runtime);
         return new DungeonEditorAuthoredRuntimeOperations(new DungeonEditorAuthoredRuntimeOperationUseCases(
                 mapUseCases(runtime),
                 projectionUseCases(runtime),
@@ -118,12 +117,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 new DungeonEditorDoorBoundaryDraftRuntimeOperation(runtime),
                 new DungeonEditorCorridorDraftRuntimeOperation(runtime),
                 new DungeonEditorStairDraftRuntimeOperation(runtime),
-                new DungeonEditorSelectionHandlePreviewRuntimeOperation(selection),
-                selection,
-                new MoveDungeonEditorHandleUseCase(
-                        runtime.workflow(),
-                        runtime.effectUseCase(),
-                        runtime.authored().handleOperationUseCase()),
+                selectedHandle,
                 detailUseCases(runtime)));
     }
 
@@ -197,8 +191,8 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                         runtime.effectUseCase()));
     }
 
-    private static ApplyDungeonEditorSelectionUseCase selection(RuntimeUseCases runtime) {
-        return new ApplyDungeonEditorSelectionUseCase(
+    private static DungeonEditorSelectedHandleRuntimeOperation selectedHandle(RuntimeUseCases runtime) {
+        return new DungeonEditorSelectedHandleRuntimeOperation(
                 runtime.workflow(),
                 runtime.mainViewInterpreter(),
                 runtime.effectUseCase(),
