@@ -98,8 +98,6 @@ final class ApplyDungeonEditorToolWorkflowUseCase {
     enum ToolInput {
         ROOM_PAINT,
         ROOM_DELETE,
-        DOOR_CREATE,
-        DOOR_DELETE,
         STAIR_CREATE,
         STAIR_CREATE_SQUARE,
         STAIR_CREATE_CIRCULAR,

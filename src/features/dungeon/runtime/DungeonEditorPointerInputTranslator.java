@@ -1,6 +1,7 @@
 package src.features.dungeon.runtime;
 
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.published.DungeonEditorTool;
 import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.ToolInput;
 import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.ToolWorkflowInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.BoundaryTarget;
@@ -26,13 +27,15 @@ final class DungeonEditorPointerInputTranslator {
                 ? new PointerSample(0.0, 0.0, false, false, PointerTarget.empty())
                 : sample;
         ToolInput selectedTool = DungeonEditorRuntimeEnumTranslator.tool(toolKey);
+        DungeonEditorTool editorTool = DungeonEditorRuntimeEnumTranslator.editorTool(toolKey);
         TransitionDestination safeDestination = transitionDestination == null
                 ? TransitionDestination.empty()
                 : transitionDestination;
         return new ToolWorkflowInput(
                 selectedTool,
                 DungeonEditorRuntimeEnumTranslator.workflowAction(action),
-                mainViewInput(safeSample, wallSingleClickMode, selectedTool, safeDestination));
+                mainViewInput(safeSample, wallSingleClickMode, editorTool == DungeonEditorTool.DOOR_DELETE,
+                        safeDestination));
     }
 
     static DungeonEditorMainViewInput mainViewInput(
@@ -65,17 +68,18 @@ final class DungeonEditorPointerInputTranslator {
         PointerSample safeSample = sample == null
                 ? new PointerSample(0.0, 0.0, false, false, PointerTarget.empty())
                 : sample;
-        ToolInput selectedTool = DungeonEditorRuntimeEnumTranslator.tool(toolKey);
+        DungeonEditorTool selectedTool = DungeonEditorRuntimeEnumTranslator.editorTool(toolKey);
         TransitionDestination safeDestination = transitionDestination == null
                 ? TransitionDestination.empty()
                 : transitionDestination;
-        return mainViewInput(safeSample, wallSingleClickMode, selectedTool, safeDestination);
+        return mainViewInput(safeSample, wallSingleClickMode, selectedTool == DungeonEditorTool.DOOR_DELETE,
+                safeDestination);
     }
 
     private static DungeonEditorMainViewInput mainViewInput(
             PointerSample sample,
             boolean wallSingleClickMode,
-            ToolInput selectedTool,
+            boolean doorDeleteSelected,
             TransitionDestination transitionDestination
     ) {
         return new DungeonEditorMainViewInput(
@@ -84,13 +88,13 @@ final class DungeonEditorPointerInputTranslator {
                 sample.primaryButtonDown(),
                 sample.secondaryButtonDown(),
                 wallSingleClickMode,
-                pointerTarget(sample.target(), selectedTool),
+                pointerTarget(sample.target(), doorDeleteSelected),
                 transitionDestination);
     }
 
-    private static DungeonEditorMainViewPointerTarget pointerTarget(PointerTarget target, ToolInput selectedTool) {
+    private static DungeonEditorMainViewPointerTarget pointerTarget(PointerTarget target, boolean doorDeleteSelected) {
         PointerTarget safeTarget = target == null ? PointerTarget.empty() : target;
-        DungeonEditorMainViewPointerTarget doorDeleteTarget = doorDeleteBoundaryTarget(safeTarget, selectedTool);
+        DungeonEditorMainViewPointerTarget doorDeleteTarget = doorDeleteBoundaryTarget(safeTarget, doorDeleteSelected);
         return doorDeleteTarget == null ? plainPointerTarget(safeTarget) : doorDeleteTarget;
     }
 
@@ -119,10 +123,10 @@ final class DungeonEditorPointerInputTranslator {
 
     private static DungeonEditorMainViewPointerTarget doorDeleteBoundaryTarget(
             PointerTarget target,
-            ToolInput selectedTool
+            boolean doorDeleteSelected
     ) {
         HandleTarget handle = target.handle();
-        if (selectedTool != ToolInput.DOOR_DELETE
+        if (!doorDeleteSelected
                 || !"HANDLE".equals(DungeonEditorRuntimeEnumTranslator.normalizedEnumName(target.targetKind()))
                 || !"DOOR".equals(DungeonEditorRuntimeEnumTranslator.normalizedEnumName(handle.kind()))
                 || !handle.sourceEdgePresent()) {
