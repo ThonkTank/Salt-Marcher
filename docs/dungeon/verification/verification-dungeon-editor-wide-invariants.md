@@ -36,8 +36,11 @@ verification folder.
 Real-route editor proofs drive the actual View route where possible:
 
 - build input through the owning view control or JavaFX event handler
-- let normal view input, intent handler, application service, domain mutation,
-  persistence, publication, and render-model flow run
+- let the production route run through the owning view control or JavaFX event
+  handler when a UI route exists, view input adapter such as
+  `DungeonEditorIntentHandler` where present, migrated feature-runtime operation
+  owner for migrated editor workflows, domain owner APIs for authored mutation,
+  persistence, publication, and render-frame/content-model readback
 - inspect authored geometry in SQLite-backed repository readback, editor state
   in `DungeonEditorMapSurfaceSnapshot`, and render facts in
   `DungeonMapContentModel`
