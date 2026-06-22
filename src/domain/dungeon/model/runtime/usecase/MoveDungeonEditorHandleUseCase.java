@@ -1,5 +1,6 @@
 package src.domain.dungeon.model.runtime.usecase;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
@@ -112,6 +113,7 @@ public final class MoveDungeonEditorHandleUseCase {
             if (handleKind.isEmpty() || ref.isEmpty()) {
                 return Optional.empty();
             }
+            DungeonEditorWorkspaceValues.Edge edge = sourceEdge();
             return Optional.of(new DungeonEditorWorkspaceValues.HandleRef(
                     handleKind.orElseThrow(),
                     ref.orElseThrow(),
@@ -122,7 +124,8 @@ public final class MoveDungeonEditorHandleUseCase {
                     index,
                     new DungeonEditorWorkspaceValues.Cell(sourceQ, sourceR, sourceLevel),
                     direction,
-                    sourceEdge()));
+                    edge,
+                    edge == null ? List.of() : List.of(edge)));
         }
 
         private DungeonEditorWorkspaceValues.Edge sourceEdge() {

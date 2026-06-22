@@ -39,6 +39,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterRoomPartition;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallMap;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWallRun;
+import src.domain.dungeon.model.core.structure.room.RoomClusterWallRunSource;
 import src.domain.dungeon.model.core.structure.room.RoomClusterWork;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
@@ -775,13 +776,21 @@ final class DungeonStructureInvariantHarness {
                                 1.0,
                                 0.0,
                                 Direction.NORTH,
-                                new Edge(new Cell(1, 0, 0), new Cell(2, 0, 0))),
+                                new RoomClusterWallRunSource(
+                                        new Edge(new Cell(1, 0, 0), new Cell(2, 0, 0)),
+                                        List.of(
+                                                new Edge(new Cell(0, 0, 0), new Cell(1, 0, 0)),
+                                                new Edge(new Cell(1, 0, 0), new Cell(2, 0, 0))))),
                         new RoomClusterWallRun(
                                 new Cell(3, 0, 0),
                                 3.0,
                                 0.0,
                                 Direction.SOUTH,
-                                new Edge(new Cell(3, 0, 0), new Cell(4, 0, 0)))),
+                                new RoomClusterWallRunSource(
+                                        new Edge(new Cell(3, 0, 0), new Cell(4, 0, 0)),
+                                        List.of(
+                                                new Edge(new Cell(2, 0, 0), new Cell(3, 0, 0)),
+                                                new Edge(new Cell(3, 0, 0), new Cell(4, 0, 0)))))),
                 wallMap.authoredWallRuns(0),
                 "core room wall runs publish geometric midpoints, source edges, and do not merge different directions");
     }

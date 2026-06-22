@@ -6,7 +6,6 @@ import java.util.Map;
 import src.domain.dungeon.model.core.component.boundary.BoundaryMap;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
-import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.geometry.EdgeKey;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryRow;
@@ -126,9 +125,8 @@ final class RoomClusterWallRuns {
         }
         double variableMidpoint = (start + end) / 2.0;
         int anchorCoordinate = (int) Math.floor(variableMidpoint);
-        EdgeKey sourceEdge = sourceEdge(edgeKeys, rowsByKey);
-        Cell sourceFrom = sourceEdge.lower();
-        Cell sourceTo = sourceEdge.upper();
+        RoomClusterWallRunSource source = RoomClusterWallRunSource.fromDirectionalRun(edgeKeys, rowsByKey);
+        Cell sourceFrom = source.sourceEdge().from();
         Cell anchorCell = horizontal
                 ? new Cell(anchorCoordinate, fixed, sourceFrom.level())
                 : new Cell(fixed, anchorCoordinate, sourceFrom.level());
@@ -137,26 +135,6 @@ final class RoomClusterWallRuns {
                 horizontal ? variableMidpoint : fixed,
                 horizontal ? fixed : variableMidpoint,
                 direction,
-                new Edge(sourceFrom, sourceTo)));
-    }
-
-    private static EdgeKey sourceEdge(List<EdgeKey> edgeKeys, Map<EdgeKey, BoundaryRow> rowsByKey) {
-        int midpointIndex = edgeKeys.size() / 2;
-        for (int offset = 0; offset < edgeKeys.size(); offset++) {
-            int before = midpointIndex - offset;
-            if (before >= 0 && !doorRow(edgeKeys.get(before), rowsByKey)) {
-                return edgeKeys.get(before);
-            }
-            int after = midpointIndex + offset;
-            if (after < edgeKeys.size() && !doorRow(edgeKeys.get(after), rowsByKey)) {
-                return edgeKeys.get(after);
-            }
-        }
-        return edgeKeys.get(midpointIndex);
-    }
-
-    private static boolean doorRow(EdgeKey edgeKey, Map<EdgeKey, BoundaryRow> rowsByKey) {
-        BoundaryRow row = rowsByKey.get(edgeKey);
-        return row != null && row.kind() == BoundaryKind.DOOR;
+                source));
     }
 }

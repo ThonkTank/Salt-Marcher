@@ -31,7 +31,8 @@ public final class DungeonEditorWorkspaceHandleProjectionHelper {
                 handle.index(),
                 workspaceCell,
                 handle.direction().name(),
-                edge(handle.sourceEdge()));
+                edge(handle.sourceEdge()),
+                edges(handle.sourceEdges()));
         return new DungeonEditorWorkspaceValues.Handle(ref, handle.label(), workspaceCell);
     }
 
@@ -45,5 +46,16 @@ public final class DungeonEditorWorkspaceHandleProjectionHelper {
         return edge == null
                 ? null
                 : new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to()));
+    }
+
+    private static List<DungeonEditorWorkspaceValues.Edge> edges(List<Edge> edges) {
+        List<DungeonEditorWorkspaceValues.Edge> result = new ArrayList<>();
+        for (Edge edge : edges == null ? List.<Edge>of() : edges) {
+            DungeonEditorWorkspaceValues.Edge workspaceEdge = edge(edge);
+            if (workspaceEdge != null) {
+                result.add(workspaceEdge);
+            }
+        }
+        return List.copyOf(result);
     }
 }

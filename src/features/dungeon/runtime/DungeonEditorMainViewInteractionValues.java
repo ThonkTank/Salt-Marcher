@@ -119,7 +119,8 @@ final class DungeonEditorMainViewInteractionValues {
             int orderIndex,
             CellTarget anchor,
             String direction,
-            DungeonEditorWorkspaceValues.Edge sourceEdge
+            DungeonEditorWorkspaceValues.Edge sourceEdge,
+            List<DungeonEditorWorkspaceValues.Edge> sourceEdges
     ) {
         HandleTarget {
             kind = kind == null || kind.isBlank() ? CLUSTER_LABEL_KIND : kind;
@@ -132,6 +133,7 @@ final class DungeonEditorMainViewInteractionValues {
             orderIndex = Math.max(0, orderIndex);
             anchor = anchor == null ? CellTarget.empty() : anchor;
             direction = direction == null ? "" : direction;
+            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
         }
 
         static HandleTarget empty() {
@@ -146,7 +148,8 @@ final class DungeonEditorMainViewInteractionValues {
                     0,
                     CellTarget.empty(),
                     "",
-                    null);
+                    null,
+                    List.of());
         }
 
         static HandleTarget clusterLabel(String topologyRefKind, long topologyRefId, long ownerId, long clusterId) {
@@ -161,7 +164,8 @@ final class DungeonEditorMainViewInteractionValues {
                     0,
                     CellTarget.empty(),
                     "",
-                    null);
+                    null,
+                    List.of());
         }
 
         boolean clusterLabel() {
@@ -201,8 +205,10 @@ final class DungeonEditorMainViewInteractionValues {
                     orderIndex,
                     anchor.toWorkspaceCell(),
                     direction,
-                    sourceEdge);
+                    sourceEdge,
+                    sourceEdges);
         }
+
     }
 
     record BoundaryTarget(
@@ -421,7 +427,9 @@ final class DungeonEditorMainViewInteractionValues {
                     0L,
                     0,
                     DungeonEditorWorkspaceValues.Cell.empty(),
-                    "");
+                    "",
+                    null,
+                    List.of());
         }
     }
 

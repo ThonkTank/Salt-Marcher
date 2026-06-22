@@ -57,7 +57,8 @@ public final class DungeonEditorAffordanceModel {
                 labelCell.r(),
                 Direction.NORTH,
                 cluster.name(),
-                null));
+                null,
+                List.of()));
         for (Map.Entry<Integer, List<Cell>> entry : cellsByLevel.entrySet()) {
             appendCornerAffordances(result, cluster, room, entry.getKey());
             appendWallRunAffordances(result, cluster, room, entry.getKey());
@@ -99,7 +100,8 @@ public final class DungeonEditorAffordanceModel {
                     corner.r(),
                     Direction.NORTH,
                     "Ecke " + (index + 1),
-                    null));
+                    null,
+                    List.of()));
         }
     }
 
@@ -129,7 +131,8 @@ public final class DungeonEditorAffordanceModel {
                     wallRun.markerR(),
                     wallRun.direction(),
                     "Wandlauf " + (index + 1),
-                    wallRun.sourceEdge()));
+                    wallRun.sourceEdge(),
+                    wallRun.sourceEdges()));
         }
     }
 }

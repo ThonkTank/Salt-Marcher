@@ -45,9 +45,18 @@ public final class PreviewDungeonEditorDoorHandleMoveHelper {
                         ref.direction(),
                         ref.sourceEdge() == null
                                 ? null
-                                : movedEdge(ref.sourceEdge(), preview.deltaQ(), preview.deltaR(), preview.deltaLevel())),
+                                : movedEdge(ref.sourceEdge(), preview.deltaQ(), preview.deltaR(), preview.deltaLevel()),
+                        movedEdges(ref.sourceEdges(), preview.deltaQ(), preview.deltaR(), preview.deltaLevel())),
                 handle.label(),
                 movedCell);
+    }
+
+    private List<Edge> movedEdges(List<Edge> edges, int deltaQ, int deltaR, int deltaLevel) {
+        List<Edge> result = new ArrayList<>();
+        for (Edge edge : edges) {
+            result.add(movedEdge(edge, deltaQ, deltaR, deltaLevel));
+        }
+        return List.copyOf(result);
     }
 
     private static Cell movedCell(Cell cell, int deltaQ, int deltaR, int deltaLevel) {

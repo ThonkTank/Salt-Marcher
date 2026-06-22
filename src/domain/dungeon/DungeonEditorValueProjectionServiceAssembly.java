@@ -52,7 +52,16 @@ final class DungeonEditorValueProjectionServiceAssembly {
                 handleRef.index(),
                 cell(handleRef.cell()),
                 handleRef.direction(),
-                handleRef.sourceEdge() == null ? null : edge(handleRef.sourceEdge()));
+                handleRef.sourceEdge() == null ? null : edge(handleRef.sourceEdge()),
+                edges(handleRef.sourceEdges()));
+    }
+
+    private static List<src.domain.dungeon.published.DungeonEdgeRef> edges(
+            List<src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.Edge> edges
+    ) {
+        return edges == null
+                ? List.of()
+                : edges.stream().map(DungeonEditorValueProjectionServiceAssembly::edge).toList();
     }
 
     static src.domain.dungeon.published.DungeonEditorTopologyElementRef topologyRef(@Nullable DungeonTopologyRef ref) {

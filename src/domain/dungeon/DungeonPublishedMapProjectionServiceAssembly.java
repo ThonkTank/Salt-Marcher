@@ -129,7 +129,8 @@ final class DungeonPublishedMapProjectionServiceAssembly {
                     handle.index(),
                     cell(handle.cell()),
                     handle.direction().name(),
-                    handle.sourceEdge() == null ? null : edge(handle.sourceEdge()));
+                    handle.sourceEdge() == null ? null : edge(handle.sourceEdge()),
+                    handle.sourceEdges().stream().map(PublishedProjectionSupport::edge).toList());
         }
 
         private static src.domain.dungeon.published.DungeonTopologyElementKind publishedTopologyKind(

@@ -1,8 +1,11 @@
 package src.features.dungeon.runtime;
 
+import java.util.ArrayList;
+import java.util.List;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.runtime.usecase.MoveDungeonEditorHandleUseCase.HandleMoveInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.SourceEdgeTarget;
 
 final class DungeonEditorHandleInputTranslator {
 
@@ -46,7 +49,8 @@ final class DungeonEditorHandleInputTranslator {
                 safeHandle.orderIndex(),
                 DungeonEditorRuntimeInputValues.cell(safeHandle.q(), safeHandle.r(), safeHandle.level()),
                 safeHandle.direction(),
-                sourceEdge(safeHandle));
+                sourceEdge(safeHandle),
+                sourceEdges(safeHandle));
     }
 
     private static DungeonEditorWorkspaceValues.Edge sourceEdge(HandleTarget handle) {
@@ -61,5 +65,17 @@ final class DungeonEditorHandleInputTranslator {
                                 handle.sourceEndR(),
                                 handle.sourceEndLevel()))
                 : null;
+    }
+
+    private static List<DungeonEditorWorkspaceValues.Edge> sourceEdges(HandleTarget handle) {
+        List<DungeonEditorWorkspaceValues.Edge> result = new ArrayList<>();
+        for (SourceEdgeTarget edge : handle.sourceEdges()) {
+            if (edge != null && edge.present()) {
+                result.add(new DungeonEditorWorkspaceValues.Edge(
+                        DungeonEditorRuntimeInputValues.cell(edge.startQ(), edge.startR(), edge.startLevel()),
+                        DungeonEditorRuntimeInputValues.cell(edge.endQ(), edge.endR(), edge.endLevel())));
+            }
+        }
+        return List.copyOf(result);
     }
 }

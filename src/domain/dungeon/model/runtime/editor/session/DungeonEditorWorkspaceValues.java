@@ -230,22 +230,9 @@ public final class DungeonEditorWorkspaceValues {
             int index,
             Cell cell,
             String direction,
-            Edge sourceEdge
+            Edge sourceEdge,
+            List<Edge> sourceEdges
     ) {
-        public HandleRef(
-                DungeonEditorHandleType kind,
-                DungeonTopologyRef topologyRef,
-                long ownerId,
-                long clusterId,
-                long corridorId,
-                long roomId,
-                int index,
-                Cell cell,
-                String direction
-        ) {
-            this(kind, topologyRef, ownerId, clusterId, corridorId, roomId, index, cell, direction, null);
-        }
-
         public HandleRef {
             kind = kind == null ? DungeonEditorHandleType.CLUSTER_LABEL : kind;
             topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
@@ -256,6 +243,7 @@ public final class DungeonEditorWorkspaceValues {
             index = Math.max(0, index);
             cell = cell == null ? Cell.empty() : cell;
             direction = direction == null ? "" : direction.trim();
+            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
         }
 
         public static HandleRef empty() {
@@ -269,12 +257,14 @@ public final class DungeonEditorWorkspaceValues {
                     0,
                     Cell.empty(),
                     "",
-                    null);
+                    null,
+                    List.of());
         }
 
         public boolean hasSourceEdge() {
             return sourceEdge != null;
         }
+
     }
 
     public record Handle(

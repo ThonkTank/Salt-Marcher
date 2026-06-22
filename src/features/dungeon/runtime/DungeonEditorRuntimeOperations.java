@@ -2,6 +2,7 @@ package src.features.dungeon.runtime;
 
 import java.util.List;
 
+@SuppressWarnings("PMD.ExcessivePublicCount")
 public interface DungeonEditorRuntimeOperations {
     void selectMap(long mapIdValue);
 
@@ -274,7 +275,8 @@ public interface DungeonEditorRuntimeOperations {
             int sourceStartLevel,
             int sourceEndQ,
             int sourceEndR,
-            int sourceEndLevel
+            int sourceEndLevel,
+            List<SourceEdgeTarget> sourceEdges
     ) {
         public HandleTarget {
             kind = safeText(kind, "");
@@ -286,6 +288,7 @@ public interface DungeonEditorRuntimeOperations {
             roomId = Math.max(0L, roomId);
             orderIndex = Math.max(0, orderIndex);
             direction = safeText(direction, "");
+            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
         }
 
         public static HandleTarget empty() {
@@ -308,8 +311,21 @@ public interface DungeonEditorRuntimeOperations {
                     0,
                     0,
                     0,
-                    0);
+                    0,
+                    List.of());
         }
+
+    }
+
+    record SourceEdgeTarget(
+            boolean present,
+            int startQ,
+            int startR,
+            int startLevel,
+            int endQ,
+            int endR,
+            int endLevel
+    ) {
     }
 
     record BoundaryTarget(

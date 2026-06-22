@@ -2113,7 +2113,6 @@ public final class DungeonMapContentModel {
             orderIndex = Math.max(0, orderIndex);
             direction = direction == null ? "" : direction.trim();
             sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
-            sourceEdge = representativeSourceEdge(sourceEdge, sourceEdges);
         }
 
         public static HandleTarget empty() {
@@ -2147,16 +2146,6 @@ public final class DungeonMapContentModel {
 
         public SourceEdgeTarget sourceEdgeTarget() {
             return SourceEdgeTarget.from(sourceEdge);
-        }
-
-        private static DungeonEdgeRef representativeSourceEdge(
-                DungeonEdgeRef sourceEdge,
-                List<DungeonEdgeRef> sourceEdges
-        ) {
-            if (sourceEdges.isEmpty() || sourceEdges.contains(sourceEdge)) {
-                return sourceEdge;
-            }
-            return sourceEdges.get(sourceEdges.size() / 2);
         }
 
         public List<SourceEdgeTarget> sourceEdgeTargets() {
@@ -3184,7 +3173,8 @@ public final class DungeonMapContentModel {
                             (int) Math.floor(center.r()),
                             center.level(),
                             "",
-                            null),
+                            null,
+                            List.of()),
                     false));
         }
         return List.copyOf(markers);
@@ -3416,7 +3406,8 @@ public final class DungeonMapContentModel {
                             anchor.r(),
                             anchor.level(),
                             "",
-                            null),
+                            null,
+                            List.of()),
                     true));
         }
 
@@ -3609,7 +3600,8 @@ public final class DungeonMapContentModel {
                         (int) Math.floor(center.r()),
                         level,
                         "",
-                        null),
+                        null,
+                        List.of()),
                 preview);
     }
 
@@ -4536,7 +4528,6 @@ public final class DungeonMapContentModel {
         }
     }
 
-    @SuppressWarnings("PMD.ExcessiveParameterList")
     record MarkerHandle(
             @Nullable DungeonEditorHandleKind kind,
             DungeonMapRenderState.TopologyRef topologyRef,
@@ -4552,36 +4543,6 @@ public final class DungeonMapContentModel {
             DungeonEdgeRef sourceEdge,
             List<DungeonEdgeRef> sourceEdges
     ) {
-        MarkerHandle(
-                @Nullable DungeonEditorHandleKind kind,
-                DungeonMapRenderState.TopologyRef topologyRef,
-                long ownerId,
-                long clusterId,
-                long corridorId,
-                long roomId,
-                int index,
-                int q,
-                int r,
-                int level,
-                String direction,
-                DungeonEdgeRef sourceEdge
-        ) {
-            this(
-                    kind,
-                    topologyRef,
-                    ownerId,
-                    clusterId,
-                    corridorId,
-                    roomId,
-                    index,
-                    q,
-                    r,
-                    level,
-                    direction,
-                    sourceEdge,
-                    sourceEdge == null ? List.of() : List.of(sourceEdge));
-        }
-
         MarkerHandle {
             topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
             ownerId = Math.max(0L, ownerId);
@@ -4591,22 +4552,12 @@ public final class DungeonMapContentModel {
             index = Math.max(0, index);
             direction = direction == null ? "" : direction.trim();
             sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
-            sourceEdge = representativeSourceEdge(sourceEdge, sourceEdges);
         }
 
         String kindName() {
             return kind == null ? emptyKind() : kind.name();
         }
 
-        private static DungeonEdgeRef representativeSourceEdge(
-                DungeonEdgeRef sourceEdge,
-                List<DungeonEdgeRef> sourceEdges
-        ) {
-            if (sourceEdges.isEmpty() || sourceEdges.contains(sourceEdge)) {
-                return sourceEdge;
-            }
-            return sourceEdges.get(sourceEdges.size() / 2);
-        }
     }
 
     record Cell(
@@ -4694,7 +4645,7 @@ public final class DungeonMapContentModel {
             label = label == null ? "" : label;
             kind = kind == null ? MarkerKind.DOOR : kind;
             handle = handle == null
-                    ? new MarkerHandle(null, TopologyRef.empty(), 0L, 0L, 0L, 0L, 0, 0, 0, 0, "", null)
+                    ? new MarkerHandle(null, TopologyRef.empty(), 0L, 0L, 0L, 0L, 0, 0, 0, 0, "", null, List.of())
                     : handle;
         }
 

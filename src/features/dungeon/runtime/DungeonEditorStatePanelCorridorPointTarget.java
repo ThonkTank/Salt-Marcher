@@ -1,10 +1,13 @@
 package src.features.dungeon.runtime;
 
+import java.util.List;
+import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.SourceEdgeTarget;
 
 final class DungeonEditorStatePanelCorridorPointTarget {
     private static final String CORRIDOR_ANCHOR_LABEL = "Korridor-Anker";
@@ -63,6 +66,25 @@ final class DungeonEditorStatePanelCorridorPointTarget {
                 sourceEdgePresent ? handleRef.sourceEdge().from().level() : 0,
                 sourceEdgePresent ? handleRef.sourceEdge().to().q() : 0,
                 sourceEdgePresent ? handleRef.sourceEdge().to().r() : 0,
-                sourceEdgePresent ? handleRef.sourceEdge().to().level() : 0);
+                sourceEdgePresent ? handleRef.sourceEdge().to().level() : 0,
+                sourceEdges(handleRef));
+    }
+
+    private static List<SourceEdgeTarget> sourceEdges(DungeonEditorHandleRef handleRef) {
+        return handleRef.sourceEdges().stream()
+                .filter(DungeonEditorStatePanelCorridorPointTarget::sourceEdgePresent)
+                .map(edge -> new SourceEdgeTarget(
+                        true,
+                        edge.from().q(),
+                        edge.from().r(),
+                        edge.from().level(),
+                        edge.to().q(),
+                        edge.to().r(),
+                        edge.to().level()))
+                .toList();
+    }
+
+    private static boolean sourceEdgePresent(DungeonEdgeRef edge) {
+        return edge != null && edge.from() != null && edge.to() != null;
     }
 }

@@ -1,5 +1,6 @@
 package src.domain.dungeon.model.core.structure.room;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -26,21 +27,22 @@ final class RoomBoundaryStretchConnectors {
             DungeonRoomTopologyClusterWork target,
             StretchSelection stretch,
             Set<Cell> clusterCells,
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
-            boolean requireTouch
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries
     ) {
         List<BoundaryVertex> vertices = stretch.vertices();
-        for (BoundaryVertex endpoint : List.of(vertices.getFirst(), vertices.getLast())) {
-            boolean touchesOuter = BOUNDARY_LOOKUP.touchesOuterBoundary(clusterCells, endpoint);
+        for (int index = 0; index < vertices.size(); index++) {
+            BoundaryVertex vertex = vertices.get(index);
+            boolean endpoint = index == 0 || index == vertices.size() - 1;
+            boolean touchesOuter = endpoint && BOUNDARY_LOOKUP.touchesOuterBoundary(clusterCells, vertex);
             boolean hasAttachment = BOUNDARY_LOOKUP.hasPerpendicularBoundary(
                     boundaries,
                     stretch.sourceKeys(),
-                    endpoint,
+                    vertex,
                     stretch.orientation());
-            if (requireTouch && !touchesOuter && !hasAttachment) {
+            if (!touchesOuter && !hasAttachment) {
                 continue;
             }
-            if (!applyConnectorPath(corridors, target, stretch, clusterCells, boundaries, endpoint)) {
+            if (!applyConnectorPath(corridors, target, stretch, clusterCells, boundaries, vertex)) {
                 return false;
             }
         }
@@ -67,7 +69,15 @@ final class RoomBoundaryStretchConnectors {
                 connectorPath)) {
             return false;
         }
-        Optional<ConnectorAction> connectorAction = connectorAction(boundaries, stretch.sourceKeys(), connectorPath);
+        List<DungeonBoundaryKey> pathKeys = boundaryKeys(connectorPath);
+        boolean preserveExistingPath = BOUNDARY_LOOKUP.hasPerpendicularBoundaryOutsidePath(
+                boundaries,
+                stretch.sourceKeys(),
+                new LinkedHashSet<>(pathKeys),
+                endpoint,
+                stretch.orientation());
+        Optional<ConnectorAction> connectorAction =
+                connectorAction(boundaries, stretch.sourceKeys(), connectorPath, pathKeys, preserveExistingPath);
         if (connectorAction.isEmpty()) {
             return false;
         }
@@ -78,12 +88,13 @@ final class RoomBoundaryStretchConnectors {
     private Optional<ConnectorAction> connectorAction(
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
             Set<DungeonBoundaryKey> sourceKeys,
-            List<Edge> path
+            List<Edge> path,
+            List<DungeonBoundaryKey> keys,
+            boolean preserveExistingPath
     ) {
         if (path.isEmpty()) {
             return Optional.empty();
         }
-        List<DungeonBoundaryKey> keys = boundaryKeys(path);
         long presentCount = presentBoundaryCount(boundaries, sourceKeys, keys);
         if (hasNoPresentBoundaries(presentCount)) {
             return Optional.of(new ConnectorAction(false, path));
@@ -97,7 +108,7 @@ final class RoomBoundaryStretchConnectors {
                 return Optional.empty();
             }
         }
-        return Optional.of(new ConnectorAction(true, path));
+        return Optional.of(new ConnectorAction(!preserveExistingPath, path));
     }
 
     private List<DungeonBoundaryKey> boundaryKeys(List<Edge> path) {

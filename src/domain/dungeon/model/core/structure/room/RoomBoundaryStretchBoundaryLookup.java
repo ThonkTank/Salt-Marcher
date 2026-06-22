@@ -1,6 +1,5 @@
 package src.domain.dungeon.model.core.structure.room;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
@@ -8,22 +7,8 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryStretchPlan.BoundaryVertex;
-import src.domain.dungeon.model.core.structure.room.RoomBoundaryStretchValues.StretchSelection;
 
 final class RoomBoundaryStretchBoundaryLookup {
-
-    boolean innerStretchCanMove(
-            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
-            StretchSelection stretch
-    ) {
-        List<BoundaryVertex> vertices = stretch.vertices();
-        for (int index = 1; index < vertices.size() - 1; index++) {
-            if (hasPerpendicularBoundary(boundaries, stretch.sourceKeys(), vertices.get(index), stretch.orientation())) {
-                return false;
-            }
-        }
-        return true;
-    }
 
     boolean hasPerpendicularBoundary(
             Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
@@ -31,8 +16,29 @@ final class RoomBoundaryStretchBoundaryLookup {
             BoundaryVertex vertex,
             BoundaryStretchOrientation sourceOrientation
     ) {
+        return hasPerpendicularBoundaryIgnoring(boundaries, sourceKeys, Set.of(), vertex, sourceOrientation);
+    }
+
+    boolean hasPerpendicularBoundaryOutsidePath(
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Set<DungeonBoundaryKey> sourceKeys,
+            Set<DungeonBoundaryKey> pathKeys,
+            BoundaryVertex vertex,
+            BoundaryStretchOrientation sourceOrientation
+    ) {
+        return hasPerpendicularBoundaryIgnoring(boundaries, sourceKeys, pathKeys, vertex, sourceOrientation);
+    }
+
+    private boolean hasPerpendicularBoundaryIgnoring(
+            Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries,
+            Set<DungeonBoundaryKey> sourceKeys,
+            Set<DungeonBoundaryKey> ignoredKeys,
+            BoundaryVertex vertex,
+            BoundaryStretchOrientation sourceOrientation
+    ) {
+        Set<DungeonBoundaryKey> safeIgnoredKeys = ignoredKeys == null ? Set.of() : ignoredKeys;
         for (Map.Entry<DungeonBoundaryKey, DungeonClusterBoundary> entry : boundaries.entrySet()) {
-            if (sourceKeys.contains(entry.getKey())) {
+            if (sourceKeys.contains(entry.getKey()) || safeIgnoredKeys.contains(entry.getKey())) {
                 continue;
             }
             if (sourceOrientation.perpendicularTo(RoomBoundaryStretchValues.orientationOf(entry.getKey()))

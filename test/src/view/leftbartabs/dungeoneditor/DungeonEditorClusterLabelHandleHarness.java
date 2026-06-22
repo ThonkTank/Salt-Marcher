@@ -623,7 +623,99 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(4.0, 3.0).targetKind().name(),
                 "DE-HANDLE-002 reload selected cluster exposes the horizontal branch run handle");
 
+        dragUpperTWallRunAndAssertConnectorPreserved(runtime, binding, controls, mapView, mapId, mapName);
+
         results.add("DE-CLUSTER-001 Ready: selected authored internal T-junction walls split wall-run handles at the junction");
+        results.add("DE-CLUSTER-002 Ready: T-split wall-run drag uses exact published sourceEdges and "
+                + "preserves perpendicular connector walls through release and reload");
+    }
+
+    private static void dragUpperTWallRunAndAssertConnectorPreserved(
+            HarnessRuntime runtime,
+            HarnessBinding binding,
+            DungeonEditorControlsView controls,
+            DungeonMapView mapView,
+            long mapId,
+            String mapName
+    ) {
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        List<String> boundaryRowsBefore = runtime.database().roomBoundaryEdgeState(mapId);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(3.0),
+                viewport.sceneToScreenY(2.0),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_DRAGGED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(2.0),
+                false);
+
+        DungeonEditorMapSurfaceSnapshot previewSurface = runtime.mapSurfaceModel().current();
+        assertTrue(previewSurface.preview() instanceof DungeonEditorPreview.MoveBoundaryStretchPreview,
+                "DE-CLUSTER-002 T-split drag publishes boundary-stretch preview");
+        DungeonEditorPreview.MoveBoundaryStretchPreview preview =
+                (DungeonEditorPreview.MoveBoundaryStretchPreview) previewSurface.preview();
+        assertEquals(
+                Set.of(
+                        edgeKey(new Cell(3, 1, 0), new Cell(3, 2, 0)),
+                        edgeKey(new Cell(3, 2, 0), new Cell(3, 3, 0))),
+                edgeKeys(preview.sourceEdges()),
+                "DE-CLUSTER-002 T-split preview carries only the selected upper wall-run source edges");
+        assertEquals(-1L, preview.deltaQ(), "DE-CLUSTER-002 T-split preview delta q");
+        assertEquals(0L, preview.deltaR(), "DE-CLUSTER-002 T-split preview delta r");
+        assertTrue(mapHasBoundaryKindAt(
+                        previewSurface.surface().previewMap(),
+                        "WALL",
+                        new Cell(3, 3, 0),
+                        new Cell(3, 4, 0)),
+                "DE-CLUSTER-002 T-split preview keeps the unselected lower vertical run in place");
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.0),
+                viewport.sceneToScreenY(2.0),
+                false);
+
+        assertTConnectorMovedState(runtime, mapId, "DE-CLUSTER-002 T-split release");
+        assertTrue(!boundaryRowsBefore.equals(runtime.database().roomBoundaryEdgeState(mapId)),
+                "DE-CLUSTER-002 T-split release writes changed boundary rows");
+
+        selectMap(controls, mapName + " Reload Hop");
+        selectMap(controls, mapName);
+        assertTConnectorMovedState(runtime, mapId, "DE-CLUSTER-002 T-split reload");
+    }
+
+    private static void assertTConnectorMovedState(
+            HarnessRuntime runtime,
+            long mapId,
+            String message
+    ) {
+        DungeonEditorMapSurfaceSnapshot snapshot = runtime.mapSurfaceModel().current();
+        assertEquals(DungeonEditorPreview.none(), snapshot.preview(), message + " clears preview");
+        assertTrue(mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(2, 1, 0), new Cell(2, 2, 0)),
+                message + " moved upper split segment 1");
+        assertTrue(mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(2, 2, 0), new Cell(2, 3, 0)),
+                message + " moved upper split segment 2");
+        assertTrue(mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(2, 3, 0), new Cell(3, 3, 0)),
+                message + " horizontal connector touches moved run");
+        assertTrue(mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(3, 3, 0), new Cell(3, 4, 0)),
+                message + " lower split run remains at the old line");
+        assertTrue(mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(3, 3, 0), new Cell(4, 3, 0)),
+                message + " original horizontal branch remains connected at the junction");
+        assertTrue(!mapHasBoundaryKindAt(snapshot.surface().map(), "WALL", new Cell(2, 3, 0), new Cell(2, 4, 0)),
+                message + " does not move the lower split run with the selected upper run");
+        assertEquals(runtime.database().countWallBoundaryRows(mapId),
+                runtime.database().countDistinctWallBoundaryTopologyRefs(mapId),
+                message + " keeps no duplicate wall topology refs");
+        assertEquals(0L, runtime.database().countUnreferencedWallTopologyElements(mapId),
+                message + " keeps no orphan wall topology rows");
     }
 
     private static void verifySharedHandleIdentityAndPassiveRefs(List<String> results) {

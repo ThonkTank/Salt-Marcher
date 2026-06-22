@@ -164,7 +164,8 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
                 0,
                 new src.features.dungeon.runtime.DungeonEditorInteractionValues.CellTarget(4, 2, 0),
                 "EAST",
-                null);
+                null,
+                List.of());
         return new PointerState(
                 4,
                 2,

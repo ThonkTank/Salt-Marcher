@@ -50,12 +50,32 @@ final class DungeonEditorBoundaryStretchHelper {
             if (!DungeonEditorWorkspaceValues.hasId(clusterId)) {
                 return null;
             }
-            List<DungeonEditorWorkspaceValues.Edge> sourceEdges =
-                    edges.resolve(snapshot, clusterId, boundaryTarget, orientation);
+            List<DungeonEditorWorkspaceValues.Edge> sourceEdges = sourceEdges(input, snapshot, clusterId, boundaryTarget,
+                    orientation, edges);
             if (sourceEdges.isEmpty()) {
                 return null;
             }
             return session(input, sourceEdges, orientation, selection(snapshot, currentSelection, clusterId, boundaryTarget), clusterId);
+        }
+
+        private static List<DungeonEditorWorkspaceValues.Edge> sourceEdges(
+                PointerState input,
+                DungeonEditorWorkspaceValues.MapSnapshot snapshot,
+                long clusterId,
+                BoundaryTarget boundaryTarget,
+                BoundaryStretchOrientation orientation,
+            StretchEdges edges
+        ) {
+            if (input.hitTarget().handleRef().clusterWallRun()) {
+                return handleSourceEdges(input.hitTarget().handleRef());
+            }
+            return edges.resolve(snapshot, clusterId, boundaryTarget, orientation);
+        }
+
+        private static List<DungeonEditorWorkspaceValues.Edge> handleSourceEdges(
+                DungeonEditorMainViewInteractionValues.HandleTarget handle
+        ) {
+            return handle.sourceEdges();
         }
 
         private static @Nullable BoundaryTarget stretchBoundaryTarget(

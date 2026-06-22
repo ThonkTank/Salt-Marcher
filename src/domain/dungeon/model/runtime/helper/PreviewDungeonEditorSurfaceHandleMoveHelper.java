@@ -80,6 +80,7 @@ public final class PreviewDungeonEditorSurfaceHandleMoveHelper {
                                 deltaQ,
                                 deltaR,
                                 deltaLevel),
+                        source,
                         sameHandle,
                         deltaQ,
                         deltaR,
@@ -94,12 +95,14 @@ public final class PreviewDungeonEditorSurfaceHandleMoveHelper {
                 DungeonEditorWorkspaceGeometry.movedCell(handle.cell(), deltaQ, deltaR, deltaLevel),
                 sourceEdge == null
                         ? null
-                        : DungeonEditorWorkspaceGeometry.movedEdge(sourceEdge, deltaQ, deltaR, deltaLevel));
+                        : DungeonEditorWorkspaceGeometry.movedEdge(sourceEdge, deltaQ, deltaR, deltaLevel),
+                movedEdges(handle.ref().sourceEdges(), deltaQ, deltaR, deltaLevel));
     }
 
     private static Handle handleWithSourceEdge(
             Handle handle,
             Edge sourceEdge,
+            Cell source,
             boolean moveCell,
             int deltaQ,
             int deltaR,
@@ -110,10 +113,16 @@ public final class PreviewDungeonEditorSurfaceHandleMoveHelper {
                 moveCell
                         ? DungeonEditorWorkspaceGeometry.movedCell(handle.cell(), deltaQ, deltaR, deltaLevel)
                         : handle.cell(),
-                sourceEdge);
+                sourceEdge,
+                movedMatchingCellEdges(handle.ref().sourceEdges(), source, deltaQ, deltaR, deltaLevel));
     }
 
-    private static Handle handleWithRef(Handle handle, Cell cell, @Nullable Edge sourceEdge) {
+    private static Handle handleWithRef(
+            Handle handle,
+            Cell cell,
+            @Nullable Edge sourceEdge,
+            List<Edge> sourceEdges
+    ) {
         HandleRef ref = handle.ref();
         return new Handle(
                 new HandleRef(
@@ -126,9 +135,34 @@ public final class PreviewDungeonEditorSurfaceHandleMoveHelper {
                         ref.index(),
                         cell,
                         ref.direction(),
-                        sourceEdge),
+                        sourceEdge,
+                        sourceEdges),
                 handle.label(),
                 cell);
+    }
+
+    private static List<Edge> movedEdges(List<Edge> edges, int deltaQ, int deltaR, int deltaLevel) {
+        List<Edge> result = new ArrayList<>();
+        for (Edge edge : edges) {
+            result.add(DungeonEditorWorkspaceGeometry.movedEdge(edge, deltaQ, deltaR, deltaLevel));
+        }
+        return List.copyOf(result);
+    }
+
+    private static List<Edge> movedMatchingCellEdges(
+            List<Edge> edges,
+            Cell source,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        List<Edge> result = new ArrayList<>();
+        for (Edge edge : edges) {
+            result.add(DungeonEditorWorkspaceGeometry.edgeHasCell(edge, source)
+                    ? DungeonEditorWorkspaceGeometry.movedMatchingCell(edge, source, deltaQ, deltaR, deltaLevel)
+                    : edge);
+        }
+        return List.copyOf(result);
     }
 
     private static boolean sameHandleRef(HandleRef first, HandleRef second) {

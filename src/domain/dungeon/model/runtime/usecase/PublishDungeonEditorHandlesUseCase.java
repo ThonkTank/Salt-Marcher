@@ -74,7 +74,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                         midpoint(doorEdge.from().r(), doorEdge.to().r()),
                         binding.direction(),
                         "Tür " + corridor.corridorId() + "." + (index + 1),
-                        doorEdge));
+                        doorEdge,
+                        List.of(doorEdge)));
                 publishedDoorRefs.add(new DoorBoundaryRef(
                         binding.topologyRef(),
                         binding.clusterId(),
@@ -134,7 +135,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                     midpoint(doorEdge.from().r(), doorEdge.to().r()),
                     boundary.direction(),
                     "Tür " + (topologyRef.present() ? topologyRef.id() : (doorIndex + 1)),
-                    doorEdge));
+                    doorEdge,
+                    List.of(doorEdge)));
             doorIndex++;
         }
     }
@@ -164,7 +166,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                         absolute.r(),
                         Direction.NORTH,
                         "Wegpunkt " + (index + 1),
-                        null));
+                        null,
+                        List.of()));
             }
         }
     }
@@ -187,7 +190,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                         anchorCell.r(),
                         Direction.NORTH,
                         "Korridoranker " + (index + 1),
-                        null));
+                        null,
+                        List.of()));
             }
         }
     }
@@ -221,7 +225,8 @@ public final class PublishDungeonEditorHandlesUseCase {
                 cell.r(),
                 stair.direction(),
                 label,
-                null);
+                null,
+                List.of());
     }
 
     private static @Nullable DungeonRoomCluster cluster(DungeonMap dungeonMap, long clusterId) {

@@ -45,8 +45,7 @@ final class RoomBoundaryStretchMutationStep {
             return Optional.empty();
         }
         Map<DungeonBoundaryKey, DungeonClusterBoundary> boundaries = new LinkedHashMap<>(boundaryMap);
-        if (!BOUNDARY_LOOKUP.innerStretchCanMove(boundaries, stretch)
-                || !CONNECTORS.applyStretchConnectors(corridors, target, stretch, levelCells, boundaries, true)
+        if (!CONNECTORS.applyStretchConnectors(corridors, target, stretch, levelCells, boundaries)
                 || !replaceStretchEdges(target, stretch, levelCells, boundaries)) {
             return Optional.empty();
         }

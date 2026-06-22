@@ -1,5 +1,6 @@
 package src.domain.dungeon.model.runtime.editor.interaction;
 
+import java.util.List;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
@@ -18,7 +19,8 @@ public record DungeonEditorHandleProjection(
         double markerR,
         Direction direction,
         String label,
-        Edge sourceEdge
+        Edge sourceEdge,
+        List<Edge> sourceEdges
 ) {
     public DungeonEditorHandleProjection {
         kind = kind == null ? DungeonEditorHandleProjectionKind.defaultKind() : kind;
@@ -33,5 +35,6 @@ public record DungeonEditorHandleProjection(
         markerR = Double.isFinite(markerR) ? markerR : cell.r();
         direction = direction == null ? Direction.NORTH : direction;
         label = label == null || label.isBlank() ? kind.name() : label.trim();
+        sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
     }
 }

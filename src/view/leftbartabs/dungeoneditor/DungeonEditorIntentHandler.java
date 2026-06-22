@@ -4,20 +4,21 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import org.jspecify.annotations.Nullable;
-import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorInlineLabelEditSession;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.BoundaryTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.ExitNarration;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.ExitNarrationDraftInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerWorkflowGesture;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerWorkflowIntent;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarrationDraftInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarration;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.ExitNarrationDraftInput;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarrationDraftInput;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.SourceEdgeTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.StairGeometryDraftInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
@@ -452,10 +453,13 @@ final class DungeonEditorIntentHandler {
             return;
         }
         updateHoverTarget(event, pointerTarget);
-        PointerSample sample = pointerSample(event, pointerTarget);
-        if (suppressedRepeatedHover(action, intent.effectiveToolKey(), sample)) {
+        PointerSample sessionSample = pointerSample(event, pointerTarget, action != PointerAction.MOVED);
+        if (suppressedRepeatedHover(action, intent.effectiveToolKey(), sessionSample)) {
             return;
         }
+        PointerSample sample = action == PointerAction.MOVED
+                ? pointerSample(event, pointerTarget, true)
+                : sessionSample;
         applyToolWorkflow(action, sample, intent);
     }
 
@@ -654,14 +658,15 @@ final class DungeonEditorIntentHandler {
 
     private PointerSample pointerSample(
             DungeonMapViewInputEvent event,
-            DungeonMapContentModel.PointerTarget target
+            DungeonMapContentModel.PointerTarget target,
+            boolean includeSourceEdges
     ) {
         return new PointerSample(
                 sceneX(event),
                 sceneY(event),
                 event.buttons().primaryButtonDown(),
                 event.buttons().secondaryButtonDown(),
-                toRuntimePointerTarget(target));
+                toRuntimePointerTarget(target, includeSourceEdges));
     }
 
     private boolean suppressedRepeatedHover(
@@ -1023,7 +1028,10 @@ final class DungeonEditorIntentHandler {
                 exit.description());
     }
 
-    private static PointerTarget toRuntimePointerTarget(DungeonMapContentModel.PointerTarget target) {
+    private static PointerTarget toRuntimePointerTarget(
+            DungeonMapContentModel.PointerTarget target,
+            boolean includeSourceEdges
+    ) {
         DungeonMapContentModel.PointerTarget safeTarget = target == null
                 ? DungeonMapContentModel.PointerTarget.empty()
                 : target;
@@ -1035,11 +1043,14 @@ final class DungeonEditorIntentHandler {
                 safeTarget.clusterId(),
                 safeTarget.topologyKind(),
                 safeTarget.topologyId(),
-                toRuntimeHandleTarget(safeTarget.handleRef()),
+                toRuntimeHandleTarget(safeTarget.handleRef(), includeSourceEdges),
                 toRuntimeBoundaryTarget(safeTarget.boundaryRef()));
     }
 
-    private static HandleTarget toRuntimeHandleTarget(DungeonMapContentModel.HandleTarget handle) {
+    private static HandleTarget toRuntimeHandleTarget(
+            DungeonMapContentModel.HandleTarget handle,
+            boolean includeSourceEdges
+    ) {
         DungeonMapContentModel.HandleTarget safeHandle = handle == null
                 ? DungeonMapContentModel.HandleTarget.empty()
                 : handle;
@@ -1063,7 +1074,21 @@ final class DungeonEditorIntentHandler {
                 sourceEdge.startLevel(),
                 sourceEdge.endQ(),
                 sourceEdge.endR(),
-                sourceEdge.endLevel());
+                sourceEdge.endLevel(),
+                includeSourceEdges ? sourceEdgeTargets(safeHandle) : List.of());
+    }
+
+    private static List<SourceEdgeTarget> sourceEdgeTargets(DungeonMapContentModel.HandleTarget handle) {
+        return handle.sourceEdgeTargets().stream()
+                .map(edge -> new SourceEdgeTarget(
+                        edge.present(),
+                        edge.startQ(),
+                        edge.startR(),
+                        edge.startLevel(),
+                        edge.endQ(),
+                        edge.endR(),
+                        edge.endLevel()))
+                .toList();
     }
 
     private static BoundaryTarget toRuntimeBoundaryTarget(DungeonMapContentModel.BoundaryTarget boundary) {

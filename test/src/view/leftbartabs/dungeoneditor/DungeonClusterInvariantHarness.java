@@ -47,6 +47,12 @@ final class DungeonClusterInvariantHarness {
                 OWNER,
                 "DGI-CLUSTER-004",
                 "DungeonMap boundary-stretch mutation accepts valid wall-run movement and rejects invalid movement atomically");
+        assertExactWallRunStretchPreservesJunctionConnectors();
+        DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
+                results,
+                OWNER,
+                "DGI-CLUSTER-006",
+                "DungeonMap exact wall-run stretch preserves T- and X-junction perpendicular connectors");
         assertClusterDefaultAndCustomNames();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -110,6 +116,81 @@ final class DungeonClusterInvariantHarness {
         assertTrue(!accepted.equals(map), "DGI-CLUSTER-004 valid wall-run movement changes map");
         DungeonMap rejected = map.moveBoundaryStretch(clusterId, topRun, 0, 12, 0);
         assertEquals(map, rejected, "DGI-CLUSTER-004 invalid wall-run movement leaves map unchanged");
+    }
+
+    private static void assertExactWallRunStretchPreservesJunctionConnectors() {
+        assertTConnectorStretch();
+        assertXConnectorStretch();
+    }
+
+    private static void assertTConnectorStretch() {
+        DungeonMap map = interiorJunctionMap(List.of(
+                edge(3, 1, 3, 2),
+                edge(3, 2, 3, 3),
+                edge(3, 3, 3, 4),
+                edge(3, 4, 3, 5),
+                edge(3, 3, 4, 3),
+                edge(4, 3, 5, 3)));
+        long clusterId = firstClusterId(map);
+
+        DungeonMap moved = map.moveBoundaryStretch(
+                clusterId,
+                List.of(edge(3, 1, 3, 2), edge(3, 2, 3, 3)),
+                -1,
+                0,
+                0);
+
+        assertTrue(hasBoundary(moved, edge(2, 1, 2, 2)), "DGI-CLUSTER-006 T moved upper segment 1");
+        assertTrue(hasBoundary(moved, edge(2, 2, 2, 3)), "DGI-CLUSTER-006 T moved upper segment 2");
+        assertTrue(!hasBoundary(moved, edge(2, 3, 2, 4)), "DGI-CLUSTER-006 T does not move lower same-line run");
+        assertTrue(hasBoundary(moved, edge(3, 3, 3, 4)), "DGI-CLUSTER-006 T keeps lower split run in place");
+        assertTrue(hasBoundary(moved, edge(2, 3, 3, 3)), "DGI-CLUSTER-006 T stretches horizontal connector to moved run");
+        assertTrue(hasBoundary(moved, edge(3, 3, 4, 3)), "DGI-CLUSTER-006 T keeps original horizontal branch");
+    }
+
+    private static void assertXConnectorStretch() {
+        DungeonMap map = interiorJunctionMap(List.of(
+                edge(3, 1, 3, 2),
+                edge(3, 2, 3, 3),
+                edge(3, 3, 3, 4),
+                edge(3, 4, 3, 5),
+                edge(1, 3, 2, 3),
+                edge(2, 3, 3, 3),
+                edge(3, 3, 4, 3),
+                edge(4, 3, 5, 3)));
+        long clusterId = firstClusterId(map);
+
+        DungeonMap moved = map.moveBoundaryStretch(
+                clusterId,
+                List.of(edge(3, 1, 3, 2), edge(3, 2, 3, 3)),
+                -1,
+                0,
+                0);
+
+        assertTrue(hasBoundary(moved, edge(2, 1, 2, 2)), "DGI-CLUSTER-006 X moved upper segment 1");
+        assertTrue(hasBoundary(moved, edge(2, 2, 2, 3)), "DGI-CLUSTER-006 X moved upper segment 2");
+        assertTrue(hasBoundary(moved, edge(2, 3, 3, 3)), "DGI-CLUSTER-006 X keeps west branch connected");
+        assertTrue(hasBoundary(moved, edge(3, 3, 4, 3)), "DGI-CLUSTER-006 X keeps east branch connected");
+        assertTrue(hasBoundary(moved, edge(3, 3, 3, 4)), "DGI-CLUSTER-006 X keeps lower split run in place");
+        assertTrue(!hasBoundary(moved, edge(2, 3, 2, 4)), "DGI-CLUSTER-006 X does not move lower same-line run");
+    }
+
+    private static DungeonMap interiorJunctionMap(List<Edge> walls) {
+        DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(10L), "Cluster Junction Harness")
+                .paintRoomRectangle(new Cell(1, 1, 0), new Cell(5, 5, 0));
+        return map.editClusterBoundaries(
+                firstClusterId(map),
+                walls,
+                RoomClusterBoundaryMaterialization.BoundaryKind.WALL,
+                false);
+    }
+
+    private static Edge edge(int fromQ, int fromR, int toQ, int toR) {
+        return new Edge(new Cell(fromQ, fromR, 0), new Cell(toQ, toR, 0));
+    }
+
+    private static boolean hasBoundary(DungeonMap map, Edge edge) {
+        return map.topology().roomClusters().getFirst().boundaryAt(edge) != null;
     }
 
     private static void assertClusterDefaultAndCustomNames() {
