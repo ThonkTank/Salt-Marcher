@@ -39,7 +39,7 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
         if (draftKey.equals(key)) {
             clearDraft();
         }
-        operationOwner.moveHandle(target, q, r);
+        operationOwner.moveCorridorPoint(target, q, r);
     }
 
     Draft current(long selectedMapIdValue, DungeonEditorStateSnapshot.Selection selection) {

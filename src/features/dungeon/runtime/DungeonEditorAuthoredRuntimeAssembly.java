@@ -17,6 +17,8 @@ import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishe
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonAuthoredMutationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorCorridorMutationUseCase;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorHandleMutationUseCase;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorHandleOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonRoomWallMutationUseCase;
@@ -117,7 +119,10 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 new DungeonEditorCorridorDraftRuntimeOperation(runtime),
                 new DungeonEditorSelectionHandlePreviewRuntimeOperation(selection),
                 selection,
-                new MoveDungeonEditorHandleUseCase(runtime.workflow(), runtime.effectUseCase()),
+                new MoveDungeonEditorHandleUseCase(
+                        runtime.workflow(),
+                        runtime.effectUseCase(),
+                        runtime.authored().handleOperationUseCase()),
                 detailUseCases(runtime)));
     }
 
@@ -195,7 +200,9 @@ final class DungeonEditorAuthoredRuntimeAssembly {
         return new ApplyDungeonEditorSelectionUseCase(
                 runtime.workflow(),
                 runtime.mainViewInterpreter(),
-                runtime.effectUseCase());
+                runtime.effectUseCase(),
+                runtime.authored().applyOperationUseCase(),
+                runtime.authored().handleOperationUseCase());
     }
 
     private static RuntimeUseCases runtimeUseCases(
@@ -233,8 +240,12 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 new ApplyDungeonEditorCorridorMutationUseCase(operationUseCase, repository);
         ApplyDungeonRoomWallMutationUseCase roomWallMutationUseCase =
                 new ApplyDungeonRoomWallMutationUseCase(operationUseCase);
+        ApplyDungeonEditorHandleMutationUseCase handleMutationUseCase =
+                new ApplyDungeonEditorHandleMutationUseCase(operationUseCase);
         PublishDungeonEditorAuthoredMutationUseCase publishMutationUseCase =
                 new PublishDungeonEditorAuthoredMutationUseCase(publishedState, dungeonState);
+        ApplyDungeonEditorHandleOperationUseCase handleOperationUseCase =
+                new ApplyDungeonEditorHandleOperationUseCase(handleMutationUseCase, publishMutationUseCase);
         return new AuthoredUseCases(
                 new SearchDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
                 new CreateDungeonEditorMapCatalogUseCase(catalogUseCase, publishedState, dungeonState),
@@ -254,6 +265,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                         corridorMutationUseCase,
                         roomWallMutationUseCase,
                         publishMutationUseCase),
+                handleOperationUseCase,
                 new SaveDungeonEditorAuthoredRoomNarrationUseCase(mutationUseCase, publishMutationUseCase),
                 new SaveDungeonEditorAuthoredLabelNameUseCase(mutationUseCase, publishMutationUseCase),
                 new SaveDungeonEditorAuthoredTransitionDescriptionUseCase(operationUseCase, publishMutationUseCase),
@@ -363,6 +375,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
             LoadDungeonEditorAuthoredMapUseCase loadMapUseCase,
             PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase,
             ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase,
+            ApplyDungeonEditorHandleOperationUseCase handleOperationUseCase,
             SaveDungeonEditorAuthoredRoomNarrationUseCase saveRoomNarrationUseCase,
             SaveDungeonEditorAuthoredLabelNameUseCase saveLabelNameUseCase,
             SaveDungeonEditorAuthoredTransitionDescriptionUseCase saveTransitionDescriptionUseCase,

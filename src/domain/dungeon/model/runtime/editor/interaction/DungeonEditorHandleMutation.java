@@ -31,9 +31,6 @@ public final class DungeonEditorHandleMutation {
         if (roomHandle(handle)) {
             return applyRoomHandle(current, handle, deltaQ, deltaR, deltaLevel);
         }
-        if (corridorHandle(handle)) {
-            return applyCorridorHandle(current, handle, deltaQ, deltaR, deltaLevel);
-        }
         return handle.kind().isStairAnchor()
                 ? current.moveStairAnchor(handle.ownerId(), handle.index(), deltaQ, deltaR, deltaLevel)
                 : current;
@@ -67,53 +64,8 @@ public final class DungeonEditorHandleMutation {
                 : current;
     }
 
-    private static DungeonMap applyCorridorHandle(
-            DungeonMap current,
-            DungeonEditorHandleMovement handle,
-            int deltaQ,
-            int deltaR,
-            int deltaLevel
-    ) {
-        if (handle.kind().isDoor()) {
-            return handle.corridorId() > 0L
-                    ? current.moveDoorBinding(
-                            handle.corridorId(),
-                            handle.index(),
-                            handle.roomId(),
-                            deltaQ,
-                            deltaR,
-                            deltaLevel)
-                    : current.moveDoorBoundary(
-                            handle.topologyRef(),
-                            clusterId(current, handle),
-                            handle.roomId(),
-                            sourceEdge(handle),
-                            deltaQ,
-                            deltaR,
-                            deltaLevel);
-        }
-        if (handle.kind().isCorridorAnchor()) {
-            return current.moveCorridorAnchor(
-                    handle.corridorId(),
-                    handle.index(),
-                    handle.topologyRef(),
-                    deltaQ,
-                    deltaR,
-                    deltaLevel);
-        }
-        return handle.kind().isCorridorWaypoint()
-                ? current.moveCorridorWaypoint(handle.corridorId(), handle.index(), deltaQ, deltaR, deltaLevel)
-                : current;
-    }
-
     private static boolean roomHandle(DungeonEditorHandleMovement handle) {
         return handle.kind().isClusterCorner() || handle.kind().isClusterWallRun() || handle.kind().isClusterLabel();
-    }
-
-    private static boolean corridorHandle(DungeonEditorHandleMovement handle) {
-        return handle.kind().isDoor()
-                || handle.kind().isCorridorAnchor()
-                || handle.kind().isCorridorWaypoint();
     }
 
     private static long clusterId(DungeonMap current, DungeonEditorHandleMovement handle) {

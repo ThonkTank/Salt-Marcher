@@ -55,18 +55,6 @@ public final class DungeonEditorHandleMovementKind {
         return this == CLUSTER_WALL_RUN;
     }
 
-    public boolean isDoor() {
-        return this == DOOR;
-    }
-
-    public boolean isCorridorAnchor() {
-        return this == CORRIDOR_ANCHOR;
-    }
-
-    public boolean isCorridorWaypoint() {
-        return this == CORRIDOR_WAYPOINT;
-    }
-
     public boolean isStairAnchor() {
         return this == STAIR_ANCHOR;
     }

@@ -191,7 +191,7 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
         applySelectionUseCase.scroll(levelDelta);
     }
 
-    void moveHandle(HandleTarget handle, int q, int r) {
+    void moveCorridorPoint(HandleTarget handle, int q, int r) {
         moveHandleUseCase.execute(DungeonEditorRuntimeInputTranslator.handleMoveInput(handle, q, r));
     }
 

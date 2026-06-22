@@ -7,7 +7,6 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomExitDescription;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
@@ -69,7 +68,7 @@ public interface DungeonEditorAuthoredOperationHelper {
     private static @Nullable DungeonEditorAuthoredOperation moveEditorHandleOperation(
             DungeonEditorSessionValues.MoveHandlePreview moveHandle
     ) {
-        if (directRuntimeCommittedHandle(moveHandle.handleRef().kind())) {
+        if (moveHandle.handleRef().kind().isDirectRuntimeMoveCommit()) {
             return null;
         }
         return DungeonEditorAuthoredOperation.moveEditorHandle(
@@ -77,11 +76,5 @@ public interface DungeonEditorAuthoredOperationHelper {
                 moveHandle.deltaQ(),
                 moveHandle.deltaR(),
                 moveHandle.deltaLevel());
-    }
-
-    private static boolean directRuntimeCommittedHandle(DungeonEditorHandleType kind) {
-        return kind == DungeonEditorHandleType.CLUSTER_LABEL
-                || kind == DungeonEditorHandleType.CLUSTER_CORNER
-                || kind == DungeonEditorHandleType.CLUSTER_WALL_RUN;
     }
 }

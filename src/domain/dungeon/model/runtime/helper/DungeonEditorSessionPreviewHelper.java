@@ -30,7 +30,19 @@ public interface DungeonEditorSessionPreviewHelper {
     }
 
     static boolean directClusterMoveCommitHandle(DungeonEditorHandleType kind) {
-        return kind == DungeonEditorHandleType.CLUSTER_LABEL
-                || kind == DungeonEditorHandleType.CLUSTER_CORNER;
+        return kind != null && kind.isDirectClusterMoveCommit();
     }
+
+    static boolean directDoorMoveCommitHandle(DungeonEditorHandleType kind) {
+        return kind != null && kind.isDirectDoorMoveCommit();
+    }
+
+    static boolean directCorridorMoveCommitHandle(DungeonEditorHandleType kind) {
+        return kind != null && kind.isDirectCorridorMoveCommit();
+    }
+
+    static boolean directDoorOrCorridorMoveCommitHandle(DungeonEditorHandleType kind) {
+        return kind != null && kind.isDirectDoorOrCorridorMoveCommit();
+    }
+
 }

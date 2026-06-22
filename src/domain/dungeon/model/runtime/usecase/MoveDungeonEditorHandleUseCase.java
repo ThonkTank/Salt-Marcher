@@ -9,17 +9,21 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffec
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper;
 
 public final class MoveDungeonEditorHandleUseCase {
     private final DungeonEditorSessionWorkflow workflow;
     private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
+    private final ApplyDungeonEditorHandleOperationUseCase handleOperationUseCase;
 
     public MoveDungeonEditorHandleUseCase(
             DungeonEditorSessionWorkflow workflow,
-            ApplyDungeonEditorSessionEffectUseCase effectUseCase
+            ApplyDungeonEditorSessionEffectUseCase effectUseCase,
+            ApplyDungeonEditorHandleOperationUseCase handleOperationUseCase
     ) {
         this.workflow = Objects.requireNonNull(workflow, "workflow");
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
+        this.handleOperationUseCase = Objects.requireNonNull(handleOperationUseCase, "handleOperationUseCase");
     }
 
     public void execute(HandleMoveInput input) {
@@ -39,12 +43,30 @@ public final class MoveDungeonEditorHandleUseCase {
         if (deltaQ == 0 && deltaR == 0) {
             return;
         }
-        effectUseCase.applyEffect(DungeonEditorSessionEffect.apply(
-                new DungeonEditorSessionValues.MoveHandlePreview(
-                        handleRef,
-                        deltaQ,
-                        deltaR,
-                        deltaLevel)), null);
+        DungeonEditorSessionValues.MoveHandlePreview preview = new DungeonEditorSessionValues.MoveHandlePreview(
+                handleRef,
+                deltaQ,
+                deltaR,
+                deltaLevel);
+        if (DungeonEditorSessionPreviewHelper.directDoorOrCorridorMoveCommitHandle(handleRef.kind())) {
+            applyTypedHandleMove(preview);
+            return;
+        }
+        effectUseCase.applyEffect(DungeonEditorSessionEffect.apply(preview), null);
+    }
+
+    private void applyTypedHandleMove(DungeonEditorSessionValues.MoveHandlePreview preview) {
+        DungeonEditorWorkspaceValues.MapId selectedMapId = workflow.session().selectedMapId();
+        if (selectedMapId == null) {
+            return;
+        }
+        if (DungeonEditorSessionPreviewHelper.directDoorMoveCommitHandle(preview.handleRef().kind())) {
+            handleOperationUseCase.executeDoorHandleMove(selectedMapId, preview);
+        } else {
+            handleOperationUseCase.executeCorridorHandleMove(selectedMapId, preview);
+        }
+        workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
+        effectUseCase.publishCurrent();
     }
 
     public record HandleMoveInput(
