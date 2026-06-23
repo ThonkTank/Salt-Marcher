@@ -2,7 +2,7 @@ package src.view.slotcontent.main.dungeonmap;
 
 import java.util.List;
 import java.util.Map;
-import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.CanvasHit;
+import src.view.slotcontent.main.dungeonmap.DungeonMapHitGeometryContentPartModel.CanvasHit;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTargetKind;
 

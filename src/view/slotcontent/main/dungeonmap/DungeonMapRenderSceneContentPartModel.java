@@ -29,29 +29,38 @@ final class DungeonMapRenderSceneContentPartModel {
     private final GridSceneAssembler gridSceneAssembler = new GridSceneAssembler();
     private final GraphSceneAssembler graphSceneAssembler = new GraphSceneAssembler();
 
-    RenderScene toScene(DungeonMapRenderState displayModel, PointerTarget hoverTarget) {
+    RenderSceneProjection toSceneProjection(DungeonMapRenderState displayModel, PointerTarget hoverTarget) {
         if (displayModel == null) {
-            return RenderScene.empty(DungeonMapContentModel.defaultTitle());
+            return new RenderSceneProjection(
+                    RenderScene.empty(DungeonMapContentModel.defaultTitle()),
+                    SceneBuckets.empty());
         }
         SceneBuckets buckets = displayModel.isGraphView()
                 ? graphSceneAssembler.assemble(displayModel, hoverTarget)
                 : gridSceneAssembler.assemble(displayModel, hoverTarget);
-        return new RenderScene(
-                displayModel.title(),
-                displayModel.subtitle(),
-                displayModel.modeLabel(),
-                displayModel.statusLabel(),
-                displayModel.summaryLabel(),
-                displayModel.mapLoaded(),
-                displayModel.overlayMessage(),
-                !displayModel.isGraphView(),
-                buckets.surfaces(),
-                buckets.boundaries(),
-                buckets.glyphs(),
-                buckets.texts(),
-                buckets.relations(),
-                buckets.actors(),
-                DungeonMapContentModel.projectRenderSceneHitAreas(buckets, displayModel));
+        return new RenderSceneProjection(
+                new RenderScene(
+                        displayModel.title(),
+                        displayModel.subtitle(),
+                        displayModel.modeLabel(),
+                        displayModel.statusLabel(),
+                        displayModel.summaryLabel(),
+                        displayModel.mapLoaded(),
+                        displayModel.overlayMessage(),
+                        !displayModel.isGraphView(),
+                        buckets.surfaces(),
+                        buckets.boundaries(),
+                        buckets.glyphs(),
+                        buckets.texts(),
+                        buckets.relations(),
+                        buckets.actors()),
+                buckets);
+    }
+
+    record RenderSceneProjection(
+            RenderScene renderScene,
+            SceneBuckets buckets
+    ) {
     }
 
     record SceneBuckets(
@@ -62,6 +71,15 @@ final class DungeonMapRenderSceneContentPartModel {
             List<RelationPrimitive> relations,
             List<MapCanvasPolygonPrimitive> actors
     ) {
+        private static SceneBuckets empty() {
+            return new SceneBuckets(
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of(),
+                    List.of());
+        }
     }
 
     private static final class GridSceneAssembler {
