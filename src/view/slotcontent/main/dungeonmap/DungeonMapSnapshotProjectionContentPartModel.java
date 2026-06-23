@@ -20,7 +20,6 @@ import src.domain.dungeon.published.DungeonEditorPreviewDiff;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
 import src.domain.dungeon.published.DungeonEditorTool;
-import src.domain.dungeon.published.DungeonFeatureKind;
 import src.domain.dungeon.published.DungeonFeatureSnapshot;
 import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.DungeonOverlaySettings;
@@ -120,59 +119,6 @@ final class DungeonMapSnapshotProjectionContentPartModel {
         return labels;
     }
 
-    static DungeonMapContentModel.DungeonMapRenderState.CellKind featureCellKind(String kind) {
-        return featureCellKind(featureKind(kind));
-    }
-
-    static DungeonMapContentModel.DungeonMapRenderState.MarkerKind featureMarkerKind(String kind) {
-        return featureMarkerKind(featureKind(kind));
-    }
-
-    static String featureMarkerLabel(String kind) {
-        return featureMarkerLabel(featureKind(kind));
-    }
-
-    private static DungeonMapContentModel.DungeonMapRenderState.CellKind featureCellKind(DungeonFeatureKind kind) {
-        return switch (kind == null ? DungeonFeatureKind.STAIR : kind) {
-            case TRANSITION -> CellKind.TRANSITION;
-            case STAIR -> CellKind.STAIR;
-            case OBJECT -> CellKind.FEATURE_OBJECT;
-            case ENCOUNTER -> CellKind.FEATURE_ENCOUNTER;
-            case POI -> CellKind.FEATURE_POI;
-        };
-    }
-
-    private static DungeonMapContentModel.DungeonMapRenderState.MarkerKind featureMarkerKind(DungeonFeatureKind kind) {
-        return switch (kind == null ? DungeonFeatureKind.STAIR : kind) {
-            case TRANSITION -> MarkerKind.WAYPOINT;
-            case STAIR -> MarkerKind.STAIR;
-            case OBJECT -> MarkerKind.FEATURE_OBJECT;
-            case ENCOUNTER -> MarkerKind.FEATURE_ENCOUNTER;
-            case POI -> MarkerKind.FEATURE_POI;
-        };
-    }
-
-    private static String featureMarkerLabel(DungeonFeatureKind kind) {
-        return switch (kind == null ? DungeonFeatureKind.STAIR : kind) {
-            case TRANSITION -> "->";
-            case STAIR -> "z";
-            case OBJECT -> "O";
-            case ENCOUNTER -> "E";
-            case POI -> "P";
-        };
-    }
-
-    private static DungeonFeatureKind featureKind(String kind) {
-        if (kind == null || kind.isBlank()) {
-            return DungeonFeatureKind.STAIR;
-        }
-        try {
-            return DungeonFeatureKind.valueOf(kind.trim().toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException ignored) {
-            return DungeonFeatureKind.STAIR;
-        }
-    }
-
     private static DungeonMapContentModel.DungeonMapRenderState mapTravelSurface(
             String placeholderTitle,
             @Nullable DungeonTravelSurfaceSnapshot surface,
@@ -219,10 +165,10 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                         cell.r(),
                         cell.level(),
                         feature.label(),
-                        featureCellKind(feature.kind()),
+                        DungeonMapEditorProjectionContentPartModel.featureCellKind(feature.kind()),
                         feature.id(),
                         0L,
-                        DungeonMapContentModel.EditorProjectionFacts.topologyRef(feature.topologyRef()),
+                        DungeonMapEditorProjectionContentPartModel.topologyRef(feature.topologyRef()),
                         false,
                         false,
                         false,
@@ -255,7 +201,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                             : CellKind.ROOM,
                     area.id(),
                     area.clusterId(),
-                    DungeonMapContentModel.EditorProjectionFacts.topologyRef(area.topologyRef()),
+                    DungeonMapEditorProjectionContentPartModel.topologyRef(area.topologyRef()),
                     false,
                     false,
                     false,
@@ -279,7 +225,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                             : EdgeKind.WALL,
                     boundary.label(),
                     boundary.id(),
-                    DungeonMapContentModel.EditorProjectionFacts.topologyRef(boundary.topologyRef()),
+                    DungeonMapEditorProjectionContentPartModel.topologyRef(boundary.topologyRef()),
                     false,
                     false));
         }
@@ -300,11 +246,11 @@ final class DungeonMapSnapshotProjectionContentPartModel {
             if (areaCells.isEmpty()) {
                 continue;
             }
-            labels.add(DungeonMapContentModel.RoomLabelRenderElements.roomLabel(
+            labels.add(DungeonMapEditorProjectionContentPartModel.roomLabel(
                     area.label(),
                     area.id(),
                     area.clusterId(),
-                    DungeonMapContentModel.EditorProjectionFacts.topologyRef(area.topologyRef()),
+                    DungeonMapEditorProjectionContentPartModel.topologyRef(area.topologyRef()),
                     areaCells,
                     roomLabelPlacementContentPartModel,
                     false,
@@ -319,7 +265,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                     center.level(),
                     feature.id(),
                     0L,
-                    DungeonMapContentModel.EditorProjectionFacts.topologyRef(feature.topologyRef()),
+                    DungeonMapEditorProjectionContentPartModel.topologyRef(feature.topologyRef()),
                     FEATURE_LABEL_KIND,
                     false,
                     false,
@@ -336,13 +282,13 @@ final class DungeonMapSnapshotProjectionContentPartModel {
         for (DungeonFeatureSnapshot feature : features) {
             CellCenter center = centerOf(feature.cells());
             markers.add(new DungeonMapContentModel.DungeonMapRenderState.Marker(
-                    featureMarkerLabel(feature.kind()),
+                    DungeonMapEditorProjectionContentPartModel.featureMarkerLabel(feature.kind()),
                     center.q(),
                     center.r(),
                     center.level(),
-                    featureMarkerKind(feature.kind()),
+                    DungeonMapEditorProjectionContentPartModel.featureMarkerKind(feature.kind()),
                     false,
-                    DungeonMapContentModel.EditorRenderElements.markerHandle(
+                    DungeonMapEditorProjectionContentPartModel.markerHandle(
                             (int) Math.floor(center.q()),
                             (int) Math.floor(center.r()),
                             center.level()),
@@ -494,7 +440,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
             DungeonMapContentModel.DungeonMapRenderState.EdgeKind kind =
                     boundaryKind(boundaryEdges.boundaryKind());
             for (DungeonEdgeRef edge : boundaryEdges.edges()) {
-                if (DungeonMapContentModel.EditorProjectionFacts.invalidEdge(edge)) {
+                if (DungeonMapEditorProjectionContentPartModel.invalidEdge(edge)) {
                     continue;
                 }
                 edges.add(new DungeonMapContentModel.DungeonMapRenderState.Edge(
@@ -535,7 +481,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                     anchor.level(),
                     MarkerKind.STAIR,
                     false,
-                    DungeonMapContentModel.EditorRenderElements.markerHandle(
+                    DungeonMapEditorProjectionContentPartModel.markerHandle(
                             anchor.q(),
                             anchor.r(),
                             anchor.level()),
@@ -599,8 +545,8 @@ final class DungeonMapSnapshotProjectionContentPartModel {
             for (DungeonEditorMapSnapshot.Area area : map.areas()) {
                 addArea(
                         area,
-                        DungeonMapContentModel.EditorSelectionFacts.selectedAreaSurface(area, selection),
-                        DungeonMapContentModel.EditorSelectionFacts.selectedArea(area, selection),
+                        DungeonMapEditorProjectionContentPartModel.selectedAreaSurface(area, selection),
+                        DungeonMapEditorProjectionContentPartModel.selectedArea(area, selection),
                         roomLabelPlacementContentPartModel);
             }
         }
@@ -613,7 +559,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
         ) {
             List<DungeonMapContentModel.DungeonMapRenderState.Cell> areaCells = new ArrayList<>();
             for (DungeonCellRef cell : area.cells()) {
-                areaCells.add(DungeonMapContentModel.EditorRenderElements.cell(
+                areaCells.add(DungeonMapEditorProjectionContentPartModel.cell(
                         area,
                         cell,
                         surfaceSelected,
@@ -627,17 +573,17 @@ final class DungeonMapSnapshotProjectionContentPartModel {
             if (areaCells.isEmpty()) {
                 return;
             }
-            DungeonMapContentModel.EditorProjectionFacts.CellCenter center =
-                    DungeonMapContentModel.EditorProjectionFacts.centerOfCells(areaCells);
+            DungeonMapEditorProjectionContentPartModel.CellCenter center =
+                    DungeonMapEditorProjectionContentPartModel.centerOfCells(areaCells);
             graphNodes.add(new DungeonMapContentModel.DungeonMapRenderState.GraphNode(
                     area.id(),
-                    DungeonMapContentModel.EditorProjectionFacts.clusterId(area),
+                    DungeonMapEditorProjectionContentPartModel.clusterId(area),
                     area.label(),
                     center.q(),
                     center.r(),
                     annotationSelected));
             if (areaCells.getFirst().kind() == CellKind.ROOM) {
-                labels.add(DungeonMapContentModel.EditorRenderElements.roomLabel(
+                labels.add(DungeonMapEditorProjectionContentPartModel.roomLabel(
                         area,
                         areaCells,
                         roomLabelPlacementContentPartModel,
@@ -660,9 +606,9 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                     continue;
                 }
                 renderedClusterIds.add(clusterId);
-                labels.add(DungeonMapContentModel.EditorRenderElements.clusterLabel(
+                labels.add(DungeonMapEditorProjectionContentPartModel.clusterLabel(
                         handle,
-                        DungeonMapContentModel.EditorSelectionFacts.selectedClusterLabel(handle, selection),
+                        DungeonMapEditorProjectionContentPartModel.selectedClusterLabel(handle, selection),
                         false,
                         0,
                         0,
@@ -677,16 +623,16 @@ final class DungeonMapSnapshotProjectionContentPartModel {
         ) {
             EditorPreviewProjection.addEditorPreview(cells, edges, labels, markers, preview);
             for (DungeonEditorMapSnapshot.Boundary boundary : map.boundaries()) {
-                if (DungeonMapContentModel.EditorProjectionFacts.invalidEdge(boundary.edge())) {
+                if (DungeonMapEditorProjectionContentPartModel.invalidEdge(boundary.edge())) {
                     continue;
                 }
-                edges.add(DungeonMapContentModel.EditorRenderElements.edge(
+                edges.add(DungeonMapEditorProjectionContentPartModel.edge(
                         boundary,
                         0,
                         0,
                         0,
                         false,
-                        DungeonMapContentModel.EditorSelectionFacts.selectedBoundary(boundary, selection)));
+                        DungeonMapEditorProjectionContentPartModel.selectedBoundary(boundary, selection)));
             }
         }
 
@@ -695,7 +641,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                 DungeonEditorStateSnapshot.Selection selection
         ) {
             for (DungeonEditorMapSnapshot.Feature feature : map.features()) {
-                addFeature(feature, DungeonMapContentModel.EditorSelectionFacts.selectedFeature(feature, selection));
+                addFeature(feature, DungeonMapEditorProjectionContentPartModel.selectedFeature(feature, selection));
             }
         }
 
@@ -705,14 +651,14 @@ final class DungeonMapSnapshotProjectionContentPartModel {
         ) {
             List<DungeonMapContentModel.DungeonMapRenderState.Cell> featureCells = new ArrayList<>();
             for (DungeonCellRef cell : feature.cells()) {
-                featureCells.add(DungeonMapContentModel.EditorRenderElements.featureCell(feature, cell, selected));
+                featureCells.add(DungeonMapEditorProjectionContentPartModel.featureCell(feature, cell, selected));
             }
             cells.addAll(featureCells);
             if (featureCells.isEmpty()) {
                 return;
             }
-            DungeonMapContentModel.EditorProjectionFacts.CellCenter center =
-                    DungeonMapContentModel.EditorProjectionFacts.centerOfCells(featureCells);
+            DungeonMapEditorProjectionContentPartModel.CellCenter center =
+                    DungeonMapEditorProjectionContentPartModel.centerOfCells(featureCells);
             labels.add(new DungeonMapContentModel.DungeonMapRenderState.Label(
                     feature.label(),
                     center.q(),
@@ -720,13 +666,13 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                     featureCells.getFirst().z(),
                     feature.id(),
                     0L,
-                    DungeonMapContentModel.EditorProjectionFacts.featureTopologyRef(feature),
+                    DungeonMapEditorProjectionContentPartModel.featureTopologyRef(feature),
                     FEATURE_LABEL_KIND,
                     selected,
                     false,
                     0.0,
                     0.0));
-            markers.add(DungeonMapContentModel.EditorRenderElements.featureMarker(
+            markers.add(DungeonMapEditorProjectionContentPartModel.featureMarker(
                     feature,
                     center,
                     featureCells.getFirst().z(),
@@ -739,19 +685,19 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                 DungeonEditorPreview preview
         ) {
             for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
-                if (!DungeonMapContentModel.EditorHandleVisibility.visibleCanvasHandle(handle.ref(), selection)) {
+                if (!DungeonMapEditorProjectionContentPartModel.visibleCanvasHandle(handle.ref(), selection)) {
                     continue;
                 }
                 if (movingPreviewHandle(handle.ref(), preview)) {
                     continue;
                 }
-                markers.add(DungeonMapContentModel.EditorRenderElements.handleMarker(handle, selection, false));
+                markers.add(DungeonMapEditorProjectionContentPartModel.handleMarker(handle, selection, false));
             }
         }
 
         private static boolean movingPreviewHandle(DungeonEditorHandleRef ref, DungeonEditorPreview preview) {
             return preview instanceof DungeonEditorPreview.MoveHandlePreview handlePreview
-                    && DungeonMapContentModel.EditorProjectionFacts.sameHandleRef(ref, handlePreview.handleRef());
+                    && DungeonMapEditorProjectionContentPartModel.sameHandleRef(ref, handlePreview.handleRef());
         }
 
         private void addPreviewDiff(

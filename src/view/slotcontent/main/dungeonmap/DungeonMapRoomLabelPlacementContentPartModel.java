@@ -17,8 +17,8 @@ final class DungeonMapRoomLabelPlacementContentPartModel {
 
     RoomLabelPlacement placementFor(List<DungeonMapContentModel.DungeonMapRenderState.Cell> cells) {
         List<DungeonMapContentModel.DungeonMapRenderState.Cell> safeCells = cells == null ? List.of() : cells;
-        DungeonMapContentModel.EditorProjectionFacts.CellCenter fallback =
-                DungeonMapContentModel.EditorProjectionFacts.centerOfCells(safeCells);
+        DungeonMapEditorProjectionContentPartModel.CellCenter fallback =
+                DungeonMapEditorProjectionContentPartModel.centerOfCells(safeCells);
         if (safeCells.isEmpty()) {
             return new RoomLabelPlacement(fallback.q(), fallback.r(), 0.0, 0.0);
         }

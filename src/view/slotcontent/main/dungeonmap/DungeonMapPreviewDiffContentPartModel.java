@@ -56,13 +56,13 @@ final class DungeonMapPreviewDiffContentPartModel {
             DungeonEditorStateSnapshot.Selection selection
     ) {
         for (DungeonEditorMapSnapshot.Boundary boundary : boundaries) {
-            edges.add(DungeonMapContentModel.EditorRenderElements.edge(
+            edges.add(DungeonMapEditorProjectionContentPartModel.edge(
                     boundary,
                     0,
                     0,
                     0,
                     true,
-                    DungeonMapContentModel.EditorSelectionFacts.selectedBoundary(boundary, selection)));
+                    DungeonMapEditorProjectionContentPartModel.selectedBoundary(boundary, selection)));
         }
     }
 
@@ -72,7 +72,7 @@ final class DungeonMapPreviewDiffContentPartModel {
             DungeonEditorStateSnapshot.Selection selection
     ) {
         for (DungeonEditorHandleSnapshot handle : handles) {
-            if (!DungeonMapContentModel.EditorHandleVisibility.visibleCanvasHandle(handle.ref(), selection)) {
+            if (!DungeonMapEditorProjectionContentPartModel.visibleCanvasHandle(handle.ref(), selection)) {
                 continue;
             }
             markers.add(previewHandleMarker(handle, selection));
@@ -83,14 +83,14 @@ final class DungeonMapPreviewDiffContentPartModel {
             DungeonEditorHandleSnapshot handle,
             DungeonEditorStateSnapshot.Selection selection
     ) {
-        return DungeonMapContentModel.EditorRenderElements.handleMarker(
+        return DungeonMapEditorProjectionContentPartModel.handleMarker(
                 handle.ref(),
                 handle.cell().q(),
                 handle.cell().r(),
                 handle.cell().level(),
                 previewMarkerQ(handle),
                 previewMarkerR(handle),
-                DungeonMapContentModel.EditorSelectionFacts.selectedHandle(handle.ref(), selection),
+                DungeonMapEditorProjectionContentPartModel.selectedHandle(handle.ref(), selection),
                 true);
     }
 
@@ -133,11 +133,11 @@ final class DungeonMapPreviewDiffContentPartModel {
             DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel,
             boolean destructive
     ) {
-        boolean selected = DungeonMapContentModel.EditorSelectionFacts.selectedArea(area, selection);
-        boolean surfaceSelected = DungeonMapContentModel.EditorSelectionFacts.selectedAreaSurface(area, selection);
+        boolean selected = DungeonMapEditorProjectionContentPartModel.selectedArea(area, selection);
+        boolean surfaceSelected = DungeonMapEditorProjectionContentPartModel.selectedAreaSurface(area, selection);
         List<DungeonMapContentModel.DungeonMapRenderState.Cell> previewCells = new ArrayList<>();
         for (DungeonCellRef cell : area.cells()) {
-            previewCells.add(DungeonMapContentModel.EditorRenderElements.cell(
+            previewCells.add(DungeonMapEditorProjectionContentPartModel.cell(
                     area,
                     cell,
                     surfaceSelected,
@@ -151,7 +151,7 @@ final class DungeonMapPreviewDiffContentPartModel {
         if (previewCells.isEmpty()) {
             return;
         }
-        labels.add(DungeonMapContentModel.EditorRenderElements.roomLabel(
+        labels.add(DungeonMapEditorProjectionContentPartModel.roomLabel(
                 area,
                 previewCells,
                 roomLabelPlacementContentPartModel,
@@ -167,17 +167,17 @@ final class DungeonMapPreviewDiffContentPartModel {
             DungeonEditorStateSnapshot.Selection selection,
             boolean destructive
     ) {
-        boolean selected = DungeonMapContentModel.EditorSelectionFacts.selectedFeature(feature, selection);
+        boolean selected = DungeonMapEditorProjectionContentPartModel.selectedFeature(feature, selection);
         List<DungeonMapContentModel.DungeonMapRenderState.Cell> featureCells = new ArrayList<>();
         for (DungeonCellRef cell : feature.cells()) {
-            featureCells.add(DungeonMapContentModel.EditorRenderElements.featureCell(feature, cell, selected, true, destructive));
+            featureCells.add(DungeonMapEditorProjectionContentPartModel.featureCell(feature, cell, selected, true, destructive));
         }
         cells.addAll(featureCells);
         if (featureCells.isEmpty()) {
             return;
         }
-        DungeonMapContentModel.EditorProjectionFacts.CellCenter center =
-                DungeonMapContentModel.EditorProjectionFacts.centerOfCells(featureCells);
+        DungeonMapEditorProjectionContentPartModel.CellCenter center =
+                DungeonMapEditorProjectionContentPartModel.centerOfCells(featureCells);
         addStairPreviewLevelLabels(labels, feature);
         labels.add(new DungeonMapContentModel.DungeonMapRenderState.Label(
                 feature.label(),
@@ -186,13 +186,13 @@ final class DungeonMapPreviewDiffContentPartModel {
                 featureCells.getFirst().z(),
                 feature.id(),
                 0L,
-                DungeonMapContentModel.EditorProjectionFacts.featureTopologyRef(feature),
+                DungeonMapEditorProjectionContentPartModel.featureTopologyRef(feature),
                 FEATURE_LABEL_KIND,
                 selected,
                 true,
                 0.0,
                 0.0));
-        markers.add(DungeonMapContentModel.EditorRenderElements.featureMarker(
+        markers.add(DungeonMapEditorProjectionContentPartModel.featureMarker(
                 feature,
                 center,
                 featureCells.getFirst().z(),
@@ -212,7 +212,7 @@ final class DungeonMapPreviewDiffContentPartModel {
                     labels,
                     cell,
                     feature.id(),
-                    DungeonMapContentModel.EditorProjectionFacts.featureTopologyRef(feature));
+                    DungeonMapEditorProjectionContentPartModel.featureTopologyRef(feature));
         }
     }
 }
