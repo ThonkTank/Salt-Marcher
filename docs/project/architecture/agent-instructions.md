@@ -47,13 +47,13 @@ Any work on covered surfaces must use that skill first.
 ## Review Skill Routing
 
 SaltMarcher keeps review instructions in global skills, not in this standard.
+Mandatory subagent use is standing user authorization for the named role.
 
 - Implementing agents use the global caller stack:
   `coord-adversarial-review` before review and `coord-main-overview` when
   launching the one required Overview coordinator for implementation handoff.
-- The Overview coordinator uses the global adversarial, coordinator, and
-  handoff coordinator lenses; before nested specialist reviewers it also uses
-  `coord-overview-reviewer`.
+- Overview uses the global adversarial, coordinator, handoff, and
+  `coord-overview-reviewer` skills.
 - Specialist reviewers first use `lens-adversarial-review-agent`, then their
   assigned `lens-*` skill.
 - Overview owns reviewer launch, scoped follow-up launch, reviewability,
@@ -80,11 +80,12 @@ files, Main reruns required proof before Overview.
 
 Main owns disposition of the code-simplifier result. A covered pass is ready for
 Overview only after Main has read the current code-simplifier pass log or worker
-report and handled every finding as fixed with affected proof rerun, assigned to
-a scoped same-run worker and integrated, or closed as false
-positive/review-owned with evidence. Findings become blocking same-run
-implementation tasks. Overview inspects the code-simplifier log with
-implementation logs.
+report and handled every finding as fixed with proof rerun, assigned to a
+same-run worker, planner-integrated, explicitly user-excluded, blocked/WIP, or
+closed as false-positive/review-owned with evidence. Findings become blocking
+same-run implementation tasks. `Deferred`, `follow-up`, `later`, `outside write
+set`, or unowned `review-owned` findings block Overview. Overview inspects the
+code-simplifier log with implementation logs.
 
 ## Planner Escalation For Systemic Feedback
 
@@ -105,22 +106,39 @@ The planner returns root cause, target-state alignment, chosen approach,
 rejected shortcuts, write set, proof route, risks, and Done When criteria. It
 does not implement, review, run proof, launch workers, or replace Overview.
 
+## Problem History Intake
+
+For non-trivial bug, regression, refactor, governance, systemic-repair, or
+repeated-fix work, Main MUST inspect pass logs before planning. Run `rg` in
+`build/agent-pass-logs/` for surface, symptom, owner, harness, check, and
+repair terms; read newest relevant matches. Cite logs or state none existed.
+
+The intake must identify prior attempts, outcomes, abandoned approaches,
+repeated symptoms, and whether the plan repeats a surface fix. Repeated churn
+or the same symptom with shallow fixes blocks planning until Main records the
+root-cause hypothesis, deeper repair, rejected shortcut, and planner escalation
+or WIP/blocker status.
+
+Known structural debt discovered by the intake must be fixed, closed as false
+positive, user-excluded, held as WIP/blocker, or materialized through
+`PROJECT_HEALTH_DEBT` and the project-health register before handoff.
+
 ## Implementation And Review Pass Logs
 
 SaltMarcher uses local pass logs as generated operational evidence for
 detecting repeated loops, reversals, quality drift, and architecture friction.
 They are not canonical documentation and must not redefine requirements,
 contracts, architecture, domain truth, or verification policy.
+Detailed artifact fields live in
+`docs/project/architecture/implementation-documentation.md`.
 
 - Implementation agents must write one implementation pass log after each
   repo-tracked implementation pass and before starting the required Overview
   handoff review.
-- Overview coordinators and specialist review agents must read the relevant
-  available implementation, code-simplifier, and review pass logs before
-  classifying final review status.
-- Nested specialist reviewers remain read-only. They must not write files
-  directly; they include pass-log evidence and trend observations in their
-  reviewer output.
+- Review agents must read relevant implementation, code-simplifier, and review
+  pass logs before final review status.
+- Nested specialist reviewers remain read-only and include pass-log evidence
+  and trend observations in their reviewer output.
 - The required review pass log is an aggregated Overview review cycle log. The
   main handoff agent writes it after each completed Overview review cycle from
   the Overview result and reviewer outputs. If nested review orchestration is
@@ -129,53 +147,14 @@ contracts, architecture, domain truth, or verification policy.
   reviewer outputs.
 - Pass logs live under `build/agent-pass-logs/` and are generated local
   evidence. Do not commit them and do not cite them as canonical truth.
-- Pass logs are also the local memory for expected wait times of recurring
-  long-running processes. Agents MUST record observed durations for frequently
-  repeated harnesses, staged verification routes, desktop installation, and
-  other long checks they run so later agents can choose sensible polling
-  intervals.
+- Pass logs are also local memory for expected wait times. Agents MUST record
+  observed durations for recurring harnesses, staged verification routes,
+  desktop installation, and other long checks they run.
 - Missing pass logs for prior work do not block a pass by themselves, but a
   required current implementation or review pass without its log remains WIP
   until the log is written or the blocker is reported.
-- If the build directory has been cleaned, reviewers treat the missing logs as
-  unavailable operational history rather than as evidence that no prior loop or
-  degradation occurred.
-
-## Wait-Time And Polling Evidence
-
-Agents SHOULD avoid tight polling of known long-running processes. Before
-waiting on a recurring SaltMarcher process, inspect the newest relevant local
-pass log or retained Gradle run log when available and use its last observed
-duration as the expected wait time.
-
-- Near the beginning of a pass, agents should do one wait-time intake for the
-  process classes they are likely to run or wait on, such as behavior harnesses,
-  staged verification routes, desktop installation, Overview review, and common
-  specialist reviews. Use the newest relevant pass-log or run-log duration as
-  the central local expectation for that process class.
-- Do not repeatedly rescan wait-time history while a process is already
-  running unless the first estimate is clearly wrong or the process emits a new
-  failure signal.
-- If a previous comparable run took several minutes, schedule the first
-  completion poll near that observed duration instead of polling every few
-  seconds.
-- For example, when the latest comparable harness run took about 10 minutes,
-  the next agent should wait about 10 minutes before the first completion poll,
-  unless the process emits meaningful incremental output that needs immediate
-  triage.
-- If no prior duration exists, use the observable wrapper output or normal
-  30-60 second status intervals until the process class has one recorded
-  duration.
-- After the expected wait time has elapsed, poll at a moderate interval
-  such as 30-60 seconds until completion or failure.
-- Do not launch duplicate Gradle, harness, or verification processes merely
-  because a known long-running process is quiet.
-
-Implementation and review pass logs MUST include a `Wait-Time Observations`
-entry whenever the pass ran a recurring process that took long enough to affect
-agent polling behavior. Each entry records the command or process class,
-observed elapsed time, result, evidence log path when one exists, and the
-recommended first-poll interval for the next comparable run.
+- If the build directory was cleaned, missing logs are unavailable history, not
+  evidence that no prior loop or degradation occurred.
 
 ## Stable-State Barrier For Waiting Agents
 
@@ -185,13 +164,10 @@ as unstable until the agent finishes, is explicitly cancelled, or reports that
 it will make no further file changes.
 
 While the target is unstable, Main MUST NOT start proof, quality analysis,
-review, code-simplifier, production-handoff, desktop-install, or other
-expensive sidecar work against the same checkout or behavior surface. Such work
-would spend compute on a state that can still be invalidated and can produce
-stale evidence. Main may only do work that is clearly independent of the moving
-surface, such as reading governance, updating an explicitly requested
-non-overlapping instruction document, checking whether a previously launched
-process is still running, or waiting for the active agent.
+review, code-simplifier, production-handoff, desktop-install, or other sidecar
+work against the same checkout or behavior surface. Main may only do clearly
+independent work, such as reading governance, updating an explicitly requested
+non-overlapping instruction document, checking a launched process, or waiting.
 
 Before launching any proof, review, or expensive local tool after a wait, Main
 MUST refresh the active coordination state: current user instruction, active
@@ -201,70 +177,18 @@ change that surface, defer the tool until the agent result is integrated or the
 agent is cancelled. After an interruption, user correction, resume, or context
 compaction, Main MUST repeat this refresh before continuing the workflow.
 Resume summaries, pass-log summaries, and remembered skill lists are orientation only.
-Before any new repo-tracked edit after interruption, Main MUST rerun `context-hygiene`, read the nearest current owner, or state that no new file edit is being made.
+Before any new repo-tracked edit after interruption, Main MUST rerun
+`context-hygiene`, read the nearest owner, or state that no edit is being made.
 
 If Main intentionally runs independent work while waiting, it must name the
 independence boundary before starting and must not claim the result as evidence
 for the unstable target surface.
 
-Implementation log filenames must use:
-
-- `build/agent-pass-logs/YYYY-MM-DD-<kebab-task-slug>-implementation.md`
-
-Review aggregation log filenames must use:
-
-- `build/agent-pass-logs/YYYY-MM-DD-<kebab-task-slug>-review.md`
-
-Use the local calendar date from the log timestamp. If the exact filename
-already exists for a later same-day pass, append `-2`, `-3`, or the next
-integer before the suffix. Each log must start with one of these headings:
-
-- `# Implementation Pass Log: <task summary>`
-- `# Review Pass Log: <task summary>`
-
-The first metadata line must be `Timestamp: YYYY-MM-DD HH:MM:SS TZ +HHMM`,
-using the local time, named timezone, numeric offset, and exact time the log is
-written. Include `Parent Pass Log:` or `Related Pass Logs:` when the pass
-continues, reviews, or fixes known prior work.
-
-An implementation pass log must include:
-
-- exact local timestamp, actor role, task goal, and scope boundary
-- parent or related pass-log paths when known
-- touched paths and intentionally untouched dirty paths
-- owner documents and mandatory skills used
-- implementation summary and key tradeoffs
-- `code-simplifier` review-agent outcome for covered implementation passes,
-  including reviewer lenses used, safe patches made, no-op result, skipped
-  status with reason, and same-run Main disposition for each finding
-- planner escalation outcome when systemic review, architecture-check,
-  behavior-harness, or proof feedback shaped the project-health plan
-- active delete signals found, retire actions completed, temporary adapters
-  left with owner/removal condition, and surfaces excluded as future baseline
-- verification commands and literal results
-- wait-time observations for recurring long-running processes, including
-  recommended first-poll intervals for future comparable runs
-- reversals, reimplemented work, abandoned approaches, or repeated edits to the
-  same behavior
-- architecture, quality, maintainability, elegance, or performance friction
-  observed while implementing
-- open blockers and review needs
-
-A review pass log must include:
-
-- exact local timestamp, Overview aggregation role or main fallback handoff
-  role, reviewed scope, and reviewed pass-log paths
-- verification evidence inspected
-- wait-time evidence inspected or updated when review depends on long-running
-  proof, harness, or installation processes
-- selected review panel or unavailable nested-review blocker
-- findings and fix outcomes
-- trend observations, including repeated reversals, looped implementation,
-  growing complexity, recurring smells, architecture loopholes, normalized
-  delete signals, or repeated governance/check misses
-- escalation recommendations when systemic governance, skill, check, or
-  architecture changes may prevent recurrence
-- final clean, blocked, or WIP status
+Implementation and review pass-log filenames, headings, timestamp metadata,
+content fields, code-simplifier evidence, wait-time observations, and
+Implementation Reading Packet fields are owned by the Implementation
+Documentation Standard. Do not duplicate those field lists in instruction
+surfaces or repo skills.
 
 When a review agent sees a systemic trend instead of an isolated defect, it
 must report that trend explicitly. If the trend suggests an architecture-model,
@@ -310,31 +234,41 @@ When a covered artifact changes, reviewers must check:
 - Does the edited file still own the right topic?
 - Did a neighboring instruction source also require an update?
 - Does `agents/openai.yaml` still match the governing skill?
-- Did the change introduce duplicate or conflicting truth across covered
-  surfaces?
+- Did the change introduce duplicate or conflicting truth?
+- Did supported project-health findings become fixed, false positive,
+  user-excluded, WIP/blocker, or synchronized marker/register entries?
 - Does the chosen verification path match the actual changed surfaces?
-- Did covered implementation work run `code-simplifier` as a qualitative
-  review agent before pass logging and Overview review, without treating it as
-  a substitute for proof or handoff review?
+- For behavior-changing work, did the pass cover the owning harness and
+  dependencies or report a concrete `Harness Gap` blocker?
+- Did covered implementation work run `code-simplifier` before pass logging and
+  Overview review, without treating it as a substitute for proof?
 - Did Main read the code-simplifier pass log and dispose every finding before
   Overview or any handoff-readiness claim?
+- Did Overview block unclassified `deferred`, `follow-up`, `later`, `outside
+  write set`, or unowned `review-owned` improvement findings?
 - If systemic review, architecture-check, behavior-harness, or proof feedback
   shaped the repair, did Main obtain a planner project-health plan before
   implementing the fix?
+- For covered repeated or non-trivial work, did Main inspect related pass-log
+  history before planning and avoid repeating failed surface fixes without a
+  deeper root-cause plan?
 - Did the implementing agent obtain a completed global `lens-coordinator-handoff`
   coordinator result before handoff?
 - Did any specialist review skill used for the pass remain a read-only review
   lens instead of becoming a competing repo-owned workflow?
-- Did the implementation agent and Overview coordinator, or main fallback
-  handoff agent, write and use the required local pass logs?
+- Did implementation and review agents write and use required local pass logs?
 - Did the review inspect pass logs for repeated reversals, loops, degradation,
   architecture friction, recurring smells, or governance/check misses?
+- Did local baseline admission check fresh proof, fresh review, marker/register
+  sync, and no supported findings hidden only in pass logs?
 
 ## References
 
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Agent Context Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
+- [Implementation Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-documentation.md:1)
+- [Project Health Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/project-health.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
 - [Global Main To Overview Coordination Skill](/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md:1)
@@ -343,8 +277,5 @@ When a covered artifact changes, reviewers must check:
 - [Global Handoff Coordinator Lens](/home/aaron/.codex/skills/local/lens-coordinator-handoff/SKILL.md:1)
 - [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md:1)
 - [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md:1)
-- [Installed Code Simplifier Skill](/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/skills/code-simplifier/SKILL.md:1)
+- [Installed Code Simplifier Skill](/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/agents/code-simplifier.md:1)
 - [Global Planner Skill](/home/aaron/.codex/skills/local/planner/SKILL.md:1)
-- [Global Performance Review Skill](/home/aaron/.codex/skills/local/lens-performance/SKILL.md:1)
-- [Global Code Quality Review Skill](/home/aaron/.codex/skills/local/lens-quality/SKILL.md:1)
-- [Global Architecture Review Skill](/home/aaron/.codex/skills/local/lens-architecture/SKILL.md:1)

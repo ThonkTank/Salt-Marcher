@@ -29,18 +29,32 @@ Before planning, implementing, refactoring, or reviewing a repo-tracked change:
 5. Define `Done When`: literal check/review/handoff facts needed for
    completion, including the current implementation pass log and required
    aggregated review pass log state for repo-tracked changes.
-6. Inspect relevant available local pass logs under `build/agent-pass-logs/`
-   when the task resumes, reviews, or continues a touched scope from prior
-   implementation or review work.
-7. After an interruption, user correction, resume, or context compaction,
+6. When an implementation handoff includes an Implementation Reading Packet,
+   use `docs/project/architecture/implementation-documentation.md` as the
+   packet owner instead of copying the packet fields into this skill.
+7. If the chosen approach knowingly creates or retains transitional support,
+   include the `LEGACY_REMOVE_ON_TOUCH` marker and concrete removal condition
+   in the planned work and Done When criteria.
+8. Use `project-health` when the task may introduce, discover, retain, or
+   close structural debt, stale proof, compatibility seams, repeated fix loops,
+   or baseline-admission concerns.
+9. For non-trivial bug, regression, refactor, governance, systemic-repair, or
+   repeated-fix work, perform the `Problem History Intake` owned by
+   `docs/project/architecture/agent-instructions.md`: use `rg` under
+   `build/agent-pass-logs/` by surface, symptom, owner, harness, check, and
+   proposed repair path before implementation planning, refactor planning,
+   implementation review, or continuation.
+10. Inspect relevant available local pass logs when the task resumes, reviews,
+   or continues a touched scope from prior implementation or review work.
+11. After an interruption, user correction, resume, or context compaction,
    treat summaries, pass logs, and remembered skill lists as orientation only.
    They do not satisfy this skill's trigger-time owner reads for a new
    repo-tracked edit. Before touching any resumed write surface, reread the
    nearest current owner and any mandatory surface skill, or state explicitly
    that no new file edit is being made.
-8. Keep only the context that affects the current task. Link to canonical
+12. Keep only the context that affects the current task. Link to canonical
    owners instead of copying their rules into new prose.
-9. When condensing or adding instructions, state the target behavior directly.
+13. When condensing or adding instructions, state the target behavior directly.
    Use negative wording only for boundaries that the positive rule does not
    already imply.
 
@@ -55,8 +69,9 @@ Before planning, implementing, refactoring, or reviewing a repo-tracked change:
   steer the same behavior.
 - If a workflow repeats across `AGENTS.md`, `SKILL.md`, architecture standards,
   and verification docs, keep the protocol in one owner and reduce other
-  surfaces to routing text. For implementation and review pass logs, the owner
-  is `docs/project/architecture/agent-instructions.md`.
+  surfaces to routing text. For implementation packets and pass-log artifact
+  fields, the owner is
+  `docs/project/architecture/implementation-documentation.md`.
 - If external sources influence a decision, use the global `source-references`
   skill and cite the preserved local mirror path.
 
@@ -69,6 +84,13 @@ For covered work, report context hygiene only when it affected the change:
   authority.
 - `Context deduplicated`: name the surfaces where repeated protocol text was
   replaced by routing text.
+- `Problem History Intake`: name the relevant pass logs inspected, or state
+  that no related local logs were available, and report any repeated-fix trend
+  that changed planning.
+- `Transitional support`: name markers added when the current plan knowingly
+  created or retained transitional support.
+- `Project Health`: name debt IDs touched, repeated families found, or the
+  reason no project-health surface was relevant.
 
 For every repo-tracked change, also report:
 
@@ -85,5 +107,7 @@ canonical documentation.
 
 - [Agent Context Standard](../../../../docs/project/architecture/agent-context.md)
 - [Agent Instruction Standard](../../../../docs/project/architecture/agent-instructions.md)
+- [Implementation Documentation Standard](../../../../docs/project/architecture/implementation-documentation.md)
+- [Project Health Standard](../../../../docs/project/architecture/project-health.md)
 - [Documentation Standard](../../../../docs/project/architecture/documentation.md)
 - [Source References Standard](../../../../docs/project/verification/source-references.md)

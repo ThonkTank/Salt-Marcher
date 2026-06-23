@@ -61,7 +61,8 @@ owning `docs/<feature>/<type>/` or `docs/project/<type>/` location.
   Entry point into project-wide canonical documentation.
 - `docs/project/architecture/*.md`
   Project-wide architecture overviews, ADRs, standards, and architecture
-  quality requirements.
+  quality requirements, including implementation-documentation,
+  project-health, and baseline-admission rules.
 - `docs/project/architecture/patterns/*.md`
   Canonical cross-feature layer and layering owner documents.
 - `docs/project/architecture/enforcement/*.md`
@@ -248,3 +249,4 @@ Use:
 
 - [Project Documentation Entry Point](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/README.md:1)
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
+- [Implementation Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-documentation.md:1)

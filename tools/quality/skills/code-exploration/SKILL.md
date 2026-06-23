@@ -31,12 +31,28 @@ covered work:
    points.
 6. Compare sibling workflows before assuming a shared entrypoint means shared
    behavior.
-7. Classify claims with the canonical context trust levels:
+7. For behavior changes, user-reported misbehavior, new features, and new
+   behavior-bearing concepts, identify the owning behavior harness, focused
+   task or suite id, declared dependency harnesses, and any missing coverage
+   that must become a `Harness Gap` blocker.
+8. Classify claims with the canonical context trust levels:
    `Owner-Proven`, `Evidence-Proven`, `Candidate`, or `Suspect`.
-8. For implementation review or continuation work, inspect relevant available
-   pass logs under `build/agent-pass-logs/` and classify them as operational
-   history, not as canonical source truth.
-9. Plan only from `Owner-Proven` or source/command-backed `Evidence-Proven`
+9. For covered implementation planning, refactor planning, implementation
+   review, or continuation work, inspect relevant available pass logs under
+   `build/agent-pass-logs/` by surface, symptom, owner, harness, check, and
+   proposed repair path. Classify them as operational history, not canonical
+   source truth.
+10. When a slice arrives with an Implementation Reading Packet, treat it as
+   handoff context governed by
+   `docs/project/architecture/implementation-documentation.md`; verify local
+   facts before planning from it.
+11. Compare the proposed repair with prior attempts and abandoned approaches.
+   If the same symptom or surface has repeated shallow fixes, block planning
+   until the root-cause hypothesis, deeper repair path, rejected shortcut, and
+   planner escalation or blocker disposition are explicit.
+12. If a supported structural finding cannot be fixed in the same pass, route
+   it through `project-health` instead of leaving it only in exploration notes.
+13. Plan only from `Owner-Proven` or source/command-backed `Evidence-Proven`
    facts. Treat `Candidate` and `Suspect` claims as risks, follow-up questions,
    or scope boundaries.
 
@@ -54,12 +70,17 @@ Keep the exploration compact but source-backed:
 - `Dispatch`: internal routing and branch points that choose workflow variants.
 - `State`: owner of mutation, projection, publication, cache, or file output.
 - `Variants`: sibling workflows checked and how they differ.
+- `Behavior harness`: owning harness task or suite id, dependency harnesses,
+  missing coverage, or reason no behavior harness is required.
 - `Tools`: repo-local tools used, their governing skill, and evidence strength.
 - `Unknowns`: seams not proven deeply enough for the requested plan; unknowns
   are notes, not authority.
 - `Pass logs`: implementation or review history inspected, including repeated
-  reversals, looped edits, growing complexity, architecture friction, recurring
-  smells, or governance/check misses when they affect the decision.
+  reversals, looped edits, failed surface fixes, growing complexity,
+  architecture friction, recurring smells, or governance/check misses when they
+  affect the decision.
+- `Project health`: active debt IDs, marker/register sync risks, and repeated
+  families that require planner or project-health review.
 
 Do not create a separate exploration document unless the user asks for one. Use
 this shape mentally, in a plan, or in handoff when it materially affects the
@@ -111,8 +132,10 @@ Report code exploration only when it affected the work:
 
 - `Code exploration`: entrypoint, dispatch path, variants checked, and state
   owner.
+- `Behavior harness`: owning harness task or suite id, dependency harnesses,
+  missing coverage, or no-harness-needed evidence.
 - `Pass logs inspected`: relevant log paths and any trend that affected the
-  plan or review.
+  plan or review, including prior fixes rejected as repeated surface work.
 - `Repo tool used`: tool, governing skill, selector or scope, and evidence
   strength.
 - `Unknown deferred`: unresolved seam and why it does not block the current
@@ -124,7 +147,9 @@ path proves that claim.
 ## References
 
 - [Agent Context Standard](../../../../docs/project/architecture/agent-context.md)
+- [Implementation Documentation Standard](../../../../docs/project/architecture/implementation-documentation.md)
 - [Context Hygiene Skill](../context-hygiene/SKILL.md)
 - [Repo Tools Skill](../repo-tools/SKILL.md)
+- [Project Health Skill](../project-health/SKILL.md)
 - [Callchain Tool Skill](../callchain-tool/SKILL.md)
 - [Code Exploration Agent Skill](../code-exploration-agent/SKILL.md)

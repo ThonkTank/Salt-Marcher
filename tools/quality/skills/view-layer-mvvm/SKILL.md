@@ -155,6 +155,16 @@ When reviewing view-layer changes:
 - reusable `slotcontent/**` units that grow any top-level role outside the
   closed `View + ViewInputEvent + ContentModel + ContentPartModel` shape
 
+## Health Review Checklist
+
+- Mark semantic View state, generic reusable handlers that own feature meaning,
+  duplicated projection facts, and PMD-driven helper splits that hide missing
+  owners as project-health debt when not fixed in the pass.
+- Treat retained `ViewModel` vocabulary, stale same-stem ownership, and
+  reusable `slotcontent` shape drift as structural findings.
+- Keep feature-specific behavior out of generic reusable surfaces unless the
+  owner proves it is genuinely reusable.
+
 ## Correctness Rule
 
 Correct view code follows the canonical cockpit view-layer target even when

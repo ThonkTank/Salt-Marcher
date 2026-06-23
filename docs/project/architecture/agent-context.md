@@ -23,6 +23,11 @@ Every non-trivial SaltMarcher task must reduce its working context to:
 
 - `Goal`: the concrete outcome requested in the current turn.
 - `Context`: the current repo facts actually read for this task.
+- `Problem History Intake`: relevant local pass logs inspected for non-trivial
+  bug, regression, refactor, governance, systemic-repair, or repeated-fix work,
+  or a statement that no related logs were available.
+- `Project Health`: owner areas, active debt markers, repeated families, and
+  whether supported findings are fixed, false positive, WIP, or materialized.
 - `Constraints`: hard scope, owners, skills, verification, and forbidden
   shortcuts.
 - `Done When`: literal checks, review state, and handoff facts required before
@@ -45,9 +50,20 @@ for a durable plan.
 - Do not turn review, verification, or source-reference handoff evidence into a
   separate changelog, PR template, or ledger unless the user explicitly asks.
 - Generated implementation and review pass logs are the narrow exception:
-  `docs/project/architecture/agent-instructions.md` owns their purpose and
-  schema, and `build/agent-pass-logs/` holds them as operational evidence, not
-  canonical documentation or a second context ledger.
+  `docs/project/architecture/implementation-documentation.md` owns their
+  artifact fields, and `build/agent-pass-logs/` holds them as operational
+  evidence, not canonical documentation or a second context ledger.
+- Implementation Reading Packets are implementation-handoff context governed by
+  the Implementation Documentation Standard. Other context surfaces route to
+  that owner instead of repeating the packet field list.
+- For covered non-trivial or repeated-fix work, use those pass logs to detect
+  repeated symptoms, abandoned fixes, and surface-level repair loops before
+  planning, review, or continuation. Repeated churn blocks implementation or
+  refactor planning until the deeper root-cause repair or WIP/blocker
+  disposition is explicit.
+- Known structural debt must be discoverable through local
+  `PROJECT_HEALTH_DEBT` markers and the central register. Do not leave a
+  supported project-health finding only in pass logs.
 - If two instruction surfaces repeat one workflow, keep the protocol in the
   owning skill or standard and replace the others with short routing text.
 
@@ -100,12 +116,15 @@ Review must flag:
   summary would have been enough
 - new duplicated instruction truth across `AGENTS.md`, `SKILL.md`, standards,
   and verification docs
+- supported project-health findings that are neither fixed nor materialized in
+  marker/register form
 - external-source claims without the source-reference route
 - enforcement claims that name no gate, task, or review owner
 
 ## References
 
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
+- [Implementation Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-documentation.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/source-references.md:1)
 - [Prompt Engineering Principles](/home/aaron/Schreibtisch/projects/references/agent-instruction-engineering/prompt-engineering-principles.md:1)

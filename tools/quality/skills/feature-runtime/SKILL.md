@@ -70,6 +70,18 @@ When reviewing feature-runtime work, look for:
 - shell binding that accumulates feature behavior instead of staying narrow
 - claims of enforcement that are not backed by a named gate
 
+## Health Review Checklist
+
+- Mark retained legacy `ContentModel`, `IntentHandler`, application-service, or
+  generic preview seams as project-health debt when they survive outside the
+  target feature-runtime owner.
+- Treat duplicated transient state, stale render-frame ownership, generic
+  operation routers, and review-owned conformance gaps as structural findings.
+- Do not approve missing feature-runtime expertise as neutral; route it through
+  `project-health` as debt or skill gap.
+- Keep migrated runtime, target, preview, mutation, publication, and
+  render-frame truth in this owner; nearby legacy code is not precedent.
+
 ## Correctness Rule
 
 Correct migrated feature work follows the canonical feature-runtime owner doc
@@ -81,4 +93,5 @@ architecture.
 
 - [Feature Runtime Architecture Standard](../../../../docs/project/architecture/patterns/feature-runtime.md)
 - [Agent Instruction Standard](../../../../docs/project/architecture/agent-instructions.md)
+- [Project Health Standard](../../../../docs/project/architecture/project-health.md)
 - [AGENTS.md](../../../../AGENTS.md)

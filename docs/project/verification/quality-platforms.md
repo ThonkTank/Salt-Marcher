@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-13
+Last Reviewed: 2026-06-18
 Source of Truth: Quality-platform operating model, status vocabulary,
 verification policy, and architecture-harness relationship for SaltMarcher
 quality gates.
@@ -110,31 +110,70 @@ SaltMarcher uses structural and build gates for automated confidence,
 production-path behavior harnesses for behavior proof, and manual testing for
 desktop interaction or UI judgment that cannot be mechanically qualified.
 
+- behavior changes, user-reported misbehavior, new features, and new
+  behavior-bearing concepts must extend the owning behavior harness or create a
+  focused concept harness before implementation handoff
+- if behavior exists but no credible harness owner can prove it, the pass
+  reports `Harness Gap` instead of treating manual inspection as equivalent
+  proof
 - behavior harnesses must exercise real production routes where possible:
   owning UI route or view input adapter, migrated feature-runtime operation
   owner where applicable, domain owner APIs for authored mutation, persistence,
   publication, and render-frame or content-model readback; direct owner-API
   proof is allowed only for model invariants or as a marked route gap
+- harness assertions must not manually reimplement the desired production
+  behavior against stubs that self-confirm; they inspect production state,
+  persisted data, published models, rendered facts, or named owner APIs
 - do not add JUnit or similar automated tests for feature behavior, internal
   orchestration, UI helpers, or other change-coupled logic whose assertions
-  must be migrated alongside normal behavior changes
+  belong in production-path behavior harnesses
 - do not add fixture-based selftests or meta-test suites inside verification
   harnesses such as `build-harness`; express repository policies directly in
   the owning gate instead
-- do not expand the compile/build/check pipeline with new automated gates
-  unless the user explicitly requests that expansion
+- do not expand the central compile/build/check pipeline with new automated
+  gates unless the user explicitly requests that expansion; adding behavior
+  harness cases, suite ids, focused JavaExec harnesses, or declared harness
+  dependencies for requested behavior is normal implementation work
 - keep CKJM hotspot regression reporting non-blocking unless an explicit future
   decision promotes it with stronger evidence than generic hotspot metrics
-- use manual testing for workflow behavior, desktop interaction, UI judgment,
-  and product acceptance
+- use manual testing for desktop interaction, UI judgment, and product
+  acceptance after the relevant behavior harness proof is selected or the
+  `Harness Gap` is reported
 - `./gradlew test` is not a general-purpose home for behavior-regression suites
 - require the repo-wide adversarial review route for repo-tracked
   implementation passes; this is a workflow obligation, not a new
   compile/build/check gate
+- treat successful proof as necessary but not as a code-health verdict; code
+  health and baseline admission are review-owned by
+  `docs/project/architecture/project-health.md`
+
+## Behavior Harness Composition
+
+Behavior harnesses are feature or concept proof surfaces, not generic build
+gates. Each harness must be independently runnable for its owning concept and
+must declare the prerequisite behavior it depends on when narrower proof would
+otherwise miss knock-on regressions.
+
+The preferred composition model is the existing Dungeon Editor suite registry:
+atomic suite ids declare dependencies, alias suites aggregate only, and focused
+Gradle tasks select suite ids plus their transitive dependencies. A feature
+family may start with a single focused JavaExec harness when that is
+proportional. Once several concepts depend on one another, that family should
+move to a registry-shaped harness rather than accumulating unrelated standalone
+tasks or hidden ordering assumptions.
+
+A focused behavior harness is a valid investigation and feature proof command.
+It does not become a new public production handoff route unless the quality
+platform owner explicitly promotes it. Production-code handoff still follows
+the public entrypoint rules below.
 
 ## Continuous Refactoring Relationship
 
 Continuous refactoring is a workflow obligation, not an additional gate.
+Project-health scanning is likewise a review and handoff obligation unless a
+later owner promotes it into a named gate. The scan proves literal
+marker/register sync for the selected scope and surfaces repeated pass-log
+families; it does not prove feature behavior or replace staged verification.
 Agents use the repo-owned
 [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
 for production-code, check/enforcement, and dependency work so existing
@@ -299,5 +338,5 @@ enforced, the enforcement document is the canonical classification.
 - [Dependabot Options Reference](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-dependabot-options.md:1)
 - [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md:1)
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md:1)
-- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/adversarial-review/SKILL.md:1)
-- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/adversarial-review-agent/SKILL.md:1)
+- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md:1)
+- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md:1)

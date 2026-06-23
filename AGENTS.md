@@ -21,14 +21,31 @@ Before changing repo-tracked files in SaltMarcher:
    implementation shape.
 4. Use every mandatory skill named by the workspace or SaltMarcher routing
    rules before planning, implementing, refactoring, or reviewing covered work.
-5. For production-code, check/enforcement, or dependency work, identify the
+5. For implementation handoffs, reduced slice briefs, roadmaps, and pass logs,
+   follow the canonical implementation-documentation rules in
+   `docs/project/architecture/implementation-documentation.md`; do not copy
+   its packet fields into this router.
+6. For non-trivial bug, regression, refactor, governance, systemic-repair, or
+   repeated-fix work, perform the `Problem History Intake` owned by
+   `docs/project/architecture/agent-instructions.md` before implementation
+   planning, refactor planning, implementation review, or continuation.
+   `context-hygiene` and `code-exploration` own the trigger-time workflow.
+7. When repo-tracked work knowingly creates transitional support or leaves
+   superseded support in place, mark it at that point with
+   `LEGACY_REMOVE_ON_TOUCH` and a concrete removal condition.
+8. When a supported architecture, quality, governance, stale-proof, repeated
+   fix, or compatibility finding cannot be fixed in the same pass, materialize
+   it as `PROJECT_HEALTH_DEBT` at the primary cause and in
+   `docs/project/architecture/project-health-debt.md`, or report why it is a
+   markerless process/tooling entry.
+9. For production-code, check/enforcement, or dependency work, identify the
    continuous-refactoring scope before editing.
-6. For production-code, check/enforcement, or dependency work, search the
+10. For production-code, check/enforcement, or dependency work, search the
    planned write set and directly owning adapters for `LEGACY_REMOVE_ON_TOUCH`.
    Any hit must be removed in the same pass or reported as an explicit blocker;
    do not grow marked support or treat marked surfaces as implementation
    precedent.
-7. Identify the required verification surface before editing and report the
+11. Identify the required verification surface before editing and report the
    literal result before handoff.
 
 If a touched surface has no clear canonical owner, stop and report the ambiguity
@@ -53,12 +70,19 @@ document exists.
 
 ## Skill Routing
 
-- Behavior-coupled automated tests are not part of the project strategy; use
-  the quality-platform gates plus manual testing instead.
+- Behavior changes, user-reported misbehavior, new features, and new
+  behavior-bearing concepts must identify their owning behavior harness before
+  implementation handoff. Extend the owning harness, create the missing concept
+  harness, or report a `Harness Gap` blocker; manual testing may supplement
+  but must not replace available production-path harness proof.
 - Verification harnesses must not carry fixture-based selftest suites or
-  meta-test layers; enforce repository policy directly in the owning gate.
-- New compile/build/check gates require explicit user request. Detailed
-  verification policy lives in `docs/project/verification/quality-platforms.md`.
+  meta-test layers. Behavior harnesses prove production routes or production
+  owner APIs; repository policy remains enforced directly in the owning gate.
+- New central compile/build/check gates require explicit user request. Adding
+  behavior-harness cases, suite ids, focused JavaExec harnesses, or declared
+  harness dependencies needed to prove requested behavior is normal
+  implementation work. Detailed verification policy lives in
+  `docs/project/verification/quality-platforms.md`.
 - Work on `AGENTS.md`, any `SKILL.md`, `agents/openai.yaml`, or other
   agent-facing instruction surface must use the global
   `agent-instruction-engineering` skill and follow
@@ -76,6 +100,10 @@ document exists.
   does not authorize new gates or broad documentation rewrites by itself.
 - Work that plans, implements, refactors, or reviews a SaltMarcher repo-tracked
   change must use the repo-owned `repo-tools` skill before starting that work.
+- Work that plans, implements, refactors, or reviews a SaltMarcher repo-tracked
+  governance, architecture, quality, repeated-fix, stale-proof, compatibility,
+  or baseline-admission concern must use the repo-owned `project-health` skill
+  and the Project Health standard.
 - Work that requires implementation planning, refactor planning, or
   implementation review where existing code behavior, workflow routing,
   build/check logic, or repo-local tool behavior affects the decision must use
@@ -89,19 +117,16 @@ document exists.
   `code-simplifier` skill as a dedicated qualitative review agent after the
   main edit and before the implementation pass log and Overview handoff review.
   If the harness does not auto-discover the skill, read
-  `/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/skills/code-simplifier/SKILL.md`
+  `/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/agents/code-simplifier.md`
   directly. This is a qualitative review-coordination pass: the
   code-simplifier agent acts like a review coordinator for simplification and
   launches independent simplicity, elegance, smell, and performance reviewers
   when subagent tooling is available, then consolidates findings into blocking
   same-run work or a no-op result. It is not a new static-analysis gate and
   does not replace mandatory proof or Overview review.
-  Main treats every code-simplifier finding as current-run work. Main fixes
-  each finding, assigns it to a scoped same-run worker and integrates the
-  result, or closes it as a false positive/review-owned concern with evidence.
-  Main decides how to integrate the repair into the current run and must read
-  the current code-simplifier pass log before follow-up planning, Overview
-  launch, or any handoff-readiness claim.
+  Main handles the result under
+  `docs/project/architecture/agent-instructions.md`; a pass without the
+  required code-simplifier disposition remains WIP.
 - When review results, architecture checks, behavior harnesses, or required
   proof expose a systemic blocker, Main must use the global `planner` skill to
   obtain a project-health repair plan before implementing the repair. The
@@ -130,7 +155,8 @@ document exists.
   `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md` and
   `/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md`, launch
   exactly one Overview coordinator subagent, and wait for that coordinator's
-  final review/fix result. The Overview coordinator must first use the global
+  final review/fix result. This mandatory launch is user-authorized governance
+  for covered passes. The Overview coordinator must first use the global
   `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`.
   Before launching nested specialist reviewers or scoped follow-up workers, the
   Overview coordinator must use
@@ -272,15 +298,18 @@ document exists.
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
+- [Implementation Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-documentation.md:1)
 - [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/source-references.md:1)
 - [Global Source References Skill](/home/aaron/.codex/skills/local/source-references/SKILL.md:1)
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
 - [Context Hygiene Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
 - [Context Hygiene Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/context-hygiene/SKILL.md:1)
 - [Repo Tools Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/repo-tools/SKILL.md:1)
+- [Project Health Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/project-health.md:1)
+- [Project Health Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/project-health/SKILL.md:1)
 - [Code Exploration Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/code-exploration/SKILL.md:1)
 - [Code Exploration Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/code-exploration-agent/SKILL.md:1)
-- [Installed Code Simplifier Skill](/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/skills/code-simplifier/SKILL.md:1)
+- [Installed Code Simplifier Skill](/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/agents/code-simplifier.md:1)
 - [Global Planner Skill](/home/aaron/.codex/skills/local/planner/SKILL.md:1)
 - [Autodev Process Optimizer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/autodev-process-optimizer/SKILL.md:1)
 - [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-15
+Last Reviewed: 2026-06-18
 Source of Truth: Aggregate entrypoints, staged handoff routing, and local
 invocation policy for SaltMarcher quality platforms.
 
@@ -125,14 +125,23 @@ the public production-handoff or documentation-enforcement proof routes.
 Focused investigation entrypoints are `compileJava`, `pmdMain`,
 `pmdStrictMain`, `checkRewriteNearMisses`, `spotbugsMain`, `cpdMain`,
 `lizardMain`, `ckjmMain`, repository/resource policy checks, technical
-`check*Enforcement` layer surfaces, `checkDocumentationEnforcement`, the
-feature-scoped `./gradlew dungeonEditorBehaviorHarness --console=plain`
-aggregate for Dungeon Editor behavior catalog work, focused Dungeon Editor
-suite tasks documented in
+`check*Enforcement` layer surfaces, `checkDocumentationEnforcement`, behavior
+harness JavaExec tasks such as
+`./gradlew dungeonEditorBehaviorHarness --console=plain`, focused Dungeon
+Editor suite tasks documented in
 `docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md`,
+other focused feature or concept harness tasks declared in `build.gradle.kts`,
 and the Gradle-owned `focused-handoff` route, each run through its documented
 command shape. Investigation tasks are not alternate production-handoff
 entries.
+
+Behavior harness entrypoints remain independently runnable proof surfaces. When
+a concept depends on another concept, its owning harness or suite registry must
+select the dependency automatically, or the implementation handoff must run and
+report the dependent harnesses explicitly. The Dungeon Editor
+`DungeonEditorBehaviorSuiteHarness` is the target pattern: atomic suites declare
+dependencies, alias suites aggregate only, and focused tasks delegate to the
+same registry instead of maintaining separate proof order.
 
 ## Runtime Wrapper Policy
 

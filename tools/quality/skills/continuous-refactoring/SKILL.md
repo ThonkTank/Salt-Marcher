@@ -34,6 +34,10 @@ class, method, adapter, or compatibility path is suspect baseline: use it to
 find what must be removed or replaced, not as precedent for new implementation
 shape.
 
+`PROJECT_HEALTH_DEBT` is the broader marker for known structural debt that
+cannot be fixed in the same pass. It must stay synchronized with
+`docs/project/architecture/project-health-debt.md`.
+
 ## Required Workflow
 
 Before editing production code, check/enforcement packages, or dependency
@@ -45,46 +49,59 @@ manifests:
    files needed for the same change. Do not default to a repo-wide cleanup.
 3. Read the nearest canonical owner for the touched surface before copying a
    nearby shape.
-4. Inspect current quality evidence for the scope. Prefer the helper:
+4. Inspect current quality evidence and relevant pass-log history for the
+   scope. Prefer the helper:
    `tools/quality/reporting/continuous_refactoring_candidates.py --scope <path>`.
    If the helper is insufficient, read the underlying reports directly.
 5. Search the planned write set and directly owning adapters for
    `LEGACY_REMOVE_ON_TOUCH` markers.
-6. Classify the pass as `Scoped Cleanup`, `Replacement Refactor`,
+6. Search the planned scope for `PROJECT_HEALTH_DEBT` and run the
+   project-health scan when structural debt, stale proof, repeated fix loops,
+   or compatibility findings affect the pass.
+7. Mark transitional support when the current plan knowingly creates or retains
+   a compatibility seam, migration bridge, or superseded path with a concrete
+   removal condition:
+   `LEGACY_REMOVE_ON_TOUCH: <why this is transitional>; remove when <specific replacement or condition exists>.`
+8. Classify the pass as `Scoped Cleanup`, `Replacement Refactor`,
    `Harness/Governance Repair`, or `Investigation Required`. Use
    `Replacement Refactor` when adapter stacks, ownership subversion,
-   self-confirming harness behavior, repeated fix churn, or active delete
-   signals show that the old surface must be retired rather than adapted.
-7. Separate findings into:
+   self-confirming harness behavior, pass-log evidence of repeated fix churn,
+   or active delete signals show that the old surface must be retired rather
+   than adapted.
+9. Separate findings into:
    `Blocking In Scope`, `Small Local Cleanup`, `Replacement Refactor`,
-   `Separate Slice`, and `Out Of Scope`.
-8. Treat `LEGACY_REMOVE_ON_TOUCH` as `Blocking In Scope` when the marked file,
+   `Main-Owned Scope Decision`, and `Out Of Scope`.
+10. Treat `LEGACY_REMOVE_ON_TOUCH` as `Blocking In Scope` when the marked file,
    class, method, or owning adapter is touched by the current task. Remove it,
    include it in the current replacement plan, or report an explicit blocker.
-9. Fix new or touched-scope blocker findings before handoff unless the finding
+11. Fix new or touched-scope blocker findings before handoff unless the finding
    is a documented false positive owned by the existing gate policy.
-10. Include small local cleanup when it is behavior-preserving and stays inside
+12. Include small local cleanup when it is behavior-preserving and stays inside
    the current owner scope.
-11. Plan replacement and deletion together when the current goal is to replace
+13. Plan replacement and deletion together when the current goal is to replace
     a bad surface. Do not split the obsolete adapter deletion away when that
     would leave later agents treating it as baseline.
-12. Split large refactors into a separate pass when they move public APIs,
-    change architecture ownership, require package moves, need dependency
-    upgrades, or touch unrelated owners and no Clean-Break signal ties deletion
-    to the current goal.
-13. For dependency work, check whether Dependabot already owns the update path.
+14. Large refactors that move public APIs, change architecture ownership,
+    require package moves, need dependency upgrades, or touch unrelated owners
+    require a Main-owned scope decision. Main must expand the current scope,
+    assign same-run repair, use planner escalation, obtain explicit user scope
+    exclusion, or report WIP/blocker. A worker or reviewer write-set boundary
+    limits who edits; it does not make a supported improvement optional.
+    Repeated shallow fixes in pass logs require the same Main-owned decision
+    before another local adaptation is planned.
+15. For dependency work, check whether Dependabot already owns the update path.
    Dependency upgrades must remain dependency-only unless the user explicitly
    combines them with product work.
-14. Temporary adapters left after a replacement pass must have an owner,
+16. Temporary adapters left after a replacement pass must have an owner,
     removal condition, and proof that they are not target architecture.
-15. Run the required SaltMarcher verification surface for the actual changed
+17. Run the required SaltMarcher verification surface for the actual changed
     files and keep the literal result available for review.
-16. Write the implementation pass log required by
+18. Write the implementation pass log required by
     `docs/project/architecture/agent-instructions.md` under
     `build/agent-pass-logs/`. Include local cleanup decisions, abandoned
     approaches, reversals, repeated edits, architecture friction, quality
     tradeoffs, and verification results.
-17. Before starting the review step, read and follow the global caller skills
+19. Before starting the review step, read and follow the global caller skills
     `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md` and
     `/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md`; they require
     one main-agent-launched Overview coordinator pass that owns nested
@@ -100,8 +117,9 @@ Use current local artifacts first:
 - `build/reports/ckjm/summary.md` when present
 - latest `build/gradle-run-logs/*production-handoff.log`
 
-These artifacts are evidence, not permission to widen the patch. A report may
-identify valuable follow-up work that still belongs in a separate slice.
+These artifacts are evidence, not permission to widen the patch. A supported
+finding outside the current owner scope returns to Main for the scope decision
+defined below; workers do not close it as optional follow-up.
 
 ## Cleanup Rules
 
@@ -121,7 +139,7 @@ Allowed in the current pass:
 - touched-scope PMD, CPD, Lizard, compile, SpotBugs, and dead-code findings
   whose fix is behavior-preserving
 
-Separate slice required:
+Main-owned scope decision required:
 
 - new public APIs, package moves, or role ownership changes
 - architecture, domain, view, data, shell, or bootstrap boundary changes unless
@@ -132,6 +150,10 @@ Separate slice required:
 - report-wide cleanup outside the touched owner scope
 - any cleanup whose correctness depends on product behavior review and is not
   already part of an explicit Replacement Refactor plan
+
+When one of these boundaries applies, Main must expand scope, assign same-run
+repair, use planner escalation, obtain explicit user exclusion, or keep the
+pass WIP/blocker.
 
 Forbidden without explicit user approval:
 
@@ -148,15 +170,27 @@ Every covered handoff must report one of these exact statuses:
 - `Cleanup included`: list the in-scope cleanup performed, including completed
   replacement or deletion work from a `Replacement Refactor` pass.
 - `No in-scope cleanup found`: name the reports or focused checks inspected.
-- `Deferred as separate slice`: name the finding and why it is not safe inside
-  the current pass.
+- `Scope decision required`: name the supported finding and the Main
+  disposition: scope expanded, same-run worker, planner repair, explicit user
+  exclusion, or WIP/blocker.
+
+Do not use `Deferred as separate slice`, `outside allowed write set`,
+`review-owned follow-up`, `non-blocking smell`, `later`, or similar terminal
+statuses for supported improvements. Clean-Break signals and duplicated
+harness/helper surfaces must not be normalized by conservative slice boundaries.
+
+Supported structural findings that survive the pass must be `PROJECT_HEALTH_DEBT`
+with a register entry, explicit user exclusion, or WIP/blocker.
 
 Every covered handoff must also report the adversarial review outcome required
 by the global `coord-adversarial-review` caller skill.
 
 Every covered handoff must report `Delete signals`: removed, explicit blocker,
-replacement plan, temporary adapter with owner/removal condition, or none found
-in the write set.
+replacement plan, marker added for new or retained transitional support,
+temporary adapter with owner/removal condition, or none found in the write set.
+
+Every covered handoff must report `Project health`: debt IDs touched, scan
+result, repeated families, and baseline-admission blocker status.
 
 Every covered handoff must report the implementation pass log path and, when
 review completed, the review pass log path or the blocker that prevented the
@@ -177,6 +211,7 @@ not claim that global debt is solved because a scoped pass is clean.
 - [OpenRewrite Gradle Plugin Configuration](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openrewrite-gradle-plugin-configuration.md)
 - [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md)
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md)
+- [Project Health Standard](../../../../docs/project/architecture/project-health.md)
 - [Global Main To Overview Coordination Skill](/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md)
 - [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md)
 - [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md)

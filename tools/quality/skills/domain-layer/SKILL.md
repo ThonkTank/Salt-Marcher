@@ -123,6 +123,16 @@ When reviewing domain-layer work, look for:
 - thin application use cases without hidden adapter composition
 - no `src/domain/mapcore/**`
 
+## Health Review Checklist
+
+- Mark unowned carriers, duplicated published facts, hidden adapter
+  composition, and root application services that accumulate policy as
+  project-health debt when not fixed in the pass.
+- Treat role-doc drift, stale enforcement claims, and copied legacy placement
+  as structural findings, not as acceptable precedent.
+- Keep domain truth in the owning context, family, and role; do not let a
+  review close missing domain expertise as a neutral result.
+
 ## Correctness Rule
 
 Correct domain work follows the canonical `domain-layer.md` owner doc even when
@@ -134,4 +144,5 @@ do not copy the drift into new code or new governance text.
 
 - [Domain Layer Standard](../../../../docs/project/architecture/patterns/domain-layer.md)
 - [Agent Instruction Standard](../../../../docs/project/architecture/agent-instructions.md)
+- [Project Health Standard](../../../../docs/project/architecture/project-health.md)
 - [AGENTS.md](../../../../AGENTS.md)

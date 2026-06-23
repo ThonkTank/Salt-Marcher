@@ -26,6 +26,10 @@ repo-tracked change:
    skill.
 5. Do not add new repo-local tools, gates, generated artifacts, or tool
    documentation paths unless the user explicitly asks for that scope.
+6. Treat Implementation Reading Packets and pass-log artifact fields as
+   documentation governed by
+   `docs/project/architecture/implementation-documentation.md`, not as
+   repo-tool catalog content.
 
 ## Tool Catalog
 
@@ -52,6 +56,18 @@ repo-tracked change:
 - Typical use:
   `python3 tools/quality/reporting/agent_context_map.py --surface <path>`
 
+### Project Health Scan
+
+- Tool path: `tools/quality/reporting/project_health_scan.py`
+- Helps with: `PROJECT_HEALTH_DEBT` marker/register synchronization and
+  repeated project-health family discovery in pass logs.
+- Governing skill:
+  `tools/quality/skills/project-health/SKILL.md`
+- Evidence strength: `Evidence-Proven` for literal marker/register sync in the
+  scanned files; `Candidate` trend evidence for pass-log term families.
+- Typical use:
+  `python3 tools/quality/reporting/project_health_scan.py --scope <path>`
+
 ## Handoff
 
 Report repo-tool usage only when it affected the work:
@@ -69,3 +85,5 @@ only to record this evidence.
 - [Callchain Tool Skill](../callchain-tool/SKILL.md)
 - [Callchain Tool README](../../../callchain/README.md)
 - [Agent Context Standard](../../../../docs/project/architecture/agent-context.md)
+- [Implementation Documentation Standard](../../../../docs/project/architecture/implementation-documentation.md)
+- [Project Health Skill](../project-health/SKILL.md)

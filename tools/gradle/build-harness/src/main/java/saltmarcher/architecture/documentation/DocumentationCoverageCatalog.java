@@ -322,6 +322,7 @@ public final class DocumentationCoverageCatalog {
                             row("domain-context-creatures-owned-reference-scope", "Review-Owned"),
                             row("domain-context-encounter-owned-roster-truth", "Review-Owned"),
                             row("domain-context-encountertable-owned-reference-scope", "Review-Owned"),
+                            row("domain-context-hex-owned-authored-map-truth", "Review-Owned"),
                             row("domain-context-dungeon-owned-authored-map-truth", "Review-Owned"),
                             row("domain-context-sessionplanner-owned-session-record-truth", "Review-Owned"),
                             row("domain-context-authored-truth-write-model-required", "Enforced",
@@ -338,6 +339,7 @@ public final class DocumentationCoverageCatalog {
                             row("domain-context-creatures-publishes-policy-input-facts", "Review-Owned"),
                             row("domain-context-encounter-consumes-foreign-public-boundaries", "Review-Owned"),
                             row("domain-context-encountertable-data-adapter-ingest-and-public-export", "Review-Owned"),
+                            row("domain-context-hex-owned-local-authored-map-boundary", "Review-Owned"),
                             row("domain-context-dungeon-consumes-party-travel-position", "Review-Owned"),
                             row("domain-context-sessionplanner-consumes-party-and-encounter-public-boundaries", "Review-Owned")))),
             Map.entry("domainHelper", spec(
