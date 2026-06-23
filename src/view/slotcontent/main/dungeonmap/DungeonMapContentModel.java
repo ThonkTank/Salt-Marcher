@@ -12,7 +12,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 import javafx.beans.property.ReadOnlyDoubleProperty;
-import javafx.beans.property.ReadOnlyDoubleWrapper;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
@@ -56,7 +55,8 @@ public final class DungeonMapContentModel {
     private final String placeholderTitle;
     private final ReadOnlyObjectWrapper<CanvasState> canvasState;
     private final ReadOnlyObjectWrapper<InlineLabelEditState> inlineLabelEditState;
-    private final ReadOnlyDoubleWrapper zoom = new ReadOnlyDoubleWrapper(defaultZoom());
+    private final DungeonMapViewportContentPartModel viewportContentPartModel =
+            new DungeonMapViewportContentPartModel();
     private final DungeonMapPointerTargetContentPartModel pointerTargetContentPartModel =
             new DungeonMapPointerTargetContentPartModel();
     private final DungeonMapPreviewDiffContentPartModel previewDiffContentPartModel =
@@ -74,7 +74,9 @@ public final class DungeonMapContentModel {
 
     public DungeonMapContentModel(String placeholderTitle, boolean editorMode) {
         this.placeholderTitle = normalizePlaceholderTitle(placeholderTitle);
-        canvasState = new ReadOnlyObjectWrapper<>(CanvasState.initial(RenderScene.empty(this.placeholderTitle)));
+        canvasState = new ReadOnlyObjectWrapper<>(CanvasState.initial(
+                RenderScene.empty(this.placeholderTitle),
+                viewportContentPartModel.currentViewport()));
         inlineLabelEditState = new ReadOnlyObjectWrapper<>(InlineLabelEditState.inactive());
         renderState = DungeonMapRenderState.empty(this.placeholderTitle, editorMode);
         showRenderScene(SCENE_PROJECTOR.toScene(renderState, currentHoverTarget));
@@ -89,7 +91,7 @@ public final class DungeonMapContentModel {
     }
 
     public ReadOnlyDoubleProperty zoomProperty() {
-        return zoom.getReadOnlyProperty();
+        return viewportContentPartModel.zoomProperty();
     }
 
     CanvasState currentCanvasState() {
@@ -105,31 +107,15 @@ public final class DungeonMapContentModel {
     }
 
     public Viewport currentViewport() {
-        return canvasState.get().viewport();
+        return viewportContentPartModel.currentViewport();
     }
 
     public double currentZoom() {
-        return currentViewport().zoom();
+        return viewportContentPartModel.currentZoom();
     }
 
     private static double minimumHitTolerance() {
         return 0.22;
-    }
-
-    private static double baseGrid() {
-        return 32.0;
-    }
-
-    private static double defaultZoom() {
-        return 1.0;
-    }
-
-    private static double minimumZoom() {
-        return 0.1;
-    }
-
-    private static double maximumZoom() {
-        return 4.0;
     }
 
     private static double hitTolerancePixels() {
@@ -141,7 +127,9 @@ public final class DungeonMapContentModel {
     }
 
     private static double maximumHitIndexTolerance() {
-        return hitTolerancePixels() / (baseGrid() * minimumZoom());
+        return hitTolerancePixels()
+                / (DungeonMapViewportContentPartModel.baseGrid()
+                * DungeonMapViewportContentPartModel.minimumZoom());
     }
 
     private static int minimumPolylinePoints() {
@@ -153,15 +141,15 @@ public final class DungeonMapContentModel {
     }
 
     public void resetCamera() {
-        setCanvasState(canvasState.get().withViewport(Viewport.initial()));
+        refreshCanvasViewport(viewportContentPartModel.resetCamera());
     }
 
     public void panByPixels(double deltaX, double deltaY) {
-        setCanvasState(canvasState.get().withViewport(canvasState.get().viewport().panByPixels(deltaX, deltaY)));
+        refreshCanvasViewport(viewportContentPartModel.panByPixels(deltaX, deltaY));
     }
 
     public void zoomAround(double canvasX, double canvasY, double factor) {
-        setCanvasState(canvasState.get().withViewport(canvasState.get().viewport().zoomAround(canvasX, canvasY, factor)));
+        refreshCanvasViewport(viewportContentPartModel.zoomAround(canvasX, canvasY, factor));
     }
 
     public PointerTarget resolvePointerTarget(double sceneX, double sceneY) {
@@ -270,7 +258,9 @@ public final class DungeonMapContentModel {
     }
 
     private void showRenderScene(RenderScene renderScene) {
-        setCanvasState(canvasState.get().withRenderScene(renderScene == null ? RenderScene.empty(placeholderTitle) : renderScene));
+        setCanvasState(canvasState.get().withRenderScene(
+                renderScene == null ? RenderScene.empty(placeholderTitle) : renderScene,
+                viewportContentPartModel.currentViewport()));
     }
 
     private List<CanvasHit> hitsAt(double sceneX, double sceneY) {
@@ -366,7 +356,10 @@ public final class DungeonMapContentModel {
 
     private void setCanvasState(CanvasState nextState) {
         canvasState.set(nextState);
-        zoom.set(nextState.viewport().zoom());
+    }
+
+    private void refreshCanvasViewport(Viewport nextViewport) {
+        setCanvasState(canvasState.get().withViewport(nextViewport));
     }
 
     private static String normalizePlaceholderTitle(String placeholderTitle) {
@@ -381,17 +374,17 @@ public final class DungeonMapContentModel {
             HitIndex hitIndex
     ) {
 
-        private static CanvasState initial(RenderScene renderScene) {
+        private static CanvasState initial(RenderScene renderScene, Viewport viewport) {
             return new CanvasState(
                     renderScene,
-                    Viewport.initial(),
+                    viewport,
                     HitIndex.from(indexableHitAreas(renderScene)));
         }
 
-        private CanvasState withRenderScene(RenderScene nextRenderScene) {
+        private CanvasState withRenderScene(RenderScene nextRenderScene, Viewport nextViewport) {
             return new CanvasState(
                     nextRenderScene,
-                    viewport,
+                    nextViewport,
                     HitIndex.from(indexableHitAreas(nextRenderScene)));
         }
 
@@ -576,29 +569,18 @@ public final class DungeonMapContentModel {
             double zoom
     ) {
 
-        private static Viewport initial() {
-            return new Viewport(0.0, 0.0, defaultZoom());
+        static Viewport initial() {
+            return new Viewport(0.0, 0.0, DungeonMapViewportContentPartModel.defaultZoom());
         }
 
         public Viewport {
-            zoom = Math.max(minimumZoom(), Math.min(maximumZoom(), zoom));
-        }
-
-        private Viewport panByPixels(double deltaX, double deltaY) {
-            return new Viewport(panX + deltaX, panY + deltaY, zoom);
-        }
-
-        private Viewport zoomAround(double canvasX, double canvasY, double factor) {
-            double nextZoom = Math.max(minimumZoom(), Math.min(maximumZoom(), zoom * factor));
-            double scale = nextZoom / zoom;
-            return new Viewport(
-                    canvasX - (canvasX - panX) * scale,
-                    canvasY - (canvasY - panY) * scale,
-                    nextZoom);
+            zoom = Math.max(
+                    DungeonMapViewportContentPartModel.minimumZoom(),
+                    Math.min(DungeonMapViewportContentPartModel.maximumZoom(), zoom));
         }
 
         public double gridSize() {
-            return baseGrid() * zoom;
+            return DungeonMapViewportContentPartModel.baseGrid() * zoom;
         }
 
         public double sceneToScreenX(double sceneX) {
@@ -2107,7 +2089,8 @@ public final class DungeonMapContentModel {
                 if (label == null || !ROOM_LABEL_KIND.equals(label.labelKind())) {
                     return labelHeightScene();
                 }
-                double fontSceneHeight = typography(label).fontSizePixels() / baseGrid();
+                double fontSceneHeight = typography(label).fontSizePixels()
+                        / DungeonMapViewportContentPartModel.baseGrid();
                 return Math.max(labelHeightScene(), Math.min(ROOM_LABEL_MAX_HEIGHT_SCENE, fontSceneHeight * 1.35));
             }
 
@@ -2131,7 +2114,7 @@ public final class DungeonMapContentModel {
                     return LabelTypography.mapLabel();
                 }
                 int glyphCount = Math.max(1, renderText(label).length());
-                double availablePixels = labelWidthScene(label) * baseGrid();
+                double availablePixels = labelWidthScene(label) * DungeonMapViewportContentPartModel.baseGrid();
                 double fontSize = Math.max(
                         ROOM_LABEL_FONT_MIN_PIXELS,
                         Math.min(
