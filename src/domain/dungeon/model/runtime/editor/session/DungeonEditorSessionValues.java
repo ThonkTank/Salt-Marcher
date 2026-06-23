@@ -320,10 +320,6 @@ public final class DungeonEditorSessionValues {
             boolean valid,
             String statusText
     ) implements Preview {
-        public StairCreatePreview(DungeonEditorWorkspaceValues.Cell anchor, String shapeName) {
-            this(anchor, anchor, anchor, shapeName, "NORTH", 0, 0, false, "");
-        }
-
         public StairCreatePreview {
             anchor = anchor == null ? DungeonEditorWorkspaceValues.Cell.empty() : anchor;
             end = end == null ? anchor : end;

@@ -7,9 +7,11 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValue
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
-import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.PointerToolUseCase;
+import src.domain.dungeon.published.DungeonEditorTool;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.PaintSession;
-import src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorRoomPaintRuntimeOperation {
     private final DungeonEditorSessionWorkflow workflow;
@@ -28,15 +30,52 @@ final class DungeonEditorRoomPaintRuntimeOperation {
                 "authoredOperationUseCase");
     }
 
-    PointerToolUseCase roomWorkflow(DungeonEditorSessionValues.Tool tool) {
-        return new PointerToolUseCase(
-                input -> applyRoom(PointerAction.PRESS, input, tool),
-                input -> applyRoom(PointerAction.DRAG, input, tool),
-                input -> applyRoom(PointerAction.RELEASE, input, tool),
-                null);
+    static DungeonEditorSessionValues.Tool roomTool(DungeonEditorTool tool) {
+        if (tool == DungeonEditorTool.ROOM_PAINT) {
+            return DungeonEditorSessionValues.Tool.ROOM_PAINT;
+        }
+        if (tool == DungeonEditorTool.ROOM_DELETE) {
+            return DungeonEditorSessionValues.Tool.ROOM_DELETE;
+        }
+        return null;
     }
 
-    private void applyRoom(PointerAction action, DungeonEditorMainViewInput input, DungeonEditorSessionValues.Tool tool) {
+    void apply(
+            PointerAction action,
+            DungeonEditorSessionValues.Tool tool,
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        if (action == null || tool == null || action == PointerAction.MOVED) {
+            return;
+        }
+        DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
+                sample,
+                wallSingleClickMode,
+                transitionDestination);
+        switch (action) {
+            case PRESSED -> applyRoom(
+                    InterpretDungeonEditorMainViewInputUseCase.PointerAction.PRESS,
+                    input,
+                    tool);
+            case DRAGGED -> applyRoom(
+                    InterpretDungeonEditorMainViewInputUseCase.PointerAction.DRAG,
+                    input,
+                    tool);
+            case RELEASED -> applyRoom(
+                    InterpretDungeonEditorMainViewInputUseCase.PointerAction.RELEASE,
+                    input,
+                    tool);
+            default -> throw new IllegalStateException("Unsupported room paint pointer action: " + action);
+        }
+    }
+
+    private void applyRoom(
+            InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
+            DungeonEditorMainViewInput input,
+            DungeonEditorSessionValues.Tool tool
+    ) {
         if (effectUseCase.committedGridOrPublishCurrent() == null) {
             return;
         }

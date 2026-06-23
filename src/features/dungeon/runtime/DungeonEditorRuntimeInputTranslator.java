@@ -2,8 +2,6 @@ package src.features.dungeon.runtime;
 
 import java.util.List;
 import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorRoomNarrationUseCase.ExitInput;
-import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.ToolWorkflowInput;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarration;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
@@ -11,21 +9,6 @@ import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDes
 final class DungeonEditorRuntimeInputTranslator {
 
     private DungeonEditorRuntimeInputTranslator() {
-    }
-
-    static ToolWorkflowInput toolWorkflowInput(
-            PointerAction action,
-            String toolKey,
-            PointerSample sample,
-            boolean wallSingleClickMode,
-            TransitionDestination transitionDestination
-    ) {
-        return DungeonEditorPointerInputTranslator.toolWorkflowInput(
-                action,
-                toolKey,
-                sample,
-                wallSingleClickMode,
-                transitionDestination);
     }
 
     static DungeonEditorMainViewInput mainViewInput(

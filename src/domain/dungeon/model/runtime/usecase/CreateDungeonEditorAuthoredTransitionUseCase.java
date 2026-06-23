@@ -42,7 +42,7 @@ public final class CreateDungeonEditorAuthoredTransitionUseCase {
         publishMutationUseCase.execute(result);
     }
 
-    boolean canExecute(MapId mapId, Cell anchor, TransitionDestination destination) {
+    public boolean canExecute(MapId mapId, Cell anchor, TransitionDestination destination) {
         return mapId != null
                 && anchor != null
                 && destination != null

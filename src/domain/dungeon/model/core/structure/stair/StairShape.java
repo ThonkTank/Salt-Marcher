@@ -44,10 +44,6 @@ public enum StairShape {
         return 3;
     }
 
-    public int defaultEditorDimension2() {
-        return 1;
-    }
-
     public int normalizedEditorDimension1(int dimension1) {
         if (this == CIRCULAR && dimension1 % 2 == 0) {
             return dimension1 + 1;

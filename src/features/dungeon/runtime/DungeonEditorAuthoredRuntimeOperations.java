@@ -14,9 +14,15 @@ import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorOverlayUseCase;
 import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorToolUseCase;
 import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorViewModeUseCase;
 import src.domain.dungeon.model.runtime.usecase.ShiftDungeonEditorProjectionLevelUseCase;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.published.DungeonEditorTool;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarration;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
-final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRuntimeOperations {
+final class DungeonEditorAuthoredRuntimeOperations {
     private static final String SELECTION_TOOL = "SELECT";
 
     private final SelectDungeonEditorMapUseCase selectMapUseCase;
@@ -27,11 +33,14 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
     private final SetDungeonEditorToolUseCase setToolUseCase;
     private final ShiftDungeonEditorProjectionLevelUseCase shiftProjectionLevelUseCase;
     private final SetDungeonEditorOverlayUseCase setOverlayUseCase;
-    private final ApplyDungeonEditorToolWorkflowUseCase applyToolWorkflowUseCase;
+    private final DungeonEditorRoomPaintRuntimeOperation roomPaintOperation;
     private final DungeonEditorWallBoundaryDraftRuntimeOperation wallBoundaryDraftOperation;
     private final DungeonEditorDoorBoundaryDraftRuntimeOperation doorBoundaryDraftOperation;
     private final DungeonEditorCorridorDraftRuntimeOperation corridorDraftOperation;
     private final DungeonEditorStairDraftRuntimeOperation stairDraftOperation;
+    private final DungeonEditorStairDeleteRuntimeOperation stairDeleteOperation;
+    private final DungeonEditorTransitionRuntimeOperation transitionOperation;
+    private final DungeonEditorFeatureMarkerRuntimeOperation featureMarkerOperation;
     private final DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation;
     private final SaveDungeonEditorRoomNarrationUseCase saveRoomNarrationUseCase;
     private final SaveDungeonEditorLabelNameUseCase saveLabelNameUseCase;
@@ -52,7 +61,7 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
                 safeUseCases.projection().shiftLevel(),
                 "shiftProjectionLevelUseCase");
         setOverlayUseCase = Objects.requireNonNull(safeUseCases.projection().setOverlay(), "setOverlayUseCase");
-        applyToolWorkflowUseCase = Objects.requireNonNull(safeUseCases.toolWorkflow(), "applyToolWorkflowUseCase");
+        roomPaintOperation = Objects.requireNonNull(safeUseCases.roomPaint(), "roomPaintOperation");
         wallBoundaryDraftOperation = Objects.requireNonNull(
                 safeUseCases.wallBoundaryDraft(),
                 "wallBoundaryDraftOperation");
@@ -65,6 +74,15 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
         stairDraftOperation = Objects.requireNonNull(
                 safeUseCases.stairDraft(),
                 "stairDraftOperation");
+        stairDeleteOperation = Objects.requireNonNull(
+                safeUseCases.stairDelete(),
+                "stairDeleteOperation");
+        transitionOperation = Objects.requireNonNull(
+                safeUseCases.transition(),
+                "transitionOperation");
+        featureMarkerOperation = Objects.requireNonNull(
+                safeUseCases.featureMarker(),
+                "featureMarkerOperation");
         selectedHandleOperation = Objects.requireNonNull(
                 safeUseCases.selectedHandle(),
                 "selectedHandleOperation");
@@ -85,72 +103,86 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
                 "saveStairGeometryUseCase");
     }
 
-    @Override
-    public void selectMap(long mapIdValue) {
+    void selectMap(long mapIdValue) {
         stairDraftOperation.clear();
         selectMapUseCase.execute(mapIdValue);
     }
 
-    @Override
-    public void createMap(String mapName) {
+    void createMap(String mapName) {
         stairDraftOperation.clear();
         createMapUseCase.execute(mapName);
     }
 
-    @Override
-    public void renameMap(long mapIdValue, String mapName) {
+    void renameMap(long mapIdValue, String mapName) {
         renameMapUseCase.execute(mapIdValue, mapName);
     }
 
-    @Override
-    public void deleteMap(long mapIdValue) {
+    void deleteMap(long mapIdValue) {
         stairDraftOperation.clear();
         deleteMapUseCase.execute(mapIdValue);
     }
 
-    @Override
-    public void setViewMode(String viewModeKey) {
+    void setViewMode(String viewModeKey) {
         stairDraftOperation.clear();
         setViewModeUseCase.execute(DungeonEditorRuntimeInputTranslator.viewModeName(viewModeKey));
     }
 
-    @Override
-    public void setTool(String toolKey) {
+    void setTool(String toolKey) {
         stairDraftOperation.clear();
         setToolUseCase.execute(DungeonEditorRuntimeInputTranslator.toolName(toolKey));
     }
 
-    @Override
-    public void cancelActivePreviewSession() {
+    void cancelActivePreviewSession() {
         stairDraftOperation.clear();
         setToolUseCase.execute(SELECTION_TOOL);
     }
 
-    @Override
-    public void shiftProjectionLevel(int levelShift) {
+    void shiftProjectionLevel(int levelShift) {
         shiftProjectionLevelUseCase.execute(levelShift);
         stairDraftOperation.refreshAfterProjectionLevelChanged();
     }
 
-    @Override
-    public void setOverlay(String modeKey, int levelRange, double opacity, java.util.List<Integer> selectedLevels) {
+    void setOverlay(String modeKey, int levelRange, double opacity, java.util.List<Integer> selectedLevels) {
         setOverlayUseCase.execute(modeKey, levelRange, opacity, selectedLevels);
     }
 
-    @Override
-    public void applyPointer(
+    void applyRoomPaint(
             PointerAction action,
-            String toolKey,
+            DungeonEditorSessionValues.Tool tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        applyToolWorkflowUseCase.apply(DungeonEditorRuntimeInputTranslator.toolWorkflowInput(
-                action,
-                toolKey,
-                sample,
-                wallSingleClickMode,
-                transitionDestination));
+        roomPaintOperation.apply(action, tool, sample, wallSingleClickMode, transitionDestination);
+    }
+
+    void applyStairDelete(
+            PointerAction action,
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        stairDeleteOperation.apply(action, sample, wallSingleClickMode, transitionDestination);
+    }
+
+    void applyTransition(
+            PointerAction action,
+            DungeonEditorTool tool,
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        transitionOperation.apply(action, tool, sample, wallSingleClickMode, transitionDestination);
+    }
+
+    void applyFeatureMarker(
+            PointerAction action,
+            DungeonEditorTool tool,
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            TransitionDestination transitionDestination
+    ) {
+        featureMarkerOperation.apply(action, tool, sample, wallSingleClickMode, transitionDestination);
     }
 
     void applyWallBoundaryDraft(
@@ -202,8 +234,7 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
         selectedHandleOperation.apply(action, sample, wallSingleClickMode, transitionDestination);
     }
 
-    @Override
-    public void scrollSelection(int levelDelta) {
+    void scrollSelection(int levelDelta) {
         selectedHandleOperation.scroll(levelDelta);
     }
 
@@ -211,8 +242,7 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
         selectedHandleOperation.moveCorridorPoint(handle, q, r);
     }
 
-    @Override
-    public void saveRoomNarration(RoomNarration narration) {
+    void saveRoomNarration(RoomNarration narration) {
         RoomNarration safeNarration = narration == null ? new RoomNarration(0L, "", java.util.List.of()) : narration;
         saveRoomNarrationUseCase.execute(new SaveDungeonEditorRoomNarrationUseCase.RoomNarrationInput(
                 safeNarration.roomId(),
@@ -220,16 +250,14 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
                 DungeonEditorRuntimeInputTranslator.exitInputs(safeNarration)));
     }
 
-    @Override
-    public void saveLabelName(String targetKind, long targetId, String name) {
+    void saveLabelName(String targetKind, long targetId, String name) {
         saveLabelNameUseCase.execute(new SaveDungeonEditorLabelNameUseCase.LabelNameInput(
                 targetKind,
                 targetId,
                 name));
     }
 
-    @Override
-    public void saveTransitionLink(
+    void saveTransitionLink(
             long sourceTransitionId,
             long targetMapId,
             long targetTransitionId,
@@ -242,16 +270,14 @@ final class DungeonEditorAuthoredRuntimeOperations implements DungeonEditorRunti
                 bidirectional));
     }
 
-    @Override
-    public void saveTransitionDescription(long transitionId, String description) {
+    void saveTransitionDescription(long transitionId, String description) {
         saveTransitionDescriptionUseCase.execute(
                 new SaveDungeonEditorTransitionDescriptionUseCase.TransitionDescriptionInput(
                         transitionId,
                         description));
     }
 
-    @Override
-    public void saveStairGeometry(
+    void saveStairGeometry(
             long stairId,
             String shapeName,
             String directionName,

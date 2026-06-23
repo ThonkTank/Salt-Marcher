@@ -311,10 +311,6 @@ public record DungeonMap(
         return withStairs(stairs.withoutUnboundStair(stairId));
     }
 
-    public DungeonMap createStair(long stairId, Cell anchor, String shapeName) {
-        return STAIR_AUTHORING.createStair(this, stairId, anchor, shapeName);
-    }
-
     public DungeonMap createStair(
             long stairId,
             Cell anchor,
@@ -324,10 +320,6 @@ public record DungeonMap(
             int dimension2
     ) {
         return STAIR_AUTHORING.createStair(this, stairId, anchor, shapeName, directionName, dimension1, dimension2);
-    }
-
-    public boolean canCreateStair(Cell anchor, String shapeName) {
-        return STAIR_AUTHORING.canCreateStair(this, anchor, shapeName);
     }
 
     public boolean canCreateStair(

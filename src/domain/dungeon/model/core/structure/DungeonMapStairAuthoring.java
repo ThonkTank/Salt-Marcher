@@ -10,11 +10,6 @@ final class DungeonMapStairAuthoring {
         return stairAuthoring.moveAnchor(dungeonMap, stairId, handleIndex, deltaQ, deltaR, deltaLevel);
     }
 
-    DungeonMap createStair(DungeonMap dungeonMap, long stairId, Cell anchor, String shapeName) {
-        var nextStairs = stairAuthoring.withAuthoredStair(dungeonMap, stairId, anchor, shapeName);
-        return nextStairs.equals(dungeonMap.stairs()) ? dungeonMap : dungeonMap.withStairs(nextStairs);
-    }
-
     DungeonMap createStair(
             DungeonMap dungeonMap,
             long stairId,
@@ -33,10 +28,6 @@ final class DungeonMapStairAuthoring {
                 dimension1,
                 dimension2);
         return nextStairs.equals(dungeonMap.stairs()) ? dungeonMap : dungeonMap.withStairs(nextStairs);
-    }
-
-    boolean canCreateStair(DungeonMap dungeonMap, Cell anchor, String shapeName) {
-        return stairAuthoring.canCreateAuthoredStair(dungeonMap, anchor, shapeName);
     }
 
     boolean canCreateStair(

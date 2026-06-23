@@ -40,11 +40,6 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
         snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
     }
 
-    public void publishSessionPreview() {
-        snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(
-                snapshotBuilder.executeSessionPreview(workflow.session())));
-    }
-
     private void publishInMemoryPreview() {
         snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(
                 snapshotBuilder.executeInMemoryPreview(workflow.session())));

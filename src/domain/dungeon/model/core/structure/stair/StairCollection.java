@@ -115,14 +115,6 @@ public record StairCollection(List<Stair> stairs) {
     public boolean canCreateAuthoredStairGeometry(
             @Nullable Cell anchor,
             String shapeName,
-            @Nullable Set<Cell> roomCells
-    ) {
-        return canCreateAuthoredStairGeometry(editorDefaultSpec(anchor, shapeName), roomCells);
-    }
-
-    public boolean canCreateAuthoredStairGeometry(
-            @Nullable Cell anchor,
-            String shapeName,
             String directionName,
             int dimension1,
             int dimension2,
@@ -145,16 +137,6 @@ public record StairCollection(List<Stair> stairs) {
         List<Stair> result = new ArrayList<>(stairs);
         result.add(Stair.authored(stairId, mapId, spec));
         return new StairCollection(result);
-    }
-
-    public StairCollection withAuthoredStair(
-            long stairId,
-            long mapId,
-            @Nullable Cell anchor,
-            String shapeName,
-            @Nullable Set<Cell> roomCells
-    ) {
-        return withAuthoredStair(stairId, mapId, editorDefaultSpec(anchor, shapeName), roomCells);
     }
 
     public StairCollection withAuthoredStair(
@@ -260,18 +242,6 @@ public record StairCollection(List<Stair> stairs) {
 
     private static boolean supportedAuthoredSpec(@Nullable StairGeometrySpec spec) {
         return spec != null && spec.shape().supportsEditorDimensions(spec.dimension1(), spec.dimension2());
-    }
-
-    private static @Nullable StairGeometrySpec editorDefaultSpec(@Nullable Cell anchor, String shapeName) {
-        StairShape shape = StairShape.supportedEditorShape(shapeName);
-        return shape == null || anchor == null
-                ? null
-                : new StairGeometrySpec(
-                        shape,
-                        anchor,
-                        Direction.NORTH,
-                        shape.defaultEditorDimension1(),
-                        shape.defaultEditorDimension2());
     }
 
     private @Nullable StairGeometrySpec recomputeSpec(

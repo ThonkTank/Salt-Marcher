@@ -2,11 +2,8 @@ package src.features.dungeon.runtime;
 
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.published.DungeonEditorTool;
-import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.ToolInput;
-import src.features.dungeon.runtime.ApplyDungeonEditorToolWorkflowUseCase.ToolWorkflowInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.BoundaryTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
@@ -14,28 +11,6 @@ import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDes
 final class DungeonEditorPointerInputTranslator {
 
     private DungeonEditorPointerInputTranslator() {
-    }
-
-    static ToolWorkflowInput toolWorkflowInput(
-            PointerAction action,
-            String toolKey,
-            PointerSample sample,
-            boolean wallSingleClickMode,
-            TransitionDestination transitionDestination
-    ) {
-        PointerSample safeSample = sample == null
-                ? new PointerSample(0.0, 0.0, false, false, PointerTarget.empty())
-                : sample;
-        ToolInput selectedTool = DungeonEditorRuntimeEnumTranslator.tool(toolKey);
-        DungeonEditorTool editorTool = DungeonEditorRuntimeEnumTranslator.editorTool(toolKey);
-        TransitionDestination safeDestination = transitionDestination == null
-                ? TransitionDestination.empty()
-                : transitionDestination;
-        return new ToolWorkflowInput(
-                selectedTool,
-                DungeonEditorRuntimeEnumTranslator.workflowAction(action),
-                mainViewInput(safeSample, wallSingleClickMode, editorTool == DungeonEditorTool.DOOR_DELETE,
-                        safeDestination));
     }
 
     static DungeonEditorMainViewInput mainViewInput(

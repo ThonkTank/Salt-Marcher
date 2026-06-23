@@ -17,11 +17,14 @@ import src.domain.dungeon.model.runtime.usecase.ShiftDungeonEditorProjectionLeve
 record DungeonEditorAuthoredRuntimeOperationUseCases(
         MapUseCases map,
         ProjectionUseCases projection,
-        ApplyDungeonEditorToolWorkflowUseCase toolWorkflow,
+        DungeonEditorRoomPaintRuntimeOperation roomPaint,
         DungeonEditorWallBoundaryDraftRuntimeOperation wallBoundaryDraft,
         DungeonEditorDoorBoundaryDraftRuntimeOperation doorBoundaryDraft,
         DungeonEditorCorridorDraftRuntimeOperation corridorDraft,
         DungeonEditorStairDraftRuntimeOperation stairDraft,
+        DungeonEditorStairDeleteRuntimeOperation stairDelete,
+        DungeonEditorTransitionRuntimeOperation transition,
+        DungeonEditorFeatureMarkerRuntimeOperation featureMarker,
         DungeonEditorSelectedHandleRuntimeOperation selectedHandle,
         DetailUseCases detail
 ) {

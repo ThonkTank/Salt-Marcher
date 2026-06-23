@@ -112,11 +112,14 @@ final class DungeonEditorAuthoredRuntimeAssembly {
         return new DungeonEditorAuthoredRuntimeOperations(new DungeonEditorAuthoredRuntimeOperationUseCases(
                 mapUseCases(runtime),
                 projectionUseCases(runtime),
-                DungeonEditorAuthoredToolWorkflowUseCases.create(runtime),
+                new DungeonEditorRoomPaintRuntimeOperation(runtime),
                 new DungeonEditorWallBoundaryDraftRuntimeOperation(runtime),
                 new DungeonEditorDoorBoundaryDraftRuntimeOperation(runtime),
                 new DungeonEditorCorridorDraftRuntimeOperation(runtime),
                 new DungeonEditorStairDraftRuntimeOperation(runtime),
+                new DungeonEditorStairDeleteRuntimeOperation(runtime),
+                new DungeonEditorTransitionRuntimeOperation(runtime),
+                new DungeonEditorFeatureMarkerRuntimeOperation(runtime),
                 selectedHandle,
                 detailUseCases(runtime)));
     }

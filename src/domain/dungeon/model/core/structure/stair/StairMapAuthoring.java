@@ -35,15 +35,6 @@ public final class StairMapAuthoring {
                 : copyWithConnections(dungeonMap, dungeonMap.corridors(), nextStairs);
     }
 
-    public StairCollection withAuthoredStair(DungeonMap dungeonMap, long stairId, Cell anchor, String shapeName) {
-        return dungeonMap.stairs().withAuthoredStair(
-                stairId,
-                dungeonMap.metadata().mapId().value(),
-                anchor,
-                shapeName,
-                roomInteriorCells(dungeonMap));
-    }
-
     public StairCollection withAuthoredStair(
             DungeonMap dungeonMap,
             long stairId,
@@ -61,13 +52,6 @@ public final class StairMapAuthoring {
                 directionName,
                 dimension1,
                 dimension2,
-                roomInteriorCells(dungeonMap));
-    }
-
-    public boolean canCreateAuthoredStair(DungeonMap dungeonMap, Cell anchor, String shapeName) {
-        return dungeonMap.stairs().canCreateAuthoredStairGeometry(
-                anchor,
-                shapeName,
                 roomInteriorCells(dungeonMap));
     }
 
