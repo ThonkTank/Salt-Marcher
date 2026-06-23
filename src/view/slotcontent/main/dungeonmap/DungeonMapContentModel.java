@@ -61,12 +61,9 @@ public final class DungeonMapContentModel {
             new DungeonMapPreviewDiffContentPartModel();
     private final DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel =
             new DungeonMapRoomLabelPlacementContentPartModel();
+    private final DungeonMapFrameConsumptionContentPartModel frameConsumptionContentPartModel =
+            new DungeonMapFrameConsumptionContentPartModel();
     private DungeonMapRenderState renderState;
-    private DungeonEditorMapSurfaceSnapshot currentEditorSurfaceSnapshot = DungeonEditorMapSurfaceSnapshot.empty();
-    private MapInteractionFrame currentMapInteractionFrame = MapInteractionFrame.empty();
-    private boolean editorSurfaceSnapshotCurrent;
-    private PointerTarget currentHoverTarget = PointerTarget.empty();
-    private Map<String, PointerTarget> pointerTargets = Map.of();
 
     // Public ContentModel API
 
@@ -76,7 +73,9 @@ public final class DungeonMapContentModel {
                 RenderScene.empty(this.placeholderTitle),
                 viewportContentPartModel.currentViewport()));
         renderState = DungeonMapRenderState.empty(this.placeholderTitle, editorMode);
-        showRenderScene(renderSceneContentPartModel.toSceneProjection(renderState, currentHoverTarget));
+        showRenderScene(renderSceneContentPartModel.toSceneProjection(
+                renderState,
+                frameConsumptionContentPartModel.currentHoverTarget()));
     }
 
     public ReadOnlyObjectProperty<CanvasState> canvasStateProperty() {
@@ -134,23 +133,28 @@ public final class DungeonMapContentModel {
     public PointerTarget resolvePointerTarget(double sceneX, double sceneY, boolean preferBoundary) {
         return pointerTargetContentPartModel.choosePrimary(
                 hitsAt(sceneX, sceneY),
-                pointerTargets,
+                frameConsumptionContentPartModel.currentPointerTargets(),
                 sceneX,
                 sceneY,
                 preferBoundary);
     }
 
     public void updateHoverTarget(PointerTarget target) {
-        PointerTarget nextTarget = selectableHoverTarget(target);
-        if (sameHoverTarget(nextTarget, currentHoverTarget)) {
+        if (!frameConsumptionContentPartModel.updateHoverTarget(target)) {
             return;
         }
-        currentHoverTarget = nextTarget;
-        showRenderScene(renderSceneContentPartModel.toSceneProjection(renderState, currentHoverTarget));
+        showRenderScene(renderSceneContentPartModel.toSceneProjection(
+                renderState,
+                frameConsumptionContentPartModel.currentHoverTarget()));
     }
 
     public void clearHoverTarget() {
-        updateHoverTarget(PointerTarget.empty());
+        if (!frameConsumptionContentPartModel.clearHoverTarget()) {
+            return;
+        }
+        showRenderScene(renderSceneContentPartModel.toSceneProjection(
+                renderState,
+                frameConsumptionContentPartModel.currentHoverTarget()));
     }
 
     public PointerTarget resolveLabelPointerTarget(double sceneX, double sceneY, String labelKind) {
@@ -185,40 +189,30 @@ public final class DungeonMapContentModel {
             DungeonEditorMapSurfaceSnapshot editorSnapshot,
             MapInteractionFrame interactionFrame
     ) {
-        DungeonEditorMapSurfaceSnapshot safeSnapshot = editorSnapshot == null
-                ? DungeonEditorMapSurfaceSnapshot.empty()
-                : editorSnapshot;
-        MapInteractionFrame safeFrame = interactionFrame == null ? MapInteractionFrame.empty() : interactionFrame;
-        if (editorSurfaceSnapshotCurrent
-                && safeSnapshot.equals(currentEditorSurfaceSnapshot)
-                && safeFrame.equals(currentMapInteractionFrame)) {
+        DungeonMapFrameConsumptionContentPartModel.EditorSurfaceFrame frame =
+                frameConsumptionContentPartModel.consumeEditorSurfaceFrame(editorSnapshot, interactionFrame);
+        if (!frame.changed()) {
             return;
         }
-        currentEditorSurfaceSnapshot = safeSnapshot;
-        currentMapInteractionFrame = safeFrame;
-        editorSurfaceSnapshotCurrent = true;
         showRenderState(DungeonMapSnapshotMapper.mapEditorSurface(
                 placeholderTitle,
-                safeSnapshot,
+                frame.editorSnapshot(),
                 roomLabelPlacementContentPartModel,
-                previewDiffContentPartModel), safeFrame);
+                previewDiffContentPartModel), frame.interactionFrame());
     }
 
     public void applyTravelSnapshot(TravelDungeonSnapshot travelSnapshot) {
-        editorSurfaceSnapshotCurrent = false;
-        currentMapInteractionFrame = MapInteractionFrame.empty();
         showRenderState(DungeonMapSnapshotMapper.mapTravel(
                 placeholderTitle,
                 travelSnapshot,
-                roomLabelPlacementContentPartModel), MapInteractionFrame.empty());
+                roomLabelPlacementContentPartModel), frameConsumptionContentPartModel.consumeTravelSnapshot());
     }
 
     private void showRenderState(DungeonMapRenderState nextRenderState, MapInteractionFrame interactionFrame) {
         renderState = nextRenderState == null ? renderState : nextRenderState;
-        MapInteractionFrame safeFrame = interactionFrame == null ? MapInteractionFrame.empty() : interactionFrame;
-        pointerTargets = safeFrame.pointerTargets();
-        currentHoverTarget = retainedHoverTarget(currentHoverTarget, pointerTargets);
-        showRenderScene(renderSceneContentPartModel.toSceneProjection(renderState, currentHoverTarget));
+        showRenderScene(renderSceneContentPartModel.toSceneProjection(
+                renderState,
+                frameConsumptionContentPartModel.consumeRenderFrame(interactionFrame)));
     }
 
     private void showRenderScene(DungeonMapRenderSceneContentPartModel.RenderSceneProjection projection) {
@@ -252,56 +246,7 @@ public final class DungeonMapContentModel {
     }
 
     static PointerTarget selectableHoverTarget(PointerTarget target) {
-        PointerTarget safeTarget = target == null ? PointerTarget.empty() : target;
-        if (safeTarget.targetKind() == PointerTargetKind.EMPTY || safeTarget.isRoomLabelTarget()) {
-            return PointerTarget.empty();
-        }
-        return safeTarget;
-    }
-
-    private static PointerTarget retainedHoverTarget(
-            PointerTarget target,
-            Map<String, PointerTarget> availableTargets
-    ) {
-        PointerTarget safeTarget = selectableHoverTarget(target);
-        if (safeTarget.targetKind() == PointerTargetKind.EMPTY) {
-            return PointerTarget.empty();
-        }
-        for (PointerTarget availableTarget : availableTargets.values()) {
-            if (sameHoverTarget(safeTarget, availableTarget)) {
-                return selectableHoverTarget(availableTarget);
-            }
-        }
-        return PointerTarget.empty();
-    }
-
-    private static boolean sameHoverTarget(PointerTarget first, PointerTarget second) {
-        PointerTarget safeFirst = selectableHoverTarget(first);
-        PointerTarget safeSecond = selectableHoverTarget(second);
-        if (safeFirst.targetKind() != safeSecond.targetKind()) {
-            return false;
-        }
-        if (safeFirst.targetKind() == PointerTargetKind.HANDLE) {
-            return safeFirst.handleRef().equals(safeSecond.handleRef());
-        }
-        if (safeFirst.targetKind() == PointerTargetKind.BOUNDARY) {
-            return safeFirst.ownerId() == safeSecond.ownerId()
-                    && Objects.equals(safeFirst.topologyRef(), safeSecond.topologyRef());
-        }
-        if (safeFirst.targetKind() == PointerTargetKind.LABEL) {
-            return safeFirst.labelKind().equals(safeSecond.labelKind())
-                    && safeFirst.ownerId() == safeSecond.ownerId()
-                    && safeFirst.clusterId() == safeSecond.clusterId()
-                    && Objects.equals(safeFirst.topologyRef(), safeSecond.topologyRef());
-        }
-        if (safeFirst.targetKind() == PointerTargetKind.CELL
-                || safeFirst.targetKind() == PointerTargetKind.GRAPH_NODE) {
-            return safeFirst.elementKind().equals(safeSecond.elementKind())
-                    && safeFirst.ownerId() == safeSecond.ownerId()
-                    && safeFirst.clusterId() == safeSecond.clusterId()
-                    && Objects.equals(safeFirst.topologyRef(), safeSecond.topologyRef());
-        }
-        return safeFirst.equals(safeSecond);
+        return DungeonMapFrameConsumptionContentPartModel.selectableHoverTarget(target);
     }
 
     private void setCanvasState(CanvasState nextState) {
