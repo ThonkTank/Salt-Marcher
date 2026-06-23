@@ -25,6 +25,8 @@ import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.BoundaryPrimitive;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.GlyphPrimitive;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditState;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditorPresentation;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.MapCanvasPoint;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.MapCanvasPolygonPrimitive;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PaintStyle;
@@ -98,7 +100,7 @@ public class DungeonMapView extends BorderPane {
                     redraw(after);
                     showInlineLabelEditor(presentationModel.currentInlineLabelEditorPresentation(), true);
                 };
-        ChangeListener<DungeonMapContentModel.InlineLabelEditState> inlineLabelEditListener =
+        ChangeListener<InlineLabelEditState> inlineLabelEditListener =
                 (ignored, before, after) -> {
                     showInlineLabelEditor(
                             presentationModel.currentInlineLabelEditorPresentation(),
@@ -158,7 +160,7 @@ public class DungeonMapView extends BorderPane {
     }
 
     private void showInlineLabelEditor(
-            DungeonMapContentModel.InlineLabelEditorPresentation presentation,
+            InlineLabelEditorPresentation presentation,
             boolean preserveSelection
     ) {
         inlineLabelEditor.resizeRelocate(
@@ -252,8 +254,8 @@ public class DungeonMapView extends BorderPane {
     }
 
     private static boolean activatesInlineLabelEditor(
-            DungeonMapContentModel.InlineLabelEditState before,
-            DungeonMapContentModel.InlineLabelEditState after
+            InlineLabelEditState before,
+            InlineLabelEditState after
     ) {
         return after != null
                 && after.active()
@@ -261,8 +263,8 @@ public class DungeonMapView extends BorderPane {
     }
 
     private static boolean preservesInlineLabelEditorSelection(
-            DungeonMapContentModel.InlineLabelEditState before,
-            DungeonMapContentModel.InlineLabelEditState after
+            InlineLabelEditState before,
+            InlineLabelEditState after
     ) {
         return !activatesInlineLabelEditor(before, after);
     }

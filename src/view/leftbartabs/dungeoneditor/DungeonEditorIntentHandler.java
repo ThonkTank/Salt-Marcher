@@ -20,6 +20,8 @@ import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDes
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditCandidate;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditState;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 
 final class DungeonEditorIntentHandler {
@@ -368,7 +370,7 @@ final class DungeonEditorIntentHandler {
     }
 
     private boolean consumeActiveInlineEditBoundary(DungeonMapViewInputEvent event) {
-        DungeonMapContentModel.InlineLabelEditState editState = mapContentModel.currentInlineLabelEditState();
+        InlineLabelEditState editState = mapContentModel.currentInlineLabelEditState();
         if (editState == null || !editState.active()) {
             return false;
         }
@@ -492,7 +494,7 @@ final class DungeonEditorIntentHandler {
         if (!editTarget.isLabelTarget()) {
             return false;
         }
-        Optional<DungeonMapContentModel.InlineLabelEditCandidate> editCandidate =
+        Optional<InlineLabelEditCandidate> editCandidate =
                 mapContentModel.inlineLabelEditCandidate(editTarget);
         if (editCandidate.isEmpty()) {
             return false;
@@ -509,7 +511,7 @@ final class DungeonEditorIntentHandler {
     }
 
     private static DungeonEditorInlineLabelEditSession inlineLabelEditSession(
-            DungeonMapContentModel.InlineLabelEditCandidate candidate
+            InlineLabelEditCandidate candidate
     ) {
         DungeonMapContentModel.PointerTarget target = candidate.target();
         LabelNameInput input = inlineLabelNameInput(target);

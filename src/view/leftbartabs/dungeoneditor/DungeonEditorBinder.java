@@ -13,6 +13,7 @@ import src.features.dungeon.shell.DungeonEditorFeatureShellBinding;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditProjection;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
 final class DungeonEditorBinder {
@@ -74,16 +75,16 @@ final class DungeonEditorBinder {
         mapContentModel.applyEditorSurfaceFrame(frame.mapSurface(), contributionModel.currentMapInteractionFrame());
     }
 
-    private static DungeonMapContentModel.InlineLabelEditProjection inlineLabelProjection(
+    private static InlineLabelEditProjection inlineLabelProjection(
             DungeonEditorInlineLabelEditSession session
     ) {
         DungeonEditorInlineLabelEditSession safeSession = session == null
                 ? DungeonEditorInlineLabelEditSession.inactive()
                 : session;
         if (!safeSession.active()) {
-            return DungeonMapContentModel.InlineLabelEditProjection.inactive();
+            return InlineLabelEditProjection.inactive();
         }
-        return new DungeonMapContentModel.InlineLabelEditProjection(
+        return new InlineLabelEditProjection(
                 true,
                 safeSession.labelKind(),
                 safeSession.ownerId(),

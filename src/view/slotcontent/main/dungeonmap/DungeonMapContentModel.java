@@ -47,7 +47,8 @@ public final class DungeonMapContentModel {
 
     private final String placeholderTitle;
     private final ReadOnlyObjectWrapper<CanvasState> canvasState;
-    private final ReadOnlyObjectWrapper<InlineLabelEditState> inlineLabelEditState;
+    private final DungeonMapInlineLabelUiStateContentPartModel inlineLabelUiStateContentPartModel =
+            new DungeonMapInlineLabelUiStateContentPartModel();
     private final DungeonMapRenderSceneContentPartModel renderSceneContentPartModel =
             new DungeonMapRenderSceneContentPartModel();
     private final DungeonMapViewportContentPartModel viewportContentPartModel =
@@ -74,7 +75,6 @@ public final class DungeonMapContentModel {
         canvasState = new ReadOnlyObjectWrapper<>(CanvasState.initial(
                 RenderScene.empty(this.placeholderTitle),
                 viewportContentPartModel.currentViewport()));
-        inlineLabelEditState = new ReadOnlyObjectWrapper<>(InlineLabelEditState.inactive());
         renderState = DungeonMapRenderState.empty(this.placeholderTitle, editorMode);
         showRenderScene(renderSceneContentPartModel.toSceneProjection(renderState, currentHoverTarget));
     }
@@ -84,7 +84,7 @@ public final class DungeonMapContentModel {
     }
 
     public ReadOnlyObjectProperty<InlineLabelEditState> inlineLabelEditStateProperty() {
-        return inlineLabelEditState.getReadOnlyProperty();
+        return inlineLabelUiStateContentPartModel.inlineLabelEditStateProperty();
     }
 
     public ReadOnlyDoubleProperty zoomProperty() {
@@ -96,11 +96,11 @@ public final class DungeonMapContentModel {
     }
 
     public InlineLabelEditState currentInlineLabelEditState() {
-        return inlineLabelEditState.get();
+        return inlineLabelUiStateContentPartModel.currentInlineLabelEditState();
     }
 
     InlineLabelEditorPresentation currentInlineLabelEditorPresentation() {
-        return InlineLabelEditorPresentation.from(inlineLabelEditState.get(), currentViewport());
+        return inlineLabelUiStateContentPartModel.currentInlineLabelEditorPresentation(currentViewport());
     }
 
     public Viewport currentViewport() {
@@ -174,22 +174,11 @@ public final class DungeonMapContentModel {
     }
 
     public Optional<InlineLabelEditCandidate> inlineLabelEditCandidate(PointerTarget target) {
-        PointerTarget safeTarget = target == null ? PointerTarget.empty() : target;
-        if (safeTarget.targetKind() != PointerTargetKind.LABEL) {
-            return Optional.empty();
-        }
-        return labelForTarget(safeTarget).map(label -> new InlineLabelEditCandidate(
-                safeTarget,
-                label.label(),
-                label.q(),
-                label.r(),
-                DungeonMapRenderSceneContentPartModel.SceneGeometry.Label.labelWidthScene(label),
-                DungeonMapRenderSceneContentPartModel.SceneGeometry.Label.labelHeightScene(label),
-                label.rotationDegrees()));
+        return inlineLabelUiStateContentPartModel.inlineLabelEditCandidate(target, renderState.labels());
     }
 
     public void applyInlineLabelEditProjection(InlineLabelEditProjection projection) {
-        inlineLabelEditState.set(InlineLabelEditState.fromProjection(projection));
+        inlineLabelUiStateContentPartModel.applyInlineLabelEditProjection(projection);
     }
 
     public void applyEditorSurfaceFrame(
@@ -244,24 +233,6 @@ public final class DungeonMapContentModel {
 
     private List<DungeonMapHitGeometryContentPartModel.CanvasHit> hitsAt(double sceneX, double sceneY) {
         return hitGeometryContentPartModel.hitsAt(sceneX, sceneY, currentViewport().gridSize());
-    }
-
-    private Optional<DungeonMapRenderState.Label> labelForTarget(PointerTarget target) {
-        for (DungeonMapRenderState.Label label : renderState.labels()) {
-            if (sameLabelTarget(label, target)) {
-                return Optional.of(label);
-            }
-        }
-        return Optional.empty();
-    }
-
-    private static boolean sameLabelTarget(DungeonMapRenderState.Label label, PointerTarget target) {
-        return label != null
-                && target != null
-                && label.ownerId() == target.ownerId()
-                && label.clusterId() == target.clusterId()
-                && label.labelKind().equals(target.labelKind())
-                && label.topologyRef().equals(target.topologyRef());
     }
 
     private static boolean labelContains(DungeonMapRenderState.Label label, double sceneX, double sceneY) {
@@ -402,23 +373,6 @@ public final class DungeonMapContentModel {
         ) {
             return new InlineLabelEditState(true, target, text, centerX, centerY, width, height, rotationDegrees);
         }
-
-        static InlineLabelEditState fromProjection(InlineLabelEditProjection projection) {
-            InlineLabelEditProjection safeProjection = projection == null
-                    ? InlineLabelEditProjection.inactive()
-                    : projection;
-            if (!safeProjection.active()) {
-                return inactive();
-            }
-            return active(
-                    pointerTargetFromProjection(safeProjection),
-                    safeProjection.text(),
-                    safeProjection.centerX(),
-                    safeProjection.centerY(),
-                    safeProjection.width(),
-                    safeProjection.height(),
-                    safeProjection.rotationDegrees());
-        }
     }
 
     public record InlineLabelEditProjection(
@@ -436,10 +390,10 @@ public final class DungeonMapContentModel {
             double rotationDegrees
     ) {
         public InlineLabelEditProjection {
-            labelKind = normalizeKind(labelKind, EMPTY_LABEL_KIND);
+            labelKind = normalizeInlineLabelKind(labelKind, EMPTY_LABEL_KIND);
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
-            topologyKind = normalizeKind(topologyKind, EMPTY_KIND);
+            topologyKind = normalizeInlineLabelKind(topologyKind, EMPTY_KIND);
             topologyId = Math.max(0L, topologyId);
             text = text == null ? "" : text;
             width = Math.max(1.0, width);
@@ -480,16 +434,6 @@ public final class DungeonMapContentModel {
         }
     }
 
-    private static PointerTarget pointerTargetFromProjection(InlineLabelEditProjection projection) {
-        return PointerTarget.label(
-                projection.labelKind(),
-                projection.ownerId(),
-                projection.clusterId(),
-                new DungeonMapRenderState.TopologyRef(
-                        projection.topologyKind(),
-                        projection.topologyId()));
-    }
-
     record InlineLabelEditorPresentation(
             boolean visible,
             String text,
@@ -500,25 +444,7 @@ public final class DungeonMapContentModel {
             double rotationDegrees
     ) {
 
-        private static InlineLabelEditorPresentation from(InlineLabelEditState editState, Viewport viewport) {
-            InlineLabelEditState safeState = editState == null ? InlineLabelEditState.inactive() : editState;
-            Viewport safeViewport = viewport == null ? Viewport.initial() : viewport;
-            if (!safeState.active()) {
-                return hidden();
-            }
-            double screenWidth = safeState.width() * safeViewport.gridSize();
-            double screenHeight = Math.max(24.0, safeState.height() * safeViewport.gridSize());
-            return new InlineLabelEditorPresentation(
-                    true,
-                    safeState.text(),
-                    safeViewport.sceneToScreenX(safeState.centerX()) - screenWidth / 2.0,
-                    safeViewport.sceneToScreenY(safeState.centerY()) - screenHeight / 2.0,
-                    screenWidth,
-                    screenHeight,
-                    safeState.rotationDegrees());
-        }
-
-        private static InlineLabelEditorPresentation hidden() {
+        static InlineLabelEditorPresentation hidden() {
             return new InlineLabelEditorPresentation(false, "", 0.0, 0.0, 0.0, 0.0, 0.0);
         }
 
@@ -527,6 +453,13 @@ public final class DungeonMapContentModel {
             width = Math.max(0.0, width);
             height = Math.max(0.0, height);
         }
+    }
+
+    private static String normalizeInlineLabelKind(String value, String fallback) {
+        String safeFallback = fallback == null || fallback.isBlank() ? EMPTY_KIND : fallback;
+        return value == null || value.isBlank()
+                ? safeFallback
+                : value.trim().toUpperCase(Locale.ROOT);
     }
 
     public record Viewport(
