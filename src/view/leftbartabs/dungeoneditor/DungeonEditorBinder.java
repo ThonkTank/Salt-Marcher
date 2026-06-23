@@ -71,7 +71,7 @@ final class DungeonEditorBinder {
     ) {
         contributionModel.applyFrame(frame);
         mapContentModel.applyInlineLabelEditProjection(inlineLabelProjection(frame.inlineLabelEditSession()));
-        mapContentModel.applyEditorSurfaceSnapshot(frame.mapSurface());
+        mapContentModel.applyEditorSurfaceFrame(frame.mapSurface(), contributionModel.currentMapInteractionFrame());
     }
 
     private static DungeonMapContentModel.InlineLabelEditProjection inlineLabelProjection(

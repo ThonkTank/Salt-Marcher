@@ -1,6 +1,7 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
@@ -22,6 +23,8 @@ public final class DungeonEditorContributionModel {
     private final DungeonEditorStateContentModel stateContentModel;
 
     private InteractionState interactionState = InteractionState.empty();
+    private DungeonMapContentModel.MapInteractionFrame mapInteractionFrame =
+            DungeonMapContentModel.MapInteractionFrame.empty();
 
     DungeonEditorContributionModel(DungeonEditorStateContentModel stateContentModel) {
         this.stateContentModel = Objects.requireNonNull(stateContentModel, "stateContentModel");
@@ -31,12 +34,17 @@ public final class DungeonEditorContributionModel {
         DungeonEditorRenderFrame safeFrame = safeFrame(frame);
         DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
         interactionState = InteractionState.from(facts);
+        mapInteractionFrame = mapInteractionFrame(facts.mapInteractionFrame());
         controlsProjection.set(ControlsProjection.from(facts));
         stateContentModel.apply(safeFrame.state(), stateContext(safeFrame));
     }
 
     InteractionState currentInteractionState() {
         return interactionState;
+    }
+
+    DungeonMapContentModel.MapInteractionFrame currentMapInteractionFrame() {
+        return mapInteractionFrame;
     }
 
     PointerTarget runtimePointerTarget(DungeonMapContentModel.PointerTarget target) {
@@ -71,6 +79,65 @@ public final class DungeonEditorContributionModel {
                 safeBoundary.endQ(),
                 safeBoundary.endR(),
                 safeBoundary.endLevel());
+    }
+
+    private static DungeonMapContentModel.MapInteractionFrame mapInteractionFrame(
+            DungeonEditorPreparedFrameFacts.MapInteractionFrame frame
+    ) {
+        DungeonEditorPreparedFrameFacts.MapInteractionFrame safeFrame = frame == null
+                ? DungeonEditorPreparedFrameFacts.MapInteractionFrame.empty()
+                : frame;
+        return new DungeonMapContentModel.MapInteractionFrame(
+                safeFrame.pointerTargets().entrySet().stream()
+                        .collect(java.util.stream.Collectors.toMap(
+                                Map.Entry::getKey,
+                                entry -> pointerTarget(entry.getValue()),
+                                (first, second) -> first,
+                                java.util.LinkedHashMap::new)));
+    }
+
+    private static DungeonMapContentModel.PointerTarget pointerTarget(
+            DungeonEditorPreparedFrameFacts.PointerTarget target
+    ) {
+        DungeonEditorPreparedFrameFacts.PointerTarget safeTarget = target == null
+                ? null
+                : target;
+        if (safeTarget == null) {
+            return DungeonMapContentModel.PointerTarget.empty();
+        }
+        return DungeonMapContentModel.PointerTarget.prepared(new DungeonMapContentModel.PointerProjection(
+                safeTarget.targetKind(),
+                safeTarget.labelKind(),
+                safeTarget.elementKind(),
+                safeTarget.ownerId(),
+                safeTarget.clusterId(),
+                safeTarget.topologyKind(),
+                safeTarget.topologyId(),
+                safeTarget.handleRef(),
+                boundaryTarget(safeTarget.boundaryRef())));
+    }
+
+    private static DungeonMapContentModel.BoundaryTarget boundaryTarget(
+            DungeonEditorPreparedFrameFacts.BoundaryTarget boundary
+    ) {
+        DungeonEditorPreparedFrameFacts.BoundaryTarget safeBoundary = boundary == null
+                ? null
+                : boundary;
+        if (safeBoundary == null) {
+            return DungeonMapContentModel.BoundaryTarget.empty();
+        }
+        return DungeonMapContentModel.BoundaryTarget.prepared(new DungeonMapContentModel.BoundaryProjection(
+                safeBoundary.kind(),
+                safeBoundary.key(),
+                safeBoundary.ownerId(),
+                safeBoundary.topologyKind(),
+                safeBoundary.topologyId(),
+                safeBoundary.startQ(),
+                safeBoundary.startR(),
+                safeBoundary.startLevel(),
+                safeBoundary.endQ(),
+                safeBoundary.endR(),
+                safeBoundary.endLevel()));
     }
 
     void bindControlsContentModel(DungeonEditorControlsContentModel contentModel) {

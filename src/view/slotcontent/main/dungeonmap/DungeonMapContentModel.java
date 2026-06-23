@@ -24,6 +24,7 @@ import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
+import src.domain.dungeon.published.DungeonEditorMapHitRef;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
@@ -64,6 +65,7 @@ public final class DungeonMapContentModel {
             new DungeonMapRoomLabelPlacementContentPartModel();
     private DungeonMapRenderState renderState;
     private DungeonEditorMapSurfaceSnapshot currentEditorSurfaceSnapshot = DungeonEditorMapSurfaceSnapshot.empty();
+    private MapInteractionFrame currentMapInteractionFrame = MapInteractionFrame.empty();
     private boolean editorSurfaceSnapshotCurrent;
     private PointerTarget currentHoverTarget = PointerTarget.empty();
     private Map<String, PointerTarget> pointerTargets = Map.of();
@@ -227,33 +229,42 @@ public final class DungeonMapContentModel {
         inlineLabelEditState.set(InlineLabelEditState.fromProjection(projection));
     }
 
-    public void applyEditorSurfaceSnapshot(DungeonEditorMapSurfaceSnapshot editorSnapshot) {
+    public void applyEditorSurfaceFrame(
+            DungeonEditorMapSurfaceSnapshot editorSnapshot,
+            MapInteractionFrame interactionFrame
+    ) {
         DungeonEditorMapSurfaceSnapshot safeSnapshot = editorSnapshot == null
                 ? DungeonEditorMapSurfaceSnapshot.empty()
                 : editorSnapshot;
-        if (editorSurfaceSnapshotCurrent && safeSnapshot.equals(currentEditorSurfaceSnapshot)) {
+        MapInteractionFrame safeFrame = interactionFrame == null ? MapInteractionFrame.empty() : interactionFrame;
+        if (editorSurfaceSnapshotCurrent
+                && safeSnapshot.equals(currentEditorSurfaceSnapshot)
+                && safeFrame.equals(currentMapInteractionFrame)) {
             return;
         }
         currentEditorSurfaceSnapshot = safeSnapshot;
+        currentMapInteractionFrame = safeFrame;
         editorSurfaceSnapshotCurrent = true;
         showRenderState(DungeonMapSnapshotMapper.mapEditorSurface(
                 placeholderTitle,
                 safeSnapshot,
                 roomLabelPlacementContentPartModel,
-                previewDiffContentPartModel));
+                previewDiffContentPartModel), safeFrame);
     }
 
     public void applyTravelSnapshot(TravelDungeonSnapshot travelSnapshot) {
         editorSurfaceSnapshotCurrent = false;
+        currentMapInteractionFrame = MapInteractionFrame.empty();
         showRenderState(DungeonMapSnapshotMapper.mapTravel(
                 placeholderTitle,
                 travelSnapshot,
-                roomLabelPlacementContentPartModel));
+                roomLabelPlacementContentPartModel), MapInteractionFrame.empty());
     }
 
-    private void showRenderState(DungeonMapRenderState nextRenderState) {
+    private void showRenderState(DungeonMapRenderState nextRenderState, MapInteractionFrame interactionFrame) {
         renderState = nextRenderState == null ? renderState : nextRenderState;
-        pointerTargets = PointerTargetIndex.from(renderState);
+        MapInteractionFrame safeFrame = interactionFrame == null ? MapInteractionFrame.empty() : interactionFrame;
+        pointerTargets = safeFrame.pointerTargets();
         currentHoverTarget = retainedHoverTarget(currentHoverTarget, pointerTargets);
         showRenderScene(SCENE_PROJECTOR.toScene(renderState, currentHoverTarget));
     }
@@ -1520,7 +1531,7 @@ public final class DungeonMapContentModel {
                     && sameTopologyRef(safeTarget.topologyRef(), cell.topologyRef())
                     && safeTarget.ownerId() == cell.ownerId()
                     && safeTarget.clusterId() == cell.clusterId()
-                    && safeTarget.elementKind().equals(PointerTargetIndex.pointerElementKind(cell.kind()));
+                    && safeTarget.elementKind().equals(pointerElementKind(cell.kind()));
         }
 
         private static boolean hoveredEdge(PointerTarget target, DungeonMapRenderState.Edge edge) {
@@ -1728,37 +1739,43 @@ public final class DungeonMapContentModel {
             if (cell.preview()) {
                 return "";
             }
-            return "cell:" + cell.kind().name()
-                    + ":" + cell.ownerId()
-                    + ":" + cell.clusterId()
-                    + ":" + cell.topologyRef().kind()
-                    + ":" + cell.topologyRef().id();
+            return DungeonEditorMapHitRef.cell(
+                            cell.kind().name(),
+                            cell.ownerId(),
+                            cell.clusterId(),
+                            cell.topologyRef().kind(),
+                            cell.topologyRef().id())
+                    .value();
         }
 
         private static String edgeHitRef(DungeonMapRenderState.Edge edge) {
             if (edge.preview()) {
                 return "";
             }
-            return "edge:" + edge.kind().name()
-                    + ":" + edge.ownerId()
-                    + ":" + edge.topologyRef().kind()
-                    + ":" + edge.topologyRef().id()
-                    + ":" + edge.z()
-                    + ":" + sceneCoordinate(edge.startQ())
-                    + ":" + sceneCoordinate(edge.startR())
-                    + ":" + sceneCoordinate(edge.endQ())
-                    + ":" + sceneCoordinate(edge.endR());
+            return DungeonEditorMapHitRef.edge(
+                            edge.kind().name(),
+                            edge.ownerId(),
+                            edge.topologyRef().kind(),
+                            edge.topologyRef().id(),
+                            edge.z(),
+                            edge.startQ(),
+                            edge.startR(),
+                            edge.endQ(),
+                            edge.endR())
+                    .value();
         }
 
         private static String labelHitRef(DungeonMapRenderState.Label label) {
             if (label.preview() || ROOM_LABEL_KIND.equals(label.labelKind())) {
                 return "";
             }
-            return "label:" + label.ownerId()
-                    + ":" + label.clusterId()
-                    + ":" + label.topologyRef().kind()
-                    + ":" + label.topologyRef().id()
-                    + ":" + label.labelKind();
+            return DungeonEditorMapHitRef.label(
+                            label.ownerId(),
+                            label.clusterId(),
+                            label.topologyRef().kind(),
+                            label.topologyRef().id(),
+                            label.labelKind())
+                    .value();
         }
 
         private static String markerHitRef(DungeonMapRenderState.Marker marker) {
@@ -1769,161 +1786,67 @@ public final class DungeonMapContentModel {
             if (!HandleMarkerPresentation.hitIndexed(handle.kind())) {
                 return "";
             }
-            return "marker:" + handle.kindName()
-                    + ":" + handle.topologyRef().kind()
-                    + ":" + handle.topologyRef().id()
-                    + ":" + handle.ownerId()
-                    + ":" + handle.clusterId()
-                    + ":" + handle.corridorId()
-                    + ":" + handle.roomId()
-                    + ":" + handle.index()
-                    + ":" + handle.q()
-                    + ":" + handle.r()
-                    + ":" + handle.level()
-                    + ":" + handle.direction();
+            return DungeonEditorMapHitRef.marker(
+                            handle.ref(),
+                            handle.q(),
+                            handle.r(),
+                            handle.level())
+                    .value();
         }
 
         private static String graphNodeHitRef(DungeonMapRenderState.GraphNode node) {
-            return "graph-node:ROOM:" + node.id() + ":" + node.clusterId();
+            return DungeonEditorMapHitRef.graphNode(node.id(), node.clusterId()).value();
         }
 
-        private static int sceneCoordinate(double coordinate) {
-            return (int) Math.round(coordinate);
+    }
+
+    private static String pointerElementKind(DungeonMapRenderState.CellKind kind) {
+        return switch (kind) {
+            case FEATURE_POI, FEATURE_OBJECT, FEATURE_ENCOUNTER -> "FEATURE_MARKER";
+            default -> kind.name();
+        };
+    }
+
+    public record MapInteractionFrame(Map<String, PointerTarget> pointerTargets) {
+        public MapInteractionFrame {
+            pointerTargets = pointerTargets == null ? Map.of() : Map.copyOf(pointerTargets);
+        }
+
+        public static MapInteractionFrame empty() {
+            return new MapInteractionFrame(Map.of());
         }
     }
 
-    private static final class PointerTargetIndex {
-
-        private static Map<String, PointerTarget> from(DungeonMapRenderState displayModel) {
-            if (displayModel == null) {
-                return Map.of();
-            }
-            Map<String, PointerTarget> targets = new LinkedHashMap<>();
-            if (displayModel.isGraphView()) {
-                addGraphTargets(displayModel, targets);
-            } else {
-                addGridTargets(displayModel, targets);
-            }
-            return Map.copyOf(targets);
+    public record PointerProjection(
+            String targetKind,
+            String labelKind,
+            String elementKind,
+            long ownerId,
+            long clusterId,
+            String topologyKind,
+            long topologyId,
+            DungeonEditorHandleRef handleRef,
+            BoundaryTarget boundaryRef
+    ) {
+        public PointerProjection {
+            handleRef = handleRef == null ? DungeonEditorHandleRef.empty() : handleRef;
+            boundaryRef = boundaryRef == null ? BoundaryTarget.empty() : boundaryRef;
         }
+    }
 
-        private static void addGridTargets(DungeonMapRenderState displayModel, Map<String, PointerTarget> targets) {
-            addCellTargets(displayModel, targets);
-            addBoundaryTargets(displayModel, targets);
-            addMarkerTargets(displayModel, targets);
-            addLabelTargets(displayModel, targets);
-        }
-
-        private static void addCellTargets(DungeonMapRenderState displayModel, Map<String, PointerTarget> targets) {
-            for (DungeonMapRenderState.Cell cell : displayModel.cells()) {
-                if (LevelFilter.includeLevel(displayModel, cell.z())) {
-                    targets.put(SceneIdentity.cellHitRef(cell), PointerTarget.cell(
-                            pointerElementKind(cell.kind()),
-                            cell.ownerId(),
-                            cell.clusterId(),
-                            cell.topologyRef()));
-                }
-            }
-        }
-
-        private static void addBoundaryTargets(DungeonMapRenderState displayModel, Map<String, PointerTarget> targets) {
-            for (DungeonMapRenderState.Edge edge : displayModel.edges()) {
-                if (LevelFilter.includeLevel(displayModel, edge.z())) {
-                    targets.put(SceneIdentity.edgeHitRef(edge), PointerTarget.boundary(edgeBoundaryTarget(edge)));
-                }
-            }
-        }
-
-        private static String pointerElementKind(DungeonMapRenderState.CellKind kind) {
-            return switch (kind) {
-                case FEATURE_POI, FEATURE_OBJECT, FEATURE_ENCOUNTER -> "FEATURE_MARKER";
-                default -> kind.name();
-            };
-        }
-
-        private static BoundaryTarget edgeBoundaryTarget(DungeonMapRenderState.Edge edge) {
-            DungeonMapRenderState.TopologyRef topologyRef = edge.topologyRef();
-            String kind = edge.isDoor() ? "DOOR" : "WALL";
-            return new BoundaryTarget(
-                    kind,
-                    boundaryKey(
-                            kind,
-                            edge.ownerId(),
-                            topologyRef,
-                            edge.startQ(),
-                            edge.startR(),
-                            edge.z(),
-                            edge.endQ(),
-                            edge.endR(),
-                            edge.z()),
-                    edge.ownerId(),
-                    topologyRef,
-                    edge.startQ(),
-                    edge.startR(),
-                    edge.z(),
-                    edge.endQ(),
-                    edge.endR(),
-                    edge.z());
-        }
-
-        private static void addMarkerTargets(DungeonMapRenderState displayModel, Map<String, PointerTarget> targets) {
-            for (DungeonMapRenderState.Marker marker : displayModel.markers()) {
-                if (LevelFilter.includeLevel(displayModel, marker.z())) {
-                    String hitRef = SceneIdentity.markerHitRef(marker);
-                    if (!hitRef.isBlank()) {
-                        targets.put(hitRef, PointerTarget.handle(marker.handle().ref()));
-                    }
-                }
-            }
-        }
-
-        private static void addLabelTargets(DungeonMapRenderState displayModel, Map<String, PointerTarget> targets) {
-            for (DungeonMapRenderState.Label label : displayModel.labels()) {
-                if (LevelFilter.includeLevel(displayModel, label.z())) {
-                    String hitRef = SceneIdentity.labelHitRef(label);
-                    if (!hitRef.isBlank()) {
-                        targets.put(hitRef, PointerTarget.label(
-                            label.labelKind(),
-                            label.ownerId(),
-                            label.clusterId(),
-                            label.topologyRef()));
-                    }
-                }
-            }
-        }
-
-        private static void addGraphTargets(DungeonMapRenderState displayModel, Map<String, PointerTarget> targets) {
-            for (DungeonMapRenderState.GraphNode node : displayModel.graphNodes()) {
-                DungeonMapRenderState.TopologyRef topologyRef = new DungeonMapRenderState.TopologyRef("ROOM", node.id());
-                targets.put(SceneIdentity.graphNodeHitRef(node), PointerTarget.graphNode(
-                        node.id(),
-                        node.clusterId(),
-                        topologyRef));
-            }
-        }
-
-        private static String boundaryKey(
-                String kind,
-                long ownerId,
-                DungeonMapRenderState.TopologyRef topologyRef,
-                double startQ,
-                double startR,
-                int startLevel,
-                double endQ,
-                double endR,
-                int endLevel
-        ) {
-            return kind + ":"
-                    + ownerId + ":"
-                    + topologyRef.kind() + ":"
-                    + topologyRef.id() + ":"
-                    + startQ + ":"
-                    + startR + ":"
-                    + startLevel + ":"
-                    + endQ + ":"
-                    + endR + ":"
-                    + endLevel;
-        }
+    public record BoundaryProjection(
+            String kind,
+            String key,
+            long ownerId,
+            String topologyKind,
+            long topologyId,
+            double startQ,
+            double startR,
+            int startLevel,
+            double endQ,
+            double endR,
+            int endLevel
+    ) {
     }
 
     public enum PointerTargetKind {
@@ -1968,23 +1891,6 @@ public final class DungeonMapContentModel {
                     BoundaryTarget.empty());
         }
 
-        public static PointerTarget cell(
-                String elementKind,
-                long ownerId,
-                long clusterId,
-                DungeonMapRenderState.TopologyRef topologyRef
-        ) {
-            return new PointerTarget(
-                    PointerTargetKind.CELL,
-                    EMPTY_LABEL_KIND,
-                    elementKind,
-                    ownerId,
-                    clusterId,
-                    topologyRef,
-                    DungeonEditorHandleRef.empty(),
-                    BoundaryTarget.empty());
-        }
-
         public static PointerTarget label(
                 String labelKind,
                 long ownerId,
@@ -2005,49 +1911,28 @@ public final class DungeonMapContentModel {
                     BoundaryTarget.empty());
         }
 
-        public static PointerTarget graphNode(
-                long ownerId,
-                long clusterId,
-                DungeonMapRenderState.TopologyRef topologyRef
-        ) {
-            DungeonMapRenderState.TopologyRef safeTopologyRef = topologyRef == null
-                    ? DungeonMapRenderState.TopologyRef.empty()
-                    : topologyRef;
-            return new PointerTarget(
-                    PointerTargetKind.GRAPH_NODE,
+        public static PointerTarget prepared(PointerProjection projection) {
+            PointerProjection safeProjection = projection == null
+                    ? new PointerProjection(
+                    EMPTY_KIND,
                     EMPTY_LABEL_KIND,
-                    safeTopologyRef.kind(),
-                    ownerId,
-                    clusterId,
-                    safeTopologyRef,
-                    DungeonEditorHandleRef.empty(),
-                    BoundaryTarget.empty());
-        }
-
-        public static PointerTarget handle(DungeonEditorHandleRef handleRef) {
-            DungeonEditorHandleRef safeHandle = handleRef == null ? DungeonEditorHandleRef.empty() : handleRef;
-            return new PointerTarget(
-                    PointerTargetKind.HANDLE,
-                    EMPTY_LABEL_KIND,
-                    safeHandle.topologyRef().kind().name(),
-                    safeHandle.ownerId(),
-                    safeHandle.clusterId(),
-                    EditorProjectionFacts.topologyRef(safeHandle.topologyRef()),
-                    safeHandle,
-                    BoundaryTarget.empty());
-        }
-
-        public static PointerTarget boundary(BoundaryTarget boundaryRef) {
-            BoundaryTarget safeBoundary = boundaryRef == null ? BoundaryTarget.empty() : boundaryRef;
-            return new PointerTarget(
-                    PointerTargetKind.BOUNDARY,
-                    EMPTY_LABEL_KIND,
-                    safeBoundary.topologyRef().kind(),
-                    safeBoundary.ownerId(),
+                    EMPTY_KIND,
                     0L,
-                    safeBoundary.topologyRef(),
+                    0L,
+                    EMPTY_KIND,
+                    0L,
                     DungeonEditorHandleRef.empty(),
-                    safeBoundary);
+                    BoundaryTarget.empty())
+                    : projection;
+            return new PointerTarget(
+                    pointerTargetKind(safeProjection.targetKind()),
+                    safeProjection.labelKind(),
+                    safeProjection.elementKind(),
+                    safeProjection.ownerId(),
+                    safeProjection.clusterId(),
+                    new DungeonMapRenderState.TopologyRef(safeProjection.topologyKind(), safeProjection.topologyId()),
+                    safeProjection.handleRef(),
+                    safeProjection.boundaryRef());
         }
 
         public String topologyKind() {
@@ -2104,6 +1989,23 @@ public final class DungeonMapContentModel {
                     0);
         }
 
+        public static BoundaryTarget prepared(BoundaryProjection projection) {
+            BoundaryProjection safeProjection = projection == null
+                    ? new BoundaryProjection("WALL", "", 0L, EMPTY_KIND, 0L, 0.0, 0.0, 0, 0.0, 0.0, 0)
+                    : projection;
+            return new BoundaryTarget(
+                    safeProjection.kind(),
+                    safeProjection.key(),
+                    safeProjection.ownerId(),
+                    new DungeonMapRenderState.TopologyRef(safeProjection.topologyKind(), safeProjection.topologyId()),
+                    safeProjection.startQ(),
+                    safeProjection.startR(),
+                    safeProjection.startLevel(),
+                    safeProjection.endQ(),
+                    safeProjection.endR(),
+                    safeProjection.endLevel());
+        }
+
         public String topologyKind() {
             return topologyRef.kind();
         }
@@ -2112,6 +2014,17 @@ public final class DungeonMapContentModel {
             return topologyRef.id();
         }
 
+    }
+
+    private static PointerTargetKind pointerTargetKind(String value) {
+        if (value == null || value.isBlank()) {
+            return PointerTargetKind.EMPTY;
+        }
+        try {
+            return PointerTargetKind.valueOf(value.trim());
+        } catch (IllegalArgumentException ignored) {
+            return PointerTargetKind.EMPTY;
+        }
     }
 
     private static String normalizeKind(String value, String fallback) {
@@ -3448,7 +3361,8 @@ public final class DungeonMapContentModel {
                 level,
                 DungeonMapSnapshotMapper.featureMarkerKind(feature.kind()),
                 selected,
-                markerHandle(
+                featureMarkerHandle(
+                        feature,
                         (int) Math.floor(center.q()),
                         (int) Math.floor(center.r()),
                         level),
@@ -3553,7 +3467,16 @@ public final class DungeonMapContentModel {
             int r,
             int level
     ) {
-        return new DungeonMapRenderState.MarkerHandle(null, q, r, level);
+        return new DungeonMapRenderState.MarkerHandle(null, q, r, level, null);
+    }
+
+    static DungeonMapRenderState.MarkerHandle markerHandle(
+            DungeonMapRenderState.TopologyRef topologyRef,
+            int q,
+            int r,
+            int level
+    ) {
+        return new DungeonMapRenderState.MarkerHandle(null, q, r, level, topologyRef);
     }
 
     static DungeonMapRenderState.MarkerHandle markerHandle(
@@ -3562,7 +3485,20 @@ public final class DungeonMapContentModel {
             int r,
             int level
     ) {
-        return new DungeonMapRenderState.MarkerHandle(handle, q, r, level);
+        return new DungeonMapRenderState.MarkerHandle(handle, q, r, level, null);
+    }
+
+    static DungeonMapRenderState.MarkerHandle featureMarkerHandle(
+            DungeonEditorMapSnapshot.Feature feature,
+            int q,
+            int r,
+            int level
+    ) {
+        DungeonMapRenderState.TopologyRef topologyRef = EditorProjectionFacts.featureTopologyRef(feature);
+        if (!"FEATURE_MARKER".equals(topologyRef.kind())) {
+            return markerHandle(q, r, level);
+        }
+        return markerHandle(topologyRef, q, r, level);
     }
 
 }
@@ -4373,38 +4309,18 @@ public final class DungeonMapContentModel {
             @Nullable DungeonEditorHandleRef ref,
             int q,
             int r,
-            int level
+            int level,
+            DungeonMapRenderState.TopologyRef explicitTopologyRef
     ) {
-        String kindName() {
-            return ref == null || ref.kind() == null ? emptyKind() : ref.kind().name();
-        }
-
         @Nullable DungeonEditorHandleKind kind() {
             return ref == null ? null : ref.kind();
         }
 
         DungeonMapRenderState.TopologyRef topologyRef() {
-            return ref == null ? TopologyRef.empty() : EditorProjectionFacts.topologyRef(ref.topologyRef());
-        }
-
-        long ownerId() {
-            return ref == null ? 0L : ref.ownerId();
-        }
-
-        long clusterId() {
-            return ref == null ? 0L : ref.clusterId();
-        }
-
-        long corridorId() {
-            return ref == null ? 0L : ref.corridorId();
-        }
-
-        long roomId() {
-            return ref == null ? 0L : ref.roomId();
-        }
-
-        int index() {
-            return ref == null ? 0 : ref.index();
+            if (ref != null) {
+                return EditorProjectionFacts.topologyRef(ref.topologyRef());
+            }
+            return explicitTopologyRef == null ? TopologyRef.empty() : explicitTopologyRef;
         }
 
         String direction() {
@@ -4502,7 +4418,7 @@ public final class DungeonMapContentModel {
             label = label == null ? "" : label;
             kind = kind == null ? MarkerKind.DOOR : kind;
             handle = handle == null
-                    ? new MarkerHandle(null, 0, 0, 0)
+                    ? new MarkerHandle(null, 0, 0, 0, null)
                     : handle;
         }
 

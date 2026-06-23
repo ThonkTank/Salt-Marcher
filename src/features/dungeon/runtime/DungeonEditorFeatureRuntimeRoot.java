@@ -9,6 +9,7 @@ import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateModel;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTool;
@@ -436,12 +437,13 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     private DungeonEditorRenderFrame currentFrame() {
         DungeonEditorControlsSnapshot controls = controlsModel.current();
+        DungeonEditorMapSurfaceSnapshot mapSurface = mapSurfaceModel.current();
         DungeonEditorStateSnapshot state = stateModel.current();
         return new DungeonEditorRenderFrame(
                 controls,
-                mapSurfaceModel.current(),
+                mapSurface,
                 state,
-                preparedFacts(controls),
+                preparedFacts(controls, mapSurface),
                 prepareStatePanelRoomNarrationDrafts(controls, state),
                 prepareStatePanelLabelNameDraft(controls, state),
                 prepareStatePanelCorridorPointDraft(controls, state),
@@ -549,7 +551,10 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 targetTransitionId);
     }
 
-    private static DungeonEditorPreparedFrameFacts preparedFacts(DungeonEditorControlsSnapshot controlsSnapshot) {
+    private static DungeonEditorPreparedFrameFacts preparedFacts(
+            DungeonEditorControlsSnapshot controlsSnapshot,
+            DungeonEditorMapSurfaceSnapshot mapSurfaceSnapshot
+    ) {
         DungeonEditorControlsSnapshot safeControls = controlsSnapshot == null
                 ? DungeonEditorControlsSnapshot.empty("")
                 : controlsSnapshot;
@@ -581,7 +586,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 DungeonEditorPreparedFrameFacts.OverlayFrame.from(overlaySettings),
                 projectionLevel,
                 selectedTool.name(),
-                DungeonEditorToolFrameLabels.labelFor(selectedTool));
+                DungeonEditorToolFrameLabels.labelFor(selectedTool),
+                DungeonEditorPreparedFrameFacts.MapInteractionFrame.from(mapSurfaceSnapshot));
     }
 
     private static DungeonEditorPreparedFrameFacts.MapEntry toMapEntry(DungeonMapSummary summary) {
