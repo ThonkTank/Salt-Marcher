@@ -15,7 +15,6 @@ import src.features.dungeon.runtime.DungeonEditorInteractionValues.VertexTarget;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.BoundaryDraft;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.EdgeKey;
-import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.HandleTarget;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.HitKind;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.HitTarget;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.InteractionState;
@@ -153,16 +152,15 @@ public final class DungeonEditorRuntimeDraftOwnerProbe {
 
     private static PointerState corridorDoorPress() {
         DungeonTopologyRef doorRef = new DungeonTopologyRef(DungeonTopologyElementKind.DOOR, 41L);
-        HandleTarget handle = new HandleTarget(
-                DungeonEditorHandleType.DOOR.name(),
-                doorRef.kind().name(),
-                doorRef.id(),
+        DungeonEditorWorkspaceValues.HandleRef handle = new DungeonEditorWorkspaceValues.HandleRef(
+                DungeonEditorHandleType.DOOR,
+                doorRef,
                 41L,
                 CLUSTER_ID,
                 0L,
                 11L,
                 0,
-                new src.features.dungeon.runtime.DungeonEditorInteractionValues.CellTarget(4, 2, 0),
+                new DungeonEditorWorkspaceValues.Cell(4, 2, 0),
                 "EAST",
                 null,
                 List.of());

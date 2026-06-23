@@ -1,8 +1,8 @@
 package src.features.dungeon.runtime;
 
 import java.util.List;
+import src.domain.dungeon.published.DungeonEditorHandleRef;
 
-@SuppressWarnings("PMD.ExcessivePublicCount")
 public interface DungeonEditorRuntimeOperations {
     void selectMap(long mapIdValue);
 
@@ -227,7 +227,7 @@ public interface DungeonEditorRuntimeOperations {
             long clusterId,
             String topologyKind,
             long topologyId,
-            HandleTarget handle,
+            DungeonEditorHandleRef handle,
             BoundaryTarget boundary
     ) {
         public PointerTarget {
@@ -238,7 +238,7 @@ public interface DungeonEditorRuntimeOperations {
             clusterId = Math.max(0L, clusterId);
             topologyKind = safeText(topologyKind, "");
             topologyId = Math.max(0L, topologyId);
-            handle = handle == null ? HandleTarget.empty() : handle;
+            handle = handle == null ? DungeonEditorHandleRef.empty() : handle;
             boundary = boundary == null ? BoundaryTarget.empty() : boundary;
         }
 
@@ -251,81 +251,9 @@ public interface DungeonEditorRuntimeOperations {
                     0L,
                     "",
                     0L,
-                    HandleTarget.empty(),
+                    DungeonEditorHandleRef.empty(),
                     BoundaryTarget.empty());
         }
-    }
-
-    record HandleTarget(
-            String kind,
-            String topologyKind,
-            long topologyId,
-            long ownerId,
-            long clusterId,
-            long corridorId,
-            long roomId,
-            int orderIndex,
-            int q,
-            int r,
-            int level,
-            String direction,
-            boolean sourceEdgePresent,
-            int sourceStartQ,
-            int sourceStartR,
-            int sourceStartLevel,
-            int sourceEndQ,
-            int sourceEndR,
-            int sourceEndLevel,
-            List<SourceEdgeTarget> sourceEdges
-    ) {
-        public HandleTarget {
-            kind = safeText(kind, "");
-            topologyKind = safeText(topologyKind, "");
-            topologyId = Math.max(0L, topologyId);
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
-            corridorId = Math.max(0L, corridorId);
-            roomId = Math.max(0L, roomId);
-            orderIndex = Math.max(0, orderIndex);
-            direction = safeText(direction, "");
-            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
-        }
-
-        public static HandleTarget empty() {
-            return new HandleTarget(
-                    "",
-                    "",
-                    0L,
-                    0L,
-                    0L,
-                    0L,
-                    0L,
-                    0,
-                    0,
-                    0,
-                    0,
-                    "",
-                    false,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    0,
-                    List.of());
-        }
-
-    }
-
-    record SourceEdgeTarget(
-            boolean present,
-            int startQ,
-            int startR,
-            int startLevel,
-            int endQ,
-            int endR,
-            int endLevel
-    ) {
     }
 
     record BoundaryTarget(

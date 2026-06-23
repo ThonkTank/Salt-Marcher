@@ -15,8 +15,8 @@ import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorToolUseCase;
 import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorViewModeUseCase;
 import src.domain.dungeon.model.runtime.usecase.ShiftDungeonEditorProjectionLevelUseCase;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.published.DungeonEditorTool;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarration;
@@ -238,7 +238,7 @@ final class DungeonEditorAuthoredRuntimeOperations {
         selectedHandleOperation.scroll(levelDelta);
     }
 
-    void moveCorridorPoint(HandleTarget handle, int q, int r) {
+    void moveCorridorPoint(DungeonEditorWorkspaceValues.HandleRef handle, int q, int r) {
         selectedHandleOperation.moveCorridorPoint(handle, q, r);
     }
 

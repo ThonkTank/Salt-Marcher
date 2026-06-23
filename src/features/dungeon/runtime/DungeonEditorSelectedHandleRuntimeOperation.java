@@ -12,7 +12,6 @@ import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorHandleOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
@@ -69,8 +68,10 @@ final class DungeonEditorSelectedHandleRuntimeOperation {
                 effectUseCase.loadCommittedSnapshot()), null);
     }
 
-    void moveCorridorPoint(HandleTarget handle, int q, int r) {
-        DungeonEditorWorkspaceValues.HandleRef handleRef = DungeonEditorHandleInputTranslator.handleRef(handle);
+    void moveCorridorPoint(DungeonEditorWorkspaceValues.HandleRef handle, int q, int r) {
+        DungeonEditorWorkspaceValues.HandleRef handleRef = handle == null
+                ? DungeonEditorWorkspaceValues.HandleRef.empty()
+                : handle;
         if (!DungeonEditorSessionPreviewHelper.directCorridorMoveCommitHandle(handleRef.kind())
                 || !workflow.session().hasSelectedMap()) {
             return;

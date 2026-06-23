@@ -1,13 +1,14 @@
 package src.features.dungeon.runtime;
 
-import java.util.List;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonTopologyElementKind;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.SourceEdgeTarget;
 
 final class DungeonEditorStatePanelCorridorPointTarget {
     private static final String CORRIDOR_ANCHOR_LABEL = "Korridor-Anker";
@@ -16,20 +17,22 @@ final class DungeonEditorStatePanelCorridorPointTarget {
     private DungeonEditorStatePanelCorridorPointTarget() {
     }
 
-    static HandleTarget from(DungeonEditorStateSnapshot.Selection selection) {
+    static DungeonEditorWorkspaceValues.HandleRef from(DungeonEditorStateSnapshot.Selection selection) {
         DungeonEditorStateSnapshot.Selection safeSelection = selection == null
                 ? DungeonEditorStateSnapshot.Selection.empty()
                 : selection;
         DungeonEditorHandleRef handleRef = safeSelection.handleRef();
         if (handleRef == null || !isEditable(handleRef)) {
-            return HandleTarget.empty();
+            return DungeonEditorWorkspaceValues.HandleRef.empty();
         }
-        return toRuntimeTarget(handleRef);
+        return toWorkspaceHandleRef(handleRef);
     }
 
-    static String labelFor(HandleTarget handle) {
-        HandleTarget safeHandle = handle == null ? HandleTarget.empty() : handle;
-        return "CORRIDOR_WAYPOINT".equals(safeHandle.kind())
+    static String labelFor(DungeonEditorWorkspaceValues.HandleRef handle) {
+        DungeonEditorWorkspaceValues.HandleRef safeHandle = handle == null
+                ? DungeonEditorWorkspaceValues.HandleRef.empty()
+                : handle;
+        return DungeonEditorHandleType.CORRIDOR_WAYPOINT == safeHandle.kind()
                 ? CORRIDOR_WAYPOINT_LABEL
                 : CORRIDOR_ANCHOR_LABEL;
     }
@@ -43,44 +46,38 @@ final class DungeonEditorStatePanelCorridorPointTarget {
                         || topologyKind == DungeonTopologyElementKind.CORRIDOR_ANCHOR);
     }
 
-    private static HandleTarget toRuntimeTarget(DungeonEditorHandleRef handleRef) {
-        boolean sourceEdgePresent = handleRef.sourceEdge() != null
-                && handleRef.sourceEdge().from() != null
-                && handleRef.sourceEdge().to() != null;
-        return new HandleTarget(
-                handleRef.kind().name(),
-                handleRef.topologyRef().kind().name(),
-                handleRef.topologyRef().id(),
+    private static DungeonEditorWorkspaceValues.HandleRef toWorkspaceHandleRef(DungeonEditorHandleRef handleRef) {
+        return new DungeonEditorWorkspaceValues.HandleRef(
+                DungeonEditorRuntimeEnumTranslator.handleType(handleRef.kind().name()),
+                new DungeonTopologyRef(
+                        DungeonEditorMainViewInteractionValues.toTopologyKind(handleRef.topologyRef().kind().name()),
+                        handleRef.topologyRef().id()),
                 handleRef.ownerId(),
                 handleRef.clusterId(),
                 handleRef.corridorId(),
                 handleRef.roomId(),
                 handleRef.index(),
-                handleRef.cell().q(),
-                handleRef.cell().r(),
-                handleRef.cell().level(),
+                cell(handleRef.cell()),
                 handleRef.direction(),
-                sourceEdgePresent,
-                sourceEdgePresent ? handleRef.sourceEdge().from().q() : 0,
-                sourceEdgePresent ? handleRef.sourceEdge().from().r() : 0,
-                sourceEdgePresent ? handleRef.sourceEdge().from().level() : 0,
-                sourceEdgePresent ? handleRef.sourceEdge().to().q() : 0,
-                sourceEdgePresent ? handleRef.sourceEdge().to().r() : 0,
-                sourceEdgePresent ? handleRef.sourceEdge().to().level() : 0,
+                sourceEdge(handleRef.sourceEdge()),
                 sourceEdges(handleRef));
     }
 
-    private static List<SourceEdgeTarget> sourceEdges(DungeonEditorHandleRef handleRef) {
+    private static DungeonEditorWorkspaceValues.Cell cell(DungeonCellRef cell) {
+        DungeonCellRef safeCell = cell == null ? new DungeonCellRef(0, 0, 0) : cell;
+        return new DungeonEditorWorkspaceValues.Cell(safeCell.q(), safeCell.r(), safeCell.level());
+    }
+
+    private static DungeonEditorWorkspaceValues.Edge sourceEdge(DungeonEdgeRef edge) {
+        return sourceEdgePresent(edge)
+                ? new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to()))
+                : null;
+    }
+
+    private static java.util.List<DungeonEditorWorkspaceValues.Edge> sourceEdges(DungeonEditorHandleRef handleRef) {
         return handleRef.sourceEdges().stream()
                 .filter(DungeonEditorStatePanelCorridorPointTarget::sourceEdgePresent)
-                .map(edge -> new SourceEdgeTarget(
-                        true,
-                        edge.from().q(),
-                        edge.from().r(),
-                        edge.from().level(),
-                        edge.to().q(),
-                        edge.to().r(),
-                        edge.to().level()))
+                .map(edge -> new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to())))
                 .toList();
     }
 

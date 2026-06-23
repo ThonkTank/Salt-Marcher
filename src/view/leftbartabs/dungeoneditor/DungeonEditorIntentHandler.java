@@ -7,18 +7,14 @@ import org.jspecify.annotations.Nullable;
 import src.features.dungeon.runtime.DungeonEditorInlineLabelEditSession;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.BoundaryTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.ExitNarration;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.ExitNarrationDraftInput;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerWorkflowGesture;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerWorkflowIntent;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarration;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarrationDraftInput;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.SourceEdgeTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.StairGeometryDraftInput;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
@@ -453,14 +449,11 @@ final class DungeonEditorIntentHandler {
             return;
         }
         updateHoverTarget(event, pointerTarget);
-        PointerSample sessionSample = pointerSample(event, pointerTarget, action != PointerAction.MOVED);
+        PointerSample sessionSample = pointerSample(event, pointerTarget);
         if (suppressedRepeatedHover(action, intent.effectiveToolKey(), sessionSample)) {
             return;
         }
-        PointerSample sample = action == PointerAction.MOVED
-                ? pointerSample(event, pointerTarget, true)
-                : sessionSample;
-        applyToolWorkflow(action, sample, intent);
+        applyToolWorkflow(action, sessionSample, intent);
     }
 
     private void updateHoverTarget(
@@ -658,15 +651,14 @@ final class DungeonEditorIntentHandler {
 
     private PointerSample pointerSample(
             DungeonMapViewInputEvent event,
-            DungeonMapContentModel.PointerTarget target,
-            boolean includeSourceEdges
+            DungeonMapContentModel.PointerTarget target
     ) {
         return new PointerSample(
                 sceneX(event),
                 sceneY(event),
                 event.buttons().primaryButtonDown(),
                 event.buttons().secondaryButtonDown(),
-                toRuntimePointerTarget(target, includeSourceEdges));
+                presentationModel.runtimePointerTarget(target));
     }
 
     private boolean suppressedRepeatedHover(
@@ -1026,87 +1018,6 @@ final class DungeonEditorIntentHandler {
                 exit.level(),
                 exit.direction(),
                 exit.description());
-    }
-
-    private static PointerTarget toRuntimePointerTarget(
-            DungeonMapContentModel.PointerTarget target,
-            boolean includeSourceEdges
-    ) {
-        DungeonMapContentModel.PointerTarget safeTarget = target == null
-                ? DungeonMapContentModel.PointerTarget.empty()
-                : target;
-        return new PointerTarget(
-                safeTarget.targetKind().name(),
-                safeTarget.labelKind(),
-                safeTarget.elementKind(),
-                safeTarget.ownerId(),
-                safeTarget.clusterId(),
-                safeTarget.topologyKind(),
-                safeTarget.topologyId(),
-                toRuntimeHandleTarget(safeTarget.handleRef(), includeSourceEdges),
-                toRuntimeBoundaryTarget(safeTarget.boundaryRef()));
-    }
-
-    private static HandleTarget toRuntimeHandleTarget(
-            DungeonMapContentModel.HandleTarget handle,
-            boolean includeSourceEdges
-    ) {
-        DungeonMapContentModel.HandleTarget safeHandle = handle == null
-                ? DungeonMapContentModel.HandleTarget.empty()
-                : handle;
-        DungeonMapContentModel.HandleTarget.SourceEdgeTarget sourceEdge = safeHandle.sourceEdgeTarget();
-        return new HandleTarget(
-                safeHandle.kindName(),
-                safeHandle.topologyKind(),
-                safeHandle.topologyId(),
-                safeHandle.ownerId(),
-                safeHandle.clusterId(),
-                safeHandle.corridorId(),
-                safeHandle.roomId(),
-                safeHandle.orderIndex(),
-                safeHandle.q(),
-                safeHandle.r(),
-                safeHandle.level(),
-                safeHandle.direction(),
-                sourceEdge.present(),
-                sourceEdge.startQ(),
-                sourceEdge.startR(),
-                sourceEdge.startLevel(),
-                sourceEdge.endQ(),
-                sourceEdge.endR(),
-                sourceEdge.endLevel(),
-                includeSourceEdges ? sourceEdgeTargets(safeHandle) : List.of());
-    }
-
-    private static List<SourceEdgeTarget> sourceEdgeTargets(DungeonMapContentModel.HandleTarget handle) {
-        return handle.sourceEdgeTargets().stream()
-                .map(edge -> new SourceEdgeTarget(
-                        edge.present(),
-                        edge.startQ(),
-                        edge.startR(),
-                        edge.startLevel(),
-                        edge.endQ(),
-                        edge.endR(),
-                        edge.endLevel()))
-                .toList();
-    }
-
-    private static BoundaryTarget toRuntimeBoundaryTarget(DungeonMapContentModel.BoundaryTarget boundary) {
-        DungeonMapContentModel.BoundaryTarget safeBoundary = boundary == null
-                ? DungeonMapContentModel.BoundaryTarget.empty()
-                : boundary;
-        return new BoundaryTarget(
-                safeBoundary.kind(),
-                safeBoundary.key(),
-                safeBoundary.ownerId(),
-                safeBoundary.topologyKind(),
-                safeBoundary.topologyId(),
-                safeBoundary.startQ(),
-                safeBoundary.startR(),
-                safeBoundary.startLevel(),
-                safeBoundary.endQ(),
-                safeBoundary.endR(),
-                safeBoundary.endLevel());
     }
 
     private record LabelNameInput(String targetKind, long targetId) {

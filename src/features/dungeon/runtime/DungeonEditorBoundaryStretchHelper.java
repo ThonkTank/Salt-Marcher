@@ -66,14 +66,16 @@ final class DungeonEditorBoundaryStretchHelper {
                 BoundaryStretchOrientation orientation,
             StretchEdges edges
         ) {
-            if (input.hitTarget().handleRef().clusterWallRun()) {
+            if (DungeonEditorMainViewInteractionValues.handleKind(
+                    input.hitTarget().handleRef(),
+                    DungeonEditorMainViewInteractionValues.CLUSTER_WALL_RUN_KIND)) {
                 return handleSourceEdges(input.hitTarget().handleRef());
             }
             return edges.resolve(snapshot, clusterId, boundaryTarget, orientation);
         }
 
         private static List<DungeonEditorWorkspaceValues.Edge> handleSourceEdges(
-                DungeonEditorMainViewInteractionValues.HandleTarget handle
+                DungeonEditorWorkspaceValues.HandleRef handle
         ) {
             return handle.sourceEdges();
         }
@@ -85,7 +87,9 @@ final class DungeonEditorBoundaryStretchHelper {
             if (input == null || !input.primaryButtonDown()) {
                 return null;
             }
-            if (input.hitTarget().handleRef().clusterWallRun()) {
+            if (DungeonEditorMainViewInteractionValues.handleKind(
+                    input.hitTarget().handleRef(),
+                    DungeonEditorMainViewInteractionValues.CLUSTER_WALL_RUN_KIND)) {
                 return DungeonEditorWallRunBoundaryTargetResolver.resolve(input, currentSelection);
             }
             BoundaryTarget boundaryTarget = input.boundaryTarget();

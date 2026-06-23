@@ -1,9 +1,12 @@
 package src.features.dungeon.runtime;
 
+import java.util.List;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEdgeRef;
+import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.BoundaryTarget;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
@@ -90,7 +93,7 @@ final class DungeonEditorPointerInputTranslator {
                     target.clusterId(),
                     DungeonEditorRuntimeInputValues.topologyRef(target.topologyKind(), target.topologyId()));
             case "HANDLE" -> DungeonEditorMainViewPointerTarget.handle(
-                    DungeonEditorHandleInputTranslator.handleRef(target.handle()));
+                    toRuntimeHandleRef(target.handle()));
             case "BOUNDARY" -> boundaryTarget(target.boundary());
             default -> DungeonEditorMainViewPointerTarget.empty();
         };
@@ -100,26 +103,69 @@ final class DungeonEditorPointerInputTranslator {
             PointerTarget target,
             boolean doorDeleteSelected
     ) {
-        HandleTarget handle = target.handle();
+        DungeonEditorWorkspaceValues.HandleRef handle = toRuntimeHandleRef(target.handle());
         if (!doorDeleteSelected
                 || !"HANDLE".equals(DungeonEditorRuntimeEnumTranslator.normalizedEnumName(target.targetKind()))
-                || !"DOOR".equals(DungeonEditorRuntimeEnumTranslator.normalizedEnumName(handle.kind()))
-                || !handle.sourceEdgePresent()) {
+                || !DungeonEditorMainViewInteractionValues.handleKind(
+                        handle,
+                        DungeonEditorMainViewInteractionValues.DOOR_KIND)
+                || !handle.hasSourceEdge()) {
             return null;
         }
         return DungeonEditorMainViewPointerTarget.boundary(
                 DungeonEditorWorkspaceValues.BoundaryKind.DOOR,
                 "",
                 handle.ownerId(),
-                DungeonEditorRuntimeInputValues.topologyRef(handle.topologyKind(), handle.topologyId()),
+                handle.topologyRef(),
                 DungeonEditorRuntimeInputValues.cell(
-                        handle.sourceStartQ(),
-                        handle.sourceStartR(),
-                        handle.sourceStartLevel()),
+                        handle.sourceEdge().from().q(),
+                        handle.sourceEdge().from().r(),
+                        handle.sourceEdge().from().level()),
                 DungeonEditorRuntimeInputValues.cell(
-                        handle.sourceEndQ(),
-                        handle.sourceEndR(),
-                        handle.sourceEndLevel()));
+                        handle.sourceEdge().to().q(),
+                        handle.sourceEdge().to().r(),
+                        handle.sourceEdge().to().level()));
+    }
+
+    private static DungeonEditorWorkspaceValues.HandleRef toRuntimeHandleRef(DungeonEditorHandleRef handle) {
+        DungeonEditorHandleRef safeHandle = handle == null
+                ? DungeonEditorHandleRef.empty()
+                : handle;
+        DungeonCellRef cell = safeHandle.cell();
+        DungeonEdgeRef primarySourceEdge = safeHandle.sourceEdge();
+        DungeonEditorWorkspaceValues.Edge runtimeSourceEdge = primarySourceEdge == null
+                || primarySourceEdge.from() == null
+                || primarySourceEdge.to() == null
+                ? null
+                : new DungeonEditorWorkspaceValues.Edge(
+                        new DungeonEditorWorkspaceValues.Cell(
+                                primarySourceEdge.from().q(),
+                                primarySourceEdge.from().r(),
+                                primarySourceEdge.from().level()),
+                        new DungeonEditorWorkspaceValues.Cell(
+                                primarySourceEdge.to().q(),
+                                primarySourceEdge.to().r(),
+                                primarySourceEdge.to().level()));
+        List<DungeonEditorWorkspaceValues.Edge> runtimeSourceEdges = safeHandle.sourceEdges().stream()
+                .filter(edge -> edge != null && edge.from() != null && edge.to() != null)
+                .map(edge -> new DungeonEditorWorkspaceValues.Edge(
+                        new DungeonEditorWorkspaceValues.Cell(edge.from().q(), edge.from().r(), edge.from().level()),
+                        new DungeonEditorWorkspaceValues.Cell(edge.to().q(), edge.to().r(), edge.to().level())))
+                .toList();
+        return new DungeonEditorWorkspaceValues.HandleRef(
+                DungeonEditorRuntimeEnumTranslator.handleType(safeHandle.kind().name()),
+                DungeonEditorRuntimeInputValues.topologyRef(
+                        safeHandle.topologyRef().kind().name(),
+                        safeHandle.topologyRef().id()),
+                safeHandle.ownerId(),
+                safeHandle.clusterId(),
+                safeHandle.corridorId(),
+                safeHandle.roomId(),
+                safeHandle.index(),
+                new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level()),
+                safeHandle.direction(),
+                runtimeSourceEdge,
+                runtimeSourceEdges);
     }
 
     private static DungeonEditorMainViewPointerTarget boundaryTarget(BoundaryTarget boundary) {

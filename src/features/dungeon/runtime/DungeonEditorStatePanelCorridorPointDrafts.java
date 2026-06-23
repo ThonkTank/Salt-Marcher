@@ -1,8 +1,8 @@
 package src.features.dungeon.runtime;
 
 import java.util.Locale;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.HandleTarget;
 
 public final class DungeonEditorStatePanelCorridorPointDrafts {
     private static final String CORRIDOR_KIND = "CORRIDOR";
@@ -14,7 +14,7 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
     private String draftR = "";
 
     void update(long selectedMapIdValue, DungeonEditorStateSnapshot.Selection selection, String q, String r) {
-        HandleTarget target = DungeonEditorStatePanelCorridorPointTarget.from(selection);
+        DungeonEditorWorkspaceValues.HandleRef target = DungeonEditorStatePanelCorridorPointTarget.from(selection);
         Key key = Key.from(selectedMapIdValue, target);
         if (!key.valid()) {
             return;
@@ -31,7 +31,7 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
             int r,
             DungeonEditorAuthoredRuntimeOperations operationOwner
     ) {
-        HandleTarget target = DungeonEditorStatePanelCorridorPointTarget.from(selection);
+        DungeonEditorWorkspaceValues.HandleRef target = DungeonEditorStatePanelCorridorPointTarget.from(selection);
         Key key = Key.from(selectedMapIdValue, target);
         if (!key.valid() || operationOwner == null) {
             return;
@@ -43,7 +43,7 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
     }
 
     Draft current(long selectedMapIdValue, DungeonEditorStateSnapshot.Selection selection) {
-        HandleTarget target = DungeonEditorStatePanelCorridorPointTarget.from(selection);
+        DungeonEditorWorkspaceValues.HandleRef target = DungeonEditorStatePanelCorridorPointTarget.from(selection);
         Key key = Key.from(selectedMapIdValue, target);
         if (!key.valid()) {
             return Draft.empty();
@@ -57,7 +57,7 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
                 labelFor(target),
                 draftQ,
                 draftR,
-                Integer.toString(target.level()));
+                Integer.toString(target.cell().level()));
     }
 
     void retainOnlyVisibleDraftForMap(long selectedMapIdValue, DungeonEditorStateSnapshot.Selection selection) {
@@ -90,20 +90,22 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
             return new Draft(false, false, "", "", "", "");
         }
 
-        static Draft target(HandleTarget handle) {
-            HandleTarget safeHandle = handle == null ? HandleTarget.empty() : handle;
+        static Draft target(DungeonEditorWorkspaceValues.HandleRef handle) {
+            DungeonEditorWorkspaceValues.HandleRef safeHandle = handle == null
+                    ? DungeonEditorWorkspaceValues.HandleRef.empty()
+                    : handle;
             return new Draft(
                     true,
                     false,
                     labelFor(safeHandle),
-                    Integer.toString(safeHandle.q()),
-                    Integer.toString(safeHandle.r()),
-                    Integer.toString(safeHandle.level()));
+                    Integer.toString(safeHandle.cell().q()),
+                    Integer.toString(safeHandle.cell().r()),
+                    Integer.toString(safeHandle.cell().level()));
         }
 
     }
 
-    private static String labelFor(HandleTarget handle) {
+    private static String labelFor(DungeonEditorWorkspaceValues.HandleRef handle) {
         return DungeonEditorStatePanelCorridorPointTarget.labelFor(handle);
     }
 
@@ -124,15 +126,17 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
             index = Math.max(0, index);
         }
 
-        static Key from(long selectedMapIdValue, HandleTarget handle) {
-            HandleTarget safeHandle = handle == null ? HandleTarget.empty() : handle;
+        static Key from(long selectedMapIdValue, DungeonEditorWorkspaceValues.HandleRef handle) {
+            DungeonEditorWorkspaceValues.HandleRef safeHandle = handle == null
+                    ? DungeonEditorWorkspaceValues.HandleRef.empty()
+                    : handle;
             return new Key(
                     selectedMapIdValue,
-                    safeHandle.kind(),
-                    safeHandle.topologyKind(),
-                    safeHandle.topologyId(),
+                    safeHandle.kind().name(),
+                    safeHandle.topologyRef().kind().name(),
+                    safeHandle.topologyRef().id(),
                     safeHandle.corridorId(),
-                    safeHandle.orderIndex());
+                    safeHandle.index());
         }
 
         static Key empty() {

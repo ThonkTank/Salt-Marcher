@@ -108,107 +108,31 @@ final class DungeonEditorMainViewInteractionValues {
         TRANSITION
     }
 
-    record HandleTarget(
-            String kind,
+    static DungeonEditorWorkspaceValues.HandleRef clusterLabelHandleRef(
             String topologyRefKind,
             long topologyRefId,
             long ownerId,
-            long clusterId,
-            long corridorId,
-            long roomId,
-            int orderIndex,
-            CellTarget anchor,
-            String direction,
-            DungeonEditorWorkspaceValues.Edge sourceEdge,
-            List<DungeonEditorWorkspaceValues.Edge> sourceEdges
+            long clusterId
     ) {
-        HandleTarget {
-            kind = kind == null || kind.isBlank() ? CLUSTER_LABEL_KIND : kind;
-            topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? EMPTY_KIND : topologyRefKind.trim();
-            topologyRefId = Math.max(0L, topologyRefId);
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
-            corridorId = Math.max(0L, corridorId);
-            roomId = Math.max(0L, roomId);
-            orderIndex = Math.max(0, orderIndex);
-            anchor = anchor == null ? CellTarget.empty() : anchor;
-            direction = direction == null ? "" : direction;
-            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
-        }
+        return new DungeonEditorWorkspaceValues.HandleRef(
+                DungeonEditorHandleType.CLUSTER_LABEL,
+                new DungeonTopologyRef(toTopologyKind(topologyRefKind), topologyRefId),
+                ownerId,
+                clusterId,
+                0L,
+                0L,
+                0,
+                DungeonEditorWorkspaceValues.Cell.empty(),
+                "",
+                null,
+                List.of());
+    }
 
-        static HandleTarget empty() {
-            return new HandleTarget(
-                    CLUSTER_LABEL_KIND,
-                    EMPTY_KIND,
-                    0L,
-                    0L,
-                    0L,
-                    0L,
-                    0L,
-                    0,
-                    CellTarget.empty(),
-                    "",
-                    null,
-                    List.of());
-        }
-
-        static HandleTarget clusterLabel(String topologyRefKind, long topologyRefId, long ownerId, long clusterId) {
-            return new HandleTarget(
-                    CLUSTER_LABEL_KIND,
-                    topologyRefKind,
-                    topologyRefId,
-                    ownerId,
-                    clusterId,
-                    0L,
-                    0L,
-                    0,
-                    CellTarget.empty(),
-                    "",
-                    null,
-                    List.of());
-        }
-
-        boolean clusterLabel() {
-            return CLUSTER_LABEL_KIND.equals(kind);
-        }
-
-        boolean clusterCorner() {
-            return CLUSTER_CORNER_KIND.equals(kind);
-        }
-
-        boolean clusterWallRun() {
-            return CLUSTER_WALL_RUN_KIND.equals(kind);
-        }
-
-        boolean corridorAnchor() {
-            return CORRIDOR_ANCHOR_KIND.equals(kind);
-        }
-
-        boolean corridorWaypoint() {
-            return CORRIDOR_WAYPOINT_KIND.equals(kind);
-        }
-
-        boolean doorHandle() {
-            return DOOR_KIND.equals(kind);
-        }
-
-        DungeonEditorWorkspaceValues.HandleRef toWorkspaceHandleRef() {
-            return new DungeonEditorWorkspaceValues.HandleRef(
-                    DungeonEditorHandleType.valueOf(kind),
-                    new DungeonTopologyRef(
-                            toTopologyKind(topologyRefKind),
-                            topologyRefId),
-                    ownerId,
-                    clusterId,
-                    corridorId,
-                    roomId,
-                    orderIndex,
-                    anchor.toWorkspaceCell(),
-                    direction,
-                    sourceEdge,
-                    sourceEdges);
-        }
-
+    static boolean handleKind(DungeonEditorWorkspaceValues.HandleRef handleRef, String kind) {
+        DungeonEditorWorkspaceValues.HandleRef safeHandle = handleRef == null
+                ? DungeonEditorWorkspaceValues.HandleRef.empty()
+                : handleRef;
+        return safeHandle.kind().name().equals(kind);
     }
 
     record BoundaryTarget(
@@ -253,7 +177,7 @@ final class DungeonEditorMainViewInteractionValues {
             String topologyRefKind,
             long topologyRefId,
             String labelKind,
-            HandleTarget handleRef,
+            DungeonEditorWorkspaceValues.HandleRef handleRef,
             BoundaryTarget boundaryTarget
     ) {
         HitTarget {
@@ -263,7 +187,7 @@ final class DungeonEditorMainViewInteractionValues {
             topologyRefKind = topologyRefKind == null || topologyRefKind.isBlank() ? EMPTY_KIND : topologyRefKind.trim();
             topologyRefId = Math.max(0L, topologyRefId);
             labelKind = labelKind == null || labelKind.isBlank() ? EMPTY_KIND : labelKind.trim();
-            handleRef = handleRef == null ? HandleTarget.empty() : handleRef;
+            handleRef = handleRef == null ? DungeonEditorWorkspaceValues.HandleRef.empty() : handleRef;
             boundaryTarget = boundaryTarget == null ? BoundaryTarget.empty() : boundaryTarget;
         }
 
@@ -275,7 +199,7 @@ final class DungeonEditorMainViewInteractionValues {
                     EMPTY_KIND,
                     0L,
                     EMPTY_KIND,
-                    HandleTarget.empty(),
+                    DungeonEditorWorkspaceValues.HandleRef.empty(),
                     BoundaryTarget.empty());
         }
 
@@ -284,26 +208,26 @@ final class DungeonEditorMainViewInteractionValues {
         }
 
         boolean draggable() {
-            return ((kind == HitKind.HANDLE && !handleRef.clusterWallRun()) || clusterLabelTarget())
+            return ((kind == HitKind.HANDLE && !handleKind(handleRef, CLUSTER_WALL_RUN_KIND)) || clusterLabelTarget())
                     && (clusterId > 0L || handleRef.ownerId() > 0L);
         }
 
         boolean clusterSelection() {
             return clusterLabelTarget()
                     || (kind == HitKind.HANDLE
-                            && (handleRef.clusterLabel()
-                                    || handleRef.clusterCorner()
-                                    || handleRef.clusterWallRun()));
+                            && (handleKind(handleRef, CLUSTER_LABEL_KIND)
+                                    || handleKind(handleRef, CLUSTER_CORNER_KIND)
+                                    || handleKind(handleRef, CLUSTER_WALL_RUN_KIND)));
         }
 
         DungeonEditorWorkspaceValues.HandleRef dragHandleRef() {
             if (kind == HitKind.HANDLE) {
-                return handleRef.toWorkspaceHandleRef();
+                return handleRef;
             }
             if (!clusterLabelTarget()) {
                 return DungeonEditorSessionValues.emptyHandleRef();
             }
-            return HandleTarget.clusterLabel(topologyRefKind, topologyRefId, ownerId, clusterId).toWorkspaceHandleRef();
+            return clusterLabelHandleRef(topologyRefKind, topologyRefId, ownerId, clusterId);
         }
 
         private boolean clusterLabelTarget() {

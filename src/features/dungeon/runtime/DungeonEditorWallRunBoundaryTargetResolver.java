@@ -19,7 +19,9 @@ final class DungeonEditorWallRunBoundaryTargetResolver {
             DungeonEditorSessionValues.@Nullable Selection currentSelection
     ) {
         var handle = input.hitTarget().handleRef();
-        if (!handle.clusterWallRun()
+        if (!DungeonEditorMainViewInteractionValues.handleKind(
+                handle,
+                DungeonEditorMainViewInteractionValues.CLUSTER_WALL_RUN_KIND)
                 || currentSelection == null
                 || !currentSelection.clusterSelection()
                 || currentSelection.clusterId() != handle.clusterId()) {
@@ -33,12 +35,12 @@ final class DungeonEditorWallRunBoundaryTargetResolver {
         return boundaryTarget(handle, edge);
     }
 
-    private static Edge fallbackEdge(DungeonEditorMainViewInteractionValues.HandleTarget handle) {
+    private static Edge fallbackEdge(DungeonEditorWorkspaceValues.HandleRef handle) {
         Direction direction = Direction.valueOf(handle.direction());
         return direction.edgeOf(new Cell(
-                handle.anchor().q(),
-                handle.anchor().r(),
-                handle.anchor().level()));
+                handle.cell().q(),
+                handle.cell().r(),
+                handle.cell().level()));
     }
 
     private static Cell workspaceCell(DungeonEditorWorkspaceValues.Cell cell) {
@@ -46,7 +48,7 @@ final class DungeonEditorWallRunBoundaryTargetResolver {
     }
 
     private static BoundaryTarget boundaryTarget(
-            DungeonEditorMainViewInteractionValues.HandleTarget handle,
+            DungeonEditorWorkspaceValues.HandleRef handle,
             Edge edge
     ) {
         return new BoundaryTarget(
@@ -55,8 +57,8 @@ final class DungeonEditorWallRunBoundaryTargetResolver {
                 "",
                 handle.ownerId(),
                 handle.clusterId(),
-                handle.topologyRefKind(),
-                handle.topologyRefId(),
+                handle.topologyRef().kind().name(),
+                handle.topologyRef().id(),
                 new CellTarget(edge.from().q(), edge.from().r(), edge.from().level()),
                 new CellTarget(edge.to().q(), edge.to().r(), edge.to().level()));
     }

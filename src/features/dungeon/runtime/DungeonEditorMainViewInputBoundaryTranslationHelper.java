@@ -4,7 +4,6 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.features.dungeon.runtime.DungeonEditorInteractionValues.VertexTarget;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.BoundaryTarget;
-import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.HandleTarget;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.HitKind;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.HitTarget;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.PointerState;
@@ -60,7 +59,7 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 target.topologyRef().kind().name(),
                 target.topologyRef().id(),
                 target.labelKind(),
-                HandleTarget.empty(),
+                DungeonEditorWorkspaceValues.HandleRef.empty(),
                 BoundaryTarget.empty());
     }
 
@@ -72,34 +71,21 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 target.topologyRef().kind().name(),
                 target.topologyRef().id(),
                 target.labelKind(),
-                HandleTarget.empty(),
+                DungeonEditorWorkspaceValues.HandleRef.empty(),
                 BoundaryTarget.empty());
     }
 
     private static HitTarget handleTarget(DungeonEditorWorkspaceValues.HandleRef handleRef) {
         DungeonEditorWorkspaceValues.HandleRef safeHandle =
                 handleRef == null ? DungeonEditorWorkspaceValues.HandleRef.empty() : handleRef;
-        HandleTarget handleTarget = new HandleTarget(
-                safeHandle.kind().name(),
-                safeHandle.topologyRef().kind().name(),
-                safeHandle.topologyRef().id(),
-                safeHandle.ownerId(),
-                safeHandle.clusterId(),
-                safeHandle.corridorId(),
-                safeHandle.roomId(),
-                safeHandle.index(),
-                toCellTarget(safeHandle.cell()),
-                safeHandle.direction(),
-                safeHandle.hasSourceEdge() ? safeHandle.sourceEdge() : null,
-                safeHandle.sourceEdges());
         return new HitTarget(
                 HitKind.HANDLE,
-                handleTarget.ownerId(),
-                handleTarget.clusterId(),
-                handleTarget.topologyRefKind(),
-                handleTarget.topologyRefId(),
+                safeHandle.ownerId(),
+                safeHandle.clusterId(),
+                safeHandle.topologyRef().kind().name(),
+                safeHandle.topologyRef().id(),
                 DungeonEditorMainViewInteractionValues.EMPTY_KIND,
-                handleTarget,
+                safeHandle,
                 BoundaryTarget.empty());
     }
 
@@ -123,7 +109,7 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 boundaryTarget.topologyRefKind(),
                 boundaryTarget.topologyRefId(),
                 DungeonEditorMainViewInteractionValues.EMPTY_KIND,
-                HandleTarget.empty(),
+                DungeonEditorWorkspaceValues.HandleRef.empty(),
                 boundaryTarget);
     }
 

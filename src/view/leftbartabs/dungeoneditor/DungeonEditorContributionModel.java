@@ -10,7 +10,10 @@ import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.features.dungeon.runtime.DungeonEditorInlineLabelEditSession;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorRenderFrame;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.BoundaryTarget;
+import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerTarget;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 
 public final class DungeonEditorContributionModel {
 
@@ -34,6 +37,40 @@ public final class DungeonEditorContributionModel {
 
     InteractionState currentInteractionState() {
         return interactionState;
+    }
+
+    PointerTarget runtimePointerTarget(DungeonMapContentModel.PointerTarget target) {
+        DungeonMapContentModel.PointerTarget safeTarget = target == null
+                ? DungeonMapContentModel.PointerTarget.empty()
+                : target;
+        return new PointerTarget(
+                safeTarget.targetKind().name(),
+                safeTarget.labelKind(),
+                safeTarget.elementKind(),
+                safeTarget.ownerId(),
+                safeTarget.clusterId(),
+                safeTarget.topologyKind(),
+                safeTarget.topologyId(),
+                safeTarget.handleRef(),
+                runtimeBoundaryTarget(safeTarget.boundaryRef()));
+    }
+
+    private static BoundaryTarget runtimeBoundaryTarget(DungeonMapContentModel.BoundaryTarget boundary) {
+        DungeonMapContentModel.BoundaryTarget safeBoundary = boundary == null
+                ? DungeonMapContentModel.BoundaryTarget.empty()
+                : boundary;
+        return new BoundaryTarget(
+                safeBoundary.kind(),
+                safeBoundary.key(),
+                safeBoundary.ownerId(),
+                safeBoundary.topologyKind(),
+                safeBoundary.topologyId(),
+                safeBoundary.startQ(),
+                safeBoundary.startR(),
+                safeBoundary.startLevel(),
+                safeBoundary.endQ(),
+                safeBoundary.endR(),
+                safeBoundary.endLevel());
     }
 
     void bindControlsContentModel(DungeonEditorControlsContentModel contentModel) {

@@ -1533,7 +1533,7 @@ public final class DungeonMapContentModel {
         private static boolean hoveredMarker(PointerTarget target, DungeonMapRenderState.Marker marker) {
             PointerTarget safeTarget = selectableHoverTarget(target);
             return safeTarget.targetKind() == PointerTargetKind.HANDLE
-                    && safeTarget.handleRef().equals(PointerTargetIndex.toHandleTarget(marker.handle()));
+                    && safeTarget.handleRef().equals(marker.handle().ref());
         }
 
         private static boolean hoveredLabel(PointerTarget target, DungeonMapRenderState.Label label) {
@@ -1871,7 +1871,7 @@ public final class DungeonMapContentModel {
                 if (LevelFilter.includeLevel(displayModel, marker.z())) {
                     String hitRef = SceneIdentity.markerHitRef(marker);
                     if (!hitRef.isBlank()) {
-                        targets.put(hitRef, PointerTarget.handle(toHandleTarget(marker.handle())));
+                        targets.put(hitRef, PointerTarget.handle(marker.handle().ref()));
                     }
                 }
             }
@@ -1900,23 +1900,6 @@ public final class DungeonMapContentModel {
                         node.clusterId(),
                         topologyRef));
             }
-        }
-
-        private static HandleTarget toHandleTarget(DungeonMapRenderState.MarkerHandle handle) {
-            return new HandleTarget(
-                    handle.kind(),
-                    handle.topologyRef(),
-                    handle.ownerId(),
-                    handle.clusterId(),
-                    handle.corridorId(),
-                    handle.roomId(),
-                    handle.index(),
-                    handle.q(),
-                    handle.r(),
-                    handle.level(),
-                    handle.direction(),
-                    handle.sourceEdge(),
-                    handle.sourceEdges());
         }
 
         private static String boundaryKey(
@@ -1959,7 +1942,7 @@ public final class DungeonMapContentModel {
             long ownerId,
             long clusterId,
             DungeonMapRenderState.TopologyRef topologyRef,
-            HandleTarget handleRef,
+            DungeonEditorHandleRef handleRef,
             BoundaryTarget boundaryRef
     ) {
         public PointerTarget {
@@ -1969,7 +1952,7 @@ public final class DungeonMapContentModel {
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
             topologyRef = topologyRef == null ? DungeonMapRenderState.TopologyRef.empty() : topologyRef;
-            handleRef = handleRef == null ? HandleTarget.empty() : handleRef;
+            handleRef = handleRef == null ? DungeonEditorHandleRef.empty() : handleRef;
             boundaryRef = boundaryRef == null ? BoundaryTarget.empty() : boundaryRef;
         }
 
@@ -1981,7 +1964,7 @@ public final class DungeonMapContentModel {
                     0L,
                     0L,
                     DungeonMapRenderState.TopologyRef.empty(),
-                    HandleTarget.empty(),
+                    DungeonEditorHandleRef.empty(),
                     BoundaryTarget.empty());
         }
 
@@ -1998,7 +1981,7 @@ public final class DungeonMapContentModel {
                     ownerId,
                     clusterId,
                     topologyRef,
-                    HandleTarget.empty(),
+                    DungeonEditorHandleRef.empty(),
                     BoundaryTarget.empty());
         }
 
@@ -2018,7 +2001,7 @@ public final class DungeonMapContentModel {
                     ownerId,
                     clusterId,
                     safeTopologyRef,
-                    HandleTarget.empty(),
+                    DungeonEditorHandleRef.empty(),
                     BoundaryTarget.empty());
         }
 
@@ -2037,19 +2020,19 @@ public final class DungeonMapContentModel {
                     ownerId,
                     clusterId,
                     safeTopologyRef,
-                    HandleTarget.empty(),
+                    DungeonEditorHandleRef.empty(),
                     BoundaryTarget.empty());
         }
 
-        public static PointerTarget handle(HandleTarget handleRef) {
-            HandleTarget safeHandle = handleRef == null ? HandleTarget.empty() : handleRef;
+        public static PointerTarget handle(DungeonEditorHandleRef handleRef) {
+            DungeonEditorHandleRef safeHandle = handleRef == null ? DungeonEditorHandleRef.empty() : handleRef;
             return new PointerTarget(
                     PointerTargetKind.HANDLE,
                     EMPTY_LABEL_KIND,
-                    safeHandle.topologyRef().kind(),
+                    safeHandle.topologyRef().kind().name(),
                     safeHandle.ownerId(),
                     safeHandle.clusterId(),
-                    safeHandle.topologyRef(),
+                    EditorProjectionFacts.topologyRef(safeHandle.topologyRef()),
                     safeHandle,
                     BoundaryTarget.empty());
         }
@@ -2063,7 +2046,7 @@ public final class DungeonMapContentModel {
                     safeBoundary.ownerId(),
                     0L,
                     safeBoundary.topologyRef(),
-                    HandleTarget.empty(),
+                    DungeonEditorHandleRef.empty(),
                     safeBoundary);
         }
 
@@ -2086,101 +2069,6 @@ public final class DungeonMapContentModel {
         public boolean isRoomLabelTarget() {
             return isLabelTarget() && ROOM_LABEL_KIND.equals(labelKind);
         }
-    }
-
-    public record HandleTarget(
-            DungeonEditorHandleKind kind,
-            DungeonMapRenderState.TopologyRef topologyRef,
-            long ownerId,
-            long clusterId,
-            long corridorId,
-            long roomId,
-            int orderIndex,
-            int q,
-            int r,
-            int level,
-            String direction,
-            DungeonEdgeRef sourceEdge,
-            List<DungeonEdgeRef> sourceEdges
-    ) {
-        public HandleTarget {
-            kind = kind == null ? DungeonEditorHandleKind.CLUSTER_LABEL : kind;
-            topologyRef = topologyRef == null ? DungeonMapRenderState.TopologyRef.empty() : topologyRef;
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
-            corridorId = Math.max(0L, corridorId);
-            roomId = Math.max(0L, roomId);
-            orderIndex = Math.max(0, orderIndex);
-            direction = direction == null ? "" : direction.trim();
-            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
-        }
-
-        public static HandleTarget empty() {
-            return new HandleTarget(
-                    DungeonEditorHandleKind.CLUSTER_LABEL,
-                    DungeonMapRenderState.TopologyRef.empty(),
-                    0L,
-                    0L,
-                    0L,
-                    0L,
-                    0,
-                    0,
-                    0,
-                    0,
-                    "",
-                    null,
-                    List.of());
-        }
-
-        public String topologyKind() {
-            return topologyRef.kind();
-        }
-
-        public long topologyId() {
-            return topologyRef.id();
-        }
-
-        public String kindName() {
-            return kind.name();
-        }
-
-        public SourceEdgeTarget sourceEdgeTarget() {
-            return SourceEdgeTarget.from(sourceEdge);
-        }
-
-        public List<SourceEdgeTarget> sourceEdgeTargets() {
-            return sourceEdges.stream()
-                    .map(SourceEdgeTarget::from)
-                    .filter(SourceEdgeTarget::present)
-                    .toList();
-        }
-
-        public record SourceEdgeTarget(
-                boolean present,
-                int startQ,
-                int startR,
-                int startLevel,
-                int endQ,
-                int endR,
-                int endLevel
-        ) {
-            private static final SourceEdgeTarget EMPTY = new SourceEdgeTarget(false, 0, 0, 0, 0, 0, 0);
-
-            private static SourceEdgeTarget from(DungeonEdgeRef sourceEdge) {
-                if (sourceEdge == null || sourceEdge.from() == null || sourceEdge.to() == null) {
-                    return EMPTY;
-                }
-                return new SourceEdgeTarget(
-                        true,
-                        sourceEdge.from().q(),
-                        sourceEdge.from().r(),
-                        sourceEdge.from().level(),
-                        sourceEdge.to().q(),
-                        sourceEdge.to().r(),
-                        sourceEdge.to().level());
-            }
-        }
-
     }
 
     public record BoundaryTarget(
@@ -3157,24 +3045,10 @@ public final class DungeonMapContentModel {
                     center.level(),
                     DungeonMapSnapshotMapper.featureMarkerKind(feature.kind()),
                     false,
-                    new DungeonMapRenderState.MarkerHandle(
-                            feature.kind() == DungeonFeatureKind.TRANSITION
-                                    ? DungeonEditorHandleKind.CORRIDOR_WAYPOINT
-                                    : feature.kind() == DungeonFeatureKind.STAIR
-                                    ? DungeonEditorHandleKind.STAIR_ANCHOR
-                                    : null,
-                            topologyRef(feature.topologyRef()),
-                            feature.id(),
-                            0L,
-                            0L,
-                            0L,
-                            0,
+                    EditorRenderElements.markerHandle(
                             (int) Math.floor(center.q()),
                             (int) Math.floor(center.r()),
-                            center.level(),
-                            "",
-                            null,
-                            List.of()),
+                            center.level()),
                     false));
         }
         return List.copyOf(markers);
@@ -3394,20 +3268,10 @@ public final class DungeonMapContentModel {
                     anchor.level(),
                     DungeonMapRenderState.MarkerKind.STAIR,
                     false,
-                    new DungeonMapRenderState.MarkerHandle(
-                            DungeonEditorHandleKind.STAIR_ANCHOR,
-                            DungeonMapRenderState.TopologyRef.empty(),
-                            0L,
-                            0L,
-                            0L,
-                            0L,
-                            0,
+                    EditorRenderElements.markerHandle(
                             anchor.q(),
                             anchor.r(),
-                            anchor.level(),
-                            "",
-                            null,
-                            List.of()),
+                            anchor.level()),
                     true));
         }
 
@@ -3584,24 +3448,10 @@ public final class DungeonMapContentModel {
                 level,
                 DungeonMapSnapshotMapper.featureMarkerKind(feature.kind()),
                 selected,
-                new DungeonMapRenderState.MarkerHandle(
-                        EditorElementKinds.transitionFeature(feature)
-                                ? DungeonEditorHandleKind.CORRIDOR_WAYPOINT
-                                : "STAIR".equalsIgnoreCase(feature.kind())
-                                ? DungeonEditorHandleKind.STAIR_ANCHOR
-                                : null,
-                        EditorProjectionFacts.featureTopologyRef(feature),
-                        feature.id(),
-                        0L,
-                        0L,
-                        0L,
-                        0,
+                markerHandle(
                         (int) Math.floor(center.q()),
                         (int) Math.floor(center.r()),
-                        level,
-                        "",
-                        null,
-                        List.of()),
+                        level),
                 preview);
     }
 
@@ -3699,25 +3549,20 @@ public final class DungeonMapContentModel {
     }
 
     static DungeonMapRenderState.MarkerHandle markerHandle(
+            int q,
+            int r,
+            int level
+    ) {
+        return new DungeonMapRenderState.MarkerHandle(null, q, r, level);
+    }
+
+    static DungeonMapRenderState.MarkerHandle markerHandle(
             DungeonEditorHandleRef handle,
             int q,
             int r,
             int level
     ) {
-        return new DungeonMapRenderState.MarkerHandle(
-                handle.kind(),
-                EditorProjectionFacts.topologyRef(handle.topologyRef()),
-                handle.ownerId(),
-                handle.clusterId(),
-                handle.corridorId(),
-                handle.roomId(),
-                handle.index(),
-                q,
-                r,
-                level,
-                handle.direction(),
-                handle.sourceEdge(),
-                handle.sourceEdges());
+        return new DungeonMapRenderState.MarkerHandle(handle, q, r, level);
     }
 
 }
@@ -3787,10 +3632,6 @@ public final class DungeonMapContentModel {
         return "CORRIDOR".equalsIgnoreCase(area.kind())
                 ? DungeonMapRenderState.CellKind.CORRIDOR
                 : DungeonMapRenderState.CellKind.ROOM;
-    }
-
-    static boolean transitionFeature(DungeonEditorMapSnapshot.Feature feature) {
-        return "TRANSITION".equalsIgnoreCase(feature.kind());
     }
 
     static DungeonMapRenderState.EdgeKind boundaryKind(String kind) {
@@ -4529,33 +4370,49 @@ public final class DungeonMapContentModel {
     }
 
     record MarkerHandle(
-            @Nullable DungeonEditorHandleKind kind,
-            DungeonMapRenderState.TopologyRef topologyRef,
-            long ownerId,
-            long clusterId,
-            long corridorId,
-            long roomId,
-            int index,
+            @Nullable DungeonEditorHandleRef ref,
             int q,
             int r,
-            int level,
-            String direction,
-            DungeonEdgeRef sourceEdge,
-            List<DungeonEdgeRef> sourceEdges
+            int level
     ) {
-        MarkerHandle {
-            topologyRef = topologyRef == null ? TopologyRef.empty() : topologyRef;
-            ownerId = Math.max(0L, ownerId);
-            clusterId = Math.max(0L, clusterId);
-            corridorId = Math.max(0L, corridorId);
-            roomId = Math.max(0L, roomId);
-            index = Math.max(0, index);
-            direction = direction == null ? "" : direction.trim();
-            sourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
+        String kindName() {
+            return ref == null || ref.kind() == null ? emptyKind() : ref.kind().name();
         }
 
-        String kindName() {
-            return kind == null ? emptyKind() : kind.name();
+        @Nullable DungeonEditorHandleKind kind() {
+            return ref == null ? null : ref.kind();
+        }
+
+        DungeonMapRenderState.TopologyRef topologyRef() {
+            return ref == null ? TopologyRef.empty() : EditorProjectionFacts.topologyRef(ref.topologyRef());
+        }
+
+        long ownerId() {
+            return ref == null ? 0L : ref.ownerId();
+        }
+
+        long clusterId() {
+            return ref == null ? 0L : ref.clusterId();
+        }
+
+        long corridorId() {
+            return ref == null ? 0L : ref.corridorId();
+        }
+
+        long roomId() {
+            return ref == null ? 0L : ref.roomId();
+        }
+
+        int index() {
+            return ref == null ? 0 : ref.index();
+        }
+
+        String direction() {
+            return ref == null ? "" : ref.direction();
+        }
+
+        @Nullable DungeonEdgeRef sourceEdge() {
+            return ref == null ? null : ref.sourceEdge();
         }
 
     }
@@ -4645,7 +4502,7 @@ public final class DungeonMapContentModel {
             label = label == null ? "" : label;
             kind = kind == null ? MarkerKind.DOOR : kind;
             handle = handle == null
-                    ? new MarkerHandle(null, TopologyRef.empty(), 0L, 0L, 0L, 0L, 0, 0, 0, 0, "", null, List.of())
+                    ? new MarkerHandle(null, 0, 0, 0)
                     : handle;
         }
 
