@@ -56,6 +56,7 @@ public final class ApplyTravelDungeonSessionUseCase {
             case "ACTION" -> move(safeCommand.actionId());
             case "SELECT_MAP" -> selectMap(safeCommand.actionId());
             case "SET_PROJECTION_LEVEL" -> setProjectionLevel(safeCommand.projectionLevel());
+            case "SHIFT_PROJECTION_LEVEL" -> setProjectionLevel(session.projectionLevel() + safeCommand.projectionLevel());
             case "SET_OVERLAY" -> setOverlay(
                     safeCommand.overlayModeKey(),
                     safeCommand.overlayLevelRange(),

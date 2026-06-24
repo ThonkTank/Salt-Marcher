@@ -7,11 +7,11 @@ public record ApplyTravelDungeonSessionCommand(
         DungeonOverlaySettings overlaySettings
 ) {
 
-    public static ApplyTravelDungeonSessionCommand projectionLevel(int projectionLevel) {
+    public static ApplyTravelDungeonSessionCommand projectionLevelShift(int projectionLevelShift) {
         return new ApplyTravelDungeonSessionCommand(
-                Action.SET_PROJECTION_LEVEL,
+                Action.SHIFT_PROJECTION_LEVEL,
                 "",
-                projectionLevel,
+                projectionLevelShift,
                 DungeonOverlaySettings.defaults());
     }
 
@@ -54,6 +54,7 @@ public record ApplyTravelDungeonSessionCommand(
         ACTION,
         SELECT_MAP,
         SET_PROJECTION_LEVEL,
+        SHIFT_PROJECTION_LEVEL,
         SET_OVERLAY
     }
 }

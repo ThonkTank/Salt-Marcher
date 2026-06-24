@@ -74,12 +74,14 @@ reconstruct a second authored edit body.
 - `ApplyTravelDungeonSessionCommand` with action `REFRESH`
 - `ApplyTravelDungeonSessionCommand` with action `ACTION`
 - `ApplyTravelDungeonSessionCommand` with action `SET_PROJECTION_LEVEL`
+- `ApplyTravelDungeonSessionCommand` with action `SHIFT_PROJECTION_LEVEL`
 - `ApplyTravelDungeonSessionCommand` with action `SET_OVERLAY`
 
 Required fields:
 
 - chosen action id for `ACTION`
 - projection level for `SET_PROJECTION_LEVEL`
+- projection-level delta for `SHIFT_PROJECTION_LEVEL`
 - overlay settings for `SET_OVERLAY`
 
 Optional fields:

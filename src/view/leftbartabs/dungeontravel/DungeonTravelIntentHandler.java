@@ -50,8 +50,7 @@ final class DungeonTravelIntentHandler {
         }
         int projectionLevelShift = event.projectionLevelShift();
         if (projectionLevelShift != 0) {
-            travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.projectionLevel(
-                    presentationModel.currentProjectionLevel() + projectionLevelShift));
+            travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.projectionLevelShift(projectionLevelShift));
             return;
         }
         travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.overlay(

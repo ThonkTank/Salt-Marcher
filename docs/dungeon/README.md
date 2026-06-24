@@ -80,6 +80,10 @@ Editor tool matrices:
 - [Dungeon Editor Handle Matrix](./verification/verification-dungeon-editor-handles.md)
 - [Dungeon Editor Label Matrix](./verification/verification-dungeon-editor-labels.md)
 
+Travel matrices:
+
+- [Dungeon Travel Map And Projection Controls Matrix](./verification/verification-dungeon-travel-map-controls.md)
+
 ### Delivery
 
 - [Dungeon Delivery Notes](./delivery/delivery-dungeon.md)

@@ -182,6 +182,8 @@ tasks.test {
 
 val dungeonEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("dungeon-editor-behavior-data")
 val dungeonEditorBehaviorHarnessResultsDir = layout.buildDirectory.dir("dungeon-editor-behavior-results")
+val dungeonTravelProjectionLevelHarnessDataDir = layout.buildDirectory.dir("dungeon-travel-projection-level-data")
+val dungeonTravelProjectionLevelHarnessResultsDir = layout.buildDirectory.dir("dungeon-travel-projection-level-results")
 
 fun registerDungeonEditorBehaviorHarnessTask(
     taskName: String,
@@ -292,6 +294,32 @@ tasks.register<JavaExec>("dungeonEditorBehaviorHarnessSuites") {
     classpath = dungeonEditorBehaviorHarness.runtimeClasspath
     mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorSuiteHarness")
     args("--list")
+}
+
+tasks.register<JavaExec>("dungeonTravelProjectionLevelHarness") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Run the focused Dungeon Travel projection-level behavior harness."
+    dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
+    classpath = dungeonEditorBehaviorHarness.runtimeClasspath
+    mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonTravelProjectionLevelHarness")
+    inputs.files(fileTree("docs/dungeon/verification") {
+        include("verification-dungeon-travel-*.md")
+    })
+        .withPropertyName("dungeonTravelBehaviorCatalogs")
+        .withPathSensitivity(PathSensitivity.RELATIVE)
+    outputs.upToDateWhen { false }
+    doFirst {
+        val runDataDir = dungeonTravelProjectionLevelHarnessDataDir.get()
+            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+        mkdir(runDataDir)
+        mkdir(runDataDir.dir("salt-marcher"))
+        mkdir(dungeonTravelProjectionLevelHarnessResultsDir)
+        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+    }
+    systemProperty(
+        "saltmarcher.dungeonEditorBehavior.resultsDir",
+        dungeonTravelProjectionLevelHarnessResultsDir.get().asFile.absolutePath
+    )
 }
 
 val catalogInitialLoadHarnessDataDir = layout.buildDirectory.dir("catalog-initial-load-data")

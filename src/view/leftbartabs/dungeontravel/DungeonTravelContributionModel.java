@@ -27,10 +27,6 @@ public final class DungeonTravelContributionModel {
         refreshStateText(null);
     }
 
-    int currentProjectionLevel() {
-        return projectionLevel.get();
-    }
-
     void bindStateContentModel(DungeonTravelStateContentModel contentModel) {
         if (contentModel == null) {
             return;
