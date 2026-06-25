@@ -1,6 +1,8 @@
 package src.features.dungeon.shell;
 
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
+import javafx.application.Platform;
 import shell.api.ShellRuntimeContext;
 import src.features.dungeon.runtime.DungeonEditorFeatureRuntimeRoot;
 import src.features.dungeon.runtime.DungeonEditorRenderFrame;
@@ -20,11 +22,45 @@ public final class DungeonEditorFeatureShellBinding {
 
     public Runnable subscribe(PublicationSink sink) {
         PublicationSink safeSink = Objects.requireNonNull(sink, "sink");
-        return runtimeRoot.subscribe(publication -> safeSink.apply(publication.frame()));
+        JavaFxPublicationDelivery delivery = new JavaFxPublicationDelivery(safeSink);
+        Runnable unsubscribeRuntime = runtimeRoot.subscribe(publication -> delivery.deliver(publication.frame()));
+        return () -> {
+            delivery.close();
+            unsubscribeRuntime.run();
+        };
     }
 
     public void publishCurrent(PublicationSink sink) {
-        Objects.requireNonNull(sink, "sink").apply(runtimeRoot.currentPublication().frame());
+        JavaFxPublicationDelivery delivery =
+                new JavaFxPublicationDelivery(Objects.requireNonNull(sink, "sink"));
+        delivery.deliver(runtimeRoot.currentPublication().frame());
+    }
+
+    private static final class JavaFxPublicationDelivery {
+        private final PublicationSink sink;
+        private final AtomicBoolean open = new AtomicBoolean(true);
+
+        private JavaFxPublicationDelivery(PublicationSink sink) {
+            this.sink = sink;
+        }
+
+        private void deliver(DungeonEditorRenderFrame frame) {
+            if (Platform.isFxApplicationThread()) {
+                applyIfOpen(frame);
+                return;
+            }
+            Platform.runLater(() -> applyIfOpen(frame));
+        }
+
+        private void applyIfOpen(DungeonEditorRenderFrame frame) {
+            if (open.get()) {
+                sink.apply(frame);
+            }
+        }
+
+        private void close() {
+            open.set(false);
+        }
     }
 
     @FunctionalInterface

@@ -3,7 +3,6 @@ package src.domain.dungeon.model.runtime.usecase;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.runtime.helper.DungeonEditorSnapshotProjectionLevelProjectionHelper;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorSnapshotStateProjectionHelper;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonFacts;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
@@ -38,14 +37,24 @@ public final class BuildDungeonEditorSnapshotUseCase {
 
     public DungeonEditorSessionSnapshot.SnapshotData execute(@Nullable DungeonEditorSession state) {
         DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
-        searchMapsUseCase.execute("");
         List<MapSummary> maps = currentDungeonFacts.currentFacts(null, safeState.selection(), safeState.preview()).maps();
         @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState, maps);
-        refreshAuthoredSurface(resolvedMapId, safeState);
         return snapshotData(safeState, maps, resolvedMapId);
     }
 
-    public DungeonEditorSessionSnapshot.SnapshotData executeInMemoryPreview(@Nullable DungeonEditorSession state) {
+    public void refreshAuthoredSnapshot(@Nullable DungeonEditorSession state) {
+        DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
+        refreshCatalog();
+        List<MapSummary> maps = currentDungeonFacts.currentFacts(null, safeState.selection(), safeState.preview()).maps();
+        @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState, maps);
+        refreshAuthoredSurface(resolvedMapId, safeState.selectedMapId(), safeState);
+    }
+
+    public void refreshCatalog() {
+        searchMapsUseCase.execute("");
+    }
+
+    public InMemoryPreviewRefresh refreshInMemoryPreview(@Nullable DungeonEditorSession state) {
         DungeonEditorSession safeState = DungeonEditorSnapshotStateProjectionHelper.safeState(state);
         List<MapSummary> maps = currentDungeonFacts.currentFacts(null, safeState.selection(), safeState.preview()).maps();
         @Nullable MapId resolvedMapId = resolveSelectedMapId(safeState, maps);
@@ -53,8 +62,11 @@ public final class BuildDungeonEditorSnapshotUseCase {
                 resolvedMapId,
                 safeState.selection(),
                 DungeonEditorSessionValues.Preview.none());
+        if (previewOperationUseCase.executeAuthoredDragPreview(safeState.selectedMapId(), safeState.preview())) {
+            return InMemoryPreviewRefresh.DIRECT_AUTHORED_DRAG_PREVIEW;
+        }
         previewOperationUseCase.executeInMemory(committedFacts.surface(), safeState.preview());
-        return snapshotData(safeState, maps, resolvedMapId);
+        return InMemoryPreviewRefresh.IN_MEMORY_PREVIEW;
     }
 
     private DungeonEditorSessionSnapshot.SnapshotData snapshotData(
@@ -67,9 +79,6 @@ public final class BuildDungeonEditorSnapshotUseCase {
                 safeState.selection(),
                 safeState.preview());
         DungeonEditorSessionSnapshot.SurfaceData surface = surfaceFacts.surface();
-        int clampedProjectionLevel = DungeonEditorSnapshotProjectionLevelProjectionHelper.clampProjectionLevel(
-                surface,
-                safeState.projectionLevel());
         String nextStatus = safeState.statusText().isBlank()
                 ? surfaceFacts.previewStatusText()
                 : safeState.statusText();
@@ -78,7 +87,7 @@ public final class BuildDungeonEditorSnapshotUseCase {
                 resolvedMapId,
                 safeState.viewMode(),
                 safeState.selectedTool(),
-                clampedProjectionLevel,
+                safeState.projectionLevel(),
                 safeState.overlaySettings(),
                 safeState.selection(),
                 surface,
@@ -95,21 +104,25 @@ public final class BuildDungeonEditorSnapshotUseCase {
         return committedDungeonFacts.committedFacts(mapId).committedSnapshot();
     }
 
-    private void refreshAuthoredSurface(@Nullable MapId mapId, DungeonEditorSession state) {
-        if (mapId == null) {
+    private void refreshAuthoredSurface(
+            @Nullable MapId readbackMapId,
+            @Nullable MapId authoredPreviewMapId,
+            DungeonEditorSession state
+    ) {
+        if (readbackMapId == null) {
             return;
         }
         DungeonEditorSessionValues.Selection selection = state.selection();
         if (hasSelectionForInspector(selection)) {
             loadMapUseCase.executeWithSelection(
-                    mapId,
+                    readbackMapId,
                     selection.topologyRef(),
                     selection.clusterId(),
                     selection.clusterSelection());
         } else {
-            loadMapUseCase.execute(mapId);
+            loadMapUseCase.execute(readbackMapId);
         }
-        previewOperationUseCase.execute(mapId, state.preview());
+        previewOperationUseCase.execute(authoredPreviewMapId, state.preview());
     }
 
     private static boolean hasSelectionForInspector(DungeonEditorSessionValues.Selection selection) {
@@ -144,5 +157,20 @@ public final class BuildDungeonEditorSnapshotUseCase {
     @FunctionalInterface
     private interface CommittedDungeonFacts {
         DungeonEditorDungeonFacts committedFacts(@Nullable MapId mapId);
+    }
+
+    public enum InMemoryPreviewRefresh {
+        DIRECT_AUTHORED_DRAG_PREVIEW(true),
+        IN_MEMORY_PREVIEW(false);
+
+        private final boolean directAuthoredDragPreview;
+
+        InMemoryPreviewRefresh(boolean directAuthoredDragPreview) {
+            this.directAuthoredDragPreview = directAuthoredDragPreview;
+        }
+
+        boolean directAuthoredDragPreview() {
+            return directAuthoredDragPreview;
+        }
     }
 }

@@ -5,7 +5,6 @@ import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestinationDraftInput;
 
 public final class DungeonEditorStatePanelTransitionDestinationDrafts {
     private static final String DEFAULT_DESTINATION_TYPE = "OVERWORLD_TILE";

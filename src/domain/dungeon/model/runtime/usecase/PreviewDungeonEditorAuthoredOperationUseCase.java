@@ -13,6 +13,7 @@ import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper;
 
 public final class PreviewDungeonEditorAuthoredOperationUseCase {
     private static final long PREVIEW_STAIR_ID = Long.MAX_VALUE;
@@ -26,6 +27,7 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
             new DungeonEditorAuthoredPublicationUseCase();
     private final PreviewDungeonEditorSurfaceMoveUseCase surfaceMovePreviewUseCase =
             new PreviewDungeonEditorSurfaceMoveUseCase();
+    private final AuthoredPreviewDispatcher authoredPreviews = new AuthoredPreviewDispatcher();
 
     public PreviewDungeonEditorAuthoredOperationUseCase(
             ApplyDungeonEditorOperationUseCase operationUseCase,
@@ -41,92 +43,16 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
         this.state = Objects.requireNonNull(state, "state");
     }
 
-    public void execute(MapId mapId, DungeonEditorSessionValues.Preview preview) {
-        if (preview instanceof DungeonEditorSessionValues.StairCreatePreview stair) {
-            publishPreview(stairPreview(mapId, stair));
-            return;
-        }
-        if (preview instanceof DungeonEditorSessionValues.RoomRectanglePreview room) {
-            publishPreview(roomWallMutationUseCase.previewRoomRectangle(
-                    domainMapId(mapId),
-                    new ApplyDungeonRoomWallMutationUseCase.RoomRectangleMutation(
-                            DungeonEditorWorkspaceCoreGeometry.cell(room.start()),
-                            DungeonEditorWorkspaceCoreGeometry.cell(room.end()),
-                            room.deleteMode())));
-            return;
-        }
-        if (preview instanceof DungeonEditorSessionValues.ClusterBoundariesPreview boundaries
-                && !boundaries.boundaryKind().isDoor()) {
-            publishPreview(roomWallMutationUseCase.previewClusterBoundaries(
-                    domainMapId(mapId),
-                    new ApplyDungeonRoomWallMutationUseCase.ClusterBoundaryMutation(
-                            boundaries.clusterId(),
-                            DungeonEditorWorkspaceCoreGeometry.edges(boundaries.edges()),
-                            DungeonEditorWorkspaceCoreGeometry.boundaryKind(boundaries.boundaryKind()),
-                            boundaries.deleteMode())));
-            return;
-        }
-        if (preview instanceof DungeonEditorSessionValues.CorridorCreatePreview corridor) {
-            publishPreview(corridorMutationUseCase.previewCreate(
-                    domainMapId(mapId),
-                    corridor.start(),
-                    corridor.end()));
-            return;
-        }
-        if (preview instanceof DungeonEditorSessionValues.DeleteCorridorPreview corridor) {
-            publishPreview(corridorMutationUseCase.previewDelete(
-                    domainMapId(mapId),
-                    corridor.corridorId(),
-                    corridor.targetKind(),
-                    corridor.topologyRefId(),
-                    corridor.roomId(),
-                    corridor.waypointIndex()));
-            return;
-        }
-        if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview move
-                && move.handleRef().kind() == DungeonEditorHandleType.STAIR_ANCHOR) {
-            publishPreview(mutationUseCase.previewHandleMovement(
-                    domainMapId(mapId),
-                    DungeonEditorWorkspaceHandleMovement.from(move.handleRef()),
-                    move.deltaQ(),
-                    move.deltaR(),
-                    move.deltaLevel()));
-            return;
-        }
-        state.replacePreview(null);
+    public void execute(@Nullable MapId mapId, DungeonEditorSessionValues.Preview preview) {
+        state.replacePreview(previewFacts(authoredPreviews.preview(mapId, preview)));
     }
 
-    private ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData stairPreview(
-            MapId mapId,
-            DungeonEditorSessionValues.StairCreatePreview stair
-    ) {
-        StairGeometrySpec spec = stairSpec(stair);
-        if (mapId == null || spec == null || !stair.valid()) {
-            return null;
+    public boolean executeAuthoredDragPreview(@Nullable MapId mapId, DungeonEditorSessionValues.Preview preview) {
+        if (!directAuthoredDragPreview(preview)) {
+            return false;
         }
-        return operationUseCase.preview(
-                domainMapId(mapId),
-                current -> current.createStair(
-                        PREVIEW_STAIR_ID,
-                        spec.anchor(),
-                        spec.shape().name(),
-                        spec.direction().name(),
-                        spec.dimension1(),
-                        spec.dimension2()));
-    }
-
-    private static @Nullable StairGeometrySpec stairSpec(DungeonEditorSessionValues.StairCreatePreview stair) {
-        StairShape shape = StairShape.supportedEditorShape(stair.shapeName());
-        Direction direction = Direction.supportedCardinal(stair.directionName());
-        if (shape == null || direction == null) {
-            return null;
-        }
-        return new StairGeometrySpec(
-                shape,
-                DungeonEditorWorkspaceCoreGeometry.cell(stair.specAnchor()),
-                direction,
-                stair.dimension1(),
-                stair.dimension2());
+        execute(mapId, preview);
+        return true;
     }
 
     public void executeInMemory(
@@ -134,14 +60,6 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
             DungeonEditorSessionValues.Preview preview
     ) {
         state.replacePreview(surfaceMovePreviewUseCase.execute(surface, preview));
-    }
-
-    public void publishPreview(ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData preview) {
-        state.replacePreview(previewFacts(preview));
-    }
-
-    private static DungeonMapIdentity domainMapId(MapId mapId) {
-        return new DungeonMapIdentity(mapId == null ? 1L : mapId.value());
     }
 
     private DungeonEditorDungeonState.@Nullable PreviewFacts previewFacts(
@@ -178,5 +96,141 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
             return preview.validationMessages().getFirst();
         }
         return "";
+    }
+
+    private static boolean directAuthoredDragPreview(DungeonEditorSessionValues.Preview preview) {
+        return preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview
+                || preview instanceof DungeonEditorSessionValues.MoveHandlePreview move
+                && DungeonEditorSessionPreviewHelper.directClusterMoveCommitHandle(move.handleRef().kind());
+    }
+
+    private final class AuthoredPreviewDispatcher {
+        private ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData preview(
+                @Nullable MapId mapId,
+                DungeonEditorSessionValues.Preview preview
+        ) {
+            if (mapId == null) {
+                return null;
+            }
+            DungeonMapIdentity domainMapId = new DungeonMapIdentity(mapId.value());
+            if (preview instanceof DungeonEditorSessionValues.StairCreatePreview stair) {
+                return stairPreview(mapId, domainMapId, stair);
+            }
+            ApplyDungeonEditorOperationUseCase.OperationResultData roomWallPreview =
+                    roomWallPreview(domainMapId, preview);
+            if (roomWallPreview != null) {
+                return roomWallPreview;
+            }
+            ApplyDungeonEditorOperationUseCase.OperationResultData corridorPreview =
+                    corridorPreview(domainMapId, preview);
+            if (corridorPreview != null) {
+                return corridorPreview;
+            }
+            return movePreview(domainMapId, preview);
+        }
+
+        private ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData roomWallPreview(
+                DungeonMapIdentity domainMapId,
+                DungeonEditorSessionValues.Preview preview
+        ) {
+            if (preview instanceof DungeonEditorSessionValues.RoomRectanglePreview room) {
+                return roomWallMutationUseCase.previewRoomRectangle(
+                        domainMapId,
+                        new ApplyDungeonRoomWallMutationUseCase.RoomRectangleMutation(
+                                DungeonEditorWorkspaceCoreGeometry.cell(room.start()),
+                                DungeonEditorWorkspaceCoreGeometry.cell(room.end()),
+                                room.deleteMode()));
+            }
+            if (preview instanceof DungeonEditorSessionValues.ClusterBoundariesPreview boundaries
+                    && !boundaries.boundaryKind().isDoor()) {
+                return roomWallMutationUseCase.previewClusterBoundaries(
+                        domainMapId,
+                        new ApplyDungeonRoomWallMutationUseCase.ClusterBoundaryMutation(
+                                boundaries.clusterId(),
+                                DungeonEditorWorkspaceCoreGeometry.edges(boundaries.edges()),
+                                DungeonEditorWorkspaceCoreGeometry.boundaryKind(boundaries.boundaryKind()),
+                                boundaries.deleteMode()));
+            }
+            return null;
+        }
+
+        private ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData corridorPreview(
+                DungeonMapIdentity domainMapId,
+                DungeonEditorSessionValues.Preview preview
+        ) {
+            if (preview instanceof DungeonEditorSessionValues.CorridorCreatePreview corridor) {
+                return corridorMutationUseCase.previewCreate(domainMapId, corridor.start(), corridor.end());
+            }
+            if (preview instanceof DungeonEditorSessionValues.DeleteCorridorPreview corridor) {
+                return corridorMutationUseCase.previewDelete(
+                        domainMapId,
+                        corridor.corridorId(),
+                        corridor.targetKind(),
+                        corridor.topologyRefId(),
+                        corridor.roomId(),
+                        corridor.waypointIndex());
+            }
+            return null;
+        }
+
+        private ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData movePreview(
+                DungeonMapIdentity domainMapId,
+                DungeonEditorSessionValues.Preview preview
+        ) {
+            if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview move
+                    && (move.handleRef().kind() == DungeonEditorHandleType.STAIR_ANCHOR
+                    || DungeonEditorSessionPreviewHelper.directClusterMoveCommitHandle(move.handleRef().kind()))) {
+                return mutationUseCase.previewHandleMovement(
+                        domainMapId,
+                        DungeonEditorWorkspaceHandleMovement.from(move.handleRef()),
+                        move.deltaQ(),
+                        move.deltaR(),
+                        move.deltaLevel());
+            }
+            if (preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch) {
+                return mutationUseCase.previewBoundaryStretch(
+                        domainMapId,
+                        stretch.clusterId(),
+                        DungeonEditorWorkspaceCoreGeometry.edges(stretch.sourceEdges()),
+                        stretch.deltaQ(),
+                        stretch.deltaR(),
+                        stretch.deltaLevel());
+            }
+            return null;
+        }
+
+        private ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData stairPreview(
+                MapId mapId,
+                DungeonMapIdentity domainMapId,
+                DungeonEditorSessionValues.StairCreatePreview stair
+        ) {
+            StairGeometrySpec spec = stairSpec(stair);
+            if (mapId == null || spec == null || !stair.valid()) {
+                return null;
+            }
+            return operationUseCase.preview(
+                    domainMapId,
+                    current -> current.createStair(
+                            PREVIEW_STAIR_ID,
+                            spec.anchor(),
+                            spec.shape().name(),
+                            spec.direction().name(),
+                            spec.dimension1(),
+                            spec.dimension2()));
+        }
+
+        private @Nullable StairGeometrySpec stairSpec(DungeonEditorSessionValues.StairCreatePreview stair) {
+            StairShape shape = StairShape.supportedEditorShape(stair.shapeName());
+            Direction direction = Direction.supportedCardinal(stair.directionName());
+            if (shape == null || direction == null) {
+                return null;
+            }
+            return new StairGeometrySpec(
+                    shape,
+                    DungeonEditorWorkspaceCoreGeometry.cell(stair.specAnchor()),
+                    direction,
+                    stair.dimension1(),
+                    stair.dimension2());
+        }
     }
 }

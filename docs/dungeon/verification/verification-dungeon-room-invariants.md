@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-08
+Last Reviewed: 2026-06-24
 Source of Truth: Target invariant catalog for Dungeon Room ownership proof.
 
 # Dungeon Room Invariants
@@ -21,7 +21,7 @@ Required proof rows publish `OwnerSuite=RoomInvariantHarness`,
 | Invariant ID | Target Owner | Invariant | Required Proof | Current Status |
 | --- | --- | --- | --- | --- |
 | `DGI-ROOM-001` | `DungeonRoom` | Room identity and narration survive aggregate cluster edits when the room remains represented. | `OwnerSuite=RoomInvariantHarness`, `ProofType=ModelInvariant` proves room identity and narration survival through named production owner/API edits. | Qualified |
-| `DGI-ROOM-002` | `RoomClusterRoomPartition` | Every floor-owned room cell is assigned to exactly one room after closed-boundary partitioning. | `OwnerSuite=RoomInvariantHarness`, `ProofType=ModelInvariant` proves one-room cell assignment without duplicate ownership. | Qualified |
+| `DGI-ROOM-002` | `RoomClusterRoomPartition` | Every floor-owned room cell is assigned to exactly one room after closed-boundary partitioning, and distinct rooms require distinct closed-boundary-connected components. | `OwnerSuite=RoomInvariantHarness`, `ProofType=ModelInvariant` proves one-room cell assignment without duplicate ownership and coalesces old room identities when a boundary edit leaves one open component. | Qualified |
 | `DGI-ROOM-003` | `DungeonRoom` and `DungeonMap` label facts | Default room name is `Raum <roomId>` unless an authored custom name exists. | `OwnerSuite=RoomInvariantHarness`, `ProofType=ModelInvariant` proves default and authored custom room-name facts. | Qualified |
 | `DGI-ROOM-004` | `RoomClusterRoomPartition` and `Room` anchor facts | Room label source facts are derived from partition-owned room floor cells and sorted room anchors. | `OwnerSuite=RoomInvariantHarness`, `ProofType=ModelInvariant` proves room-label source facts derive from room floor cells without claiming view-owned orientation. | Qualified |
 

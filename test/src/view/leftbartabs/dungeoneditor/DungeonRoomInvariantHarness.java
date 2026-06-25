@@ -34,7 +34,8 @@ final class DungeonRoomInvariantHarness {
                 results,
                 OWNER,
                 "DGI-ROOM-002",
-                "RoomClusterRoomPartition assigns each floor-owned room cell to exactly one room");
+                "RoomClusterRoomPartition assigns each floor-owned room cell to exactly one room "
+                        + "and coalesces rooms when closed boundaries no longer split them");
         assertDefaultAndCustomRoomNames();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -112,6 +113,31 @@ final class DungeonRoomInvariantHarness {
         long assignedCount = assigned.values().stream().mapToLong(List::size).sum();
         assertEquals(Set.of(left, middle, right), assignedCells, "DGI-ROOM-002 partition covers floor cells");
         assertEquals(assignedCells.size(), (int) assignedCount, "DGI-ROOM-002 partition assigns each cell once");
+
+        DungeonMap partitioned = DungeonMapAuthoring.empty(new DungeonMapIdentity(12L), "Boundary Coalesce Harness")
+                .paintRoomRectangle(left, middle);
+        long clusterId = firstRoom(partitioned).clusterId();
+        DungeonMap split = partitioned.editClusterBoundaries(
+                clusterId,
+                List.of(EdgeSide.eastOf(0, 0)),
+                BoundaryKind.WALL,
+                false);
+        assertEquals(2L, (long) split.rooms().rooms().size(),
+                "DGI-ROOM-002 closed boundary split creates two room components");
+        DungeonMap coalesced = split.editClusterBoundaries(
+                clusterId,
+                List.of(EdgeSide.eastOf(0, 0)),
+                BoundaryKind.WALL,
+                true);
+        assertEquals(1L, (long) coalesced.rooms().rooms().size(),
+                "DGI-ROOM-002 removing the separating wall coalesces the open component to one room");
+        var coalescedCluster = coalesced.topology().roomClusters().getFirst();
+        Map<Long, List<Cell>> coalescedCells = RoomClusterRoomPartition.cellsByRoom(
+                coalescedCluster.toCore(coalescedCluster.cellsByLevel()),
+                coalesced.rooms().rooms().stream().map(DungeonRoom::toCore).toList(),
+                coalescedCluster.closedBoundaryEdgesByLevel());
+        assertEquals(List.of(left, middle), coalescedCells.values().iterator().next(),
+                "DGI-ROOM-002 coalesced room owns the full open floor component");
     }
 
     private static void assertDefaultAndCustomRoomNames() {

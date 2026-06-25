@@ -19,7 +19,6 @@ public record DungeonEditorStateSnapshot(
         viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
         selectedTool = selectedTool == null ? DungeonEditorTool.SELECT : selectedTool;
         overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
-        projectionLevel = Math.max(0, projectionLevel);
     }
 
     public static DungeonEditorStateSnapshot empty(String statusText) {

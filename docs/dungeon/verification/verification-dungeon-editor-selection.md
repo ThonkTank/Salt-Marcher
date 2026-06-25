@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-23
 Source of Truth: Selection route expectations for Dungeon Editor behavior
 verification.
 
@@ -21,7 +21,8 @@ after a target is selected.
 | `DE-SEL-003` | Select stair | `DungeonMapView` primary click on stair handle | `F7_STAIR_ANCHOR` | Selection resolves the stable stair target and leaves authored rows unchanged. | Ready |
 | `DE-SEL-004` | Select corridor anchor | `DungeonMapView` primary click on corridor anchor | `F5_CORRIDOR_WITH_ANCHOR` | Selection resolves the stable corridor-anchor target and leaves authored rows unchanged. | Ready |
 | `DE-SEL-005` | Clear selection | `DungeonMapView` primary click on empty map space | `F1_SINGLE_ROOM` | Selection clears and authored rows remain unchanged. | Ready |
-| `DE-SEL-006` | Hover selectable map target | `OwnerSuite=DungeonEditorSelectionHarness`; `ProofType=RealRoute`; `DungeonMapView` mouse move over room floor, door boundary, marker, cluster label, and empty space | `F1_SINGLE_ROOM` / `F4_WALLED_ROOM_WITH_DOOR` / `F7_STAIR_ANCHOR` | Hover styling is content-model presentation state, remains visually distinct from selected and preview styling, and clears on empty target without authored row changes or room-label interactivity. | Ready |
+| `DE-SEL-006` | Hover selectable map target | `OwnerSuite=DungeonEditorSelectionHarness`; `ProofType=RealRoute`; `DungeonMapView` mouse move over selectable targets, plain wall edges, room labels, and empty/off-grid space | `F1_SINGLE_ROOM` / `F4_WALLED_ROOM_WITH_DOOR` / `F7_STAIR_ANCHOR` | Hover styling is content-model presentation state, remains visually distinct from selected and preview styling, appears only for existing selectable targets, and clears or stays absent for non-selectable wall, room-label, and tool-only geometry without authored row changes. | Ready |
+| `DE-HOVER-001` | Hover active editor tool geometry | `OwnerSuite=DungeonEditorSelectionHarness`; `ProofType=RealRoute`; active tool plus `DungeonMapView` mouse move | mixed editor fixtures | Wall-path hover highlights vertices, wall single-click hover highlights edges, room hover highlights cells, and corridor hover highlights only wall or door boundary edges plus authored corridor cells. | Ready |
 
 ## References
 

@@ -569,11 +569,15 @@ final class DungeonEditorTransitionHarness {
 
         DungeonEditorTopologyElementRef transitionRef = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
         Point2D transitionCenter = glyphCenterForRef(binding.mapContentModel(), transitionRef);
-        assertEquals("HANDLE", binding.mapContentModel()
+        assertEquals("CELL", binding.mapContentModel()
                         .resolvePointerTarget(transitionCenter.getX(), transitionCenter.getY())
                         .targetKind()
                         .name(),
                 "DE-TRN-002 transition marker resolves as a real map pointer target");
+        assertEquals("TRANSITION", binding.mapContentModel()
+                        .resolvePointerTarget(transitionCenter.getX(), transitionCenter.getY())
+                        .elementKind(),
+                "DE-TRN-002 transition marker resolves through transition cell semantics");
         assertEquals("TRANSITION", binding.mapContentModel()
                         .resolvePointerTarget(transitionCenter.getX(), transitionCenter.getY())
                         .topologyKind(),

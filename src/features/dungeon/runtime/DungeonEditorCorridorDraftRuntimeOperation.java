@@ -13,9 +13,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceVal
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorCorridorDraftRuntimeOperation {
     private final DungeonEditorSessionWorkflow workflow;
@@ -80,7 +77,7 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
     }
 
     private static PointerAction previewAction(PointerAction action) {
-        return action == null ? PointerAction.MOVED : action;
+        return PointerAction.orMoved(action);
     }
 
     private static InterpretDungeonEditorMainViewInputUseCase.PointerAction pointerAction(PointerAction action) {

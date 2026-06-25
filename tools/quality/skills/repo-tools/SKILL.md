@@ -60,13 +60,18 @@ repo-tracked change:
 
 - Tool path: `tools/quality/reporting/project_health_scan.py`
 - Helps with: `PROJECT_HEALTH_DEBT` marker/register synchronization and
-  repeated project-health family discovery in pass logs.
+  repeated project-health family discovery in pass logs. With `--intake`, it
+  also detects active registered debt that intersects planned paths, owner
+  areas, or the current worktree and must be resolved before handoff.
 - Governing skill:
   `tools/quality/skills/project-health/SKILL.md`
 - Evidence strength: `Evidence-Proven` for literal marker/register sync in the
-  scanned files; `Candidate` trend evidence for pass-log term families.
+  scanned files and registered debt intake matches; `Candidate` trend evidence
+  for pass-log term families.
 - Typical use:
   `python3 tools/quality/reporting/project_health_scan.py --scope <path>`
+  `python3 tools/quality/reporting/project_health_scan.py --intake --planned-path <path>`
+  `python3 tools/quality/reporting/project_health_scan.py --intake --worktree`
 
 ## Handoff
 

@@ -2,9 +2,6 @@ package src.features.dungeon.runtime;
 
 import java.util.List;
 import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorRoomNarrationUseCase.ExitInput;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarration;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorRuntimeInputTranslator {
 
@@ -50,7 +47,7 @@ final class DungeonEditorRuntimeInputTranslator {
                 .toList();
     }
 
-    private static ExitInput exitInput(DungeonEditorRuntimeOperations.ExitNarration exit) {
+    private static ExitInput exitInput(ExitNarration exit) {
         return new ExitInput(
                 exit.label(),
                 exit.q(),

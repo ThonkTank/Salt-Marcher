@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.ExitNarrationDraftInput;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarrationDraftInput;
 
 public final class DungeonEditorStatePanelRoomNarrationDrafts {
     private final Map<RoomKey, String> visualDrafts = new HashMap<>();

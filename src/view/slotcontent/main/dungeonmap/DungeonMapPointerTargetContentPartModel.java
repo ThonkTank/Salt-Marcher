@@ -3,8 +3,8 @@ package src.view.slotcontent.main.dungeonmap;
 import java.util.List;
 import java.util.Map;
 import src.view.slotcontent.main.dungeonmap.DungeonMapHitGeometryContentPartModel.CanvasHit;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.BoundaryTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTarget;
-import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTargetKind;
 
 final class DungeonMapPointerTargetContentPartModel {
     private static final String FEATURE_MARKER_ELEMENT_KIND = "FEATURE_MARKER";
@@ -45,10 +45,10 @@ final class DungeonMapPointerTargetContentPartModel {
     }
 
     private int boundaryPreferredPriority(PointerTarget target) {
-        if (target.targetKind() == PointerTargetKind.BOUNDARY) {
+        if (target.isBoundaryTarget()) {
             return 0;
         }
-        if (target.targetKind() == PointerTargetKind.HANDLE) {
+        if (target.isHandleTarget()) {
             return 1;
         }
         int normalPriority = normalPriority(target);
@@ -59,7 +59,7 @@ final class DungeonMapPointerTargetContentPartModel {
     }
 
     private int normalPriority(PointerTarget safeTarget) {
-        if (safeTarget.targetKind() == PointerTargetKind.LABEL) {
+        if (safeTarget.isLabelTarget()) {
             return labelPriority(safeTarget);
         }
         return switch (safeTarget.targetKind()) {
@@ -93,14 +93,14 @@ final class DungeonMapPointerTargetContentPartModel {
     }
 
     private static boolean boundaryCandidate(PointerTarget target) {
-        return target != null && target.targetKind() == PointerTargetKind.BOUNDARY;
+        return target != null && target.isBoundaryTarget();
     }
 
     private static double boundaryDistance(PointerTarget target, double sceneX, double sceneY) {
         if (!boundaryCandidate(target)) {
             return Double.POSITIVE_INFINITY;
         }
-        DungeonMapContentModel.BoundaryTarget boundary = target.boundaryRef();
+        BoundaryTarget boundary = target.boundaryRef();
         return distanceToSegment(
                 sceneX,
                 sceneY,
@@ -134,14 +134,14 @@ final class DungeonMapPointerTargetContentPartModel {
         if (!boundaryCandidate(target)) {
             return "";
         }
-        DungeonMapContentModel.BoundaryTarget boundary = target.boundaryRef();
-        return boundary.kind()
+        BoundaryTarget boundary = target.boundaryRef();
+        return boundary.boundaryKind().legacyName()
                 + ":"
                 + boundary.ownerId()
                 + ":"
-                + boundary.topologyRef().kind()
+                + boundary.topologyKind()
                 + ":"
-                + boundary.topologyRef().id()
+                + boundary.topologyId()
                 + ":"
                 + boundary.key();
     }

@@ -1,17 +1,11 @@
 package src.features.dungeon.runtime;
 
-import java.util.Locale;
-
 public final class DungeonEditorStatePanelLabelNameDrafts {
-    private static final long NO_TARGET_ID = 0L;
-    private static final String CLUSTER_KIND = "CLUSTER";
-    private static final String ROOM_KIND = "ROOM";
-
     private Key draftKey = Key.empty();
     private String draftName = "";
 
-    void update(long selectedMapIdValue, String targetKind, long targetId, String name) {
-        Key key = Key.from(selectedMapIdValue, targetKind, targetId);
+    void update(long selectedMapIdValue, DungeonEditorRuntimeLabelTarget target, String name) {
+        Key key = Key.from(selectedMapIdValue, target);
         if (!key.valid()) {
             return;
         }
@@ -19,25 +13,25 @@ public final class DungeonEditorStatePanelLabelNameDrafts {
         draftName = name == null ? "" : name;
     }
 
-    void clear(long selectedMapIdValue, String targetKind, long targetId) {
-        if (draftKey.equals(Key.from(selectedMapIdValue, targetKind, targetId))) {
+    void clear(long selectedMapIdValue, DungeonEditorRuntimeLabelTarget target) {
+        if (draftKey.equals(Key.from(selectedMapIdValue, target))) {
             clearDraft();
         }
     }
 
-    Draft current(long selectedMapIdValue, String targetKind, long targetId) {
-        Key key = Key.from(selectedMapIdValue, targetKind, targetId);
+    Draft current(long selectedMapIdValue, DungeonEditorRuntimeLabelTarget target) {
+        Key key = Key.from(selectedMapIdValue, target);
         if (!key.valid()) {
             return Draft.empty();
         }
         if (!draftKey.equals(key)) {
-            return Draft.target(key.targetKind(), key.targetId());
+            return Draft.target(key.target());
         }
-        return new Draft(key.targetKind(), key.targetId(), draftName, true);
+        return new Draft(key.target(), draftName, true);
     }
 
-    void retainOnlyVisibleDraftForMap(long selectedMapIdValue, String targetKind, long targetId) {
-        Key visible = Key.from(selectedMapIdValue, targetKind, targetId);
+    void retainOnlyVisibleDraftForMap(long selectedMapIdValue, DungeonEditorRuntimeLabelTarget target) {
+        Key visible = Key.from(selectedMapIdValue, target);
         if (draftKey.selectedMapIdValue() == Math.max(0L, selectedMapIdValue)
                 && (!visible.valid() || !draftKey.equals(visible))) {
             clearDraft();
@@ -49,58 +43,59 @@ public final class DungeonEditorStatePanelLabelNameDrafts {
         draftName = "";
     }
 
-    public record Draft(String targetKind, long targetId, String name, boolean present) {
+    public record Draft(DungeonEditorRuntimeLabelTarget target, String name, boolean present) {
         public Draft {
-            targetKind = normalizeTargetKind(targetKind);
-            targetId = Math.max(NO_TARGET_ID, targetId);
+            target = DungeonEditorRuntimeLabelTarget.orEmpty(target);
             name = name == null ? "" : name;
-            present = present && targetId > NO_TARGET_ID && !targetKind.isBlank();
+            present = present && target.present();
         }
 
         public static Draft empty() {
-            return new Draft("", NO_TARGET_ID, "", false);
+            return new Draft(DungeonEditorRuntimeLabelTarget.empty(), "", false);
         }
 
-        static Draft target(String targetKind, long targetId) {
-            return new Draft(targetKind, targetId, "", false);
+        static Draft target(DungeonEditorRuntimeLabelTarget target) {
+            return new Draft(target, "", false);
         }
 
         public boolean targetPresent() {
-            return targetId > NO_TARGET_ID && (CLUSTER_KIND.equals(targetKind) || ROOM_KIND.equals(targetKind));
+            return target.present();
+        }
+
+        public String targetKind() {
+            return target.targetKind();
+        }
+
+        public long targetId() {
+            return target.targetId();
         }
 
         public String fallbackName() {
-            return CLUSTER_KIND.equals(targetKind) ? "Cluster " + targetId : "Raum " + targetId;
+            return target.fallbackName();
         }
 
         public String label() {
-            return CLUSTER_KIND.equals(targetKind) ? "Cluster-Name" : "Raum-Name";
+            return target.label();
         }
 
     }
 
-    private record Key(long selectedMapIdValue, String targetKind, long targetId) {
+    private record Key(long selectedMapIdValue, DungeonEditorRuntimeLabelTarget target) {
         Key {
             selectedMapIdValue = Math.max(0L, selectedMapIdValue);
-            targetKind = normalizeTargetKind(targetKind);
-            targetId = Math.max(NO_TARGET_ID, targetId);
+            target = DungeonEditorRuntimeLabelTarget.orEmpty(target);
         }
 
-        static Key from(long selectedMapIdValue, String targetKind, long targetId) {
-            return new Key(selectedMapIdValue, targetKind, targetId);
+        static Key from(long selectedMapIdValue, DungeonEditorRuntimeLabelTarget target) {
+            return new Key(selectedMapIdValue, target);
         }
 
         static Key empty() {
-            return new Key(0L, "", NO_TARGET_ID);
+            return new Key(0L, DungeonEditorRuntimeLabelTarget.empty());
         }
 
         boolean valid() {
-            return selectedMapIdValue > 0L && targetId > NO_TARGET_ID
-                    && (CLUSTER_KIND.equals(targetKind) || ROOM_KIND.equals(targetKind));
+            return selectedMapIdValue > 0L && target.present();
         }
-    }
-
-    private static String normalizeTargetKind(String targetKind) {
-        return targetKind == null ? "" : targetKind.trim().toUpperCase(Locale.ROOT);
     }
 }

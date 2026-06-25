@@ -9,7 +9,6 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEd
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditState;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditorPresentation;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTarget;
-import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTargetKind;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.Viewport;
 
 final class DungeonMapInlineLabelUiStateContentPartModel {
@@ -33,7 +32,7 @@ final class DungeonMapInlineLabelUiStateContentPartModel {
             List<DungeonMapContentModel.DungeonMapRenderState.Label> labels
     ) {
         PointerTarget safeTarget = target == null ? PointerTarget.empty() : target;
-        if (safeTarget.targetKind() != PointerTargetKind.LABEL) {
+        if (!safeTarget.isLabelTarget()) {
             return Optional.empty();
         }
         return labelForTarget(safeTarget, labels).map(label -> new InlineLabelEditCandidate(

@@ -40,7 +40,7 @@ normalize_focused_path() {
     local path="$1"
     path="${path#./}"
     path="${path%/}"
-    if [[ -z "$path" || "$path" == /* || "$path" == *".."* || "$path" == *"*"* || "$path" == *"?"* || "$path" == *"["* ]]; then
+    if [[ -z "$path" || "$path" == /* || "$path" == *".."* || "$path" == *","* || "$path" == *"*"* || "$path" == *"?"* || "$path" == *"["* ]]; then
         return 1
     fi
     printf '%s\n' "$path"
@@ -101,6 +101,21 @@ request_production_handoff_configuration_cache() {
     extra_args=("--configuration-cache" "${extra_args[@]}")
 }
 
+run_project_health_debt_intake() {
+    local label="$1"
+    shift
+    local intake_cmd=("$REPO_ROOT/tools/quality/reporting/project_health_scan.py" --intake --intake-only "$@")
+
+    {
+        echo "[staged-verification] Project health debt intake: $label"
+        (
+            cd "$REPO_ROOT"
+            python3 "${intake_cmd[@]}"
+        )
+        echo
+    } | tee -a "$STAGED_VERIFICATION_LOG"
+}
+
 declare -a requested_surfaces=()
 declare -a extra_args=()
 fail_fast=false
@@ -130,6 +145,10 @@ if ! is_supported_surface "${requested_surfaces[0]}"; then
     exit 64
 fi
 
+readonly STAGED_VERIFICATION_LOG="$REPO_ROOT/build/gradle-run-logs/$(date -u '+%Y%m%dT%H%M%SZ')-staged-${requested_surfaces[0]}.log"
+mkdir -p "$(dirname "$STAGED_VERIFICATION_LOG")"
+echo "[staged-verification] Wrapper log: $STAGED_VERIFICATION_LOG"
+
 run_surface() {
     local surface="$1"
 
@@ -137,6 +156,7 @@ run_surface() {
     echo
 
     if [[ "$surface" == "production-handoff" ]]; then
+        run_project_health_debt_intake "current worktree" --worktree
         request_production_handoff_configuration_cache
         run_observable_gradle "$fail_fast" production-handoff
         return
@@ -244,6 +264,15 @@ run_focused_handoff() {
         echo "[staged-verification] Focused compile integrity: requested"
     fi
     echo
+
+    declare -a intake_args=()
+    for value in "${focused_paths[@]}"; do
+        intake_args+=(--planned-path "$value")
+    done
+    for value in "${explicit_areas[@]}"; do
+        intake_args+=(--planned-owner "$value")
+    done
+    run_project_health_debt_intake "focused scope" "${intake_args[@]}"
 
     local focused_paths_property="-Dsaltmarcher.focusedVerificationPaths=$(join_by_comma "${focused_paths[@]}")"
     extra_args=("$focused_paths_property" "${extra_args[@]}")

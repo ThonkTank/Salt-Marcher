@@ -35,6 +35,7 @@ public final class RenameDungeonEditorMapUseCase {
                 workflow.session().selection(),
                 workflow.session().preview()).mutationMapId();
         workflow.applyMapLifecycle(DungeonEditorSessionWorkflow.MAP_RENAMED, nextMapId);
+        snapshotBuilder.refreshAuthoredSnapshot(workflow.session());
         snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
     }
 }

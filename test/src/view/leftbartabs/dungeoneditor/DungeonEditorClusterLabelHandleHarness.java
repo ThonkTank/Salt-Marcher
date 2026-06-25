@@ -18,6 +18,7 @@ import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.features.dungeon.runtime.DungeonEditorFeatureRuntimeRoot;
+import src.features.dungeon.runtime.DungeonEditorRuntimeLabelTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
@@ -240,8 +241,10 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertRoomLabelHitAndEditorPresentation(binding, runtime, roomIds, roomLabelCenter, roomLabelText);
         DungeonEditorRuntimeOperations operations =
                 DungeonEditorFeatureRuntimeRoot.create(runtime.context().services()).operations();
-        operations.selectMap(roomMapId);
-        operations.saveLabelName("ROOM", roomIds.roomId(), "   Lantern Room   ");
+        operations.catalog().selectMap(roomMapId);
+        operations.transitionStairs().saveLabelName(
+                DungeonEditorRuntimeLabelTarget.room(roomIds.roomId()),
+                "   Lantern Room   ");
         assertEquals("Lantern Room", runtime.database().roomName(roomIds.roomId()),
                 "DE-LABEL-006 shared label-name operation trims and saves custom room label");
         assertEquals(roomGeometryRowsBefore, runtime.database().countAuthoredGeometryRows(roomMapId),
@@ -668,6 +671,12 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-CLUSTER-002 T-split preview carries only the selected upper wall-run source edges");
         assertEquals(-1L, preview.deltaQ(), "DE-CLUSTER-002 T-split preview delta q");
         assertEquals(0L, preview.deltaR(), "DE-CLUSTER-002 T-split preview delta r");
+        assertTrue(mapHasBoundaryKindAt(
+                        previewSurface.surface().previewMap(),
+                        "WALL",
+                        new Cell(2, 3, 0),
+                        new Cell(3, 3, 0)),
+                "DE-CLUSTER-002 T-split preview shows the connector touching the moved wall run before release");
         assertTrue(mapHasBoundaryKindAt(
                         previewSurface.surface().previewMap(),
                         "WALL",
@@ -1260,6 +1269,12 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-CLUSTER-002 clears wall-run preview after release");
         assertEquals(roomIdsBefore, runtime.database().roomByName(mapId, "R1"),
                 "DE-CLUSTER-002 wall-run drag keeps room and cluster identity");
+        assertEquals(1L, runtime.database().countRoomsForMap(mapId),
+                "DE-CLUSTER-002 wall-run drag coalesces the open closed-boundary component to one room row");
+        assertEquals(1L, committedSurface.surface().map().areas().stream()
+                        .filter(area -> "ROOM".equalsIgnoreCase(area.kind()))
+                        .count(),
+                "DE-CLUSTER-002 wall-run drag publishes one room area for one closed-boundary component");
         assertTrue(!boundaryRowsBefore.equals(runtime.database().roomBoundaryEdgeState(mapId)),
                 "DE-CLUSTER-002 recomputes persisted boundary rows after wall-run release");
         assertEquals(runtime.database().countWallBoundaryRows(mapId),
@@ -1274,13 +1289,20 @@ final class DungeonEditorClusterLabelHandleHarness {
         selectMap(controls, "Complex Cluster Wall Run Move Map");
         assertEquals(roomIdsBefore, runtime.database().roomByName(mapId, "R1"),
                 "DE-CLUSTER-002 reload keeps room and cluster identity");
+        assertEquals(1L, runtime.database().countRoomsForMap(mapId),
+                "DE-CLUSTER-002 reload keeps one room row for one closed-boundary component");
+        assertEquals(1L, runtime.mapSurfaceModel().current().surface().map().areas().stream()
+                        .filter(area -> "ROOM".equalsIgnoreCase(area.kind()))
+                        .count(),
+                "DE-CLUSTER-002 reload publishes one room area for one closed-boundary component");
         assertEquals(0L, runtime.database().countUnreferencedWallTopologyElements(mapId),
                 "DE-CLUSTER-002 reload keeps no orphan wall topology rows");
         assertTrue(runtime.database().authoredClusterBoundaryCorners(clusterId).containsAll(Set.of("10,9,0", "13,9,0")),
                 "DE-CLUSTER-002 reload keeps the dragged full wall-run endpoints");
 
         results.add("DE-CLUSTER-002 Ready: F15_COMPLEX_CLUSTER wall-run drag previews, commits, reloads, "
-                + "preserves identity, and rejects invalid geometry atomically");
+                + "preserves surviving identity, coalesces open room partitions, "
+                + "and rejects invalid geometry atomically");
         results.add("DE-HANDLE-002 Ready: Shared canvas handle hit route includes selected cluster wall-run and "
                 + "selected cluster corner only");
         results.add("DE-HANDLE-003 Ready: Cluster wall-run drags publish boundary-stretch preview before persistence");
@@ -2408,7 +2430,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 .filter(glyph -> glyphMatchesHandleKind(glyph, DOOR_KIND))
                 .filter(glyph -> Math.abs(glyphCenterQ(glyph) - q) < 0.000_001
                         && Math.abs(glyphCenterR(glyph) - r) < 0.000_001)
-                .findFirst();
+                .max(java.util.Comparator.comparingDouble(glyph -> glyph.style().alpha()));
     }
 
     private static DungeonMapContentModel.GlyphPrimitive glyphAt(
@@ -2426,7 +2448,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 .filter(glyph -> glyphMatchesHandleKind(glyph, handleKind))
                 .filter(glyph -> Math.abs(glyphCenterQ(glyph) - q) < 0.000_001
                         && Math.abs(glyphCenterR(glyph) - r) < 0.000_001)
-                .findFirst()
+                .max(java.util.Comparator.comparingDouble(glyph -> glyph.style().alpha()))
                 .orElseThrow(() -> new AssertionError(message + " glyph not rendered at " + q + "," + r));
     }
 
@@ -2628,10 +2650,10 @@ final class DungeonEditorClusterLabelHandleHarness {
                 .filter(text -> label.equals(text.text()))
                 .filter(text -> Math.abs(text.centerX() - q) < 0.01)
                 .filter(text -> Math.abs(text.centerY() - r) < 0.01)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Label primitive not found for " + label))
-                .style()
-                .strokeWidth();
+                .map(DungeonMapContentModel.TextPrimitive::style)
+                .mapToDouble(DungeonMapContentModel.PaintStyle::strokeWidth)
+                .max()
+                .orElseThrow(() -> new AssertionError("Label primitive not found for " + label));
     }
 
     private record LabelCenter(double q, double r) {

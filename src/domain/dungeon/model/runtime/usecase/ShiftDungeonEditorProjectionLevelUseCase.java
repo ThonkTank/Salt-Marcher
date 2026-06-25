@@ -20,6 +20,7 @@ public final class ShiftDungeonEditorProjectionLevelUseCase {
 
     public void execute(int projectionLevelDelta) {
         workflow.shiftProjectionLevel(projectionLevelDelta);
+        snapshotBuilder.refreshAuthoredSnapshot(workflow.session());
         snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
     }
 }

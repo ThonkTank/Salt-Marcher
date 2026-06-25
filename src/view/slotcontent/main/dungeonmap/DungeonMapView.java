@@ -135,15 +135,13 @@ public class DungeonMapView extends BorderPane {
         if (canvasState == null) {
             return;
         }
-        RenderScene renderScene = canvasState.renderScene();
         CanvasRenderer.render(
                 this,
                 CanvasSurface.graphicsContext(canvas),
-                renderScene,
-                canvasState.viewport(),
+                canvasState,
                 CanvasSurface.renderWidth(canvas),
                 CanvasSurface.renderHeight(canvas));
-        ViewChrome.showOverlay(overlayMessage, renderScene);
+        ViewChrome.showOverlay(overlayMessage, canvasState);
     }
 
     private void removeCurrentCanvasListeners() {
@@ -588,7 +586,11 @@ public class DungeonMapView extends BorderPane {
             StackPane.setAlignment(overlayMessage, Pos.CENTER);
         }
 
-        static void showOverlay(Label overlayMessage, RenderScene renderScene) {
+        static void showOverlay(Label overlayMessage, DungeonMapContentModel.CanvasState canvasState) {
+            RenderScene renderScene = canvasState.baseRenderScene();
+            if (!renderScene.sceneLoaded()) {
+                renderScene = canvasState.renderScene();
+            }
             overlayMessage.setText(renderScene.overlayMessage());
             overlayMessage.setVisible(!renderScene.sceneLoaded());
             overlayMessage.getStyleClass().setAll(renderScene.sceneLoaded()
@@ -619,19 +621,24 @@ public class DungeonMapView extends BorderPane {
         static void render(
                 DungeonMapView view,
                 GraphicsContext gc,
-                RenderScene renderScene,
-                Viewport viewport,
+                DungeonMapContentModel.CanvasState canvasState,
                 double width,
                 double height
         ) {
+            RenderScene renderScene = canvasState.baseRenderScene();
+            Viewport viewport = canvasState.viewport();
             clear(gc, width, height);
             drawGrid(gc, renderScene, viewport, width, height);
             drawRelations(gc, renderScene.relations(), viewport);
-            drawSurfaces(view, gc, renderScene.surfaces(), viewport);
-            drawBoundaries(gc, renderScene.boundaries(), viewport);
+            drawSurfaces(view, gc, renderScene.baseSurfaces(), viewport);
+            drawBoundaries(gc, renderScene.baseBoundaries(), viewport);
             drawSurfaces(view, gc, renderScene.actors(), viewport);
-            drawGlyphs(view, gc, renderScene.glyphs(), viewport);
-            drawTexts(gc, renderScene.texts(), viewport);
+            drawGlyphs(view, gc, renderScene.baseGlyphs(), viewport);
+            drawTexts(gc, renderScene.baseTexts(), viewport);
+            drawSurfaces(view, gc, canvasState.hoverSurfaces(), viewport);
+            drawBoundaries(gc, canvasState.hoverBoundaries(), viewport);
+            drawGlyphs(view, gc, canvasState.hoverGlyphs(), viewport);
+            drawTexts(gc, canvasState.hoverTexts(), viewport);
         }
 
         static void clear(GraphicsContext gc, double width, double height) {

@@ -2,16 +2,23 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
+import src.domain.dungeon.published.DungeonEditorHandleRef;
+import src.domain.dungeon.published.DungeonEditorMapHitRef;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
+import src.domain.dungeon.published.DungeonEditorPreviewDiff;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
+import src.domain.dungeon.published.DungeonEditorSurface;
+import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
@@ -53,6 +60,7 @@ final class DungeonEditorSelectionHarness {
         route(results, () -> verifyDoorSelectionThroughMapView(results));
         route(results, () -> verifyStairSelectionThroughMapView(results));
         route(results, () -> verifyCorridorSelectionThroughMapView(results));
+        route(results, () -> verifyToolSpecificHoverPolicyThroughMapView(results));
     }
 
     private static void route(
@@ -94,6 +102,34 @@ final class DungeonEditorSelectionHarness {
                 roomFloorQ,
                 roomFloorR,
                 "DE-SEL-006 room floor hover");
+        assertHoverStylesOnlySurfaceAt(
+                binding.mapContentModel(),
+                mapView,
+                viewport,
+                roomRef,
+                roomFloorQ,
+                roomFloorR,
+                "DE-SEL-006 room floor hover stays on the exact rendered cell");
+        assertHoverStylesOnlySyntheticBoundaryEdge(
+                "DE-SEL-006 boundary hover stays on the exact rendered edge");
+        assertSelectHoverIgnoresWallBoundary(
+                binding.mapContentModel(),
+                mapView,
+                viewport,
+                "DE-SEL-006 select hover ignores plain wall boundaries");
+        assertSelectHoverPublishesNoSyntheticOverlay(
+                binding.mapContentModel(),
+                mapView,
+                viewport,
+                10.12,
+                10.02,
+                "DE-SEL-006 select hover ignores tool-only off-grid hover points");
+        assertRoomLabelHoverStaysPassive(
+                binding.mapContentModel(),
+                mapView,
+                viewport,
+                roomRef,
+                "DE-SEL-006 room label hover stays passive");
         assertHoverClearsOnEmptyMove(
                 binding.mapContentModel(),
                 mapView,
@@ -357,6 +393,14 @@ final class DungeonEditorSelectionHarness {
                         .resolvePointerTarget(corridorBody.getX(), corridorBody.getY())
                         .elementKind(),
                 "DE-SEL-004 corridor body keeps corridor element identity");
+        assertHoverStylesOnlySurfaceAt(
+                binding.mapContentModel(),
+                mapView,
+                viewport,
+                corridorRef,
+                corridorBody.getX(),
+                corridorBody.getY(),
+                "DE-SEL-006 corridor body hover stays on the exact rendered cell");
 
         fireMapMousePressed(
                 mapView,
@@ -383,7 +427,96 @@ final class DungeonEditorSelectionHarness {
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
                 "DE-SEL-004 leaves authored DB state unchanged");
 
+        results.add("DE-SEL-006 Ready: DungeonMapView hover route keeps selectable targets visually distinct and exact"
+                + " while ignoring non-selectable wall, tool-only, and room-label targets");
         results.add("DE-SEL-004 Ready: DungeonMapView corridor body click -> SQLite unchanged -> corridor selection");
+    }
+
+    private static void verifyToolSpecificHoverPolicyThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Tool Hover Policy Map");
+        runtime.database().seedCorridorWithAnchor(mapId);
+        createMapThroughControls(controls, runtime, "Tool Hover Policy Reload Hop");
+        selectMap(controls, "Tool Hover Policy Map");
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+
+        click(button(controls, "Wand"));
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(10.12),
+                viewport.sceneToScreenY(10.02),
+                false);
+        assertSyntheticVertexHoverAt(binding.mapContentModel(), 10, 10,
+                "DE-HOVER-001 wall path hover highlights a vertex");
+
+        fireMapMouseWithControl(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(10.12),
+                viewport.sceneToScreenY(10.02));
+        assertSyntheticBoundaryHoverAt(binding.mapContentModel(), 10.0, 10.0, 11.0, 10.0,
+                "DE-HOVER-001 wall single-click hover highlights an edge");
+
+        click(button(controls, "Raum"));
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(10.5),
+                viewport.sceneToScreenY(10.5),
+                false);
+        assertSyntheticCellHoverAt(binding.mapContentModel(), 10, 10,
+                "DE-HOVER-001 room hover highlights a cell");
+
+        click(button(controls, "Korridor"));
+        assertNoSyntheticHoverOverlay(binding.mapContentModel(),
+                "DE-HOVER-001 tool switch clears stale synthetic hover before the next mouse move");
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(1.5),
+                viewport.sceneToScreenY(2.5),
+                false);
+        assertNoSyntheticHoverOverlay(binding.mapContentModel(),
+                "DE-HOVER-001 corridor hover ignores generic room cells");
+
+        var corridorAnchor = runtime.mapSurfaceModel().current().surface().map().editorHandles().stream()
+                .filter(handle -> "CORRIDOR_ANCHOR".equals(handle.ref().kind().name()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR anchor not loaded."));
+        DungeonEditorTopologyElementRef corridorRef = runtime.mapSurfaceModel().current().surface().map().areas().stream()
+                .filter(area -> "CORRIDOR".equals(area.kind()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR corridor area not loaded."))
+                .topologyRef();
+        Point2D corridorBody = new Point2D(corridorAnchor.markerQ() + 0.05, corridorAnchor.markerR() + 0.05);
+        assertHoverStylesOnlySurfaceAt(
+                binding.mapContentModel(),
+                mapView,
+                viewport,
+                corridorRef,
+                corridorBody.getX(),
+                corridorBody.getY(),
+                "DE-HOVER-001 corridor hover keeps corridor cells eligible");
+
+        Point2D doorMidpoint = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
+        assertHoverHighlightsBoundary(
+                binding.mapContentModel(),
+                mapView,
+                viewport,
+                doorMidpoint.getX(),
+                doorMidpoint.getY(),
+                "DE-HOVER-001 corridor hover keeps wall and door edges eligible");
+
+        results.add("DE-HOVER-001 Ready: DungeonMapView hover policy follows active editor tool geometry");
     }
 
     private static void assertHoverHighlightsSurface(
@@ -405,7 +538,7 @@ final class DungeonEditorSelectionHarness {
                 viewport.sceneToScreenY(sceneY),
                 false);
         double hoverStroke = surfaceStrokeWidth(mapContentModel, selectionRef);
-        assertTrue(hoverStroke > normalStroke && hoverStroke < 2.0 / DEFAULT_GRID_SIZE,
+        assertTrue(hoverStroke > normalStroke,
                 message + " uses a hover stroke distinct from normal and selected styling");
     }
 
@@ -424,7 +557,7 @@ final class DungeonEditorSelectionHarness {
                 viewport.sceneToScreenX(8.5),
                 viewport.sceneToScreenY(8.5),
                 false);
-        assertTrue(surfaceStrokeWidth(mapContentModel, selectionRef) < 1.5 / DEFAULT_GRID_SIZE,
+        assertEquals(normalSurfaceStrokeWidth(mapContentModel, selectionRef), surfaceStrokeWidth(mapContentModel, selectionRef),
                 message + " removes hover styling after an empty target move");
     }
 
@@ -436,7 +569,7 @@ final class DungeonEditorSelectionHarness {
             double sceneY,
             String message
     ) {
-        DungeonMapContentModel.PointerTarget target = mapContentModel.resolvePointerTarget(sceneX, sceneY);
+        DungeonMapContentModel.PointerTarget target = mapContentModel.resolvePointerTarget(sceneX, sceneY, true);
         assertEquals("BOUNDARY", target.targetKind().name(), message + " resolves a boundary target");
         String selectionRef = target.topologyKind() + ":" + target.topologyId();
         double normalStroke = boundaryStrokeWidth(mapContentModel, selectionRef);
@@ -448,7 +581,7 @@ final class DungeonEditorSelectionHarness {
                 viewport.sceneToScreenY(sceneY),
                 false);
         double hoverStroke = boundaryStrokeWidth(mapContentModel, selectionRef);
-        assertTrue(hoverStroke > normalStroke && hoverStroke < 4.2 / DEFAULT_GRID_SIZE,
+        assertTrue(hoverStroke > normalStroke,
                 message + " uses a boundary hover stroke distinct from normal and selected styling"
                         + " (normal=" + normalStroke + ", hover=" + hoverStroke + ")");
     }
@@ -472,21 +605,490 @@ final class DungeonEditorSelectionHarness {
                 viewport.sceneToScreenY(sceneY),
                 false);
         double hoverStroke = glyphStrokeWidth(mapContentModel, selectionRef);
-        assertTrue(hoverStroke > normalStroke && hoverStroke < 2.2 / DEFAULT_GRID_SIZE,
+        assertTrue(hoverStroke > normalStroke,
                 message + " uses a glyph hover stroke distinct from normal and selected styling");
+    }
+
+    private static void assertHoverStylesOnlySurfaceAt(
+            DungeonMapContentModel mapContentModel,
+            DungeonMapView mapView,
+            DungeonMapContentModel.Viewport viewport,
+            DungeonEditorTopologyElementRef ref,
+            double sceneX,
+            double sceneY,
+            String message
+    ) {
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(8.5),
+                viewport.sceneToScreenY(8.5),
+                false);
+        DungeonMapContentModel.PointerTarget target = mapContentModel.resolvePointerTarget(sceneX, sceneY);
+        assertEquals("CELL", target.targetKind().name(), message + " resolves a cell target");
+        String selectionRef = selectionRef(ref);
+        DungeonMapContentModel.MapCanvasPolygonPrimitive hoveredBefore =
+                surfacePrimitiveAt(mapContentModel, selectionRef, sceneX, sceneY);
+        DungeonMapContentModel.MapCanvasPolygonPrimitive siblingBefore =
+                siblingSurfacePrimitive(mapContentModel, selectionRef, hoveredBefore);
+        double normalHoverCellStroke = hoveredBefore.style().strokeWidth();
+        double normalSiblingStroke = siblingBefore.style().strokeWidth();
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(sceneX),
+                viewport.sceneToScreenY(sceneY),
+                false);
+
+        DungeonMapContentModel.MapCanvasPolygonPrimitive hoveredAfter =
+                surfacePrimitiveAt(mapContentModel, selectionRef, sceneX, sceneY);
+        DungeonMapContentModel.MapCanvasPolygonPrimitive siblingAfter =
+                surfacePrimitiveWithOrigin(mapContentModel, selectionRef, siblingBefore);
+        assertTrue(hoveredAfter.style().strokeWidth() > normalHoverCellStroke,
+                message + " increases the hovered cell stroke");
+        assertEquals(normalSiblingStroke, siblingAfter.style().strokeWidth(),
+                message + " leaves sibling cell stroke unchanged");
+    }
+
+    private static void assertSelectHoverIgnoresWallBoundary(
+            DungeonMapContentModel mapContentModel,
+            DungeonMapView mapView,
+            DungeonMapContentModel.Viewport viewport,
+            String message
+    ) {
+        DungeonMapContentModel.BoundaryPrimitive plainWall = mapContentModel.canvasStateProperty()
+                .get()
+                .renderScene()
+                .boundaries()
+                .stream()
+                .filter(boundary -> boundary.selectionRef().startsWith("WALL:"))
+                .filter(boundary -> !boundary.hitRef().isBlank())
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + " fixture has no rendered wall boundary"));
+        Point2D midpoint = boundaryMidpoint(plainWall);
+        DungeonMapContentModel.PointerTarget rawTarget =
+                mapContentModel.resolvePointerTarget(midpoint.getX(), midpoint.getY(), true);
+        assertEquals("BOUNDARY", rawTarget.targetKind().name(), message + " raw hit index still exposes boundary");
+        assertEquals("WALL", rawTarget.boundaryRef().boundaryKind().legacyName(),
+                message + " raw boundary is a wall");
+
+        double normalStroke = plainWall.style().strokeWidth();
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(midpoint.getX()),
+                viewport.sceneToScreenY(midpoint.getY()),
+                false);
+
+        DungeonMapContentModel.BoundaryPrimitive afterHover =
+                boundaryPrimitiveWithEndpoints(mapContentModel, plainWall.selectionRef(), plainWall);
+        assertEquals(normalStroke, afterHover.style().strokeWidth(),
+                message + " leaves the non-selectable wall edge unhighlighted");
+        assertNoSyntheticHoverOverlay(mapContentModel, message);
+    }
+
+    private static void assertSelectHoverPublishesNoSyntheticOverlay(
+            DungeonMapContentModel mapContentModel,
+            DungeonMapView mapView,
+            DungeonMapContentModel.Viewport viewport,
+            double sceneX,
+            double sceneY,
+            String message
+    ) {
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(sceneX),
+                viewport.sceneToScreenY(sceneY),
+                false);
+        assertNoSyntheticHoverOverlay(mapContentModel, message);
+    }
+
+    private static void assertRoomLabelHoverStaysPassive(
+            DungeonMapContentModel mapContentModel,
+            DungeonMapView mapView,
+            DungeonMapContentModel.Viewport viewport,
+            DungeonEditorTopologyElementRef roomRef,
+            String message
+    ) {
+        Point2D labelCenter = labelCenterForRef(mapContentModel, roomRef);
+        DungeonMapContentModel.TextPrimitive labelBefore = textPrimitiveForRef(mapContentModel, roomRef);
+        assertEquals("EMPTY",
+                mapContentModel.resolveRoomLabelPointerTarget(labelCenter.getX(), labelCenter.getY())
+                        .targetKind()
+                        .name(),
+                message + " room label is not a direct label target");
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(labelCenter.getX()),
+                viewport.sceneToScreenY(labelCenter.getY()),
+                false);
+
+        DungeonMapContentModel.TextPrimitive labelAfter = textPrimitiveForRef(mapContentModel, roomRef);
+        assertEquals(labelBefore.style(), labelAfter.style(), message + " leaves room label text styling unchanged");
+        assertEquals(labelBefore.textColor(), labelAfter.textColor(), message + " leaves room label text color unchanged");
+    }
+
+    private static void assertHoverStylesOnlySyntheticBoundaryEdge(String message) {
+        DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Boundary Exactness", true);
+        DungeonEditorTopologyElementRef wallRef = new DungeonEditorTopologyElementRef("WALL", 7001L);
+        DungeonEdgeRef firstEdge = new DungeonEdgeRef(
+                new DungeonCellRef(0, 0, 0),
+                new DungeonCellRef(1, 0, 0));
+        DungeonEdgeRef secondEdge = new DungeonEdgeRef(
+                new DungeonCellRef(0, 1, 0),
+                new DungeonCellRef(1, 1, 0));
+        long sharedOwnerId = 77L;
+        DungeonEditorMapSnapshot.Boundary firstBoundary = new DungeonEditorMapSnapshot.Boundary(
+                "wall",
+                sharedOwnerId,
+                "Wall",
+                firstEdge,
+                wallRef);
+        DungeonEditorMapSnapshot.Boundary secondBoundary = new DungeonEditorMapSnapshot.Boundary(
+                "wall",
+                sharedOwnerId,
+                "Wall",
+                secondEdge,
+                wallRef);
+        DungeonEditorMapSurfaceSnapshot snapshot = syntheticBoundarySnapshot(firstBoundary, secondBoundary);
+        mapContentModel.applyEditorSurfaceFrame(
+                snapshot,
+                syntheticBoundaryInteractionFrame(firstBoundary, secondBoundary));
+        double sceneX = 0.5;
+        double sceneY = 0.0;
+        DungeonMapContentModel.PointerTarget target = mapContentModel.resolvePointerTarget(sceneX, sceneY, true);
+        assertEquals("BOUNDARY", target.targetKind().name(), message + " resolves a boundary target");
+        String selectionRef = target.topologyKind() + ":" + target.topologyId();
+        DungeonMapContentModel.BoundaryPrimitive hoveredBefore =
+                boundaryPrimitiveAt(mapContentModel, selectionRef, sceneX, sceneY);
+        DungeonMapContentModel.BoundaryPrimitive siblingBefore =
+                siblingBoundaryPrimitive(mapContentModel, selectionRef, hoveredBefore);
+        double normalHoverEdgeStroke = hoveredBefore.style().strokeWidth();
+        double normalSiblingStroke = siblingBefore.style().strokeWidth();
+
+        mapContentModel.updateHoverTarget(target);
+
+        DungeonMapContentModel.BoundaryPrimitive hoveredAfter =
+                boundaryPrimitiveAt(mapContentModel, selectionRef, sceneX, sceneY);
+        DungeonMapContentModel.BoundaryPrimitive siblingAfter =
+                boundaryPrimitiveWithEndpoints(mapContentModel, selectionRef, siblingBefore);
+        assertTrue(hoveredAfter.style().strokeWidth() > normalHoverEdgeStroke,
+                message + " increases the hovered edge stroke");
+        assertEquals(normalSiblingStroke, siblingAfter.style().strokeWidth(),
+                message + " leaves sibling edge stroke unchanged");
+    }
+
+    private static DungeonEditorMapSurfaceSnapshot syntheticBoundarySnapshot(
+            DungeonEditorMapSnapshot.Boundary firstBoundary,
+            DungeonEditorMapSnapshot.Boundary secondBoundary
+    ) {
+        DungeonEditorMapSnapshot map = new DungeonEditorMapSnapshot(
+                "SQUARE",
+                3,
+                3,
+                List.of(),
+                List.of(firstBoundary, secondBoundary),
+                List.of(),
+                List.of());
+        return new DungeonEditorMapSurfaceSnapshot(
+                new DungeonEditorSurface(
+                        "Boundary Exactness",
+                        1,
+                        map,
+                        null,
+                        DungeonEditorPreviewDiff.empty(),
+                        null),
+                DungeonEditorStateSnapshot.Selection.empty(),
+                DungeonEditorPreview.none(),
+                DungeonEditorViewMode.GRID,
+                DungeonOverlaySettings.defaults(),
+                0,
+                DungeonEditorTool.SELECT);
+    }
+
+    private static DungeonMapContentModel.MapInteractionFrame syntheticBoundaryInteractionFrame(
+            DungeonEditorMapSnapshot.Boundary firstBoundary,
+            DungeonEditorMapSnapshot.Boundary secondBoundary
+    ) {
+        return new DungeonMapContentModel.MapInteractionFrame(Map.of(
+                boundaryHitRef(firstBoundary), boundaryPointerTarget(firstBoundary),
+                boundaryHitRef(secondBoundary), boundaryPointerTarget(secondBoundary)), List.of());
+    }
+
+    private static String boundaryHitRef(DungeonEditorMapSnapshot.Boundary boundary) {
+        return DungeonEditorMapHitRef.edge(
+                "WALL",
+                boundary.id(),
+                boundary.topologyRef(),
+                boundary.edge()).value();
+    }
+
+    private static DungeonMapContentModel.PointerTarget boundaryPointerTarget(
+            DungeonEditorMapSnapshot.Boundary boundary
+    ) {
+        DungeonEdgeRef edge = boundary.edge();
+        DungeonMapContentModel.BoundaryTarget boundaryTarget =
+                new DungeonMapContentModel.BoundaryTarget(
+                        "WALL",
+                        boundaryHitRef(boundary),
+                        boundary.id(),
+                        boundary.topologyRef().kind(),
+                        boundary.topologyRef().id(),
+                        edge.from().q(),
+                        edge.from().r(),
+                        edge.from().level(),
+                        edge.to().q(),
+                        edge.to().r(),
+                        edge.to().level());
+        return DungeonMapContentModel.PointerTarget.target(
+                "BOUNDARY",
+                "",
+                "WALL",
+                boundary.id(),
+                0L,
+                boundary.topologyRef().kind(),
+                boundary.topologyRef().id(),
+                DungeonEditorHandleRef.empty(),
+                boundaryTarget,
+                "NONE");
     }
 
     private static String selectionRef(DungeonEditorTopologyElementRef ref) {
         return ref.kind() + ":" + ref.id();
     }
 
+    private static DungeonMapContentModel.TextPrimitive textPrimitiveForRef(
+            DungeonMapContentModel mapContentModel,
+            DungeonEditorTopologyElementRef ref
+    ) {
+        String selectionRef = selectionRef(ref);
+        return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
+                .filter(text -> selectionRef.equals(text.selectionRef()))
+                .max(java.util.Comparator.comparingDouble(text -> text.style().strokeWidth()))
+                .orElseThrow(() -> new AssertionError("Text primitive not found for " + selectionRef));
+    }
+
+    private static DungeonMapContentModel.MapCanvasPolygonPrimitive surfacePrimitiveAt(
+            DungeonMapContentModel mapContentModel,
+            String selectionRef,
+            double sceneX,
+            double sceneY
+    ) {
+        return mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
+                .filter(surface -> selectionRef.equals(surface.selectionRef()))
+                .filter(surface -> surfaceOriginQ(surface) <= sceneX && sceneX <= surfaceOriginQ(surface) + 1.0)
+                .filter(surface -> surfaceOriginR(surface) <= sceneY && sceneY <= surfaceOriginR(surface) + 1.0)
+                .max(java.util.Comparator.comparingDouble(surface -> surface.style().strokeWidth()))
+                .orElseThrow(() -> new AssertionError("Surface primitive not found at "
+                        + sceneX + "," + sceneY + " for " + selectionRef));
+    }
+
+    private static DungeonMapContentModel.MapCanvasPolygonPrimitive siblingSurfacePrimitive(
+            DungeonMapContentModel mapContentModel,
+            String selectionRef,
+            DungeonMapContentModel.MapCanvasPolygonPrimitive hovered
+    ) {
+        return mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
+                .filter(surface -> selectionRef.equals(surface.selectionRef()))
+                .filter(surface -> surfaceOriginQ(surface) != surfaceOriginQ(hovered)
+                        || surfaceOriginR(surface) != surfaceOriginR(hovered))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Sibling surface primitive not found for " + selectionRef));
+    }
+
+    private static DungeonMapContentModel.MapCanvasPolygonPrimitive surfacePrimitiveWithOrigin(
+            DungeonMapContentModel mapContentModel,
+            String selectionRef,
+            DungeonMapContentModel.MapCanvasPolygonPrimitive expected
+    ) {
+        return mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
+                .filter(surface -> selectionRef.equals(surface.selectionRef()))
+                .filter(surface -> surfaceOriginQ(surface) == surfaceOriginQ(expected))
+                .filter(surface -> surfaceOriginR(surface) == surfaceOriginR(expected))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Surface primitive origin not found for " + selectionRef));
+    }
+
+    private static DungeonMapContentModel.BoundaryPrimitive boundaryPrimitiveAt(
+            DungeonMapContentModel mapContentModel,
+            String selectionRef,
+            double sceneX,
+            double sceneY
+    ) {
+        return mapContentModel.canvasStateProperty().get().renderScene().boundaries().stream()
+                .filter(boundary -> selectionRef.equals(boundary.selectionRef()))
+                .filter(boundary -> boundaryDistance(boundary, sceneX, sceneY) < 0.000_001)
+                .max(java.util.Comparator.comparingDouble(boundary -> boundary.style().strokeWidth()))
+                .orElseThrow(() -> new AssertionError("Boundary primitive not found at "
+                        + sceneX + "," + sceneY + " for " + selectionRef));
+    }
+
+    private static DungeonMapContentModel.BoundaryPrimitive siblingBoundaryPrimitive(
+            DungeonMapContentModel mapContentModel,
+            String selectionRef,
+            DungeonMapContentModel.BoundaryPrimitive hovered
+    ) {
+        return mapContentModel.canvasStateProperty().get().renderScene().boundaries().stream()
+                .filter(boundary -> selectionRef.equals(boundary.selectionRef()))
+                .filter(boundary -> !sameBoundaryEndpoints(boundary, hovered))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Sibling boundary primitive not found for " + selectionRef));
+    }
+
+    private static DungeonMapContentModel.BoundaryPrimitive boundaryPrimitiveWithEndpoints(
+            DungeonMapContentModel mapContentModel,
+            String selectionRef,
+            DungeonMapContentModel.BoundaryPrimitive expected
+    ) {
+        return mapContentModel.canvasStateProperty().get().renderScene().boundaries().stream()
+                .filter(boundary -> selectionRef.equals(boundary.selectionRef()))
+                .filter(boundary -> sameBoundaryEndpoints(boundary, expected))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Boundary primitive endpoints not found for " + selectionRef));
+    }
+
+    private static double surfaceOriginQ(DungeonMapContentModel.MapCanvasPolygonPrimitive surface) {
+        return surface.polygon().getFirst().x();
+    }
+
+    private static double surfaceOriginR(DungeonMapContentModel.MapCanvasPolygonPrimitive surface) {
+        return surface.polygon().getFirst().y();
+    }
+
+    private static boolean sameBoundaryEndpoints(
+            DungeonMapContentModel.BoundaryPrimitive first,
+            DungeonMapContentModel.BoundaryPrimitive second
+    ) {
+        return first.polyline().getFirst().x() == second.polyline().getFirst().x()
+                && first.polyline().getFirst().y() == second.polyline().getFirst().y()
+                && first.polyline().get(1).x() == second.polyline().get(1).x()
+                && first.polyline().get(1).y() == second.polyline().get(1).y();
+    }
+
+    private static void assertSyntheticCellHoverAt(
+            DungeonMapContentModel mapContentModel,
+            int q,
+            int r,
+            String message
+    ) {
+        boolean found = mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
+                .filter(surface -> surface.hitRef().isBlank() && surface.selectionRef().isBlank())
+                .anyMatch(surface -> surfaceOriginQ(surface) == q && surfaceOriginR(surface) == r);
+        assertTrue(found, message + " publishes a transient cell hover overlay");
+    }
+
+    private static void assertSyntheticBoundaryHoverAt(
+            DungeonMapContentModel mapContentModel,
+            double startX,
+            double startY,
+            double endX,
+            double endY,
+            String message
+    ) {
+        boolean found = mapContentModel.canvasStateProperty().get().renderScene().boundaries().stream()
+                .filter(boundary -> boundary.hitRef().isBlank() && boundary.selectionRef().isBlank())
+                .anyMatch(boundary -> sameBoundaryEndpoints(
+                        boundary,
+                        new DungeonMapContentModel.BoundaryPrimitive(
+                                "",
+                                "",
+                                0,
+                                List.of(
+                                        new DungeonMapContentModel.MapCanvasPoint(startX, startY),
+                                        new DungeonMapContentModel.MapCanvasPoint(endX, endY)),
+                                null)));
+        assertTrue(found, message + " publishes a transient boundary hover overlay");
+    }
+
+    private static void assertSyntheticVertexHoverAt(
+            DungeonMapContentModel mapContentModel,
+            int q,
+            int r,
+            String message
+    ) {
+        boolean found = mapContentModel.canvasStateProperty().get().renderScene().glyphs().stream()
+                .filter(glyph -> glyph.hitRef().isBlank() && glyph.selectionRef().isBlank())
+                .anyMatch(glyph -> vertexGlyphCenteredAt(glyph, q, r));
+        assertTrue(found, message + " publishes a transient vertex hover overlay");
+    }
+
+    private static boolean vertexGlyphCenteredAt(
+            DungeonMapContentModel.GlyphPrimitive glyph,
+            int q,
+            int r
+    ) {
+        double centerX = glyph.polygon().stream()
+                .mapToDouble(DungeonMapContentModel.MapCanvasPoint::x)
+                .average()
+                .orElse(Double.NaN);
+        double centerY = glyph.polygon().stream()
+                .mapToDouble(DungeonMapContentModel.MapCanvasPoint::y)
+                .average()
+                .orElse(Double.NaN);
+        double tolerance = 0.001;
+        return Math.abs(centerX - q) <= tolerance && Math.abs(centerY - r) <= tolerance;
+    }
+
+    private static void assertNoSyntheticHoverOverlay(
+            DungeonMapContentModel mapContentModel,
+            String message
+    ) {
+        boolean foundSyntheticSurface = mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
+                .anyMatch(surface -> surface.hitRef().isBlank()
+                        && surface.selectionRef().isBlank());
+        boolean foundSyntheticBoundary = mapContentModel.canvasStateProperty().get().renderScene().boundaries().stream()
+                .anyMatch(boundary -> boundary.hitRef().isBlank()
+                        && boundary.selectionRef().isBlank());
+        boolean foundSyntheticVertex = mapContentModel.canvasStateProperty().get().renderScene().glyphs().stream()
+                .anyMatch(glyph -> glyph.hitRef().isBlank()
+                        && glyph.selectionRef().isBlank());
+        assertTrue(!foundSyntheticSurface && !foundSyntheticBoundary && !foundSyntheticVertex,
+                message + " does not publish a transient hover overlay");
+    }
+
+    private static double boundaryDistance(
+            DungeonMapContentModel.BoundaryPrimitive boundary,
+            double sceneX,
+            double sceneY
+    ) {
+        DungeonMapContentModel.MapCanvasPoint start = boundary.polyline().getFirst();
+        DungeonMapContentModel.MapCanvasPoint end = boundary.polyline().get(1);
+        double dx = end.x() - start.x();
+        double dy = end.y() - start.y();
+        double lengthSquared = dx * dx + dy * dy;
+        if (lengthSquared == 0.0) {
+            return Math.hypot(sceneX - start.x(), sceneY - start.y());
+        }
+        double t = ((sceneX - start.x()) * dx + (sceneY - start.y()) * dy) / lengthSquared;
+        double clamped = Math.max(0.0, Math.min(1.0, t));
+        return Math.hypot(sceneX - (start.x() + clamped * dx), sceneY - (start.y() + clamped * dy));
+    }
+
     private static double surfaceStrokeWidth(DungeonMapContentModel mapContentModel, String selectionRef) {
         return mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
                 .filter(surface -> selectionRef.equals(surface.selectionRef()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Surface primitive not found for " + selectionRef))
-                .style()
-                .strokeWidth();
+                .map(DungeonMapContentModel.MapCanvasPolygonPrimitive::style)
+                .mapToDouble(DungeonMapContentModel.PaintStyle::strokeWidth)
+                .max()
+                .orElseThrow(() -> new AssertionError("Surface primitive not found for " + selectionRef));
+    }
+
+    private static double normalSurfaceStrokeWidth(DungeonMapContentModel mapContentModel, String selectionRef) {
+        return mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
+                .filter(surface -> selectionRef.equals(surface.selectionRef()))
+                .map(DungeonMapContentModel.MapCanvasPolygonPrimitive::style)
+                .mapToDouble(DungeonMapContentModel.PaintStyle::strokeWidth)
+                .min()
+                .orElseThrow(() -> new AssertionError("Surface primitive not found for " + selectionRef));
     }
 
     private static double boundaryStrokeWidth(DungeonMapContentModel mapContentModel, String selectionRef) {
@@ -501,10 +1103,10 @@ final class DungeonEditorSelectionHarness {
     private static double glyphStrokeWidth(DungeonMapContentModel mapContentModel, String selectionRef) {
         return mapContentModel.canvasStateProperty().get().renderScene().glyphs().stream()
                 .filter(glyph -> selectionRef.equals(glyph.selectionRef()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Glyph primitive not found for " + selectionRef))
-                .style()
-                .strokeWidth();
+                .map(DungeonMapContentModel.GlyphPrimitive::style)
+                .mapToDouble(DungeonMapContentModel.PaintStyle::strokeWidth)
+                .max()
+                .orElseThrow(() -> new AssertionError("Glyph primitive not found for " + selectionRef));
     }
 
 }

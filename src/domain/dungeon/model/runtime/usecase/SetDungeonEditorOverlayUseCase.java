@@ -26,6 +26,7 @@ public final class SetDungeonEditorOverlayUseCase {
             List<Integer> selectedLevels
     ) {
         workflow.setOverlay(modeKey, levelRange, opacity, selectedLevels);
+        snapshotBuilder.refreshAuthoredSnapshot(workflow.session());
         snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
     }
 }

@@ -24,24 +24,8 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.DungeonMapRen
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.DungeonMapRenderState.TopologyRef;
 
 final class DungeonMapEditorProjectionContentPartModel {
+    private static final String STAIR_KIND = "STAIR";
     private DungeonMapEditorProjectionContentPartModel() {
-    }
-
-    static boolean visibleCanvasHandle(
-            DungeonEditorHandleRef ref,
-            DungeonEditorStateSnapshot.Selection selection
-    ) {
-        if (ref.kind().isClusterLabel()
-                || ref.kind().isCorridorGeometryHandle()) {
-            return false;
-        }
-        if (ref.kind().isDoor()) {
-            return true;
-        }
-        return !ref.kind().isClusterDragHandle()
-                || selection != null
-                && selection.clusterSelection()
-                && selection.clusterId() == ref.clusterId();
     }
 
     static Label roomLabel(
@@ -304,8 +288,11 @@ final class DungeonMapEditorProjectionContentPartModel {
             int r,
             int level
     ) {
+        if (STAIR_KIND.equalsIgnoreCase(feature.kind())) {
+            return markerHandle(q, r, level);
+        }
         TopologyRef topologyRef = featureTopologyRef(feature);
-        if (!"FEATURE_MARKER".equals(topologyRef.kind())) {
+        if (topologyRef.equals(TopologyRef.empty())) {
             return markerHandle(q, r, level);
         }
         return markerHandle(topologyRef, q, r, level);

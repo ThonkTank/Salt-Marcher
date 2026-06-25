@@ -63,6 +63,20 @@ public final class ApplyDungeonAuthoredMutationUseCase {
                 current -> current.moveBoundaryStretch(clusterId, safeSourceEdges, deltaQ, deltaR, deltaLevel));
     }
 
+    public ApplyDungeonEditorOperationUseCase.OperationResultData previewBoundaryStretch(
+            @Nullable DungeonMapIdentity mapId,
+            long clusterId,
+            List<Edge> sourceEdges,
+            int deltaQ,
+            int deltaR,
+            int deltaLevel
+    ) {
+        List<Edge> safeSourceEdges = sourceEdges == null ? List.of() : List.copyOf(sourceEdges);
+        return applyDungeonEditorOperationUseCase.preview(
+                mapId,
+                current -> current.moveBoundaryStretch(clusterId, safeSourceEdges, deltaQ, deltaR, deltaLevel));
+    }
+
     public ApplyDungeonEditorOperationUseCase.OperationResultData applySaveLabelName(
             @Nullable DungeonMapIdentity mapId,
             String targetKind,

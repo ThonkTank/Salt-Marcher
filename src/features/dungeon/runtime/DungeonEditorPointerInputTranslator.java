@@ -6,10 +6,6 @@ import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorTool;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.BoundaryTarget;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerTarget;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorPointerInputTranslator {
 
@@ -22,7 +18,7 @@ final class DungeonEditorPointerInputTranslator {
             TransitionDestination transitionDestination
     ) {
         PointerSample safeSample = sample == null
-                ? new PointerSample(0.0, 0.0, false, false, PointerTarget.empty())
+                ? new PointerSample(0.0, 0.0, false, false, DungeonEditorRuntimePointerTarget.empty())
                 : sample;
         TransitionDestination safeDestination = transitionDestination == null
                 ? TransitionDestination.empty()
@@ -44,7 +40,7 @@ final class DungeonEditorPointerInputTranslator {
             TransitionDestination transitionDestination
     ) {
         PointerSample safeSample = sample == null
-                ? new PointerSample(0.0, 0.0, false, false, PointerTarget.empty())
+                ? new PointerSample(0.0, 0.0, false, false, DungeonEditorRuntimePointerTarget.empty())
                 : sample;
         DungeonEditorTool selectedTool = DungeonEditorRuntimeEnumTranslator.editorTool(toolKey);
         TransitionDestination safeDestination = transitionDestination == null
@@ -70,42 +66,53 @@ final class DungeonEditorPointerInputTranslator {
                 transitionDestination);
     }
 
-    private static DungeonEditorMainViewPointerTarget pointerTarget(PointerTarget target, boolean doorDeleteSelected) {
-        PointerTarget safeTarget = target == null ? PointerTarget.empty() : target;
+    private static DungeonEditorMainViewPointerTarget pointerTarget(
+            DungeonEditorRuntimePointerTarget target,
+            boolean doorDeleteSelected
+    ) {
+        DungeonEditorRuntimePointerTarget safeTarget = target == null
+                ? DungeonEditorRuntimePointerTarget.empty()
+                : target;
         DungeonEditorMainViewPointerTarget doorDeleteTarget = doorDeleteBoundaryTarget(safeTarget, doorDeleteSelected);
         return doorDeleteTarget == null ? plainPointerTarget(safeTarget) : doorDeleteTarget;
     }
 
-    private static DungeonEditorMainViewPointerTarget plainPointerTarget(PointerTarget target) {
-        return switch (DungeonEditorRuntimeEnumTranslator.normalizedEnumName(target.targetKind())) {
-            case "CELL" -> DungeonEditorMainViewPointerTarget.cell(
-                    DungeonEditorRuntimeEnumTranslator.topologyKind(target.elementKind()),
-                    target.ownerId(),
-                    target.clusterId(),
-                    DungeonEditorRuntimeInputValues.topologyRef(target.topologyKind(), target.topologyId()));
-            case "LABEL" -> DungeonEditorMainViewPointerTarget.label(
-                    target.ownerId(),
-                    target.clusterId(),
-                    DungeonEditorRuntimeInputValues.topologyRef(target.topologyKind(), target.topologyId()),
-                    DungeonEditorRuntimeEnumTranslator.labelKind(target.labelKind()));
-            case "GRAPH_NODE" -> DungeonEditorMainViewPointerTarget.graphNode(
-                    target.ownerId(),
-                    target.clusterId(),
-                    DungeonEditorRuntimeInputValues.topologyRef(target.topologyKind(), target.topologyId()));
-            case "HANDLE" -> DungeonEditorMainViewPointerTarget.handle(
-                    toRuntimeHandleRef(target.handle()));
-            case "BOUNDARY" -> boundaryTarget(target.boundary());
+    private static DungeonEditorMainViewPointerTarget plainPointerTarget(DungeonEditorRuntimePointerTarget target) {
+        DungeonEditorRuntimePointerTarget safeTarget = target == null
+                ? DungeonEditorRuntimePointerTarget.empty()
+                : target;
+        return switch (safeTarget.targetKind()) {
+            case CELL -> DungeonEditorMainViewPointerTarget.cell(
+                    safeTarget.topologyElementKind(),
+                    safeTarget.ownerId(),
+                    safeTarget.clusterId(),
+                    safeTarget.topologyRef());
+            case LABEL -> DungeonEditorMainViewPointerTarget.label(
+                    safeTarget.ownerId(),
+                    safeTarget.clusterId(),
+                    safeTarget.topologyRef(),
+                    safeTarget.labelKind().legacyName());
+            case GRAPH_NODE -> DungeonEditorMainViewPointerTarget.graphNode(
+                    safeTarget.ownerId(),
+                    safeTarget.clusterId(),
+                    safeTarget.topologyRef());
+            case HANDLE -> DungeonEditorMainViewPointerTarget.handle(
+                    toRuntimeHandleRef(safeTarget.handleRef()));
+            case BOUNDARY -> boundaryTarget(safeTarget.boundary());
             default -> DungeonEditorMainViewPointerTarget.empty();
         };
     }
 
     private static DungeonEditorMainViewPointerTarget doorDeleteBoundaryTarget(
-            PointerTarget target,
+            DungeonEditorRuntimePointerTarget target,
             boolean doorDeleteSelected
     ) {
-        DungeonEditorWorkspaceValues.HandleRef handle = toRuntimeHandleRef(target.handle());
+        DungeonEditorRuntimePointerTarget safeTarget = target == null
+                ? DungeonEditorRuntimePointerTarget.empty()
+                : target;
+        DungeonEditorWorkspaceValues.HandleRef handle = toRuntimeHandleRef(safeTarget.handleRef());
         if (!doorDeleteSelected
-                || !"HANDLE".equals(DungeonEditorRuntimeEnumTranslator.normalizedEnumName(target.targetKind()))
+                || !safeTarget.isHandleTarget()
                 || !DungeonEditorMainViewInteractionValues.handleKind(
                         handle,
                         DungeonEditorMainViewInteractionValues.DOOR_KIND)
@@ -168,13 +175,19 @@ final class DungeonEditorPointerInputTranslator {
                 runtimeSourceEdges);
     }
 
-    private static DungeonEditorMainViewPointerTarget boundaryTarget(BoundaryTarget boundary) {
-        BoundaryTarget safeBoundary = boundary == null ? BoundaryTarget.empty() : boundary;
+    private static DungeonEditorMainViewPointerTarget boundaryTarget(
+            DungeonEditorRuntimePointerTarget.BoundaryTarget boundary
+    ) {
+        DungeonEditorRuntimePointerTarget.BoundaryTarget safeBoundary = boundary == null
+                ? DungeonEditorRuntimePointerTarget.BoundaryTarget.empty()
+                : boundary;
         return DungeonEditorMainViewPointerTarget.boundary(
-                DungeonEditorRuntimeEnumTranslator.boundaryKind(safeBoundary.kind()),
+                safeBoundary.boundaryKind().workspaceKind(),
                 safeBoundary.key(),
                 safeBoundary.ownerId(),
-                DungeonEditorRuntimeInputValues.topologyRef(safeBoundary.topologyKind(), safeBoundary.topologyId()),
+                DungeonEditorRuntimeInputValues.topologyRef(
+                        safeBoundary.topologyKind().legacyName(),
+                        safeBoundary.topologyId()),
                 DungeonEditorRuntimeInputValues.cell(
                         safeBoundary.startQ(),
                         safeBoundary.startR(),

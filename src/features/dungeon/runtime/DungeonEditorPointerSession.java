@@ -2,9 +2,6 @@ package src.features.dungeon.runtime;
 
 import java.util.Objects;
 import java.util.Optional;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerTarget;
 
 final class DungeonEditorPointerSession {
     private static final String SELECT_TOOL = "SELECT";
@@ -18,7 +15,7 @@ final class DungeonEditorPointerSession {
             PointerSample sample,
             int projectionLevel
     ) {
-        if (action != PointerAction.MOVED) {
+        if (!PointerAction.isMoved(action)) {
             clear();
             return true;
         }
@@ -42,7 +39,7 @@ final class DungeonEditorPointerSession {
             boolean vertexPresent,
             int vertexQ,
             int vertexR,
-            PointerTarget target
+            DungeonEditorRuntimePointerTarget target
     ) {
         private static HoverSample from(
                 String tool,
@@ -50,7 +47,7 @@ final class DungeonEditorPointerSession {
                 int projectionLevel
         ) {
             PointerSample safeSample = sample == null
-                    ? new PointerSample(0.0, 0.0, false, false, PointerTarget.empty())
+                    ? new PointerSample(0.0, 0.0, false, false, DungeonEditorRuntimePointerTarget.empty())
                     : sample;
             int vertexQ = Math.toIntExact(Math.round(safeSample.sceneX()));
             int vertexR = Math.toIntExact(Math.round(safeSample.sceneY()));

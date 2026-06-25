@@ -18,6 +18,7 @@ final class DungeonMapPreviewDiffContentPartModel {
             List<DungeonMapContentModel.DungeonMapRenderState.Label> labels,
             List<DungeonMapContentModel.DungeonMapRenderState.Marker> markers,
             DungeonEditorPreviewDiff previewDiff,
+            DungeonMapContentModel.MapInteractionFrame interactionFrame,
             DungeonEditorStateSnapshot.Selection selection,
             DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel
     ) {
@@ -31,8 +32,8 @@ final class DungeonMapPreviewDiffContentPartModel {
         addPreviewAreaDiff(cells, labels, safePreviewDiff.removedAreas(), selection, roomLabelPlacementContentPartModel, true);
         addPreviewBoundaryDiff(edges, safePreviewDiff.changedBoundaries(), selection);
         addPreviewBoundaryDiff(edges, safePreviewDiff.removedBoundaries(), selection);
-        addPreviewHandleDiff(markers, safePreviewDiff.changedHandles(), selection);
-        addPreviewHandleDiff(markers, safePreviewDiff.removedHandles(), selection);
+        addPreviewHandleDiff(markers, safePreviewDiff.changedHandles(), interactionFrame, selection);
+        addPreviewHandleDiff(markers, safePreviewDiff.removedHandles(), interactionFrame, selection);
         addPreviewFeatureDiff(cells, labels, markers, safePreviewDiff.changedFeatures(), selection, false);
         addPreviewFeatureDiff(cells, labels, markers, safePreviewDiff.removedFeatures(), selection, true);
     }
@@ -69,14 +70,26 @@ final class DungeonMapPreviewDiffContentPartModel {
     private void addPreviewHandleDiff(
             List<DungeonMapContentModel.DungeonMapRenderState.Marker> markers,
             List<DungeonEditorHandleSnapshot> handles,
+            DungeonMapContentModel.MapInteractionFrame interactionFrame,
             DungeonEditorStateSnapshot.Selection selection
     ) {
+        DungeonMapContentModel.MapInteractionFrame safeFrame = interactionFrame == null
+                ? DungeonMapContentModel.MapInteractionFrame.empty()
+                : interactionFrame;
         for (DungeonEditorHandleSnapshot handle : handles) {
-            if (!DungeonMapEditorProjectionContentPartModel.visibleCanvasHandle(handle.ref(), selection)) {
+            if (!runtimePreparedPreviewHandle(handle, safeFrame)) {
                 continue;
             }
             markers.add(previewHandleMarker(handle, selection));
         }
+    }
+
+    private static boolean runtimePreparedPreviewHandle(
+            DungeonEditorHandleSnapshot handle,
+            DungeonMapContentModel.MapInteractionFrame interactionFrame
+    ) {
+        return interactionFrame.previewHandleHitRefs()
+                .contains(src.domain.dungeon.published.DungeonEditorMapHitRef.marker(handle.ref(), handle.cell()).value());
     }
 
     private DungeonMapContentModel.DungeonMapRenderState.Marker previewHandleMarker(

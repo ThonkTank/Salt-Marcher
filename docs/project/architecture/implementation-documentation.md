@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-22
+Last Reviewed: 2026-06-25
 Source of Truth: Canonical implementation-documentation artifacts,
 Implementation Reading Packet fields, and generated implementation/review log
 content rules for SaltMarcher agent work.
@@ -64,6 +64,9 @@ The packet must include:
   disposition when churn exists.
 - `Project Health`: owner areas, active debt markers, repeated families,
   compatibility/delete signals, scan route, and supported-finding disposition.
+- `Project Health Debt Intake`: planned paths or owner areas scanned, active
+  matching debt IDs, and each disposition: resolved, false positive,
+  user-excluded, or WIP/blocker.
 - `Source Evidence`: local repo evidence and preserved external reference
   paths used for decisions; state `none` when the pass is not source-backed
   beyond local owner docs.
@@ -140,6 +143,8 @@ An implementation pass log must record:
   support, retire actions, and unmarked known-support blockers
 - Project Health: scan command/result, debt IDs touched, repeated families, and
   supported findings fixed, closed, blocked, or materialized
+- Project Health Debt Intake: command/result, matching active debt IDs, and
+  resolver disposition for every match
 - Behavior Harness Coverage: owning harness changes, dependency suites,
   literal harness result, `Harness Gap`, or no-behavior-change evidence
 - verification commands and literal results
@@ -177,12 +182,25 @@ trend observations in their reviewer output.
 A review pass log must record:
 
 - review role, reviewed scope, reviewed pass logs, and verification evidence
+- Objective Completion Verdict: whether the reviewed state satisfies the
+  original goal and Done When criteria, or the exact WIP status when it does
+  not
 - behavior-harness coverage, including missing `Harness Gap` blockers
 - wait-time evidence when review depends on long-running proof or harnesses
 - selected review panel or unavailable nested-review blocker
+- selected and skipped lenses, including required architecture/quality lenses
+  for architecture, refactor, state-ownership, system-of-record, seam, or
+  repeated-fix work
 - findings and fix outcomes
 - Problem History Intake accepted or blocked
 - Project Health marker/register sync and supported-finding disposition
+- Project Health Debt Intake accepted or blocked
+- residual debt classification: fixed, false positive, explicitly
+  user-excluded, materialization required for incidental debt, or WIP/blocker
+  for objective-relevant debt
+- Baseline Admission: fresh proof, fresh review, objective completion,
+  synchronized debt markers/register entries, and no supported finding hidden
+  only in pass logs
 - trend observations, including repeated reversals, looped implementation,
   growing complexity, recurring smells, architecture loopholes, normalized
   delete signals, or repeated governance/check misses

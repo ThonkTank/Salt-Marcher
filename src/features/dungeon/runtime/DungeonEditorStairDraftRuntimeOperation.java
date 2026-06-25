@@ -13,9 +13,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceVal
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorAuthoredStairUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 @SuppressWarnings("PMD.TooManyMethods")
 final class DungeonEditorStairDraftRuntimeOperation {
@@ -39,11 +36,7 @@ final class DungeonEditorStairDraftRuntimeOperation {
 
     static @Nullable DungeonEditorTool stairTool(String toolKey) {
         DungeonEditorTool tool = DungeonEditorRuntimeEnumTranslator.editorTool(toolKey);
-        return tool == DungeonEditorTool.STAIR_CREATE
-                || tool == DungeonEditorTool.STAIR_CREATE_SQUARE
-                || tool == DungeonEditorTool.STAIR_CREATE_CIRCULAR
-                ? tool
-                : null;
+        return DungeonEditorRuntimeWorkflowMapping.isStairCreateTool(tool) ? tool : null;
     }
 
     void apply(
@@ -169,13 +162,7 @@ final class DungeonEditorStairDraftRuntimeOperation {
     }
 
     private static StairShape shapeFor(DungeonEditorTool tool) {
-        if (tool == DungeonEditorTool.STAIR_CREATE_SQUARE) {
-            return StairShape.SQUARE;
-        }
-        if (tool == DungeonEditorTool.STAIR_CREATE_CIRCULAR) {
-            return StairShape.CIRCULAR;
-        }
-        return StairShape.STRAIGHT;
+        return DungeonEditorRuntimeWorkflowMapping.stairShape(tool);
     }
 
     private static DungeonEditorWorkspaceValues.Cell workspaceCell(Cell cell) {

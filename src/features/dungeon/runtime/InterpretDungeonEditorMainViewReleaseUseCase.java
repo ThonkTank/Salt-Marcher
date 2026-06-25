@@ -71,7 +71,7 @@ final class InterpretDungeonEditorMainViewReleaseUseCase {
         BoundaryStretchSession releasedSession = state.boundaryStretchSession();
         InteractionState nextState = state.withBoundaryStretchSession(BoundaryStretchSession.none());
         if (!releasedSession.moved()) {
-            return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorSessionEffect.select(releasedSession.selection()));
+            return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorSessionEffect.clearedSelection());
         }
         return new DungeonEditorMainViewInterpretation(nextState, DungeonEditorSessionEffect.apply(releasedSession.preview()));
     }

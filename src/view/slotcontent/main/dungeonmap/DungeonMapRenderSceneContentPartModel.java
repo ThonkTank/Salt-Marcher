@@ -11,6 +11,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorMapHitRef;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.BoundaryPrimitive;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.BoundaryTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.DungeonMapRenderState;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.GlyphPrimitive;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.LabelTypography;
@@ -18,13 +19,13 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.MapCanvasPoin
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.MapCanvasPolygonPrimitive;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PaintStyle;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTarget;
-import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTargetKind;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.RelationPrimitive;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.RenderColor;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.RenderScene;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.TextPrimitive;
 
 final class DungeonMapRenderSceneContentPartModel {
+    private static final String GRAPH_ROOM_SELECTION_PREFIX = "ROOM:";
 
     private final GridSceneAssembler gridSceneAssembler = new GridSceneAssembler();
     private final GraphSceneAssembler graphSceneAssembler = new GraphSceneAssembler();
@@ -53,8 +54,21 @@ final class DungeonMapRenderSceneContentPartModel {
                         buckets.glyphs(),
                         buckets.texts(),
                         buckets.relations(),
-                        buckets.actors()),
+                        buckets.actors(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of()),
                 buckets);
+    }
+
+    SceneBuckets toHoverOverlay(DungeonMapRenderState displayModel, PointerTarget hoverTarget) {
+        if (displayModel == null) {
+            return SceneBuckets.empty();
+        }
+        return displayModel.isGraphView()
+                ? graphSceneAssembler.hoverOverlay(displayModel, hoverTarget)
+                : gridSceneAssembler.hoverOverlay(displayModel, hoverTarget);
     }
 
     record RenderSceneProjection(
@@ -71,7 +85,7 @@ final class DungeonMapRenderSceneContentPartModel {
             List<RelationPrimitive> relations,
             List<MapCanvasPolygonPrimitive> actors
     ) {
-        private static SceneBuckets empty() {
+        static SceneBuckets empty() {
             return new SceneBuckets(
                     List.of(),
                     List.of(),
@@ -94,6 +108,7 @@ final class DungeonMapRenderSceneContentPartModel {
             addEdges(displayModel, boundaries, hoverTarget);
             addMarkers(displayModel, glyphs, hoverTarget);
             addLabels(displayModel, texts, hoverTarget);
+            addToolHoverOverlays(displayModel, hoverTarget, surfaces, boundaries, glyphs);
             addPartyToken(displayModel, actors);
             return new SceneBuckets(
                     surfaces,
@@ -102,6 +117,113 @@ final class DungeonMapRenderSceneContentPartModel {
                     texts,
                     List.of(),
                     actors);
+        }
+
+        private SceneBuckets hoverOverlay(DungeonMapRenderState displayModel, PointerTarget hoverTarget) {
+            List<MapCanvasPolygonPrimitive> surfaces = new ArrayList<>();
+            List<BoundaryPrimitive> boundaries = new ArrayList<>();
+            List<GlyphPrimitive> glyphs = new ArrayList<>();
+            List<TextPrimitive> texts = new ArrayList<>();
+            if (DungeonMapContentModel.selectableHoverTarget(hoverTarget).syntheticHoverTarget()) {
+                addToolHoverOverlays(displayModel, hoverTarget, surfaces, boundaries, glyphs);
+                return new SceneBuckets(
+                        surfaces,
+                        boundaries,
+                        glyphs,
+                        texts,
+                        List.of(),
+                        List.of());
+            }
+            addCellHoverOverlays(displayModel, hoverTarget, surfaces);
+            addEdgeHoverOverlays(displayModel, hoverTarget, boundaries);
+            addMarkerHoverOverlays(displayModel, hoverTarget, glyphs);
+            addLabelHoverOverlays(displayModel, hoverTarget, texts);
+            return new SceneBuckets(
+                    surfaces,
+                    boundaries,
+                    glyphs,
+                    texts,
+                    List.of(),
+                    List.of());
+        }
+
+        private void addCellHoverOverlays(
+                DungeonMapRenderState displayModel,
+                PointerTarget hoverTarget,
+                List<MapCanvasPolygonPrimitive> surfaces
+        ) {
+            for (DungeonMapRenderState.Cell cell : displayModel.cells()) {
+                if (LevelFilter.includeLevel(displayModel, cell.z()) && HoverFacts.hoveredCell(hoverTarget, cell)) {
+                    surfaces.add(new MapCanvasPolygonPrimitive(
+                            SceneIdentity.cellHitRef(cell),
+                            SceneIdentity.selectionRef(cell.topologyRef()),
+                            cell.z(),
+                            SceneGeometry.square(cell.q(), cell.r(), 1.0),
+                            SurfaceStyler.style(cell, displayModel, true)));
+                }
+            }
+        }
+
+        private void addEdgeHoverOverlays(
+                DungeonMapRenderState displayModel,
+                PointerTarget hoverTarget,
+                List<BoundaryPrimitive> boundaries
+        ) {
+            for (DungeonMapRenderState.Edge edge : displayModel.edges()) {
+                if (LevelFilter.includeLevel(displayModel, edge.z()) && HoverFacts.hoveredEdge(hoverTarget, edge)) {
+                    boundaries.add(new BoundaryPrimitive(
+                            SceneIdentity.edgeHitRef(edge),
+                            SceneIdentity.selectionRef(edge.topologyRef()),
+                            edge.z(),
+                            List.of(
+                                    new MapCanvasPoint(edge.startQ(), edge.startR()),
+                                    new MapCanvasPoint(edge.endQ(), edge.endR())),
+                            EdgeStyler.style(edge, displayModel, true)));
+                }
+            }
+        }
+
+        private void addMarkerHoverOverlays(
+                DungeonMapRenderState displayModel,
+                PointerTarget hoverTarget,
+                List<GlyphPrimitive> glyphs
+        ) {
+            for (DungeonMapRenderState.Marker marker : displayModel.markers()) {
+                if (LevelFilter.includeLevel(displayModel, marker.z()) && HoverFacts.hoveredMarker(hoverTarget, marker)) {
+                    glyphs.add(new GlyphPrimitive(
+                            SceneIdentity.markerHitRef(marker),
+                            SceneIdentity.selectionRef(marker.handle().topologyRef()),
+                            marker.z(),
+                            SceneGeometry.Marker.markerShape(marker),
+                            MarkerStyler.style(marker, displayModel, true),
+                            SceneGeometry.Marker.markerText(marker),
+                            ScenePalette.LABEL_TEXT));
+                }
+            }
+        }
+
+        private void addLabelHoverOverlays(
+                DungeonMapRenderState displayModel,
+                PointerTarget hoverTarget,
+                List<TextPrimitive> texts
+        ) {
+            for (DungeonMapRenderState.Label label : displayModel.labels()) {
+                if (LevelFilter.includeLevel(displayModel, label.z()) && HoverFacts.hoveredLabel(hoverTarget, label)) {
+                    texts.add(new TextPrimitive(
+                            SceneIdentity.labelHitRef(label),
+                            SceneIdentity.selectionRef(label.topologyRef()),
+                            label.z(),
+                            SceneGeometry.Label.renderText(label),
+                            label.q(),
+                            label.r(),
+                            SceneGeometry.Label.labelWidthScene(label),
+                            SceneGeometry.Label.labelHeightScene(label),
+                            label.rotationDegrees(),
+                            SceneGeometry.Label.typography(label),
+                            LabelStyler.style(label, displayModel, true),
+                            SceneGeometry.Label.textColor(label)));
+                }
+            }
         }
 
         private void addCells(
@@ -161,6 +283,86 @@ final class DungeonMapRenderSceneContentPartModel {
                         SceneGeometry.Marker.markerText(marker),
                         ScenePalette.LABEL_TEXT));
             }
+        }
+
+        private void addToolHoverOverlays(
+                DungeonMapRenderState displayModel,
+                PointerTarget hoverTarget,
+                List<MapCanvasPolygonPrimitive> surfaces,
+                List<BoundaryPrimitive> boundaries,
+                List<GlyphPrimitive> glyphs
+        ) {
+            PointerTarget safeTarget = DungeonMapContentModel.selectableHoverTarget(hoverTarget);
+            if (!safeTarget.syntheticHoverTarget()) {
+                return;
+            }
+            if (safeTarget.isCellTarget()) {
+                addSyntheticCellHover(displayModel, safeTarget, surfaces);
+                return;
+            }
+            if (safeTarget.isBoundaryTarget()) {
+                addSyntheticBoundaryHover(displayModel, safeTarget, boundaries);
+                return;
+            }
+            if (safeTarget.isVertexTarget()) {
+                addSyntheticVertexHover(displayModel, safeTarget, glyphs);
+            }
+        }
+
+        private void addSyntheticCellHover(
+                DungeonMapRenderState displayModel,
+                PointerTarget hoverTarget,
+                List<MapCanvasPolygonPrimitive> surfaces
+        ) {
+            DungeonMapContentModel.CellTarget cell = hoverTarget.cellRef();
+            if (!cell.exact() || !LevelFilter.includeLevel(displayModel, cell.level())) {
+                return;
+            }
+            surfaces.add(new MapCanvasPolygonPrimitive(
+                    "",
+                    "",
+                    cell.level(),
+                    SceneGeometry.square(cell.q(), cell.r(), 1.0),
+                    HoverOverlayStyler.cell()));
+        }
+
+        private void addSyntheticBoundaryHover(
+                DungeonMapRenderState displayModel,
+                PointerTarget hoverTarget,
+                List<BoundaryPrimitive> boundaries
+        ) {
+            BoundaryTarget boundary = hoverTarget.boundaryRef();
+            if (!boundary.key().startsWith("hover-boundary:")
+                    || !LevelFilter.includeLevel(displayModel, boundary.startLevel())) {
+                return;
+            }
+            boundaries.add(new BoundaryPrimitive(
+                    "",
+                    "",
+                    boundary.startLevel(),
+                    List.of(
+                            new MapCanvasPoint(boundary.startQ(), boundary.startR()),
+                            new MapCanvasPoint(boundary.endQ(), boundary.endR())),
+                    HoverOverlayStyler.boundary()));
+        }
+
+        private void addSyntheticVertexHover(
+                DungeonMapRenderState displayModel,
+                PointerTarget hoverTarget,
+                List<GlyphPrimitive> glyphs
+        ) {
+            DungeonMapContentModel.VertexTarget vertex = hoverTarget.vertexRef();
+            if (!vertex.exact() || !LevelFilter.includeLevel(displayModel, vertex.level())) {
+                return;
+            }
+            glyphs.add(new GlyphPrimitive(
+                    "",
+                    "",
+                    vertex.level(),
+                    SceneGeometry.Marker.circle(vertex.q(), vertex.r(), 0.14, 16),
+                    HoverOverlayStyler.vertex(),
+                    "",
+                    ScenePalette.LABEL_TEXT));
         }
 
         private void addLabels(
@@ -228,6 +430,31 @@ final class DungeonMapRenderSceneContentPartModel {
                     List.of());
         }
 
+        private SceneBuckets hoverOverlay(DungeonMapRenderState displayModel, PointerTarget hoverTarget) {
+            List<MapCanvasPolygonPrimitive> surfaces = new ArrayList<>();
+            List<TextPrimitive> texts = new ArrayList<>();
+            addHoveredNode(displayModel, surfaces, texts, hoverTarget);
+            return new SceneBuckets(
+                    surfaces,
+                    List.of(),
+                    List.of(),
+                    texts,
+                    List.of(),
+                    List.of());
+        }
+
+        private void addHoveredNode(
+                DungeonMapRenderState displayModel,
+                List<MapCanvasPolygonPrimitive> surfaces,
+                List<TextPrimitive> texts,
+                PointerTarget hoverTarget
+        ) {
+            displayModel.graphNodes().stream()
+                    .filter(node -> HoverFacts.hoveredGraphNode(hoverTarget, node))
+                    .findFirst()
+                    .ifPresent(node -> addGraphNodePrimitives(displayModel, surfaces, texts, node, true));
+        }
+
         private Map<Long, DungeonMapRenderState.GraphNode> indexNodes(List<DungeonMapRenderState.GraphNode> graphNodes) {
             Map<Long, DungeonMapRenderState.GraphNode> nodesById = new LinkedHashMap<>();
             for (DungeonMapRenderState.GraphNode node : graphNodes) {
@@ -269,34 +496,47 @@ final class DungeonMapRenderSceneContentPartModel {
                 PointerTarget hoverTarget
         ) {
             for (DungeonMapRenderState.GraphNode node : displayModel.graphNodes()) {
-                boolean hovered = HoverFacts.hoveredGraphNode(hoverTarget, node);
-                surfaces.add(new MapCanvasPolygonPrimitive(
-                        SceneIdentity.graphNodeHitRef(node),
-                        "ROOM:" + node.id(),
-                        displayModel.projectionLevel(),
-                        SceneGeometry.roundedRect(node.q(), node.r(), 1.8, 1.1),
-                        new PaintStyle(
-                                ScenePalette.GRAPH_NODE_FILL,
-                                node.selected()
-                                        ? ScenePalette.HIGHLIGHT_STROKE
-                                        : hovered ? ScenePalette.HOVER_STROKE : ScenePalette.ROOM_CELL_STROKE,
-                                node.selected() ? 2.4 / 32.0 : hovered ? 2.0 / 32.0 : 1.2 / 32.0,
-                                1.0,
-                                false)));
-                texts.add(new TextPrimitive(
-                        SceneIdentity.graphNodeHitRef(node),
-                        "ROOM:" + node.id(),
-                        displayModel.projectionLevel(),
-                        node.label(),
-                        node.q(),
-                        node.r(),
-                        Math.max(1.8, SceneGeometry.Label.labelWidthScene(node.label())),
-                        SceneGeometry.Label.labelHeightScene(),
-                        0.0,
-                        LabelTypography.mapLabel(),
-                        new PaintStyle(null, null, 0.0, 1.0, false),
-                        ScenePalette.LABEL_TEXT));
+                addGraphNodePrimitives(displayModel, surfaces, texts, node, HoverFacts.hoveredGraphNode(hoverTarget, node));
             }
+        }
+
+        private void addGraphNodePrimitives(
+                DungeonMapRenderState displayModel,
+                List<MapCanvasPolygonPrimitive> surfaces,
+                List<TextPrimitive> texts,
+                DungeonMapRenderState.GraphNode node,
+                boolean hovered
+        ) {
+            surfaces.add(new MapCanvasPolygonPrimitive(
+                    SceneIdentity.graphNodeHitRef(node),
+                    graphNodeSelectionRef(node),
+                    displayModel.projectionLevel(),
+                    SceneGeometry.roundedRect(node.q(), node.r(), 1.8, 1.1),
+                    new PaintStyle(
+                            ScenePalette.GRAPH_NODE_FILL,
+                            node.selected()
+                                    ? ScenePalette.HIGHLIGHT_STROKE
+                                    : hovered ? ScenePalette.HOVER_STROKE : ScenePalette.ROOM_CELL_STROKE,
+                            node.selected() ? 2.4 / 32.0 : hovered ? 2.0 / 32.0 : 1.2 / 32.0,
+                            1.0,
+                            false)));
+            texts.add(new TextPrimitive(
+                    SceneIdentity.graphNodeHitRef(node),
+                    graphNodeSelectionRef(node),
+                    displayModel.projectionLevel(),
+                    node.label(),
+                    node.q(),
+                    node.r(),
+                    Math.max(1.8, SceneGeometry.Label.labelWidthScene(node.label())),
+                    SceneGeometry.Label.labelHeightScene(),
+                    0.0,
+                    LabelTypography.mapLabel(),
+                    new PaintStyle(null, null, 0.0, 1.0, false),
+                    ScenePalette.LABEL_TEXT));
+        }
+
+        private static String graphNodeSelectionRef(DungeonMapRenderState.GraphNode node) {
+            return GRAPH_ROOM_SELECTION_PREFIX + node.id();
         }
     }
 
@@ -306,29 +546,48 @@ final class DungeonMapRenderSceneContentPartModel {
 
         private static boolean hoveredCell(PointerTarget target, DungeonMapRenderState.Cell cell) {
             DungeonMapContentModel.PointerTarget safeTarget = DungeonMapContentModel.selectableHoverTarget(target);
-            return safeTarget.targetKind() == PointerTargetKind.CELL
+            boolean sameCellOwner = safeTarget.isCellTarget()
                     && sameTopologyRef(safeTarget.topologyRef(), cell.topologyRef())
                     && safeTarget.ownerId() == cell.ownerId()
                     && safeTarget.clusterId() == cell.clusterId()
                     && safeTarget.elementKind().equals(pointerElementKind(cell.kind()));
+            if (!sameCellOwner) {
+                return false;
+            }
+            DungeonMapContentModel.CellTarget cellRef = safeTarget.cellRef();
+            return !cellRef.exact()
+                    || cellRef.q() == cell.q()
+                    && cellRef.r() == cell.r()
+                    && cellRef.level() == cell.z();
         }
 
         private static boolean hoveredEdge(PointerTarget target, DungeonMapRenderState.Edge edge) {
             DungeonMapContentModel.PointerTarget safeTarget = DungeonMapContentModel.selectableHoverTarget(target);
-            return safeTarget.targetKind() == PointerTargetKind.BOUNDARY
+            boolean sameBoundaryOwner = safeTarget.isBoundaryTarget()
                     && safeTarget.ownerId() == edge.ownerId()
                     && sameTopologyRef(safeTarget.topologyRef(), edge.topologyRef());
+            if (!sameBoundaryOwner) {
+                return false;
+            }
+            BoundaryTarget boundaryRef = safeTarget.boundaryRef();
+            return boundaryRef.key().isBlank()
+                    || boundaryRef.startQ() == edge.startQ()
+                    && boundaryRef.startR() == edge.startR()
+                    && boundaryRef.startLevel() == edge.z()
+                    && boundaryRef.endQ() == edge.endQ()
+                    && boundaryRef.endR() == edge.endR()
+                    && boundaryRef.endLevel() == edge.z();
         }
 
         private static boolean hoveredMarker(PointerTarget target, DungeonMapRenderState.Marker marker) {
             DungeonMapContentModel.PointerTarget safeTarget = DungeonMapContentModel.selectableHoverTarget(target);
-            return safeTarget.targetKind() == PointerTargetKind.HANDLE
+            return safeTarget.isHandleTarget()
                     && safeTarget.handleRef().equals(marker.handle().ref());
         }
 
         private static boolean hoveredLabel(PointerTarget target, DungeonMapRenderState.Label label) {
             DungeonMapContentModel.PointerTarget safeTarget = DungeonMapContentModel.selectableHoverTarget(target);
-            return safeTarget.targetKind() == PointerTargetKind.LABEL
+            return safeTarget.isLabelTarget()
                     && !DungeonMapContentModel.ROOM_LABEL_KIND.equals(label.labelKind())
                     && safeTarget.labelKind().equals(label.labelKind())
                     && sameTopologyRef(safeTarget.topologyRef(), label.topologyRef())
@@ -338,7 +597,7 @@ final class DungeonMapRenderSceneContentPartModel {
 
         private static boolean hoveredGraphNode(PointerTarget target, DungeonMapRenderState.GraphNode node) {
             DungeonMapContentModel.PointerTarget safeTarget = DungeonMapContentModel.selectableHoverTarget(target);
-            return safeTarget.targetKind() == PointerTargetKind.GRAPH_NODE
+            return safeTarget.isGraphNodeTarget()
                     && "ROOM".equals(safeTarget.topologyKind())
                     && safeTarget.topologyId() == node.id()
                     && safeTarget.ownerId() == node.id()
@@ -388,12 +647,15 @@ final class DungeonMapRenderSceneContentPartModel {
             if (cell.preview()) {
                 return "";
             }
-            return DungeonEditorMapHitRef.cell(
+            return DungeonEditorMapHitRef.exactCell(
                             cell.kind().name(),
                             cell.ownerId(),
                             cell.clusterId(),
                             cell.topologyRef().kind(),
-                            cell.topologyRef().id())
+                            cell.topologyRef().id(),
+                            cell.q(),
+                            cell.r(),
+                            cell.z())
                     .value();
         }
 
@@ -433,7 +695,18 @@ final class DungeonMapRenderSceneContentPartModel {
             }
             DungeonMapRenderState.MarkerHandle handle = marker.handle();
             if (handle.kind() == null) {
-                return "";
+                DungeonMapRenderState.TopologyRef topologyRef = handle.topologyRef();
+                return topologyRef.equals(DungeonMapRenderState.TopologyRef.empty())
+                        || !"TRANSITION".equals(topologyRef.kind())
+                        ? ""
+                        : DungeonEditorMapHitRef.featureMarker(
+                                topologyRef.kind(),
+                                topologyRef.id(),
+                                marker.handle().topologyRef().id(),
+                                handle.q(),
+                                handle.r(),
+                                handle.level())
+                        .value();
             }
             return DungeonEditorMapHitRef.marker(
                             handle.ref(),
@@ -996,7 +1269,7 @@ final class DungeonMapRenderSceneContentPartModel {
                 DungeonMapRenderState displayModel
         ) {
             double labelAlpha = label.preview()
-                    ? alpha(label, displayModel) * 0.92
+                    ? alpha(label, displayModel) * 0.94
                     : label.selected() ? alpha(label, displayModel) : alpha(label, displayModel) * 0.72;
             return new PaintStyle(
                     null,
@@ -1034,6 +1307,36 @@ final class DungeonMapRenderSceneContentPartModel {
                         displayModel.overlaySettings().opacity());
             }
             return label.preview() ? 0.76 : 1.0;
+        }
+    }
+
+    private static final class HoverOverlayStyler {
+
+        private static PaintStyle cell() {
+            return new PaintStyle(
+                    ScenePalette.blend(ScenePalette.ROOM_FILL, ScenePalette.HOVER_STROKE, 0.38),
+                    ScenePalette.HOVER_STROKE,
+                    1.9 / 32.0,
+                    0.68,
+                    false);
+        }
+
+        private static PaintStyle boundary() {
+            return new PaintStyle(
+                    null,
+                    ScenePalette.HOVER_STROKE,
+                    2.7 / 32.0,
+                    0.94,
+                    false);
+        }
+
+        private static PaintStyle vertex() {
+            return new PaintStyle(
+                    ScenePalette.PREVIEW_FILL,
+                    ScenePalette.HOVER_STROKE,
+                    1.7 / 32.0,
+                    0.92,
+                    false);
         }
     }
 

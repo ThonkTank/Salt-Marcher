@@ -17,10 +17,6 @@ import src.domain.dungeon.model.runtime.usecase.ShiftDungeonEditorProjectionLeve
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.published.DungeonEditorTool;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.RoomNarration;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorAuthoredRuntimeOperations {
     private static final String SELECTION_TOOL = "SELECT";
@@ -250,10 +246,11 @@ final class DungeonEditorAuthoredRuntimeOperations {
                 DungeonEditorRuntimeInputTranslator.exitInputs(safeNarration)));
     }
 
-    void saveLabelName(String targetKind, long targetId, String name) {
+    void saveLabelName(DungeonEditorRuntimeLabelTarget target, String name) {
+        DungeonEditorRuntimeLabelTarget safeTarget = DungeonEditorRuntimeLabelTarget.orEmpty(target);
         saveLabelNameUseCase.execute(new SaveDungeonEditorLabelNameUseCase.LabelNameInput(
-                targetKind,
-                targetId,
+                safeTarget.targetKind(),
+                safeTarget.targetId(),
                 name));
     }
 

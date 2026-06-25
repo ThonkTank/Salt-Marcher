@@ -1,18 +1,16 @@
 package src.view.slotcontent.main.dungeonmap;
 
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonAreaKind;
 import src.domain.dungeon.published.DungeonAreaSnapshot;
 import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
+import src.domain.dungeon.published.DungeonEditorMapHitRef;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
@@ -31,11 +29,11 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.DungeonMapRen
 
 final class DungeonMapSnapshotProjectionContentPartModel {
     private static final String FEATURE_LABEL_KIND = "FEATURE_LABEL";
-    private static final Map<DungeonEditorTool, String> TOOL_LABELS = createToolLabels();
 
     DungeonMapContentModel.DungeonMapRenderState mapEditorSurface(
             String placeholderTitle,
             DungeonEditorMapSurfaceSnapshot snapshot,
+            DungeonMapContentModel.MapInteractionFrame interactionFrame,
             DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel,
             DungeonMapPreviewDiffContentPartModel previewDiffContentPartModel
     ) {
@@ -47,6 +45,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                 safeSnapshot.surface(),
                 safeSnapshot.selection(),
                 safeSnapshot.preview(),
+                interactionFrame,
                 roomLabelPlacementContentPartModel,
                 previewDiffContentPartModel,
                 true);
@@ -88,35 +87,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
     }
 
     private static String toolLabel(DungeonEditorTool selectedTool) {
-        return TOOL_LABELS.getOrDefault(
-                selectedTool,
-                DungeonMapContentModel.DungeonMapRenderState.selectToolLabel());
-    }
-
-    private static Map<DungeonEditorTool, String> createToolLabels() {
-        Map<DungeonEditorTool, String> labels = new EnumMap<>(DungeonEditorTool.class);
-        labels.put(
-                DungeonEditorTool.SELECT,
-                DungeonMapContentModel.DungeonMapRenderState.selectToolLabel());
-        labels.put(DungeonEditorTool.ROOM_PAINT, "Raum malen");
-        labels.put(DungeonEditorTool.ROOM_DELETE, "Raum löschen");
-        labels.put(DungeonEditorTool.WALL_CREATE, "Wand setzen");
-        labels.put(DungeonEditorTool.WALL_DELETE, "Wand löschen");
-        labels.put(DungeonEditorTool.DOOR_CREATE, "Tür setzen");
-        labels.put(DungeonEditorTool.DOOR_DELETE, "Tür löschen");
-        labels.put(DungeonEditorTool.CORRIDOR_CREATE, "Korridor erstellen");
-        labels.put(DungeonEditorTool.CORRIDOR_DELETE, "Korridor löschen");
-        labels.put(DungeonEditorTool.STAIR_CREATE, "Treppe erstellen");
-        labels.put(DungeonEditorTool.STAIR_CREATE_SQUARE, "Treppe erstellen");
-        labels.put(DungeonEditorTool.STAIR_CREATE_CIRCULAR, "Treppe erstellen");
-        labels.put(DungeonEditorTool.STAIR_DELETE, "Treppe löschen");
-        labels.put(DungeonEditorTool.TRANSITION_CREATE, "Übergang erstellen");
-        labels.put(DungeonEditorTool.TRANSITION_DELETE, "Übergang löschen");
-        labels.put(DungeonEditorTool.FEATURE_POI_CREATE, "POI erstellen");
-        labels.put(DungeonEditorTool.FEATURE_OBJECT_CREATE, "Objekt erstellen");
-        labels.put(DungeonEditorTool.FEATURE_ENCOUNTER_CREATE, "Encounter erstellen");
-        labels.put(DungeonEditorTool.FEATURE_DELETE, "Feature löschen");
-        return labels;
+        return DungeonEditorTool.labelFor(selectedTool);
     }
 
     private static DungeonMapContentModel.DungeonMapRenderState mapTravelSurface(
@@ -368,6 +339,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
             @Nullable DungeonEditorSurface surface,
             DungeonEditorStateSnapshot.Selection selection,
             DungeonEditorPreview preview,
+            DungeonMapContentModel.MapInteractionFrame interactionFrame,
             DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel,
             DungeonMapPreviewDiffContentPartModel previewDiffContentPartModel,
             boolean editorMode
@@ -381,6 +353,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                 surface.previewDiff(),
                 selection == null ? DungeonEditorStateSnapshot.Selection.empty() : selection,
                 preview == null ? DungeonEditorPreview.none() : preview,
+                interactionFrame == null ? DungeonMapContentModel.MapInteractionFrame.empty() : interactionFrame,
                 roomLabelPlacementContentPartModel,
                 previewDiffContentPartModel == null
                         ? new DungeonMapPreviewDiffContentPartModel()
@@ -393,6 +366,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
             DungeonEditorPreviewDiff previewDiff,
             DungeonEditorStateSnapshot.Selection selection,
             DungeonEditorPreview preview,
+            DungeonMapContentModel.MapInteractionFrame interactionFrame,
             DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel,
             DungeonMapPreviewDiffContentPartModel previewDiffContentPartModel
     ) {
@@ -401,12 +375,13 @@ final class DungeonMapSnapshotProjectionContentPartModel {
         projection.addClusterLabels(map, selection);
         projection.addPreviewAndBoundaries(map, selection, preview);
         projection.addFeatures(map, selection);
-        projection.addHandles(map, selection, preview);
+        projection.addHandles(map, selection, interactionFrame);
         projection.addPreviewDiff(
                 previewDiffContentPartModel,
                 previewDiff,
                 selection,
                 preview,
+                interactionFrame,
                 roomLabelPlacementContentPartModel);
         projection.addFallbackGraphLinks();
         return projection;
@@ -682,22 +657,28 @@ final class DungeonMapSnapshotProjectionContentPartModel {
         private void addHandles(
                 DungeonEditorMapSnapshot map,
                 DungeonEditorStateSnapshot.Selection selection,
-                DungeonEditorPreview preview
+                DungeonMapContentModel.MapInteractionFrame interactionFrame
         ) {
             for (DungeonEditorHandleSnapshot handle : map.editorHandles()) {
-                if (!DungeonMapEditorProjectionContentPartModel.visibleCanvasHandle(handle.ref(), selection)) {
-                    continue;
-                }
-                if (movingPreviewHandle(handle.ref(), preview)) {
+                if (!runtimePreparedHandle(handle, interactionFrame)) {
                     continue;
                 }
                 markers.add(DungeonMapEditorProjectionContentPartModel.handleMarker(handle, selection, false));
             }
         }
 
-        private static boolean movingPreviewHandle(DungeonEditorHandleRef ref, DungeonEditorPreview preview) {
-            return preview instanceof DungeonEditorPreview.MoveHandlePreview handlePreview
-                    && DungeonMapEditorProjectionContentPartModel.sameHandleRef(ref, handlePreview.handleRef());
+        private static boolean runtimePreparedHandle(
+                DungeonEditorHandleSnapshot handle,
+                DungeonMapContentModel.MapInteractionFrame interactionFrame
+        ) {
+            String hitRef = DungeonEditorMapHitRef.marker(handle.ref(), handle.cell()).value();
+            if (hitRef.isBlank()) {
+                return false;
+            }
+            DungeonMapContentModel.PointerTarget target = interactionFrame.pointerTargets().get(hitRef);
+            return target != null
+                    && target.isHandleTarget()
+                    && DungeonMapEditorProjectionContentPartModel.sameHandleRef(handle.ref(), target.handleRef());
         }
 
         private void addPreviewDiff(
@@ -705,6 +686,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                 DungeonEditorPreviewDiff previewDiff,
                 DungeonEditorStateSnapshot.Selection selection,
                 DungeonEditorPreview preview,
+                DungeonMapContentModel.MapInteractionFrame interactionFrame,
                 DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel
         ) {
             if (!structuredPreviewDiffOwner(preview)) {
@@ -716,6 +698,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                     labels,
                     markers,
                     previewDiff,
+                    interactionFrame,
                     selection,
                     roomLabelPlacementContentPartModel);
         }

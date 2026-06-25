@@ -11,9 +11,6 @@ import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectU
 import src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorAuthoredTransitionUseCase;
 import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorAuthoredTransitionUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorTransitionRuntimeOperation {
     private static final String DESTINATION_DUNGEON_MAP = "DUNGEON_MAP";
@@ -50,7 +47,7 @@ final class DungeonEditorTransitionRuntimeOperation {
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        if (action != PointerAction.PRESSED) {
+        if (!PointerAction.isPressed(action)) {
             return;
         }
         if (tool == DungeonEditorTool.TRANSITION_CREATE) {

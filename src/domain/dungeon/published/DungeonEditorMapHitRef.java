@@ -15,15 +15,6 @@ public record DungeonEditorMapHitRef(String value) {
             String elementKind,
             long ownerId,
             long clusterId,
-            DungeonEditorTopologyElementRef topologyRef
-    ) {
-        return cell(elementKind, ownerId, clusterId, topologyKind(topologyRef), topologyId(topologyRef));
-    }
-
-    public static DungeonEditorMapHitRef cell(
-            String elementKind,
-            long ownerId,
-            long clusterId,
             String topologyKind,
             long topologyId
     ) {
@@ -33,6 +24,63 @@ public record DungeonEditorMapHitRef(String value) {
                 + ":" + Math.max(0L, clusterId)
                 + ":" + normalizeKind(topologyKind)
                 + ":" + Math.max(0L, topologyId));
+    }
+
+    public static DungeonEditorMapHitRef exactCell(
+            String elementKind,
+            long ownerId,
+            long clusterId,
+            DungeonEditorTopologyElementRef topologyRef,
+            DungeonCellRef cell
+    ) {
+        if (cell == null) {
+            return empty();
+        }
+        return exactCell(
+                elementKind,
+                ownerId,
+                clusterId,
+                topologyKind(topologyRef),
+                topologyId(topologyRef),
+                cell.q(),
+                cell.r(),
+                cell.level());
+    }
+
+    public static DungeonEditorMapHitRef exactCell(
+            String elementKind,
+            long ownerId,
+            long clusterId,
+            String topologyKind,
+            long topologyId,
+            int q,
+            int r,
+            int level
+    ) {
+        return new DungeonEditorMapHitRef(cell(elementKind, ownerId, clusterId, topologyKind, topologyId).value()
+                + ":" + q
+                + ":" + r
+                + ":" + level);
+    }
+
+    public static ExactCellHitRef parseExactCell(String hitRef) {
+        if (hitRef == null) {
+            return ExactCellHitRef.empty();
+        }
+        String[] parts = hitRef.split(":");
+        int exactCellPartCount = 9;
+        if (parts.length != exactCellPartCount || !"cell".equals(parts[0])) {
+            return ExactCellHitRef.empty();
+        }
+        try {
+            return new ExactCellHitRef(
+                    hitRef,
+                    Integer.parseInt(parts[6]),
+                    Integer.parseInt(parts[7]),
+                    Integer.parseInt(parts[8]));
+        } catch (NumberFormatException ignored) {
+            return ExactCellHitRef.empty();
+        }
     }
 
     public static DungeonEditorMapHitRef edge(
@@ -148,6 +196,33 @@ public record DungeonEditorMapHitRef(String value) {
                 + ":" + ref.direction());
     }
 
+    public static DungeonEditorMapHitRef featureMarker(
+            DungeonEditorTopologyElementRef topologyRef,
+            long ownerId,
+            int q,
+            int r,
+            int level
+    ) {
+        return featureMarker(topologyKind(topologyRef), topologyId(topologyRef), ownerId, q, r, level);
+    }
+
+    public static DungeonEditorMapHitRef featureMarker(
+            String topologyKind,
+            long topologyId,
+            long ownerId,
+            int q,
+            int r,
+            int level
+    ) {
+        return new DungeonEditorMapHitRef("marker:FEATURE:"
+                + normalizeKind(topologyKind)
+                + ":" + Math.max(0L, topologyId)
+                + ":" + Math.max(0L, ownerId)
+                + ":" + q
+                + ":" + r
+                + ":" + level);
+    }
+
     public static DungeonEditorMapHitRef graphNode(long roomId, long clusterId) {
         return new DungeonEditorMapHitRef("graph-node:ROOM:"
                 + Math.max(0L, roomId)
@@ -176,5 +251,24 @@ public record DungeonEditorMapHitRef(String value) {
 
     private static int sceneCoordinate(double coordinate) {
         return (int) Math.round(coordinate);
+    }
+
+    public record ExactCellHitRef(
+            String key,
+            int q,
+            int r,
+            int level
+    ) {
+        public ExactCellHitRef {
+            key = key == null ? "" : key.strip();
+        }
+
+        public static ExactCellHitRef empty() {
+            return new ExactCellHitRef("", 0, 0, 0);
+        }
+
+        public boolean exact() {
+            return !key.isBlank();
+        }
     }
 }

@@ -86,6 +86,7 @@ final class DungeonEditorRoomWallDoorHarness {
 
     static void runWall(List<String> results) throws Exception {
         route(results, () -> verifyWallStartDraftThroughMapView(results));
+        route(results, () -> verifyWallHoverAlignedOffGridInputThroughMapView(results));
         route(results, () -> verifyWallPreviewMoveThroughMapView(results));
         route(results, () -> verifyWallPathSecondaryCompletionThroughMapView(results));
         route(results, () -> verifyWallIntermediateAndExistingWallCompletionThroughMapView(results));
@@ -1313,7 +1314,7 @@ final class DungeonEditorRoomWallDoorHarness {
                 binding.mapContentModel().resolvePointerTarget(3.96, 1.20, true);
         assertEquals("BOUNDARY", nearCornerTarget.targetKind().name(),
                 "DE-DOOR-001 boundary-preferred resolver chooses an authored boundary near a room corner");
-        assertEquals("WALL", nearCornerTarget.boundaryRef().kind(),
+        assertEquals("WALL", nearCornerTarget.boundaryRef().boundaryKind().legacyName(),
                 "DE-DOOR-001 boundary-preferred resolver keeps the wall candidate for door creation");
         assertEquals(4.0, nearCornerTarget.boundaryRef().startQ(),
                 "DE-DOOR-001 boundary-preferred resolver chooses the nearest east wall start q");
@@ -1878,16 +1879,12 @@ final class DungeonEditorRoomWallDoorHarness {
                 viewport.sceneToScreenY(10.5),
                 false);
 
-        assertEquals(2L, runtime.database().countRoomsForMap(mapId),
-                "DE-ROOM-005 partitioned paint keeps two room rows");
+        assertEquals(1L, runtime.database().countRoomsForMap(mapId),
+                "DE-ROOM-005 partitioned paint coalesces openly connected room rows");
         assertEquals(r1Ids, runtime.database().roomByName(mapId, "R1"),
-                "DE-ROOM-005 partitioned paint keeps R1 identity");
-        assertEquals(r2Ids, runtime.database().roomByName(mapId, "R2"),
-                "DE-ROOM-005 partitioned paint keeps R2 identity");
-        assertEquals(1L, runtime.database().countRoomVisualDescription(r2Ids.roomId(), "Partitioned room narration."),
-                "DE-ROOM-005 partitioned paint keeps R2 narration");
-        assertEquals(expectedCells, runtime.database().clusterFloorCells(r2Ids.clusterId()),
-                "DE-ROOM-005 direct cluster floor cells preserve partitioned union without template collapse");
+                "DE-ROOM-005 partitioned paint keeps the deterministic surviving room identity");
+        assertEquals(expectedCells, runtime.database().clusterFloorCells(r1Ids.clusterId()),
+                "DE-ROOM-005 direct cluster floor cells preserve the coalesced open union");
         assertTrue(!boundaryRowsBefore.equals(runtime.database().roomBoundaryEdgeState(mapId)),
                 "DE-ROOM-005 partitioned paint recomputes boundary rows after release");
         assertEquals(runtime.database().countWallBoundaryRows(mapId),
@@ -1900,9 +1897,9 @@ final class DungeonEditorRoomWallDoorHarness {
         assertEquals(DungeonEditorPreview.none(), committedSurface.preview(),
                 "DE-ROOM-005 release clears room preview");
         assertNoOverlappingSurfaceCellOwnership(committedSurface, "DE-ROOM-005");
-        var r2Area = roomAreaByLabel(committedSurface, "R2", "DE-ROOM-005 committed R2");
-        assertTrue(areaCellSet(r2Area).contains("13,10,0"),
-                "DE-ROOM-005 published R2 area includes the newly painted partition cell");
+        var r1Area = roomAreaByLabel(committedSurface, "R1", "DE-ROOM-005 committed R1");
+        assertTrue(areaCellSet(r1Area).contains("13,10,0"),
+                "DE-ROOM-005 published coalesced R1 area includes the newly painted partition cell");
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).contains("13,10,0"),
                 "DE-ROOM-005 render-facing state shows the newly painted partition cell");
         assertCanvasHasPaintedContent(mapView,
@@ -1910,17 +1907,17 @@ final class DungeonEditorRoomWallDoorHarness {
 
         selectMap(controls, "Partitioned Room Paint Reload Hop");
         selectMap(controls, "Partitioned Room Paint Map");
-        assertEquals(r2Ids, runtime.database().roomByName(mapId, "R2"),
-                "DE-ROOM-005 reload keeps R2 identity");
-        assertEquals(1L, runtime.database().countRoomVisualDescription(r2Ids.roomId(), "Partitioned room narration."),
-                "DE-ROOM-005 reload keeps R2 narration");
-        assertEquals(expectedCells, runtime.database().clusterFloorCells(r2Ids.clusterId()),
-                "DE-ROOM-005 reload keeps partitioned cluster cells");
-        assertTrue(roomAreaByLabel(runtime.mapSurfaceModel().current(), "R2", "DE-ROOM-005 reloaded R2")
+        assertEquals(1L, runtime.database().countRoomsForMap(mapId),
+                "DE-ROOM-005 reload keeps coalesced room count");
+        assertEquals(r1Ids, runtime.database().roomByName(mapId, "R1"),
+                "DE-ROOM-005 reload keeps the surviving room identity");
+        assertEquals(expectedCells, runtime.database().clusterFloorCells(r1Ids.clusterId()),
+                "DE-ROOM-005 reload keeps coalesced cluster cells");
+        assertTrue(roomAreaByLabel(runtime.mapSurfaceModel().current(), "R1", "DE-ROOM-005 reloaded R1")
                         .cells().stream().anyMatch(cell -> cell.q() == 13 && cell.r() == 10 && cell.level() == 0),
-                "DE-ROOM-005 reload publishes R2 extension cell");
+                "DE-ROOM-005 reload publishes coalesced extension cell");
 
-        results.add("DE-ROOM-005 Ready: partitioned room paint -> SQLite identity/narration -> render/readback -> reload");
+        results.add("DE-ROOM-005 Ready: partitioned room paint -> SQLite coalesced open partition -> render/readback -> reload");
     }
 
 
@@ -2152,6 +2149,61 @@ final class DungeonEditorRoomWallDoorHarness {
     }
 
 
+    private static void verifyWallHoverAlignedOffGridInputThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createWallFixture(controls, runtime, "Wall Hover Aligned Hit Map");
+        RoomClusterIds roomIds = runtime.database().roomByName(mapId, "R1");
+        List<String> boundaryStateBefore = runtime.database().roomBoundaryEdgeState(mapId);
+
+        click(button(controls, "Wand"));
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(2.50),
+                viewport.sceneToScreenY(1.50),
+                false);
+        assertSyntheticVertexHoverAt(binding.mapContentModel(), 3, 2,
+                "DE-WALL-015 wall path hover snaps the off-grid pointer to the start vertex");
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.50),
+                viewport.sceneToScreenY(1.50),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_RELEASED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(2.50),
+                viewport.sceneToScreenY(1.50),
+                false);
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(3.49),
+                viewport.sceneToScreenY(4.49),
+                false);
+        DungeonEditorPreview.ClusterBoundariesPreview preview =
+                assertWallPreview(runtime.mapSurfaceModel().current(), 2, false, "DE-WALL-015 off-grid path preview");
+        assertTrue(previewHasEdge(preview, 3, 3, 0, 3, 4, 0),
+                "DE-WALL-015 preview uses the highlighted end vertex instead of the raw pointer position");
+        assertEquals(boundaryStateBefore, runtime.database().roomBoundaryEdgeState(mapId),
+                "DE-WALL-015 off-grid path preview leaves persisted boundary rows unchanged");
+        assertEquals(0L, runtime.database().countInternalWallBoundaries(roomIds.clusterId()),
+                "DE-WALL-015 off-grid path preview does not persist internal wall rows");
+
+        results.add("DE-WALL-015 Ready: wall path hover vertex snap is reused by press and preview input");
+    }
+
+
     private static void verifyWallPreviewMoveThroughMapView(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
@@ -2361,13 +2413,21 @@ final class DungeonEditorRoomWallDoorHarness {
         assertEquals("WALL_CREATE", runtime.controlsModel().current().selectedTool().name(),
                 "DE-WALL-011 wall family keeps path mode as the default wall-create tool");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        fireMapMouseWithControl(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(2.49),
+                viewport.sceneToScreenY(2.04));
+        assertSyntheticBoundaryHoverAt(binding.mapContentModel(), 2.0, 2.0, 3.0, 2.0,
+                "DE-WALL-011 single-click hover snaps the off-grid pointer to a wall edge");
         startAndPreviewInternalWall(mapView, viewport);
         fireMapMouseWithControl(
                 mapView,
                 MouseEvent.MOUSE_RELEASED,
                 MouseButton.PRIMARY,
-                viewport.sceneToScreenX(2.0),
-                viewport.sceneToScreenY(4.0));
+                viewport.sceneToScreenX(2.49),
+                viewport.sceneToScreenY(4.04));
 
         assertEquals(3L, runtime.database().countInternalWallBoundaries(roomIds.clusterId()),
                 "DE-WALL-011 single-click mode lets primary release complete the wall path");
@@ -2377,6 +2437,67 @@ final class DungeonEditorRoomWallDoorHarness {
 
         results.add("DE-WALL-011 Ready: Ctrl-modified optional single-click mode completes on primary release"
                 + " while path mode remains the default");
+    }
+
+    private static void assertSyntheticBoundaryHoverAt(
+            DungeonMapContentModel mapContentModel,
+            double startX,
+            double startY,
+            double endX,
+            double endY,
+            String message
+    ) {
+        DungeonMapContentModel.BoundaryPrimitive expected = new DungeonMapContentModel.BoundaryPrimitive(
+                "",
+                "",
+                0,
+                List.of(
+                        new DungeonMapContentModel.MapCanvasPoint(startX, startY),
+                        new DungeonMapContentModel.MapCanvasPoint(endX, endY)),
+                null);
+        boolean found = mapContentModel.canvasStateProperty().get().renderScene().boundaries().stream()
+                .filter(boundary -> boundary.hitRef().isBlank() && boundary.selectionRef().isBlank())
+                .anyMatch(boundary -> sameBoundaryEndpoints(boundary, expected));
+        assertTrue(found, message + " publishes a transient boundary hover overlay");
+    }
+
+    private static boolean sameBoundaryEndpoints(
+            DungeonMapContentModel.BoundaryPrimitive first,
+            DungeonMapContentModel.BoundaryPrimitive second
+    ) {
+        return first.polyline().getFirst().x() == second.polyline().getFirst().x()
+                && first.polyline().getFirst().y() == second.polyline().getFirst().y()
+                && first.polyline().get(1).x() == second.polyline().get(1).x()
+                && first.polyline().get(1).y() == second.polyline().get(1).y();
+    }
+
+    private static void assertSyntheticVertexHoverAt(
+            DungeonMapContentModel mapContentModel,
+            int q,
+            int r,
+            String message
+    ) {
+        boolean found = mapContentModel.canvasStateProperty().get().renderScene().glyphs().stream()
+                .filter(glyph -> glyph.hitRef().isBlank() && glyph.selectionRef().isBlank())
+                .anyMatch(glyph -> vertexGlyphCenteredAt(glyph, q, r));
+        assertTrue(found, message + " publishes a transient vertex hover overlay");
+    }
+
+    private static boolean vertexGlyphCenteredAt(
+            DungeonMapContentModel.GlyphPrimitive glyph,
+            int q,
+            int r
+    ) {
+        double centerX = glyph.polygon().stream()
+                .mapToDouble(DungeonMapContentModel.MapCanvasPoint::x)
+                .average()
+                .orElse(Double.NaN);
+        double centerY = glyph.polygon().stream()
+                .mapToDouble(DungeonMapContentModel.MapCanvasPoint::y)
+                .average()
+                .orElse(Double.NaN);
+        double tolerance = 0.001;
+        return Math.abs(centerX - q) <= tolerance && Math.abs(centerY - r) <= tolerance;
     }
 
 

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-18
+Last Reviewed: 2026-06-24
 Source of Truth: Aggregate entrypoints, staged handoff routing, and local
 invocation policy for SaltMarcher quality platforms.
 
@@ -37,8 +37,10 @@ finalizer owner for the production handoff.
 `tools/gradle/run-staged-verification.sh production-handoff` is the default
 implementation-handoff route required by `AGENTS.md` for production-code
 changes. The wrapper is runtime-only: it routes the canonical surface name
-to the Gradle-owned `production-handoff` lifecycle task. The verification core
-owns the internal phase barriers: compile integrity proves Java and
+to the Gradle-owned `production-handoff` lifecycle task after running
+repo-owned project-health debt intake for current changed worktree paths.
+Owner-area intake remains caller-owned through explicit project-health scan
+selectors. The verification core owns the internal phase barriers: compile integrity proves Java and
 included-build compilation, structure proves architecture and build-harness
 topology, and hygiene aggregates assemble, bundle selectors, and
 quality-hygiene tool owners inside Gradle.
@@ -59,7 +61,9 @@ development route for scoped implementation work. Additional `--path` values
 MAY be supplied for the same focused run. Use it as a fast local proof for
 concrete packages or resource directories during scoped check/enforcement or
 product-adjacent work when the affected surface is narrow enough to be
-validated by the selected focused engines.
+validated by the selected focused engines. The wrapper runs project-health
+debt intake against focused paths and explicit focused areas before Gradle
+starts; unrelated dirty worktree paths are not part of focused intake.
 
 Focused paths are repo-relative package or resource directories such as
 `src/domain/encounter` or `src/view/sessionplanner`; ambiguous roots require
@@ -89,6 +93,13 @@ A completed implementation pass is incomplete until the required
 production-code handoff, documented focused-handoff proof for scoped package or
 resource work, or documentation-enforcement rerun has completed, or a concrete
 blocker has been reported.
+For `production-handoff` and `focused-handoff`, the wrapper-owned
+project-health debt intake is part of that public proof surface. The wrapper
+uses intake-only mode, so it blocks only on matching active registered debt and
+does not promote full marker/register synchronization into the wrapper gate. A
+matching active debt entry blocks the wrapper before Gradle starts until the
+pass resolves it, closes it with evidence, obtains explicit user exclusion, or
+reports WIP/blocker.
 
 Public local proof entrypoints are:
 

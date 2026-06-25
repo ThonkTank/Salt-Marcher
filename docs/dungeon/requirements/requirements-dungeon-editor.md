@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-23
 Source of Truth: Editor-facing dungeon behavior, visible states, and acceptance criteria.
 
 # Dungeon Editor Requirements
@@ -118,6 +118,8 @@ cards.
 - selecting a room floor area MUST select that room without exposing cluster
   corner or wall-run handles; selecting the cluster label MUST expose the
   owning cluster corner and wall-run handles
+- selection hover feedback MUST appear only for stable selectable objects:
+  room/corridor/stair/transition/feature cells, visible handles, cluster or feature labels, graph nodes, and door boundaries. Plain wall boundaries, room labels, and tool-only synthetic geometry MUST stay visually passive in selection mode.
 - door handles MUST be visible canvas handles, hittable through the shared
   handle route, draggable with live preview, and committed as authored door
   boundary movement
@@ -126,6 +128,9 @@ cards.
   doors and corridor-side anchors
 - generic room hits and generic corridor hits remain allowed input, but the
   committed corridor MUST bind to a concrete authored door or corridor anchor
+- corridor hover feedback MUST stay narrower than accepted fallback input:
+  wall or door boundary edges and authored corridor cells may highlight, while
+  generic room cells must not present as corridor hover targets
 - stair create and delete flows with visible shape and exit configuration
 - transition create and delete flows with description, destination, and
   bidirectional-link options
@@ -133,7 +138,9 @@ cards.
 - custom cluster name editing through state-panel fields and direct map-label
   editing; custom room name editing through state-panel fields
 - grid and graph projection modes
-- level and overlay controls that affect presentation only
+- level controls that can select empty positive and negative editor levels
+  before authored geometry exists there
+- overlay controls that affect presentation only
 
 Corridor, stair, and transition editing are still partial in current
 SaltMarcher builds, but they remain visible target-state surface obligations in
@@ -146,23 +153,17 @@ evidenced in the sibling repo.
 - a single-cluster overlap merge MUST keep existing room and cluster identity, add the newly painted non-overlapping cells, and recompute the perimeter without duplicated overlap cells
 - adjacent room paint with no overlapping authored cell MUST create a distinct room and cluster even when the new rectangle touches an existing room edge
 - a freshly painted or adjacent new room uses the painted rectangle's minimum cell as its room component and cluster center until a later explicit move or stretch changes it
-- freshly painted or adjacent new rooms MUST read back after commit and reload
-  with the full painted floor-cell set and a closed perimeter wall around that
-  floor set
-- freshly painted or adjacent new room perimeter walls MUST be authored durable
-  wall truth after commit; absent perimeter wall rows are old-map compatibility
-  input only, not the target output of fresh room creation
+- freshly painted or adjacent new rooms MUST read back after commit and reload with the full painted floor-cell set and a closed perimeter wall around that floor set
+- freshly painted or adjacent new room perimeter walls MUST be authored durable wall truth after commit; absent perimeter wall rows are old-map compatibility input only, not the target output of fresh room creation
 - intentional wall deletion on a room perimeter MUST be observable as an authored open edge, distinct from an absent un-authored edge whose perimeter wall may still be derived
 - overlap merges MUST NOT leave stale old boundary rows visible as internal walls inside the merged room
 - wall finalization is idempotent: existing wall segments reuse topology, absent boundary segments create or mark that segment as wall, and neither path creates duplicate topology rows
-- path-based wall drawing starts with a primary click, accepts primary-click
-  intermediate points, and commits only when the active wall process is
-  completed by secondary input or by a point that falls on an existing wall
+- path-based wall drawing starts with a primary click, accepts primary-click intermediate points, and commits only when the active wall process is completed by secondary input or by a point that falls on an existing wall
+- wall tool hit detection MUST reuse the visible wall hover snap target: path mode targets the highlighted vertex, and single-click mode targets the highlighted wall edge instead of a separate raw-pointer hitbox
 - secondary input is context-sensitive for wall work: while a wall-create path
   is active it completes that create path; without an active create path it
   starts or completes a wall-delete path
-- single-click wall creation or deletion MAY be toggled through Ctrl or through
-  a dropdown anchored under the wall tool button, using the same secondary
+- single-click wall creation or deletion MAY be toggled through Ctrl or through a dropdown anchored under the wall tool button, using the same secondary
   option pattern as the stair tool dropdown
 - deleting walls removes the whole contiguous straight wall run until the next
   corner; deleting a corner removes every contiguous straight run meeting at
@@ -170,16 +171,9 @@ evidenced in the sibling repo.
 - cluster exterior walls MUST NOT be deleted; attempts to delete them reject
   without authored geometry, topology, preview, or selection mutation
 - stretching a straight cluster wall moves that wall and its two connected side walls while preserving selected cluster identity and recomputing enclosed cells and perimeter as one mutation
-- cluster drag handles MUST publish one handle at every authored wall corner
-  and one handle at the midpoint of every authored straight wall run, for both
-  interior and exterior walls
-- moving a selected cluster corner through a published corner handle MUST
-  preserve cluster and room identity, update the true wall-corner vertex rather
-  than a bounding-box corner, and recompute the adjacent boundary spans without
-  orphan or duplicate wall rows
-- dragging a selected wall-midpoint handle MUST move the whole contiguous
-  straight wall run one-to-one with pointer movement while preserving cluster
-  identity and rejecting invalid geometry atomically
+- cluster drag handles MUST publish one handle at every authored wall corner and one handle at the midpoint of every authored straight wall run, for both interior and exterior walls
+- moving a selected cluster corner through a published corner handle MUST preserve cluster and room identity, update the true wall-corner vertex rather than a bounding-box corner, and recompute the adjacent boundary spans without orphan or duplicate wall rows
+- dragging a selected wall-midpoint handle MUST move the whole contiguous straight wall run one-to-one with pointer movement while preserving cluster identity and rejecting invalid geometry atomically
 - cluster corner and wall-run drag handles MUST be visible and hittable only while their owning cluster is selected; corner handles render as compact point affordances on true authored corners, and wall-run handles render as compact midpoint affordances on the corresponding wall line
 - deleting an unbound door restores the same boundary segment to a wall and removes the door topology or semantic binding; it does not delete the entire wall segment
 - deleting a corridor-bound door MUST be rejected without mutating the door, corridor, room boundary, or preview state

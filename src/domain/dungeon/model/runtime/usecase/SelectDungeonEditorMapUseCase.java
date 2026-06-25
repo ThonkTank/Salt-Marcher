@@ -20,6 +20,7 @@ public final class SelectDungeonEditorMapUseCase {
 
     public void execute(long mapId) {
         workflow.selectMap(mapId);
+        snapshotBuilder.refreshAuthoredSnapshot(workflow.session());
         snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
     }
 }

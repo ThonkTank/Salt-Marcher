@@ -12,9 +12,6 @@ import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorHandleOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorSelectedHandleRuntimeOperation {
     private final DungeonEditorSessionWorkflow workflow;
@@ -47,14 +44,14 @@ final class DungeonEditorSelectedHandleRuntimeOperation {
                 sample,
                 wallSingleClickMode,
                 transitionDestination);
-        PointerAction effectiveAction = action == null ? PointerAction.MOVED : action;
-        if (effectiveAction == PointerAction.PRESSED) {
+        PointerAction effectiveAction = PointerAction.orMoved(action);
+        if (effectiveAction.pressed()) {
             press(input);
-        } else if (effectiveAction == PointerAction.DRAGGED) {
+        } else if (effectiveAction.dragged()) {
             drag(input);
-        } else if (effectiveAction == PointerAction.RELEASED) {
+        } else if (effectiveAction.released()) {
             release(input);
-        } else if (effectiveAction == PointerAction.MOVED) {
+        } else if (effectiveAction.moved()) {
             hover(input);
         } else {
             throw new IllegalStateException("Unsupported selected-handle action: " + effectiveAction);

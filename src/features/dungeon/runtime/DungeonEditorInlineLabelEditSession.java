@@ -2,8 +2,7 @@ package src.features.dungeon.runtime;
 
 public record DungeonEditorInlineLabelEditSession(
         boolean active,
-        String targetKind,
-        long targetId,
+        DungeonEditorRuntimeLabelTarget target,
         String labelKind,
         long ownerId,
         long clusterId,
@@ -19,8 +18,7 @@ public record DungeonEditorInlineLabelEditSession(
     private static final DungeonEditorInlineLabelEditSession INACTIVE =
             new DungeonEditorInlineLabelEditSession(
                     false,
-                    "",
-                    0L,
+                    DungeonEditorRuntimeLabelTarget.empty(),
                     "",
                     0L,
                     0L,
@@ -34,8 +32,8 @@ public record DungeonEditorInlineLabelEditSession(
                     0.0);
 
     public DungeonEditorInlineLabelEditSession {
-        targetKind = safeText(targetKind);
-        targetId = Math.max(0L, targetId);
+        target = DungeonEditorRuntimeLabelTarget.orEmpty(target);
+        active = active && target.present();
         labelKind = safeText(labelKind);
         ownerId = Math.max(0L, ownerId);
         clusterId = Math.max(0L, clusterId);
@@ -59,8 +57,7 @@ public record DungeonEditorInlineLabelEditSession(
         Placement safePlacement = placement == null ? Placement.empty() : placement;
         return new DungeonEditorInlineLabelEditSession(
                 true,
-                safeTarget.targetKind(),
-                safeTarget.targetId(),
+                safeTarget.labelTarget(),
                 safeTarget.labelKind(),
                 safeTarget.ownerId(),
                 safeTarget.clusterId(),
@@ -79,14 +76,13 @@ public record DungeonEditorInlineLabelEditSession(
             return inactive();
         }
         return active(
-                new Target(targetKind, targetId, labelKind, ownerId, clusterId, topologyKind, topologyId),
+                new Target(target, labelKind, ownerId, clusterId, topologyKind, topologyId),
                 nextDraftText,
                 new Placement(centerX, centerY, width, height, rotationDegrees));
     }
 
     public record Target(
-            String targetKind,
-            long targetId,
+            DungeonEditorRuntimeLabelTarget labelTarget,
             String labelKind,
             long ownerId,
             long clusterId,
@@ -94,8 +90,7 @@ public record DungeonEditorInlineLabelEditSession(
             long topologyId
     ) {
         public Target {
-            targetKind = safeText(targetKind);
-            targetId = Math.max(0L, targetId);
+            labelTarget = DungeonEditorRuntimeLabelTarget.orEmpty(labelTarget);
             labelKind = safeText(labelKind);
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
@@ -104,7 +99,7 @@ public record DungeonEditorInlineLabelEditSession(
         }
 
         private static Target empty() {
-            return new Target("", 0L, "", 0L, 0L, "", 0L);
+            return new Target(DungeonEditorRuntimeLabelTarget.empty(), "", 0L, 0L, "", 0L);
         }
     }
 

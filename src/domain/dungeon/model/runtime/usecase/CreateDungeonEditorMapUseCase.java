@@ -33,6 +33,7 @@ public final class CreateDungeonEditorMapUseCase {
                 workflow.session().selection(),
                 workflow.session().preview()).mutationMapId();
         workflow.applyMapLifecycle(DungeonEditorSessionWorkflow.MAP_CREATED, nextMapId);
+        snapshotBuilder.refreshAuthoredSnapshot(workflow.session());
         snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
     }
 }

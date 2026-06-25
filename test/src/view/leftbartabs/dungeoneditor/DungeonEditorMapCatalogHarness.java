@@ -406,6 +406,8 @@ final class DungeonEditorMapCatalogHarness {
                 "DE-START-001 fixture covers the reported 56k-scale persisted current-geometry class");
         assertEquals(null, mapSurfaceModel.current().surface(),
                 "DE-START-001 startup surface remains unloaded until explicit map selection");
+        assertEquals(DungeonEditorPreview.none(), mapSurfaceModel.current().preview(),
+                "DE-START-001 startup preview remains empty without selected map");
         assertVisiblePlaceholder(mapView,
                 "DE-START-001 real JavaFX canvas renders a responsive unloaded-map placeholder");
 

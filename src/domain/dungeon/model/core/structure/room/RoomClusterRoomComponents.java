@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
@@ -31,18 +32,12 @@ final class RoomClusterRoomComponents {
         Set<Long> usedRoomIds = new LinkedHashSet<>();
         List<Room> rooms = new ArrayList<>();
         for (RoomComponent component : components) {
-            List<Room> templates = RoomComponentTemplateSelection.templatesFor(
+            Optional<Room> template = RoomComponentTemplateSelection.templateFor(
                     work.rooms(),
                     previousCellSetsByRoom,
                     component,
                     usedRoomIds);
-            if (templates.isEmpty()) {
-                addRoom(rooms, work, component, null, idCursor, usedRoomIds);
-            } else {
-                for (Room template : templates) {
-                    addRoom(rooms, work, component, template, idCursor, usedRoomIds);
-                }
-            }
+            addRoom(rooms, work, component, template.orElse(null), idCursor, usedRoomIds);
         }
         return List.copyOf(rooms);
     }

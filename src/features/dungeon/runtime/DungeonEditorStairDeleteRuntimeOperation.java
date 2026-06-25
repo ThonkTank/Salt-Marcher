@@ -7,9 +7,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkf
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorAuthoredStairUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorStairDeleteRuntimeOperation {
     private static final long NO_STAIR_ID = 0L;
@@ -38,7 +35,7 @@ final class DungeonEditorStairDeleteRuntimeOperation {
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        if (action != PointerAction.PRESSED) {
+        if (!PointerAction.isPressed(action)) {
             return;
         }
         if (!workflow.session().hasSelectedMap()) {

@@ -54,14 +54,12 @@ final class DungeonEditorBinder {
         state.onViewInputEvent(intentHandler::consume);
         contributionModel.bindControlsContentModel(controlsContentModel);
         contributionModel.bindMapCatalogContentModel(controlsContentModel, mapCatalogContentModel);
-        featureShell.subscribe(frame -> applyFrame(
+        DungeonEditorFeatureShellBinding.PublicationSink frameSink = frame -> applyFrame(
                 frame,
                 contributionModel,
-                mapContentModel));
-        featureShell.publishCurrent(frame -> applyFrame(
-                frame,
-                contributionModel,
-                mapContentModel));
+                mapContentModel);
+        featureShell.subscribe(frameSink);
+        featureShell.publishCurrent(frameSink);
         return new Binding(ShellControls.stack(mapCatalog, controls), main, state);
     }
 

@@ -5,17 +5,14 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonFacts;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper;
 
 public final class ApplyDungeonEditorSessionEffectUseCase {
     private final DungeonEditorSessionWorkflow workflow;
-    private final ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase;
-    private final DungeonEditorDungeonState dungeonState;
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
     private final PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase;
+    private final DungeonEditorPreviewLifecycleUseCase previewLifecycle;
 
     public ApplyDungeonEditorSessionEffectUseCase(
             DungeonEditorSessionWorkflow workflow,
@@ -25,11 +22,14 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
             PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase
     ) {
         this.workflow = Objects.requireNonNull(workflow, "workflow");
-        this.applyOperationUseCase = Objects.requireNonNull(applyOperationUseCase, "applyOperationUseCase");
-        this.dungeonState = Objects.requireNonNull(dungeonState, "dungeonState");
         this.snapshotBuilder = Objects.requireNonNull(snapshotBuilder, "snapshotBuilder");
         this.snapshotPublicationUseCase =
                 Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
+        previewLifecycle = new DungeonEditorPreviewLifecycleUseCase(
+                this.workflow,
+                applyOperationUseCase,
+                dungeonState,
+                this.snapshotBuilder);
     }
 
     public DungeonEditorWorkspaceValues.@Nullable MapSnapshot loadCommittedSnapshot() {
@@ -37,67 +37,29 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
     }
 
     public void publishCurrent() {
-        snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
-    }
-
-    private void publishInMemoryPreview() {
-        snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(
-                snapshotBuilder.executeInMemoryPreview(workflow.session())));
+        publish(previewLifecycle.preparePublishCurrent());
     }
 
     public DungeonEditorWorkspaceValues.@Nullable MapSnapshot committedGridOrPublishCurrent() {
-        DungeonEditorWorkspaceValues.MapSnapshot committedSnapshot = loadCommittedSnapshot();
-        if (!workflow.session().hasSelectedMap() || committedSnapshot == null || !workflow.session().viewMode().isGrid()) {
-            publishCurrent();
-            return null;
-        }
-        return committedSnapshot;
+        DungeonEditorPreviewLifecycleUseCase.CurrentGridResult result =
+                previewLifecycle.committedGridOrCurrentFallback();
+        publish(result.outcome());
+        return result.committedSnapshot();
     }
 
     public void applyEffect(DungeonEditorSessionEffect effect, @Nullable AuthoredCommit authoredCommit) {
-        if (effect == null) {
-            publishCurrent();
-            return;
-        }
-        DungeonEditorSessionValues.Preview previousPreview = workflow.session().preview();
-        DungeonEditorSessionValues.Preview applyPreview = workflow.applyEffect(effect);
-        if (applyPreview != null) {
-            applyAuthoredPreview(applyPreview, authoredCommit);
-            publishCurrent();
-            return;
-        }
-        if (!DungeonEditorSessionPreviewHelper.inMemoryDragPreview(effect.getPreview())) {
-            publishCurrent();
-            return;
-        }
-        if (previousPreview.equals(workflow.session().preview())) {
-            return;
-        }
-        publishInMemoryPreview();
+        publish(previewLifecycle.applyEffect(effect, authoredCommit));
     }
 
     public DungeonEditorDungeonFacts currentFacts() {
-        return dungeonState.currentFacts(
-                workflow.session().selectedMapId(),
-                workflow.session().selection(),
-                workflow.session().preview());
+        return previewLifecycle.currentFacts();
     }
 
-    private void applyAuthoredPreview(
-            DungeonEditorSessionValues.Preview applyPreview,
-            @Nullable AuthoredCommit authoredCommit
-    ) {
-        DungeonEditorWorkspaceValues.MapId mapId = workflow.session().selectedMapId();
-        if (mapId != null && authoredCommit == null) {
-            applyOperationUseCase.execute(mapId, applyPreview);
+    private void publish(DungeonEditorPreviewLifecycleUseCase.PublicationOutcome outcome) {
+        if (!outcome.publishesSnapshot()) {
+            return;
         }
-        if (mapId != null && authoredCommit != null) {
-            authoredCommit.apply(mapId);
-        }
-        workflow.clearPreviewWithStatus(currentFacts().mutationStatusText());
-        if (DungeonEditorSessionPreviewHelper.clearsSelectionAfterApply(applyPreview)) {
-            workflow.applyEffect(DungeonEditorSessionEffect.clearedSelection());
-        }
+        snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
     }
 
     @FunctionalInterface

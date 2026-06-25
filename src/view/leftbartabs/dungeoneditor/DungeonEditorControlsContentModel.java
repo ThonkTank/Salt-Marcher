@@ -9,7 +9,6 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonOverlaySettings;
-import src.features.dungeon.runtime.DungeonEditorToolFrameLabels;
 
 final class DungeonEditorControlsContentModel {
 
@@ -69,7 +68,7 @@ final class DungeonEditorControlsContentModel {
         return List.of(
                 new OverlayModeOption(overlayOffMode(), "Aus", false, false),
                 new OverlayModeOption(overlayNearbyMode(), "Nahe Ebenen", true, false),
-                new OverlayModeOption(overlaySelectedMode(), "Auswahl", false, true));
+                new OverlayModeOption(overlaySelectedMode(), DungeonEditorTool.SELECT.displayLabel(), false, true));
     }
 
     ToolControls toolControls() {
@@ -372,7 +371,6 @@ final class DungeonEditorControlsContentModel {
             boolean graphViewSelected
     ) {
         ProjectionState {
-            activeLevel = Math.max(0, activeLevel);
             overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
             overlayPanelState = overlayPanelState == null
                     ? OverlayPanelState.from(overlaySettings, overlayDisabled)
@@ -642,7 +640,7 @@ final class DungeonEditorControlsContentModel {
     }
 
     static String defaultToolLabel() {
-        return "Auswahl";
+        return DungeonEditorTool.SELECT.displayLabel();
     }
 
     static String gridViewLabel() {
@@ -680,7 +678,7 @@ final class DungeonEditorControlsContentModel {
     private interface ToolPresentation {
 
         static String labelOf(@Nullable DungeonEditorTool tool) {
-            return DungeonEditorToolFrameLabels.labelFor(tool);
+            return DungeonEditorTool.labelFor(tool);
         }
 
         static String normalizeViewModeKey(@Nullable String viewModeKey) {

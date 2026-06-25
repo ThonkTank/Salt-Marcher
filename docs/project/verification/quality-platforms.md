@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-18
+Last Reviewed: 2026-06-24
 Source of Truth: Quality-platform operating model, status vocabulary,
 verification policy, and architecture-harness relationship for SaltMarcher
 quality gates.
@@ -170,10 +170,17 @@ the public entrypoint rules below.
 ## Continuous Refactoring Relationship
 
 Continuous refactoring is a workflow obligation, not an additional gate.
-Project-health scanning is likewise a review and handoff obligation unless a
-later owner promotes it into a named gate. The scan proves literal
-marker/register sync for the selected scope and surfaces repeated pass-log
-families; it does not prove feature behavior or replace staged verification.
+Project-health marker/register sync scanning is likewise a review and handoff
+obligation unless a later owner promotes it into a named gate. Project-health
+debt intake is promoted by the local entrypoint owner into a wrapper preflight
+for `production-handoff` and `focused-handoff`: it fails before Gradle when
+active registered debt intersects changed worktree paths for production
+handoff, or the focused paths and explicit areas for focused handoff.
+Owner-area intake outside explicit focused areas remains caller-owned through
+project-health scan selectors. The scan proves literal marker/register sync
+for the selected scope and surfaces repeated pass-log families; wrapper intake
+proves only that matching active registered debt was found or absent. Neither
+proves feature behavior or replaces staged verification.
 Agents use the repo-owned
 [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
 for production-code, check/enforcement, and dependency work so existing

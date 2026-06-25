@@ -20,6 +20,7 @@ public final class SetDungeonEditorViewModeUseCase {
 
     public void execute(String viewModeName) {
         workflow.setViewMode(viewModeName);
+        snapshotBuilder.refreshAuthoredSnapshot(workflow.session());
         snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
     }
 }

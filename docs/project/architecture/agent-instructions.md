@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-18
+Last Reviewed: 2026-06-25
 Source of Truth: Governance for agent instruction surfaces, the mandatory
 global instruction skill, and ownership boundaries between instruction
 artifacts.
@@ -60,6 +60,21 @@ Mandatory subagent use is standing user authorization for the named role.
   specialist outcomes, fix outcomes, and the final clean-or-blocked result. If
   it returns not-reviewable or blocked, the pass remains WIP until fixed and
   reviewed again.
+- Handoff review is a completion gate, not a proof-only or known-finding
+  closure check. Overview must decide whether the reviewed state satisfies the
+  original goal, Done When criteria, architecture/quality objectives, and
+  project-health baseline admission. Green proof is necessary evidence, not a
+  sufficient completion verdict.
+- For architecture, refactor, governance, state-ownership, system-of-record,
+  adapter/seam, repeated-fix, or Clean-Break work, the handoff panel must
+  include the global architecture lens or report `WIP - Review Panel Blocked`.
+  If broad maintainability or accidental-complexity risk remains, the panel
+  must also include the quality, smells, simplicity, or another narrower lens
+  matching the risk.
+- A handoff result is not clean when supported residual debt belongs to the
+  user's stated objective. Such debt must be fixed, explicitly user-excluded,
+  or reported as WIP/blocker. Project-health materialization is allowed only
+  for incidental supported debt outside the current objective.
 - Required proof tools run only at the top-level handoff layer. Reviewers
   inspect provided literal proof and report missing or stale proof instead of
   rerunning it. If reviewed paths or behavior change, Main reruns proof and
@@ -122,6 +137,10 @@ or WIP/blocker status.
 Known structural debt discovered by the intake must be fixed, closed as false
 positive, user-excluded, held as WIP/blocker, or materialized through
 `PROJECT_HEALTH_DEBT` and the project-health register before handoff.
+Materialized debt is not a terminal follow-up. When a later pass touches a
+matching repo-relative path or owner area, the project-health debt intake pulls
+the entry into the current scope. Main must resolve it, close it with evidence,
+obtain explicit user exclusion, or keep the pass WIP/blocked.
 
 ## Implementation And Review Pass Logs
 
@@ -254,13 +273,17 @@ When a covered artifact changes, reviewers must check:
   deeper root-cause plan?
 - Did the implementing agent obtain a completed global `lens-coordinator-handoff`
   coordinator result before handoff?
+- Did the Overview result include an objective-completion verdict, baseline
+  admission disposition, required architecture/quality lens coverage, and a
+  global final status rather than treating green proof as sufficient?
 - Did any specialist review skill used for the pass remain a read-only review
   lens instead of becoming a competing repo-owned workflow?
 - Did implementation and review agents write and use required local pass logs?
 - Did the review inspect pass logs for repeated reversals, loops, degradation,
   architecture friction, recurring smells, or governance/check misses?
 - Did local baseline admission check fresh proof, fresh review, marker/register
-  sync, and no supported findings hidden only in pass logs?
+  sync, matching active debt intake disposition, and no supported findings
+  hidden only in pass logs?
 
 ## References
 

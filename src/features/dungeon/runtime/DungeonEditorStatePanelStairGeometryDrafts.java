@@ -6,9 +6,9 @@ public final class DungeonEditorStatePanelStairGeometryDrafts {
     private Key draftKey = Key.empty();
     private DraftValue draftValue = DraftValue.empty();
 
-    void update(long selectedMapIdValue, DungeonEditorRuntimeOperations.StairGeometryDraftInput input) {
-        DungeonEditorRuntimeOperations.StairGeometryDraftInput safeInput = input == null
-                ? new DungeonEditorRuntimeOperations.StairGeometryDraftInput(0L, "", "", "", "")
+    void update(long selectedMapIdValue, StairGeometryDraftInput input) {
+        StairGeometryDraftInput safeInput = input == null
+                ? new StairGeometryDraftInput(0L, "", "", "", "")
                 : input;
         Key key = Key.from(selectedMapIdValue, safeInput.stairId());
         if (!key.valid()) {
@@ -94,9 +94,9 @@ public final class DungeonEditorStatePanelStairGeometryDrafts {
             return new DraftValue("", "", "", "");
         }
 
-        static DraftValue from(DungeonEditorRuntimeOperations.StairGeometryDraftInput input) {
-            DungeonEditorRuntimeOperations.StairGeometryDraftInput safeInput = input == null
-                    ? new DungeonEditorRuntimeOperations.StairGeometryDraftInput(0L, "", "", "", "")
+        static DraftValue from(StairGeometryDraftInput input) {
+            StairGeometryDraftInput safeInput = input == null
+                    ? new StairGeometryDraftInput(0L, "", "", "", "")
                     : input;
             return new DraftValue(
                     safeInput.shapeName(),

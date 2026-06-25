@@ -1,11 +1,10 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-14
+Last Reviewed: 2026-06-24
 Source of Truth: Verification-surface ownership, layer boundaries, and public
 verification-entry architecture for SaltMarcher build logic.
 
 # Verification Core Architecture
-
 ## Purpose
 
 This document defines the architecture of SaltMarcher's verification runtime,
@@ -17,7 +16,6 @@ verification surfaces, bundle-owned focused checks, and private rule
 implementation. It does not redefine the detailed proof inventory from
 `docs/project/verification/quality-platforms*.md`, and it does not redefine the
 layer or role rules owned by `docs/project/architecture/enforcement/`.
-
 ## Stakeholders And Concerns
 
 Primary consumers are engineers changing `tools/gradle/**`, `build.gradle.kts`,
@@ -43,6 +41,9 @@ Runtime wrappers MAY know canonical verification surface names and the
 production-handoff phase task names. They MAY know `focused-handoff` as a
 named local entrypoint, but focused area selection, task resolution, engine
 selection, and path-to-input validation belong to the verification core.
+Runtime wrappers MAY run repo-owned handoff preflights such as project-health
+debt intake before Gradle starts, provided those preflights do not duplicate
+verification-core rule selection.
 Runtime wrappers MUST NOT know bundle member tasks, diagnostic task names,
 internal rule lists, or architecture-rule ownership.
 `tools/gradle/run-staged-verification.sh` routes the canonical

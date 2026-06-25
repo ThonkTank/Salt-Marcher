@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
+Last Reviewed: 2026-06-24
 Source of Truth: Room route expectations for Dungeon Editor behavior
 verification.
 
@@ -31,6 +31,7 @@ prove the editor route.
 | `DE-ROOM-002` | Paint overlapping room merges | Room family plus overlapping drag/release | `F3_OVERLAPPING_ROOM_TARGET` | Existing room/cluster identity survives; union cells persist; stale internal walls do not publish. | Ready |
 | `DE-ROOM-003` | Paint adjacent room does not merge | Room family plus adjacent drag/release | `F1_SINGLE_ROOM` | A separate room and cluster persist when no authored cell overlaps. | Ready |
 | `DE-ROOM-004` | Delete whole room rectangle | Room family plus secondary drag/release | `F1_SINGLE_ROOM` | Target room/cluster rows, topology, boundaries, handles, and preview are removed or cleared. | Ready |
+| `DE-ROOM-005` | Paint across an old partition coalesces open rooms | Room family plus direct partition-spanning drag/release | Partitioned two-room cluster fixture | Commit and reload coalesce openly connected old room rows to one persisted room and one published room area when no closed boundary separates the painted component; the deterministic surviving room identity owns the full coalesced floor-cell set. | Ready |
 | `DE-STATE-001` | Edit room narration | `DungeonEditorStateView` narration card | `F4_WALLED_ROOM_WITH_DOOR` | Room visual and exit narration persist, reload, and leave geometry unchanged. | Ready |
 
 ## References

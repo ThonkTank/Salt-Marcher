@@ -16,7 +16,6 @@ public record DungeonEditorMapSurfaceSnapshot(
         preview = preview == null ? DungeonEditorPreview.none() : preview;
         viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
         overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
-        projectionLevel = Math.max(0, projectionLevel);
         selectedTool = selectedTool == null ? DungeonEditorTool.SELECT : selectedTool;
     }
 

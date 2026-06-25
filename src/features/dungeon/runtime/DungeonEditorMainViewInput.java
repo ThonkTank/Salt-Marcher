@@ -1,6 +1,5 @@
 package src.features.dungeon.runtime;
 
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 record DungeonEditorMainViewInput(
         double canvasX,

@@ -18,7 +18,6 @@ public record DungeonEditorControlsSnapshot(
         maps = maps == null ? List.of() : List.copyOf(maps);
         viewMode = viewMode == null ? DungeonEditorViewMode.GRID : viewMode;
         selectedTool = selectedTool == null ? DungeonEditorTool.SELECT : selectedTool;
-        projectionLevel = Math.max(0, projectionLevel);
         overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
         reachableLevels = reachableLevels == null ? List.of(0) : List.copyOf(reachableLevels);
         statusText = statusText == null ? "" : statusText;

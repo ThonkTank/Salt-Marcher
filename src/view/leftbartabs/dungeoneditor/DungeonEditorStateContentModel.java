@@ -10,6 +10,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
+import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.features.dungeon.runtime.DungeonEditorStatePanelCorridorPointDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelLabelNameDrafts;
@@ -390,10 +391,9 @@ final class DungeonEditorStateContentModel {
         StateProjectionContext {
             selectedMapIdValue = Math.max(0L, selectedMapIdValue);
             statusText = statusText == null ? "" : statusText;
-            selectedToolLabel = selectedToolLabel == null ? "Auswahl" : selectedToolLabel;
+            selectedToolLabel = selectedToolLabel == null ? DungeonEditorTool.SELECT.displayLabel() : selectedToolLabel;
             selectedToolKey = selectedToolKey == null ? "" : selectedToolKey;
             viewModeLabel = normalizeViewModeKey(viewModeLabel);
-            projectionLevel = Math.max(0, projectionLevel);
             overlayLabel = overlayLabel == null ? "" : overlayLabel;
             statePanelRoomNarrationDrafts = statePanelRoomNarrationDrafts == null
                     ? DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty()
@@ -420,7 +420,7 @@ final class DungeonEditorStateContentModel {
                     0L,
                     "",
                     false,
-                    "Auswahl",
+                    DungeonEditorTool.SELECT.displayLabel(),
                     "",
                     "Grid",
                     0,

@@ -9,9 +9,6 @@ import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperat
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.PaintSession;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorRoomPaintRuntimeOperation {
     private final DungeonEditorSessionWorkflow workflow;
@@ -47,7 +44,7 @@ final class DungeonEditorRoomPaintRuntimeOperation {
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        if (action == null || tool == null || action == PointerAction.MOVED) {
+        if (action == null || tool == null || PointerAction.isMoved(action)) {
             return;
         }
         DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(

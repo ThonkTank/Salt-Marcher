@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-22
+Last Reviewed: 2026-06-25
 Source of Truth: Project-health ownership, debt materialization, and local
 baseline-admission rules for known structural and quality problems.
 
@@ -87,10 +87,62 @@ Each register entry records:
 - problem
 - owner areas
 - affected paths or symbols
+- intake trigger
+- resolution mode
+- resolver status
+- required next action
 - source pass log or discovery evidence
 - decision
 - removal condition
 - current status
+
+## Automatic Debt Intake
+
+Materialized project-health debt is active work, not archival metadata. Open
+debt returns to the working scope automatically when a later pass supplies a
+matching repo-relative path or owner area named by the register's
+`Intake Trigger`, `Affected Paths`, `Owner Areas`, or marker.
+The wrapper does not infer symbols or concepts from source content.
+
+The default resolution mode is `Next Matching Touch`. Existing entries without
+explicit resolver fields are treated as `Resolution Mode: Next Matching Touch`
+and `Resolver Status: Open`. When debt intake matches the current scope, Main
+must resolve it in the same pass, close it as false positive with evidence,
+obtain explicit user exclusion, or report a WIP/blocker before continuing to a
+handoff-ready state.
+
+Debt that belongs to the current user's stated objective is not incidental
+baseline. It blocks completion until fixed, explicitly user-excluded, or
+reported as WIP/blocker. Marker/register materialization may preserve
+incidental supported debt outside the objective; it must not convert unfinished
+objective work into a clean handoff.
+
+Use `tools/quality/reporting/project_health_scan.py --intake` with
+`--planned-path`, `--planned-owner`, or `--worktree` to check planned scope.
+The staged verification wrappers run intake-only before `production-handoff`
+for current changed worktree paths and before `focused-handoff` for focused
+paths and explicit focused areas; a matching active debt entry fails the
+wrapper before Gradle starts. Wrapper worktree intake is path-only. Owner-area
+debt intake remains a planning and handoff responsibility through explicit
+`--planned-owner` selectors.
+Register list fields use comma-separated tokens. Path tokens are matched
+case-sensitively; owner-area tokens are matched case-insensitively.
+
+### Resolver Dispositions
+
+Use these register transitions when intake or review closes a debt item:
+
+| Outcome | Marker | Register Section | Status | Resolution Mode | Resolver Status |
+| --- | --- | --- | --- | --- | --- |
+| Fixed or removed | remove marker | Removed Or Closed Debt | Removed | Next Matching Touch | Resolved |
+| False positive | remove marker, or keep `Marker: none` for markerless process entries | Removed Or Closed Debt | False Positive | Next Matching Touch | False Positive |
+| Superseded | replace marker with the new debt ID when one exists | Removed Or Closed Debt | Superseded | Next Matching Touch | Superseded |
+| Explicit user exclusion | keep marker unless the user excludes a markerless process entry | Active Debt | Open | User Excluded | User Excluded |
+| Blocked or WIP | keep marker | Active Debt | Open | Next Matching Touch | Blocked |
+
+Only entries whose status or resolver status is closed, or whose resolution mode
+is `User Excluded`, are inactive for automatic intake. `Blocked` remains active
+and must be reported as WIP when matched.
 
 ## Review Governance
 
@@ -119,8 +171,9 @@ treat missing expertise as approval.
 ## Repetition Detection
 
 Use `tools/quality/reporting/project_health_scan.py` as the read-only review
-helper for marker/register sync and repeated pass-log terms. A review must run
-it for the current scope or explain why no project-health surface is touched.
+helper for marker/register sync, automatic debt intake, and repeated pass-log
+terms. A review must run it for the current scope or explain why no
+project-health surface is touched.
 
 The second occurrence of the same debt family in a touched owner area triggers
 Planner or project-health review before another local fix loop. Families can be
@@ -135,8 +188,13 @@ Before commit or push, Main checks local baseline admission:
 - final diff still matches the reviewed scope
 - proof is fresh for the final diff
 - Overview is fresh for the final diff
+- Overview includes an objective-completion verdict for the original goal and
+  Done When criteria
 - `PROJECT_HEALTH_DEBT` markers and register entries are synchronized
+- active matching debt has an intake disposition
 - supported findings are not only buried in pass logs
+- objective-relevant structural debt is fixed, explicitly user-excluded, or
+  held as WIP/blocker rather than materialized as incidental baseline
 - touched scope contains no unowned compatibility seam
 
 This is the local equivalent of deciding whether the change may become project

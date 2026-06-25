@@ -1,7 +1,6 @@
 package src.features.dungeon.runtime;
 
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
@@ -13,9 +12,6 @@ import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectU
 import src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorAuthoredFeatureMarkerUseCase;
 import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorAuthoredFeatureMarkerUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorFeatureMarkerRuntimeOperation {
     private static final String INVALID_FEATURE_MARKER_STATUS = "Feature-Markierung ungueltig.";
@@ -40,7 +36,8 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
     }
 
     static boolean handles(DungeonEditorTool tool) {
-        return kindFor(tool) != null || tool == DungeonEditorTool.FEATURE_DELETE;
+        return DungeonEditorRuntimeWorkflowMapping.featureMarkerKind(tool) != null
+                || tool == DungeonEditorTool.FEATURE_DELETE;
     }
 
     void apply(
@@ -50,10 +47,10 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        if (action != PointerAction.PRESSED) {
+        if (!PointerAction.isPressed(action)) {
             return;
         }
-        FeatureMarkerKind markerKind = kindFor(tool);
+        FeatureMarkerKind markerKind = DungeonEditorRuntimeWorkflowMapping.featureMarkerKind(tool);
         if (markerKind != null) {
             createMarker(DungeonEditorPointRuntimeTarget.anchor(
                     sample,
@@ -121,18 +118,5 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
                 0L,
                 false,
                 DungeonEditorSessionValues.emptyHandleRef());
-    }
-
-    private static @Nullable FeatureMarkerKind kindFor(DungeonEditorTool tool) {
-        if (tool == DungeonEditorTool.FEATURE_POI_CREATE) {
-            return FeatureMarkerKind.POI;
-        }
-        if (tool == DungeonEditorTool.FEATURE_OBJECT_CREATE) {
-            return FeatureMarkerKind.OBJECT;
-        }
-        if (tool == DungeonEditorTool.FEATURE_ENCOUNTER_CREATE) {
-            return FeatureMarkerKind.ENCOUNTER;
-        }
-        return null;
     }
 }

@@ -49,6 +49,7 @@ final class DungeonEditorProjectionOverlayHarness {
 
     static void run(List<String> results) throws Exception {
         route(results, () -> verifyProjectionLevelButtonsThroughControlsView(results));
+        route(results, () -> verifyProjectionLevelButtonsReachEmptyLevels(results));
         route(results, () -> verifyProjectionLevelShortcutsThroughMapView(results));
         route(results, () -> verifyViewModeControlsThroughControlsView(results));
         route(results, () -> verifyViewModeClearsActiveInteractionSession(results));
@@ -104,6 +105,72 @@ final class DungeonEditorProjectionOverlayHarness {
 
         results.add("DE-LVL-001 Ready: DungeonEditorControlsView + button -> SQLite unchanged -> projection z=1");
         results.add("DE-LVL-002 Ready: DungeonEditorControlsView - button -> SQLite unchanged -> projection z=0");
+    }
+
+    private static void verifyProjectionLevelButtonsReachEmptyLevels(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+
+        long mapId = createMapThroughControls(controls, runtime, "Empty Level Expansion Map");
+        runtime.database().seedF1SingleRoom(mapId, "R1", 0, 1, 1);
+        long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+
+        click(button(controls, "+"));
+
+        DungeonEditorControlsSnapshot afterPlusControls = runtime.controlsModel().current();
+        DungeonEditorMapSurfaceSnapshot afterPlusSurface = runtime.mapSurfaceModel().current();
+        assertEquals(1L, afterPlusControls.projectionLevel(),
+                "DE-LVL-005 controls projection level reaches empty positive level");
+        assertEquals(1L, afterPlusSurface.projectionLevel(),
+                "DE-LVL-005 map surface projection level reaches empty positive level");
+        assertTrue(labelVisible(controls, "Ebene z=1"),
+                "DE-LVL-005 visible level label updates to empty positive level");
+        assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).isEmpty(),
+                "DE-LVL-005 active empty z=1 renders no z=0 floor cells");
+        assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-LVL-005 leaves authored DB rows unchanged");
+
+        click(button(controls, "-"));
+        click(button(controls, "-"));
+
+        DungeonEditorControlsSnapshot afterMinusControls = runtime.controlsModel().current();
+        DungeonEditorMapSurfaceSnapshot afterMinusSurface = runtime.mapSurfaceModel().current();
+        assertEquals(-1L, afterMinusControls.projectionLevel(),
+                "DE-LVL-006 controls projection level reaches empty negative level");
+        assertEquals(-1L, afterMinusSurface.projectionLevel(),
+                "DE-LVL-006 map surface projection level reaches empty negative level");
+        assertTrue(labelVisible(controls, "Ebene z=-1"),
+                "DE-LVL-006 visible level label updates to empty negative level");
+        assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).isEmpty(),
+                "DE-LVL-006 active empty z=-1 renders no z=0 floor cells");
+        assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-LVL-006 leaves authored DB rows unchanged");
+
+        click(button(controls, "Raum"));
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        double startX = viewport.sceneToScreenX(6.5);
+        double startY = viewport.sceneToScreenY(6.5);
+        double endX = viewport.sceneToScreenX(7.5);
+        double endY = viewport.sceneToScreenY(7.5);
+        fireMapMouse(binding.mapView(), MouseEvent.MOUSE_PRESSED, MouseButton.PRIMARY, startX, startY, false);
+        fireMapMouse(binding.mapView(), MouseEvent.MOUSE_DRAGGED, MouseButton.PRIMARY, endX, endY, false);
+        fireMapMouse(binding.mapView(), MouseEvent.MOUSE_RELEASED, MouseButton.PRIMARY, endX, endY, false);
+
+        DungeonEditorMapSurfaceSnapshot afterPaintSurface = runtime.mapSurfaceModel().current();
+        assertEquals(-1L, afterPaintSurface.projectionLevel(),
+                "DE-LVL-007 room paint keeps the selected negative projection level");
+        assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(6, 6, 7, 7, -1)),
+                "DE-LVL-007 render shows newly authored negative-level room cells");
+        assertTrue(runtime.database().authoredGeometryState(mapId).stream().anyMatch(row ->
+                        row.startsWith("dungeon_room_cluster_floor_cells|") && row.contains("|level_z=-1")),
+                "DE-LVL-007 SQLite floor cells persist at z=-1");
+        assertTrue(runtime.database().countAuthoredGeometryRows(mapId) > geometryRowsBefore,
+                "DE-LVL-007 writes authored geometry on the selected negative level");
+
+        results.add("DE-LVL-005 Ready: DungeonEditorControlsView + button -> empty positive projection z=1");
+        results.add("DE-LVL-006 Ready: DungeonEditorControlsView - button -> empty negative projection z=-1");
+        results.add("DE-LVL-007 Ready: DungeonEditorControlsView - button + room paint -> SQLite level_z=-1");
     }
 
 

@@ -24,10 +24,11 @@ Row IDs are stable; removed IDs stay retired and are not reused or renumbered.
 | `DE-WALL-008` | Add intermediate wall point | Active wall path plus primary vertex click | `F1_SINGLE_ROOM` | Click adds committed preview edges to the draft path without finalizing or persisting authored rows. | Ready |
 | `DE-WALL-009` | Complete wall path by secondary input | Active wall path plus secondary click | `F1_SINGLE_ROOM` | Entire drafted path persists atomically; preview clears; duplicate topology rows are not created. | Ready |
 | `DE-WALL-010` | Complete wall path by hitting existing wall | Active wall path plus primary click on existing wall | `F1_SINGLE_ROOM` | Entire drafted path persists atomically and connects to the existing wall. | Ready |
-| `DE-WALL-011` | Use single-click wall mode | Ctrl-modified gesture | `F0_EMPTY_MAP` | A transient Ctrl modifier changes one primary release from path behavior to single-click wall completion while path mode remains the default. | Ready |
+| `DE-WALL-011` | Use single-click wall mode | Ctrl-modified off-grid edge gesture | `F0_EMPTY_MAP` | A transient Ctrl modifier changes one primary release from path behavior to single-click wall completion using the highlighted wall edge while path mode remains the default. | Ready |
 | `DE-WALL-012` | Delete straight wall run | Wall tool with no active create draft, secondary delete path on wall run | `F1_SINGLE_ROOM` | The whole contiguous straight run to the next corner is marked open or removed; unrelated wall runs stay. | Ready |
 | `DE-WALL-013` | Delete corner-connected runs | Secondary delete on a wall corner | `F1_SINGLE_ROOM` | Every contiguous straight run meeting at the corner is deleted until its next corner. | Ready |
 | `DE-WALL-014` | Reject cluster exterior wall delete | Secondary delete on exterior cluster wall | `F1_SINGLE_ROOM` | Rejection status is published; authored rows, topology, preview, and selection remain unchanged. | Ready |
+| `DE-WALL-015` | Reuse wall hover snap for path input | Wall family plus off-grid hover-aligned primary input | `F1_SINGLE_ROOM` | Path-mode press and preview use the highlighted vertex rather than the raw pointer position. | Ready |
 
 ## References
 

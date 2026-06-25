@@ -16,9 +16,6 @@ import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperat
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.features.dungeon.runtime.DungeonEditorWallBoundaryDraftInterpretation.WallBoundaryCommit;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerAction;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.PointerSample;
-import src.features.dungeon.runtime.DungeonEditorRuntimeOperations.TransitionDestination;
 
 final class DungeonEditorWallBoundaryDraftRuntimeOperation {
     private final DungeonEditorSessionWorkflow workflow;
@@ -84,7 +81,7 @@ final class DungeonEditorWallBoundaryDraftRuntimeOperation {
     }
 
     private static PointerAction previewAction(PointerAction action) {
-        return action == null ? PointerAction.MOVED : action;
+        return PointerAction.orMoved(action);
     }
 
     private static InterpretDungeonEditorMainViewInputUseCase.PointerAction pointerAction(PointerAction action) {

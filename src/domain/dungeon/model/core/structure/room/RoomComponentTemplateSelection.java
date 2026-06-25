@@ -3,6 +3,7 @@ package src.domain.dungeon.model.core.structure.room;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
 
@@ -11,7 +12,7 @@ final class RoomComponentTemplateSelection {
     private RoomComponentTemplateSelection() {
     }
 
-    static List<Room> templatesFor(
+    static Optional<Room> templateFor(
             List<Room> rooms,
             Map<Long, Set<Cell>> previousCellSetsByRoom,
             RoomClusterRoomComponents.RoomComponent component,
@@ -27,11 +28,9 @@ final class RoomComponentTemplateSelection {
             }
         }
         candidates.sort(RoomComponentTemplateSelection::compareCandidates);
-        List<Room> result = new ArrayList<>();
-        for (Candidate candidate : candidates) {
-            result.add(candidate.room());
-        }
-        return List.copyOf(result);
+        return candidates.isEmpty()
+                ? Optional.empty()
+                : Optional.of(candidates.getFirst().room());
     }
 
     private static Candidate candidate(
