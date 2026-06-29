@@ -50,8 +50,42 @@ compatibility seams, duplicated facts, generic routers, semantic View state,
 unowned carriers, self-confirming harnesses, stale proof wording, or target
 architecture drift without a marker and register entry.
 
+Gate-shaped workarounds are project-health problems when a repair satisfies a
+check, harness, or review phrase while making the target structure less clear.
+Examples include replacing typed state with a raw protocol only to pass a layer
+rule, moving interpretation to a different class without removing duplicated
+semantics, changing production code to satisfy a stale or over-broad gate, or
+closing a blocker without recording the rejected cleaner repair. A green gate
+after such a workaround is not a code-health improvement by itself.
+
+Self-confirming harnesses are project-health problems when proof demonstrates a
+new route or fixture but would still pass if the reported old failure,
+duplicated state source, stale projection, fallback mutation path, or wrong
+visual affordance remained. For user-reported defects, a harness must include a
+negative assertion tied to the old failure before its green result can support
+baseline admission.
+
+Structural-state debt is a project-health family when it is supported by code
+evidence and cannot be fixed in the same pass. Examples include duplicated
+system-of-record facts, unclear state ownership, competing mutation paths,
+stringly typed boundary protocols, encoded UI values, `null` used as a domain
+state, placeholder concepts flattened into absence, view draft state acting as
+truth, snapshot reconstruction of facts a command does not own, and duplicated
+enum or type literals.
+
 Green tests and successful gates are necessary proof for behavior and policy.
 They are not by themselves a code-health verdict.
+
+Planning for stateful work must actively inspect the structural-state family
+before implementation planning is considered complete. Planning-Time Structural
+State Preflight is owned by the Agent Instruction Standard; project-health owns
+the disposition of supported non-clean rows that cannot be fixed inside the
+current objective or must remain discoverable after the pass.
+
+When a blocker triggers the Agent Instruction Standard's Blocker Reflection
+Gate, project-health owns the disposition of any finding classified as target
+architecture violation, stale or over-broad gate, governance gap, repeated
+quick-fix family, or gate-shaped workaround.
 
 ## Debt Marker
 
@@ -146,6 +180,15 @@ and must be reported as WIP when matched.
 
 ## Review Governance
 
+Before planning or reviewing stateful owner areas, Main must inspect
+structural-state risk directly rather than only searching for already named
+debt terms. The inspection must classify whether the preflight was triggered
+and must dispose every non-clean row as fixed in plan, `Plan Must Address`,
+`Planning Blocker`, incidental project-health debt, or explicit user exclusion.
+Unsupported suspected rows are recorded as `Clean` or `Not Triggered` with code
+evidence; false positive remains a supported-finding or review disposition, not
+a planning matrix row.
+
 Every repo-tracked implementation review must search the reviewed scope for:
 
 ```text
@@ -157,13 +200,30 @@ stale
 deferred
 review-owned
 outside write set
+proof oracle
+self-confirming harness
+missing negative assertion
+gate-shaped workaround
+quick local unblock
+raw protocol fallback
+rejected shortcut
+stringly typed protocol
+encoded UI value
+null domain state
+duplicated system of record
+view draft truth
+snapshot reconstruction
+duplicated type literal
+parallel mutation path
 ```
 
 Supported findings must not remain only in a pass log. Main or Overview must
 close each one as fixed, false positive with evidence, user-excluded, WIP
 blocker, or materialized `PROJECT_HEALTH_DEBT` with register entry and removal
-condition. A pass with newly recognized structural residual debt is not
-handoff-ready until marker and register are synchronized.
+condition. A pass with newly recognized structural residual debt, including a
+Structural State Ownership Matrix row classified as `Materialization Required`,
+is not handoff-ready until marker and register are synchronized and the row is
+reclassified as `Materialized`, or the user explicitly excludes the debt.
 
 When expertise is missing, record a skill gap or project-health debt. Do not
 treat missing expertise as approval.
@@ -178,8 +238,12 @@ project-health surface is touched.
 The second occurrence of the same debt family in a touched owner area triggers
 Planner or project-health review before another local fix loop. Families can be
 symbol names, marker IDs, owner areas, or repeated terms such as stale proof,
-retained compatibility, source-edge carriers, generic preview, or deferred
-review-owned findings.
+proof oracle, self-confirming harness, missing negative assertion, retained
+compatibility, source-edge carriers, generic preview, gate-shaped workaround,
+quick local unblock, raw protocol fallback, rejected shortcut, stringly typed
+protocol, null domain state, view draft truth, snapshot reconstruction,
+duplicated type literal, parallel mutation path, or deferred review-owned
+findings.
 
 ## Baseline Admission
 
@@ -190,11 +254,19 @@ Before commit or push, Main checks local baseline admission:
 - Overview is fresh for the final diff
 - Overview includes an objective-completion verdict for the original goal and
   Done When criteria
+- user-reported defect proof includes negative assertions that make the old
+  failure impossible
 - `PROJECT_HEALTH_DEBT` markers and register entries are synchronized
 - active matching debt has an intake disposition
 - supported findings are not only buried in pass logs
 - objective-relevant structural debt is fixed, explicitly user-excluded, or
   held as WIP/blocker rather than materialized as incidental baseline
+- blocker-driven repairs record the Blocker Reflection Gate classification,
+  rejected shortcut, and why the chosen repair improves or preserves target
+  architecture and project health
+- triggered Structural State Ownership Matrix rows are complete, and no
+  `Planning Blocker`, `Handoff Blocker`, or unresolved
+  `Materialization Required` row remains
 - touched scope contains no unowned compatibility seam
 
 This is the local equivalent of deciding whether the change may become project

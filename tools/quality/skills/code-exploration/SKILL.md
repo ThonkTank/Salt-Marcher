@@ -34,25 +34,49 @@ covered work:
 7. For behavior changes, user-reported misbehavior, new features, and new
    behavior-bearing concepts, identify the owning behavior harness, focused
    task or suite id, declared dependency harnesses, and any missing coverage
-   that must become a `Harness Gap` blocker.
-8. Classify claims with the canonical context trust levels:
+   that must become a `Harness Gap` blocker. For user-reported defects, name
+   the old failure as a negative assertion the harness must prove impossible;
+   a happy-path assertion that would pass while the old failure remains is a
+   self-confirming harness and cannot close planning.
+8. For repair planning after proof, review, architecture, quality, harness, or
+   gate feedback, trace the blocker before proposing a fix. Read the literal
+   failing output, current code path, governing owner docs, relevant check or
+   harness rule, and related pass logs. Record the Blocker Reflection
+   classification as local defect, target architecture violation, stale or
+   over-broad gate, governance gap, missing proof, unclear root cause, or
+   foreign baseline. Separately record the evidence level for that
+   classification. If the evidence level is not `Owner-Proven` or
+   source-backed `Evidence-Proven`, planning must remain blocked or become a
+   bounded exploration slice.
+9. For implementation or refactor planning that touches stateful domain,
+   runtime, view, view-model, data, command, mapper, projection,
+   persistence-row, enum, value-object, draft, session, or content-model code,
+   perform Planning-Time Structural State Preflight from
+   `docs/project/architecture/agent-instructions.md`. Produce a compact
+   Structural State Ownership Matrix before the plan or wave-plan artifact is
+   decision-complete. Rows must identify evidence for single source of truth,
+   state owner, mutation paths, consistency boundary, coupling, duplication,
+   typed boundary protocols, null or placeholder semantics, and draft/view
+   truth where applicable, with `Planning Blocker`, `Plan Must Address`,
+   `Incidental Debt`, `Clean`, or `Not Triggered` dispositions.
+10. Classify claims with the canonical context trust levels:
    `Owner-Proven`, `Evidence-Proven`, `Candidate`, or `Suspect`.
-9. For covered implementation planning, refactor planning, implementation
+11. For covered implementation planning, refactor planning, implementation
    review, or continuation work, inspect relevant available pass logs under
    `build/agent-pass-logs/` by surface, symptom, owner, harness, check, and
    proposed repair path. Classify them as operational history, not canonical
    source truth.
-10. When a slice arrives with an Implementation Reading Packet, treat it as
+12. When a slice arrives with an Implementation Reading Packet, treat it as
    handoff context governed by
    `docs/project/architecture/implementation-documentation.md`; verify local
    facts before planning from it.
-11. Compare the proposed repair with prior attempts and abandoned approaches.
+13. Compare the proposed repair with prior attempts and abandoned approaches.
    If the same symptom or surface has repeated shallow fixes, block planning
    until the root-cause hypothesis, deeper repair path, rejected shortcut, and
    planner escalation or blocker disposition are explicit.
-12. If a supported structural finding cannot be fixed in the same pass, route
+14. If a supported structural finding cannot be fixed in the same pass, route
    it through `project-health` instead of leaving it only in exploration notes.
-13. Plan only from `Owner-Proven` or source/command-backed `Evidence-Proven`
+15. Plan only from `Owner-Proven` or source/command-backed `Evidence-Proven`
    facts. Treat `Candidate` and `Suspect` claims as risks, follow-up questions,
    or scope boundaries.
 
@@ -71,7 +95,13 @@ Keep the exploration compact but source-backed:
 - `State`: owner of mutation, projection, publication, cache, or file output.
 - `Variants`: sibling workflows checked and how they differ.
 - `Behavior harness`: owning harness task or suite id, dependency harnesses,
-  missing coverage, or reason no behavior harness is required.
+  missing coverage, required negative assertions for old failures, or reason no
+  behavior harness is required.
+- `Blocker Reflection`: literal blocker output, owner docs or check rules read,
+  classification, candidate repair surfaces, rejected quick fix, and remaining
+  unknowns.
+- `Structural State Preflight`: triggered or not triggered; matrix rows,
+  evidence, and planning dispositions for stateful code scopes.
 - `Tools`: repo-local tools used, their governing skill, and evidence strength.
 - `Unknowns`: seams not proven deeply enough for the requested plan; unknowns
   are notes, not authority.

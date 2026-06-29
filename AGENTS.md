@@ -21,15 +21,21 @@ Before changing repo-tracked files in SaltMarcher:
    implementation shape.
 4. Use every mandatory skill named by the workspace or SaltMarcher routing
    rules before planning, implementing, refactoring, or reviewing covered work.
-5. For implementation handoffs, reduced slice briefs, roadmaps, and pass logs,
-   follow the canonical implementation-documentation rules in
-   `docs/project/architecture/implementation-documentation.md`; do not copy
-   its packet fields into this router.
+5. Non-trivial repo-tracked implementation, refactor, migration, governance
+   repair, systemic repair, repeated-fix, or broad documentation/instruction
+   work follows the Standard Coordinated Workflow owned by
+   `docs/project/architecture/agent-instructions.md`. Wave Coordination is the
+   normal operating skill for that workflow, not a separate exception path.
+   Artifact shape remains owned by
+   `docs/project/architecture/implementation-documentation.md`.
 6. For non-trivial bug, regression, refactor, governance, systemic-repair, or
    repeated-fix work, perform the `Problem History Intake` owned by
    `docs/project/architecture/agent-instructions.md` before implementation
    planning, refactor planning, implementation review, or continuation.
    `context-hygiene` and `code-exploration` own the trigger-time workflow.
+   When proof, review, architecture, quality, harness, or gate feedback blocks
+   a pass, run that standard's `Blocker Reflection Gate` before planning a
+   repair.
 7. When repo-tracked work knowingly creates transitional support or leaves
    superseded support in place, mark it at that point with
    `LEGACY_REMOVE_ON_TOUCH` and a concrete removal condition.
@@ -118,14 +124,9 @@ document exists.
   main edit and before the implementation pass log and Overview handoff review.
   If the harness does not auto-discover the skill, read
   `/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/agents/code-simplifier.md`
-  directly. This is a qualitative review-coordination pass: the
-  code-simplifier agent acts like a review coordinator for simplification and
-  launches independent simplicity, elegance, smell, and performance reviewers
-  when subagent tooling is available, then consolidates findings into blocking
-  same-run work or a no-op result. It is not a new static-analysis gate and
-  does not replace mandatory proof or Overview review.
-  Main handles the result under
-  `docs/project/architecture/agent-instructions.md`; a pass without the
+  directly. Main handles the result under
+  `docs/project/architecture/agent-instructions.md`; it is not a static gate
+  and does not replace mandatory proof or Overview review. A pass without the
   required code-simplifier disposition remains WIP.
 - When review results, architecture checks, behavior harnesses, or required
   proof expose a systemic blocker, Main must use the global `planner` skill to
@@ -142,7 +143,7 @@ document exists.
 - Work that runs, plans, changes, or reviews the SaltMarcher
   process-autoresearch loop must use the repo-owned
   `autodev-process-optimizer` skill. The process optimizer tunes implementer
-  prompts, slice briefs, context budgets, model routing, review routing, and
+  prompts, slice handoffs, context budgets, model routing, review routing, and
   feedback capture; it must not weaken mandatory SaltMarcher proof, review, or
   publication rules.
 - Production-code, check/enforcement, and dependency work must use the

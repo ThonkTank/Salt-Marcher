@@ -44,41 +44,92 @@ Any work on covered surfaces must use that skill first.
 - The governing workflow lives in the global `SKILL.md`.
 - `agents/openai.yaml` must not become a second source of truth for workflow.
 
+## Standard Coordinated Workflow
+
+Non-trivial repo-tracked implementation, refactor, migration, governance
+repair, systemic repair, repeated-fix, or broad documentation/instruction work
+MUST use the Standard Coordinated Workflow unless the user explicitly asks for
+read-only planning/review or the task is a trivial mechanical edit with no
+semantic workflow, governance, architecture, behavior, proof, or ownership
+effect. The global `wave-coordination` skill operates
+`Goal Definition -> Roadmap Planning -> Phase Planning -> Implementation -> Review -> Commit/Handoff`.
+
+Main owns intake, skill routing, dirty baseline, proof, integration, and
+publication state. Main clarifies goals with the user before delegation. The
+first clean-start planner uses `planner` to write the Main-reviewed roadmap
+with must-do completion goals and required change surfaces. A
+second clean-start planner is required only when scope is broad, dependency
+order is unclear, or phase boundaries need separate decomposition. Later
+planning prepares implementation-ready wave-plan artifacts as needed for each phase or
+slice. Implementation uses clean-start `wave-implementation-worker` agents with
+disjoint write sets; Review uses `code-simplifier` and Overview. Required
+subagent launches are standing user authorization; unavailable subagent tooling
+keeps full handoff WIP unless the direct-pass exception applies and normal
+proof, logging, and review complete.
+
+## Planning-Time Structural State Preflight
+Before roadmap planning, phase planning, or briefing implementation/refactor/governance repair
+for stateful domain, runtime, view, view-model, data, command, mapper,
+projection, persistence-row, enum, value-object, draft, session, or
+content-model code, Main MUST classify Structural State Preflight as
+`Triggered` or `Not Triggered`.
+
+When triggered, Main runs or delegates a read-only architecture/state review
+before the plan is decision-complete. The compact matrix covers ownership,
+mutation paths, consistency boundary, coupling, duplication, typed boundary
+protocols, placeholder/null semantics, and draft/view truth. Each row is
+`Planning Blocker`, `Plan Must Address`, `Incidental Debt`, `Clean`, or
+`Not Triggered`; non-clean rows need a slice, blocker/WIP status,
+project-health route, or explicit user exclusion. Handoff review must not be
+the first structural-state ownership check.
+
+## Blocker Reflection Gate
+
+When proof, handoff review, architecture review, behavior-harness feedback,
+quality review, or a repo-local gate blocks a pass, Main MUST stop before
+planning a repair and classify one primary blocker: `Local Defect`,
+`Target Architecture Violation`, `Stale Or Over-Broad Gate`, `Governance Gap`,
+`Missing Proof`, `Unclear Root Cause`, or `Foreign Baseline`.
+
+If the repair may change architecture, layer boundaries, state ownership, typed
+boundaries, system-of-record facts, harness/check rules, or project health,
+Main must obtain read-only architecture and quality judgment, or a planner
+project-health repair plan that includes those lenses, before choosing the
+repair. The record must compare the target-architecture repair against the
+shortest local unblocker, name any cleaner gate/harness repair, and capture the
+blocker source, classification, chosen repair surface, rejected shortcut,
+target-architecture or project-health benefit, proof route, and WIP/blocker
+status. Main must not start a gate-shaped quick fix while those facts are
+missing.
+
 ## Review Skill Routing
 
 SaltMarcher keeps review instructions in global skills, not in this standard.
 Mandatory subagent use is standing user authorization for the named role.
 
-- Implementing agents use the global caller stack:
-  `coord-adversarial-review` before review and `coord-main-overview` when
-  launching the one required Overview coordinator for implementation handoff.
-- Overview uses the global adversarial, coordinator, handoff, and
-  `coord-overview-reviewer` skills.
-- Specialist reviewers first use `lens-adversarial-review-agent`, then their
-  assigned `lens-*` skill.
-- Overview owns reviewer launch, scoped follow-up launch, reviewability,
-  specialist outcomes, fix outcomes, and the final clean-or-blocked result. If
-  it returns not-reviewable or blocked, the pass remains WIP until fixed and
-  reviewed again.
-- Handoff review is a completion gate, not a proof-only or known-finding
-  closure check. Overview must decide whether the reviewed state satisfies the
-  original goal, Done When criteria, architecture/quality objectives, and
-  project-health baseline admission. Green proof is necessary evidence, not a
-  sufficient completion verdict.
-- For architecture, refactor, governance, state-ownership, system-of-record,
-  adapter/seam, repeated-fix, or Clean-Break work, the handoff panel must
-  include the global architecture lens or report `WIP - Review Panel Blocked`.
-  If broad maintainability or accidental-complexity risk remains, the panel
-  must also include the quality, smells, simplicity, or another narrower lens
-  matching the risk.
-- A handoff result is not clean when supported residual debt belongs to the
-  user's stated objective. Such debt must be fixed, explicitly user-excluded,
-  or reported as WIP/blocker. Project-health materialization is allowed only
-  for incidental supported debt outside the current objective.
-- Required proof tools run only at the top-level handoff layer. Reviewers
-  inspect provided literal proof and report missing or stale proof instead of
-  rerunning it. If reviewed paths or behavior change, Main reruns proof and
-  launches a fresh coordinator.
+- Handoff uses `coord-adversarial-review`, `coord-main-overview`, one Overview
+  coordinator, `coord-overview-reviewer`, and specialist `lens-*` skills after
+  `lens-adversarial-review-agent`.
+- Overview owns reviewer/follow-up launch, reviewability, fix outcomes, and
+  final clean-or-blocked status. Not-reviewable or blocked results keep the
+  pass WIP until fixed, freshly proved, and reviewed again.
+- Overview is a completion gate: it checks original goal, Done When,
+  architecture/quality objectives, proof oracle, and project-health baseline
+  admission. Green proof is necessary but insufficient.
+- Architecture, refactor, governance, state-ownership, system-of-record,
+  adapter/seam, repeated-fix, or Clean-Break work includes the architecture
+  lens or reports `WIP - Review Panel Blocked`; add quality/smell/simplicity
+  lenses when complexity risk remains.
+- When Structural State Review is triggered, Overview must include a fresh
+  architecture-lens matrix. Missing, incomplete, contradicted, unresolved
+  `Handoff Blocker`, or unsynchronized `Materialization Required` rows prevent
+  `Clean`.
+- Objective-relevant residual debt blocks handoff until fixed, user-excluded,
+  or reported WIP/blocker. Incidental supported debt may be materialized only
+  through project-health.
+- Required proof tools run only at top-level handoff. Reviewers inspect literal
+  proof and report missing/stale proof. If reviewed paths or behavior change,
+  Main reruns proof and launches a fresh coordinator.
 - Global review specialist skills remain supplementary lenses; do not create
   repo-local copies unless the user explicitly asks for a SaltMarcher fork.
 
@@ -102,12 +153,23 @@ same-run implementation tasks. `Deferred`, `follow-up`, `later`, `outside write
 set`, or unowned `review-owned` findings block Overview. Overview inspects the
 code-simplifier log with implementation logs.
 
+`code-simplifier` may surface structural smells, but it cannot by itself close
+architecture, state-ownership, or system-of-record risk. Any code-simplifier
+finding in a structural-state family must be disposed as fixed, architecture
+review blocker, planner-integrated, project-health materialized,
+user-excluded, or false positive with code evidence before Overview readiness.
+
 ## Planner Escalation For Systemic Feedback
 
 When review, architecture-check, behavior-harness, or proof feedback indicates
 a systemic problem rather than a local defect, Main obtains a project-health
 repair plan from the global planner before repair. The planner optimizes for
 target architecture and maintainability, not the shortest immediate unblocker.
+
+The Blocker Reflection Gate must run before this escalation decision. A blocker
+classified as `Target Architecture Violation`, `Stale Or Over-Broad Gate`,
+`Governance Gap`, or `Unclear Root Cause` is systemic unless source-backed
+evidence proves it is an isolated local defect.
 
 Escalate when root cause is unclear, the same surface has repeated fix cycles,
 the finding suggests architecture/check/harness mismatch, the repair crosses
@@ -144,11 +206,12 @@ obtain explicit user exclusion, or keep the pass WIP/blocked.
 
 ## Implementation And Review Pass Logs
 
-SaltMarcher uses local pass logs as generated operational evidence for
-detecting repeated loops, reversals, quality drift, and architecture friction.
-They are not canonical documentation and must not redefine requirements,
-contracts, architecture, domain truth, or verification policy.
-Detailed artifact fields live in
+SaltMarcher uses local implementation artifacts as generated operational
+evidence for loops, reversals, quality drift, and architecture friction. They
+are not canonical documentation and must not redefine requirements, contracts,
+architecture, domain truth, or verification policy. Roadmaps, wave plans,
+implementation logs, review logs, completion audits, filenames, field lists,
+and link rules live in
 `docs/project/architecture/implementation-documentation.md`.
 
 - Implementation agents must write one implementation pass log after each
@@ -166,9 +229,9 @@ Detailed artifact fields live in
   reviewer outputs.
 - Pass logs live under `build/agent-pass-logs/` and are generated local
   evidence. Do not commit them and do not cite them as canonical truth.
-- Pass logs are also local memory for expected wait times. Agents MUST record
-  observed durations for recurring harnesses, staged verification routes,
-  desktop installation, and other long checks they run.
+- Pass logs are also local memory for expected wait times. Agents MUST follow
+  the wait-time procedure in `implementation-documentation.md` and record
+  observed durations for recurring long checks they run.
 - Missing pass logs for prior work do not block a pass by themselves, but a
   required current implementation or review pass without its log remains WIP
   until the log is written or the blocker is reported.
@@ -203,11 +266,10 @@ If Main intentionally runs independent work while waiting, it must name the
 independence boundary before starting and must not claim the result as evidence
 for the unstable target surface.
 
-Implementation and review pass-log filenames, headings, timestamp metadata,
-content fields, code-simplifier evidence, wait-time observations, and
-Implementation Reading Packet fields are owned by the Implementation
-Documentation Standard. Do not duplicate those field lists in instruction
-surfaces or repo skills.
+Implementation artifact filenames, headings, timestamp metadata, content
+fields, code-simplifier evidence, wait-time observations, and Implementation
+Reading Packet fields are owned by the Implementation Documentation Standard.
+Do not duplicate those field lists in instruction surfaces or repo skills.
 
 When a review agent sees a systemic trend instead of an isolated defect, it
 must report that trend explicitly. If the trend suggests an architecture-model,
@@ -250,55 +312,39 @@ links.
 When a covered artifact changes, reviewers must check:
 
 - Was the global instruction skill used?
-- Does the edited file still own the right topic?
-- Did a neighboring instruction source also require an update?
-- Does `agents/openai.yaml` still match the governing skill?
-- Did the change introduce duplicate or conflicting truth?
-- Did supported project-health findings become fixed, false positive,
-  user-excluded, WIP/blocker, or synchronized marker/register entries?
+- Does the edited file still own the right topic, without duplicate or
+  conflicting truth, and did neighboring instruction metadata such as
+  `agents/openai.yaml` stay aligned?
 - Does the chosen verification path match the actual changed surfaces?
 - For behavior-changing work, did the pass cover the owning harness and
-  dependencies or report a concrete `Harness Gap` blocker?
+  dependencies, including negative assertions against the reported old
+  behavior, or report a concrete `Harness Gap` blocker?
 - Did covered implementation work run `code-simplifier` before pass logging and
-  Overview review, without treating it as a substitute for proof?
-- Did Main read the code-simplifier pass log and dispose every finding before
-  Overview or any handoff-readiness claim?
-- Did Overview block unclassified `deferred`, `follow-up`, `later`, `outside
-  write set`, or unowned `review-owned` improvement findings?
-- If systemic review, architecture-check, behavior-harness, or proof feedback
-  shaped the repair, did Main obtain a planner project-health plan before
-  implementing the fix?
+  Overview review, read its result, and dispose every finding before any
+  handoff-readiness claim?
+- For Standard Coordinated Workflow, did phase ownership, clean-start
+  subagents, and WIP/tooling blockers stay explicit?
+- When proof, review, architecture, quality, harness, or gate feedback blocked
+  the pass, did Main run the Blocker Reflection Gate before planning a repair,
+  classify the blocker, compare the target-architecture repair against the
+  shortest local unblocker, obtain planner escalation for systemic feedback,
+  and record the rejected shortcut?
 - For covered repeated or non-trivial work, did Main inspect related pass-log
   history before planning and avoid repeating failed surface fixes without a
   deeper root-cause plan?
+- For stateful planning or refactor work, did Main run or explicitly classify
+  Planning-Time Structural State Preflight before the implementation plan or
+  wave-plan artifact, and did every non-clean row receive an allowed
+  disposition?
 - Did the implementing agent obtain a completed global `lens-coordinator-handoff`
   coordinator result before handoff?
 - Did the Overview result include an objective-completion verdict, baseline
   admission disposition, required architecture/quality lens coverage, and a
   global final status rather than treating green proof as sufficient?
+- For stateful or user-reported bugs, did review verify that the proof oracle
+  makes the old failure impossible instead of only proving a new happy path?
 - Did any specialist review skill used for the pass remain a read-only review
   lens instead of becoming a competing repo-owned workflow?
 - Did implementation and review agents write and use required local pass logs?
-- Did the review inspect pass logs for repeated reversals, loops, degradation,
-  architecture friction, recurring smells, or governance/check misses?
-- Did local baseline admission check fresh proof, fresh review, marker/register
-  sync, matching active debt intake disposition, and no supported findings
-  hidden only in pass logs?
-
-## References
-
-- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
-- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
-- [Agent Context Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
-- [Implementation Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-documentation.md:1)
-- [Project Health Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/project-health.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
-- [Global Main To Overview Coordination Skill](/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md:1)
-- [Global Overview To Reviewer Coordination Skill](/home/aaron/.codex/skills/local/coord-overview-reviewer/SKILL.md:1)
-- [Global Coordinator Lens](/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md:1)
-- [Global Handoff Coordinator Lens](/home/aaron/.codex/skills/local/lens-coordinator-handoff/SKILL.md:1)
-- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md:1)
-- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md:1)
-- [Installed Code Simplifier Skill](/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/agents/code-simplifier.md:1)
-- [Global Planner Skill](/home/aaron/.codex/skills/local/planner/SKILL.md:1)
+- Did local baseline admission check fresh proof/review, marker/register sync,
+  active debt intake, pass-log trends, and no hidden supported findings?
