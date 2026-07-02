@@ -114,7 +114,7 @@ public final class DungeonEditorBehaviorSuiteHarness {
         add(result, "doors", List.of("selection", "door-core", "door-handles"),
                 runner(DungeonEditorRoomWallDoorHarness::runDoor));
         add(result, "rooms", List.of("selection", "room-core"), runner(DungeonEditorRoomWallDoorHarness::runRoom));
-        add(result, "walls", List.of("selection", "wall-core"), runner(DungeonEditorRoomWallDoorHarness::runWall));
+        add(result, "walls", List.of("wall-core"), runner(DungeonEditorRoomWallDoorHarness::runWall));
         alias(result, "core", List.of(
                 "geometry",
                 "component",

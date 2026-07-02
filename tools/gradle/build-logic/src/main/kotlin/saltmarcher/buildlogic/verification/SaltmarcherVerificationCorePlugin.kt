@@ -5,6 +5,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.file.RegularFile
 import org.gradle.api.specs.Spec
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.TaskProvider
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.kotlin.dsl.getByType
@@ -29,6 +30,12 @@ class SaltmarcherVerificationCorePlugin : Plugin<Project> {
 }
 
 internal fun Project.configureVerificationCore() {
+    val behaviorHarnesses = extensions.create(
+        "behaviorHarnesses",
+        BehaviorHarnessRegistry::class.java,
+        tasks,
+        objects
+    )
     val enforcementBundles = extensions.getByType(EnforcementBundlesExtension::class.java)
     val activeEnforcementBundleIds = enforcementBundles.activeEnforcementBundleIds
     val verificationHarness = extensions.getByType<VerificationHarnessExtension>()
@@ -82,6 +89,26 @@ internal fun Project.configureVerificationCore() {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run blocking first-party near-miss hygiene checks."
         nearMissCompileTask?.let { task -> dependsOn(task) }
+    }
+    val checkBehaviorHarnessTopology = tasks.register<CheckBehaviorHarnessTopologyTask>(
+        "checkBehaviorHarnessTopology"
+    ) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Verify all behavior-harness-like JavaExec tasks are registered in behaviorHarnesses."
+    }
+    gradle.projectsEvaluated {
+        checkBehaviorHarnessTopology.configure {
+            registeredTaskNames.set(behaviorHarnesses.registrations.map(BehaviorHarnessRegistration::taskName))
+            registeredHarnessMetadata.set(behaviorHarnesses.registrations.map(::behaviorHarnessRegistrationMetadata))
+            discoveredHarnesses.set(tasks.withType(JavaExec::class.java)
+                .mapNotNull(::behaviorHarnessDiagnostic)
+                .sorted())
+        }
+    }
+    pluginManager.withPlugin("base") {
+        tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME) {
+            dependsOn(checkBehaviorHarnessTopology)
+        }
     }
 
     fun registerStandardBundle(bundleId: String): RegisteredEnforcementBundleTasks {
@@ -239,6 +266,7 @@ internal fun Project.configureVerificationCore() {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the fail-fast architecture and build-harness structure phase for production handoff."
         dependsOn(markProductionHandoffCompileIntegrity)
+        dependsOn(checkBehaviorHarnessTopology)
         verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.STRUCTURE).forEach(::dependsOn)
         if (includeBuildHarness) {
             dependsOn(gradle.includedBuild("build-harness").task(":allBuildHarnessTopologyCheck"))

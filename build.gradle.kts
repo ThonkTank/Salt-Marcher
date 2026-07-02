@@ -10,6 +10,8 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.application.tasks.CreateStartScripts
 import org.gradle.language.base.plugins.LifecycleBasePlugin
+import saltmarcher.buildlogic.verification.BehaviorHarnessClassification
+import saltmarcher.buildlogic.verification.BehaviorHarnessRegistry
 import saltmarcher.buildlogic.tasks.MainClassesSystemPropertyProvider
 
 plugins {
@@ -184,142 +186,218 @@ val dungeonEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("dungeon-edi
 val dungeonEditorBehaviorHarnessResultsDir = layout.buildDirectory.dir("dungeon-editor-behavior-results")
 val dungeonTravelProjectionLevelHarnessDataDir = layout.buildDirectory.dir("dungeon-travel-projection-level-data")
 val dungeonTravelProjectionLevelHarnessResultsDir = layout.buildDirectory.dir("dungeon-travel-projection-level-results")
+val behaviorHarnesses = extensions.getByType<BehaviorHarnessRegistry>()
 
 fun registerDungeonEditorBehaviorHarnessTask(
     taskName: String,
     taskDescription: String,
-    suiteIds: List<String>
+    suiteIds: List<String>,
+    classification: BehaviorHarnessClassification,
+    conceptIds: List<String> = emptyList(),
+    setupDependencies: List<String> = emptyList(),
+    behaviorDependencies: List<String> = emptyList(),
+    aggregateOf: List<String> = emptyList()
 ) {
-    tasks.register<JavaExec>(taskName) {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = taskDescription
-        dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
-        classpath = dungeonEditorBehaviorHarness.runtimeClasspath
-        mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorSuiteHarness")
-        args(suiteIds)
-        inputs.files(fileTree("docs/dungeon/verification") {
-            include("verification-dungeon-*-invariants.md")
-            include("verification-dungeon-editor-*.md")
-        })
-            .withPropertyName("dungeonEditorBehaviorCatalogs")
-            .withPathSensitivity(PathSensitivity.RELATIVE)
-        inputs.property("dungeonEditorBehaviorSuites", suiteIds.joinToString(","))
-        outputs.dir(dungeonEditorBehaviorHarnessResultsDir)
-        outputs.upToDateWhen { false }
-        doFirst {
-            val runDataDir = dungeonEditorBehaviorHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
-            mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            mkdir(dungeonEditorBehaviorHarnessResultsDir)
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+    behaviorHarnesses.javaExec(taskName) {
+        this.classification.set(classification)
+        this.conceptIds.set(conceptIds)
+        this.suiteIds.set(suiteIds)
+        this.setupDependencies.set(setupDependencies)
+        this.behaviorDependencies.set(behaviorDependencies)
+        this.aggregateOf.set(aggregateOf)
+        task {
+            group = LifecycleBasePlugin.VERIFICATION_GROUP
+            description = taskDescription
+            dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
+            classpath = dungeonEditorBehaviorHarness.runtimeClasspath
+            mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorSuiteHarness")
+            args(suiteIds)
+            inputs.files(fileTree("docs/dungeon/verification") {
+                include("verification-dungeon-*-invariants.md")
+                include("verification-dungeon-editor-*.md")
+            })
+                .withPropertyName("dungeonEditorBehaviorCatalogs")
+                .withPathSensitivity(PathSensitivity.RELATIVE)
+            inputs.property("dungeonEditorBehaviorSuites", suiteIds.joinToString(","))
+            outputs.dir(dungeonEditorBehaviorHarnessResultsDir)
+            outputs.upToDateWhen { false }
+            doFirst {
+                val runDataDir = dungeonEditorBehaviorHarnessDataDir.get()
+                    .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+                mkdir(runDataDir)
+                mkdir(runDataDir.dir("salt-marcher"))
+                mkdir(dungeonEditorBehaviorHarnessResultsDir)
+                environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            }
+            systemProperty(
+                "saltmarcher.dungeonEditorBehavior.resultsDir",
+                dungeonEditorBehaviorHarnessResultsDir.get().asFile.absolutePath
+            )
         }
-        systemProperty(
-            "saltmarcher.dungeonEditorBehavior.resultsDir",
-            dungeonEditorBehaviorHarnessResultsDir.get().asFile.absolutePath
-        )
     }
 }
 
 registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorBehaviorHarness",
     "Run all focused view-driven Dungeon Editor behavior suites.",
-    listOf("all")
+    listOf("all"),
+    BehaviorHarnessClassification.AGGREGATE,
+    aggregateOf = listOf("core", "routes")
 )
 
 registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorCoreBehaviorHarness",
     "Run Dungeon Editor core model invariant suites.",
-    listOf("core")
+    listOf("core"),
+    BehaviorHarnessClassification.AGGREGATE,
+    aggregateOf = listOf(
+        "geometry",
+        "component",
+        "floor",
+        "wall-core",
+        "door-core",
+        "path-core",
+        "corridor-core",
+        "stair-core",
+        "transition-core",
+        "runtime-projection",
+        "topology",
+        "cluster-core",
+        "room-core",
+        "structure"
+    )
 )
 
 registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorRouteBehaviorHarness",
     "Run Dungeon Editor route behavior suites.",
-    listOf("routes")
+    listOf("routes"),
+    BehaviorHarnessClassification.AGGREGATE,
+    aggregateOf = listOf(
+        "map-catalog",
+        "map-controls",
+        "projection-overlay",
+        "selection",
+        "stairs",
+        "transitions",
+        "features",
+        "corridors",
+        "labels",
+        "shared-handles",
+        "door-handles",
+        "cluster-handles",
+        "cluster-routes",
+        "doors",
+        "rooms",
+        "walls"
+    )
 )
 
 registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorDoorBehaviorHarness",
     "Run Door behavior plus declared geometry/domain dependencies.",
-    listOf("doors")
+    listOf("doors"),
+    BehaviorHarnessClassification.AGGREGATE,
+    aggregateOf = listOf("selection", "door-core", "door-handles", "doors")
 )
 
 registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorWallBehaviorHarness",
     "Run Wall behavior plus declared geometry/domain dependencies.",
-    listOf("walls")
+    listOf("walls"),
+    BehaviorHarnessClassification.FOCUSED,
+    conceptIds = listOf("walls"),
+    setupDependencies = listOf("wall-core")
 )
 
 registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorRoomBehaviorHarness",
     "Run Room behavior plus declared geometry/domain dependencies.",
-    listOf("rooms")
+    listOf("rooms"),
+    BehaviorHarnessClassification.AGGREGATE,
+    aggregateOf = listOf("selection", "room-core", "rooms")
 )
 
 registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorClusterBehaviorHarness",
     "Run Cluster behavior plus declared geometry/domain dependencies.",
-    listOf("labels", "cluster-handles", "cluster-routes")
+    listOf("labels", "cluster-handles", "cluster-routes"),
+    BehaviorHarnessClassification.AGGREGATE,
+    aggregateOf = listOf("selection", "cluster-core", "labels", "cluster-handles", "cluster-routes")
 )
 
 registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorCorridorBehaviorHarness",
     "Run Corridor behavior plus declared geometry/domain dependencies.",
-    listOf("corridors")
+    listOf("corridors"),
+    BehaviorHarnessClassification.AGGREGATE,
+    aggregateOf = listOf("selection", "corridor-core", "corridors")
 )
 
 registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorStairBehaviorHarness",
     "Run Stair behavior plus declared geometry/domain dependencies.",
-    listOf("stairs")
+    listOf("stairs"),
+    BehaviorHarnessClassification.AGGREGATE,
+    aggregateOf = listOf("selection", "stair-core", "stairs")
 )
 
 registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorTransitionBehaviorHarness",
     "Run Transition behavior plus declared geometry/domain dependencies.",
-    listOf("transitions")
+    listOf("transitions"),
+    BehaviorHarnessClassification.AGGREGATE,
+    aggregateOf = listOf("selection", "transition-core", "transitions")
 )
 
 registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorFeatureBehaviorHarness",
     "Run Feature-marker behavior plus declared editor-route dependencies.",
-    listOf("features")
+    listOf("features"),
+    BehaviorHarnessClassification.AGGREGATE,
+    aggregateOf = listOf("selection", "features")
 )
 
-tasks.register<JavaExec>("dungeonEditorBehaviorHarnessSuites") {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Print the available Dungeon Editor behavior suite ids."
-    dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
-    classpath = dungeonEditorBehaviorHarness.runtimeClasspath
-    mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorSuiteHarness")
-    args("--list")
+behaviorHarnesses.javaExec("dungeonEditorBehaviorHarnessSuites") {
+    classification.set(BehaviorHarnessClassification.UTILITY)
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Print the available Dungeon Editor behavior suite ids."
+        dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
+        classpath = dungeonEditorBehaviorHarness.runtimeClasspath
+        mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorSuiteHarness")
+        args("--list")
+    }
 }
 
-tasks.register<JavaExec>("dungeonTravelProjectionLevelHarness") {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run the focused Dungeon Travel projection-level behavior harness."
-    dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
-    classpath = dungeonEditorBehaviorHarness.runtimeClasspath
-    mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonTravelProjectionLevelHarness")
-    inputs.files(fileTree("docs/dungeon/verification") {
-        include("verification-dungeon-travel-*.md")
-    })
-        .withPropertyName("dungeonTravelBehaviorCatalogs")
-        .withPathSensitivity(PathSensitivity.RELATIVE)
-    outputs.upToDateWhen { false }
-    doFirst {
-        val runDataDir = dungeonTravelProjectionLevelHarnessDataDir.get()
-            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
-        mkdir(runDataDir)
-        mkdir(runDataDir.dir("salt-marcher"))
-        mkdir(dungeonTravelProjectionLevelHarnessResultsDir)
-        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+behaviorHarnesses.javaExec("dungeonTravelProjectionLevelHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("dungeon-travel-projection-level"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused Dungeon Travel projection-level behavior harness."
+        dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
+        classpath = dungeonEditorBehaviorHarness.runtimeClasspath
+        mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonTravelProjectionLevelHarness")
+        inputs.files(fileTree("docs/dungeon/verification") {
+            include("verification-dungeon-travel-*.md")
+        })
+            .withPropertyName("dungeonTravelBehaviorCatalogs")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = dungeonTravelProjectionLevelHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            mkdir(dungeonTravelProjectionLevelHarnessResultsDir)
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+        systemProperty(
+            "saltmarcher.dungeonEditorBehavior.resultsDir",
+            dungeonTravelProjectionLevelHarnessResultsDir.get().asFile.absolutePath
+        )
     }
-    systemProperty(
-        "saltmarcher.dungeonEditorBehavior.resultsDir",
-        dungeonTravelProjectionLevelHarnessResultsDir.get().asFile.absolutePath
-    )
 }
 
 val catalogInitialLoadHarnessDataDir = layout.buildDirectory.dir("catalog-initial-load-data")
@@ -328,92 +406,116 @@ val hexMapEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-map-edit
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
 
-tasks.register<JavaExec>("catalogInitialLoadHarness") {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run the view-driven Catalog initial-load behavior harness."
-    dependsOn(tasks.named("testClasses"))
-    classpath = sourceSets["test"].runtimeClasspath
-    mainClass.set("src.view.leftbartabs.catalog.CatalogInitialLoadHarness")
-    outputs.upToDateWhen { false }
-    doFirst {
-        val runDataDir = catalogInitialLoadHarnessDataDir.get()
-            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
-        mkdir(runDataDir)
-        mkdir(runDataDir.dir("salt-marcher"))
-        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+behaviorHarnesses.javaExec("catalogInitialLoadHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("catalog-initial-load"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the view-driven Catalog initial-load behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.view.leftbartabs.catalog.CatalogInitialLoadHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = catalogInitialLoadHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
     }
 }
 
-tasks.register<JavaExec>("catalogCrudControlsHarness") {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run the shared Catalog CRUD controls behavior harness."
-    dependsOn(tasks.named("testClasses"))
-    classpath = sourceSets["test"].runtimeClasspath
-    mainClass.set("src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsHarness")
-    outputs.upToDateWhen { false }
-    doFirst {
-        val runDataDir = catalogCrudControlsHarnessDataDir.get()
-            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
-        mkdir(runDataDir)
-        mkdir(runDataDir.dir("salt-marcher"))
-        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+behaviorHarnesses.javaExec("catalogCrudControlsHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("catalog-crud-controls"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the shared Catalog CRUD controls behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = catalogCrudControlsHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
     }
 }
 
-tasks.register<JavaExec>("hexMapEditorBehaviorHarness") {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run the focused Hex Map editor behavior harness."
-    dependsOn(tasks.named(hexMapEditorBehaviorHarness.classesTaskName))
-    classpath = hexMapEditorBehaviorHarness.runtimeClasspath
-    mainClass.set("src.view.leftbartabs.hexmap.HexMapEditorBehaviorHarness")
-    outputs.upToDateWhen { false }
-    doFirst {
-        val runDataDir = hexMapEditorBehaviorHarnessDataDir.get()
-            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
-        mkdir(runDataDir)
-        mkdir(runDataDir.dir("salt-marcher"))
-        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+behaviorHarnesses.javaExec("hexMapEditorBehaviorHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("hex-map-editor"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused Hex Map editor behavior harness."
+        dependsOn(tasks.named(hexMapEditorBehaviorHarness.classesTaskName))
+        classpath = hexMapEditorBehaviorHarness.runtimeClasspath
+        mainClass.set("src.view.leftbartabs.hexmap.HexMapEditorBehaviorHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = hexMapEditorBehaviorHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
     }
 }
 
-tasks.register<JavaExec>("hexTravelStateBehaviorHarness") {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run the focused Hex travel state behavior harness."
-    dependsOn(tasks.named(hexMapEditorBehaviorHarness.classesTaskName))
-    classpath = hexMapEditorBehaviorHarness.runtimeClasspath
-    mainClass.set("src.view.statetabs.travel.TravelStateHexHarness")
-    outputs.upToDateWhen { false }
-}
-
-tasks.register<JavaExec>("sessionPlannerCatalogHarness") {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run the Session Planner catalog CRUD behavior harness."
-    dependsOn(tasks.named("testClasses"))
-    classpath = sourceSets["test"].runtimeClasspath
-    mainClass.set("src.view.leftbartabs.sessionplanner.SessionPlannerCatalogHarness")
-    outputs.upToDateWhen { false }
-    doFirst {
-        val runDataDir = sessionPlannerCatalogHarnessDataDir.get()
-            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
-        mkdir(runDataDir)
-        mkdir(runDataDir.dir("salt-marcher"))
-        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+behaviorHarnesses.javaExec("hexTravelStateBehaviorHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("hex-travel-state"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused Hex travel state behavior harness."
+        dependsOn(tasks.named(hexMapEditorBehaviorHarness.classesTaskName))
+        classpath = hexMapEditorBehaviorHarness.runtimeClasspath
+        mainClass.set("src.view.statetabs.travel.TravelStateHexHarness")
+        outputs.upToDateWhen { false }
     }
 }
 
-tasks.register<JavaExec>("sessionPlannerShellLayoutHarness") {
-    group = LifecycleBasePlugin.VERIFICATION_GROUP
-    description = "Run the Session Planner shell controls layout behavior harness."
-    dependsOn(tasks.named("testClasses"))
-    classpath = sourceSets["test"].runtimeClasspath
-    mainClass.set("shell.host.SessionPlannerShellLayoutHarness")
-    outputs.upToDateWhen { false }
-    doFirst {
-        val runDataDir = sessionPlannerShellLayoutHarnessDataDir.get()
-            .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
-        mkdir(runDataDir)
-        mkdir(runDataDir.dir("salt-marcher"))
-        environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+behaviorHarnesses.javaExec("sessionPlannerCatalogHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("session-planner-catalog"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the Session Planner catalog CRUD behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.view.leftbartabs.sessionplanner.SessionPlannerCatalogHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = sessionPlannerCatalogHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+    }
+}
+
+behaviorHarnesses.javaExec("sessionPlannerShellLayoutHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("session-planner-shell-layout"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the Session Planner shell controls layout behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("shell.host.SessionPlannerShellLayoutHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = sessionPlannerShellLayoutHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
     }
 }
 
