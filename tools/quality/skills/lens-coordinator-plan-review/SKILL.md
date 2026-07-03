@@ -41,6 +41,10 @@ reviewer that only checks formal fields is incomplete.
 
 ## Review Artifact
 
+The caller must assign exactly one plan-review artifact path as this
+coordinator's allowed write surface. If that assignment is missing or broader
+than the review artifact, return `Not Reviewable Yet`.
+
 Write only the assigned `*-plan-review.md`. It must start with:
 
 - `Artifact Role: Plan Review`

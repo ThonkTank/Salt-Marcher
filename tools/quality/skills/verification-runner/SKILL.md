@@ -24,11 +24,15 @@ The launch packet must include:
   second fallback when no comparable duration exists
 - final dirty-path/provenance boundary and protected unrelated work
 - assigned public proof commands
-- expected evidence section or generated log location
-- allowed write surface, if any, limited to the assigned evidence section or
-  pass log
+- required output: expected evidence section or generated proof log location
+- allowed write surface, if any, limited to that assigned evidence section or
+  proof log
 - unavailable-tool fallback: return WIP/blocked; do not substitute commands
   unless the accepted plan assigns the substitute
+
+If the required output or allowed write surface is ambiguous, return
+`WIP - Verification Blocked` instead of writing proof evidence into an
+unassigned artifact.
 
 ## Command Surface
 
@@ -50,7 +54,8 @@ Record each command, literal result, elapsed time, relevant log path, and
 whether reviewed paths changed before or after the run. Worker-local proof
 belongs in implementation logs. Final integrated proof belongs in the
 aggregated review log verification section unless the accepted plan assigns a
-different evidence surface.
+different evidence surface. The runner records evidence only; it does not write
+the aggregated review log or make the implementation-review verdict.
 
 ## Failure
 

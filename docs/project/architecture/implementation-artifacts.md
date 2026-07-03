@@ -46,18 +46,22 @@ rows use exactly: `Wave`, `Plan`, `Implementation`, `Review`, `Proof`,
 ## Artifact Roles And Write Ownership
 
 Each generated artifact has a workflow role that writes it. Caller roles must
-assign that role's artifact paths before launch; author roles must write only
-their assigned artifact class.
+assign that role's artifact paths and allowed write surface before launch.
+Author roles must write only their assigned artifact class. If a required
+artifact path, evidence section, or allowed write surface is missing, the
+workflow remains WIP/blocked until the caller supplies it; the author role must
+not invent a path, widen its write surface, or replace the artifact with
+chat-only status.
 
 | Artifact role | Writer role | Guard role value | Main write authority |
 | --- | --- | --- | --- |
 | Goal definition, CR | Main/User | `Main/User` | Main may write. |
-| CR review | Planning Review Coordinator | `Planning Review Coordinator` | Main assigns one CR review path but must not write or replace it. |
-| Roadmap, phase plan, wave/step plan | Planner | `Planner` | Main assigns the planning bundle paths; Main must not substitute chat plans. |
-| Planning-bundle review | Planning Review Coordinator | `Planning Review Coordinator` | Main assigns one plan-review path but must not write or replace it. |
-| Implementation log | Implementation Worker | not guard-checked | Worker writes after implementation and worker-local proof. |
-| Final integrated proof evidence | Verification Runner | not guard-checked | Runner records assigned command results in the assigned evidence section. |
-| Review log | Main Aggregator from Implementation Review Coordinator result | not guard-checked | Main writes the aggregate from accepted coordinator evidence. |
+| CR review | Planning Review Coordinator | `Planning Review Coordinator` | Main assigns one CR review path as the allowed write surface but must not write or replace it. |
+| Roadmap, phase plan, wave/step plan | Planner | `Planner` | Main assigns the planning bundle paths as the allowed generated-artifact write surface; Main must not substitute chat plans. |
+| Planning-bundle review | Planning Review Coordinator | `Planning Review Coordinator` | Main assigns one plan-review path as the allowed write surface but must not write or replace it. |
+| Implementation log | Implementation Worker | not guard-checked | Main assigns one implementation-log path; worker writes it after implementation and worker-local proof. |
+| Final integrated proof evidence | Verification Runner | not guard-checked | Runner records assigned command results in the assigned evidence section or proof log. |
+| Review log | Main Aggregator from Implementation Review Coordinator result | not guard-checked | Main assigns the review-log path before review and writes the aggregate from accepted coordinator evidence. |
 
 Guard-readable primary planning artifacts start with:
 

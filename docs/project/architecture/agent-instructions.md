@@ -80,15 +80,32 @@ Main must know write ownership before launching each workflow role:
 | Artifact | Writer role | Main launch obligation |
 | --- | --- | --- |
 | Goal definition and CR | Main/User | Main may write these intake artifacts and must keep requested plans as input, not authority. |
-| CR review | CR Review Coordinator | Launch through `coord-main-cr-review`, assign exactly one CR review path, and do not write or replace it from Main. |
-| Roadmap, phase plan, and step plan | Planner | Launch one planner with accepted CR/review and assign the roadmap plus required phase and step-plan paths. |
-| Planning-bundle review | Plan Review Coordinator | Launch through `coord-main-plan-review`, assign exactly one plan-review path for the roadmap/phase/step bundle, and do not write or replace it from Main. |
-| Implementation log | Implementation Worker | The worker writes its assigned implementation pass log after implementation and worker-local proof. |
-| Final integrated proof | Verification Runner | Launch with assigned command surface, evidence section, start time, and unavailable-tool fallback. |
-| Review log | Main Aggregator from Implementation Review Coordinator result | Main writes the aggregate from accepted coordinator evidence. |
+| CR review | CR Review Coordinator | Launch through `coord-main-cr-review`, assign exactly one CR review path as the allowed write surface, and do not write or replace it from Main. |
+| Roadmap, phase plan, and step plan | Planner | Launch one planner with accepted CR/review, assign the roadmap plus required phase and step-plan paths, and limit the planner write surface to those planning-bundle artifacts. |
+| Planning-bundle review | Plan Review Coordinator | Launch through `coord-main-plan-review`, assign exactly one plan-review path for the roadmap/phase/step bundle as the allowed write surface, and do not write or replace it from Main. |
+| Implementation log | Implementation Worker | Launch from one accepted step plan with one assigned implementation-log path; the worker writes that log after implementation and worker-local proof. |
+| Final integrated proof | Verification Runner | Launch with assigned command surface, evidence section or log path, allowed proof write surface, start time, and unavailable-tool fallback. |
+| Review log | Main Aggregator from Implementation Review Coordinator result | Assign the review-log path before review; the coordinator returns a result, and Main writes the aggregate from accepted coordinator evidence. |
 
 The Implementation Artifacts Standard owns artifact roles and guard-readable
 fields. Caller and author skills repeat only role-local field needs.
+
+### Role Launch Artifact Contract
+
+Every delegated role launch packet must name the input authority, required
+output artifact path or evidence section, allowed write surface, and blocked
+fallback. Missing output assignment is a workflow blocker, not permission for a
+role to invent an artifact or return chat-only status.
+
+| Role | Input authority | Required output |
+| --- | --- | --- |
+| Planner | accepted CR and CR review | assigned roadmap, phase plans, and step plans only |
+| CR Review Coordinator | CR | one assigned `*-cr-review.md` |
+| Plan Review Coordinator | planning bundle and accepted CR review | one assigned `*-plan-review.md` |
+| Implementation Worker | one accepted step plan | assigned implementation log plus plan write set |
+| Verification Runner | final checkout and assigned commands | assigned evidence section or proof log only |
+| Implementation Review Coordinator | plan, logs, proof, review-log destination | coordinator result, not review log |
+| Main Aggregator | accepted coordinator result and proof | assigned aggregated review log |
 
 ## Planning-Time Structural State Preflight
 Before planning-bundle creation or briefing implementation/refactor/governance repair

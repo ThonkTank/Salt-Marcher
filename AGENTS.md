@@ -67,19 +67,22 @@ instead of creating a second source of truth.
 
 ## Workflow Artifact Ownership
 
-Before launching another workflow role, Main must name the expected generated
-artifact path and allowed write surface in that role's prompt. A role may write
-only the artifact class assigned here and by the narrower caller skill or plan.
+Before launching another workflow role, Main must name the input authority, the
+expected generated artifact path, and the allowed write surface in that role's
+prompt. A role may write only the artifact class assigned here and by the
+narrower caller skill or plan. If Main cannot assign the required output path
+or allowed write surface, the workflow stays WIP/blocked instead of launching a
+role with implicit artifact duties.
 
 | Artifact | Workflow route | Guard-readable artifact role | Caller/launch surface |
 | --- | --- | --- | --- |
-| Goal definition, CR | Main/User | `Main/User` | Main writes intake and CR only. |
-| CR review | CR Review Coordinator route | `Planning Review Coordinator` in `Owner Role` and `Authored By Role` | Main launches through `coord-main-cr-review`, assigns exactly one CR review path, and must not write or replace it. |
-| Roadmap, phase plan, wave/step plan | Planner | `Planner` | Main launches one planner with the accepted CR/review and assigns the roadmap plus any needed phase and step-plan paths. |
-| Planning-bundle review | Plan Review Coordinator route | `Planning Review Coordinator` in `Owner Role` and `Authored By Role` | Main launches through `coord-main-plan-review`, assigns exactly one plan-review path for the roadmap/phase/step bundle, and must not write or replace it. |
-| Implementation log | Implementation Worker | not guard-checked | The worker writes its assigned pass log after implementation and worker-local proof. |
-| Final integrated proof | Verification Runner | not guard-checked | Main launches the runner with assigned commands and evidence section; Main must not substitute proof. |
-| Review log | Main Aggregator from Implementation Review Coordinator result | not guard-checked | Main writes the aggregate from accepted coordinator evidence. |
+| Goal definition, CR | Main/User | `Main/User` | Main writes intake and CR only; requested plans remain input authority, not downstream permission. |
+| CR review | CR Review Coordinator route | `Planning Review Coordinator` in `Owner Role` and `Authored By Role` | Main launches through `coord-main-cr-review`, assigns exactly one CR review path as the allowed write surface, and must not write or replace it. |
+| Roadmap, phase plan, wave/step plan | Planner | `Planner` | Main launches one planner with the accepted CR/review, assigns the roadmap plus any needed phase and step-plan paths, and limits the planner write surface to that bundle. |
+| Planning-bundle review | Plan Review Coordinator route | `Planning Review Coordinator` in `Owner Role` and `Authored By Role` | Main launches through `coord-main-plan-review`, assigns exactly one plan-review path for the roadmap/phase/step bundle as the allowed write surface, and must not write or replace it. |
+| Implementation log | Implementation Worker | not guard-checked | Main launches the worker from one accepted step plan, assigns one implementation-log path plus the step-plan write set, and the worker writes that pass log after implementation and worker-local proof. |
+| Final integrated proof | Verification Runner | not guard-checked | Main launches the runner with assigned commands and evidence section or log path as the allowed write surface; Main must not substitute proof. |
+| Review log | Main Aggregator from Implementation Review Coordinator result | not guard-checked | Main assigns the review-log path before review, the coordinator returns a result only, and Main writes the aggregate from accepted coordinator evidence. |
 
 Generated artifact form and guard-readable fields are owned by
 `docs/project/architecture/implementation-artifacts.md`. Role skills repeat the

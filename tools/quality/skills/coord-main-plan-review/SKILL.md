@@ -28,16 +28,19 @@ Provide only neutral, inspectable facts:
 
 - accepted CR and CR review paths
 - roadmap, phase-plan, and step-plan paths under review
-- required plan-review artifact path
-- allowed write surface: exactly that review artifact path
+- input authority: accepted CR review plus the planning bundle under review
+- required output artifact path: exactly one plan-review path
+- allowed write surface: exactly that plan-review artifact path
 - dirty baseline boundary and unrelated work
 - owner documents, mandatory skills, proof snippets, source evidence, and
   unresolved questions needed to judge the bundle
 - Initial Concern Hints as hints only
 
-Main must not write or replace the plan-review artifact. If the coordinator or
-required reviewer launch is unavailable, the bundle remains WIP/blocked; Main
-must not self-review or synthesize implementation permission.
+Main assigns the review path before launch and must not write or replace the
+plan-review artifact. If the path or allowed write surface is missing, or if
+the coordinator or required reviewer launch is unavailable, the bundle remains
+WIP/blocked; Main must not self-review, invent a review path, or synthesize
+implementation permission.
 
 ## Handoff
 

@@ -22,8 +22,9 @@ does not fork global specialist lenses.
 
 Return `Not Reviewable Yet` for missing implementation logs, missing accepted
 plan authority, missing or stale Verification Runner proof, ambiguous dirty
-baseline, missing owner evidence, or missing review-log destination. Return
-`Blocked` when required reviewer tooling or the qualitative packet cannot run.
+baseline, missing owner evidence, missing review-log destination, or unclear
+coordinator output assignment. Return `Blocked` when required reviewer tooling
+or the qualitative packet cannot run.
 
 ## Evidence Pass
 
@@ -55,7 +56,11 @@ launch a fresh Verification Runner before final status.
 
 ## Output
 
-Return one coordinator result with:
+Return one coordinator result for Main to aggregate. Do not write the
+aggregated review log; Main owns that artifact after accepting the coordinator
+result.
+
+The coordinator result must include:
 
 - reviewability and evidence checked
 - changed/reviewed scope

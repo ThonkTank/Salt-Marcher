@@ -30,7 +30,11 @@ The coordinator prompt must name:
 - owner evidence and mandatory skills for the touched surface
 - required qualitative `code-simplifier` packet path or fallback instruction
   to read the installed plugin skill directly when auto-discovery is missing
-- review-log path that Main will aggregate after coordinator output
+- required output from the coordinator: one coordinator result
+- assigned review-log path that Main will aggregate after coordinator output
+- allowed write surface for the coordinator: reviewer outputs, qualitative
+  packet evidence, and explicitly assigned scoped-fix write sets only; not the
+  aggregated review log
 - exact local start time and expected first-poll time for launched review roles
 
 ## Required Behavior
@@ -47,10 +51,11 @@ before final aggregation.
 
 ## Handoff
 
-Main writes the aggregated review log only from the coordinator's accepted
-output. The pass is not handoff-ready until the review log records fresh
-Verification Runner proof, qualitative packet disposition, selected reviewer
-outcomes, fixes, project-health/baseline admission, and final status.
+The coordinator returns review evidence and final status; Main writes the
+aggregated review log only from the coordinator's accepted output. The pass is
+not handoff-ready until the review log records fresh Verification Runner proof,
+qualitative packet disposition, selected reviewer outcomes, fixes,
+project-health/baseline admission, and final status.
 
 ## References
 

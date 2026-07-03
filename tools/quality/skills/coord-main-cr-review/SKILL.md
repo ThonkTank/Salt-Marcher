@@ -26,17 +26,19 @@ Main launches exactly one clean coordinator using:
 Provide only neutral, inspectable facts:
 
 - reviewed CR path
-- required CR review artifact path
-- allowed write surface: exactly that review artifact path
+- input authority: the CR path under review
+- required output artifact path: exactly one CR review path
+- allowed write surface: exactly that CR review artifact path
 - current dirty-path boundary and unrelated work
 - owner documents and mandatory skills needed to judge the CR
 - local source evidence and proof snippets the CR relies on
 - user constraints, non-goals, and unresolved questions
 - Initial Concern Hints as hints only, not questions or expected findings
 
-Main assigns the review path but must not write or replace it. If the
-coordinator or required reviewer launch is unavailable, the CR remains
-WIP/blocked; Main must not self-review or synthesize acceptance.
+Main assigns the review path before launch but must not write or replace it. If
+the path or allowed write surface is missing, or if the coordinator or required
+reviewer launch is unavailable, the CR remains WIP/blocked; Main must not
+self-review, invent a review path, or synthesize acceptance.
 
 ## Handoff
 

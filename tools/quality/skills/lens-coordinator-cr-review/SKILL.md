@@ -42,6 +42,10 @@ specialist evidence, return `Blocked` or rebrief them.
 
 ## Review Artifact
 
+The caller must assign exactly one CR review artifact path as this
+coordinator's allowed write surface. If that assignment is missing or broader
+than the review artifact, return `Not Reviewable Yet`.
+
 Write only the assigned `*-cr-review.md`. It must start with:
 
 - `Artifact Role: CR Review`
