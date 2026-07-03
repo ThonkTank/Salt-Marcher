@@ -16,13 +16,6 @@ final class DungeonEditorControlsProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonEditorControlsSnapshot snapshot(
-            src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot.SnapshotData snapshot,
-            DungeonEditorSurfaceContextServiceAssembly.ControlsContext surfaceContext
-    ) {
-        return snapshot(snapshot, surfaceContext.reachableLevels(), surfaceContext.surfacePresent());
-    }
-
-    static src.domain.dungeon.published.DungeonEditorControlsSnapshot snapshot(
             src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot.ControlsData controls,
             src.domain.dungeon.published.DungeonEditorControlsSnapshot current
     ) {

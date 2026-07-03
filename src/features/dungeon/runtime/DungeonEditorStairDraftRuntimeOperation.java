@@ -83,7 +83,7 @@ final class DungeonEditorStairDraftRuntimeOperation {
         StairGeometrySpec spec = result.spec();
         DungeonEditorSessionValues.StairCreatePreview preview = stairPreview(shape, result, "");
         draft = Draft.inactive();
-        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.applyEffect(
+        return DungeonEditorAuthoredRuntimeOperations.resultFromPublication(effectUseCase.applyEffect(
                 DungeonEditorSessionEffect.apply(preview),
                 mapId -> createStairUseCase.execute(mapId, spec)));
     }
@@ -115,7 +115,7 @@ final class DungeonEditorStairDraftRuntimeOperation {
             String statusText
     ) {
         DungeonEditorSessionValues.StairCreatePreview preview = stairPreview(shape, result, statusText);
-        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(
+        return DungeonEditorAuthoredRuntimeOperations.resultFromPublication(
                 effectUseCase.applyEffect(DungeonEditorSessionEffect.preview(preview), null));
     }
 

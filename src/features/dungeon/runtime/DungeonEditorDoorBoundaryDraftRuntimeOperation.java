@@ -73,9 +73,9 @@ final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
                         committedSnapshot,
                         doorTool,
                         workflow.session().projectionLevel());
-        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(DungeonEditorDraftOperationSupport.latestSnapshot(
+        return DungeonEditorAuthoredRuntimeOperations.resultFromPublication(
                 currentGrid.snapshot(),
-                effectUseCase.applyEffect(interpretation.effect(), commitFor(interpretation.commit()))));
+                effectUseCase.applyEffect(interpretation.effect(), commitFor(interpretation.commit())));
     }
 
     private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit commitFor(

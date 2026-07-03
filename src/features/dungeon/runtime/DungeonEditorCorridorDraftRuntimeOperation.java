@@ -69,9 +69,9 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
                         committedSnapshot,
                         corridorTool,
                         workflow.session().projectionLevel());
-        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(DungeonEditorDraftOperationSupport.latestSnapshot(
+        return DungeonEditorAuthoredRuntimeOperations.resultFromPublication(
                 currentGrid.snapshot(),
-                effectUseCase.applyEffect(effect, commitFor(effect.getApplyPreview()))));
+                effectUseCase.applyEffect(effect, commitFor(effect.getApplyPreview())));
     }
 
     private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit commitFor(

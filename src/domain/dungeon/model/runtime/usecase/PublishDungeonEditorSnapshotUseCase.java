@@ -15,10 +15,6 @@ public final class PublishDungeonEditorSnapshotUseCase {
         publication.publishEditorSnapshot(Objects.requireNonNull(snapshot, "snapshot"));
     }
 
-    public void executeControlsSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
-        publication.publishEditorControlsSnapshot(Objects.requireNonNull(snapshot, "snapshot"));
-    }
-
     public void executeControls(DungeonEditorSessionSnapshot.ControlsData controls) {
         publication.publishEditorControls(Objects.requireNonNull(controls, "controls"));
     }

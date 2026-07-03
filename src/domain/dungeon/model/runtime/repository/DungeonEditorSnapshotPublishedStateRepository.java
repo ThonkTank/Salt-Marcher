@@ -5,8 +5,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnaps
 public interface DungeonEditorSnapshotPublishedStateRepository {
     void publishEditorSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot);
 
-    void publishEditorControlsSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot);
-
     void publishEditorControls(DungeonEditorSessionSnapshot.ControlsData controls);
 
     void publishEditorSessionFrame(DungeonEditorSessionSnapshot.SessionFrameData frameData);

@@ -5,8 +5,6 @@ import static src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUs
 import static src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction.PRESS;
 import static src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction.RELEASE;
 
-import org.jspecify.annotations.Nullable;
-
 final class DungeonEditorDraftOperationSupport {
     private DungeonEditorDraftOperationSupport() {
     }
@@ -24,10 +22,4 @@ final class DungeonEditorDraftOperationSupport {
         };
     }
 
-    static <T> @Nullable T latestSnapshot(
-            @Nullable T first,
-            @Nullable T second
-    ) {
-        return second == null ? first : second;
-    }
 }

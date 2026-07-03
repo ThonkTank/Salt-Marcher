@@ -38,7 +38,7 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
     }
 
     public DungeonEditorSessionSnapshot.@Nullable SnapshotData publishCurrent() {
-        return publish(previewLifecycle.preparePublishCurrent());
+        return publish(previewLifecycle.preparePublishCurrent()).snapshot();
     }
 
     public DungeonEditorWorkspaceValues.@Nullable MapSnapshot committedGridOrPublishCurrent() {
@@ -48,10 +48,10 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
     public CurrentGridPublication committedGridOrPublishCurrentResult() {
         DungeonEditorPreviewLifecycleUseCase.CurrentGridResult result =
                 previewLifecycle.committedGridOrCurrentFallback();
-        return new CurrentGridPublication(result.committedSnapshot(), publish(result.outcome()));
+        return new CurrentGridPublication(result.committedSnapshot(), publish(result.outcome()).snapshot());
     }
 
-    public DungeonEditorSessionSnapshot.@Nullable SnapshotData applyEffect(
+    public PublicationResult applyEffect(
             DungeonEditorSessionEffect effect,
             @Nullable AuthoredCommit authoredCommit
     ) {
@@ -62,20 +62,22 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
         return previewLifecycle.currentFacts();
     }
 
-    private DungeonEditorSessionSnapshot.@Nullable SnapshotData publish(
+    private PublicationResult publish(
             DungeonEditorPreviewLifecycleUseCase.PublicationOutcome outcome
     ) {
         if (!outcome.publishesSnapshot()) {
-            return null;
+            return PublicationResult.none();
+        }
+        if (outcome.controlsOnly()) {
+            DungeonEditorSessionSnapshot.ControlsData controls =
+                    DungeonEditorSessionSnapshot.controlsData(workflow.session());
+            snapshotPublicationUseCase.executeControls(controls);
+            return PublicationResult.controls(controls);
         }
         DungeonEditorSessionSnapshot.SnapshotData snapshot =
                 workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
-        if (outcome.controlsOnly()) {
-            snapshotPublicationUseCase.executeControlsSnapshot(snapshot);
-            return snapshot;
-        }
         snapshotPublicationUseCase.execute(snapshot);
-        return snapshot;
+        return PublicationResult.full(snapshot);
     }
 
     @FunctionalInterface
@@ -87,6 +89,51 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
             DungeonEditorWorkspaceValues.@Nullable MapSnapshot committedSnapshot,
             DungeonEditorSessionSnapshot.@Nullable SnapshotData snapshot
     ) {
+    }
+
+    public enum PublicationKind {
+        NONE,
+        FULL_SNAPSHOT,
+        CONTROLS
+    }
+
+    public record PublicationResult(
+            PublicationKind kind,
+            DungeonEditorSessionSnapshot.@Nullable SnapshotData snapshot,
+            DungeonEditorSessionSnapshot.@Nullable ControlsData controls
+    ) {
+        public PublicationResult {
+            kind = Objects.requireNonNull(kind, "kind");
+            switch (kind) {
+                case NONE -> {
+                    if (snapshot != null || controls != null) {
+                        throw new IllegalArgumentException("NONE publication cannot carry snapshot or controls");
+                    }
+                }
+                case FULL_SNAPSHOT -> {
+                    if (snapshot == null || controls != null) {
+                        throw new IllegalArgumentException("FULL_SNAPSHOT publication requires snapshot only");
+                    }
+                }
+                case CONTROLS -> {
+                    if (snapshot != null || controls == null) {
+                        throw new IllegalArgumentException("CONTROLS publication requires controls only");
+                    }
+                }
+            }
+        }
+
+        public static PublicationResult none() {
+            return new PublicationResult(PublicationKind.NONE, null, null);
+        }
+
+        public static PublicationResult full(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
+            return new PublicationResult(PublicationKind.FULL_SNAPSHOT, snapshot, null);
+        }
+
+        public static PublicationResult controls(DungeonEditorSessionSnapshot.ControlsData controls) {
+            return new PublicationResult(PublicationKind.CONTROLS, null, controls);
+        }
     }
 
 }

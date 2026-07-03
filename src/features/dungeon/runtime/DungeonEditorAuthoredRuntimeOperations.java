@@ -6,6 +6,7 @@ import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorMapUseCase;
 import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorMapUseCase;
 import src.domain.dungeon.model.runtime.usecase.RenameDungeonEditorMapUseCase;
@@ -367,6 +368,25 @@ final class DungeonEditorAuthoredRuntimeOperations {
         actions.add(new DungeonEditorAction.SetReachableLevels(reachableLevels(snapshot)));
         actions.add(new DungeonEditorAction.SetStatusText(snapshot.statusText()));
         return DungeonEditorRuntimeOperationResult.publish(actions);
+    }
+
+    static DungeonEditorRuntimeOperationResult resultFromPublication(
+            ApplyDungeonEditorSessionEffectUseCase.PublicationResult publication
+    ) {
+        return resultFromPublication(null, publication);
+    }
+
+    static DungeonEditorRuntimeOperationResult resultFromPublication(
+            DungeonEditorSessionSnapshot.@Nullable SnapshotData fallbackSnapshot,
+            ApplyDungeonEditorSessionEffectUseCase.PublicationResult publication
+    ) {
+        ApplyDungeonEditorSessionEffectUseCase.PublicationResult safePublication =
+                Objects.requireNonNull(publication, "publication");
+        return switch (safePublication.kind()) {
+            case CONTROLS -> resultFromControls(safePublication.controls());
+            case FULL_SNAPSHOT -> resultFromSnapshot(safePublication.snapshot());
+            case NONE -> resultFromSnapshot(fallbackSnapshot);
+        };
     }
 
     private static DungeonEditorRuntimeOperationResult resultFromSessionFrame(

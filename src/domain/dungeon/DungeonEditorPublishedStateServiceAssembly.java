@@ -51,17 +51,6 @@ final class DungeonEditorPublishedStateServiceAssembly implements DungeonEditorS
     }
 
     @Override
-    public void publishEditorControlsSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
-        DungeonEditorSessionSnapshot.SnapshotData safeSnapshot =
-                snapshot == null ? DungeonEditorSessionSnapshot.empty("") : snapshot;
-        DungeonEditorSurfaceContextServiceAssembly.ControlsContext surfaceContext =
-                DungeonEditorSurfaceContextServiceAssembly.controlsContext(
-                        safeSnapshot.surface(),
-                        safeSnapshot.projectionLevel());
-        controls.publish(DungeonEditorControlsProjectionServiceAssembly.snapshot(safeSnapshot, surfaceContext));
-    }
-
-    @Override
     public void publishEditorControls(DungeonEditorSessionSnapshot.ControlsData controlsData) {
         controls.publish(DungeonEditorControlsProjectionServiceAssembly.snapshot(controlsData, controls.current()));
     }
