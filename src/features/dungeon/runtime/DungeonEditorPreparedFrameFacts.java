@@ -7,12 +7,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
-import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
-import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
-import src.domain.dungeon.published.DungeonEditorPreviewDiff;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
 import src.domain.dungeon.published.DungeonEditorTool;
@@ -388,14 +386,14 @@ public record DungeonEditorPreparedFrameFacts(
 
     @SuppressWarnings("PMD.DataClass")
     public record PreviewRenderDiffFrame(
-            List<DungeonEditorMapSnapshot.Area> changedAreas,
-            List<DungeonEditorMapSnapshot.Area> removedAreas,
-            List<DungeonEditorMapSnapshot.Boundary> changedBoundaries,
-            List<DungeonEditorMapSnapshot.Boundary> removedBoundaries,
-            List<DungeonEditorHandleSnapshot> changedHandles,
-            List<DungeonEditorHandleSnapshot> removedHandles,
-            List<DungeonEditorMapSnapshot.Feature> changedFeatures,
-            List<DungeonEditorMapSnapshot.Feature> removedFeatures
+            List<PreviewAreaDiffFrame> changedAreas,
+            List<PreviewAreaDiffFrame> removedAreas,
+            List<PreviewBoundaryDiffFrame> changedBoundaries,
+            List<PreviewBoundaryDiffFrame> removedBoundaries,
+            List<PreviewHandleDiffFrame> changedHandles,
+            List<PreviewHandleDiffFrame> removedHandles,
+            List<PreviewFeatureDiffFrame> changedFeatures,
+            List<PreviewFeatureDiffFrame> removedFeatures
     ) {
         public PreviewRenderDiffFrame {
             changedAreas = copy(changedAreas);
@@ -421,65 +419,47 @@ public record DungeonEditorPreparedFrameFacts(
         }
 
         @Override
-        public List<DungeonEditorMapSnapshot.Area> changedAreas() {
+        public List<PreviewAreaDiffFrame> changedAreas() {
             return copy(changedAreas);
         }
 
         @Override
-        public List<DungeonEditorMapSnapshot.Area> removedAreas() {
+        public List<PreviewAreaDiffFrame> removedAreas() {
             return copy(removedAreas);
         }
 
         @Override
-        public List<DungeonEditorMapSnapshot.Boundary> changedBoundaries() {
+        public List<PreviewBoundaryDiffFrame> changedBoundaries() {
             return copy(changedBoundaries);
         }
 
         @Override
-        public List<DungeonEditorMapSnapshot.Boundary> removedBoundaries() {
+        public List<PreviewBoundaryDiffFrame> removedBoundaries() {
             return copy(removedBoundaries);
         }
 
         @Override
-        public List<DungeonEditorHandleSnapshot> changedHandles() {
+        public List<PreviewHandleDiffFrame> changedHandles() {
             return copy(changedHandles);
         }
 
         @Override
-        public List<DungeonEditorHandleSnapshot> removedHandles() {
+        public List<PreviewHandleDiffFrame> removedHandles() {
             return copy(removedHandles);
         }
 
         @Override
-        public List<DungeonEditorMapSnapshot.Feature> changedFeatures() {
+        public List<PreviewFeatureDiffFrame> changedFeatures() {
             return copy(changedFeatures);
         }
 
         @Override
-        public List<DungeonEditorMapSnapshot.Feature> removedFeatures() {
+        public List<PreviewFeatureDiffFrame> removedFeatures() {
             return copy(removedFeatures);
         }
 
         public static PreviewRenderDiffFrame from(DungeonEditorMapSurfaceSnapshot snapshot) {
-            DungeonEditorMapSurfaceSnapshot safeSnapshot = snapshot == null
-                    ? DungeonEditorMapSurfaceSnapshot.empty()
-                    : snapshot;
-            if (!renderStructuredPreviewDiff(safeSnapshot.preview()) || safeSnapshot.surface() == null) {
-                return empty();
-            }
-            DungeonEditorPreviewDiff previewDiff = safeSnapshot.surface().previewDiff();
-            if (previewDiff == null || previewDiff.isEmpty()) {
-                return empty();
-            }
-            return new PreviewRenderDiffFrame(
-                    previewDiff.changedAreas(),
-                    previewDiff.removedAreas(),
-                    previewDiff.changedBoundaries(),
-                    previewDiff.removedBoundaries(),
-                    previewDiff.changedHandles(),
-                    previewDiff.removedHandles(),
-                    previewDiff.changedFeatures(),
-                    previewDiff.removedFeatures());
+            return DungeonEditorPreviewRenderDiffAssembler.from(snapshot);
         }
 
         public boolean isEmpty() {
@@ -493,13 +473,124 @@ public record DungeonEditorPreparedFrameFacts(
                     && removedFeatures.isEmpty();
         }
 
-        private static boolean renderStructuredPreviewDiff(DungeonEditorPreview preview) {
-            return !(preview instanceof DungeonEditorPreview.ClusterBoundariesPreview);
-        }
-
         private static <T> List<T> copy(List<T> values) {
             return values == null ? List.of() : List.copyOf(values);
         }
+    }
+
+    public record PreviewAreaDiffFrame(
+            String kind,
+            long id,
+            long clusterId,
+            String label,
+            List<DungeonCellRef> cells,
+            DungeonEditorTopologyElementRef topologyRef,
+            boolean destructive
+    ) {
+        public PreviewAreaDiffFrame {
+            kind = normalizedKind(kind, "ROOM");
+            id = normalizedId(id);
+            clusterId = Math.max(0L, clusterId);
+            label = normalizedLabel(label, kind);
+            cells = copy(cells);
+            topologyRef = normalizedTopologyRef(topologyRef, kind, id);
+        }
+
+        @Override
+        public List<DungeonCellRef> cells() {
+            return copy(cells);
+        }
+    }
+
+    public record PreviewBoundaryDiffFrame(
+            String kind,
+            long id,
+            String label,
+            DungeonEdgeRef edge,
+            DungeonEditorTopologyElementRef topologyRef,
+            boolean destructive
+    ) {
+        public PreviewBoundaryDiffFrame {
+            kind = normalizedKind(kind, "boundary");
+            id = normalizedId(id);
+            label = normalizedLabel(label, kind);
+            edge = edge == null ? emptyEdge() : edge;
+            topologyRef = normalizedTopologyRef(topologyRef, kind, id);
+        }
+    }
+
+    public record PreviewHandleDiffFrame(
+            DungeonEditorHandleRef ref,
+            String label,
+            DungeonCellRef cell,
+            double markerQ,
+            double markerR,
+            boolean destructive
+    ) {
+        public PreviewHandleDiffFrame {
+            ref = ref == null ? DungeonEditorHandleRef.empty() : ref;
+            label = label == null || label.isBlank() ? ref.kind().name() : label.trim();
+            cell = cell == null ? ref.cell() : cell;
+            markerQ = Double.isFinite(markerQ) ? markerQ : cell.q();
+            markerR = Double.isFinite(markerR) ? markerR : cell.r();
+        }
+    }
+
+    public record PreviewFeatureDiffFrame(
+            String kind,
+            long id,
+            String label,
+            List<DungeonCellRef> cells,
+            String description,
+            String destinationLabel,
+            DungeonEditorTopologyElementRef topologyRef,
+            DungeonEdgeRef anchorEdge,
+            boolean destructive
+    ) {
+        public PreviewFeatureDiffFrame {
+            kind = normalizedKind(kind, "STAIR");
+            id = normalizedId(id);
+            label = normalizedLabel(label, kind);
+            cells = copy(cells);
+            description = description == null ? "" : description.trim();
+            destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
+            topologyRef = normalizedTopologyRef(topologyRef, kind, id);
+        }
+
+        @Override
+        public List<DungeonCellRef> cells() {
+            return copy(cells);
+        }
+    }
+
+    private static String normalizedKind(String kind, String fallback) {
+        return kind == null || kind.isBlank() ? fallback : kind.trim();
+    }
+
+    private static String normalizedLabel(String label, String fallback) {
+        return label == null || label.isBlank() ? fallback : label.trim();
+    }
+
+    private static long normalizedId(long id) {
+        return Math.max(1L, id);
+    }
+
+    private static DungeonEditorTopologyElementRef normalizedTopologyRef(
+            DungeonEditorTopologyElementRef topologyRef,
+            String kind,
+            long id
+    ) {
+        return topologyRef == null
+                ? new DungeonEditorTopologyElementRef(kind.toUpperCase(Locale.ROOT), id)
+                : topologyRef;
+    }
+
+    private static DungeonEdgeRef emptyEdge() {
+        return new DungeonEdgeRef(new DungeonCellRef(0, 0, 0), new DungeonCellRef(0, 0, 0));
+    }
+
+    private static <T> List<T> copy(List<T> values) {
+        return values == null ? List.of() : List.copyOf(values);
     }
 
     public record MapInteractionFrame(

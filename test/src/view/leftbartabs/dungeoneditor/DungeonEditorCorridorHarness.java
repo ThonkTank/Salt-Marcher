@@ -19,6 +19,7 @@ import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import javafx.event.ActionEvent;
@@ -1231,11 +1232,16 @@ final class DungeonEditorCorridorHarness {
         addedPreviewCells.removeAll(committedCells);
         assertEquals(expectedAddedPreviewCells, addedPreviewCells,
                 message + " preview map adds exactly the candidate corridor route cells");
-        boolean structuredRoutePublished = snapshot.surface().previewDiff().changedAreas().stream()
+        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(snapshot);
+        assertTrue(!previewRenderDiff.isEmpty(),
+                message + " publishes runtime-prepared preview diff facts");
+        boolean structuredRoutePublished = previewRenderDiff.changedAreas().stream()
                 .filter(area -> "CORRIDOR".equalsIgnoreCase(area.kind()))
-                .map(DungeonEditorBehaviorHarnessSupport::areaCellSet)
+                .map(area -> area.cells().stream()
+                        .map(DungeonEditorBehaviorHarnessSupport::cellKey)
+                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)))
                 .anyMatch(expectedCells::equals);
-        boolean structuredFeaturePublished = snapshot.surface().previewDiff().changedFeatures().stream()
+        boolean structuredFeaturePublished = previewRenderDiff.changedFeatures().stream()
                 .map(feature -> feature.cells().stream()
                         .map(cell -> cell.q() + "," + cell.r() + "," + cell.level())
                         .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)))

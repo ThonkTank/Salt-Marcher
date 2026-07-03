@@ -37,15 +37,4 @@ public record DungeonEditorPreviewDiff(
     public static DungeonEditorPreviewDiff empty() {
         return EMPTY;
     }
-
-    public boolean isEmpty() {
-        return changedAreas.isEmpty()
-                && removedAreas.isEmpty()
-                && changedBoundaries.isEmpty()
-                && removedBoundaries.isEmpty()
-                && changedHandles.isEmpty()
-                && removedHandles.isEmpty()
-                && changedFeatures.isEmpty()
-                && removedFeatures.isEmpty();
-    }
 }

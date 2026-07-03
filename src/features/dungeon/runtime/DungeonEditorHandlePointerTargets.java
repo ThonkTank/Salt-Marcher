@@ -12,7 +12,7 @@ import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
-import src.domain.dungeon.published.DungeonEditorSurface;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreviewHandleDiffFrame;
 
 final class DungeonEditorHandlePointerTargets {
     private DungeonEditorHandlePointerTargets() {
@@ -43,12 +43,8 @@ final class DungeonEditorHandlePointerTargets {
             DungeonEditorMapSurfaceSnapshot snapshot,
             DungeonEditorStateSnapshot.Selection selection
     ) {
-        DungeonEditorSurface surface = snapshot.surface();
-        if (surface == null) {
-            return List.of();
-        }
-        var previewDiff = surface.previewDiff();
-        if (previewDiff == null || previewDiff.isEmpty()) {
+        var previewDiff = DungeonEditorPreviewRenderDiffAssembler.from(snapshot);
+        if (previewDiff.isEmpty()) {
             return List.of();
         }
         Set<String> hitRefs = new LinkedHashSet<>();
@@ -59,11 +55,11 @@ final class DungeonEditorHandlePointerTargets {
 
     private static void addPreviewHandleHitRefs(
             Set<String> hitRefs,
-            List<DungeonEditorHandleSnapshot> handles,
+            List<PreviewHandleDiffFrame> handles,
             DungeonEditorStateSnapshot.Selection selection,
             DungeonEditorMapSurfaceSnapshot snapshot
     ) {
-        for (DungeonEditorHandleSnapshot handle : handles) {
+        for (PreviewHandleDiffFrame handle : handles) {
             if (!visibleCanvasHandle(handle.ref(), selection)
                     || !DungeonEditorProjectionLevelInclusion.includes(snapshot, handle.cell().level())) {
                 continue;

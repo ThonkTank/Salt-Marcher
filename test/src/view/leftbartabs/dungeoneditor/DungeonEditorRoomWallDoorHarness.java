@@ -22,6 +22,7 @@ import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import javafx.event.ActionEvent;
@@ -545,7 +546,8 @@ final class DungeonEditorRoomWallDoorHarness {
                         new Cell(11, 9, 0),
                         new Cell(12, 9, 0)),
                 "DE-WALLRUN-DOOR-001 preview map moves the embedded door with the wall run");
-        assertTrue(previewSurface.surface().previewDiff().changedBoundaries().stream()
+        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && sameEdge(boundary.edge(), new Cell(11, 9, 0), new Cell(12, 9, 0))),
                 "DE-WALLRUN-DOOR-001 structured preview diff carries the moved door boundary");
@@ -1650,10 +1652,13 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-PREVIEW-001 publishes a preview map before release");
         assertEquals(cellRect(1, 1, 3, 3, 0), mapSnapshotCellSet(previewSurface.surface().previewMap()),
                 "DE-PREVIEW-001 preview map contains the painted room cells");
-        assertEquals(1L, (long) previewSurface.surface().previewDiff().changedAreas().size(),
+        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        assertEquals(1L, (long) previewRenderDiff.changedAreas().size(),
                 "DE-PREVIEW-001 structured preview diff publishes one changed room area");
         assertEquals(cellRect(1, 1, 3, 3, 0),
-                areaCellSet(previewSurface.surface().previewDiff().changedAreas().getFirst()),
+                previewRenderDiff.changedAreas().getFirst().cells().stream()
+                        .map(DungeonEditorBehaviorHarnessSupport::cellKey)
+                        .collect(java.util.stream.Collectors.toCollection(LinkedHashSet::new)),
                 "DE-PREVIEW-001 structured preview diff carries the painted room cells");
         assertTrue(renderSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(1, 1, 3, 3, 0)),
                 "DE-PREVIEW-001 render scene contains preview cells at expected coordinates");

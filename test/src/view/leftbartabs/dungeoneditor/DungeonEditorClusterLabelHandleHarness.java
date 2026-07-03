@@ -18,6 +18,7 @@ import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.features.dungeon.runtime.DungeonEditorFeatureRuntimeRoot;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 import src.features.dungeon.runtime.DungeonEditorRuntimeLabelTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
@@ -1109,7 +1110,8 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-CLUSTER-003 publishes a preview map during true-corner drag");
         assertTrue(!mapSnapshotCellSet(previewSurface.surface().previewMap()).equals(cellsBefore),
                 "DE-CLUSTER-003 preview map changes affected cluster cells before release");
-        assertTrue(previewSurface.surface().previewDiff().changedHandles().stream().anyMatch(handle ->
+        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        assertTrue(previewRenderDiff.changedHandles().stream().anyMatch(handle ->
                         handle.ref().kind() == cornerHandle.ref().kind()
                                 && handle.cell().q() == 14
                                 && handle.cell().r() == 12
@@ -1253,7 +1255,8 @@ final class DungeonEditorClusterLabelHandleHarness {
         assertTrue(!mapSnapshotCellSet(previewSurface.surface().previewMap())
                         .equals(mapSnapshotCellSet(previewSurface.surface().map())),
                 "DE-HANDLE-003 preview map differs from the committed cluster cells");
-        assertTrue(previewSurface.surface().previewDiff().changedBoundaries().stream()
+        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .map(boundary -> boundary.edge())
                         .collect(java.util.stream.Collectors.toSet())
                         .containsAll(Set.of(
@@ -1261,8 +1264,8 @@ final class DungeonEditorClusterLabelHandleHarness {
                                 edge(new Cell(11, 9, 0), new Cell(12, 9, 0)),
                                 edge(new Cell(12, 9, 0), new Cell(13, 9, 0)))),
                 "DE-HANDLE-003 structured preview diff carries every moved segment of the dragged wall run");
-        assertTrue(previewSurface.surface().previewDiff().changedAreas().stream().anyMatch(area ->
-                        !areaCellSet(area).isEmpty()),
+        assertTrue(previewRenderDiff.changedAreas().stream().anyMatch(area ->
+                        !area.cells().isEmpty()),
                 "DE-HANDLE-003 structured preview diff carries affected room cells");
 
         fireMapMouse(
@@ -1541,11 +1544,12 @@ final class DungeonEditorClusterLabelHandleHarness {
                         new Cell(4, 3, 0),
                         new Cell(4, 4, 0)),
                 "DE-HANDLE-006 door drag preview map contains the moved door boundary");
-        assertTrue(previewSurface.surface().previewDiff().changedBoundaries().stream()
+        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && sameEdge(boundary.edge(), new Cell(4, 3, 0), new Cell(4, 4, 0))),
                 "DE-HANDLE-006 structured preview diff carries the moved door boundary");
-        assertTrue(previewSurface.surface().previewDiff().changedHandles().stream()
+        assertTrue(previewRenderDiff.changedHandles().stream()
                         .anyMatch(handle -> handle.ref().kind() == DungeonEditorHandleKind.DOOR
                                 && handle.ref().corridorId() == corridorId
                                 && handle.ref().topologyRef().id() == doorHandle.ref().topologyRef().id()
@@ -1673,11 +1677,12 @@ final class DungeonEditorClusterLabelHandleHarness {
                         new Cell(4, 3, 0),
                         new Cell(4, 4, 0)),
                 "DE-HANDLE-006 standalone door drag preview map contains the moved door boundary");
-        assertTrue(previewSurface.surface().previewDiff().changedBoundaries().stream()
+        PreviewRenderDiffFrame previewRenderDiff = PreviewRenderDiffFrame.from(previewSurface);
+        assertTrue(previewRenderDiff.changedBoundaries().stream()
                         .anyMatch(boundary -> "door".equalsIgnoreCase(boundary.kind())
                                 && sameEdge(boundary.edge(), new Cell(4, 3, 0), new Cell(4, 4, 0))),
                 "DE-HANDLE-006 standalone structured preview diff carries the moved door boundary");
-        assertTrue(previewSurface.surface().previewDiff().changedHandles().stream()
+        assertTrue(previewRenderDiff.changedHandles().stream()
                         .anyMatch(handle -> handle.ref().kind() == DungeonEditorHandleKind.DOOR
                                 && handle.ref().corridorId() == 0L
                                 && handle.ref().topologyRef().id() == doorHandle.ref().topologyRef().id()
