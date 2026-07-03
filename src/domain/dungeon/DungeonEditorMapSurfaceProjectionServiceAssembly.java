@@ -3,7 +3,6 @@ package src.domain.dungeon;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
-import src.domain.dungeon.published.DungeonEditorPreviewDiff;
 import src.domain.dungeon.published.DungeonEditorSurface;
 
 final class DungeonEditorMapSurfaceProjectionServiceAssembly {
@@ -72,7 +71,6 @@ final class DungeonEditorMapSurfaceProjectionServiceAssembly {
                 surface.revision(),
                 surface.map(),
                 null,
-                DungeonEditorPreviewDiff.empty(),
                 surface.inspector());
     }
 }

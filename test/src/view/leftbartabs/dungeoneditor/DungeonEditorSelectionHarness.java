@@ -10,7 +10,6 @@ import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
-import src.domain.dungeon.published.DungeonEditorPreviewDiff;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
 import src.domain.dungeon.published.DungeonEditorTool;
@@ -1015,7 +1014,6 @@ final class DungeonEditorSelectionHarness {
                         1,
                         map,
                         null,
-                        DungeonEditorPreviewDiff.empty(),
                         null),
                 DungeonEditorStateSnapshot.Selection.empty(),
                 DungeonEditorPreview.none(),

@@ -5,7 +5,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
-import src.domain.dungeon.published.DungeonEditorPreviewDiff;
 import src.domain.dungeon.published.DungeonEditorSurface;
 
 final class DungeonEditorMapProjectionServiceAssembly {
@@ -24,7 +23,6 @@ final class DungeonEditorMapProjectionServiceAssembly {
                 surface.revision(),
                 committedMap,
                 previewMap,
-                DungeonEditorPreviewDiff.empty(),
                 DungeonEditorInspectorProjectionServiceAssembly.inspector(surface.inspector()));
     }
 
