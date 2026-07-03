@@ -67,21 +67,21 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
 
     private DungeonEditorRuntimeOperationResult createMarker(Cell anchor, FeatureMarkerKind kind) {
         if (!workflow.session().hasSelectedMap() || anchor == null) {
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         if (!createFeatureMarkerUseCase.canExecute(workflow.session().selectedMapId(), kind, anchor)) {
             workflow.clearPreviewWithStatus(INVALID_FEATURE_MARKER_STATUS);
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         long markerId = createFeatureMarkerUseCase.execute(workflow.session().selectedMapId(), kind, anchor);
         if (markerId <= NO_MARKER_ID) {
             workflow.clearPreviewWithStatus(INVALID_FEATURE_MARKER_STATUS);
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         workflow.applyEffect(DungeonEditorSessionEffect.select(
                 markerSelection(markerId),
                 effectUseCase.currentFacts().mutationStatusText()));
-        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+        return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
     }
 
     private DungeonEditorRuntimeOperationResult deleteMarker(
@@ -90,7 +90,7 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
             TransitionDestination transitionDestination
     ) {
         if (!workflow.session().hasSelectedMap()) {
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         long markerId = DungeonEditorPointRuntimeTarget.targetId(
                 sample,
@@ -98,14 +98,14 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
                 transitionDestination,
                 DungeonTopologyElementKind.FEATURE_MARKER);
         if (markerId <= NO_MARKER_ID) {
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         boolean deleted = deleteFeatureMarkerUseCase.execute(workflow.session().selectedMapId(), markerId);
         if (deleted) {
             workflow.applyEffect(DungeonEditorSessionEffect.clearedSelection());
             workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
         }
-        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+        return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
     }
 
     private static DungeonEditorSessionValues.Selection markerSelection(long markerId) {

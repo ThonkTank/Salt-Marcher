@@ -36,9 +36,13 @@ Current enforcement status:
   unless a later document names a specific mechanical gate.
 - Existing `checkViewEnforcement` and `checkDomainEnforcement` routes do not
   prove feature-runtime conformance for `src/features/**`.
+- `checkFeatureRuntimeEnforcement` is a layering-backed scoped diagnostic for
+  `src/features/**` source-root placement only. It does not prove internal
+  feature-runtime topology or passive-carrier mirror absence inside
+  `src/features/**`.
 - Active non-empty `src/features/**` source roots are allowed by the layering
   `src/` direct-child allowlist. Their internal feature-runtime topology
-  remains review-owned until a later document names a specific mechanical gate.
+  remains Review-Owned until a later document names a specific mechanical gate.
 
 ## Current State And Target State
 

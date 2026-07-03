@@ -26,7 +26,9 @@ import src.domain.encounter.model.session.usecase.PublishEncounterSessionUseCase
 import src.domain.encounter.model.session.usecase.UpdateEncounterBuilderInputsUseCase;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.EncounterTableCandidatesModel;
+import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
+@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.ExcessiveParameterList"})
 final class EncounterApplicationServiceFactoryServiceAssembly {
 
     private static final long INITIAL_PLAN_ID = 0L;
@@ -49,7 +51,15 @@ final class EncounterApplicationServiceFactoryServiceAssembly {
                 services.require(EncounterTableApplicationService.class));
         ApplicationEncounterTableCandidatePort tableCandidates =
                 new EncounterTableCandidateServiceAssembly(services.require(EncounterTableCandidatesModel.class));
-        return create(repository, party, creatures, creatureCatalog, encounterTables, tableCandidates, publishedState);
+        return create(
+                repository,
+                party,
+                creatures,
+                creatureCatalog,
+                encounterTables,
+                tableCandidates,
+                services.find(WorldPlannerSnapshotModel.class).orElse(null),
+                publishedState);
     }
 
     private static EncounterApplicationService create(
@@ -59,6 +69,7 @@ final class EncounterApplicationServiceFactoryServiceAssembly {
             ApplicationEncounterCreatureCatalogPort creatureCatalog,
             EncounterTableCandidateRepository encounterTables,
             ApplicationEncounterTableCandidatePort tableCandidates,
+            WorldPlannerSnapshotModel worldPlannerSources,
             EncounterPublishedStateServiceAssembly publishedState
     ) {
         LoadEncounterBudgetUseCase loadBudgetUseCase = new LoadEncounterBudgetUseCase(party);
@@ -73,6 +84,7 @@ final class EncounterApplicationServiceFactoryServiceAssembly {
                 creatureCatalog,
                 encounterTables,
                 tableCandidates,
+                worldPlannerSources,
                 savePlanUseCase,
                 loadSavedPlanUseCase,
                 listSavedPlansUseCase,
@@ -98,6 +110,7 @@ final class EncounterApplicationServiceFactoryServiceAssembly {
             ApplicationEncounterCreatureCatalogPort creatureCatalog,
             EncounterTableCandidateRepository encounterTables,
             ApplicationEncounterTableCandidatePort tableCandidates,
+            WorldPlannerSnapshotModel worldPlannerSources,
             SaveEncounterPlanUseCase savePlanUseCase,
             LoadSavedEncounterPlanUseCase loadSavedPlanUseCase,
             ListSavedEncounterPlansUseCase listSavedPlansUseCase,
@@ -111,7 +124,9 @@ final class EncounterApplicationServiceFactoryServiceAssembly {
                         creatures,
                         creatureCatalog,
                         new EncounterSessionUseCaseAdaptersRepository(
-                                generator::execute,
+                                request -> generator.execute(EncounterWorldPlannerSourceServiceAssembly.resolve(
+                                        request,
+                                        worldPlannerSources)),
                                 () -> {
                                     LoadEncounterBudgetUseCase.Result result = loadBudgetUseCase.execute();
                                     return new EncounterSessionUseCaseAdaptersRepository.EncounterBudgetLoadResult(

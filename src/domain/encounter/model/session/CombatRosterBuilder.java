@@ -25,16 +25,26 @@ public final class CombatRosterBuilder {
 
     public int addMonsters(CombatRoster roster, EncounterCreatureData creature, int initiative, int order) {
         MonsterCombatProfile profile = MonsterCombatProfile.fromEncounterCreature(creature);
-        return addMonsterMembers(roster, profile, creature.count(), creature.id(), initiative, order, nextMonsterOrdinal(roster.combatants(), profile.creatureId()));
+        return addMonsterMembers(
+                roster,
+                profile,
+                creature.count(),
+                creature.id(),
+                creature.worldNpcId(),
+                initiative,
+                order,
+                nextMonsterOrdinal(roster.combatants(), profile.creatureId()));
     }
 
-    public String addReinforcement(CombatRoster roster, CreatureDetailData creature, String role, int initiative) {
+    public String addReinforcement(CombatRoster roster, CreatureDetailData creature, long worldNpcId, String role, int initiative) {
         MonsterCombatProfile profile = MonsterCombatProfile.fromReinforcement(creature, role);
         int nextOrdinal = nextMonsterOrdinal(roster.combatants(), profile.creatureId());
         int nextOrder = nextOrder(roster.combatants());
         String displayName = uniqueMonsterName(profile.name(), nextOrdinal);
-        String id = REINFORCEMENT_ID_PREFIX + profile.creatureId() + "-" + nextOrdinal;
-        roster.add(Combatant.monsterMember(id, displayName, profile, initiative, nextOrder, 1));
+        String id = worldNpcId > 0L
+                ? "world-npc-" + worldNpcId + "-reinforcement"
+                : REINFORCEMENT_ID_PREFIX + profile.creatureId() + "-" + nextOrdinal;
+        roster.add(Combatant.monsterMember(id, displayName, profile, worldNpcId, initiative, nextOrder, 1));
         roster.sort();
         return displayName;
     }
@@ -53,6 +63,7 @@ public final class CombatRosterBuilder {
             MonsterCombatProfile profile,
             int count,
             String sourceId,
+            long worldNpcId,
             int initiative,
             int order,
             int firstOrdinal
@@ -60,7 +71,14 @@ public final class CombatRosterBuilder {
         int nextOrder = order;
         for (int creatureIndex = 1; creatureIndex <= count; creatureIndex++) {
             String displayName = count == 1 ? uniqueMonsterName(profile.name(), firstOrdinal) : profile.name();
-            roster.add(Combatant.monsterMember(sourceId, displayName, profile, initiative, nextOrder, count == 1 ? 1 : creatureIndex));
+            roster.add(Combatant.monsterMember(
+                    sourceId,
+                    displayName,
+                    profile,
+                    worldNpcId,
+                    initiative,
+                    nextOrder,
+                    count == 1 ? 1 : creatureIndex));
             nextOrder++;
         }
         return nextOrder;

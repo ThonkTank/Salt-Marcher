@@ -40,7 +40,7 @@ creature-detail truth, or loot truth.
 - the exported read-only planner observation surfaces are:
   `SessionPlannerCurrentSessionModel`,
   `SessionPlannerParticipantsModel`,
-  `SessionPlannerEncountersModel`, and
+  `SessionPlannerSceneTimelineModel`, and
   `SessionPlannerStatePanelModel`
 - `src/domain/sessionplanner/model/session/SessionPlan`
   is the authored aggregate root for persisted session truth
@@ -96,8 +96,8 @@ Target state:
 
 - the planner is one `LEFT_BAR` runtime contribution
 - it binds `COCKPIT_CONTROLS` for planning summary and imports
-- it binds `COCKPIT_MAIN` for encounter order, rest placement, and loot
-  placeholders
+- it binds `COCKPIT_MAIN` for compact setup input, scene order, rest placement,
+  and loot placeholders
 - it reserves `COCKPIT_STATE` for preparatory read-only session state context
 
 ## Session Record Model
@@ -105,8 +105,8 @@ Target state:
 - `SessionPlan` is authored session-owned truth, not transient-only workspace
   state
 - the planner aggregate owns participant references, encounter-day assumptions,
-  ordered session-encounter references, per-encounter budget allocations,
-  selected encounter, placed rests, loot placeholders, and session-local
+  ordered session scenes, optional encounter-plan references, per-scene budget
+  allocations, selected scene, placed rests, loot placeholders, and session-local
   status feedback
 - foreign domains remain foreign:
   `party` owns character truth, `encounter` owns encounter-plan rosters,

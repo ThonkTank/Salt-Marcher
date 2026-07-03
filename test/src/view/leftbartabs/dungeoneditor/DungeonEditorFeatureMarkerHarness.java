@@ -10,6 +10,7 @@ import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
+import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import static src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorHarnessSupport.*;
@@ -142,11 +143,11 @@ final class DungeonEditorFeatureMarkerHarness {
                 0,
                 "DE-FEATURE-003 committed create");
         var pointerTarget = runtimePointerTarget(binding.mapContentModel(), 5.5, 2.5);
-        assertEquals("MARKER", pointerTarget.targetKind().name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER, pointerTarget.targetKind(),
                 "DE-FEATURE-004 authored feature marker resolves as a marker target");
-        assertEquals("FEATURE_MARKER", pointerTarget.elementKind(),
+        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.FEATURE_MARKER, pointerTarget.elementKind(),
                 "DE-FEATURE-004 authored feature marker publishes FEATURE_MARKER element kind");
-        assertEquals("FEATURE_MARKER", pointerTarget.topologyKind(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TopologyKind.FEATURE_MARKER, pointerTarget.topologyKind(),
                 "DE-FEATURE-004 authored feature marker carries the FEATURE_MARKER topology ref");
         updateHoverTarget(binding.mapContentModel(), pointerTarget);
         assertTrue(renderHasHoverText(binding.mapContentModel(), "POI " + markerId),
@@ -297,9 +298,9 @@ final class DungeonEditorFeatureMarkerHarness {
         assertEquals(1L, runtime.database().countFeatureMarkerById(mapId, rightPoiId),
                 "DE-FEATURE-007 setup keeps the right POI marker row");
         var deletePointerTarget = runtimePointerTarget(binding.mapContentModel(), 9.5, 2.5);
-        assertEquals("MARKER", deletePointerTarget.targetKind().name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER, deletePointerTarget.targetKind(),
                 "DE-FEATURE-007 authored delete target resolves as a feature-marker marker");
-        assertEquals("FEATURE_MARKER", deletePointerTarget.elementKind(),
+        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.FEATURE_MARKER, deletePointerTarget.elementKind(),
                 "DE-FEATURE-007 authored delete target keeps FEATURE_MARKER element identity");
         fireMapMousePressed(
                 mapView,

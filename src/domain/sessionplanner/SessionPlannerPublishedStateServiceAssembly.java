@@ -10,13 +10,15 @@ import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
+import src.domain.sessionplanner.model.session.port.SessionLocationReferencePort;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
-import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
+import src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
+import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
 final class SessionPlannerPublishedStateServiceAssembly {
 
@@ -51,8 +53,8 @@ final class SessionPlannerPublishedStateServiceAssembly {
         return create(services).participantsModel();
     }
 
-    SessionPlannerEncountersModel encountersModel(ServiceRegistry services) {
-        return create(services).encountersModel();
+    SessionPlannerSceneTimelineModel sceneTimelineModel(ServiceRegistry services) {
+        return create(services).sceneTimelineModel();
     }
 
     SessionPlannerStatePanelModel statePanelModel(ServiceRegistry services) {
@@ -67,7 +69,10 @@ final class SessionPlannerPublishedStateServiceAssembly {
         SessionEncounterFactsPort encounterFacts = new SessionPlannerEncounterFactsReadbackServiceAssembly(
                 registry.require(SavedEncounterPlanListModel.class),
                 registry.require(EncounterPlanBudgetModel.class));
-        return new SessionPlannerPublishedStateRepositoryServiceAssembly(
+        WorldPlannerSnapshotModel worldPlanner = registry.find(WorldPlannerSnapshotModel.class).orElse(null);
+        SessionLocationReferencePort locationReferences =
+                new SessionPlannerLocationReferenceReadbackServiceAssembly(worldPlanner);
+        SessionPlannerPublishedStateRepositoryServiceAssembly candidate = new SessionPlannerPublishedStateRepositoryServiceAssembly(
                 repository,
                 partyFacts,
                 new SessionPlannerPartyFactsInvokerServiceAssembly(
@@ -76,6 +81,11 @@ final class SessionPlannerPublishedStateServiceAssembly {
                 encounterFacts,
                 new SessionPlannerEncounterFactsInvokerServiceAssembly(
                         registry.require(EncounterApplicationService.class),
-                        encounterFacts));
+                        encounterFacts),
+                locationReferences);
+        if (worldPlanner != null) {
+            worldPlanner.subscribe(ignored -> candidate.publishLoadedCurrentSession());
+        }
+        return candidate;
     }
 }

@@ -30,6 +30,10 @@ final class HexMapVocabularyContentPartModel {
         return label(MARKER_TYPE_OPTIONS, markerType, DEFAULT_MARKER_TYPE);
     }
 
+    static int defaultMarkerTypeOptionIndex() {
+        return optionIndex(MARKER_TYPE_OPTIONS, DEFAULT_MARKER_TYPE);
+    }
+
     private static String label(List<Option> options, String key, String fallback) {
         String normalized = safeKey(key, fallback);
         return options.stream()
@@ -46,6 +50,16 @@ final class HexMapVocabularyContentPartModel {
     private static String safeKey(String text, String fallback) {
         String safeText = text == null ? "" : text.trim();
         return safeText.isBlank() ? fallback : safeText;
+    }
+
+    private static int optionIndex(List<Option> options, String key) {
+        String normalized = safeKey(key, "");
+        for (int index = 0; index < options.size(); index++) {
+            if (options.get(index).key().equals(normalized)) {
+                return index;
+            }
+        }
+        return 0;
     }
 
     record Option(String key, String label) {

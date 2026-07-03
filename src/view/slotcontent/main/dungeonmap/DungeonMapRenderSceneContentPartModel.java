@@ -10,6 +10,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorMapHitRef;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedTopologyKind;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.BoundaryPrimitive;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.BoundaryTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.DungeonMapRenderState;
@@ -574,7 +575,7 @@ final class DungeonMapRenderSceneContentPartModel {
                     && sameTopologyRef(safeTarget.topologyRef(), cell.topologyRef())
                     && safeTarget.ownerId() == cell.ownerId()
                     && safeTarget.clusterId() == cell.clusterId()
-                    && safeTarget.elementKind().equals(pointerElementKind(cell.kind()));
+                    && safeTarget.elementKind() == pointerElementKind(cell.kind());
             if (!sameCellOwner) {
                 return false;
             }
@@ -617,7 +618,7 @@ final class DungeonMapRenderSceneContentPartModel {
             DungeonMapContentModel.PointerTarget safeTarget = DungeonMapContentModel.selectableHoverTarget(target);
             return safeTarget.isLabelTarget()
                     && !DungeonMapContentModel.ROOM_LABEL_KIND.equals(label.labelKind())
-                    && safeTarget.labelKind().equals(label.labelKind())
+                    && safeTarget.labelKind() == DungeonMapContentModel.preparedRenderLabelKind(label.labelKind())
                     && sameTopologyRef(safeTarget.topologyRef(), label.topologyRef())
                     && safeTarget.ownerId() == label.ownerId()
                     && safeTarget.clusterId() == label.clusterId();
@@ -626,7 +627,7 @@ final class DungeonMapRenderSceneContentPartModel {
         private static boolean hoveredGraphNode(PointerTarget target, DungeonMapRenderState.GraphNode node) {
             DungeonMapContentModel.PointerTarget safeTarget = DungeonMapContentModel.selectableHoverTarget(target);
             return safeTarget.isGraphNodeTarget()
-                    && "ROOM".equals(safeTarget.topologyKind())
+                    && safeTarget.topologyKind() == PreparedTopologyKind.ROOM
                     && safeTarget.topologyId() == node.id()
                     && safeTarget.ownerId() == node.id()
                     && safeTarget.clusterId() == node.clusterId();
@@ -754,11 +755,10 @@ final class DungeonMapRenderSceneContentPartModel {
 
     }
 
-    private static String pointerElementKind(DungeonMapRenderState.CellKind kind) {
-        return switch (kind) {
-            case FEATURE_POI, FEATURE_OBJECT, FEATURE_ENCOUNTER -> "FEATURE_MARKER";
-            default -> kind.name();
-        };
+    private static src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedElementKind pointerElementKind(
+            DungeonMapRenderState.CellKind kind
+    ) {
+        return DungeonMapContentModel.preparedCellElementKind(kind);
     }
 
     static final class SceneGeometry {

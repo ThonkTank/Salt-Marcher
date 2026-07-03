@@ -32,6 +32,15 @@ Technical diagnostic route:
   documentation-coverage checks. `checkLayeringEnforcement`, `check`, and `build`
   include the same mechanical surface transitively, and the neighboring `Enforced
   Elsewhere` rows below stay in their owner-specific bundles.
+- `./gradlew checkFeatureRuntimeEnforcement --console=plain` is the
+  `src/features/**` scoped diagnostic surface backed by the same
+  `layering-architecture-enforcement` bundle. It exists for focused
+  feature-runtime placement diagnostics, not for internal feature-runtime
+  topology conformance or passive-carrier mirror absence inside
+  `src/features/**`.
+- `tools/gradle/run-staged-verification.sh focused-handoff --path
+  src/features/dungeon/runtime --area feature-runtime` selects that
+  layering-backed feature-runtime surface for package-focused local proof.
 
 ## Invariant Catalog
 
@@ -47,8 +56,12 @@ Technical diagnostic route:
 Feature-runtime active-root note:
 
 - `src/features/**` is an active allowed direct child under this enforced
-  allowlist. Its internal feature-runtime topology remains owned by the
-  Feature Runtime Architecture Standard and review-owned unless a later
+  allowlist. `checkFeatureRuntimeEnforcement` and focused-handoff
+  `--area feature-runtime` run the existing layering-backed placement
+  diagnostics for that source root. Internal feature-runtime topology,
+  passive-carrier mirror absence inside `src/features/**`, shell-binding
+  adequacy, and persistence/authored-fact seam adequacy remain owned by the
+  Feature Runtime Architecture Standard and Review-Owned unless a later
   document names a specific mechanical gate.
 
 ### Must Not Contain

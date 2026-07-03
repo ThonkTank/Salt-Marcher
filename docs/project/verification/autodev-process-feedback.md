@@ -25,7 +25,7 @@ This feedback strategy verifies:
 - the current private process variant used for an inner implementation run
 - the inner run's process cost and context footprint
 - mandatory skill and proof-route adherence
-- required `code-simplifier` review-agent step adherence for covered
+- required qualitative implementation-review coverage for covered
   implementation work
 - required planner escalation adherence when systemic review, architecture,
   behavior-harness, or proof feedback shaped a repair
@@ -54,7 +54,7 @@ The packet MUST include these fields:
 | `estimated_complexity` | Optimizer estimate before implementation. |
 | `context_budget` | Files read, approximate prompt/tool tokens, and withheld context. |
 | `slice_quality` | Ambiguity count, read/write-set precision, and Done-When clarity. |
-| `skill_routing` | Mandatory skills expected, used, missed, or corrected, including `code-simplifier` and planner escalation when covered work requires them. |
+| `skill_routing` | Mandatory skills expected, used, missed, or corrected, including qualitative implementation-review coverage and planner escalation when covered work requires them. |
 | `implementation_result` | Changed paths, completion status, elapsed time, and rework count. |
 | `proof_result` | Commands, literal result, log paths, stale-proof findings, and blocker type. |
 | `review_result` | Review panel, findings by severity, fix cycles, and final review state. |
@@ -125,7 +125,7 @@ The process score is computed from these fixed, reviewable factors:
 
 | Metric | Required computation |
 | --- | --- |
-| `harness_pass` | `1` only when every scope-required gate, mandatory skill, implementation pass log, Overview review, review pass log, and publication rule is satisfied; otherwise `0`. Dirty-attribution failure, missed mandatory proof, missed required review, missed required `code-simplifier` review-agent step, missed required planner escalation, or private-boundary violation forces `0`. |
+| `harness_pass` | `1` only when every scope-required gate, mandatory skill, implementation pass log, Overview review, review pass log, and publication rule is satisfied; otherwise `0`. Dirty-attribution failure, missed mandatory proof, missed required review, missed required qualitative implementation-review coverage, missed required planner escalation, or private-boundary violation forces `0`. |
 | `done_when_pass_rate` | Completed Done-When bullets divided by planned Done-When bullets. Empty or missing Done-When sets score `0`. |
 | `diagnostic_value_rate` | Bounded value from useful blocked-run diagnosis, normalized from `0` to `1`; it never counts as verified progress and is multiplied by `0.25` in the primary score. |
 | `proof_success_rate` | Successful required proof commands divided by required proof commands. No required proof on a planning-only private run is `not_applicable`; repo-tracked work without required proof scores `0`. |
@@ -182,8 +182,8 @@ process_score =
 
 `harness_pass = 0` prevents a variant from winning by reducing tokens while
 weakening SaltMarcher gates. `proof_success_rate`, `dirty_attribution`, private
-boundary status, mandatory skill routing, required `code-simplifier`
-review-agent step, planner escalation, pass logs, and required review feed into
+boundary status, mandatory skill routing, required qualitative
+implementation-review coverage, planner escalation, pass logs, and required review feed into
 `harness_pass`; they are
 also reported separately so reviewers can identify why a run failed.
 
@@ -198,7 +198,7 @@ Penalties apply for:
 - proof failure or stale proof
 - Overview or specialist review blockers
 - missed mandatory skills
-- missed or unjustifiably skipped required `code-simplifier` review-agent step
+- missed or unjustifiably skipped qualitative implementation-review coverage
 - missed required planner project-health escalation for systemic feedback
 - dirty-tree ambiguity
 - oversized or unfocused context

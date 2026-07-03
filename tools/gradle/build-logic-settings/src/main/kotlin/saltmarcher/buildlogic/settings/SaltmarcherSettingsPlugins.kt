@@ -37,6 +37,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
         val diagnosticSurfaceTaskNames = diagnosticSurfaceCatalog.diagnosticTaskToBundleIds.keys
         val buildHarnessTaskToBundleIds = buildHarnessTaskToBundleIds(diagnosticSurfaceCatalog, bundleCatalog)
         val archunitTaskToBundleIds = archunitTaskToBundleIds(bundleCatalog)
+        val jqassistantTaskToBundleIds = jqassistantTaskToBundleIds(bundleCatalog)
         val focusedHandoffSurfaceIds = if (FocusedHandoffTaskName in requestedTaskNames) {
             focusedHandoffSurfaceIds(diagnosticSurfaceCatalog)
         } else {
@@ -61,6 +62,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
                     ?: internalSelectorTaskToBundleId[taskName]?.let(::listOf)
                     ?: buildHarnessTaskToBundleIds[taskName]
                     ?: archunitTaskToBundleIds[taskName]
+                    ?: jqassistantTaskToBundleIds[taskName]
                     ?: emptyList()
                 }
             }
@@ -69,6 +71,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             diagnosticSurfaceTaskNames +
             buildHarnessTaskToBundleIds.keys +
             archunitTaskToBundleIds.keys +
+            jqassistantTaskToBundleIds.keys +
             setOf(FocusedHandoffTaskName)
         val focusedEnforcementBundleMode = requestedTaskNames.isNotEmpty() &&
             requestedBundleIds.isNotEmpty() &&
@@ -195,6 +198,20 @@ private fun archunitTaskToBundleIds(bundleCatalog: EnforcementBundleCatalog): Ma
         .flatten()
         .toMap()
 
+private fun jqassistantTaskToBundleIds(bundleCatalog: EnforcementBundleCatalog): Map<String, List<String>> =
+    bundleCatalog.descriptorsById.values
+        .mapNotNull { descriptor ->
+            descriptor.jqassistant?.let { jqassistant ->
+                val scanTaskName = jqassistant.taskName.replaceFirst("Analyze", "Scan")
+                listOf(
+                    jqassistant.taskName to listOf(descriptor.bundleId),
+                    scanTaskName to listOf(descriptor.bundleId)
+                )
+            }
+        }
+        .flatten()
+        .toMap()
+
 private data class VerificationRequestScope(
     val includeBuildHarness: Boolean,
     val includeQualityRules: Boolean,
@@ -223,9 +240,8 @@ private fun verificationRequestScope(
         documentationRequest ||
         descriptorEngineSources.any { descriptor -> descriptor.buildHarnessTasks.isNotEmpty() } ||
         requestedTaskNames.any(::isBuildHarnessTaskName)
-    val jqassistantRequest = broadProductionRequest ||
-        requestedTaskNames.any(::isJqassistantTaskName) ||
-        descriptorEngineSources.any { descriptor -> descriptor.jqassistant != null }
+    val jqassistantRequest = requestedTaskNames.any(::isJqassistantTaskName) ||
+        (focusedEnforcementRequest && descriptorEngineSources.any { descriptor -> descriptor.jqassistant != null })
 
     return VerificationRequestScope(
         includeBuildHarness = discoveryBuildRequest || productionHandoffStructureRequest || buildHarnessRequest,

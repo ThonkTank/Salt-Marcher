@@ -66,8 +66,8 @@ evaluation harness for an ordinary process experiment:
 - workspace and SaltMarcher `AGENTS.md` rules
 - mandatory skill routing
 - context hygiene, repo-tool, code-exploration, and layer-skill obligations
-- the required Implementation Review Coordinator cycle, including the
-  qualitative `code-simplifier` packet for covered implementation work
+- the required Implementation Review Coordinator cycle, including qualitative
+  implementation-review coverage for covered implementation work
 - planner escalation before repairs for systemic review, architecture-check,
   behavior-harness, or proof feedback
 - implementation and review pass-log obligations

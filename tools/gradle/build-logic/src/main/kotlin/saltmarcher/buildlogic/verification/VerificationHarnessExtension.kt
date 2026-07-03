@@ -47,7 +47,8 @@ internal open class VerificationHarnessExtension(
         val sourceSetName = "focusedVerification${sliceKey.sliceId}"
         val roots = sliceKey.verificationSourceRoots
         val includes = sliceKey.verificationSourceIncludes
-        val mainClassesSupportClasspath = project.files(project.layout.buildDirectory.dir("classes/java/main"))
+        val mainCompileJava = project.tasks.named<JavaCompile>("compileJava")
+        val mainClassesSupportClasspath = project.files(mainSourceSet.output)
         sourceSets.register(sourceSetName) {
             java.setSrcDirs(roots)
             includes.forEach(java::include)
@@ -58,6 +59,7 @@ internal open class VerificationHarnessExtension(
         return project.tasks.named<JavaCompile>(compileJavaTaskName(sourceSetName)) {
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = taskDescription
+            dependsOn(mainCompileJava)
             setSource(project.files(roots).asFileTree.matching {
                 FocusedVerificationPaths.configureDefaultSourceFilter(this, includes)
             }.matching {
@@ -99,7 +101,8 @@ internal open class VerificationHarnessExtension(
         inputPaths: List<String>
     ): TaskProvider<Test> {
         val sourceSetName = "${bundleId.replaceFirstChar(Char::lowercaseChar)}EnforcementArchunit"
-        val mainClassesSupportClasspath = project.files(project.layout.buildDirectory.dir("classes/java/main"))
+        val mainCompileJava = project.tasks.named<JavaCompile>("compileJava")
+        val mainClassesSupportClasspath = project.files(mainSourceSet.output)
         requireArchunitSources(bundleId, taskName, archunitSourceRoots, archunitIncludes)
         val hasFocusedSelection = FocusedVerificationPaths.hasSelection()
         val filterMainClasses = hasFocusedSelection &&
@@ -129,6 +132,7 @@ internal open class VerificationHarnessExtension(
             val focusedCompileTask = project.tasks.register<JavaCompile>(focusedCompileTaskName) {
                 group = LifecycleBasePlugin.VERIFICATION_GROUP
                 description = "Compile package-focused production classes imported by $bundleId ArchUnit enforcement."
+                dependsOn(mainCompileJava)
                 setSource(focusedMainClassSources ?: project.files())
                 classpath = mainClassesSupportClasspath + mainSourceSet.compileClasspath
                 options.sourcepath = project.files()
@@ -138,7 +142,6 @@ internal open class VerificationHarnessExtension(
             }
             focusedCompileTask to focusedMainClassesDirectory
         } else {
-            val mainCompileJava = project.tasks.named<JavaCompile>("compileJava")
             mainCompileJava to mainCompileJava.flatMap { task -> task.destinationDirectory }
         }
         val archunitSourceSet = sourceSets.register(sourceSetName) {
@@ -210,7 +213,7 @@ internal open class VerificationHarnessExtension(
         taskSpec: EnforcementJqassistantTask
     ): JqassistantTaskPair {
         val compileJava = project.tasks.named<JavaCompile>("compileJava")
-        val mainClassesSupportClasspath = project.files(project.layout.buildDirectory.dir("classes/java/main"))
+        val mainClassesSupportClasspath = project.files(mainSourceSet.output)
         val selectedFocusedOutputKey = FocusedVerificationPaths.focusedOutputKey()
         val focusJqassistant = selectedFocusedOutputKey != null &&
             FocusedVerificationPaths.selectionContainsPathUnderAnyRoot(taskSpec.sourceRoots)
@@ -224,6 +227,7 @@ internal open class VerificationHarnessExtension(
             ) {
                 group = LifecycleBasePlugin.VERIFICATION_GROUP
                 description = "Compile package-focused production classes scanned by $bundleId jQAssistant enforcement."
+                dependsOn(compileJava)
                 setSource(project.files(taskSpec.sourceRoots).asFileTree.matching {
                     FocusedVerificationPaths.configureDefaultSourceFilter(this, taskSpec.sourceIncludes)
                 }.matching {

@@ -9,6 +9,8 @@ import src.features.dungeon.runtime.DungeonEditorInlineLabelEditSession;
 import src.features.dungeon.runtime.DungeonEditorInlineLabelOperations;
 import src.features.dungeon.runtime.DungeonEditorMapCatalogOperations;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedTopologyKind;
 import src.features.dungeon.runtime.DungeonEditorPointerInteractionOperations;
 import src.features.dungeon.runtime.DungeonEditorRuntimeLabelTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations;
@@ -554,10 +556,10 @@ final class DungeonEditorIntentHandler {
         return DungeonEditorInlineLabelEditSession.active(
                 new DungeonEditorInlineLabelEditSession.Target(
                         input,
-                        target.labelKind(),
+                        inlineLabelSessionLabelKind(target.labelKind()),
                         target.ownerId(),
                         target.clusterId(),
-                        target.topologyKind(),
+                        inlineLabelSessionTopologyKind(target.topologyKind()),
                         target.topologyId()),
                 candidate.text(),
                 new DungeonEditorInlineLabelEditSession.Placement(
@@ -566,6 +568,14 @@ final class DungeonEditorIntentHandler {
                         candidate.width(),
                         candidate.height(),
                         candidate.rotationDegrees()));
+    }
+
+    private static String inlineLabelSessionLabelKind(PreparedLabelKind labelKind) {
+        return labelKind == null || labelKind == PreparedLabelKind.EMPTY ? "" : labelKind.name();
+    }
+
+    private static String inlineLabelSessionTopologyKind(PreparedTopologyKind topologyKind) {
+        return topologyKind == null || topologyKind == PreparedTopologyKind.EMPTY ? "" : topologyKind.name();
     }
 
     private static DungeonEditorRuntimeLabelTarget inlineLabelNameInput(DungeonMapContentModel.PointerTarget target) {

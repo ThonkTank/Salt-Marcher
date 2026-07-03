@@ -50,7 +50,7 @@ Each artifact-lens reviewer prompt must include:
   the artifact type, or accepted CR/CR review for a planning bundle.
 - `Baseline Evidence`: repo paths, logs, proof snippets, and dirty-baseline
   boundary needed to check current-state claims.
-- `Artifact Questions`: formal contract, CR intent preservation or planning
+- `Artifact Review Focus`: formal contract, CR intent preservation or planning
   bundle coverage, planning quality, dependency order, authorized step-plan
   readiness, proof route, review route, and decision completeness.
 - `Constraints`: read-only, no edits, no staging, no commits, no formatters,
@@ -92,7 +92,7 @@ Each content-lens reviewer prompt must include:
 - `Expected Specialist Judgment`: the fachliche judgment this lens must return,
   such as target fit, baseline truth, owner fit, dependency/proof feasibility,
   missed blockers, alternative quality, and residual risk.
-- `Worker-Ready Quality Question`: whether the plan already decides API shape,
+- `Worker-Ready Quality Focus`: whether the plan already decides API shape,
   ownership boundary, migration path, compatibility budget, slice order, and
   proof oracle, or whether it wrongly pushes those decisions to the worker.
 - `Artifact Boundary`: formal field, formatting, and provenance checks belong
@@ -128,7 +128,7 @@ Invalid content-lens briefing patterns include:
 - asking whether the plan includes a field, link, route, log, proof command, or
   role-triggered skill
 - asking whether the plan preserves CR, roadmap, phase, guard, review,
-  implementation-log, qualitative packet, or implementation-review gates
+  implementation-log, qualitative review, or implementation-review gates
 - asking only whether the write set is narrow enough
 - asking only whether upstream obligations are repeated or not skipped
 - accepting abstract target principles without per-surface technical decisions

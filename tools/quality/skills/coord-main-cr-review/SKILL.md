@@ -27,18 +27,22 @@ Provide only neutral, inspectable facts:
 
 - reviewed CR path
 - input authority: the CR path under review
-- required output artifact path: exactly one CR review path
-- allowed write surface: exactly that CR review artifact path
+- required output artifact path: exactly one canonical CR review path,
+  `YYYY-MM-DD-<slug>-cr-review.md`, derived from the CR path
+- allowed write surface: exactly that CR review artifact path plus the reviewed
+  CR's guard-readable status/upkeep fields
 - current dirty-path boundary and unrelated work
 - owner documents and mandatory skills needed to judge the CR
 - local source evidence and proof snippets the CR relies on
-- user constraints, non-goals, and unresolved questions
-- Initial Concern Hints as hints only, not questions or expected findings
+- user constraints, non-goals, and unresolved unknowns
+- Initial Concern Hints as hints only, not reviewer prompts or expected
+  findings
 
-Main assigns the review path before launch but must not write or replace it. If
-the path or allowed write surface is missing, or if the coordinator or required
-reviewer launch is unavailable, the CR remains WIP/blocked; Main must not
-self-review, invent a review path, or synthesize acceptance.
+Main assigns the review path and narrow CR status/upkeep surface before launch
+but must not write or replace them. If the path or allowed write surface is
+missing, or if the coordinator or required reviewer launch is unavailable, the
+CR remains WIP/blocked; Main must not self-review, invent a review path,
+synthesize acceptance, or patch the CR status after review.
 
 ## Handoff
 
@@ -51,6 +55,14 @@ the assigned path and show:
 - completed `lens-cr-artifact`
 - a valid verdict
 - downstream permission `Roadmap creation may proceed` when accepted
+- the reviewed CR's `Status`, `Status Authority Role`, and
+  `Status Authority Path` synchronized to the coordinator verdict
+
+Pure CR-review form errors, such as a missing guard-readable header field or
+status-authority field whose value is fixed by the artifact contract, may be
+sent back to the CR Review Coordinator for direct mechanical repair. Do not
+start a planner or content re-review for that form repair unless the correction
+would change CR intent, verdict, permission, scope, or reviewer judgment.
 
 ## References
 

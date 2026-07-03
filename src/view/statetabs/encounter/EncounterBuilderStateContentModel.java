@@ -72,6 +72,7 @@ final class EncounterBuilderStateContentModel {
     private static RosterCardView toRosterCard(EncounterStateSnapshot.RosterCard creature) {
         return new RosterCardView(
                 creature.creatureId(),
+                creature.worldNpcId(),
                 creature.displayName(),
                 creature.challengeRating(),
                 creature.xpTotal(),
@@ -175,6 +176,7 @@ final class EncounterBuilderStateContentModel {
 
     record RosterCardView(
             long creatureId,
+            long worldNpcId,
             String name,
             String challengeRating,
             int xp,
@@ -184,11 +186,17 @@ final class EncounterBuilderStateContentModel {
             int count
     ) {
         RosterCardView {
+            creatureId = Math.max(0L, creatureId);
+            worldNpcId = Math.max(0L, worldNpcId);
             name = name == null ? "" : name;
             challengeRating = challengeRating == null ? "" : challengeRating;
             type = type == null ? "" : type;
             role = role == null ? "" : role;
             count = Math.max(1, count);
+        }
+
+        boolean namedNpc() {
+            return worldNpcId > 0L;
         }
     }
 

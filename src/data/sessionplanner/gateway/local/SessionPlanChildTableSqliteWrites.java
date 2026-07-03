@@ -46,14 +46,17 @@ final class SessionPlanChildTableSqliteWrites {
                 INSERT_INTO
                         + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE
                         + " "
-                        + "(session_id, encounter_id, encounter_plan_id, budget_percentage, sort_order) "
-                        + "VALUES (?, ?, ?, ?, ?)")) {
+                        + "(session_id, encounter_id, encounter_plan_id, budget_percentage, scene_title, scene_notes, "
+                        + "location_id, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")) {
             for (SessionEncounterRecord record : encounters) {
                 insert.setLong(1, sessionId);
                 insert.setLong(2, record.encounterId());
                 insert.setLong(3, record.encounterPlanId());
                 insert.setString(4, record.budgetPercentage());
-                insert.setInt(5, record.sortOrder());
+                insert.setString(5, record.sceneTitle());
+                insert.setString(6, record.sceneNotes());
+                insert.setLong(7, record.locationId());
+                insert.setInt(8, record.sortOrder());
                 insert.addBatch();
             }
             insert.executeBatch();

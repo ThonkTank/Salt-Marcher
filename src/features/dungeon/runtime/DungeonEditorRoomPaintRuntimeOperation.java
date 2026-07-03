@@ -87,7 +87,7 @@ final class DungeonEditorRoomPaintRuntimeOperation {
                 input,
                 tool,
                 workflow.session().projectionLevel());
-        return DungeonEditorAuthoredRuntimeOperations.resultFromPublication(
+        return DungeonEditorRuntimeResultTranslator.fromPublication(
                 effectUseCase.applyEffect(interpretation.effect(), commitFor(interpretation.commitSession())));
     }
 

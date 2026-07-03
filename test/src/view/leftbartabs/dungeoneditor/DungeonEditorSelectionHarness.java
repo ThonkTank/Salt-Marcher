@@ -18,6 +18,7 @@ import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
+import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 import src.features.dungeon.runtime.DungeonEditorRenderFrame;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
@@ -218,14 +219,14 @@ final class DungeonEditorSelectionHarness {
                 .orElseThrow(() -> new IllegalStateException("DE-SEL-002 door boundary not loaded."));
         Point2D doorMidpoint = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         var doorMidpointTarget = runtimePointerTarget(binding.mapContentModel(), doorMidpoint.getX(), doorMidpoint.getY());
-        assertEquals("HANDLE",
-                doorMidpointTarget.targetKind().name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE,
+                doorMidpointTarget.targetKind(),
                 "DE-SEL-002 render hit index resolves the centered door drag affordance at the door midpoint: "
                         + doorMidpointTarget);
         Point2D doorSelectionPoint = new Point2D(doorMidpoint.getX(), doorMidpoint.getY() - 0.42);
         var doorPointerTarget = runtimePointerTarget(binding.mapContentModel(), doorSelectionPoint.getX(), doorSelectionPoint.getY());
-        assertEquals("BOUNDARY",
-                doorPointerTarget.targetKind().name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY,
+                doorPointerTarget.targetKind(),
                 "DE-SEL-002 render hit index resolves the free door segment as a boundary: "
                         + doorPointerTarget);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
@@ -301,11 +302,10 @@ final class DungeonEditorSelectionHarness {
         assertTrue(stairFeature.cells().stream()
                         .anyMatch(cell -> cell.q() == 2 && cell.r() == 0 && cell.level() == 1),
                 "DE-SEL-003 published stair feature includes upper exit coordinate");
-        assertEquals("HANDLE", runtimePointerTarget(binding.mapContentModel(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(),
                                 glyphCenterForRef(binding.mapContentModel(), stairRef).getX(),
                                 glyphCenterForRef(binding.mapContentModel(), stairRef).getY())
-                        .targetKind()
-                        .name(),
+                        .targetKind(),
                 "DE-SEL-003 render hit index resolves the stair marker as a handle");
 
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
@@ -381,11 +381,12 @@ final class DungeonEditorSelectionHarness {
                 .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR corridor area not loaded."));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D corridorBody = new Point2D(corridorAnchor.markerQ() + 0.05, corridorAnchor.markerR() + 0.05);
-        assertEquals("CELL", runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
-                        .targetKind()
-                        .name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.CELL,
+                runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
+                        .targetKind(),
                 "DE-SEL-004 corridor body resolves as a body cell instead of an anchor handle");
-        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
+        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.CORRIDOR,
+                runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
                         .elementKind(),
                 "DE-SEL-004 corridor body keeps corridor element identity");
         assertHoverStylesOnlySurfaceAt(
@@ -732,8 +733,9 @@ final class DungeonEditorSelectionHarness {
             String message
     ) {
         var target = runtimePointerTarget(mapContentModel, sceneX, sceneY, true);
-        assertEquals("BOUNDARY", target.targetKind().name(), message + " resolves a boundary target");
-        String selectionRef = target.topologyKind() + ":" + target.topologyId();
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY, target.targetKind(),
+                message + " resolves a boundary target");
+        String selectionRef = target.topologyRefText() + ":" + target.topologyId();
         double normalStroke = boundaryStrokeWidth(mapContentModel, selectionRef);
         fireMapMouse(
                 mapView,
@@ -802,7 +804,8 @@ final class DungeonEditorSelectionHarness {
                 viewport.sceneToScreenY(8.5),
                 false);
         var target = runtimePointerTarget(mapContentModel, sceneX, sceneY);
-        assertEquals("CELL", target.targetKind().name(), message + " resolves a cell target");
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.CELL, target.targetKind(),
+                message + " resolves a cell target");
         String selectionRef = selectionRef(ref);
         DungeonMapContentModel.MapCanvasPolygonPrimitive hoveredBefore =
                 surfacePrimitiveAt(mapContentModel, selectionRef, sceneX, sceneY);
@@ -847,8 +850,9 @@ final class DungeonEditorSelectionHarness {
         Point2D midpoint = boundaryMidpoint(plainWall);
         var rawTarget =
                 runtimePointerTarget(mapContentModel, midpoint.getX(), midpoint.getY(), true);
-        assertEquals("BOUNDARY", rawTarget.targetKind().name(), message + " raw hit index still exposes boundary");
-        assertEquals("WALL", rawTarget.boundaryRef().boundaryKind().legacyName(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY, rawTarget.targetKind(),
+                message + " raw hit index still exposes boundary");
+        assertEquals(DungeonEditorRuntimePointerTarget.BoundaryKind.WALL, rawTarget.boundaryRef().boundaryKind(),
                 message + " raw boundary is a wall");
 
         double normalStroke = plainWall.style().strokeWidth();
@@ -894,10 +898,8 @@ final class DungeonEditorSelectionHarness {
     ) {
         Point2D labelCenter = labelCenterForRef(mapContentModel, roomRef);
         DungeonMapContentModel.TextPrimitive labelBefore = textPrimitiveForRef(mapContentModel, roomRef);
-        assertTrue(!runtimePointerTarget(mapContentModel, labelCenter.getX(), labelCenter.getY())
-                        .targetKind()
-                        .name()
-                        .equals("LABEL"),
+        assertTrue(runtimePointerTarget(mapContentModel, labelCenter.getX(), labelCenter.getY())
+                        .targetKind() != DungeonEditorRuntimePointerTarget.TargetKind.LABEL,
                 message + " room label is not a runtime label target");
 
         fireMapMouse(
@@ -940,8 +942,9 @@ final class DungeonEditorSelectionHarness {
         double sceneX = 0.5;
         double sceneY = 0.0;
         var target = runtimePointerTarget(mapContentModel, sceneX, sceneY, true);
-        assertEquals("BOUNDARY", target.targetKind().name(), message + " resolves a boundary target");
-        String selectionRef = target.topologyKind() + ":" + target.topologyId();
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY, target.targetKind(),
+                message + " resolves a boundary target");
+        String selectionRef = target.topologyRefText() + ":" + target.topologyId();
         DungeonMapContentModel.BoundaryPrimitive hoveredBefore =
                 boundaryPrimitiveAt(mapContentModel, selectionRef, sceneX, sceneY);
         DungeonMapContentModel.BoundaryPrimitive siblingBefore =

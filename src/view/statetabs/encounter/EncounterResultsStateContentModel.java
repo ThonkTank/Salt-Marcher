@@ -8,6 +8,8 @@ import src.domain.encounter.published.EncounterStateSnapshot;
 
 final class EncounterResultsStateContentModel {
 
+    private static final long UNRESOLVED_WORLD_NPC_ID = 0L;
+
     private final ReadOnlyObjectWrapper<PanelModel> panel =
             new ReadOnlyObjectWrapper<>(PanelModel.empty());
 
@@ -49,6 +51,18 @@ final class EncounterResultsStateContentModel {
         thresholdFraction = clamp(nextThresholdFraction);
         xpFraction = clamp(nextXpFraction);
         rebuildPanel(selectedEnemies);
+    }
+
+    List<WorldNpcDefeatView> selectedWorldNpcDefeats(List<Boolean> selectedEnemies) {
+        List<Boolean> selected = normalizeSelections(selectedEnemies, enemies);
+        List<WorldNpcDefeatView> worldNpcIds = new ArrayList<>();
+        for (int index = 0; index < enemies.size(); index++) {
+            EnemyView enemy = enemies.get(index);
+            if (selected.get(index) && enemy.worldNpcId() > UNRESOLVED_WORLD_NPC_ID) {
+                worldNpcIds.add(new WorldNpcDefeatView(enemy.worldNpcId(), enemy.creatureId()));
+            }
+        }
+        return List.copyOf(worldNpcIds);
     }
 
     private void rebuildPanel(List<Boolean> selectedEnemies) {
@@ -164,6 +178,8 @@ final class EncounterResultsStateContentModel {
 
     record EnemyView(
             String name,
+            long creatureId,
+            long worldNpcId,
             String status,
             int xp,
             boolean defeatedByDefault,
@@ -172,6 +188,8 @@ final class EncounterResultsStateContentModel {
     ) {
         EnemyView {
             name = safe(name);
+            creatureId = Math.max(0L, creatureId);
+            worldNpcId = Math.max(0L, worldNpcId);
             status = safe(status);
             loot = safe(loot);
         }
@@ -179,6 +197,8 @@ final class EncounterResultsStateContentModel {
         static EnemyView from(EncounterStateSnapshot.ResultEnemy enemy) {
             return new EnemyView(
                     enemy.displayName(),
+                    enemy.creatureId(),
+                    enemy.worldNpcId(),
                     enemy.statusLabel(),
                     enemy.xp(),
                     enemy.defeatedByDefault(),
@@ -187,7 +207,14 @@ final class EncounterResultsStateContentModel {
         }
 
         EnemyView withSelected(boolean nextSelected) {
-            return new EnemyView(name, status, xp, defeatedByDefault, loot, nextSelected);
+            return new EnemyView(name, creatureId, worldNpcId, status, xp, defeatedByDefault, loot, nextSelected);
+        }
+    }
+
+    record WorldNpcDefeatView(long worldNpcId, long expectedCreatureStatblockId) {
+        WorldNpcDefeatView {
+            worldNpcId = Math.max(0L, worldNpcId);
+            expectedCreatureStatblockId = Math.max(0L, expectedCreatureStatblockId);
         }
     }
 }

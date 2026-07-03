@@ -8,6 +8,7 @@ import src.domain.sessionplanner.SessionPlannerEncounterApplicationService;
 import src.domain.sessionplanner.SessionPlannerLootApplicationService;
 import src.domain.sessionplanner.SessionPlannerParticipantApplicationService;
 import src.domain.sessionplanner.SessionPlannerRestApplicationService;
+import src.domain.sessionplanner.published.AddSessionSceneCommand;
 import src.domain.sessionplanner.published.AddSessionLootPlaceholderCommand;
 import src.domain.sessionplanner.published.AttachSessionEncounterCommand;
 import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
@@ -16,16 +17,14 @@ import src.domain.sessionplanner.published.SessionPlannerCatalogCommand;
 import src.domain.sessionplanner.published.SessionPlannerEncounterAllocationCommand;
 import src.domain.sessionplanner.published.SessionPlannerEncounterCommand;
 import src.domain.sessionplanner.published.SessionPlannerParticipantCommand;
+import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
+import src.domain.sessionplanner.published.UpdateSessionEncounterSceneCommand;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent;
 
 final class SessionPlannerIntentHandler {
-
-    private static final String REST_NONE = "NONE";
-    private static final String REST_SHORT = "SHORT_REST";
-    private static final String REST_LONG = "LONG_REST";
 
     private final SessionPlannerApplicationService planner;
     private final SessionPlannerParticipantApplicationService participants;
@@ -34,6 +33,7 @@ final class SessionPlannerIntentHandler {
     private final SessionPlannerLootApplicationService loot;
     private final SessionPlannerControlsContentModel controlsContentModel;
     private final CatalogCrudControlsContentModel catalogContentModel;
+    private final SessionPlannerTimelineMainContentModel timelineMainContentModel;
 
     SessionPlannerIntentHandler(
             SessionPlannerApplicationService planner,
@@ -42,7 +42,8 @@ final class SessionPlannerIntentHandler {
             SessionPlannerRestApplicationService rests,
             SessionPlannerLootApplicationService loot,
             SessionPlannerControlsContentModel controlsContentModel,
-            CatalogCrudControlsContentModel catalogContentModel
+            CatalogCrudControlsContentModel catalogContentModel,
+            SessionPlannerTimelineMainContentModel timelineMainContentModel
     ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.participants = Objects.requireNonNull(participants, "participants");
@@ -51,25 +52,12 @@ final class SessionPlannerIntentHandler {
         this.loot = Objects.requireNonNull(loot, "loot");
         this.controlsContentModel = Objects.requireNonNull(controlsContentModel, "controlsContentModel");
         this.catalogContentModel = Objects.requireNonNull(catalogContentModel, "catalogContentModel");
+        this.timelineMainContentModel = Objects.requireNonNull(timelineMainContentModel, "timelineMainContentModel");
     }
 
     void consume(SessionPlannerControlsViewInputEvent event) {
-        if (event == null) {
+        if (event == null || !controlsContentModel.hasCurrentSession()) {
             return;
-        }
-        if (!controlsContentModel.hasCurrentSession()) {
-            return;
-        }
-        long participantToAddId = selectedPartyMemberId(event.participantToAddValue());
-        if (hasPositiveId(participantToAddId)) {
-            addParticipant(participantToAddId);
-        }
-        if (hasPositiveId(event.participantToRemoveId())) {
-            removeParticipant(event.participantToRemoveId());
-        }
-        BigDecimal encounterDays = parsePositiveDecimal(event.encounterDaysText());
-        if (encounterDays != null) {
-            setEncounterDays(encounterDays);
         }
         if (hasPositiveId(event.planIdToAttach())) {
             attachEncounter(event.planIdToAttach());
@@ -81,41 +69,88 @@ final class SessionPlannerIntentHandler {
             return;
         }
         consumeTimelineSelection(event);
+        consumeTimelineSetup(event);
         consumeTimelineMutation(event);
         consumeTimelineRest(event);
         consumeTimelineLoot(event);
+        consumeTimelineSceneDraft(event);
+        consumeTimelineScene(event);
     }
 
     private void consumeTimelineSelection(SessionPlannerTimelineMainViewInputEvent event) {
-        if (hasPositiveId(event.selectedEncounterToken())) {
-            selectEncounter(event.selectedEncounterToken());
+        SessionPlannerTimelineMainViewInputEvent.SelectionSnapshot selection = event.selection();
+        if (hasPositiveId(selection.selectedSceneToken())) {
+            selectEncounter(selection.selectedSceneToken());
         }
-        if (hasPositiveId(event.allocationEncounterToken())) {
-            setEncounterAllocation(event.allocationEncounterToken(), event.targetAllocationPercentage());
+        if (hasPositiveId(selection.allocationSceneToken())) {
+            setEncounterAllocation(selection.allocationSceneToken(), selection.targetAllocationPercentage());
+        }
+    }
+
+    private void consumeTimelineSetup(SessionPlannerTimelineMainViewInputEvent event) {
+        SessionPlannerTimelineMainViewInputEvent.SetupSnapshot setup = event.setup();
+        long participantToAddId = timelineMainContentModel.participantChoiceId(setup.participantChoiceIndex());
+        if (hasPositiveId(participantToAddId)) {
+            addParticipant(participantToAddId);
+        }
+        if (hasPositiveId(setup.participantToRemoveId())) {
+            removeParticipant(setup.participantToRemoveId());
+        }
+        BigDecimal encounterDays = parsePositiveDecimal(setup.encounterDaysText());
+        if (encounterDays != null) {
+            setEncounterDays(encounterDays);
+        }
+        if (setup.addSceneRequested()) {
+            addScene();
         }
     }
 
     private void consumeTimelineMutation(SessionPlannerTimelineMainViewInputEvent event) {
-        if (hasPositiveId(event.moveEncounterToken())) {
-            applyMove(event.moveEncounterToken(), event.moveDirection());
+        SessionPlannerTimelineMainViewInputEvent.MutationSnapshot mutation = event.mutation();
+        if (hasPositiveId(mutation.moveSceneToken())) {
+            applyMove(mutation.moveSceneToken(), mutation.moveDirection());
         }
-        if (hasPositiveId(event.encounterTokenToRemove())) {
-            removeEncounter(event.encounterTokenToRemove());
+        if (hasPositiveId(mutation.sceneTokenToRemove())) {
+            removeEncounter(mutation.sceneTokenToRemove());
         }
     }
 
     private void consumeTimelineRest(SessionPlannerTimelineMainViewInputEvent event) {
-        if (isResolvedGap(event.restLeftEncounterId(), event.restRightEncounterId())) {
-            applyRestGap(event.restLeftEncounterId(), event.restRightEncounterId(), event.restSelection());
+        SessionPlannerTimelineMainViewInputEvent.RestSnapshot rest = event.rest();
+        if (isResolvedGap(rest.leftSceneToken(), rest.rightSceneToken())) {
+            applyRestGap(rest.leftSceneToken(), rest.rightSceneToken(), rest.selection());
         }
     }
 
     private void consumeTimelineLoot(SessionPlannerTimelineMainViewInputEvent event) {
-        if (hasPositiveId(event.lootEncounterTokenToAdd())) {
-            addLootPlaceholder(event.lootEncounterTokenToAdd());
+        SessionPlannerTimelineMainViewInputEvent.LootSnapshot lootSnapshot = event.loot();
+        if (hasPositiveId(lootSnapshot.sceneTokenToAdd())) {
+            addLootPlaceholder(lootSnapshot.sceneTokenToAdd());
         }
-        if (hasPositiveId(event.lootTokenToRemove())) {
-            removeLootPlaceholder(event.lootTokenToRemove());
+        if (hasPositiveId(lootSnapshot.tokenToRemove())) {
+            removeLootPlaceholder(lootSnapshot.tokenToRemove());
+        }
+    }
+
+    private void consumeTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
+        SessionPlannerTimelineMainViewInputEvent.SceneSnapshot scene = event.scene();
+        if (hasPositiveId(scene.sceneToken())) {
+            updateEncounterScene(
+                    scene.sceneToken(),
+                    scene.title(),
+                    scene.notes(),
+                    scene.locationId());
+        }
+    }
+
+    private void consumeTimelineSceneDraft(SessionPlannerTimelineMainViewInputEvent event) {
+        SessionPlannerTimelineMainViewInputEvent.SceneDraftSnapshot sceneDraft = event.sceneDraft();
+        if (hasPositiveId(sceneDraft.sceneToken())) {
+            timelineMainContentModel.updateSceneDraft(
+                    sceneDraft.sceneToken(),
+                    sceneDraft.title(),
+                    sceneDraft.notes(),
+                    sceneDraft.locationId());
         }
     }
 
@@ -131,28 +166,30 @@ final class SessionPlannerIntentHandler {
         }
     }
 
-    private static boolean isResolvedGap(long leftEncounterId, long rightEncounterId) {
-        return hasPositiveId(leftEncounterId) && hasPositiveId(rightEncounterId);
+    private static boolean isResolvedGap(long leftSceneToken, long rightSceneToken) {
+        return hasPositiveId(leftSceneToken) && hasPositiveId(rightSceneToken);
     }
 
-    private void applyMove(long encounterToken, int moveDirection) {
+    private void applyMove(long sceneToken, int moveDirection) {
         if (moveDirection > 0) {
-            moveEncounterDown(encounterToken);
+            moveEncounterDown(sceneToken);
             return;
         }
         if (moveDirection < 0) {
-            moveEncounterUp(encounterToken);
+            moveEncounterUp(sceneToken);
         }
     }
 
-    private void applyRestGap(long leftEncounterId, long rightEncounterId, String restSelection) {
-        String normalized = restSelection == null ? "" : restSelection.trim();
-        if (REST_NONE.equals(normalized)) {
-            clearRestGap(leftEncounterId, rightEncounterId);
-        } else if (REST_SHORT.equals(normalized)) {
-            setRestGap(leftEncounterId, rightEncounterId, REST_SHORT);
-        } else if (REST_LONG.equals(normalized)) {
-            setRestGap(leftEncounterId, rightEncounterId, REST_LONG);
+    private void applyRestGap(
+            long leftSceneToken,
+            long rightSceneToken,
+            SessionPlannerTimelineMainViewInputEvent.RestSelection restSelection
+    ) {
+        switch (restSelection) {
+            case NONE -> clearRestGap(leftSceneToken, rightSceneToken);
+            case SHORT_REST -> setRestGap(leftSceneToken, rightSceneToken, SessionPlannerRestKind.SHORT_REST);
+            case LONG_REST -> setRestGap(leftSceneToken, rightSceneToken, SessionPlannerRestKind.LONG_REST);
+            default -> throw new IllegalStateException("Unhandled rest selection: " + restSelection);
         }
     }
 
@@ -211,21 +248,6 @@ final class SessionPlannerIntentHandler {
         participants.addParticipant(SessionPlannerParticipantCommand.add(characterId));
     }
 
-    private static long selectedPartyMemberId(String value) {
-        if (value == null) {
-            return 0L;
-        }
-        int separator = value.lastIndexOf('\t');
-        if (separator < 0 || separator + 1 >= value.length()) {
-            return 0L;
-        }
-        try {
-            return Long.parseLong(value.substring(separator + 1));
-        } catch (NumberFormatException exception) {
-            return 0L;
-        }
-    }
-
     private void removeParticipant(long characterId) {
         participants.removeParticipant(SessionPlannerParticipantCommand.remove(characterId));
     }
@@ -238,42 +260,54 @@ final class SessionPlannerIntentHandler {
         encounters.attachEncounter(new AttachSessionEncounterCommand(planId));
     }
 
-    private void selectEncounter(long encounterToken) {
-        encounters.selectEncounter(SessionPlannerEncounterCommand.select(encounterToken));
+    private void addScene() {
+        encounters.addScene(new AddSessionSceneCommand());
     }
 
-    private void setEncounterAllocation(long encounterToken, BigDecimal targetAllocationPercentage) {
+    private void selectEncounter(long sceneToken) {
+        encounters.selectEncounter(SessionPlannerEncounterCommand.select(sceneToken));
+    }
+
+    private void setEncounterAllocation(long sceneToken, BigDecimal targetAllocationPercentage) {
         encounters.setEncounterAllocation(new SessionPlannerEncounterAllocationCommand(
-                encounterToken,
+                sceneToken,
                 targetAllocationPercentage));
     }
 
-    private void moveEncounterUp(long encounterToken) {
-        encounters.moveEncounterUp(SessionPlannerEncounterCommand.moveUp(encounterToken));
+    private void moveEncounterUp(long sceneToken) {
+        encounters.moveEncounterUp(SessionPlannerEncounterCommand.moveUp(sceneToken));
     }
 
-    private void moveEncounterDown(long encounterToken) {
-        encounters.moveEncounterDown(SessionPlannerEncounterCommand.moveDown(encounterToken));
+    private void moveEncounterDown(long sceneToken) {
+        encounters.moveEncounterDown(SessionPlannerEncounterCommand.moveDown(sceneToken));
     }
 
-    private void removeEncounter(long encounterToken) {
-        encounters.removeEncounter(SessionPlannerEncounterCommand.remove(encounterToken));
+    private void removeEncounter(long sceneToken) {
+        encounters.removeEncounter(SessionPlannerEncounterCommand.remove(sceneToken));
     }
 
-    private void clearRestGap(long leftEncounterId, long rightEncounterId) {
-        rests.clearRestGap(new ClearSessionRestGapCommand(leftEncounterId, rightEncounterId));
+    private void clearRestGap(long leftSceneToken, long rightSceneToken) {
+        rests.clearRestGap(new ClearSessionRestGapCommand(leftSceneToken, rightSceneToken));
     }
 
-    private void setRestGap(long leftEncounterId, long rightEncounterId, String restKind) {
-        rests.setRestGap(SetSessionRestGapCommand.fromKey(leftEncounterId, rightEncounterId, restKind));
+    private void setRestGap(long leftSceneToken, long rightSceneToken, SessionPlannerRestKind restKind) {
+        rests.setRestGap(new SetSessionRestGapCommand(leftSceneToken, rightSceneToken, restKind));
     }
 
-    private void addLootPlaceholder(long encounterToken) {
-        loot.addLootPlaceholder(new AddSessionLootPlaceholderCommand(encounterToken));
+    private void addLootPlaceholder(long sceneToken) {
+        loot.addLootPlaceholder(new AddSessionLootPlaceholderCommand(sceneToken));
     }
 
     private void removeLootPlaceholder(long lootToken) {
         loot.removeLootPlaceholder(new RemoveSessionLootPlaceholderCommand(lootToken));
+    }
+
+    private void updateEncounterScene(long sceneToken, String sceneTitle, String sceneNotes, long locationId) {
+        encounters.updateEncounterScene(new UpdateSessionEncounterSceneCommand(
+                sceneToken,
+                sceneTitle,
+                sceneNotes,
+                locationId));
     }
 
     private static @Nullable BigDecimal parsePositiveDecimal(String raw) {

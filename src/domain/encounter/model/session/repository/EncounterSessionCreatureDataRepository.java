@@ -67,6 +67,7 @@ final class EncounterSessionCreatureDataRepository {
         return new EncounterCreatureData(
                 "monster-" + current.id(),
                 current.id(),
+                0L,
                 current.name(),
                 current.challengeRating(),
                 current.xp(),
@@ -83,6 +84,7 @@ final class EncounterSessionCreatureDataRepository {
         return new EncounterCreatureData(
                 "monster-" + creature.creatureId(),
                 creature.creatureId(),
+                0L,
                 creature.name(),
                 creature.challengeRating(),
                 creature.xp(),

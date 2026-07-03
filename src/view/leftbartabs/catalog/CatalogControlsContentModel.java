@@ -10,6 +10,9 @@ import src.domain.encounter.published.EncounterTuningPreviewLabels;
 import src.domain.encountertable.published.EncounterTableCatalogResult;
 import src.domain.encountertable.published.EncounterTableReadStatus;
 import src.domain.encountertable.published.EncounterTableSummary;
+import src.domain.worldplanner.published.WorldFactionSummary;
+import src.domain.worldplanner.published.WorldLocationSummary;
+import src.domain.worldplanner.published.WorldPlannerSnapshot;
 
 public final class CatalogControlsContentModel {
 
@@ -80,6 +83,11 @@ public final class CatalogControlsContentModel {
         refreshProjection();
     }
 
+    void applyWorldPlannerSnapshot(WorldPlannerSnapshot snapshot) {
+        state.applyWorldPlannerSnapshot(snapshot);
+        refreshProjection();
+    }
+
     void applyEncounterTuningPreview(EncounterTuningPreviewLabels labels) {
         state.applyEncounterTuningPreview(labels);
         refreshProjection();
@@ -107,6 +115,8 @@ public final class CatalogControlsContentModel {
             FilterDropdownState alignmentDropdownState,
             FilterDropdownState encounterTableDropdownState,
             List<EncounterTableOption> encounterTableOptions,
+            List<WorldSourceOption> worldFactionOptions,
+            List<WorldSourceOption> worldLocationOptions,
             List<FilterChip> chips,
             ControlsState controlsState
     ) {
@@ -122,6 +132,8 @@ public final class CatalogControlsContentModel {
                     ? FilterDropdownState.closed()
                     : encounterTableDropdownState;
             encounterTableOptions = Values.copiedList(encounterTableOptions);
+            worldFactionOptions = Values.copiedList(worldFactionOptions);
+            worldLocationOptions = Values.copiedList(worldLocationOptions);
             chips = Values.copiedList(chips);
             controlsState = controlsState == null ? ControlsState.empty() : controlsState;
         }
@@ -136,6 +148,8 @@ public final class CatalogControlsContentModel {
                     FilterDropdownState.closed(),
                     FilterDropdownState.closed(),
                     FilterDropdownState.closed(),
+                    List.of(),
+                    List.of(),
                     List.of(),
                     List.of(),
                     ControlsState.empty());
@@ -242,6 +256,8 @@ public final class CatalogControlsContentModel {
             List<String> creatureSubtypes,
             List<String> biomes,
             List<Long> encounterTableIds,
+            List<Long> worldFactionIds,
+            long worldLocationId,
             SliderProjection difficulty,
             SliderProjection balance,
             SliderProjection amount,
@@ -252,6 +268,8 @@ public final class CatalogControlsContentModel {
             creatureSubtypes = Values.copiedList(creatureSubtypes);
             biomes = Values.copiedList(biomes);
             encounterTableIds = Values.copiedList(encounterTableIds);
+            worldFactionIds = Values.copiedList(worldFactionIds);
+            worldLocationId = Math.max(0L, worldLocationId);
             difficulty = difficulty == null ? SliderProjection.empty() : difficulty;
             balance = balance == null ? SliderProjection.empty() : balance;
             amount = amount == null ? SliderProjection.empty() : amount;
@@ -264,6 +282,8 @@ public final class CatalogControlsContentModel {
                     List.of(),
                     List.of(),
                     List.of(),
+                    List.of(),
+                    0L,
                     SliderProjection.defaultDifficulty(),
                     SliderProjection.defaultBalance(),
                     SliderProjection.defaultAmount(),
@@ -279,6 +299,8 @@ public final class CatalogControlsContentModel {
                     safeState.creatureSubtypes(),
                     safeState.biomes(),
                     safeState.encounterTableIds(),
+                    safeState.worldFactionIds(),
+                    safeState.worldLocationId(),
                     SliderProjection.from(safeState.difficulty()),
                     SliderProjection.from(safeState.balance()),
                     SliderProjection.from(safeState.amount()),
@@ -295,6 +317,8 @@ public final class CatalogControlsContentModel {
                     safeInputs.creatureSubtypes(),
                     safeInputs.biomes(),
                     safeInputs.encounterTableIds(),
+                    safeInputs.worldFactionIds(),
+                    safeInputs.worldLocationId(),
                     SliderProjection.difficulty(
                             safeInputs.autoDifficulty(),
                             safeInputs.difficultyLevel(),
@@ -328,6 +352,8 @@ public final class CatalogControlsContentModel {
                     creatureSubtypes,
                     biomes,
                     encounterTableIds,
+                    worldFactionIds,
+                    worldLocationId,
                     difficulty.withPreviewLabels(
                             safeLabels.difficultyLabels(),
                             DEFAULT_DIFFICULTY_LABELS,
@@ -482,10 +508,24 @@ public final class CatalogControlsContentModel {
         EncounterTableOption {
             name = name == null || name.isBlank() ? "Tabelle " + tableId : name;
         }
+
         static EncounterTableOption from(EncounterTableOption option) {
             return option == null
                     ? new EncounterTableOption(0L, "", null)
                     : new EncounterTableOption(option.tableId(), option.name(), option.linkedLootTableId());
+        }
+    }
+
+    record WorldSourceOption(long id, String name) {
+        WorldSourceOption {
+            id = Math.max(0L, id);
+            name = name == null || name.isBlank() ? "Quelle " + id : name;
+        }
+
+        static WorldSourceOption from(WorldSourceOption option) {
+            return option == null
+                    ? new WorldSourceOption(0L, "")
+                    : new WorldSourceOption(option.id(), option.name());
         }
     }
 
@@ -695,6 +735,8 @@ public final class CatalogControlsContentModel {
         private CatalogControlsContentModel.FilterDropdownState encounterTableDropdownState =
                 CatalogControlsContentModel.FilterDropdownState.closed();
         private List<CatalogControlsContentModel.EncounterTableOption> encounterTableOptions = List.of();
+        private List<CatalogControlsContentModel.WorldSourceOption> worldFactionOptions = List.of();
+        private List<CatalogControlsContentModel.WorldSourceOption> worldLocationOptions = List.of();
     
         void applyControlsDraft(CatalogControlsContentModel.ControlsDraft draft) {
             CatalogControlsContentModel.ControlsDraft safeDraft = draft == null
@@ -750,6 +792,20 @@ public final class CatalogControlsContentModel {
                     .map(CatalogControlsContentState::encounterTableOption)
                     .toList();
         }
+
+        void applyWorldPlannerSnapshot(WorldPlannerSnapshot snapshot) {
+            if (snapshot == null) {
+                worldFactionOptions = List.of();
+                worldLocationOptions = List.of();
+                return;
+            }
+            worldFactionOptions = snapshot.factions().stream()
+                    .map(CatalogControlsContentState::worldFactionOption)
+                    .toList();
+            worldLocationOptions = snapshot.locations().stream()
+                    .map(CatalogControlsContentState::worldLocationOption)
+                    .toList();
+        }
     
         void applyEncounterTuningPreview(EncounterTuningPreviewLabels labels) {
             CatalogControlsPreviewLabels previewLabels = CatalogControlsPreviewLabels.from(labels);
@@ -784,6 +840,14 @@ public final class CatalogControlsContentModel {
                             .stream()
                             .map(CatalogControlsContentModel.EncounterTableOption::from)
                             .toList(),
+                    CatalogControlsContentModel.Values.copiedList(worldFactionOptions)
+                            .stream()
+                            .map(CatalogControlsContentModel.WorldSourceOption::from)
+                            .toList(),
+                    CatalogControlsContentModel.Values.copiedList(worldLocationOptions)
+                            .stream()
+                            .map(CatalogControlsContentModel.WorldSourceOption::from)
+                            .toList(),
                     CatalogControlsContentModel.FilterChip.from(creatureFilters, encounterTableOptions, controlsState)
                             .stream()
                             .map(CatalogControlsContentModel.FilterChip::from)
@@ -798,6 +862,14 @@ public final class CatalogControlsContentModel {
                     summary.tableId(),
                     summary.name(),
                     summary.linkedLootTableId());
+        }
+
+        private static CatalogControlsContentModel.WorldSourceOption worldFactionOption(WorldFactionSummary summary) {
+            return new CatalogControlsContentModel.WorldSourceOption(summary.factionId(), summary.displayName());
+        }
+
+        private static CatalogControlsContentModel.WorldSourceOption worldLocationOption(WorldLocationSummary summary) {
+            return new CatalogControlsContentModel.WorldSourceOption(summary.locationId(), summary.displayName());
         }
     }
     

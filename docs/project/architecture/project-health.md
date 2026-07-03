@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-25
+Last Reviewed: 2026-06-30
 Source of Truth: Project-health ownership, debt materialization, and local
 baseline-admission rules for known structural and quality problems.
 
@@ -86,6 +86,13 @@ When a blocker triggers the Agent Instruction Standard's Blocker Reflection
 Gate, project-health owns the disposition of any finding classified as target
 architecture violation, stale or over-broad gate, governance gap, repeated
 quick-fix family, or gate-shaped workaround.
+
+Decisions, blockers, and insights first recorded in roadmaps, wave plans, or
+pass logs become project-health concerns when they affect future planning,
+baseline admission, owner boundaries, proof trust, or repeated work. Keep them
+linked from the roadmap while active, and materialize durable structural or
+governance debt through this standard before handoff instead of leaving it only
+in generated logs.
 
 ## Debt Marker
 

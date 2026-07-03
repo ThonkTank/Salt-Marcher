@@ -46,6 +46,8 @@ public final class CombatRosterMutation {
             }
             enemies.add(new ResultEnemyData(
                     combatant.name(),
+                    combatant.creatureId(),
+                    combatant.worldNpcId(),
                     combatant.isAlive() ? "Lebt" : "Tot",
                     Math.max(0, combatant.maxHp() - combatant.currentHp()),
                     combatant.xp(),

@@ -36,7 +36,8 @@ final class SessionPlanSqliteDetailReads {
 
     List<SessionEncounterRecord> loadEncounters(Connection connection, long sessionId) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT encounter_id, encounter_plan_id, budget_percentage, sort_order "
+                "SELECT encounter_id, encounter_plan_id, budget_percentage, scene_title, scene_notes, location_id, "
+                        + "sort_order "
                         + "FROM " + SessionPlannerPersistenceSchema.SESSION_ENCOUNTERS_TABLE + " "
                         + "WHERE session_id = ? ORDER BY sort_order, encounter_id")) {
             statement.setLong(1, sessionId);
@@ -47,6 +48,9 @@ final class SessionPlanSqliteDetailReads {
                             resultSet.getLong("encounter_id"),
                             resultSet.getLong("encounter_plan_id"),
                             resultSet.getString("budget_percentage"),
+                            resultSet.getString("scene_title"),
+                            resultSet.getString("scene_notes"),
+                            resultSet.getLong("location_id"),
                             resultSet.getInt(SORT_ORDER)));
                 }
                 return encounters;

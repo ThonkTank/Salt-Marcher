@@ -104,9 +104,9 @@ manifests:
 19. Before starting the review step, use the repo-owned
     `coord-main-implementation-review` route. It launches one Implementation
     Review Coordinator that applies the global adversarial review and handoff
-    stack, owns the qualitative packet, nested specialist review, scoped
-    follow-up worker routing, proof-staleness handling, and final clean/WIP/
-    blocked result before handoff.
+    stack, owns qualitative implementation review, nested specialist review,
+    scoped follow-up worker routing, proof-staleness handling, review-log
+    writing, and final clean/WIP/blocked result before handoff.
 
 ## Evidence Sources
 

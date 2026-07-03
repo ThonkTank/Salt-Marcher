@@ -56,12 +56,12 @@ chat-only status.
 | Artifact role | Writer role | Guard role value | Main write authority |
 | --- | --- | --- | --- |
 | Goal definition, CR | Main/User | `Main/User` | Main may write. |
-| CR review | Planning Review Coordinator | `Planning Review Coordinator` | Main assigns one CR review path as the allowed write surface but must not write or replace it. |
+| CR review | Planning Review Coordinator | `Planning Review Coordinator` | Main assigns one CR review path plus CR status/upkeep fields as the allowed write surface but must not write or replace them. |
 | Roadmap, phase plan, wave/step plan | Planner | `Planner` | Main assigns the planning bundle paths as the allowed generated-artifact write surface; Main must not substitute chat plans. |
-| Planning-bundle review | Planning Review Coordinator | `Planning Review Coordinator` | Main assigns one plan-review path as the allowed write surface but must not write or replace it. |
+| Planning-bundle review | Planning Review Coordinator | `Planning Review Coordinator` | Main assigns one plan-review path plus reviewed planning-bundle status/upkeep fields as the allowed write surface but must not write or replace them. |
 | Implementation log | Implementation Worker | not guard-checked | Main assigns one implementation-log path; worker writes it after implementation and worker-local proof. |
 | Final integrated proof evidence | Verification Runner | not guard-checked | Runner records assigned command results in the assigned evidence section or proof log. |
-| Review log | Main Aggregator from Implementation Review Coordinator result | not guard-checked | Main assigns the review-log path before review and writes the aggregate from accepted coordinator evidence. |
+| Review log | Implementation Review Coordinator | not guard-checked | Main assigns exactly one review-log path as the allowed write surface before review; the coordinator writes that log from coordinator, reviewer, and proof evidence. |
 
 Guard-readable primary planning artifacts start with:
 
@@ -69,6 +69,10 @@ Guard-readable primary planning artifacts start with:
 - `Owner Role`: the writer role from the table above
 - `Authored By Role`: the writer role that actually authored the artifact
 - `Status`: `Accepted` before downstream use
+- `Status Authority Role`: `Planning Review Coordinator` after accepted
+  review-owned status upkeep
+- `Status Authority Path`: absolute path to the CR review or plan-review
+  artifact that set the accepted status
 
 Guard-readable CR-review artifacts start with:
 
@@ -82,8 +86,9 @@ Guard-readable CR-review artifacts start with:
 - `Content Review Rationale`: free prose
 - `Verdict`: `Accepted`, `Rework Required`, or `Blocked`
 - `Downstream Permission`: `Roadmap creation may proceed` when accepted
-- `Reviewed Path`, `Authored Review Path`, and `Allowed Write Surface`, all
-  absolute paths
+- `Reviewed Path` and `Authored Review Path`, both absolute paths
+- `Allowed Write Surface`: comma-separated absolute paths containing the
+  authored review artifact and the reviewed CR for status/upkeep only
 
 Guard-readable planning-bundle review artifacts start with:
 
@@ -97,8 +102,10 @@ Guard-readable planning-bundle review artifacts start with:
 - `Content Review Rationale`: free prose
 - `Verdict`: `Accepted`, `Rework Required`, or `Blocked`
 - `Downstream Permission`: `Implementation may proceed` when accepted
-- `Reviewed Path`, `Authored Review Path`, and `Allowed Write Surface`, all
-  absolute paths
+- `Reviewed Path` and `Authored Review Path`, both absolute paths
+- `Allowed Write Surface`: comma-separated absolute paths containing the
+  authored review artifact and every reviewed roadmap, phase-plan, and
+  authorized step-plan artifact for status/upkeep only
 - `Reviewed Roadmap Path`: absolute path
 - `Reviewed Phase Plan Paths`: comma-separated absolute paths or `None`
 - `Authorized Step Plan Paths`: comma-separated absolute paths
@@ -106,6 +113,33 @@ Guard-readable planning-bundle review artifacts start with:
 These fields are the machine contract. Narrative reviewer evidence, selected
 content lenses, skipped-lens explanation, findings, and rationale remain
 human-readable review content and must not be made parser-exact.
+
+## Mechanical Artifact Form Repair
+
+Mechanical artifact form errors are parser-, schema-, path-, status-, or
+required-log-field mismatches whose correct value is directly derivable from
+this standard, the writer role's skill, or
+`tools/quality/reporting/verify_artifact_chain.py --print-contract`. They do
+not require a new planner or content re-review when the correction changes no
+goal, scope, API, proof route, architecture decision, review verdict, allowed
+write surface, authorized step plan, or substantive artifact content.
+
+The role that owns the artifact may repair its own artifact form. Review
+coordinators may repair only their generated review artifact and their assigned
+mechanical status/upkeep fields. Implementation Workers may repair only their
+assigned implementation-log form. Verification Runners may repair only their
+assigned proof-evidence form. Implementation Review Coordinators may repair
+only their assigned review-log form. Main may repair only Main/User-owned form
+fields and may route role-owned form repair back to the owning role; Main must
+not synthesize acceptance, replace review-owned artifacts, or rewrite
+substantive review or plan content.
+
+After a mechanical form repair, rerun the smallest matching guard or proof:
+the artifact-chain guard for guarded CR/plan chains, the guard self-test after
+guard-tool changes, project-health scan for touched governance scopes, or the
+documentation-enforcement check for documentation/instruction changes. If the
+repair needs a new judgment or has multiple plausible corrections, it is not a
+mechanical form repair and must return to the normal review or planner route.
 
 ## CR Semantics
 
@@ -119,9 +153,12 @@ permission, or implementation authority.
 
 CR status values are `Draft`, `Review Required`, `Review Fix Applied -
 Re-review Required`, `Rework Required`, `Accepted`, `Blocked`, and
-`Superseded`. Main may apply fixes and record `Review Fix Applied`, but only a
-planning-review-coordinator-authored review artifact may accept or reject the
-CR.
+`Superseded`. Main/User writes initial CR status as `Draft` or
+`Review Required`, and may record `Review Fix Applied - Re-review Required`
+only after a Main-owned CR repair. The CR Review Coordinator maps its verdict
+to the reviewed CR status in the same pass: `Accepted` -> `Status: Accepted`,
+`Rework Required` -> `Status: Rework Required`, and `Blocked` ->
+`Status: Blocked`. Main must not perform a post-review acceptance/status fix.
 
 Accepted CRs freeze planning intent. Material changes to goal, owner surfaces,
 artifact sequence, acceptance criteria, or Done When require a new CR or a
@@ -130,6 +167,8 @@ artifact sequence, acceptance criteria, or Done When require a new CR or a
 ## Planning Artifacts
 
 One planner authors the planning bundle after CR review acceptance.
+Planner-authored roadmaps, phase plans, and wave/step plans start as
+`Review Required` until planning-bundle review updates their status.
 
 Roadmaps preserve the accepted CR, must-do completion goals, owner surfaces,
 phase table, artifact index, decision/blocker log, pre-implementation
@@ -166,9 +205,19 @@ needed for review: target-state decision, rejected alternatives and shortcuts,
 interface/API decisions, migration path, slice independence or dependency
 rationale, behavior-tied acceptance tests, and remaining blockers. Governance
 obligations such as artifact-chain guard, Verification Runner,
-Implementation Review Coordinator, qualitative review packets, and commit
+Implementation Review Coordinator, qualitative review coverage, and commit
 routing must stay compact enough that they do not hide missing technical
 decisions.
+
+The Planning Review Coordinator maps its verdict to the reviewed roadmap,
+reviewed phase plans, and authorized step plans in the same pass:
+`Accepted` -> `Status: Accepted`, `Rework Required` ->
+`Status: Rework Required`, and `Blocked` -> `Status: Blocked`. The coordinator
+may update only guard-readable mechanical status/upkeep fields, status
+authority fields, review links, and roadmap artifact-index/status rows that
+point at the review result; substantive CR or plan content remains owned by
+Main/User or Planner. If substantive artifact content must change, the review
+returns `Rework Required` and the owning author repairs it before re-review.
 
 Repair plans after `WIP - Planner Repair Required` use the same planner-owned
 roadmap, phase-plan, and wave/step-plan family. They must preserve the
@@ -250,21 +299,32 @@ classification, deviations from plan, worker-local proof commands and literal
 results, review needs, wait-time observations, reversals, abandoned
 approaches, and open blockers.
 
+Missing implementation-log fields are mechanical form errors only when the
+worker can fill them from the accepted step plan, literal diff, command output,
+or already-run proof without changing the implementation claim. Otherwise the
+worker reports a blocker or deviation instead of inventing log content.
+
 ## Review Logs
 
-Main writes one aggregated review log after each completed Implementation
-Review Coordinator cycle from the coordinator result, reviewer outputs,
-qualitative packet evidence, and Verification Runner evidence. Nested
-specialist reviewers remain read-only and report pass-log evidence and trends
-in their own output.
+The Implementation Review Coordinator writes one review log after each
+completed coordinator cycle from coordinator evidence, reviewer outputs,
+qualitative implementation-review evidence, and Verification Runner evidence.
+Nested specialist reviewers remain read-only and report pass-log evidence and
+trends in their own output.
 
 A review log records reviewed scope, pass logs, final integrated verification
 evidence, Objective Completion Verdict, behavior-harness coverage, selected
-review panel, qualitative packet outcome, Blocker Reflection review, Structural
-State Ownership Matrix when needed, findings, fixes, residual debt
+review panel, qualitative review outcome, Blocker Reflection review,
+Structural State Ownership Matrix when needed, findings, fixes, residual debt
 classification, project-health sync, Baseline Admission, trend observations,
 wait-time observations, escalation recommendations, and final clean, blocked,
 or WIP status.
+
+Missing review-log fields are mechanical form errors only when the
+Implementation Review Coordinator can fill them from its existing evidence,
+reviewer outputs, Verification Runner result, and unchanged final verdict. A
+different verdict, new finding disposition, or changed baseline-admission
+judgment requires the normal review/fix route.
 
 ## Completion Audits
 

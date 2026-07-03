@@ -78,7 +78,7 @@ coverage, or any `minimal chain` shortcut keeps WIP.
 Implementation uses clean-start `wave-implementation-worker` agents. Workers
 own worker-local proof in implementation logs. Verification Runner owns final
 integrated proof. One Implementation Review Coordinator owns review, including
-the qualitative `code-simplifier` packet and risk-selected handoff lenses.
+qualitative implementation-review coverage and risk-selected handoff lenses.
 Unavailable required role tooling keeps the pass WIP/blocked; Main may record
 the blocker but must not substitute the missing role.
 
@@ -87,12 +87,12 @@ Main must know write ownership before launching each workflow role:
 | Artifact | Writer role | Main launch obligation |
 | --- | --- | --- |
 | Goal definition and CR | Main/User | Main may write these intake artifacts and must keep requested plans as input, not authority. |
-| CR review | CR Review Coordinator | Launch through `coord-main-cr-review`, assign exactly one CR review path as the allowed write surface, and do not write or replace it from Main. |
+| CR review | CR Review Coordinator | Launch through `coord-main-cr-review`, assign one CR review path plus CR status/upkeep fields as the allowed write surface, and do not write or replace them from Main. |
 | Roadmap, phase plan, and step plan | Planner | Launch one planner with accepted CR/review, assign the roadmap plus required phase and step-plan paths, and limit the planner write surface to those planning-bundle artifacts. |
-| Planning-bundle review | Plan Review Coordinator | Launch through `coord-main-plan-review`, assign exactly one plan-review path for the roadmap/phase/step bundle as the allowed write surface, and do not write or replace it from Main. |
+| Planning-bundle review | Plan Review Coordinator | Launch through `coord-main-plan-review`, assign one plan-review path plus reviewed roadmap/phase/step status/upkeep fields as the allowed write surface, and do not write or replace them from Main. |
 | Implementation log | Implementation Worker | Launch from one accepted step plan with one assigned implementation-log path; the worker writes that log after implementation and worker-local proof. |
 | Final integrated proof | Verification Runner | Launch with assigned command surface, evidence section or log path, allowed proof write surface, start time, and unavailable-tool fallback. |
-| Review log | Main Aggregator from Implementation Review Coordinator result | Assign the review-log path before review; the coordinator returns a result, and Main writes the aggregate from accepted coordinator evidence. |
+| Review log | Implementation Review Coordinator | Assign exactly one review-log path as the coordinator's allowed write surface before review; the coordinator writes that log from coordinator, reviewer, and proof evidence. |
 
 The Implementation Artifacts Standard owns artifact roles and guard-readable
 fields. Caller and author skills repeat only role-local field needs.
@@ -107,12 +107,11 @@ role to invent an artifact or return chat-only status.
 | Role | Input authority | Required output |
 | --- | --- | --- |
 | Planner | accepted CR and CR review | assigned roadmap, phase plans, and step plans only |
-| CR Review Coordinator | CR | one assigned `*-cr-review.md` |
-| Plan Review Coordinator | planning bundle and accepted CR review | one assigned `*-plan-review.md` |
+| CR Review Coordinator | CR | one assigned `*-cr-review.md` plus CR status/upkeep fields |
+| Plan Review Coordinator | planning bundle and accepted CR review | one assigned `*-plan-review.md` plus reviewed planning-bundle status/upkeep fields |
 | Implementation Worker | one accepted step plan | assigned implementation log plus plan write set |
 | Verification Runner | final checkout and assigned commands | assigned evidence section or proof log only |
-| Implementation Review Coordinator | plan, logs, proof, review-log destination | coordinator result, not review log |
-| Main Aggregator | accepted coordinator result and proof | assigned aggregated review log |
+| Implementation Review Coordinator | plan, logs, proof, review-log destination | assigned review log and coordinator result |
 
 ## Planning-Time Structural State Preflight
 Before planning-bundle creation or briefing implementation/refactor/governance repair
@@ -165,7 +164,8 @@ Review instructions live in skills; mandatory subagent use is authorized.
   WIP/blocked with no Main fallback.
 - Implementation review uses `coord-main-implementation-review`, one
   Implementation Review Coordinator, `lens-coordinator-implementation-review`,
-  the required `code-simplifier` packet, and risk-selected specialist lenses.
+  built-in qualitative implementation-review coverage, and risk-selected
+  specialist lenses.
   Not-reviewable or blocked results keep the pass WIP until fixed, freshly
   proved by Verification Runner, and reviewed again.
 - Implementation review is a completion gate: it checks original goal, Done
@@ -191,9 +191,14 @@ Review instructions live in skills; mandatory subagent use is authorized.
 
 ## Qualitative Simplification And Repair Gate
 
-Covered implementation passes include the installed `code-simplifier` packet inside Implementation Review Coordinator review. It checks simplicity, elegance, smells, and performance; it does not create gates, weaken proof, or close architecture/state-ownership/system-of-record risk by itself.
+Covered implementation passes include qualitative implementation-review
+coverage inside the Implementation Review Coordinator review. It checks
+simplicity, elegance, smells, coupling, indirection, performance,
+maintainability, and project-health disposition through normal coordinator and
+risk-selected lens review; it does not create a separate agent, weaken proof,
+or close architecture/state-ownership/system-of-record risk by itself.
 
-Review blockers default to `Planner Repair Required`. The coordinator may route a direct fix only for `Trivial Mechanical Fix`: exactly one obvious correction, no accepted-plan decision change, and no owner, architecture, code-health, proof, harness, PMD, API, state, shape, or target-model concern. All other blockers, including code-health, PMD/quality-rule, `code-simplifier`, smell, ownership, harness/gate, repeated-fix, proof-oracle, and multi-repair findings, require Blocker Reflection plus a global-planner repair plan.
+Review blockers default to `Planner Repair Required`. The coordinator may route a direct fix only for `Trivial Mechanical Fix`: exactly one obvious correction, no accepted-plan decision change, and no owner, architecture, code-health, proof, harness, PMD, API, state, shape, or target-model concern. All other blockers, including code-health, PMD/quality-rule, simplicity, smell, ownership, harness/gate, repeated-fix, proof-oracle, and multi-repair findings, require Blocker Reflection plus a global-planner repair plan.
 
 For `Planner Repair Required`, Main gives neutral evidence only; the planner weighs the original goal against review findings, rejects fast fixes that harm target architecture or maintainability, and returns repair form, write set, proof route, risks, and Done When. It does not implement or replace review.
 
@@ -233,13 +238,12 @@ entry standard.
 - Implementation Workers must write one implementation pass log after each
   repo-tracked implementation pass and worker-local proof.
 - Verification Runner and implementation-review roles must read relevant
-  implementation, qualitative packet, proof, and review pass logs before final
-  status.
+  implementation, proof, and review pass logs before final status.
 - Nested specialist reviewers remain read-only and include pass-log evidence
   and trend observations in their reviewer output.
-- The required review pass log is an aggregated Implementation Review
-  Coordinator cycle log from coordinator output, reviewer outputs, qualitative
-  packet evidence, and Verification Runner evidence.
+- The required review pass log is written by the Implementation Review
+  Coordinator from coordinator evidence, reviewer outputs, qualitative
+  implementation-review evidence, and Verification Runner evidence.
 - Pass logs live under `build/agent-pass-logs/` as generated local evidence.
   Link them to the roadmap or plan; do not commit or cite them as canonical
   truth.

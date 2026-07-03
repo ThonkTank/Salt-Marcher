@@ -97,7 +97,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 snapshotBuilder,
                 snapshotPublicationUseCase);
         DungeonEditorRuntimeOperationResult initialResult =
-                DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+                DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         return new AssemblyResult(operations(runtimeUseCases(
                 authored,
                 dungeonState,

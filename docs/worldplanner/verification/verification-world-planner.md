@@ -11,9 +11,10 @@ Planner documentation and later production behavior.
 This document defines how World Planner behavior, ownership, and persistence
 rules are proven.
 
-Wave 1 is documentation-only. Later waves must add production-path behavior
-harness proof before claiming backend, UI, Encounter, Combat, or public
-location-choice integration complete.
+The current implemented slice has production-path domain, persistence,
+readback, minimal left-bar UI proof, Encounter source constraint integration,
+Encounter result NPC-loss confirmation, and Session Planner
+scene/location-reference metadata.
 
 ## Source Documents
 
@@ -24,7 +25,7 @@ Verified source documents:
 - [World Planner Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/architecture/architecture-world-planner.md:1)
 - [World Planner Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/contract/contract-world-planner-persistence.md:1)
 
-## Wave 1 Documentation Proof
+## Documentation Proof
 
 Mechanically enforced:
 
@@ -39,6 +40,15 @@ Review-owned:
 - architecture defines topology and seams, not acceptance criteria
 - contract defines stored truth and references, not user flow
 - verification maps proof, not product meaning
+
+## Backend Behavior Harness
+
+Mechanically enforced for the current backend slice:
+
+- `./gradlew worldPlannerBackendHarness --console=plain`
+
+The backend harness proves current NPC, faction, location, lifecycle,
+inventory-limit, persistence-reload, storage-error, and readback-only behavior.
 
 ## Later Behavior Harness Obligations
 
@@ -59,14 +69,27 @@ Encounter integration harness proof is required for:
 - finite faction inventory caps
 - unlimited default when no finite limit exists
 - clear no-solution behavior when finite stock cannot satisfy generation
+- World Planner NPC identity through Encounter builder, combat, and result
+  state
+
+Mechanically enforced for the current Encounter integration slice:
+
+- `./gradlew worldPlannerEncounterHarness --console=plain`
+
+The current implementation routes Encounter Planner faction and location IDs
+through `EncounterBuilderInputs`, resolves World Planner faction/location
+sources at generation time, intersects explicit table choices with
+World Planner source tables, enforces finite statblock stock caps in draft
+enumeration, and preserves selected World Planner NPC identity through
+Encounter result publication.
 
 Combat lifecycle harness proof is required for:
 
 - NPCs added to combat preserve World Planner identity
 - combat does not mutate World Planner durable state before manual
   confirmation
-- confirmed losses mark named NPCs defeated or reduce finite stock according
-  to World Planner domain rules
+- confirmed named NPC losses mark those NPCs defeated according to
+  World Planner domain rules
 - reactivation restores named NPC availability
 
 Public location-choice integration harness proof is required for:
@@ -78,25 +101,33 @@ Public location-choice integration harness proof is required for:
 - World Planner verification does not define Session Planner-owned session
   record shape or scene behavior
 
-UI harness proof is required for:
+Later UI harness proof is required for:
 
-- World Planner left-bar tab discovery
 - NPC details publication to the shell details/Inspector surface
 - faction and location editors mutate only through World Planner public
   boundaries
 - view-local draft state does not become durable truth without domain readback
 
+Mechanically enforced for the current left-bar UI slice:
+
+- `./gradlew worldPlannerUiHarness --console=plain`
+
+The UI harness proves the World Planner contribution bind route can create
+NPCs, update NPC notes, toggle NPC lifecycle, create factions, link NPC
+membership, set faction inventory limits, create locations, link factions, link
+encounter tables, and render selected NPC detail notes from domain readback.
+The World Planner view also exposes a selected-NPC action that adds the NPC to
+the Encounter roster through the Encounter public boundary while carrying its
+World Planner identity.
+
 ## Known Harness Gaps
 
-- no World Planner backend behavior harness exists yet
-- no World Planner left-bar UI harness exists yet
-- no focused Encounter combat/result harness exists for NPC loss confirmation
-- no World Planner public location-choice readback harness exists yet
+- no focused finite-stock decrement confirmation exists for unnamed stock-only
+  losses
 
-These are expected later implementation obligations. Session Planner-owned
-scene behavior remains outside the World Planner verification owner. Manual
-testing may supplement but must not replace available production-path harness
-proof.
+Session Planner-owned scene behavior remains outside the World Planner
+verification owner. Manual testing may supplement but must not replace
+available production-path harness proof.
 
 ## References
 

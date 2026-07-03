@@ -7,6 +7,8 @@ import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.SelectCreatureDetailCommand;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
+import src.domain.worldplanner.WorldPlannerApplicationService;
+import src.domain.worldplanner.published.SetWorldNpcLifecycleStatusCommand;
 
 final class EncounterStateIntentHandler {
 
@@ -15,17 +17,20 @@ final class EncounterStateIntentHandler {
 
     private final EncounterStateContributionModel presentationModel;
     private final EncounterApplicationService encounters;
+    private final WorldPlannerApplicationService worldPlanner;
     private final CreaturesApplicationService creatures;
     private final CreatureDetailSink creatureDetailSink;
 
     EncounterStateIntentHandler(
             EncounterStateContributionModel presentationModel,
             EncounterApplicationService encounters,
+            WorldPlannerApplicationService worldPlanner,
             CreaturesApplicationService creatures,
             CreatureDetailSink creatureDetailSink
     ) {
         this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
+        this.worldPlanner = worldPlanner;
         this.creatures = Objects.requireNonNull(creatures, "creatures");
         this.creatureDetailSink = creatureDetailSink == null ? NO_CREATURE_DETAIL_SINK : creatureDetailSink;
     }
@@ -119,7 +124,26 @@ final class EncounterStateIntentHandler {
             return;
         }
         if (event.returnToBuilderRequested()) {
+            markSelectedWorldNpcsDefeated(presentationModel.contentModels().results()
+                    .selectedWorldNpcDefeats(event.selectedEnemies()));
             apply(ApplyEncounterStateCommand.action("RETURN_TO_BUILDER_AFTER_RESULTS"));
+        }
+    }
+
+    private void markSelectedWorldNpcsDefeated(
+            List<EncounterResultsStateContentModel.WorldNpcDefeatView> worldNpcIds
+    ) {
+        if (worldPlanner == null) {
+            return;
+        }
+        for (EncounterResultsStateContentModel.WorldNpcDefeatView worldNpc : worldNpcIds == null
+                ? List.<EncounterResultsStateContentModel.WorldNpcDefeatView>of()
+                : worldNpcIds) {
+            if (worldNpc != null && worldNpc.worldNpcId() > UNRESOLVED_ID) {
+                worldPlanner.setNpcLifecycleStatus(SetWorldNpcLifecycleStatusCommand.defeated(
+                        worldNpc.worldNpcId(),
+                        worldNpc.expectedCreatureStatblockId()));
+            }
         }
     }
 

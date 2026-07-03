@@ -1,6 +1,6 @@
 ---
 name: verification-runner
-description: Use for SaltMarcher final integrated proof execution after file-changing roles finish and before implementation-review final aggregation. Runs assigned public proof commands, records evidence, and returns WIP/blocked when tooling is unavailable.
+description: Use for SaltMarcher final integrated proof execution after file-changing roles finish and before implementation-review final review-log writing. Runs assigned public proof commands, records evidence, and returns WIP/blocked when tooling is unavailable.
 ---
 
 # Verification Runner
@@ -13,7 +13,7 @@ not Main, not an implementation worker, and not a reviewer.
 Main launches a fresh runner after all file-changing implementation or fix
 roles finish. If later review or fix work changes repo-tracked files, prior
 runner evidence is stale and Main must launch a fresh runner before final
-implementation-review aggregation.
+implementation-review log writing.
 
 ## Launch Contract
 
@@ -34,6 +34,12 @@ If the required output or allowed write surface is ambiguous, return
 `WIP - Verification Blocked` instead of writing proof evidence into an
 unassigned artifact.
 
+If the assigned proof-evidence surface exists but misses only mechanical form
+fields, repair the runner-owned evidence directly when the value is derivable
+from the executed command, literal result, elapsed time, log path, and freshness
+state. Do not change commands, substitute proof, or alter implementation-review
+judgment through this form-repair path.
+
 ## Command Surface
 
 Run only documented public proof entrypoints selected from `AGENTS.md` and
@@ -53,9 +59,13 @@ the assigned command cannot run.
 Record each command, literal result, elapsed time, relevant log path, and
 whether reviewed paths changed before or after the run. Worker-local proof
 belongs in implementation logs. Final integrated proof belongs in the
-aggregated review log verification section unless the accepted plan assigns a
-different evidence surface. The runner records evidence only; it does not write
-the aggregated review log or make the implementation-review verdict.
+review-log verification section unless the accepted plan assigns a different
+evidence surface. The runner records evidence only; it does not write the
+review log or make the implementation-review verdict.
+
+Mechanical evidence-form repair is complete only after the assigned evidence
+again names every command, literal result, elapsed time, log path, and
+freshness status needed by the Implementation Review Coordinator.
 
 ## Failure
 

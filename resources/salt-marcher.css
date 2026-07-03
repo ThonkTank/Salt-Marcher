@@ -649,11 +649,17 @@
 }
 .nav-icon {
     -fx-alignment: center;
+    -fx-pref-width: 18;
+    -fx-pref-height: 18;
+    -fx-min-width: 18;
+    -fx-min-height: 18;
+    -fx-max-width: 18;
+    -fx-max-height: 18;
 }
 .nav-btn .nav-icon-stroke {
     -fx-fill: transparent;
     -fx-stroke: -sm-text-secondary;
-    -fx-stroke-width: 1.8;
+    -fx-stroke-width: 2.0;
     -fx-stroke-line-cap: round;
     -fx-stroke-line-join: round;
 }
@@ -1460,6 +1466,97 @@
     -fx-background-radius: 8;
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 8;
+}
+.session-planner-setup-strip {
+    -fx-spacing: 6;
+    -fx-padding: 8;
+    -fx-background-color: rgba(255, 255, 255, 0.055);
+    -fx-background-radius: 8;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 8;
+}
+.session-planner-scene-target {
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-accent-hover;
+}
+.session-planner-scene-encounter-summary {
+    -fx-padding: 2 0 2 0;
+}
+.world-planner-controls,
+.world-planner-main,
+.world-planner-state {
+    -fx-spacing: 8;
+    -fx-padding: 12;
+}
+.world-planner-controls {
+    -fx-min-width: 220;
+    -fx-alignment: center-left;
+}
+.world-planner-title,
+.world-planner-section-title {
+    -fx-font-weight: bold;
+}
+.world-planner-module-tabs {
+    -fx-padding: 0 0 0 6;
+    -fx-spacing: 6;
+}
+.world-planner-module-tab {
+    -fx-alignment: center;
+    -fx-min-width: 84;
+    -fx-padding: 5 10 5 10;
+}
+.search-filter-controls {
+    -fx-spacing: 7;
+    -fx-padding: 0 12 12 12;
+}
+.search-filter-search-row {
+    -fx-spacing: 6;
+    -fx-alignment: center-left;
+}
+.search-filter-field {
+    -fx-min-width: 180;
+}
+.search-filter-option {
+    -fx-padding: 2 5 2 5;
+}
+.search-filter-clear {
+    -fx-min-width: 72;
+}
+.world-planner-main-stack {
+    -fx-background-color: -sm-bg-darkest;
+}
+.world-planner-module-main {
+    -fx-spacing: 8;
+    -fx-padding: 12;
+}
+.world-planner-editor {
+    -fx-spacing: 8;
+    -fx-padding: 10;
+    -fx-background-color: rgba(255, 255, 255, 0.035);
+    -fx-background-radius: 6;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 6;
+}
+.world-planner-grid {
+    -fx-hgap: 8;
+    -fx-vgap: 8;
+}
+.world-planner-top-line,
+.world-planner-list-section {
+    -fx-spacing: 8;
+}
+.world-planner-titled-section {
+    -fx-spacing: 4;
+}
+.world-planner-note-section {
+    -fx-spacing: 2;
+}
+.world-planner-detail {
+    -fx-spacing: 10;
+    -fx-padding: 12;
+}
+.world-planner-detail-line {
+    -fx-spacing: 2;
 }
 .session-planner-card-title {
     -fx-font-weight: bold;

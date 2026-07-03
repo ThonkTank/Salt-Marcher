@@ -6,16 +6,13 @@ verification-entry architecture for SaltMarcher build logic.
 
 # Verification Core Architecture
 ## Purpose
+This document defines SaltMarcher's verification runtime, verification-core
+lifecycle surface, focused enforcement bundles, and private rule engines.
 
-This document defines the architecture of SaltMarcher's verification runtime,
-verification-core lifecycle surface, focused enforcement bundles, and private
-rule engines.
-
-It owns the structural split between runtime wrappers, public Gradle
-verification surfaces, bundle-owned focused checks, and private rule
-implementation. It does not redefine the detailed proof inventory from
-`docs/project/verification/quality-platforms*.md`, and it does not redefine the
-layer or role rules owned by `docs/project/architecture/enforcement/`.
+It owns the split between runtime wrappers, public Gradle verification surfaces,
+bundle-owned focused checks, and private rule implementation. It does not
+redefine the detailed proof inventory from `docs/project/verification/quality-platforms*.md`,
+or the layer and role rules owned by `docs/project/architecture/enforcement/`.
 ## Stakeholders And Concerns
 
 Primary consumers are engineers changing `tools/gradle/**`, `build.gradle.kts`,
@@ -222,6 +219,9 @@ also classifies the requested surface into the engines that the task graph can
 consume. Focused surfaces MUST NOT include build-harness, quality-rules, or
 Error Prone included builds, and MUST NOT register jQAssistant engine tasks,
 unless the selected surface or active bundle descriptors require that engine.
+Broad `production-handoff` does not activate jQAssistant by default; graph enforcement remains
+available through direct jQAssistant task requests and focused diagnostic surfaces whose
+selected bundle descriptors require it.
 The build publishes four focused-selection facts to the included builds:
 `saltmarcher.repoRootDir`, `saltmarcher.focusedEnforcementBundleMode`,
 `saltmarcher.activeEnforcementBundleIds`, and
@@ -306,10 +306,10 @@ execution every run. Successful unchanged verification results may be reused;
 this does not relax blocker semantics because changed or previously failing
 runs still execute their owning gates.
 Bytecode graph scanners that materialize checkout-specific stores, such as
-jQAssistant, SHOULD remain local up-to-date tasks rather than remote-cacheable
-tasks. Their scan tasks must declare only bytecode/source scan inputs, while
-rule directories and analyze groups belong to the analyze task so rule-only
-edits do not force a fresh store rebuild.
+jQAssistant, SHOULD remain direct or focused diagnostics rather than default broad handoff
+dependencies, and SHOULD stay local up-to-date tasks rather than remote-cacheable tasks.
+Their scan tasks must declare only bytecode/source scan inputs, while rule directories and
+analyze groups belong to the analyze task so rule-only edits do not force a fresh store rebuild.
 That rule now also covers the remaining root-owned verification surfaces such
 as `spotbugsMain`, `checkNoCompiledArtifactsInSource`,
 `checkDesktopPackagingInputs`, and `:build-harness:architectureCheck`; they

@@ -28,9 +28,9 @@ This standard applies to generated artifacts used for coordinated work:
   planning-bundle review
 - Implementation Reading Packets in prompts, handoffs, plans, or notes
 - implementation pass logs under `build/agent-pass-logs/`
-- qualitative review packet reports or pass-log summaries
+- qualitative implementation-review reports or pass-log summaries
 - Verification Runner final integrated proof evidence in review logs
-- aggregated Implementation Review Coordinator pass logs
+- Implementation Review Coordinator review pass logs
 - broad-goal completion audits
 
 Generated artifacts live under `build/agent-pass-logs/`. They are local

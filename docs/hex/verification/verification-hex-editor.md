@@ -30,6 +30,10 @@ contracts.
 - `Mechanically Enforced`: `./gradlew hexMapEditorBehaviorHarness
   --console=plain` runs through production Hex editor/domain/persistence
   routes with an isolated `XDG_DATA_HOME`.
+- `Mechanically Enforced`: `./gradlew sessionPlannerShellLayoutHarness
+  --console=plain` mounts `HexMapContribution` in `ShellWorkspacePane` and
+  verifies the shared `CatalogCrudControlsView` plus `ShellControls.stack`
+  composition gives the main map visible space.
 - `Mechanically Enforced`: `./gradlew checkDocumentationEnforcement
   --console=plain` for documentation structure after docs-only changes.
 - `Review-Owned`: review confirms requirements, domain, contract, and
@@ -51,6 +55,8 @@ behavior IDs before broader production handoff proof.
 | `HEX-EDITOR-007` | Persistence reload | Created map metadata, terrain overrides, and markers reload through the production SQLite route with stable domain meaning. | Ready |
 | `HEX-EDITOR-008` | Controls action routing | Map-save controls events and marker-save controls events remain distinct so a marker draft cannot be persisted by pressing map `Speichern`. | Ready |
 | `HEX-EDITOR-009` | Marker-save action routing | Marker-save controls events remain distinct from incidental map draft changes so pressing `Marker speichern` persists the marker instead of updating map metadata. | Ready |
+| `HEX-EDITOR-010` | Shared shell layout | `HexMapContribution` mounts shared catalog CRUD controls as the fixed stack child, compact Hex controls as the flexible stack child, and keeps the Hex main map visible in `COCKPIT_MAIN`. | Ready |
+| `HEX-EDITOR-011` | Catalog rename radius preservation | Renaming a non-current Hex map through the shared catalog CRUD route preserves that target map's existing radius instead of writing the create default. | Ready |
 
 ## Pass Or Fail Criteria
 

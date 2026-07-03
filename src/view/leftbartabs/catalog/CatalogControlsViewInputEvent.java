@@ -30,7 +30,9 @@ public record CatalogControlsViewInputEvent(
         double amountValue,
         boolean diversityAuto,
         double diversityValue,
-        List<Long> encounterTableIds
+        List<Long> encounterTableIds,
+        List<Long> worldFactionIds,
+        long worldLocationId
 ) {
 
     public CatalogControlsViewInputEvent {
@@ -48,5 +50,7 @@ public record CatalogControlsViewInputEvent(
         biomePopupQuery = biomePopupQuery == null ? "" : biomePopupQuery;
         alignmentPopupQuery = alignmentPopupQuery == null ? "" : alignmentPopupQuery;
         encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
+        worldFactionIds = worldFactionIds == null ? List.of() : List.copyOf(worldFactionIds);
+        worldLocationId = Math.max(0L, worldLocationId);
     }
 }

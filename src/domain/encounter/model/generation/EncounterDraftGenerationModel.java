@@ -15,6 +15,7 @@ public final class EncounterDraftGenerationModel {
     private final Collection<EncounterCandidateProfile> lockedProfiles;
     private final Map<Long, Integer> lockedQuantities;
     private final List<EncounterCandidateProfile> unlockedProfiles;
+    private final Map<Long, Integer> finiteCreatureStockCaps;
 
     public EncounterDraftGenerationModel(
             EncounterDifficultyIntent targetDifficulty,
@@ -23,7 +24,8 @@ public final class EncounterDraftGenerationModel {
             EncounterTuningIntent tuning,
             Collection<EncounterCandidateProfile> lockedProfiles,
             Map<Long, Integer> lockedQuantities,
-            List<EncounterCandidateProfile> unlockedProfiles
+            List<EncounterCandidateProfile> unlockedProfiles,
+            Map<Long, Integer> finiteCreatureStockCaps
     ) {
         this.targetDifficulty = targetDifficulty;
         this.thresholds = thresholds;
@@ -34,6 +36,9 @@ public final class EncounterDraftGenerationModel {
                 ? Map.of()
                 : Collections.unmodifiableMap(new LinkedHashMap<>(lockedQuantities));
         this.unlockedProfiles = unlockedProfiles == null ? List.of() : List.copyOf(unlockedProfiles);
+        this.finiteCreatureStockCaps = finiteCreatureStockCaps == null
+                ? Map.of()
+                : Collections.unmodifiableMap(new LinkedHashMap<>(finiteCreatureStockCaps));
     }
 
     public List<EncounterDraft> createDrafts() {
@@ -44,7 +49,8 @@ public final class EncounterDraftGenerationModel {
                 tuning,
                 lockedProfiles,
                 lockedQuantities,
-                unlockedProfiles);
+                unlockedProfiles,
+                finiteCreatureStockCaps);
     }
 
     public record ScoreInput(

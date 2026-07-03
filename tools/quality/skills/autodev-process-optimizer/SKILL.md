@@ -53,8 +53,8 @@ Before running, planning, changing, or reviewing a process experiment:
 The process optimizer MUST NOT treat these as normal experiment knobs:
 
 - mandatory skill routing
-- required Implementation Review Coordinator cycles, including the
-  qualitative `code-simplifier` packet for covered implementation work
+- required Implementation Review Coordinator cycles, including qualitative
+  implementation-review coverage for covered implementation work
 - required planner escalation before repair for systemic review, architecture,
   behavior-harness, or proof feedback
 - implementation and review pass-log obligations
@@ -137,8 +137,8 @@ and `process_score`.
 The optimizer scores verified useful progress over process cost using the fixed
 primary formula from the verification standard. It must penalize proof failure,
 stale proof, missed mandatory skills, missed required Implementation Review
-Coordinator cycle or qualitative packet, missed required planner escalation,
-review blockers,
+Coordinator cycle or qualitative review coverage, missed required planner
+escalation, review blockers,
 dirty-tree ambiguity, user correction, delayed regressions, and context bloat.
 Until the verification standard changes, score computation may use only the
 documented `score_inputs` keys.

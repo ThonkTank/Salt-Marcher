@@ -27,7 +27,9 @@ final class EncounterBuilderInputsProjectionServiceAssembly {
                 publishedAmountValue(tuning),
                 isAutoDiversity(tuning),
                 publishedDiversityLevel(tuning),
-                safeInputs.encounterTableIds());
+                safeInputs.encounterTableIds(),
+                safeInputs.worldFactionIds(),
+                safeInputs.worldLocationId());
     }
 
     static EncounterStateSnapshot.BuilderSettings toPublishedBuilderSettings(

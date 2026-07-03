@@ -13,13 +13,15 @@ public record EncounterDraftBuildRequest(
         EncounterTuningIntent tuning,
         Collection<EncounterCandidateProfile> lockedProfiles,
         Map<Long, Integer> lockedQuantities,
-        List<EncounterCandidateProfile> pool
+        List<EncounterCandidateProfile> pool,
+        Map<Long, Integer> finiteCreatureStockCaps
 ) {
     public EncounterDraftBuildRequest {
         tuning = tuning == null ? EncounterTuningIntent.defaultIntent() : tuning;
         lockedProfiles = copyProfiles(lockedProfiles);
         lockedQuantities = copyQuantities(lockedQuantities);
         pool = copyProfiles(pool);
+        finiteCreatureStockCaps = copyQuantities(finiteCreatureStockCaps);
     }
 
     @Override
@@ -35,6 +37,11 @@ public record EncounterDraftBuildRequest(
     @Override
     public List<EncounterCandidateProfile> pool() {
         return copyProfiles(pool);
+    }
+
+    @Override
+    public Map<Long, Integer> finiteCreatureStockCaps() {
+        return copyQuantities(finiteCreatureStockCaps);
     }
 
     private static List<EncounterCandidateProfile> copyProfiles(Collection<EncounterCandidateProfile> profiles) {

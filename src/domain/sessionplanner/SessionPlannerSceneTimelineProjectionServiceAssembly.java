@@ -13,17 +13,18 @@ import src.domain.sessionplanner.model.session.SessionRestPlacement;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
 import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
-import src.domain.sessionplanner.published.SessionPlannerEncountersProjection;
+import src.domain.sessionplanner.published.SessionPlannerSceneTimelineProjection;
 import src.domain.sessionplanner.published.SessionPlannerRestKind;
 
-final class SessionPlannerEncountersProjectionServiceAssembly {
+final class SessionPlannerSceneTimelineProjectionServiceAssembly {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
+    private static final long NO_ENCOUNTER_PLAN_ID = 0L;
 
-    private SessionPlannerEncountersProjectionServiceAssembly() {
+    private SessionPlannerSceneTimelineProjectionServiceAssembly() {
     }
 
-    static SessionPlannerEncountersProjection projectEncounters(
+    static SessionPlannerSceneTimelineProjection projectSceneTimeline(
             SessionPlan session,
             SessionPartyFactsPort partyFacts,
             SessionPartyFactsRepository partyFactsRepository,
@@ -35,8 +36,8 @@ final class SessionPlannerEncountersProjectionServiceAssembly {
                         partyFacts,
                         partyFactsRepository,
                         encounterFactsRepository);
-        return new SessionPlannerEncountersProjection(
-                buildPlannedEncounters(
+        return new SessionPlannerSceneTimelineProjection(
+                buildSessionScenes(
                         session,
                         context.scaledBudgetXp(),
                         context.loadedEncounters(),
@@ -44,24 +45,26 @@ final class SessionPlannerEncountersProjectionServiceAssembly {
                 buildRestGaps(session));
     }
 
-    static List<SessionPlannerEncountersProjection.PlannedEncounter> buildPlannedEncounters(
+    static List<SessionPlannerSceneTimelineProjection.SessionScene> buildSessionScenes(
             SessionPlan session,
             int scaledBudgetXp,
             Map<Long, SessionEncounterPlanFact> loadedEncounters,
             SessionEncounterFactsRepository encounterFactsRepository
     ) {
-        List<SessionPlannerEncountersProjection.PlannedEncounter> plannedEncounters = new ArrayList<>();
+        List<SessionPlannerSceneTimelineProjection.SessionScene> sessionScenes = new ArrayList<>();
         for (SessionEncounter encounter : session.encounters()) {
-            SessionEncounterPlanFact detail = loadedEncounters.computeIfAbsent(
-                    encounter.encounterPlanId(),
-                    encounterFactsRepository::loadEncounterPlan);
+            boolean hasLinkedEncounter = encounter.encounterPlanId() > NO_ENCOUNTER_PLAN_ID;
+            SessionEncounterPlanFact detail = hasLinkedEncounter
+                    ? loadedEncounters.computeIfAbsent(encounter.encounterPlanId(), encounterFactsRepository::loadEncounterPlan)
+                    : SessionEncounterPlanFact.unavailable(NO_ENCOUNTER_PLAN_ID, "");
             int targetXp = encounter.allocation().budgetPercentage()
                     .multiply(BigDecimal.valueOf(scaledBudgetXp))
                     .divide(HUNDRED, 0, RoundingMode.HALF_UP)
                     .intValue();
-            plannedEncounters.add(new SessionPlannerEncountersProjection.PlannedEncounter(
+            sessionScenes.add(new SessionPlannerSceneTimelineProjection.SessionScene(
                     encounter.encounterId(),
                     encounter.encounterPlanId(),
+                    hasLinkedEncounter,
                     detail.name(),
                     detail.generatedLabel(),
                     detail.creatureCount(),
@@ -72,30 +75,33 @@ final class SessionPlannerEncountersProjectionServiceAssembly {
                     encounter.allocation().budgetPercentage(),
                     targetXp,
                     session.selectedEncounterId() == encounter.encounterId(),
+                    encounter.sceneTitle(),
+                    encounter.sceneNotes(),
+                    encounter.locationId(),
                     lootForEncounter(session.lootPlaceholders(), encounter.encounterId())));
         }
-        return List.copyOf(plannedEncounters);
+        return List.copyOf(sessionScenes);
     }
 
-    private static List<SessionPlannerEncountersProjection.LootPlaceholder> lootForEncounter(
+    private static List<SessionPlannerSceneTimelineProjection.LootPlaceholder> lootForEncounter(
             List<SessionLootPlaceholder> lootPlaceholders,
             long encounterId
     ) {
         return lootPlaceholders.stream()
                 .filter(loot -> loot.encounterId() == encounterId)
-                .map(loot -> new SessionPlannerEncountersProjection.LootPlaceholder(
+                .map(loot -> new SessionPlannerSceneTimelineProjection.LootPlaceholder(
                         loot.lootId(),
                         loot.label()))
                 .toList();
     }
 
-    private static List<SessionPlannerEncountersProjection.RestGap> buildRestGaps(SessionPlan session) {
-        List<SessionPlannerEncountersProjection.RestGap> gaps = new ArrayList<>();
+    private static List<SessionPlannerSceneTimelineProjection.RestGap> buildRestGaps(SessionPlan session) {
+        List<SessionPlannerSceneTimelineProjection.RestGap> gaps = new ArrayList<>();
         List<SessionEncounter> encounters = session.encounters();
         for (int index = 0; index < encounters.size() - 1; index++) {
             SessionEncounter left = encounters.get(index);
             SessionEncounter right = encounters.get(index + 1);
-            gaps.add(new SessionPlannerEncountersProjection.RestGap(
+            gaps.add(new SessionPlannerSceneTimelineProjection.RestGap(
                     index,
                     left.encounterId(),
                     right.encounterId(),
@@ -105,14 +111,14 @@ final class SessionPlannerEncountersProjectionServiceAssembly {
     }
 
     private static SessionPlannerRestKind restKindForGap(
-            long leftEncounterId,
-            long rightEncounterId,
+            long leftSceneToken,
+            long rightSceneToken,
             List<SessionRestPlacement> placements
     ) {
         return placements.stream()
-                .filter(placement -> placement.matchesGap(leftEncounterId, rightEncounterId))
+                .filter(placement -> placement.matchesGap(leftSceneToken, rightSceneToken))
                 .findFirst()
-                .map(SessionPlannerEncountersProjectionServiceAssembly::toRestKind)
+                .map(SessionPlannerSceneTimelineProjectionServiceAssembly::toRestKind)
                 .orElse(SessionPlannerRestKind.NONE);
     }
 

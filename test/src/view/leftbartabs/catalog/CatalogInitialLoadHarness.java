@@ -13,6 +13,9 @@ import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
 import javafx.scene.layout.HBox;
@@ -25,6 +28,12 @@ import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.data.creatures.model.CreaturesPersistenceSchema;
+import src.domain.encounter.published.EncounterBuilderInputsModel;
+import src.domain.worldplanner.published.WorldFactionSummary;
+import src.domain.worldplanner.published.WorldLocationSummary;
+import src.domain.worldplanner.published.WorldPlannerReadStatus;
+import src.domain.worldplanner.published.WorldPlannerSnapshot;
+import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
 public final class CatalogInitialLoadHarness {
 
@@ -72,6 +81,7 @@ public final class CatalogInitialLoadHarness {
         assertTrue(!table.getItems().isEmpty(), "Catalog table did not receive initial DB-backed rows.");
         assertTrue("2 Monster gefunden".equals(countLabel.getText()),
                 "Catalog count label did not reflect DB-backed total: " + countLabel.getText());
+        assertWorldPlannerSourceControls(registry, controls);
     }
 
     private static ServiceRegistry services() {
@@ -84,7 +94,35 @@ public final class CatalogInitialLoadHarness {
         new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
         new src.domain.party.PartyServiceContribution().register(builder);
         new src.domain.encounter.EncounterServiceContribution().register(builder);
+        builder.register(WorldPlannerSnapshotModel.class, new WorldPlannerSnapshotModel(
+                CatalogInitialLoadHarness::worldPlannerSnapshot,
+                listener -> () -> { }));
         return builder.build();
+    }
+
+    private static void assertWorldPlannerSourceControls(ServiceRegistry registry, Parent controls) {
+        Button factionButton = button(controls, "Fraktionen");
+        factionButton.fire();
+        CheckBox faction = popupDescendant(CheckBox.class, "Scarlet Knives");
+        faction.fire();
+        selectComboItem(comboBox(controls), "#501 | Old Gate");
+
+        EncounterBuilderInputsModel inputsModel = registry.require(EncounterBuilderInputsModel.class);
+        assertTrue(inputsModel.current().worldFactionIds().equals(List.of(1L)),
+                "Encounter builder did not receive selected World Planner faction ids: "
+                        + inputsModel.current().worldFactionIds());
+        assertTrue(inputsModel.current().worldLocationId() == 501L,
+                "Encounter builder did not receive selected World Planner location id: "
+                        + inputsModel.current().worldLocationId());
+    }
+
+    private static WorldPlannerSnapshot worldPlannerSnapshot() {
+        return new WorldPlannerSnapshot(
+                WorldPlannerReadStatus.SUCCESS,
+                List.of(),
+                List.of(new WorldFactionSummary(1L, "Scarlet Knives", "", 301L, List.of(), List.of())),
+                List.of(new WorldLocationSummary(501L, "Old Gate", "", List.of(1L), List.of(301L))),
+                "");
     }
 
     private static void seedCreatureCatalog() throws Exception {
@@ -124,6 +162,73 @@ public final class CatalogInitialLoadHarness {
                 .map(type::cast)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Descendant not found: " + type.getSimpleName()));
+    }
+
+    private static Button button(Parent parent, String textPrefix) {
+        return descendants(parent).stream()
+                .filter(Button.class::isInstance)
+                .map(Button.class::cast)
+                .filter(button -> button.getText() != null && button.getText().startsWith(textPrefix))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Button not found: " + textPrefix));
+    }
+
+    private static ComboBox<?> comboBox(Parent parent) {
+        return descendants(parent).stream()
+                .filter(ComboBox.class::isInstance)
+                .map(ComboBox.class::cast)
+                .filter(comboBox -> comboBox.getItems().stream().anyMatch(
+                        item -> "#501 | Old Gate".equals(itemText(comboBox, item))))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("World Planner location ComboBox not found."));
+    }
+
+    private static void selectComboItem(ComboBox<?> comboBox, String itemText) {
+        for (Object item : comboBox.getItems()) {
+            if (itemText.equals(itemText(comboBox, item))) {
+                selectComboItemRaw(comboBox, item);
+                return;
+            }
+        }
+        throw new AssertionError("World Planner location item not found: " + itemText);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static void selectComboItemRaw(ComboBox comboBox, Object item) {
+        comboBox.getSelectionModel().select(item);
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static String itemText(ComboBox comboBox, Object item) {
+        return comboBox.getConverter() == null ? String.valueOf(item) : comboBox.getConverter().toString(item);
+    }
+
+    private static <T extends Node> T popupDescendant(Class<T> type, String text) {
+        for (Window window : Window.getWindows()) {
+            Scene scene = window.getScene();
+            if (scene == null || scene.getRoot() == null) {
+                continue;
+            }
+            for (Node node : descendants(scene.getRoot())) {
+                if (type.isInstance(node) && textValue(node).contains(text)) {
+                    return type.cast(node);
+                }
+            }
+        }
+        throw new AssertionError("Popup descendant not found: " + text);
+    }
+
+    private static String textValue(Node node) {
+        if (node instanceof Button button) {
+            return button.getText();
+        }
+        if (node instanceof CheckBox checkBox) {
+            return checkBox.getText();
+        }
+        if (node instanceof Label label) {
+            return label.getText();
+        }
+        return "";
     }
 
     private static List<Node> descendants(Node node) {

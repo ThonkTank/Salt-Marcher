@@ -313,8 +313,9 @@ Rules:
 - `hex`: Authored Hex Map Context.
 - `dungeon`: Authored Dungeon Map Context with `core` truth and runtime.
 - `sessionplanner`: Roster Truth Context.
+- `worldplanner`: Roster Truth Context.
 
-## Context Relationships <!-- mechanical-domain-dependencies: dungeon=party; encounter=creatures,encountertable,party; hex=party; sessionplanner=encounter,party -->
+## Context Relationships <!-- mechanical-domain-dependencies: dungeon=party; encounter=creatures,encountertable,party,worldplanner; hex=party; sessionplanner=encounter,party,worldplanner; worldplanner=creatures,encountertable -->
 
 - `party`: `Party Character State Context`; publishes roster, membership, XP,
   rest cadence, adventuring-day facts, and travel-position facts.
@@ -344,4 +345,5 @@ Rules:
   published state through own ports to persist one session plan for participant
   references, encounter order, allocations, rest placement, placeholders, and
   selected encounter context.
+- `worldplanner`: `Roster Truth Context`; owns authored NPC, faction, and location state while storing foreign creature statblock and encounter-table references by stable id only.
 References: [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1), [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1), [Domain Context Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-context-enforcement.md:1)

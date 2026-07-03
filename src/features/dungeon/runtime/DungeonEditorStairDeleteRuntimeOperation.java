@@ -39,7 +39,7 @@ final class DungeonEditorStairDeleteRuntimeOperation {
             return DungeonEditorRuntimeOperationResult.none();
         }
         if (!workflow.session().hasSelectedMap()) {
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         long stairId = DungeonEditorPointRuntimeTarget.targetId(
                 sample,
@@ -47,14 +47,14 @@ final class DungeonEditorStairDeleteRuntimeOperation {
                 transitionDestination,
                 DungeonTopologyElementKind.STAIR);
         if (stairId <= NO_STAIR_ID) {
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         boolean deleted = deleteStairUseCase.execute(workflow.session().selectedMapId(), stairId);
         if (deleted) {
             workflow.applyEffect(DungeonEditorSessionEffect.clearedSelection());
             workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
         }
-        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+        return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
     }
 
 }

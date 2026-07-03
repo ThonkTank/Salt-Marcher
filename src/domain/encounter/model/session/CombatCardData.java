@@ -4,6 +4,7 @@ public record CombatCardData(
         String id,
         String name,
         boolean playerCharacter,
+        long worldNpcId,
         boolean active,
         boolean alive,
         int currentHp,
@@ -16,6 +17,7 @@ public record CombatCardData(
     public CombatCardData {
         id = id == null ? "" : id;
         name = name == null ? "" : name;
+        worldNpcId = Math.max(0L, worldNpcId);
         detail = detail == null ? "" : detail;
     }
 }

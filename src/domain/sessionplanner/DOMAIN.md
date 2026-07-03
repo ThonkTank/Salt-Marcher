@@ -73,9 +73,10 @@ Aggregate Root: SessionPlan
 - user-visible session display name
 - session-local participant references
 - exact `encounterDays`
-- ordered encounter-plan references
-- per-encounter budget allocations
-- selected encounter context
+- ordered session scenes
+- optional encounter-plan reference per scene
+- per-scene budget allocations when an encounter plan is linked
+- selected scene context
 - rests, placeholders, and planner-owned status state
 
 It does not embed foreign party membership truth, encounter rosters, creature
@@ -87,12 +88,13 @@ Commands entering the runtime model are:
 
 - create session plan
 - add or remove session participant reference
-- attach or detach encounter-plan reference
-- reorder attached encounter reference
-- change encounter allocation
-- set or clear a rest in one encounter gap
+- add or remove session scene
+- attach or detach encounter-plan reference on a scene
+- reorder scenes
+- change scene allocation when an encounter plan is linked
+- set or clear a rest in one scene gap
 - add or remove a loot placeholder
-- select the current session encounter context
+- select the current session scene context
 
 Core invariants:
 
@@ -100,9 +102,10 @@ Core invariants:
 - session participant count equals the number of session participant references
 - the current persistence model holds multiple session records and one current
   session pointer
-- attached encounters keep the session-local order chosen by the planner
-- rests can exist only between adjacent encounters
-- each attached encounter refers to exactly one encounter-owned saved plan
+- scenes keep the session-local order chosen by the planner
+- rests can exist only between adjacent scenes
+- each scene may refer to one encounter-owned saved plan, but scenes may also
+  have no linked encounter
 - sessionplanner persists only references and planner-owned metadata, not
   foreign party or encounter internals
 - loot placeholders do not contribute fake XP or fake gold values
@@ -115,12 +118,12 @@ Current state:
   current pointer through a planner-owned repository port and canonical
   load/save session use cases
 - reopening the planner after reload or application restart preserves
-  participant refs, encounter order, allocations, selection, rests, and
+  participant refs, scene order, allocations, selection, rests, and
   placeholders for that current session only
 
 Target state:
 
-- reopening a session restores session-owned participant refs, encounter order,
+- reopening a session restores session-owned participant refs, scene order,
   allocations, selection, rests, and placeholders
 - party, encounter, creature, and later loot truth are reloaded through their
   owning boundaries instead of being shadow-copied into session persistence
@@ -128,9 +131,9 @@ Target state:
 ## Ubiquitous Language
 
 - `SessionPlan`: authored planning record for one adventure session
-- `Session Encounter`: one encounter-owned saved plan attached to the session
-  with planner-owned metadata
-- `Rest Gap`: a place between two adjacent session encounters where a rest can
+- `Session Scene`: one session-owned timeline unit that may optionally link to
+  one encounter-owned saved plan
+- `Rest Gap`: a place between two adjacent session scenes where a rest can
   be placed
 - `Loot Placeholder`: unresolved reward marker owned by the session plan
 

@@ -17,9 +17,11 @@ integration.
 
 ## Current State
 
-World Planner does not yet exist as a canonical owner. NPCs, factions, and
-campaign-planning locations are not owned by Creatures, Encounter,
-EncounterTable, Session Planner, Party, Dungeon, Hex, or Travel.
+World Planner owns a backend domain, SQLite persistence adapter, published
+readback model, minimal left-bar contribution, backend behavior harness, and
+left-bar UI harness for NPCs, factions, and campaign-planning locations.
+Encounter, Combat lifecycle, and Session Planner location-choice integration
+remain later waves.
 
 ## Target Topology
 
@@ -31,16 +33,16 @@ src/data/worldplanner/**
 src/view/leftbartabs/worldplanner/**
 ```
 
-Wave 1 does not use `src/features/worldplanner/**`. That route would require
-an explicit shell-discovery and feature-runtime integration decision before it
-could become the left-bar target.
+The current target does not use `src/features/worldplanner/**`. That route
+would require an explicit shell-discovery and feature-runtime integration
+decision before it could become the left-bar target.
 
 ## Boundaries
 
 `src/domain/worldplanner/**` owns:
 
 - World Planner application services
-- published commands, statuses, and read-only models
+- published command carriers and read-only models
 - NPC, faction, and location authored models
 - use cases for lifecycle, membership, inventory limits, source constraints,
   loss confirmation, and reactivation
@@ -105,10 +107,11 @@ could become the left-bar target.
 
 ## Verification And Review
 
-World Planner architecture conformance is initially review-owned. Later
-implementation waves must add behavior harness proof for production routes and
-use the repository's normal staged verification route for production-code
-changes.
+World Planner architecture conformance is review-owned outside the implemented
+backend and minimal left-bar routes. Later implementation waves must add
+behavior harness proof for Encounter, Combat lifecycle, and public
+location-choice production routes and use the repository's normal staged
+verification route for production-code changes.
 
 ## References
 

@@ -16,12 +16,13 @@ import src.domain.hex.model.map.usecase.LoadHexEditorStateUseCase;
 import src.domain.hex.model.map.usecase.LoadHexEditorUseCase;
 import src.domain.hex.model.map.usecase.MoveHexPartyTokenUseCase;
 import src.domain.hex.model.map.usecase.PaintHexTerrainUseCase;
+import src.domain.hex.model.map.usecase.RenameHexMapUseCase;
 import src.domain.hex.model.map.usecase.SaveHexMarkerUseCase;
 import src.domain.hex.model.map.usecase.SelectHexMapUseCase;
 import src.domain.hex.model.map.usecase.SelectHexTileUseCase;
 import src.domain.hex.model.map.usecase.SetHexEditorToolUseCase;
-import src.domain.hex.model.map.usecase.UpdateHexTravelPositionUseCase;
 import src.domain.hex.model.map.usecase.UpdateHexMapUseCase;
+import src.domain.hex.model.map.usecase.UpdateHexTravelPositionUseCase;
 import src.domain.hex.published.HexEditorModel;
 import src.domain.hex.published.HexEditorSnapshot;
 import src.domain.hex.published.HexTravelModel;
@@ -61,6 +62,7 @@ final class HexServiceAssembly implements HexEditorPublishedStateRepository {
                 new LoadHexEditorUseCase(loadState),
                 new SelectHexMapUseCase(repository, loadState),
                 new UpdateHexMapUseCase(repository, loadState),
+                new RenameHexMapUseCase(repository, loadState),
                 new SelectHexTileUseCase(repository, loadState),
                 new PaintHexTerrainUseCase(repository, loadState),
                 new SaveHexMarkerUseCase(repository, loadState),

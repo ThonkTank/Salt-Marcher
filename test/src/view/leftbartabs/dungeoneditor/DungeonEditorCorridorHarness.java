@@ -20,6 +20,7 @@ import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
+import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import javafx.event.ActionEvent;
@@ -98,16 +99,16 @@ final class DungeonEditorCorridorHarness {
                         "DE-COR-005 starts with A1 anchored at (6,5,0): " + anchorRowsBefore));
         assertTrue(a1AnchorRow.contains("|cell_y=5|"),
                 "DE-COR-005 captures exact A1 anchor row at (6,5,0): " + a1AnchorRow);
-        assertTrue(!"HANDLE".equals(runtimePointerTarget(binding.mapContentModel(), corridorAnchor.markerQ(), corridorAnchor.markerR())
-                        .targetKind()
-                        .name()),
+        assertTrue(runtimePointerTarget(binding.mapContentModel(), corridorAnchor.markerQ(), corridorAnchor.markerR())
+                        .targetKind() != DungeonEditorRuntimePointerTarget.TargetKind.HANDLE,
                 "DE-SEL-006 corridor anchor marker does not resolve as a draggable handle");
         Point2D corridorBody = new Point2D(corridorAnchor.markerQ() + 0.05, corridorAnchor.markerR() + 0.05);
-        assertEquals("CELL", runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
-                        .targetKind()
-                        .name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.CELL,
+                runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
+                        .targetKind(),
                 "DE-SEL-006 corridor anchor body resolves as a generic corridor cell");
-        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
+        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.CORRIDOR,
+                runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
                         .elementKind(),
                 "DE-SEL-006 corridor anchor body keeps corridor element identity");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
@@ -560,8 +561,10 @@ final class DungeonEditorCorridorHarness {
         click(button(controls, "Korridor"));
         Point2D doorOne = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
         Point2D doorTwo = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 10.0, 7.5);
-        assertPointerTarget(binding.mapContentModel(), doorOne, "HANDLE", "DE-COR-014 first door");
-        assertPointerTarget(binding.mapContentModel(), doorTwo, "HANDLE", "DE-COR-014 second door");
+        assertPointerTarget(binding.mapContentModel(), doorOne,
+                DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, "DE-COR-014 first door");
+        assertPointerTarget(binding.mapContentModel(), doorTwo,
+                DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, "DE-COR-014 second door");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
@@ -583,7 +586,8 @@ final class DungeonEditorCorridorHarness {
                 "8,7,0",
                 "9,7,0");
         assertVisibleCorridorPreview(runtime, binding, expectedCells, "DE-COR-014 hover");
-        assertPointerTarget(binding.mapContentModel(), doorTwo, "HANDLE",
+        assertPointerTarget(binding.mapContentModel(), doorTwo,
+                DungeonEditorRuntimePointerTarget.TargetKind.HANDLE,
                 "DE-COR-014 hover keeps committed second door target authoritative");
         clickMap(mapView, MouseButton.PRIMARY,
                 viewport.sceneToScreenX(doorTwo.getX()), viewport.sceneToScreenY(doorTwo.getY()), false);
@@ -601,8 +605,10 @@ final class DungeonEditorCorridorHarness {
                 expectedCells,
                 "DE-COR-014");
         Point2D fallbackCorridorBody = new Point2D(4.05, 5.05);
-        assertPointerTarget(binding.mapContentModel(), fallbackCorridorBody, "CELL", "DE-COR-014 fallback body");
-        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
+        assertPointerTarget(binding.mapContentModel(), fallbackCorridorBody,
+                DungeonEditorRuntimePointerTarget.TargetKind.CELL, "DE-COR-014 fallback body");
+        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.CORRIDOR,
+                runtimePointerTarget(binding.mapContentModel(), fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
                         .elementKind(),
                 "DE-COR-014 fallback body remains a semantic corridor target");
         selectMap(controls, "Corridor Vertical Fallback Reload Hop");
@@ -613,9 +619,11 @@ final class DungeonEditorCorridorHarness {
                 newCorridorId,
                 expectedCells,
                 "DE-COR-014 reload");
-        assertPointerTarget(binding.mapContentModel(), fallbackCorridorBody, "CELL",
+        assertPointerTarget(binding.mapContentModel(), fallbackCorridorBody,
+                DungeonEditorRuntimePointerTarget.TargetKind.CELL,
                 "DE-COR-014 reload fallback body");
-        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
+        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.CORRIDOR,
+                runtimePointerTarget(binding.mapContentModel(), fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
                         .elementKind(),
                 "DE-COR-014 reload fallback body remains a semantic corridor target");
 
@@ -640,8 +648,10 @@ final class DungeonEditorCorridorHarness {
         click(button(controls, "Korridor"));
         assertEquals("CORRIDOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
                 "DE-COR-004 corridor family selects corridor-create tool");
-        assertPointerTarget(binding.mapContentModel(), doorOne, "HANDLE", "DE-COR-004 D1");
-        assertPointerTarget(binding.mapContentModel(), doorThree, "HANDLE", "DE-COR-004 D3");
+        assertPointerTarget(binding.mapContentModel(), doorOne,
+                DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, "DE-COR-004 D1");
+        assertPointerTarget(binding.mapContentModel(), doorThree,
+                DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, "DE-COR-004 D3");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
@@ -711,9 +721,9 @@ final class DungeonEditorCorridorHarness {
         long corridorId = anchorHandle.ref().corridorId();
         DungeonEditorTopologyElementRef anchorRef = editorTopologyRef(anchorHandle.ref().topologyRef());
         Point2D anchorCenter = new Point2D(anchorHandle.markerQ() + 0.05, anchorHandle.markerR() + 0.05);
-        assertEquals("CELL", runtimePointerTarget(binding.mapContentModel(), anchorCenter.getX(), anchorCenter.getY())
-                        .targetKind()
-                        .name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.CELL,
+                runtimePointerTarget(binding.mapContentModel(), anchorCenter.getX(), anchorCenter.getY())
+                        .targetKind(),
                 "DE-COR-006 existing anchor delete uses a corridor body point, not a rendered anchor handle");
         assertEquals(1L, runtime.database().countCorridorAnchorsAt(mapId, 6, 5, 0),
                 "DE-COR-006 fixture starts with authored A1 at (6,5,0)");
@@ -836,9 +846,10 @@ final class DungeonEditorCorridorHarness {
         assertPointerTarget(
                 binding.mapContentModel(),
                 genericCorridorPoint,
-                "CELL",
+                DungeonEditorRuntimePointerTarget.TargetKind.CELL,
                 "DE-COR-013 existing-anchor corridor body");
-        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), genericCorridorPoint.getX(), genericCorridorPoint.getY())
+        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.CORRIDOR,
+                runtimePointerTarget(binding.mapContentModel(), genericCorridorPoint.getX(), genericCorridorPoint.getY())
                         .elementKind(),
                 "DE-COR-013 existing-anchor body hit resolves as a generic corridor cell instead of the anchor handle");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
@@ -915,9 +926,10 @@ final class DungeonEditorCorridorHarness {
         assertPointerTarget(
                 binding.mapContentModel(),
                 genericCorridorPoint,
-                "CELL",
+                DungeonEditorRuntimePointerTarget.TargetKind.CELL,
                 "DE-COR-013 new-anchor corridor body");
-        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), genericCorridorPoint.getX(), genericCorridorPoint.getY())
+        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.CORRIDOR,
+                runtimePointerTarget(binding.mapContentModel(), genericCorridorPoint.getX(), genericCorridorPoint.getY())
                         .elementKind(),
                 "DE-COR-013 new-anchor body hit resolves as a generic corridor cell instead of an anchor handle");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
@@ -1016,8 +1028,10 @@ final class DungeonEditorCorridorHarness {
         click(button(controls, "Korridor"));
         Point2D westWall = boundaryMidpointNear(binding.mapContentModel(), "WALL", 0.0, 2.5);
         Point2D eastWall = boundaryMidpointNear(binding.mapContentModel(), "WALL", 5.0, 2.5);
-        assertPointerTarget(binding.mapContentModel(), westWall, "BOUNDARY", "DE-COR-008 west endpoint");
-        assertPointerTarget(binding.mapContentModel(), eastWall, "BOUNDARY", "DE-COR-008 east endpoint");
+        assertPointerTarget(binding.mapContentModel(), westWall,
+                DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY, "DE-COR-008 west endpoint");
+        assertPointerTarget(binding.mapContentModel(), eastWall,
+                DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY, "DE-COR-008 east endpoint");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
         fireMapMousePressed(mapView, MouseButton.PRIMARY,
@@ -1072,11 +1086,14 @@ final class DungeonEditorCorridorHarness {
         click(button(controls, "Korridor"));
         Point2D roomInterior = new Point2D(1.5, 2.5);
         Point2D doorTwo = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 8.0, 2.5);
-        assertPointerTarget(binding.mapContentModel(), roomInterior, "LABEL", "DE-COR-013 generic-room start");
-        assertEquals("ROOM", runtimePointerTarget(binding.mapContentModel(), roomInterior.getX(), roomInterior.getY())
+        assertPointerTarget(binding.mapContentModel(), roomInterior,
+                DungeonEditorRuntimePointerTarget.TargetKind.LABEL, "DE-COR-013 generic-room start");
+        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.ROOM,
+                runtimePointerTarget(binding.mapContentModel(), roomInterior.getX(), roomInterior.getY())
                         .elementKind(),
                 "DE-COR-013 generic-room start resolves as a room target rather than a door target");
-        assertPointerTarget(binding.mapContentModel(), doorTwo, "HANDLE", "DE-COR-013 generic-room second door");
+        assertPointerTarget(binding.mapContentModel(), doorTwo,
+                DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, "DE-COR-013 generic-room second door");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 

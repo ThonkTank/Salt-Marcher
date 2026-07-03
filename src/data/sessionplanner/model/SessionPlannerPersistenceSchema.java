@@ -6,10 +6,16 @@ public final class SessionPlannerPersistenceSchema {
     public static final String SESSION_PLANS_TABLE = "session_planner_sessions";
     public static final String CURRENT_SESSION_TABLE = "session_planner_current_session";
     public static final String SESSION_PARTICIPANTS_TABLE = "session_planner_participants";
+    // LEGACY_REMOVE_ON_TOUCH: table and column names retain encounter wording
+    // during the scene migration; remove when a schema migration can rename the
+    // compatibility storage surface without losing existing session plans.
     public static final String SESSION_ENCOUNTERS_TABLE = "session_planner_encounters";
     public static final String SESSION_RESTS_TABLE = "session_planner_rests";
     public static final String SESSION_LOOT_PLACEHOLDERS_TABLE = "session_planner_loot_placeholders";
     public static final String SESSION_LOOT_ENCOUNTER_ID_COLUMN = "encounter_id";
+    public static final String SESSION_ENCOUNTER_SCENE_TITLE_COLUMN = "scene_title";
+    public static final String SESSION_ENCOUNTER_SCENE_NOTES_COLUMN = "scene_notes";
+    public static final String SESSION_ENCOUNTER_LOCATION_ID_COLUMN = "location_id";
     private static final String CREATE_TABLE_IF_NOT_EXISTS = "CREATE TABLE IF NOT EXISTS ";
     private static final String REQUIRED_SESSION_REFERENCE =
             "session_id INTEGER NOT NULL REFERENCES "
@@ -50,6 +56,9 @@ public final class SessionPlannerPersistenceSchema {
                     + "encounter_id INTEGER NOT NULL, "
                     + "encounter_plan_id INTEGER NOT NULL, "
                     + "budget_percentage TEXT NOT NULL, "
+                    + SESSION_ENCOUNTER_SCENE_TITLE_COLUMN + " TEXT NOT NULL DEFAULT '', "
+                    + SESSION_ENCOUNTER_SCENE_NOTES_COLUMN + " TEXT NOT NULL DEFAULT '', "
+                    + SESSION_ENCOUNTER_LOCATION_ID_COLUMN + " INTEGER NOT NULL DEFAULT 0, "
                     + SORT_ORDER_COLUMN_DECLARATION
                     + "PRIMARY KEY(session_id, encounter_id)"
                     + ")";

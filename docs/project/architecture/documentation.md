@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-29
+Last Reviewed: 2026-06-30
 Source of Truth: Documentation taxonomy, required metadata, and review rules
 for all project documentation outside `AGENTS.md`.
 
@@ -50,6 +50,26 @@ Canonical project documentation lives under `docs/`.
 
 If a topic spans several roots, the canonical copy still lives once inside the
 owning `docs/<feature>/<type>/` or `docs/project/<type>/` location.
+
+## Placement Classes
+
+Before adding or changing documentation, name the artifact class and its home.
+
+- Canonical project truth lives in `docs/project/<type>/`.
+- Canonical feature truth lives in `docs/<feature>/<type>/`.
+- Operative agent workflow lives in the owning `SKILL.md`.
+- Generated implementation evidence lives under `build/agent-pass-logs/`.
+- Review verdicts for CRs and planning artifacts live in coordinator-authored
+  generated review artifacts, not in chat or Main summaries.
+- Durable structural or governance debt lives in the project-health marker and
+  register flow.
+- External source evidence lives in the workspace reference mirror, not in
+  SaltMarcher docs.
+
+Placement decisions must be reasoned by audience, durability, review owner,
+operational use, and whether the content defines truth or records evidence.
+When a new artifact class appears, extend this taxonomy or route to a narrower
+owner before producing more instances.
 
 ## Canonical Document Types
 
@@ -125,6 +145,29 @@ owning `docs/<feature>/<type>/` or `docs/project/<type>/` location.
 - Split a document once it becomes hard to scan or exceeds 350 lines.
 - Keep one language per document. German and English are both allowed.
 - Prefer fixed filenames at the owning root over free-form naming.
+
+## Split Rules
+
+Splitting is required when accumulated additions make one document carry
+multiple artifact classes, audiences, review owners, field lists, or operative
+workflows. Do not wait for one large edit; many small additions that blur the
+owner boundary are the normal split signal.
+
+When splitting, keep the entry document as a router, move detailed procedure to
+the narrower owner or skill, preserve meaning, and add links in both
+directions. Constantly compressing owner documents to fit new workflow detail
+is not the default extension strategy.
+
+## Naming And Linking
+
+Use stable, descriptive kebab-case filenames at the owning root. Documents that
+route to another owner must link to that owner. Split owner documents must link
+back to their entry document. Generated artifact groups must share a stable
+slug and maintain the index/backlink rules owned by the Implementation
+Artifacts Standard.
+
+`AGENTS.md` must keep the mandatory route to the owner rules a fresh agent
+needs before editing governed docs or workflow artifacts.
 
 ## Duplication Rules
 
@@ -250,3 +293,4 @@ Use:
 - [Project Documentation Entry Point](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/README.md:1)
 - [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
 - [Implementation Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-documentation.md:1)
+- [Implementation Artifact Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-artifacts.md:1)

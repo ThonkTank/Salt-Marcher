@@ -30,97 +30,66 @@ public final class EncounterApplicationService {
     }
 
     public void applyState(ApplyEncounterStateCommand command) {
-        applyStateUseCase.execute(toStateArguments(command));
+        applyStateUseCase.execute(toApplyStateRequest(command));
     }
 
     public void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command) {
-        updateBuilderInputsUseCase.execute(toBuilderArguments(command));
+        updateBuilderInputsUseCase.execute(toBuilderInputsRequest(command));
     }
 
     public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) {
         publishPlanBudgetUseCase.execute(command == null ? 0L : command.planId());
     }
 
-    private static Object[] toStateArguments(ApplyEncounterStateCommand command) {
+    private static ApplyEncounterStateUseCase.Request toApplyStateRequest(ApplyEncounterStateCommand command) {
         if (command == null) {
-            return defaultStateArguments();
+            return ApplyEncounterStateUseCase.Request.refresh();
         }
-        long[] stateIds = new long[] {
+        List<ApplyEncounterStateUseCase.InitiativeInput> initiativeInputs = new ArrayList<>();
+        List<String> initiativeIds = command.initiativeIds();
+        List<Integer> initiativeScores = command.initiativeScores();
+        int count = Math.min(initiativeIds.size(), initiativeScores.size());
+        for (int index = 0; index < count; index++) {
+            initiativeInputs.add(new ApplyEncounterStateUseCase.InitiativeInput(
+                    initiativeIds.get(index),
+                    initiativeScores.get(index).intValue()));
+        }
+        return new ApplyEncounterStateUseCase.Request(
+                command.action().name(),
                 command.creatureId(),
                 command.planId(),
-                command.undoToken(),
-                command.partyMemberId()
-        };
-        int[] stateValues = new int[] {
+                command.worldNpcId(),
                 command.delta(),
-                command.initiative(),
-                command.amount()
-        };
-        List<String> initiativeIds = new ArrayList<>();
-        List<Integer> initiatives = new ArrayList<>();
-        int initiativeValueCount = command.initiativeValues().size();
-        for (int index = 0; index < initiativeValueCount; index++) {
-            initiativeIds.add(command.initiativeValues().get(index).id());
-            initiatives.add(command.initiativeValues().get(index).initiative());
-        }
-        return new Object[] {
-                command.action().name(),
-                stateIds,
-                stateValues,
-                initiativeIds,
-                initiatives,
+                command.undoToken(),
+                initiativeInputs,
                 command.combatantId(),
-                command.healing()
-        };
+                command.initiative(),
+                command.partyMemberId(),
+                command.amount(),
+                command.healing());
     }
 
-    private static Object[] toBuilderArguments(UpdateEncounterBuilderInputsCommand command) {
+    private static UpdateEncounterBuilderInputsUseCase.Request toBuilderInputsRequest(
+            UpdateEncounterBuilderInputsCommand command
+    ) {
         if (command == null) {
-            return defaultBuilderArguments();
+            return UpdateEncounterBuilderInputsUseCase.Request.empty();
         }
-        boolean[] autoFlags = new boolean[] {
-                command.inputs().autoDifficulty(),
-                command.inputs().autoBalance(),
-                command.inputs().autoAmount(),
-                command.inputs().autoDiversity()
-        };
-        int[] tuningLevels = new int[] {
-                command.inputs().difficultyLevel(),
-                command.inputs().balanceLevel(),
-                command.inputs().diversityLevel()
-        };
-        return new Object[] {
-                command.inputs().creatureTypes(),
-                command.inputs().creatureSubtypes(),
-                command.inputs().biomes(),
-                autoFlags,
-                tuningLevels,
-                command.inputs().amountValue(),
-                command.inputs().encounterTableIds()
-        };
+        return new UpdateEncounterBuilderInputsUseCase.Request(
+                command.creatureTypes(),
+                command.creatureSubtypes(),
+                command.biomes(),
+                command.autoDifficulty(),
+                command.difficultyLevel(),
+                command.autoBalance(),
+                command.balanceLevel(),
+                command.autoAmount(),
+                command.amountValue(),
+                command.autoDiversity(),
+                command.diversityLevel(),
+                command.encounterTableIds(),
+                command.worldFactionIds(),
+                command.worldLocationId());
     }
 
-    private static Object[] defaultStateArguments() {
-        return new Object[] {
-                null,
-                new long[] {0L, 0L, 0L, 0L},
-                new int[] {0, 0, 0},
-                List.of(),
-                List.of(),
-                "",
-                false
-        };
-    }
-
-    private static Object[] defaultBuilderArguments() {
-        return new Object[] {
-                null,
-                null,
-                null,
-                new boolean[] {false, false, false, false},
-                new int[] {0, 0, 0},
-                0.0,
-                null
-        };
-    }
 }

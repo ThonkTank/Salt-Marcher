@@ -1164,11 +1164,11 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
     static void assertPointerTarget(
             DungeonMapContentModel mapContentModel,
             Point2D scenePoint,
-            String expectedKind,
+            DungeonEditorRuntimePointerTarget.TargetKind expectedKind,
             String message
     ) {
         assertEquals(expectedKind,
-                runtimePointerTarget(mapContentModel, scenePoint.getX(), scenePoint.getY()).targetKind().name(),
+                runtimePointerTarget(mapContentModel, scenePoint.getX(), scenePoint.getY()).targetKind(),
                 message + " input route resolves expected runtime map hit target");
     }
 
@@ -1222,12 +1222,12 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             return rawTarget.targetKind();
         }
 
-        String labelKind() {
-            return rawTarget.labelKind().legacyName();
+        DungeonEditorRuntimePointerTarget.LabelKind labelKind() {
+            return rawTarget.labelKind();
         }
 
-        String elementKind() {
-            return rawTarget.elementKind().legacyName();
+        DungeonEditorRuntimePointerTarget.ElementKind elementKind() {
+            return rawTarget.elementKind();
         }
 
         long ownerId() {
@@ -1238,7 +1238,11 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             return rawTarget.clusterId();
         }
 
-        String topologyKind() {
+        DungeonEditorRuntimePointerTarget.TopologyKind topologyKind() {
+            return rawTarget.topologyKind();
+        }
+
+        String topologyRefText() {
             return rawTarget.topologyKind().legacyName();
         }
 

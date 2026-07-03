@@ -22,7 +22,8 @@ final class EncounterDraftEnumerationModel {
             EncounterTuningIntent tuning,
             Collection<EncounterCandidateProfile> lockedProfiles,
             Map<Long, Integer> lockedQuantities,
-            List<EncounterCandidateProfile> unlockedProfiles
+            List<EncounterCandidateProfile> unlockedProfiles,
+            Map<Long, Integer> finiteCreatureStockCaps
     ) {
         List<EncounterCandidateProfile> pool =
                 EncounterSearchPoolModel.buildSearchPool(unlockedProfiles, thresholds, targetDifficulty);
@@ -33,7 +34,8 @@ final class EncounterDraftEnumerationModel {
                 tuning,
                 lockedProfiles,
                 lockedQuantities,
-                pool));
+                pool,
+                finiteCreatureStockCaps));
     }
 
     static List<EncounterDraft> enumerate(EncounterDraftBuildRequest request) {
@@ -54,6 +56,9 @@ final class EncounterDraftEnumerationModel {
             Map<Long, Integer> counts
     ) {
         EncounterDraftComposition composition = EncounterDraftComposition.from(counts, profiles);
+        if (!withinFiniteStockCaps(counts, request.finiteCreatureStockCaps())) {
+            return;
+        }
         for (EncounterDraft draft : create(composition, request)) {
             drafts.put(draft.canonicalKey(), draft);
         }
@@ -153,6 +158,18 @@ final class EncounterDraftEnumerationModel {
 
     static void addCount(Map<Long, Integer> counts, long id, int count) {
         counts.put(id, counts.getOrDefault(id, 0) + count);
+    }
+
+    private static boolean withinFiniteStockCaps(Map<Long, Integer> counts, Map<Long, Integer> finiteStockCaps) {
+        if (finiteStockCaps == null || finiteStockCaps.isEmpty()) {
+            return true;
+        }
+        for (Map.Entry<Long, Integer> cap : finiteStockCaps.entrySet()) {
+            if (counts.getOrDefault(cap.getKey(), 0) > cap.getValue()) {
+                return false;
+            }
+        }
+        return true;
     }
 
 }

@@ -18,6 +18,7 @@ import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonEditorViewMode;
+import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
@@ -629,7 +630,8 @@ final class DungeonEditorRoomWallDoorHarness {
         assertEquals(Set.of("1,1,0", "4,1,0", "4,4,0", "1,4,0"),
                 runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId()),
                 "DE-SEL-008 starts with authored boundary corners");
-        assertEquals("HANDLE", runtimePointerTarget(binding.mapContentModel(), 4.0, 4.0).targetKind().name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE,
+                runtimePointerTarget(binding.mapContentModel(), 4.0, 4.0).targetKind(),
                 "DE-SEL-008 input route resolves the south-east corner as a handle");
 
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
@@ -1164,7 +1166,8 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-SEL-010 reload publishes a cluster-corner handle at the boundary-derived corner");
         assertTrue(renderHasGlyphAt(binding.mapContentModel(), roomRef, 4.0, 4.0, false),
                 "DE-SEL-010 reload render shows the corner handle glyph");
-        assertEquals("HANDLE", runtimePointerTarget(binding.mapContentModel(), 4.0, 4.0).targetKind().name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE,
+                runtimePointerTarget(binding.mapContentModel(), 4.0, 4.0).targetKind(),
                 "DE-SEL-010 reload pointer route resolves the corner as a handle");
 
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
@@ -1315,9 +1318,9 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-DOOR-001 door family selects door-create tool");
         var nearCornerTarget =
                 runtimePointerTarget(binding.mapContentModel(), 3.96, 1.20, true);
-        assertEquals("BOUNDARY", nearCornerTarget.targetKind().name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY, nearCornerTarget.targetKind(),
                 "DE-DOOR-001 boundary-preferred resolver chooses an authored boundary near a room corner");
-        assertEquals("WALL", nearCornerTarget.boundaryRef().boundaryKind().legacyName(),
+        assertEquals(DungeonEditorRuntimePointerTarget.BoundaryKind.WALL, nearCornerTarget.boundaryRef().boundaryKind(),
                 "DE-DOOR-001 boundary-preferred resolver keeps the wall candidate for door creation");
         assertEquals(4.0, nearCornerTarget.boundaryRef().startQ(),
                 "DE-DOOR-001 boundary-preferred resolver chooses the nearest east wall start q");

@@ -6,6 +6,7 @@ public record ApplyEncounterStateCommand(
         Action action,
         long creatureId,
         long planId,
+        long worldNpcId,
         int delta,
         long undoToken,
         List<InitiativeValue> initiativeValues,
@@ -20,6 +21,7 @@ public record ApplyEncounterStateCommand(
         action = action == null ? Action.REFRESH : action;
         creatureId = Math.max(0L, creatureId);
         planId = Math.max(0L, planId);
+        worldNpcId = Math.max(0L, worldNpcId);
         undoToken = Math.max(0L, undoToken);
         initiativeValues = initiativeValues == null ? List.of() : List.copyOf(initiativeValues);
         combatantId = combatantId == null ? "" : combatantId;
@@ -30,6 +32,7 @@ public record ApplyEncounterStateCommand(
     public static ApplyEncounterStateCommand action(String actionKey) {
         return new ApplyEncounterStateCommand(
                 actionFromKey(actionKey),
+                0L,
                 0L,
                 0L,
                 0,
@@ -47,6 +50,23 @@ public record ApplyEncounterStateCommand(
                 actionFromKey(actionKey),
                 creatureId,
                 0L,
+                0L,
+                0,
+                0L,
+                List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false);
+    }
+
+    public static ApplyEncounterStateCommand worldNpc(String actionKey, long creatureId, long worldNpcId) {
+        return new ApplyEncounterStateCommand(
+                actionFromKey(actionKey),
+                creatureId,
+                0L,
+                worldNpcId,
                 0,
                 0L,
                 List.of(),
@@ -62,6 +82,7 @@ public record ApplyEncounterStateCommand(
                 actionFromKey(actionKey),
                 0L,
                 planId,
+                0L,
                 0,
                 0L,
                 List.of(),
@@ -77,6 +98,7 @@ public record ApplyEncounterStateCommand(
                 actionFromKey(actionKey),
                 0L,
                 0L,
+                0L,
                 delta,
                 0L,
                 List.of(),
@@ -90,6 +112,7 @@ public record ApplyEncounterStateCommand(
     public static ApplyEncounterStateCommand undo(String actionKey, long undoToken) {
         return new ApplyEncounterStateCommand(
                 actionFromKey(actionKey),
+                0L,
                 0L,
                 0L,
                 0,
@@ -109,6 +132,7 @@ public record ApplyEncounterStateCommand(
     ) {
         return new ApplyEncounterStateCommand(
                 actionFromKey(actionKey),
+                0L,
                 0L,
                 0L,
                 0,
@@ -131,6 +155,7 @@ public record ApplyEncounterStateCommand(
                 actionFromKey(actionKey),
                 0L,
                 0L,
+                0L,
                 0,
                 0L,
                 List.of(),
@@ -144,6 +169,7 @@ public record ApplyEncounterStateCommand(
     public static ApplyEncounterStateCommand initiative(String actionKey, String combatantId, int initiative) {
         return new ApplyEncounterStateCommand(
                 actionFromKey(actionKey),
+                0L,
                 0L,
                 0L,
                 0,
@@ -161,6 +187,7 @@ public record ApplyEncounterStateCommand(
                 actionFromKey(actionKey),
                 0L,
                 0L,
+                0L,
                 0,
                 0L,
                 List.of(),
@@ -169,6 +196,22 @@ public record ApplyEncounterStateCommand(
                 partyMemberId,
                 0,
                 false);
+    }
+
+    public List<String> initiativeIds() {
+        List<String> ids = new java.util.ArrayList<>();
+        for (InitiativeValue value : initiativeValues) {
+            ids.add(value.id());
+        }
+        return List.copyOf(ids);
+    }
+
+    public List<Integer> initiativeScores() {
+        List<Integer> scores = new java.util.ArrayList<>();
+        for (InitiativeValue value : initiativeValues) {
+            scores.add(Integer.valueOf(value.initiative()));
+        }
+        return List.copyOf(scores);
     }
 
     private static Action actionFromKey(String actionKey) {

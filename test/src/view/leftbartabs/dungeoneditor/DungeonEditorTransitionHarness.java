@@ -18,6 +18,7 @@ import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
+import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import javafx.event.ActionEvent;
@@ -516,7 +517,7 @@ final class DungeonEditorTransitionHarness {
         assertTrue(!renderHasTextForRef(binding.mapContentModel(), unlinkedTransitionRef),
                 "DE-TRN-001 cell transition does not render a committed feature label");
         var unlinkedMarkerTarget = runtimePointerTarget(binding.mapContentModel(), 4.5, 2.5, false);
-        assertEquals("MARKER", unlinkedMarkerTarget.targetKind().name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER, unlinkedMarkerTarget.targetKind(),
                 "DE-TRN-001 cell transition marker hit resolves through marker target kind");
         updateHoverTarget(binding.mapContentModel(), unlinkedMarkerTarget);
         assertTrue(renderHasHoverText(binding.mapContentModel(), "Übergang " + unlinkedTransitionId),
@@ -681,9 +682,9 @@ final class DungeonEditorTransitionHarness {
         click(button(controls, "Übergang"));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D wallMidpoint = boundaryMidpointNear(binding.mapContentModel(), "WALL", 2.0, 1.5);
-        assertEquals("BOUNDARY", runtimePointerTarget(binding.mapContentModel(), wallMidpoint.getX(), wallMidpoint.getY(), true)
-                        .targetKind()
-                        .name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.BOUNDARY,
+                runtimePointerTarget(binding.mapContentModel(), wallMidpoint.getX(), wallMidpoint.getY(), true)
+                        .targetKind(),
                 "DE-TRN-005 transition create samples a wall boundary target");
         clickMap(
                 mapView,
@@ -730,9 +731,9 @@ final class DungeonEditorTransitionHarness {
         assertTrue(!renderHasTextForRef(binding.mapContentModel(), transitionRef),
                 "DE-TRN-005 edge transition does not render a committed feature label");
         var transitionMarkerTarget = runtimePointerTarget(binding.mapContentModel(), wallMidpoint.getX(), wallMidpoint.getY(), false);
-        assertEquals("MARKER", transitionMarkerTarget.targetKind().name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER, transitionMarkerTarget.targetKind(),
                 "DE-TRN-005 edge transition marker hit resolves through marker target kind");
-        assertEquals("TRANSITION", transitionMarkerTarget.topologyKind(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TopologyKind.TRANSITION, transitionMarkerTarget.topologyKind(),
                 "DE-TRN-005 edge transition marker hit carries transition topology kind");
         updateHoverTarget(binding.mapContentModel(), transitionMarkerTarget);
         assertTrue(renderHasHoverText(binding.mapContentModel(), "Übergang " + transitionId),
@@ -884,7 +885,7 @@ final class DungeonEditorTransitionHarness {
         assertTrue(!renderHasTextForRef(binding.mapContentModel(), edgeRef),
                 "DE-TRN-001 roundtrip EDGE anchor does not render a committed feature label");
         var edgeMarkerTarget = runtimePointerTarget(binding.mapContentModel(), 7.0, 2.5, false);
-        assertEquals("MARKER", edgeMarkerTarget.targetKind().name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER, edgeMarkerTarget.targetKind(),
                 "DE-TRN-001 roundtrip EDGE anchor marker hit resolves through marker target kind");
         updateHoverTarget(binding.mapContentModel(), edgeMarkerTarget);
         assertTrue(renderHasHoverText(binding.mapContentModel(), "Übergang " + edgeTransitionId),
@@ -999,14 +1000,16 @@ final class DungeonEditorTransitionHarness {
 
         DungeonEditorTopologyElementRef transitionRef = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
         Point2D transitionCenter = glyphCenterForRef(binding.mapContentModel(), transitionRef);
-        assertEquals("MARKER", runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
-                        .targetKind()
-                        .name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.MARKER,
+                runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
+                        .targetKind(),
                 "DE-TRN-002 transition marker resolves as a real map pointer target");
-        assertEquals("TRANSITION", runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
+        assertEquals(DungeonEditorRuntimePointerTarget.ElementKind.TRANSITION,
+                runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
                         .elementKind(),
                 "DE-TRN-002 transition marker resolves through transition marker semantics");
-        assertEquals("TRANSITION", runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
+        assertEquals(DungeonEditorRuntimePointerTarget.TopologyKind.TRANSITION,
+                runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
                         .topologyKind(),
                 "DE-TRN-002 transition marker carries a transition topology ref");
         assertCompactTransitionGlyph(binding.mapContentModel(), transitionRef, "DE-TRN-002");

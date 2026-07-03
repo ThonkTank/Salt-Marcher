@@ -37,9 +37,10 @@ than one smell scoreboard. PMD retains generic source-smell families such as
 SpotBugs retains bytecode bug and security-smell discovery; generic ArchUnit
 suites retain cycle and broad dependency-direction blockers; `checkNoDeadCode`
 retains whole-program production reachability; CKJM retains hotspot and
-regression reporting; and jQAssistant backs the focused graph blockers and
-diagnostics for role-aware relay, reuse direction, and sprawl rules that generic
-smell tools cannot classify by SaltMarcher role semantics.
+regression reporting; and jQAssistant backs direct and focused graph diagnostics
+for role-aware relay, reuse direction, and sprawl rules that generic smell tools
+cannot classify by SaltMarcher role semantics. jQAssistant is not a default
+broad `production-handoff` dependency.
 
 For unused-code hygiene, the active mechanical scope is split by route:
 focused Error Prone verification compiles behind the production-code handoff

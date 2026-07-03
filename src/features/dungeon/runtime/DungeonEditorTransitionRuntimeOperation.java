@@ -65,7 +65,7 @@ final class DungeonEditorTransitionRuntimeOperation {
             TransitionDestination transitionDestination
     ) {
         if (!workflow.session().hasSelectedMap()) {
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         long transitionId = DungeonEditorPointRuntimeTarget.targetId(
                 sample,
@@ -73,14 +73,14 @@ final class DungeonEditorTransitionRuntimeOperation {
                 transitionDestination,
                 DungeonTopologyElementKind.TRANSITION);
         if (transitionId <= NO_TRANSITION_ID) {
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         boolean deleted = deleteTransitionUseCase.execute(workflow.session().selectedMapId(), transitionId);
         if (deleted) {
             workflow.applyEffect(DungeonEditorSessionEffect.clearedSelection());
             workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
         }
-        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+        return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
     }
 
     private DungeonEditorRuntimeOperationResult createTransition(
@@ -96,15 +96,15 @@ final class DungeonEditorTransitionRuntimeOperation {
         src.domain.dungeon.model.core.structure.transition.TransitionDestination destination =
                 destination(transitionDestination);
         if (!workflow.session().hasSelectedMap()) {
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         if (!createTransitionUseCase.canExecute(workflow.session().selectedMapId(), anchor, destination)) {
             workflow.clearPreviewWithStatus(INVALID_TRANSITION_DESTINATION_STATUS);
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         createTransitionUseCase.execute(workflow.session().selectedMapId(), anchor, destination);
         workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+        return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
     }
 
     private static TransitionAnchor transitionAnchor(

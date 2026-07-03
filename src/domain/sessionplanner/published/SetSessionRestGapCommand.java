@@ -18,25 +18,4 @@ public record SetSessionRestGapCommand(
         this.restKind = Objects.requireNonNull(restKind, "restKind");
     }
 
-    public static SetSessionRestGapCommand fromKey(
-            long leftEncounterId,
-            long rightEncounterId,
-            String restKindKey
-    ) {
-        return new SetSessionRestGapCommand(
-                leftEncounterId,
-                rightEncounterId,
-                restKindFromKey(restKindKey));
-    }
-
-    private static SessionPlannerRestKind restKindFromKey(String restKindKey) {
-        if (restKindKey == null || restKindKey.isBlank()) {
-            return SessionPlannerRestKind.SHORT_REST;
-        }
-        try {
-            return SessionPlannerRestKind.valueOf(restKindKey);
-        } catch (IllegalArgumentException ignored) {
-            return SessionPlannerRestKind.SHORT_REST;
-        }
-    }
 }

@@ -56,6 +56,14 @@ summaries, or separate roadmap/phase/step reviews as implementation authority.
 A worker may start only for a step plan listed in an accepted plan review and
 after the artifact-chain guard passes.
 
+The accepted plan-review artifact must be the canonical
+`YYYY-MM-DD-<slug>-plan-review.md` path for the CR chain. Noncanonical
+accepted artifacts such as `*-plan-review-r2.md` are evidence only until the
+Plan Review Coordinator repairs the canonical artifact form. The exact
+`Allowed Write Surface`, reviewed path fields, and authorized step-plan list
+must match the artifact contract or the output of
+`verify_artifact_chain.py --print-contract`.
+
 ## Review Criteria
 
 ### Formal Contract
@@ -67,6 +75,9 @@ Flag missing or contradictory:
 - bundle provenance, accepted artifact statuses, review fields, and authorized
   step-plan list
 - role values showing `Planner` authored roadmap, phase, and step artifacts
+- canonical review paths, exact header names, exact downstream-permission
+  values, and status-authority fields that allow the artifact-chain guard to
+  pass without a Main-owned status-fix step
 
 ### Goal Coverage
 
@@ -113,8 +124,11 @@ Check whether the bundle can prove the intended outcome:
 - behavior harness, focused handoff, documentation enforcement, or production
   handoff route matches the touched surface
 - proof is not self-confirming or weaker than the risk requires
-- Verification Runner, Implementation Review Coordinator, qualitative packet,
+- Verification Runner, Implementation Review Coordinator, qualitative review,
   project-health, and debt sync are assigned when their triggers apply
+- reviewed roadmap, phase-plan, and authorized step-plan status/upkeep fields
+  are review-owned, point to the plan-review artifact as status authority, and
+  are not deferred to a Main status-fix step
 
 ## Lens Escalation Signals
 

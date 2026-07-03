@@ -1,19 +1,19 @@
 package src.domain.sessionplanner.published;
 
 public record SessionPlannerStatePanelProjection(
-        boolean selectedEncounterAvailable,
-        String selectedEncounterTitle,
-        String selectedEncounterDetail,
-        String selectedEncounterXpSummary,
+        boolean selectedSceneAvailable,
+        String selectedSceneTitle,
+        String selectedSceneDetail,
+        String selectedSceneXpSummary,
         String stateContextLabel,
         String placeholderTitle,
         String placeholderDetail
 ) {
 
     public SessionPlannerStatePanelProjection {
-        selectedEncounterTitle = selectedEncounterTitle == null ? "" : selectedEncounterTitle;
-        selectedEncounterDetail = selectedEncounterDetail == null ? "" : selectedEncounterDetail;
-        selectedEncounterXpSummary = selectedEncounterXpSummary == null ? "" : selectedEncounterXpSummary;
+        selectedSceneTitle = selectedSceneTitle == null ? "" : selectedSceneTitle;
+        selectedSceneDetail = selectedSceneDetail == null ? "" : selectedSceneDetail;
+        selectedSceneXpSummary = selectedSceneXpSummary == null ? "" : selectedSceneXpSummary;
         stateContextLabel = stateContextLabel == null ? "" : stateContextLabel;
         placeholderTitle = placeholderTitle == null ? "" : placeholderTitle;
         placeholderDetail = placeholderDetail == null ? "" : placeholderDetail;
@@ -22,8 +22,8 @@ public record SessionPlannerStatePanelProjection(
     public static SessionPlannerStatePanelProjection empty() {
         return new SessionPlannerStatePanelProjection(
                 false,
-                "Kein Session-Encounter ausgewaehlt",
-                "Waehle im Planner einen Encounter aus, um den vorbereitenden State-Kontext zu sehen.",
+                "Keine Session-Szene ausgewaehlt",
+                "Waehle im Planner eine Szene aus, um den vorbereitenden State-Kontext zu sehen.",
                 "",
                 "",
                 "Katalog-Vorbereitung",

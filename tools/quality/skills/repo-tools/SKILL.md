@@ -78,19 +78,22 @@ repo-tracked change:
 - Tool path: `tools/quality/reporting/verify_artifact_chain.py`
 - Helps with: read-only verification that a CR and implementation-ready
   wave/step plan have simple role-authored artifact headers,
-  planning-review-coordinator acceptance, a single planning-bundle review,
-  matching artifact-lens completion, authorized step-plan coverage, and no
-  Main-authored review or `minimal chain` shortcut before implementation
-  starts.
+  planning-review-coordinator acceptance, review-owned status authority,
+  a single planning-bundle review, matching artifact-lens completion,
+  authorized step-plan coverage, and no Main-authored review or `minimal
+  chain` shortcut before implementation starts.
 - Governing skill: this `repo-tools` skill plus the Artifact Chain Guard rule
   in `docs/project/architecture/agent-instructions.md`.
 - Evidence strength: `Evidence-Proven` for literal artifact fields and
   matching generated artifact files; it is not a replacement for reviewer
-  judgment, proof, implementation logs, qualitative review packets, or
+  judgment, proof, implementation logs, qualitative review coverage, or
   Implementation Review Coordinator review.
 - Typical use:
   `python3 tools/quality/reporting/verify_artifact_chain.py --cr <cr> --plan <wave-or-step-plan>`
   Add `--phase-plan <phase-plan>` for each phase plan in the planning bundle.
+  Use `--print-contract` with `--cr` and `--plan` to print the canonical review
+  paths, header fields, and allowed write surfaces for mechanical artifact form
+  repair.
   `python3 tools/quality/reporting/verify_artifact_chain.py --self-test`
 
 ## Handoff

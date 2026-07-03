@@ -130,7 +130,8 @@ public final class EncounterResultsStateView extends VBox {
     private void publish(boolean awardExperienceRequested, boolean returnToBuilderRequested) {
         List<Boolean> selectedEnemies = new ArrayList<>();
         for (Node node : resultEnemyList.getChildren()) {
-            selectedEnemies.add(node instanceof CheckBox checkBox && checkBox.isSelected());
+            boolean selected = node instanceof CheckBox checkBox && checkBox.isSelected();
+            selectedEnemies.add(selected);
         }
         viewInputEventHandler.accept(new EncounterResultsStateViewInputEvent(
                 awardExperienceRequested,

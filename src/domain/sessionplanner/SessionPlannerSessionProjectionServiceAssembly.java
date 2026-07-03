@@ -11,6 +11,7 @@ import src.domain.sessionplanner.model.session.SessionPlan;
 import src.domain.sessionplanner.model.session.SessionRestPlacement;
 import src.domain.sessionplanner.model.session.SessionSavedEncounterPlanFact;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
+import src.domain.sessionplanner.model.session.port.SessionLocationReferencePort;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
 import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
@@ -27,7 +28,8 @@ final class SessionPlannerSessionProjectionServiceAssembly {
             SessionPartyFactsPort partyFacts,
             SessionPartyFactsRepository partyFactsRepository,
             SessionEncounterFactsPort encounterFacts,
-            SessionEncounterFactsRepository encounterFactsRepository
+            SessionEncounterFactsRepository encounterFactsRepository,
+            SessionLocationReferencePort locationReferences
     ) {
         SessionPlannerProjectionContextServiceAssembly.ProjectionContext context =
                 SessionPlannerProjectionContextServiceAssembly.buildContext(
@@ -53,6 +55,7 @@ final class SessionPlannerSessionProjectionServiceAssembly {
                         countLongRests(session.restPlacements())),
                 SessionPlannerSessionSnapshot.GoldBudgetState.placeholder(session.lootPlaceholders().size()),
                 availablePlans,
+                SessionPlannerSessionLocationProjectionServiceAssembly.buildLocationReferences(locationReferences),
                 resolveStatus(context.participants(), context.partyMembersFact(), encounterPlansFact, session.statusText()));
     }
 

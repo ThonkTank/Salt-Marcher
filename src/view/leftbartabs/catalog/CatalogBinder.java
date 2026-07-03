@@ -18,6 +18,7 @@ import src.domain.encounter.published.EncounterBuilderInputsModel;
 import src.domain.encounter.published.EncounterTuningPreviewModel;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.EncounterTableCatalogModel;
+import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 import src.view.slotcontent.details.creature.CreatureDetailsContentModel;
 import src.view.slotcontent.details.creature.CreatureDetailsView;
 
@@ -59,11 +60,17 @@ final class CatalogBinder {
         models.tuningPreview().subscribe(result ->
                 presentationModel.controlsContentModel().applyEncounterTuningPreview(result.labels()));
         models.builderInputs().subscribe(intentHandler::applyEncounterBuilderInputs);
+        if (models.worldPlanner() != null) {
+            models.worldPlanner().subscribe(presentationModel.controlsContentModel()::applyWorldPlannerSnapshot);
+        }
 
         presentationModel.controlsContentModel().applyCreatureFilterOptions(models.filterOptions().current());
         presentationModel.mainContentModel().applySearchResult(models.catalog().current());
         presentationModel.controlsContentModel().applyEncounterTables(models.encounterTables().current());
         presentationModel.controlsContentModel().applyEncounterTuningPreview(models.tuningPreview().current().labels());
+        if (models.worldPlanner() != null) {
+            presentationModel.controlsContentModel().applyWorldPlannerSnapshot(models.worldPlanner().current());
+        }
         intentHandler.applyEncounterBuilderInputs(models.builderInputs().current());
         return new Binding(controls, main);
     }
@@ -122,7 +129,8 @@ final class CatalogBinder {
                     runtimeContext.services().require(CreatureCatalogModel.class),
                     runtimeContext.services().require(CreatureDetailModel.class),
                     runtimeContext.services().require(EncounterTableCatalogModel.class),
-                    runtimeContext.services().require(EncounterTuningPreviewModel.class));
+                    runtimeContext.services().require(EncounterTuningPreviewModel.class),
+                    runtimeContext.services().find(WorldPlannerSnapshotModel.class).orElse(null));
         }
     }
 
@@ -139,7 +147,8 @@ final class CatalogBinder {
             CreatureCatalogModel catalog,
             CreatureDetailModel detail,
             EncounterTableCatalogModel encounterTables,
-            EncounterTuningPreviewModel tuningPreview
+            EncounterTuningPreviewModel tuningPreview,
+            WorldPlannerSnapshotModel worldPlanner
     ) {
     }
 

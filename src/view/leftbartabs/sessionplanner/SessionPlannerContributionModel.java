@@ -4,8 +4,10 @@ import java.util.Objects;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCatalogSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
-import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
+import src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
+import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
+import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 
@@ -15,6 +17,8 @@ public final class SessionPlannerContributionModel {
     private final CatalogCrudControlsContentModel catalogContentModel;
     private final SessionPlannerTimelineMainContentModel timelineMainContentModel;
     private final SessionPlannerStateContentModel stateContentModel;
+    private SessionPlannerSessionSnapshot latestSession = SessionPlannerSessionSnapshot.empty("");
+    private SessionPlannerParticipantsProjection latestParticipants = SessionPlannerParticipantsProjection.empty();
 
     SessionPlannerContributionModel(
             SessionPlannerControlsContentModel controlsContentModel,
@@ -32,19 +36,37 @@ public final class SessionPlannerContributionModel {
             SessionPlannerCurrentSessionModel sessionModel,
             SessionPlannerCatalogModel catalogModel,
             SessionPlannerParticipantsModel participantsModel,
-            SessionPlannerEncountersModel encountersModel,
-        SessionPlannerStatePanelModel statePanelModel
+            SessionPlannerSceneTimelineModel sceneTimelineModel,
+            SessionPlannerStatePanelModel statePanelModel
     ) {
-        sessionModel.subscribe(controlsContentModel::applySession);
+        sessionModel.subscribe(this::applySession);
         catalogModel.subscribe(this::applyCatalog);
-        participantsModel.subscribe(controlsContentModel::applyParticipants);
-        encountersModel.subscribe(timelineMainContentModel::applyEncounters);
+        participantsModel.subscribe(this::applyParticipants);
+        sceneTimelineModel.subscribe(timelineMainContentModel::applySceneTimeline);
         statePanelModel.subscribe(stateContentModel::applyStatePanel);
-        controlsContentModel.applySession(sessionModel.current());
+        applySession(sessionModel.current());
         applyCatalog(catalogModel.current());
-        controlsContentModel.applyParticipants(participantsModel.current());
-        timelineMainContentModel.applyEncounters(encountersModel.current());
+        applyParticipants(participantsModel.current());
+        timelineMainContentModel.applySceneTimeline(sceneTimelineModel.current());
         stateContentModel.applyStatePanel(statePanelModel.current());
+    }
+
+    private void applySession(SessionPlannerSessionSnapshot snapshot) {
+        latestSession = snapshot == null ? SessionPlannerSessionSnapshot.empty("") : snapshot;
+        controlsContentModel.applySession(latestSession);
+        timelineMainContentModel.applyLocationReferences(latestSession.locationReferences());
+        applyTimelineSetup();
+    }
+
+    private void applyParticipants(SessionPlannerParticipantsProjection projection) {
+        latestParticipants = projection == null ? SessionPlannerParticipantsProjection.empty() : projection;
+        applyTimelineSetup();
+    }
+
+    private void applyTimelineSetup() {
+        timelineMainContentModel.applySetup(SessionPlannerTimelineMainContentModel.SetupState.from(
+                latestSession,
+                latestParticipants));
     }
 
     private void applyCatalog(SessionPlannerCatalogSnapshot catalog) {

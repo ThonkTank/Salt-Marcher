@@ -71,7 +71,7 @@ final class DungeonMapInlineLabelUiStateContentPartModel {
                 && target != null
                 && label.ownerId() == target.ownerId()
                 && label.clusterId() == target.clusterId()
-                && label.labelKind().equals(target.labelKind())
+                && DungeonMapContentModel.preparedRenderLabelKind(label.labelKind()) == target.labelKind()
                 && label.topologyRef().equals(target.topologyRef());
     }
 

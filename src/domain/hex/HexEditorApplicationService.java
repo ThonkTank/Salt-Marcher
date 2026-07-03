@@ -4,6 +4,7 @@ import java.util.Objects;
 import src.domain.hex.model.map.usecase.CreateHexMapUseCase;
 import src.domain.hex.model.map.usecase.LoadHexEditorUseCase;
 import src.domain.hex.model.map.usecase.PaintHexTerrainUseCase;
+import src.domain.hex.model.map.usecase.RenameHexMapUseCase;
 import src.domain.hex.model.map.usecase.SaveHexMarkerUseCase;
 import src.domain.hex.model.map.usecase.SelectHexMapUseCase;
 import src.domain.hex.model.map.usecase.SelectHexTileUseCase;
@@ -12,6 +13,7 @@ import src.domain.hex.model.map.usecase.UpdateHexMapUseCase;
 import src.domain.hex.published.CreateHexMapCommand;
 import src.domain.hex.published.LoadHexEditorCommand;
 import src.domain.hex.published.PaintHexTerrainCommand;
+import src.domain.hex.published.RenameHexMapCommand;
 import src.domain.hex.published.SaveHexMarkerCommand;
 import src.domain.hex.published.SelectHexMapCommand;
 import src.domain.hex.published.SelectHexTileCommand;
@@ -24,6 +26,7 @@ public final class HexEditorApplicationService {
     private final LoadHexEditorUseCase loadEditorUseCase;
     private final SelectHexMapUseCase selectMapUseCase;
     private final UpdateHexMapUseCase updateMapUseCase;
+    private final RenameHexMapUseCase renameMapUseCase;
     private final SelectHexTileUseCase selectTileUseCase;
     private final PaintHexTerrainUseCase paintTerrainUseCase;
     private final SaveHexMarkerUseCase saveMarkerUseCase;
@@ -34,6 +37,7 @@ public final class HexEditorApplicationService {
             LoadHexEditorUseCase loadEditorUseCase,
             SelectHexMapUseCase selectMapUseCase,
             UpdateHexMapUseCase updateMapUseCase,
+            RenameHexMapUseCase renameMapUseCase,
             SelectHexTileUseCase selectTileUseCase,
             PaintHexTerrainUseCase paintTerrainUseCase,
             SaveHexMarkerUseCase saveMarkerUseCase,
@@ -43,6 +47,7 @@ public final class HexEditorApplicationService {
         this.loadEditorUseCase = Objects.requireNonNull(loadEditorUseCase, "loadEditorUseCase");
         this.selectMapUseCase = Objects.requireNonNull(selectMapUseCase, "selectMapUseCase");
         this.updateMapUseCase = Objects.requireNonNull(updateMapUseCase, "updateMapUseCase");
+        this.renameMapUseCase = Objects.requireNonNull(renameMapUseCase, "renameMapUseCase");
         this.selectTileUseCase = Objects.requireNonNull(selectTileUseCase, "selectTileUseCase");
         this.paintTerrainUseCase = Objects.requireNonNull(paintTerrainUseCase, "paintTerrainUseCase");
         this.saveMarkerUseCase = Objects.requireNonNull(saveMarkerUseCase, "saveMarkerUseCase");
@@ -68,6 +73,10 @@ public final class HexEditorApplicationService {
                 command.displayName(),
                 command.radius(),
                 command.confirmDestructiveShrink());
+    }
+
+    public void renameMap(RenameHexMapCommand command) {
+        renameMapUseCase.execute(command.mapId(), command.displayName());
     }
 
     public void selectTile(SelectHexTileCommand command) {

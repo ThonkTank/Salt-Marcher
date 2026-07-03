@@ -14,10 +14,15 @@ Provide one session-owned planning surface that:
 - stores session-local participant references without mutating party
   membership
 - uses those session participants as the planning baseline
+- stores how many encounter days the session covers
+- stores ordered session-owned scenes with title, notes, and an optional World
+  Planner location reference
+- lets a scene optionally reference one saved encounter plan; scenes are not
+  encounters and may exist without an encounter
 - shows the session XP budget and the remaining or exceeded amount
-- attaches saved encounter plans as reusable session-encounter references
+- attaches saved encounter plans as optional scene encounter references
 - recommends how many short and long rests the planned encounter XP implies
-- lets the user place rests between planned encounters
+- lets the user place rests between planned scenes
 - keeps loot and gold planning visibly open without inventing fake gold math
 
 ## Non-Goals
@@ -27,6 +32,7 @@ Provide one session-owned planning surface that:
   session
 - copying encounter rosters, party character details, creature statblocks, or
   loot internals into sessionplanner-owned truth
+- copying World Planner location details into sessionplanner-owned truth
 - deriving gold budgets from provisional heuristics
 - replacing the encounter state tab or the party dropdown
 
@@ -38,14 +44,17 @@ Provide one session-owned planning surface that:
    party and encounter summaries needed for planning.
 4. The user adds or removes party characters from the session without changing
    party membership.
-5. The user attaches one or more saved encounter plans to the session.
-6. The planner updates the planned XP total, remaining budget, and rest
+5. The user adds one or more scenes to the session.
+6. The user optionally links saved encounter plans to scenes.
+7. The user records scene title, notes, and an optional World Planner location
+   reference on each scene.
+8. The planner updates the planned XP total, remaining budget, and rest
    recommendation.
-7. The user reorders encounters, adjusts encounter budget allocations, and
-   places short or long rests between them.
-8. The user selects one session encounter for the preparatory state-panel
+9. The user reorders scenes, adjusts budget allocations for encounter-linked
+   scenes, and places short or long rests between scenes.
+10. The user selects one session scene for the preparatory state-panel
    context.
-9. The user adds loot placeholders while the gold budget remains explicitly
+11. The user adds loot placeholders while the gold budget remains explicitly
    unresolved.
 
 ## Expected Capabilities
@@ -58,14 +67,15 @@ Provide one session-owned planning surface that:
 - show recommended short-rest and long-rest counts derived from the planned
   encounter XP
 - show how many rests are currently placed in the timeline
-- attach saved encounter plans through the encounter public boundary instead of
-  touching encounter persistence directly
-- show session-encounter cards with their adjusted XP, base XP, difficulty
-  label, creature count, and session-local budget allocation
-- allow encounter reordering
-- allow budget-percent changes per attached encounter
-- allow short-rest or long-rest placement only in the gaps between encounters
-- preserve selected encounter context for the preparatory state panel
+- add blank session-owned scenes without requiring an encounter plan
+- optionally attach saved encounter plans through the encounter public boundary
+  instead of touching encounter persistence directly
+- show scene cards with title, notes, optional World Planner location ID, and
+  encounter detail only when a saved encounter plan is linked
+- allow scene reordering
+- allow budget-percent changes per scene when an encounter plan is linked
+- allow short-rest or long-rest placement only in the gaps between scenes
+- preserve selected scene context for the preparatory state panel
 - allow loot placeholders that do not affect XP math and do not claim a gold
   budget is already available
 
@@ -77,8 +87,10 @@ Current state:
 - the planner now persists a session catalog with stable session identity,
   user-visible session names, and one current-session pointer as
   planner-owned truth
+- scene rows now persist session-owned scene title, scene notes, optional World
+  Planner location reference, and optional encounter-plan reference
 - XP budget and rest recommendation are real party-based calculations
-- imported encounter cards use real encounter-plan budget reads
+- imported encounter-linked scene cards use real encounter-plan budget reads
 - gold budgeting remains a visible placeholder
 - loot placeholders are structural only
 
@@ -97,13 +109,16 @@ Target state:
   rebuilding all state as transient-only runtime orchestration
 - the planner depends only on public party and encounter application-service
   boundaries
-- attached encounters contribute real adjusted XP to the planner budget
+- linked encounter plans contribute real adjusted XP to the planner budget;
+  blank scenes contribute no XP
 - the planner stores only session-local references and planning allocations,
   not foreign encounter rosters or party-character internals
-- the planner shows when the attached encounters stay within the XP budget and
+- scene location links store World Planner location IDs, not copied location
+  detail
+- the planner shows when linked encounter plans stay within the XP budget and
   when they exceed it
 - recommended rests update when the imported encounter XP total changes
-- placed rests can appear only between adjacent encounters
+- placed rests can appear only between adjacent scenes
 - loot placeholders stay visible while gold budgeting remains explicitly marked
   as unavailable
 

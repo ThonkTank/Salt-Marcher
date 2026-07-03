@@ -15,7 +15,7 @@ import src.domain.sessionplanner.SessionPlannerParticipantApplicationService;
 import src.domain.sessionplanner.SessionPlannerRestApplicationService;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
-import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
+import src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
@@ -47,8 +47,8 @@ final class SessionPlannerBinder {
                 services.require(SessionPlannerCatalogModel.class);
         SessionPlannerParticipantsModel participantsModel =
                 services.require(SessionPlannerParticipantsModel.class);
-        SessionPlannerEncountersModel encountersModel =
-                services.require(SessionPlannerEncountersModel.class);
+        SessionPlannerSceneTimelineModel sceneTimelineModel =
+                services.require(SessionPlannerSceneTimelineModel.class);
         SessionPlannerStatePanelModel statePanelModel =
                 services.require(SessionPlannerStatePanelModel.class);
         SessionPlannerControlsContentModel controlsContentModel = new SessionPlannerControlsContentModel();
@@ -67,7 +67,8 @@ final class SessionPlannerBinder {
                 rests,
                 loot,
                 controlsContentModel,
-                catalogContentModel);
+                catalogContentModel,
+                timelineMainContentModel);
         SessionPlannerControlsView controlsView = new SessionPlannerControlsView();
         CatalogCrudControlsView catalogView = new CatalogCrudControlsView();
         SessionPlannerTimelineMainView timelineView = new SessionPlannerTimelineMainView();
@@ -81,7 +82,12 @@ final class SessionPlannerBinder {
         controlsView.onViewInputEvent(intentHandler::consume);
         timelineView.onViewInputEvent(intentHandler::consume);
 
-        contributionModel.bindReadback(sessionModel, catalogModel, participantsModel, encountersModel, statePanelModel);
+        contributionModel.bindReadback(
+                sessionModel,
+                catalogModel,
+                participantsModel,
+                sceneTimelineModel,
+                statePanelModel);
         return new Binding(ShellControls.stack(catalogView, controlsView), timelineView, stateView);
     }
 

@@ -43,7 +43,10 @@ public final class SessionPlanMapper {
                 .map(record -> new SessionEncounter(
                         record.encounterId(),
                         record.encounterPlanId(),
-                        new SessionEncounterAllocation(parseDecimal(record.budgetPercentage()))))
+                        new SessionEncounterAllocation(parseDecimal(record.budgetPercentage())),
+                        record.sceneTitle(),
+                        record.sceneNotes(),
+                        record.locationId()))
                 .toList();
         return new SessionPlan(
                 plan.sessionId(),
@@ -77,6 +80,9 @@ public final class SessionPlanMapper {
                 encounter.encounterId(),
                 encounter.encounterPlanId(),
                 encounter.allocation().budgetPercentage().toPlainString(),
+                encounter.sceneTitle(),
+                encounter.sceneNotes(),
+                encounter.locationId(),
                 index));
     }
 

@@ -3,8 +3,8 @@ package src.domain.sessionplanner;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCatalogSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
-import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
-import src.domain.sessionplanner.published.SessionPlannerEncountersProjection;
+import src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel;
+import src.domain.sessionplanner.published.SessionPlannerSceneTimelineProjection;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
@@ -22,16 +22,16 @@ final class SessionPlannerPublishedModelsServiceAssembly {
     private final SessionPlannerPublishedModelChannelServiceAssembly<SessionPlannerParticipantsProjection>
             participants = new SessionPlannerPublishedModelChannelServiceAssembly<>(
                     SessionPlannerParticipantsProjection.empty());
-    private final SessionPlannerPublishedModelChannelServiceAssembly<SessionPlannerEncountersProjection>
-            encounters = new SessionPlannerPublishedModelChannelServiceAssembly<>(
-                    SessionPlannerEncountersProjection.empty());
+    private final SessionPlannerPublishedModelChannelServiceAssembly<SessionPlannerSceneTimelineProjection>
+            sceneTimeline = new SessionPlannerPublishedModelChannelServiceAssembly<>(
+                    SessionPlannerSceneTimelineProjection.empty());
     private final SessionPlannerPublishedModelChannelServiceAssembly<SessionPlannerStatePanelProjection>
             statePanel = new SessionPlannerPublishedModelChannelServiceAssembly<>(
                     SessionPlannerStatePanelProjection.empty());
     private final SessionPlannerCurrentSessionModel currentSessionModel;
     private final SessionPlannerCatalogModel catalogModel;
     private final SessionPlannerParticipantsModel participantsModel;
-    private final SessionPlannerEncountersModel encountersModel;
+    private final SessionPlannerSceneTimelineModel sceneTimelineModel;
     private final SessionPlannerStatePanelModel statePanelModel;
 
     SessionPlannerPublishedModelsServiceAssembly(Runnable loadPublishedState) {
@@ -54,12 +54,12 @@ final class SessionPlannerPublishedModelsServiceAssembly {
                     return participants.current();
                 },
                 participants::subscribe);
-        this.encountersModel = new SessionPlannerEncountersModel(
+        this.sceneTimelineModel = new SessionPlannerSceneTimelineModel(
                 () -> {
                     loadPublishedState.run();
-                    return encounters.current();
+                    return sceneTimeline.current();
                 },
-                encounters::subscribe);
+                sceneTimeline::subscribe);
         this.statePanelModel = new SessionPlannerStatePanelModel(
                 () -> {
                     loadPublishedState.run();
@@ -80,8 +80,8 @@ final class SessionPlannerPublishedModelsServiceAssembly {
         return participantsModel;
     }
 
-    SessionPlannerEncountersModel encountersModel() {
-        return encountersModel;
+    SessionPlannerSceneTimelineModel sceneTimelineModel() {
+        return sceneTimelineModel;
     }
 
     SessionPlannerStatePanelModel statePanelModel() {
@@ -100,8 +100,8 @@ final class SessionPlannerPublishedModelsServiceAssembly {
         participants.publish(projection);
     }
 
-    void publishEncounters(SessionPlannerEncountersProjection projection) {
-        encounters.publish(projection);
+    void publishSceneTimeline(SessionPlannerSceneTimelineProjection projection) {
+        sceneTimeline.publish(projection);
     }
 
     void publishStatePanel(SessionPlannerStatePanelProjection projection) {

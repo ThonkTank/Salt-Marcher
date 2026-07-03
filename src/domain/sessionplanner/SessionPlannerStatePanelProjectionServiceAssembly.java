@@ -5,8 +5,7 @@ import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
 import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
-import src.domain.sessionplanner.published.SessionPlannerEncountersProjection;
-import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
+import src.domain.sessionplanner.published.SessionPlannerSceneTimelineProjection;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
 
 final class SessionPlannerStatePanelProjectionServiceAssembly {
@@ -27,15 +26,9 @@ final class SessionPlannerStatePanelProjectionServiceAssembly {
                         partyFacts,
                         partyFactsRepository,
                         encounterFactsRepository);
-        SessionPlannerSessionSnapshot sessionSnapshot = SessionPlannerSessionProjectionServiceAssembly.projectSession(
-                session,
-                partyFacts,
-                partyFactsRepository,
-                encounterFacts,
-                encounterFactsRepository);
         return buildStatePanel(
-                sessionSnapshot,
-                SessionPlannerEncountersProjectionServiceAssembly.buildPlannedEncounters(
+                session.selectedEncounterId() > 0L,
+                SessionPlannerSceneTimelineProjectionServiceAssembly.buildSessionScenes(
                         session,
                         context.scaledBudgetXp(),
                         context.loadedEncounters(),
@@ -43,37 +36,54 @@ final class SessionPlannerStatePanelProjectionServiceAssembly {
     }
 
     private static SessionPlannerStatePanelProjection buildStatePanel(
-            SessionPlannerSessionSnapshot session,
-            java.util.List<SessionPlannerEncountersProjection.PlannedEncounter> encounters
+            boolean hasSelectedScene,
+            java.util.List<SessionPlannerSceneTimelineProjection.SessionScene> sessionScenes
     ) {
-        SessionPlannerEncountersProjection.PlannedEncounter selectedEncounter = encounters.stream()
-                .filter(SessionPlannerEncountersProjection.PlannedEncounter::selected)
+        SessionPlannerSceneTimelineProjection.SessionScene selectedScene = sessionScenes.stream()
+                .filter(SessionPlannerSceneTimelineProjection.SessionScene::selected)
                 .findFirst()
                 .orElse(null);
-        if (selectedEncounter == null) {
+        if (selectedScene == null) {
             return new SessionPlannerStatePanelProjection(
                     false,
-                    "Kein Session-Encounter ausgewaehlt",
-                    "Waehle im Planner einen Encounter aus, um den vorbereitenden State-Kontext zu sehen.",
+                    "Keine Session-Szene ausgewaehlt",
+                    "Waehle im Planner eine Szene aus, um den vorbereitenden State-Kontext zu sehen.",
                     "",
-                    session.session().hasSelectedEncounter()
-                            ? "Encounter fuer State-Panel ausgewaehlt"
-                            : "Noch kein Encounter fuer State-Panel ausgewaehlt",
+                    hasSelectedScene
+                            ? "Szene fuer State-Panel ausgewaehlt"
+                            : "Noch keine Szene fuer State-Panel ausgewaehlt",
                     "Katalog-Vorbereitung",
-                    "Der generische Katalog folgt spaeter. Dieser Slice reserviert nur die planner-eigene read-only Flaeche.");
+                    "Planner-owned read-only Placeholder.");
         }
-        String detail = selectedEncounter.creatureCount() + " Kreaturen"
-                + (selectedEncounter.generatedLabel().isBlank() ? "" : " · " + selectedEncounter.generatedLabel());
-        String xpSummary = selectedEncounter.budgetPercentage().stripTrailingZeros().toPlainString()
-                + "% Budget · Ziel " + selectedEncounter.targetXp() + " XP · Ist "
-                + selectedEncounter.adjustedXp() + " XP";
+        String title = firstNonBlank(
+                selectedScene.sceneTitle(),
+                selectedScene.linkedEncounterName(),
+                "Szene #" + selectedScene.sceneToken());
+        String detail = selectedScene.linkedEncounterPlan()
+                ? selectedScene.linkedEncounterCreatureCount() + " Kreaturen"
+                        + (selectedScene.linkedEncounterGeneratedLabel().isBlank()
+                                ? ""
+                                : " · " + selectedScene.linkedEncounterGeneratedLabel())
+                : "Keine verknuepfte Encounter-Planung";
+        String xpSummary = selectedScene.budgetPercentage().stripTrailingZeros().toPlainString()
+                + "% Budget · Ziel " + selectedScene.targetXp() + " XP · Ist "
+                + selectedScene.linkedEncounterAdjustedXp() + " XP";
         return new SessionPlannerStatePanelProjection(
                 true,
-                selectedEncounter.name(),
+                title,
                 detail,
                 xpSummary,
-                "Ausgewaehlter Encounter #" + selectedEncounter.token(),
+                "Ausgewaehlte Szene #" + selectedScene.sceneToken(),
                 "Katalog-Vorbereitung",
-                "Read-only Placeholder fuer spaetere Monster-, Spell- und Loot-Aktionen. Noch keine echte Catalog-Boundary und keine Mutation.");
+                "Planner-owned read-only Placeholder.");
+    }
+
+    private static String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return "";
     }
 }

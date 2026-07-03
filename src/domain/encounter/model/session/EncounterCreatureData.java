@@ -5,6 +5,7 @@ import java.util.List;
 public record EncounterCreatureData(
         String id,
         long creatureId,
+        long worldNpcId,
         String name,
         String challengeRating,
         int xp,
@@ -21,11 +22,12 @@ public record EncounterCreatureData(
 
     public EncounterCreatureData {
         id = id == null ? "" : id;
+        worldNpcId = Math.max(0L, worldNpcId);
         name = name == null ? "" : name;
         challengeRating = challengeRating == null ? "" : challengeRating;
         creatureType = creatureType == null ? "" : creatureType;
         encounterRole = encounterRole == null || encounterRole.isBlank() ? DEFAULT_ROLE : encounterRole;
-        count = Math.max(1, count);
+        count = worldNpcId > 0L ? 1 : Math.max(1, count);
         tags = tags == null ? List.of() : List.copyOf(tags);
     }
 
@@ -37,6 +39,7 @@ public record EncounterCreatureData(
         return new EncounterCreatureData(
                 id,
                 creatureId,
+                worldNpcId,
                 name,
                 challengeRating,
                 xp,
@@ -45,7 +48,7 @@ public record EncounterCreatureData(
                 initiativeBonus,
                 creatureType,
                 encounterRole,
-                Math.max(1, Math.min(maxCount, nextCount)),
+                worldNpcId > 0L ? 1 : Math.max(1, Math.min(maxCount, nextCount)),
                 tags);
     }
 }

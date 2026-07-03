@@ -20,6 +20,7 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.Spinner;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
@@ -38,6 +39,7 @@ import src.domain.hex.published.HexTravelSnapshot;
 import src.domain.hex.published.LoadHexEditorCommand;
 import src.domain.hex.published.PaintHexTerrainCommand;
 import src.domain.hex.published.SaveHexMarkerCommand;
+import src.domain.hex.published.SelectHexMapCommand;
 import src.domain.hex.published.SelectHexTileCommand;
 import src.domain.hex.published.SetHexEditorToolCommand;
 import src.domain.hex.published.UpdateHexMapCommand;
@@ -47,6 +49,7 @@ import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.MembershipState;
 import src.domain.party.published.MovePartyCharactersCommand;
 import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 
 public final class HexMapEditorBehaviorHarness {
 
@@ -122,6 +125,7 @@ public final class HexMapEditorBehaviorHarness {
         assertEquals(UPDATED_RADIUS, selectedMap(expanded).radius(), "HEX-EDITOR-002 radius expansion persists");
         assertTileTerrain(expanded, AUTHORED_Q, AUTHORED_R, AUTHORED_TERRAIN,
                 "HEX-EDITOR-002 authored terrain survives expansion");
+        runOnFxThread(() -> assertStatePaneAllowsDomainRadius(runtime, expanded, 21));
 
         runtime.editor().updateMap(new UpdateHexMapCommand(mapId.value(), "Unsafe Shrink", 1, false));
         HexEditorSnapshot shrinkBlocked = runtime.current();
@@ -227,6 +231,7 @@ public final class HexMapEditorBehaviorHarness {
                 "HEX-EDITOR-007 reloaded terrain");
         assertMarker(reloaded, MARKER_NAME, "LANDMARK", MARKER_NOTE,
                 "HEX-EDITOR-007 reloaded marker");
+        assertCatalogRenamePreservesNonCurrentRadius(runtime);
 
         runOnFxThread(() -> assertMarkerDraftPreservedAfterFailure(selected, missingName));
         runtime.database().forceMapRadius(mapId.value(), 100);
@@ -243,7 +248,7 @@ public final class HexMapEditorBehaviorHarness {
         assertOversizedMapDoesNotRenderCanvasTiles();
 
         results.add("HEX-EDITOR-001 Ready: HexEditorApplicationService createMap -> HexEditorModel readback -> main projection title");
-        results.add("HEX-EDITOR-002 Ready: updateMap expands metadata/radius, rejects over-limit stored radius, and blocks destructive shrink with warning before confirmation");
+        results.add("HEX-EDITOR-002 Ready: updateMap expands metadata/radius, state pane accepts domain radius range, rejects over-limit stored radius, and blocks destructive shrink with warning before confirmation");
         results.add("HEX-EDITOR-003 Ready: selectTile -> selected tile details and state projection expose q,r plus terrain");
         results.add("HEX-EDITOR-004 Ready: paintTerrain -> HexEditorModel tile terrain, main projection label, and SQLite terrain override row");
         results.add("HEX-EDITOR-005 Ready: saveMarker -> one-tile marker readback, visible marker label, and one SQLite marker row");
@@ -251,6 +256,7 @@ public final class HexMapEditorBehaviorHarness {
         results.add("HEX-EDITOR-007 Ready: rebuilt services reload metadata, terrain override, and marker from isolated SQLite route");
         results.add("HEX-EDITOR-008 Ready: map save controls event does not route marker draft into marker persistence");
         results.add("HEX-EDITOR-009 Ready: marker save controls event does not route map draft into map metadata update");
+        results.add("HEX-EDITOR-011 Ready: shared catalog rename preserves non-current Hex map radius");
         results.add("HEX-TRAVEL-001 Ready: HexCoordinate stable tile id round-trips q,r for Party overworld travel");
         results.add("HEX-TRAVEL-002 Ready: Party overworld travel position projects as HexTravelModel and visible party token");
         results.add("HEX-TRAVEL-003 Ready: MOVE_PARTY Hex tool moves the existing party token through PartyApplicationService");
@@ -313,9 +319,10 @@ public final class HexMapEditorBehaviorHarness {
             HexEditorSnapshot beforeFailure,
             HexEditorSnapshot failureSnapshot
     ) {
-        HexMapControlsContentModel contentModel = new HexMapControlsContentModel();
-        HexMapControlsView view = new HexMapControlsView();
+        HexMapStateContentModel contentModel = new HexMapStateContentModel();
+        HexMapStateView view = new HexMapStateView();
         view.bind(contentModel);
+        wireMarkerDraftEvents(view, contentModel);
         contentModel.applySnapshot(beforeFailure);
         TextField markerName = markerNameField(view);
         ComboBox<String> markerType = markerTypeSelector(view);
@@ -336,25 +343,139 @@ public final class HexMapEditorBehaviorHarness {
             HexEditorSnapshot beforeToolRefresh,
             HexEditorSnapshot afterToolRefresh
     ) {
-        HexMapControlsContentModel contentModel = new HexMapControlsContentModel();
-        HexMapControlsView view = new HexMapControlsView();
-        view.bind(contentModel);
-        contentModel.applySnapshot(beforeToolRefresh);
-        TextField markerName = markerNameField(view);
-        ComboBox<String> markerType = markerTypeSelector(view);
-        TextArea markerNote = markerNoteArea(view);
+        HexMapStateContentModel stateContentModel = new HexMapStateContentModel();
+        HexMapStateView stateView = new HexMapStateView();
+        stateView.bind(stateContentModel);
+        wireMarkerDraftEvents(stateView, stateContentModel);
+        stateContentModel.applySnapshot(beforeToolRefresh);
+        TextField markerName = markerNameField(stateView);
+        ComboBox<String> markerType = markerTypeSelector(stateView);
+        TextArea markerNote = markerNoteArea(stateView);
         markerName.setText("Draft Shrine");
         selectMarkerType(markerType, "DANGER");
         markerNote.setText("Draft danger note");
-        contentModel.applySnapshot(afterToolRefresh);
+        stateContentModel.applySnapshot(afterToolRefresh);
         assertEquals("Draft Shrine", markerName.getText(),
-                "HEX-TRAVEL-007 controls preserve marker name draft across tool refresh");
+                "HEX-TRAVEL-007 state preserves marker name draft across tool refresh");
         assertEquals("DANGER", markerTypeKey(markerType.getValue()),
-                "HEX-TRAVEL-007 controls preserve marker type draft across tool refresh");
+                "HEX-TRAVEL-007 state preserves marker type draft across tool refresh");
         assertEquals("Draft danger note", markerNote.getText(),
-                "HEX-TRAVEL-007 controls preserve marker note draft across tool refresh");
-        assertTrue(reisegruppeToolButton(view).isSelected(),
+                "HEX-TRAVEL-007 state preserves marker note draft across tool refresh");
+
+        HexMapControlsContentModel controlsContentModel = new HexMapControlsContentModel();
+        HexMapControlsView controlsView = new HexMapControlsView();
+        controlsView.bind(controlsContentModel);
+        controlsContentModel.applySnapshot(afterToolRefresh);
+        assertTrue(reisegruppeToolButton(controlsView).isSelected(),
                 "HEX-TRAVEL-007 Reisegruppe tool selected after refresh");
+    }
+
+    private static void wireMarkerDraftEvents(
+            HexMapStateView stateView,
+            HexMapStateContentModel stateContentModel
+    ) {
+        stateView.onViewInputEvent(event -> {
+            long markerId = stateContentModel.resolvedMarkerId(event.markerOptionIndex());
+            String markerName = stateContentModel.resolvedMarkerName(
+                    event.markerOptionIndex(),
+                    event.markerName(),
+                    event.markerSelectionRequested());
+            String markerTypeKey = stateContentModel.resolvedMarkerTypeKey(
+                    event.markerOptionIndex(),
+                    event.markerTypeOptionIndex(),
+                    event.markerSelectionRequested());
+            String markerNote = stateContentModel.resolvedMarkerNote(
+                    event.markerOptionIndex(),
+                    event.markerNote(),
+                    event.markerSelectionRequested());
+            stateContentModel.updateMarkerDraft(
+                    markerId,
+                    markerName,
+                    markerTypeKey,
+                    markerNote);
+        });
+    }
+
+    private static void assertStatePaneAllowsDomainRadius(
+            RuntimeSurface runtime,
+            HexEditorSnapshot snapshot,
+            int proofRadius
+    ) {
+        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
+        HexMapMainContentModel mainModel = new HexMapMainContentModel();
+        HexMapStateContentModel stateModel = new HexMapStateContentModel();
+        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
+        contributionModel.applySnapshot(snapshot);
+        HexMapStateView view = new HexMapStateView();
+        AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
+        view.onViewInputEvent(emitted::set);
+        view.bind(stateModel);
+        Spinner<Integer> radiusSpinner = radiusSpinner(view);
+        radiusSpinner.getValueFactory().setValue(proofRadius);
+        mapSaveButton(view).fire();
+
+        HexMapIntentHandler handler = new HexMapIntentHandler(
+                runtime.editor(),
+                runtime.hexTravel(),
+                contributionModel,
+                controlsModel,
+                stateModel,
+                new CatalogCrudControlsContentModel());
+        handler.consume(requiredEvent(emitted, "HEX-EDITOR-002 expected radius state event."));
+        assertEquals(proofRadius, selectedMap(runtime.current()).radius(),
+                "HEX-EDITOR-002 state pane accepts radius above old UI cap");
+        runtime.editor().updateMap(new UpdateHexMapCommand(
+                selectedMapId(runtime.current()).value(),
+                UPDATED_NAME,
+                UPDATED_RADIUS,
+                false));
+    }
+
+    private static void assertCatalogRenamePreservesNonCurrentRadius(RuntimeSurface runtime) {
+        long currentMapId = selectedMapId(runtime.current()).value();
+        runtime.editor().createMap(new CreateHexMapCommand("Catalog Rename Target", 7));
+        long targetMapId = selectedMapId(runtime.current()).value();
+        runtime.editor().selectMap(new SelectHexMapCommand(currentMapId));
+        HexEditorSnapshot snapshot = runtime.current();
+        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
+        HexMapMainContentModel mainModel = new HexMapMainContentModel();
+        HexMapStateContentModel stateModel = new HexMapStateContentModel();
+        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
+        contributionModel.applySnapshot(snapshot);
+        HexMapIntentHandler handler = new HexMapIntentHandler(
+                runtime.editor(),
+                runtime.hexTravel(),
+                contributionModel,
+                controlsModel,
+                stateModel,
+                new CatalogCrudControlsContentModel());
+        handler.consume(new src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent(
+                "",
+                "",
+                "",
+                false,
+                "",
+                "",
+                Long.toString(targetMapId),
+                "Catalog Rename Target Updated",
+                "",
+                "",
+                false,
+                ""));
+
+        assertEquals(currentMapId, selectedMapId(runtime.current()).value(),
+                "HEX-EDITOR-011 catalog rename preserves the current map selection");
+        assertEquals(7, runtime.database().mapRadius(targetMapId),
+                "HEX-EDITOR-011 catalog rename preserves non-current map radius in storage");
+        HexEditorSnapshot renamed = runtime.current();
+        HexEditorSnapshot.MapSummary renamedSummary = renamed.catalog().stream()
+                .filter(summary -> summary.mapId().value() == targetMapId)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("HEX-EDITOR-011 renamed catalog map missing."));
+        assertEquals("Catalog Rename Target Updated", renamedSummary.displayName(),
+                "HEX-EDITOR-011 catalog rename updates non-current map name");
+        assertEquals(7, renamedSummary.radius(),
+                "HEX-EDITOR-011 catalog rename readback preserves non-current map radius");
     }
 
     private static void assertMapSaveDoesNotRouteToMarkerSave(
@@ -366,11 +487,11 @@ public final class HexMapEditorBehaviorHarness {
         HexMapMainContentModel mainModel = new HexMapMainContentModel();
         HexMapStateContentModel stateModel = new HexMapStateContentModel();
         HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
-        HexMapControlsView view = new HexMapControlsView();
-        AtomicReference<HexMapControlsViewInputEvent> emitted = new AtomicReference<>();
+        HexMapStateView view = new HexMapStateView();
+        AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
         view.onViewInputEvent(emitted::set);
-        view.bind(controlsModel);
-        controlsModel.applySnapshot(snapshot);
+        view.bind(stateModel);
+        stateModel.applySnapshot(snapshot);
         TextField markerName = markerNameField(view);
         ComboBox<String> markerType = markerTypeSelector(view);
         TextArea markerNote = markerNoteArea(view);
@@ -379,9 +500,9 @@ public final class HexMapEditorBehaviorHarness {
         markerNote.setText("Should stay a draft");
         mapSaveButton(view).fire();
 
-        HexMapControlsViewInputEvent event = emitted.get();
+        HexMapStateViewInputEvent event = emitted.get();
         if (event == null) {
-            throw new IllegalStateException("HEX-EDITOR-008 expected map save controls event.");
+            throw new IllegalStateException("HEX-EDITOR-008 expected map save state event.");
         }
         assertTrue(event.updateMapRequested(), "HEX-EDITOR-008 map save requests map update");
         assertTrue(!event.saveMarkerRequested(), "HEX-EDITOR-008 map save must not request marker save");
@@ -391,7 +512,9 @@ public final class HexMapEditorBehaviorHarness {
                 runtime.editor(),
                 runtime.hexTravel(),
                 contributionModel,
-                controlsModel);
+                controlsModel,
+                stateModel,
+                new CatalogCrudControlsContentModel());
         handler.consume(event);
         assertEquals(1L, runtime.database().markerCount(mapId),
                 "HEX-EDITOR-008 map save does not persist marker draft");
@@ -406,11 +529,11 @@ public final class HexMapEditorBehaviorHarness {
         HexMapMainContentModel mainModel = new HexMapMainContentModel();
         HexMapStateContentModel stateModel = new HexMapStateContentModel();
         HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
-        HexMapControlsView view = new HexMapControlsView();
-        AtomicReference<HexMapControlsViewInputEvent> emitted = new AtomicReference<>();
+        HexMapStateView view = new HexMapStateView();
+        AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
         view.onViewInputEvent(emitted::set);
-        view.bind(controlsModel);
-        controlsModel.applySnapshot(snapshot);
+        view.bind(stateModel);
+        stateModel.applySnapshot(snapshot);
         mapNameField(view).setText("Incidental Map Draft");
         TextField markerName = markerNameField(view);
         ComboBox<String> markerType = markerTypeSelector(view);
@@ -420,9 +543,9 @@ public final class HexMapEditorBehaviorHarness {
         markerNote.setText("Should become a marker");
         markerSaveButton(view).fire();
 
-        HexMapControlsViewInputEvent event = emitted.get();
+        HexMapStateViewInputEvent event = emitted.get();
         if (event == null) {
-            throw new IllegalStateException("HEX-EDITOR-009 expected marker save controls event.");
+            throw new IllegalStateException("HEX-EDITOR-009 expected marker save state event.");
         }
         assertTrue(event.saveMarkerRequested(), "HEX-EDITOR-009 marker save requests marker save");
         assertTrue(!event.updateMapRequested(), "HEX-EDITOR-009 marker save must not request map update");
@@ -431,7 +554,9 @@ public final class HexMapEditorBehaviorHarness {
                 runtime.editor(),
                 runtime.hexTravel(),
                 contributionModel,
-                controlsModel);
+                controlsModel,
+                stateModel,
+                new CatalogCrudControlsContentModel());
         handler.consume(event);
         HexEditorSnapshot afterMarkerSave = runtime.current();
         assertEquals(UPDATED_NAME, selectedMap(afterMarkerSave).displayName(),
@@ -456,7 +581,9 @@ public final class HexMapEditorBehaviorHarness {
                 runtime.editor(),
                 runtime.hexTravel(),
                 contributionModel,
-                controlsModel);
+                controlsModel,
+                stateModel,
+                new CatalogCrudControlsContentModel());
         handler.consume(new HexMapMainViewInputEvent(
                 selectedMapId(snapshot).value(),
                 0,
@@ -600,6 +727,24 @@ public final class HexMapEditorBehaviorHarness {
         return buttonDescendant(parent, "Marker speichern");
     }
 
+    private static Spinner<Integer> radiusSpinner(Parent parent) {
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            if (child instanceof Spinner<?> spinner) {
+                @SuppressWarnings("unchecked")
+                Spinner<Integer> typedSpinner = (Spinner<Integer>) spinner;
+                return typedSpinner;
+            }
+            if (child instanceof Parent childParent) {
+                try {
+                    return radiusSpinner(childParent);
+                } catch (IllegalStateException ignored) {
+                    // Continue scanning sibling branches.
+                }
+            }
+        }
+        throw new IllegalStateException("Expected Hex radius spinner.");
+    }
+
     private static ToggleButton reisegruppeToolButton(Parent parent) {
         return toggleButtonDescendant(parent, "Reisegruppe");
     }
@@ -624,33 +769,43 @@ public final class HexMapEditorBehaviorHarness {
 
     private static boolean containsMarkerTypeValue(ComboBox<?> comboBox) {
         Object value = comboBox.getValue();
-        if (value instanceof String text && "SETTLEMENT".equals(markerTypeKey(text))) {
+        if (value instanceof String label && markerTypeKey(label).equals("SETTLEMENT")) {
             return true;
         }
         return comboBox.getItems().stream()
                 .filter(String.class::isInstance)
                 .map(String.class::cast)
-                .anyMatch(text -> "SETTLEMENT".equals(markerTypeKey(text)));
+                .anyMatch(label -> markerTypeKey(label).equals("SETTLEMENT"));
     }
 
     private static void selectMarkerType(
             ComboBox<String> markerType,
             String key
     ) {
-        for (String option : markerType.getItems()) {
-            if (key.equals(markerTypeKey(option))) {
-                markerType.getSelectionModel().select(option);
+        for (String label : markerType.getItems()) {
+            if (key.equals(markerTypeKey(label))) {
+                markerType.getSelectionModel().select(label);
                 return;
             }
         }
         throw new IllegalStateException("Expected marker type " + key + ".");
     }
 
-    private static String markerTypeKey(String encodedValue) {
-        if (encodedValue == null) {
-            return "";
+    private static String markerTypeKey(String label) {
+        String safeLabel = label == null ? "" : label;
+        return HexMapVocabularyContentPartModel.MARKER_TYPE_OPTIONS.stream()
+                .filter(option -> option.label().equals(safeLabel))
+                .map(HexMapVocabularyContentPartModel.Option::key)
+                .findFirst()
+                .orElse("");
+    }
+
+    private static long parseLong(String value) {
+        try {
+            return Long.parseLong(value == null ? "" : value.trim());
+        } catch (NumberFormatException ignored) {
+            return 0L;
         }
-        return encodedValue.split(HexMapControlsContentModel.VALUE_DELIMITER, -1)[0].trim();
     }
 
     private static <T extends Node> T descendant(Parent parent, Class<T> type, String promptText) {
@@ -763,6 +918,17 @@ public final class HexMapEditorBehaviorHarness {
         }
     }
 
+    private static HexMapStateViewInputEvent requiredEvent(
+            AtomicReference<HexMapStateViewInputEvent> emitted,
+            String message
+    ) {
+        HexMapStateViewInputEvent event = emitted.get();
+        if (event == null) {
+            throw new IllegalStateException(message);
+        }
+        return event;
+    }
+
     private static void assertEquals(Object expected, Object actual, String message) {
         if (!expected.equals(actual)) {
             throw new IllegalStateException(message + " expected <" + expected + "> but was <" + actual + ">.");
@@ -873,6 +1039,23 @@ public final class HexMapEditorBehaviorHarness {
                     "SELECT COUNT(*) FROM " + HexPersistenceSchema.MARKERS_TABLE
                             + " WHERE map_id = ?",
                     mapId);
+        }
+
+        int mapRadius(long mapId) {
+            try (Connection connection = open();
+                    PreparedStatement statement = connection.prepareStatement(
+                            "SELECT radius FROM " + HexPersistenceSchema.MAPS_TABLE
+                                    + " WHERE map_id = ?")) {
+                statement.setLong(1, mapId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        return resultSet.getInt(1);
+                    }
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to inspect Hex map radius.", exception);
+            }
+            throw new IllegalStateException("Expected Hex map radius row.");
         }
 
         void forceMapRadius(long mapId, int radius) {

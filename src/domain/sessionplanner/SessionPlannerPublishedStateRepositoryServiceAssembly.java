@@ -5,6 +5,7 @@ import java.util.Optional;
 import src.domain.sessionplanner.model.session.SessionPlan;
 import src.domain.sessionplanner.model.session.SessionPlanSummary;
 import src.domain.sessionplanner.model.session.port.SessionEncounterFactsPort;
+import src.domain.sessionplanner.model.session.port.SessionLocationReferencePort;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionEncounterFactsRepository;
 import src.domain.sessionplanner.model.session.repository.SessionPartyFactsRepository;
@@ -13,7 +14,7 @@ import src.domain.sessionplanner.model.session.repository.SessionPlannerPublishe
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCatalogSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
-import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
+import src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 
@@ -27,6 +28,7 @@ final class SessionPlannerPublishedStateRepositoryServiceAssembly
     private final SessionPartyFactsRepository partyFactsRepository;
     private final SessionEncounterFactsPort encounterFactsPort;
     private final SessionEncounterFactsRepository encounterFactsRepository;
+    private final SessionLocationReferencePort locationReferences;
     private final SessionPlannerPublishedModelsServiceAssembly publishedModels =
             new SessionPlannerPublishedModelsServiceAssembly(this::loadPublishedState);
     private boolean loaded;
@@ -36,13 +38,15 @@ final class SessionPlannerPublishedStateRepositoryServiceAssembly
             SessionPartyFactsPort partyFacts,
             SessionPartyFactsRepository partyFactsRepository,
             SessionEncounterFactsPort encounterFacts,
-            SessionEncounterFactsRepository encounterFactsRepository
+            SessionEncounterFactsRepository encounterFactsRepository,
+            SessionLocationReferencePort locationReferences
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.partyFactsPort = Objects.requireNonNull(partyFacts, "partyFacts");
         this.partyFactsRepository = Objects.requireNonNull(partyFactsRepository, "partyFactsRepository");
         this.encounterFactsPort = Objects.requireNonNull(encounterFacts, "encounterFacts");
         this.encounterFactsRepository = Objects.requireNonNull(encounterFactsRepository, "encounterFactsRepository");
+        this.locationReferences = Objects.requireNonNull(locationReferences, "locationReferences");
     }
 
     @Override
@@ -54,11 +58,12 @@ final class SessionPlannerPublishedStateRepositoryServiceAssembly
                 partyFactsPort,
                 partyFactsRepository,
                 encounterFactsPort,
-                encounterFactsRepository));
+                encounterFactsRepository,
+                locationReferences));
         publishedModels.publishParticipants(SessionPlannerParticipantsProjectionServiceAssembly.projectParticipants(
                 safeSession,
                 partyFactsPort));
-        publishedModels.publishEncounters(SessionPlannerEncountersProjectionServiceAssembly.projectEncounters(
+        publishedModels.publishSceneTimeline(SessionPlannerSceneTimelineProjectionServiceAssembly.projectSceneTimeline(
                 safeSession,
                 partyFactsPort,
                 partyFactsRepository,
@@ -84,8 +89,8 @@ final class SessionPlannerPublishedStateRepositoryServiceAssembly
         return publishedModels.participantsModel();
     }
 
-    SessionPlannerEncountersModel encountersModel() {
-        return publishedModels.encountersModel();
+    SessionPlannerSceneTimelineModel sceneTimelineModel() {
+        return publishedModels.sceneTimelineModel();
     }
 
     SessionPlannerStatePanelModel statePanelModel() {
@@ -103,6 +108,16 @@ final class SessionPlannerPublishedStateRepositoryServiceAssembly
             return;
         }
         publishCurrentSession(currentSession.get());
+    }
+
+    void publishLoadedCurrentSession() {
+        if (!loaded) {
+            return;
+        }
+        Optional<SessionPlan> currentSession = repository.loadCurrent();
+        if (currentSession.isPresent()) {
+            publishCurrentSession(currentSession.get());
+        }
     }
 
     private void publishCatalog(long selectedSessionId, String statusText) {

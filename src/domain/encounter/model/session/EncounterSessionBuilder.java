@@ -45,8 +45,8 @@ final class EncounterSessionBuilder {
         generation.clearGenerationHistory(context);
     }
 
-    void addCreature(CreatureDetailData creature, EncounterSessionContext context) {
-        if (roster.addCreature(creature, context)) {
+    void addCreature(CreatureDetailData creature, long worldNpcId, EncounterSessionContext context) {
+        if (roster.addCreature(creature, worldNpcId, context)) {
             savedPlans.clearActivePlan();
             generation.clearGeneratedSelection();
         }

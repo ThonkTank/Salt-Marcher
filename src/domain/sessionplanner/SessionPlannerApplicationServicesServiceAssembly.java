@@ -5,8 +5,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import shell.api.ServiceRegistry;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
+import src.domain.sessionplanner.model.session.port.SessionLocationReferencePort;
 import src.domain.sessionplanner.model.session.port.SessionPartyFactsPort;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
+import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
 final class SessionPlannerApplicationServicesServiceAssembly {
 
@@ -59,6 +61,9 @@ final class SessionPlannerApplicationServicesServiceAssembly {
                 new src.domain.sessionplanner.model.session.usecase.SetSessionEncounterDaysUseCase(
                         runtime.loadCurrentSessionPlanUseCase,
                         runtime.saveCurrentSessionPlanUseCase),
+                new src.domain.sessionplanner.model.session.usecase.AddSessionSceneUseCase(
+                        runtime.loadCurrentSessionPlanUseCase,
+                        runtime.saveCurrentSessionPlanUseCase),
                 new src.domain.sessionplanner.model.session.usecase.AttachSessionEncounterUseCase(
                         runtime.loadCurrentSessionPlanUseCase,
                         runtime.saveCurrentSessionPlanUseCase),
@@ -76,7 +81,11 @@ final class SessionPlannerApplicationServicesServiceAssembly {
                         runtime.saveCurrentSessionPlanUseCase),
                 new src.domain.sessionplanner.model.session.usecase.SelectSessionEncounterUseCase(
                         runtime.loadCurrentSessionPlanUseCase,
-                        runtime.saveCurrentSessionPlanUseCase));
+                        runtime.saveCurrentSessionPlanUseCase),
+                new src.domain.sessionplanner.model.session.usecase.UpdateSessionEncounterSceneUseCase(
+                        runtime.loadCurrentSessionPlanUseCase,
+                        runtime.saveCurrentSessionPlanUseCase,
+                        runtime.locationValidator));
     }
 
     SessionPlannerRestApplicationService createRests(ServiceRegistry services) {
@@ -131,7 +140,13 @@ final class SessionPlannerApplicationServicesServiceAssembly {
                 loadCurrentSessionPlanUseCase,
                 saveCurrentSessionPlanUseCase,
                 seedSessionPlanUseCase,
-                publishedState.create(services));
+                publishedState.create(services),
+                locationValidator(services));
+    }
+
+    private static SessionLocationReferencePort locationValidator(ServiceRegistry services) {
+        return new SessionPlannerLocationReferenceReadbackServiceAssembly(
+                services.find(WorldPlannerSnapshotModel.class).orElse(null));
     }
 
     private static final class UseCaseRuntime {
@@ -144,6 +159,7 @@ final class SessionPlannerApplicationServicesServiceAssembly {
         private final src.domain.sessionplanner.model.session.usecase.SeedSessionPlanUseCase seedSessionPlanUseCase;
         private final src.domain.sessionplanner.model.session.repository.SessionPlannerPublishedStateRepository
                 publishedStateRepository;
+        private final SessionLocationReferencePort locationValidator;
 
         private UseCaseRuntime(
                 SessionPlanRepository repository,
@@ -153,13 +169,15 @@ final class SessionPlannerApplicationServicesServiceAssembly {
                         saveCurrentSessionPlanUseCase,
                 src.domain.sessionplanner.model.session.usecase.SeedSessionPlanUseCase seedSessionPlanUseCase,
                 src.domain.sessionplanner.model.session.repository.SessionPlannerPublishedStateRepository
-                        publishedStateRepository
+                        publishedStateRepository,
+                SessionLocationReferencePort locationValidator
         ) {
             this.repository = repository;
             this.loadCurrentSessionPlanUseCase = loadCurrentSessionPlanUseCase;
             this.saveCurrentSessionPlanUseCase = saveCurrentSessionPlanUseCase;
             this.seedSessionPlanUseCase = seedSessionPlanUseCase;
             this.publishedStateRepository = publishedStateRepository;
+            this.locationValidator = locationValidator;
         }
     }
 }

@@ -58,6 +58,8 @@ Provide a runtime encounter builder that:
 - return best fallback encounter options with an advisory when no exact target
   difficulty can be generated from the available candidates
 - support encounter-table selection as an alternate generator source
+- support World Planner faction and location source IDs as generator
+  constraints, including table-source intersection and finite stock caps
 - show a non-blocking `Loot-Konflikt` warning when selected encounter tables
   reference multiple linked loot-table IDs
 - expose creature composition, role hints, and generator highlights
@@ -84,6 +86,9 @@ Provide a runtime encounter builder that:
 - previous and next actions switch generated alternatives in place
 - selecting encounter tables limits generated candidates to those tables and
   ignores type, subtype, and biome filters for that generation run
+- selecting World Planner factions or a World Planner location constrains
+  generation to the source tables available through those sources and prevents
+  generated statblock counts from exceeding finite faction stock caps
 - opening a saved plan replaces the builder roster and returns the state tab to
   Creation mode
 

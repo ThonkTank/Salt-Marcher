@@ -8,11 +8,11 @@ invariants, lifecycle state, and foreign-reference boundaries.
 
 ## Context Role
 
-Context Role: Campaign Planning Context
+Context Role: Roster Truth Context
 Context Name: WorldPlanner
 
 - `worldplanner` owns authored NPC, faction, and location planning truth.
-- Its planned public backend boundary is
+- Its public backend boundary is
   `src/domain/worldplanner/WorldPlannerApplicationService.java`.
 - It reads creature, encounter-table, and Encounter-owned combat/result facts
   through public boundaries, and exposes location choices for later
@@ -23,13 +23,13 @@ Context Name: WorldPlanner
 
 ## Published Language
 
-`published/` will own commands, statuses, read-only models, and passive
-carriers for:
+`published/` owns command carriers, read-only models, and passive carriers
+for:
 
 - NPC catalog and detail readback
 - faction catalog, membership, inventory, and encounter-source readback
 - location catalog, faction links, and encounter-table links
-- post-combat candidate loss confirmation and NPC reactivation
+- NPC lifecycle readback and reactivation
 
 Published carriers remain thinner than the internal authored model. They carry
 stable IDs and display data, not copied foreign statblocks or encounter
@@ -68,14 +68,18 @@ World Planner has three authored aggregate centers.
 World Planner derives:
 
 - available NPCs by faction, location, and lifecycle status
-- effective encounter-table sources for a faction or location
+- effective authored encounter-table sources for a faction or location
 - finite and unlimited statblock availability for encounter generation
-- candidate combat losses waiting for user confirmation
-- public location choices for later Session Planner-owned integration
 
 Derived state is recalculated from World Planner authored state and foreign
 public reads. It is not stored as copied creature, encounter, party, dungeon,
 or hex truth.
+
+Encounter result integration derives confirmed named-NPC losses from
+Encounter-owned combat/result state and writes only durable World Planner NPC
+lifecycle. Later integration waves may derive additional stock-only loss
+candidates and Session Planner-facing location choices from this authored
+state.
 
 ## Commands And Invariants
 

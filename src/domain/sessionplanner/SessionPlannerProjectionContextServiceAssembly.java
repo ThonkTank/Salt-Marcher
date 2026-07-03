@@ -15,6 +15,8 @@ import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 
 final class SessionPlannerProjectionContextServiceAssembly {
 
+    private static final long NO_ENCOUNTER_PLAN_ID = 0L;
+
     private SessionPlannerProjectionContextServiceAssembly() {
     }
 
@@ -81,7 +83,9 @@ final class SessionPlannerProjectionContextServiceAssembly {
     ) {
         Map<Long, SessionEncounterPlanFact> loadedEncounters = new HashMap<>();
         for (SessionEncounter encounter : session.encounters()) {
-            loadedEncounters.computeIfAbsent(encounter.encounterPlanId(), encounterFactsRepository::loadEncounterPlan);
+            if (encounter.encounterPlanId() > NO_ENCOUNTER_PLAN_ID) {
+                loadedEncounters.computeIfAbsent(encounter.encounterPlanId(), encounterFactsRepository::loadEncounterPlan);
+            }
         }
         return loadedEncounters;
     }

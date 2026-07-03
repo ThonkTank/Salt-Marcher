@@ -72,6 +72,7 @@ final class EncounterSessionSnapshotProjectionServiceAssembly {
                 safeState.roster().stream()
                         .map(creature -> new EncounterStateSnapshot.RosterCard(
                                 creature.creatureId(),
+                                creature.worldNpcId(),
                                 creature.name(),
                                 creature.challengeRating(),
                                 creature.totalXp(),
@@ -106,6 +107,7 @@ final class EncounterSessionSnapshotProjectionServiceAssembly {
                                 card.id(),
                                 card.name(),
                                 card.playerCharacter(),
+                                card.worldNpcId(),
                                 card.active(),
                                 card.alive(),
                                 card.currentHp(),
@@ -132,6 +134,8 @@ final class EncounterSessionSnapshotProjectionServiceAssembly {
                 safeState.enemies().stream()
                         .map(enemy -> new EncounterStateSnapshot.ResultEnemy(
                                 enemy.name(),
+                                enemy.creatureId(),
+                                enemy.worldNpcId(),
                                 enemy.status(),
                                 enemy.hpLoss(),
                                 enemy.xp(),

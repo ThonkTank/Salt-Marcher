@@ -36,7 +36,7 @@ Target state:
   `SessionPlannerApplicationService.class` for write workflows,
   `SessionPlannerCurrentSessionModel.class`,
   `SessionPlannerParticipantsModel.class`,
-  `SessionPlannerEncountersModel.class`, and
+  `SessionPlannerSceneTimelineModel.class`, and
   `SessionPlannerStatePanelModel.class` for read-only observation.
 - Domain ports, repositories, gateways, mappers, and schema classes remain
   implementation details and must not be registered as runtime services.
@@ -51,9 +51,13 @@ The persisted session record stores only sessionplanner-owned truth:
 - user-visible session display name
 - session-local participant references to party characters
 - exact `encounterDays` planning input
-- ordered references to encounter-owned saved plans
-- per-encounter budget percentages or equivalent planner-owned allocation data
-- selected encounter context
+- ordered session-owned scenes
+- optional references from a scene to an encounter-owned saved plan
+- session-owned scene title and scene notes per scene
+- optional stable World Planner location reference per scene
+- per-scene budget percentages or equivalent planner-owned allocation data
+  when an encounter plan is linked
+- selected scene context
 - session-local rests, placeholders, and planner status or selection truth
 
 The session record does not persist:
@@ -62,16 +66,20 @@ The session record does not persist:
 - party character details beyond stable references
 - encounter rosters or copied encounter creature rows
 - creature statblocks or creature lifecycle truth
+- copied World Planner location details
 - loot-object internals or fake gold-budget fields
 
 ## Reference Rules
 
 - party characters are stored only as stable session participant references
-- encounter attachments are stored only as stable references to
-  encounter-owned saved plans
+- scene entries are session-owned truth; their encounter reference is optional
+  and, when present, is stored only as a stable reference to an
+  encounter-owned saved plan
+- World Planner locations are stored only as stable references; location
+  display/detail truth remains World Planner-owned
 - foreign truth must be re-read through the owning public boundary when a
   session is opened
-- session-owned ordering, allocations, rests, placeholders, and selection
+- session-owned scene ordering, allocations, rests, placeholders, and selection
   state remain in sessionplanner persistence even when foreign source data is
   reloaded
 
@@ -112,7 +120,7 @@ The session record does not persist:
   `SessionPlannerApplicationService.class`,
   `SessionPlannerCurrentSessionModel.class`,
   `SessionPlannerParticipantsModel.class`,
-  `SessionPlannerEncountersModel.class`, and
+  `SessionPlannerSceneTimelineModel.class`, and
   `SessionPlannerStatePanelModel.class`.
 
 ## References

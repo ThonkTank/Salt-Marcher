@@ -8,7 +8,7 @@ import java.util.function.Function;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
-import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
+import src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 
@@ -43,8 +43,8 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
                 SessionPlannerParticipantsModel.class,
                 registry -> resolver.apply(registry).participantsModel(registry));
         services.registerFactory(
-                SessionPlannerEncountersModel.class,
-                registry -> resolver.apply(registry).encountersModel(registry));
+                SessionPlannerSceneTimelineModel.class,
+                registry -> resolver.apply(registry).sceneTimelineModel(registry));
         services.registerFactory(
                 SessionPlannerStatePanelModel.class,
                 registry -> resolver.apply(registry).statePanelModel(registry));

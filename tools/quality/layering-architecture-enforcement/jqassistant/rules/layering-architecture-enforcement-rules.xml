@@ -74,11 +74,15 @@
                   AND NOT (
                     (
                       source.relativePath =~ 'src/domain/[^/]+/[^/]+ServiceAssembly\\.java'
-                      AND target.relativePath = 'shell/api/ServiceRegistry.java'
+                      AND target.relativePath IN ['shell/api/ServiceRegistry.java', 'shell/api/ServiceRegistry$Builder.java']
                     )
                     OR (
                       source.relativePath =~ 'src/domain/[^/]+/[^/]+ServiceContribution\\.java'
-                      AND target.relativePath IN ['shell/api/ServiceRegistry.java', 'shell/api/ServiceContribution.java']
+                      AND target.relativePath IN [
+                        'shell/api/ServiceRegistry.java',
+                        'shell/api/ServiceRegistry$Builder.java',
+                        'shell/api/ServiceContribution.java'
+                      ]
                     )
                   )
                 )
@@ -123,7 +127,9 @@
                   source.feature = target.feature
                   OR (source.feature = 'catalog' AND target.feature IN ['creatures', 'encounter', 'encountertable'])
                   OR (source.feature = 'encounter' AND target.feature IN ['encounter', 'creatures'])
+                  OR (source.feature = 'encounter' AND target.feature = 'worldplanner')
                   OR (source.feature = 'hexmap' AND target.feature = 'hex')
+                  OR (source.feature = 'worldplanner' AND target.feature = 'encounter')
                   OR (source.feature = 'adventuringday' AND target.feature = 'party')
                   OR (source.feature IN ['dungeoneditor', 'dungeontravel', 'travel'] AND target.feature = 'dungeon')
                 )

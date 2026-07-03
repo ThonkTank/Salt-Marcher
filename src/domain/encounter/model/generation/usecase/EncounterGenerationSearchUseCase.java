@@ -45,7 +45,8 @@ final class EncounterGenerationSearchUseCase {
                     attempt.tuning(),
                     lockedCreatures.lockedProfiles().values(),
                     lockedCreatures.lockedQuantities(),
-                    unlockedProfiles));
+                    unlockedProfiles,
+                    request.finiteCreatureStockCaps()));
             accumulator = accumulator.record(attempt, drafts);
             List<EncounterDraft> exactDrafts = exactDrafts(drafts, attempt);
             if (!exactDrafts.isEmpty()) {

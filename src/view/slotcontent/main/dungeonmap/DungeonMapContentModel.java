@@ -19,8 +19,14 @@ import src.domain.dungeon.published.DungeonTravelHeading;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.MapSurfaceFrame;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedBoundaryKind;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedBoundaryTargetFrame;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedElementKind;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedSyntheticHoverKind;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedTargetKind;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedTopologyKind;
 import src.features.dungeon.runtime.DungeonEditorRenderFrame;
 import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 
@@ -250,7 +256,7 @@ public final class DungeonMapContentModel {
                 : target;
         if (safeTarget.cell().exact()) {
             return PointerTarget.syntheticCell(
-                    safeTarget.elementKind().legacyName(),
+                    safeTarget.elementKind(),
                     safeTarget.cell().q(),
                     safeTarget.cell().r(),
                     safeTarget.cell().level());
@@ -262,16 +268,16 @@ public final class DungeonMapContentModel {
                     safeTarget.vertex().level());
         }
         return PointerTarget.target(
-                safeTarget.targetKind().name(),
-                safeTarget.labelKind().legacyName(),
-                safeTarget.elementKind().legacyName(),
+                safeTarget.targetKind(),
+                safeTarget.labelKind(),
+                safeTarget.elementKind(),
                 safeTarget.ownerId(),
                 safeTarget.clusterId(),
-                safeTarget.topologyKind().legacyName(),
+                safeTarget.topologyKind(),
                 safeTarget.topologyId(),
                 safeTarget.handleRef(),
                 renderBoundaryTarget(safeTarget.boundary()),
-                safeTarget.syntheticHoverKind().name());
+                safeTarget.syntheticHoverKind());
     }
 
     private static BoundaryTarget renderBoundaryTarget(PreparedBoundaryTargetFrame boundary) {
@@ -279,10 +285,10 @@ public final class DungeonMapContentModel {
                 ? DungeonEditorPreparedFrameFacts.PreparedBoundaryTargetFrame.empty()
                 : boundary;
         return new BoundaryTarget(
-                safeBoundary.boundaryKind().legacyName(),
+                safeBoundary.boundaryKind(),
                 safeBoundary.key(),
                 safeBoundary.ownerId(),
-                safeBoundary.topologyKind().legacyName(),
+                safeBoundary.topologyKind(),
                 safeBoundary.topologyId(),
                 safeBoundary.startQ(),
                 safeBoundary.startR(),
@@ -298,7 +304,7 @@ public final class DungeonMapContentModel {
                 : target;
         if (safeTarget.isSyntheticCellHover() && safeTarget.cell().exact()) {
             return PointerTarget.syntheticCell(
-                    legacyName(safeTarget.elementKind()),
+                    preparedElementKind(safeTarget.elementKind()),
                     safeTarget.cellQ(),
                     safeTarget.cellR(),
                     safeTarget.cellLevel());
@@ -310,28 +316,16 @@ public final class DungeonMapContentModel {
                     safeTarget.vertexLevel());
         }
         return PointerTarget.target(
-                safeTarget.targetKind().name(),
-                legacyName(safeTarget.labelKind()),
-                legacyName(safeTarget.elementKind()),
+                preparedTargetKind(safeTarget.targetKind()),
+                preparedLabelKind(safeTarget.labelKind()),
+                preparedElementKind(safeTarget.elementKind()),
                 safeTarget.ownerId(),
                 safeTarget.clusterId(),
-                legacyName(safeTarget.topologyKind()),
+                preparedTopologyKind(safeTarget.topologyKind()),
                 safeTarget.topologyId(),
                 safeTarget.handleRef(),
                 runtimeHoverDisplayBoundaryTarget(safeTarget.boundary()),
-                safeTarget.syntheticHoverKind().name());
-    }
-
-    private static String legacyName(DungeonEditorRuntimePointerTarget.LabelKind labelKind) {
-        return labelKind == null ? "" : labelKind.legacyName();
-    }
-
-    private static String legacyName(DungeonEditorRuntimePointerTarget.ElementKind elementKind) {
-        return elementKind == null ? "" : elementKind.legacyName();
-    }
-
-    private static String legacyName(DungeonEditorRuntimePointerTarget.TopologyKind topologyKind) {
-        return topologyKind == null ? "" : topologyKind.legacyName();
+                preparedSyntheticHoverKind(safeTarget.syntheticHoverKind()));
     }
 
     private static BoundaryTarget runtimeHoverDisplayBoundaryTarget(
@@ -341,10 +335,10 @@ public final class DungeonMapContentModel {
                 ? DungeonEditorRuntimePointerTarget.BoundaryTarget.empty()
                 : boundary;
         return new BoundaryTarget(
-                safeBoundary.boundaryKind().legacyName(),
+                preparedBoundaryKind(safeBoundary.boundaryKind()),
                 safeBoundary.key(),
                 safeBoundary.ownerId(),
-                legacyName(safeBoundary.topologyKind()),
+                preparedTopologyKind(safeBoundary.topologyKind()),
                 safeBoundary.topologyId(),
                 safeBoundary.startQ(),
                 safeBoundary.startR(),
@@ -418,6 +412,149 @@ public final class DungeonMapContentModel {
 
     private static PointerTarget labelPointerTarget(DungeonMapRenderState.Label label) {
         return PointerTarget.label(label.labelKind(), label.ownerId(), label.clusterId(), label.topologyRef());
+    }
+
+    static PreparedLabelKind preparedRenderLabelKind(String labelKind) {
+        return switch (normalizeKind(labelKind, EMPTY_LABEL_KIND)) {
+            case ROOM_LABEL_KIND -> PreparedLabelKind.ROOM_LABEL;
+            case CLUSTER_LABEL_KIND -> PreparedLabelKind.CLUSTER_LABEL;
+            case FEATURE_LABEL_KIND -> PreparedLabelKind.FEATURE_LABEL;
+            default -> PreparedLabelKind.EMPTY;
+        };
+    }
+
+    static PreparedTopologyKind preparedRenderTopologyKind(String topologyKind) {
+        return switch (normalizeKind(topologyKind, EMPTY_KIND)) {
+            case "ROOM" -> PreparedTopologyKind.ROOM;
+            case "CORRIDOR" -> PreparedTopologyKind.CORRIDOR;
+            case "CORRIDOR_ANCHOR" -> PreparedTopologyKind.CORRIDOR_ANCHOR;
+            case "DOOR" -> PreparedTopologyKind.DOOR;
+            case "WALL" -> PreparedTopologyKind.WALL;
+            case "STAIR" -> PreparedTopologyKind.STAIR;
+            case "TRANSITION" -> PreparedTopologyKind.TRANSITION;
+            case "FEATURE_MARKER" -> PreparedTopologyKind.FEATURE_MARKER;
+            default -> PreparedTopologyKind.EMPTY;
+        };
+    }
+
+    static PreparedElementKind preparedCellElementKind(DungeonMapRenderState.CellKind kind) {
+        if (kind == null) {
+            return PreparedElementKind.EMPTY;
+        }
+        return switch (kind) {
+            case ROOM -> PreparedElementKind.ROOM;
+            case CORRIDOR -> PreparedElementKind.CORRIDOR;
+            case STAIR -> PreparedElementKind.STAIR;
+            case TRANSITION -> PreparedElementKind.TRANSITION;
+            case FEATURE_POI, FEATURE_OBJECT, FEATURE_ENCOUNTER -> PreparedElementKind.FEATURE_MARKER;
+        };
+    }
+
+    static String renderStateTopologyKindText(PreparedTopologyKind topologyKind) {
+        return topologyKind == null || topologyKind == PreparedTopologyKind.EMPTY ? "" : topologyKind.name();
+    }
+
+    private static PreparedTargetKind preparedTargetKind(DungeonEditorRuntimePointerTarget.TargetKind targetKind) {
+        if (targetKind == null) {
+            return PreparedTargetKind.EMPTY;
+        }
+        return switch (targetKind) {
+            case CELL -> PreparedTargetKind.CELL;
+            case LABEL -> PreparedTargetKind.LABEL;
+            case MARKER -> PreparedTargetKind.MARKER;
+            case GRAPH_NODE -> PreparedTargetKind.GRAPH_NODE;
+            case HANDLE -> PreparedTargetKind.HANDLE;
+            case BOUNDARY -> PreparedTargetKind.BOUNDARY;
+            case VERTEX -> PreparedTargetKind.VERTEX;
+            default -> PreparedTargetKind.EMPTY;
+        };
+    }
+
+    private static PreparedLabelKind preparedLabelKind(DungeonEditorRuntimePointerTarget.LabelKind labelKind) {
+        if (labelKind == null) {
+            return PreparedLabelKind.EMPTY;
+        }
+        return switch (labelKind) {
+            case ROOM_LABEL -> PreparedLabelKind.ROOM_LABEL;
+            case CLUSTER_LABEL -> PreparedLabelKind.CLUSTER_LABEL;
+            case FEATURE_LABEL -> PreparedLabelKind.FEATURE_LABEL;
+            default -> PreparedLabelKind.EMPTY;
+        };
+    }
+
+    @SuppressWarnings("PMD.CyclomaticComplexity")
+    private static PreparedElementKind preparedElementKind(DungeonEditorRuntimePointerTarget.ElementKind elementKind) {
+        if (elementKind == null) {
+            return PreparedElementKind.EMPTY;
+        }
+        return switch (elementKind) {
+            case ROOM -> PreparedElementKind.ROOM;
+            case CORRIDOR -> PreparedElementKind.CORRIDOR;
+            case CORRIDOR_ANCHOR -> PreparedElementKind.CORRIDOR_ANCHOR;
+            case STAIR -> PreparedElementKind.STAIR;
+            case TRANSITION -> PreparedElementKind.TRANSITION;
+            case FEATURE_MARKER -> PreparedElementKind.FEATURE_MARKER;
+            case FEATURE_OBJECT -> PreparedElementKind.FEATURE_OBJECT;
+            case FEATURE_ENCOUNTER -> PreparedElementKind.FEATURE_ENCOUNTER;
+            case FEATURE_POI -> PreparedElementKind.FEATURE_POI;
+            case WALL -> PreparedElementKind.WALL;
+            case DOOR -> PreparedElementKind.DOOR;
+            case WALL_VERTEX -> PreparedElementKind.WALL_VERTEX;
+            default -> PreparedElementKind.EMPTY;
+        };
+    }
+
+    @SuppressWarnings("PMD.CyclomaticComplexity")
+    private static PreparedElementKind preparedElementKind(PreparedTopologyKind topologyKind) {
+        return switch (topologyKind == null ? PreparedTopologyKind.EMPTY : topologyKind) {
+            case ROOM -> PreparedElementKind.ROOM;
+            case CORRIDOR -> PreparedElementKind.CORRIDOR;
+            case CORRIDOR_ANCHOR -> PreparedElementKind.CORRIDOR_ANCHOR;
+            case DOOR -> PreparedElementKind.DOOR;
+            case WALL -> PreparedElementKind.WALL;
+            case STAIR -> PreparedElementKind.STAIR;
+            case TRANSITION -> PreparedElementKind.TRANSITION;
+            case FEATURE_MARKER -> PreparedElementKind.FEATURE_MARKER;
+            default -> PreparedElementKind.EMPTY;
+        };
+    }
+
+    @SuppressWarnings("PMD.CyclomaticComplexity")
+    private static PreparedTopologyKind preparedTopologyKind(DungeonEditorRuntimePointerTarget.TopologyKind topologyKind) {
+        if (topologyKind == null) {
+            return PreparedTopologyKind.EMPTY;
+        }
+        return switch (topologyKind) {
+            case ROOM -> PreparedTopologyKind.ROOM;
+            case CORRIDOR -> PreparedTopologyKind.CORRIDOR;
+            case CORRIDOR_ANCHOR -> PreparedTopologyKind.CORRIDOR_ANCHOR;
+            case DOOR -> PreparedTopologyKind.DOOR;
+            case WALL -> PreparedTopologyKind.WALL;
+            case STAIR -> PreparedTopologyKind.STAIR;
+            case TRANSITION -> PreparedTopologyKind.TRANSITION;
+            case FEATURE_MARKER -> PreparedTopologyKind.FEATURE_MARKER;
+            default -> PreparedTopologyKind.EMPTY;
+        };
+    }
+
+    private static PreparedBoundaryKind preparedBoundaryKind(DungeonEditorRuntimePointerTarget.BoundaryKind boundaryKind) {
+        return boundaryKind == DungeonEditorRuntimePointerTarget.BoundaryKind.DOOR
+                ? PreparedBoundaryKind.DOOR
+                : PreparedBoundaryKind.WALL;
+    }
+
+    private static PreparedSyntheticHoverKind preparedSyntheticHoverKind(
+            DungeonEditorRuntimePointerTarget.SyntheticHoverKind syntheticHoverKind
+    ) {
+        if (syntheticHoverKind == null) {
+            return PreparedSyntheticHoverKind.NONE;
+        }
+        return switch (syntheticHoverKind) {
+            case CELL -> PreparedSyntheticHoverKind.CELL;
+            case BOUNDARY -> PreparedSyntheticHoverKind.BOUNDARY;
+            case VERTEX -> PreparedSyntheticHoverKind.VERTEX;
+            default -> PreparedSyntheticHoverKind.NONE;
+        };
     }
 
     static PointerTarget selectableHoverTarget(PointerTarget target) {
@@ -1235,10 +1372,10 @@ public final class DungeonMapContentModel {
     }
 
     public record BoundaryTarget(
-            BoundaryTargetKind boundaryKind,
+            PreparedBoundaryKind boundaryKind,
             String key,
             long ownerId,
-            String topologyKind,
+            PreparedTopologyKind topologyKind,
             long topologyId,
             double startQ,
             double startR,
@@ -1248,152 +1385,113 @@ public final class DungeonMapContentModel {
             int endLevel
     ) {
         public BoundaryTarget {
-            boundaryKind = boundaryKind == null ? BoundaryTargetKind.WALL : boundaryKind;
-            key = key == null ? "" : key.strip();
-            ownerId = Math.max(0L, ownerId);
-            topologyKind = normalizeKind(topologyKind, EMPTY_KIND);
-            topologyId = Math.max(0L, topologyId);
-            startQ = Double.isFinite(startQ) ? startQ : 0.0;
-            startR = Double.isFinite(startR) ? startR : 0.0;
-            endQ = Double.isFinite(endQ) ? endQ : 0.0;
-            endR = Double.isFinite(endR) ? endR : 0.0;
-        }
-
-        @SuppressWarnings("PMD.ExcessiveParameterList")
-        public BoundaryTarget(
-                String boundaryKind,
-                String key,
-                long ownerId,
-                String topologyKind,
-                long topologyId,
-                double startQ,
-                double startR,
-                int startLevel,
-                double endQ,
-                double endR,
-                int endLevel
-        ) {
-            this(
-                    BoundaryTargetKind.fromLegacy(boundaryKind),
-                    key,
-                    ownerId,
-                    topologyKind,
-                    topologyId,
-                    startQ,
-                    startR,
-                    startLevel,
-                    endQ,
-                    endR,
-                    endLevel);
+            boundaryKind = safeBoundaryKind(boundaryKind);
+            key = safeBoundaryKey(key);
+            ownerId = safeBoundaryId(ownerId);
+            topologyKind = safeBoundaryTopologyKind(topologyKind);
+            topologyId = safeBoundaryId(topologyId);
+            startQ = safeBoundaryCoordinate(startQ);
+            startR = safeBoundaryCoordinate(startR);
+            endQ = safeBoundaryCoordinate(endQ);
+            endR = safeBoundaryCoordinate(endR);
         }
 
         public static BoundaryTarget empty() {
-            return new BoundaryTarget(BoundaryTargetKind.WALL, "", 0L, EMPTY_KIND, 0L, 0.0, 0.0, 0, 0.0, 0.0, 0);
+            return new BoundaryTarget(
+                    PreparedBoundaryKind.WALL,
+                    "",
+                    0L,
+                    PreparedTopologyKind.EMPTY,
+                    0L,
+                    0.0,
+                    0.0,
+                    0,
+                    0.0,
+                    0.0,
+                    0);
         }
-    }
 
-    public enum BoundaryTargetKind {
-        WALL(WALL_KIND),
-        DOOR("DOOR");
-
-        private final String legacyName;
-
-        BoundaryTargetKind(String legacyName) {
-            this.legacyName = legacyName;
+        private static PreparedBoundaryKind safeBoundaryKind(PreparedBoundaryKind value) {
+            return value == null ? PreparedBoundaryKind.WALL : value;
         }
 
-        static BoundaryTargetKind fromLegacy(String value) {
-            String normalized = normalizeKind(value, WALL_KIND);
-            for (BoundaryTargetKind kind : values()) {
-                if (kind.name().equals(normalized) || kind.legacyName.equals(normalized)) {
-                    return kind;
-                }
-            }
-            return WALL;
+        private static String safeBoundaryKey(String value) {
+            return value == null ? "" : value.strip();
         }
-    }
 
-    public enum PointerTargetKind {
-        EMPTY,
-        HANDLE,
-        BOUNDARY,
-        LABEL,
-        MARKER,
-        CELL,
-        GRAPH_NODE,
-        VERTEX;
+        private static long safeBoundaryId(long value) {
+            return Math.max(0L, value);
+        }
 
-        static PointerTargetKind fromLegacy(String value) {
-            String normalized = normalizeKind(value, EMPTY_KIND);
-            for (PointerTargetKind kind : values()) {
-                if (kind.name().equals(normalized)) {
-                    return kind;
-                }
-            }
-            return EMPTY;
+        private static PreparedTopologyKind safeBoundaryTopologyKind(PreparedTopologyKind value) {
+            return value == null ? PreparedTopologyKind.EMPTY : value;
+        }
+
+        private static double safeBoundaryCoordinate(double value) {
+            return Double.isFinite(value) ? value : 0.0;
         }
     }
 
     public record PointerTarget(
-            PointerTargetKind targetKind,
-            String labelKind,
-            String elementKind,
+            PreparedTargetKind targetKind,
+            PreparedLabelKind labelKind,
+            PreparedElementKind elementKind,
             long ownerId,
             long clusterId,
-            String topologyKind,
+            PreparedTopologyKind topologyKind,
             long topologyId,
             DungeonEditorHandleRef handleRef,
             BoundaryTarget boundaryRef,
-            String syntheticHoverKind,
+            PreparedSyntheticHoverKind syntheticHoverKind,
             CellTarget cellRef,
             VertexTarget vertexRef
     ) {
         public PointerTarget {
-            targetKind = targetKind == null ? PointerTargetKind.EMPTY : targetKind;
-            labelKind = normalizeKind(labelKind, EMPTY_LABEL_KIND);
-            elementKind = normalizeKind(elementKind, EMPTY_KIND);
+            targetKind = targetKind == null ? PreparedTargetKind.EMPTY : targetKind;
+            labelKind = labelKind == null ? PreparedLabelKind.EMPTY : labelKind;
+            elementKind = elementKind == null ? PreparedElementKind.EMPTY : elementKind;
             ownerId = Math.max(0L, ownerId);
             clusterId = Math.max(0L, clusterId);
-            topologyKind = normalizeKind(topologyKind, EMPTY_KIND);
+            topologyKind = topologyKind == null ? PreparedTopologyKind.EMPTY : topologyKind;
             topologyId = Math.max(0L, topologyId);
             handleRef = handleRef == null ? DungeonEditorHandleRef.empty() : handleRef;
             boundaryRef = boundaryRef == null ? BoundaryTarget.empty() : boundaryRef;
-            syntheticHoverKind = normalizeKind(syntheticHoverKind, SYNTHETIC_HOVER_NONE_KIND);
+            syntheticHoverKind = syntheticHoverKind == null ? PreparedSyntheticHoverKind.NONE : syntheticHoverKind;
             cellRef = cellRef == null ? CellTarget.empty() : cellRef;
             vertexRef = vertexRef == null ? VertexTarget.empty() : vertexRef;
         }
 
         public static PointerTarget empty() {
             return new PointerTarget(
-                    PointerTargetKind.EMPTY,
-                    EMPTY_LABEL_KIND,
-                    EMPTY_KIND,
+                    PreparedTargetKind.EMPTY,
+                    PreparedLabelKind.EMPTY,
+                    PreparedElementKind.EMPTY,
                     0L,
                     0L,
-                    EMPTY_KIND,
+                    PreparedTopologyKind.EMPTY,
                     0L,
                     DungeonEditorHandleRef.empty(),
                     BoundaryTarget.empty(),
-                    SYNTHETIC_HOVER_NONE_KIND,
+                    PreparedSyntheticHoverKind.NONE,
                     CellTarget.empty(),
                     VertexTarget.empty());
         }
 
-        @SuppressWarnings({"PMD.ExcessiveParameterList", "PMD.UseObjectForClearerAPI"})
+        @SuppressWarnings("PMD.ExcessiveParameterList")
         public static PointerTarget target(
-                String targetKind,
-                String labelKind,
-                String elementKind,
+                PreparedTargetKind targetKind,
+                PreparedLabelKind labelKind,
+                PreparedElementKind elementKind,
                 long ownerId,
                 long clusterId,
-                String topologyKind,
+                PreparedTopologyKind topologyKind,
                 long topologyId,
                 DungeonEditorHandleRef handleRef,
                 BoundaryTarget boundaryRef,
-                String syntheticHoverKind
+                PreparedSyntheticHoverKind syntheticHoverKind
         ) {
             return new PointerTarget(
-                    PointerTargetKind.fromLegacy(targetKind),
+                    targetKind,
                     labelKind,
                     elementKind,
                     ownerId,
@@ -1417,48 +1515,48 @@ public final class DungeonMapContentModel {
                     ? DungeonMapRenderState.TopologyRef.empty()
                     : topologyRef;
             return new PointerTarget(
-                    PointerTargetKind.LABEL,
-                    labelKind,
-                    safeTopologyRef.kind(),
+                    PreparedTargetKind.LABEL,
+                    preparedRenderLabelKind(labelKind),
+                    preparedElementKind(preparedRenderTopologyKind(safeTopologyRef.kind())),
                     ownerId,
                     clusterId,
-                    safeTopologyRef.kind(),
+                    preparedRenderTopologyKind(safeTopologyRef.kind()),
                     safeTopologyRef.id(),
                     DungeonEditorHandleRef.empty(),
                     BoundaryTarget.empty(),
-                    SYNTHETIC_HOVER_NONE_KIND,
+                    PreparedSyntheticHoverKind.NONE,
                     CellTarget.empty(),
                     VertexTarget.empty());
         }
 
-        public static PointerTarget syntheticCell(String elementKind, int q, int r, int level) {
+        public static PointerTarget syntheticCell(PreparedElementKind elementKind, int q, int r, int level) {
             return new PointerTarget(
-                    PointerTargetKind.CELL,
-                    EMPTY_LABEL_KIND,
+                    PreparedTargetKind.CELL,
+                    PreparedLabelKind.EMPTY,
                     elementKind,
                     0L,
                     0L,
-                    EMPTY_KIND,
+                    PreparedTopologyKind.EMPTY,
                     0L,
                     DungeonEditorHandleRef.empty(),
                     BoundaryTarget.empty(),
-                    "CELL",
-                    new CellTarget("hover-cell:" + elementKind + ":" + q + ":" + r + ":" + level, q, r, level),
+                    PreparedSyntheticHoverKind.CELL,
+                    new CellTarget("hover-cell:" + elementKind.name() + ":" + q + ":" + r + ":" + level, q, r, level),
                     VertexTarget.empty());
         }
 
         public static PointerTarget syntheticVertex(int q, int r, int level) {
             return new PointerTarget(
-                    PointerTargetKind.VERTEX,
-                    EMPTY_LABEL_KIND,
-                    "WALL_VERTEX",
+                    PreparedTargetKind.VERTEX,
+                    PreparedLabelKind.EMPTY,
+                    PreparedElementKind.WALL_VERTEX,
                     0L,
                     0L,
-                    EMPTY_KIND,
+                    PreparedTopologyKind.EMPTY,
                     0L,
                     DungeonEditorHandleRef.empty(),
                     BoundaryTarget.empty(),
-                    "VERTEX",
+                    PreparedSyntheticHoverKind.VERTEX,
                     CellTarget.empty(),
                     new VertexTarget(true, q, r, level));
         }
@@ -1480,83 +1578,53 @@ public final class DungeonMapContentModel {
         }
 
         public boolean syntheticHoverTarget() {
-            return !SYNTHETIC_HOVER_NONE_KIND.equals(syntheticHoverKind);
+            return syntheticHoverKind != PreparedSyntheticHoverKind.NONE;
         }
 
         public boolean isEmptyTarget() {
-            return targetKind == PointerTargetKind.EMPTY;
+            return targetKind == PreparedTargetKind.EMPTY;
         }
 
         public boolean isBoundaryTarget() {
-            return targetKind == PointerTargetKind.BOUNDARY;
+            return targetKind == PreparedTargetKind.BOUNDARY;
         }
 
         public boolean isVertexTarget() {
-            return targetKind == PointerTargetKind.VERTEX;
+            return targetKind == PreparedTargetKind.VERTEX;
         }
 
         public boolean isCellTarget() {
-            return targetKind == PointerTargetKind.CELL;
+            return targetKind == PreparedTargetKind.CELL;
         }
 
         public boolean isHandleTarget() {
-            return targetKind == PointerTargetKind.HANDLE;
+            return targetKind == PreparedTargetKind.HANDLE;
         }
 
         public boolean isGraphNodeTarget() {
-            return targetKind == PointerTargetKind.GRAPH_NODE && topologyId > 0L && !EMPTY_KIND.equals(topologyKind);
-        }
-
-        public String topologyKind() {
-            return topologyKind;
-        }
-
-        public long topologyId() {
-            return topologyId;
+            return targetKind == PreparedTargetKind.GRAPH_NODE
+                    && topologyId > 0L
+                    && topologyKind != PreparedTopologyKind.EMPTY;
         }
 
         public boolean isLabelTarget() {
-            return targetKind == PointerTargetKind.LABEL;
+            return targetKind == PreparedTargetKind.LABEL;
         }
 
         public boolean isMarkerTarget() {
-            return targetKind == PointerTargetKind.MARKER;
+            return targetKind == PreparedTargetKind.MARKER;
         }
 
         public boolean isClusterLabelTarget() {
-            return isLabelTarget() && CLUSTER_LABEL_KIND.equals(labelKind());
+            return isLabelTarget() && labelKind == PreparedLabelKind.CLUSTER_LABEL;
         }
 
         public boolean isRoomLabelTarget() {
-            return isLabelTarget() && ROOM_LABEL_KIND.equals(labelKind());
-        }
-
-        public String labelKind() {
-            return labelKind;
-        }
-
-        public String elementKind() {
-            return elementKind;
-        }
-
-        public long ownerId() {
-            return ownerId;
-        }
-
-        public long clusterId() {
-            return clusterId;
+            return isLabelTarget() && labelKind == PreparedLabelKind.ROOM_LABEL;
         }
 
         public DungeonMapRenderState.TopologyRef topologyRef() {
-            return new DungeonMapRenderState.TopologyRef(topologyKind(), topologyId());
-        }
-
-        public DungeonEditorHandleRef handleRef() {
-            return handleRef;
-        }
-
-        public BoundaryTarget boundaryRef() {
-            return boundaryRef;
+            return new DungeonMapRenderState.TopologyRef(renderStateTopologyKindText(topologyKind), topologyId);
         }
     }
 

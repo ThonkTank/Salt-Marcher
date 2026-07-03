@@ -1,6 +1,7 @@
 package src.domain.encounter.model.generation;
 
 import java.util.List;
+import java.util.Map;
 import src.domain.encounter.model.plan.EncounterPlanCreature;
 
 public record EncounterGenerationRequest(
@@ -52,5 +53,17 @@ public record EncounterGenerationRequest(
 
     public List<Long> encounterTableIds() {
         return inputs.encounterTableIds();
+    }
+
+    public List<Long> worldFactionIds() {
+        return inputs.worldFactionIds();
+    }
+
+    public long worldLocationId() {
+        return inputs.worldLocationId();
+    }
+
+    public Map<Long, Integer> finiteCreatureStockCaps() {
+        return inputs.finiteCreatureStockCaps();
     }
 }

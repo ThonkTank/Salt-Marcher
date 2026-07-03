@@ -9,6 +9,7 @@ import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Label;
 import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.ToggleButton;
@@ -28,8 +29,12 @@ import src.view.leftbartabs.catalog.CatalogContribution;
 import src.view.leftbartabs.dungeoneditor.DungeonEditorContribution;
 import src.view.leftbartabs.dungeontravel.DungeonTravelContribution;
 import src.view.leftbartabs.hexmap.HexMapContribution;
+import src.view.leftbartabs.hexmap.HexMapControlsView;
+import src.view.leftbartabs.hexmap.HexMapMainView;
 import src.view.leftbartabs.sessionplanner.SessionPlannerContribution;
 import src.view.leftbartabs.sessionplanner.SessionPlannerControlsView;
+import src.view.leftbartabs.sessionplanner.SessionPlannerTimelineMainView;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 
 public final class SessionPlannerShellLayoutHarness {
 
@@ -77,6 +82,8 @@ public final class SessionPlannerShellLayoutHarness {
                 .orElseThrow(() -> new AssertionError("Growing contribution controls not found."));
         SessionPlannerControlsView plannerControls =
                 descendant(controlsPanel, SessionPlannerControlsView.class);
+        SessionPlannerTimelineMainView plannerMain =
+                descendant(workspace, SessionPlannerTimelineMainView.class);
 
         assertTrue(VBox.getVgrow(controlsPanel) == javafx.scene.layout.Priority.ALWAYS,
                 "shell controls panel grows vertically");
@@ -90,6 +97,19 @@ public final class SessionPlannerShellLayoutHarness {
                 "planner scroll controls stay inside the shell controls panel");
         assertTrue(plannerControls.getVbarPolicy() != ScrollPane.ScrollBarPolicy.NEVER,
                 "planner controls keep vertical scrolling available");
+        assertTrue(plannerMain.getVbarPolicy() != ScrollPane.ScrollBarPolicy.NEVER,
+                "planner main keeps vertical scrolling available");
+        assertTrue(plannerMain.isFitToWidth(), "planner main scroll content fits available width");
+        assertTrue(descendants(plannerMain).stream()
+                        .filter(Parent.class::isInstance)
+                        .map(Parent.class::cast)
+                        .anyMatch(node -> node.getStyleClass().contains("session-planner-setup-strip")),
+                "planner main renders the compact setup strip in the main slot");
+        assertTrue(descendants(plannerMain).stream()
+                        .filter(Label.class::isInstance)
+                        .map(Label.class::cast)
+                        .anyMatch(label -> "0 / ca. 0 Szenen".equals(label.getText())),
+                "planner main setup strip renders the compact scene target");
 
         ScrollPane stateScroll = descendants(workspace).stream()
                 .filter(ScrollPane.class::isInstance)
@@ -105,23 +125,28 @@ public final class SessionPlannerShellLayoutHarness {
         registerSidebarTab(
                 sidebar,
                 new DungeonTravelContribution().registrationSpec(),
-                "Dungeon-Reise");
+                "Dungeon-Reise",
+                "/view/leftbartabs/dungeontravel/navigation-icon.svg");
         registerSidebarTab(
                 sidebar,
                 new SessionPlannerContribution().registrationSpec(),
-                "Session Planner");
+                "Session Planner",
+                "/view/leftbartabs/sessionplanner/navigation-icon.svg");
         registerSidebarTab(
                 sidebar,
                 new CatalogContribution().registrationSpec(),
-                "Encounter-Planer");
+                "Encounter-Planer",
+                "/view/leftbartabs/catalog/navigation-icon.svg");
         registerSidebarTab(
                 sidebar,
                 new DungeonEditorContribution().registrationSpec(),
-                "Dungeon-Editor");
+                "Dungeon-Editor",
+                "/view/leftbartabs/dungeoneditor/navigation-icon.svg");
         registerSidebarTab(
                 sidebar,
                 new HexMapContribution().registrationSpec(),
-                "Hex-Karte");
+                "Hex-Karte",
+                "/view/leftbartabs/hexmap/navigation-icon.svg");
         layout(sidebar);
 
         List<Node> sidebarChildren = List.copyOf(sidebar.getChildren());
@@ -149,6 +174,10 @@ public final class SessionPlannerShellLayoutHarness {
                 shell.api.NavigationGraphicResource.of("/shell/host/malformed-navigation-icon.svg"));
         assertTrue(malformedGraphic.getStyleClass().contains("nav-icon-missing"),
                 "malformed navigation resource uses missing graphic fallback");
+        assertLoadedNavigationGraphic(
+                "/view/leftbartabs/worldplanner/navigation-icon.svg",
+                "World Planner navigation icon loads from its stable resource path");
+        assertHexMapShellLayout();
     }
 
     private static ServiceRegistry services() {
@@ -156,14 +185,57 @@ public final class SessionPlannerShellLayoutHarness {
         new src.data.creatures.CreaturesServiceContribution().register(builder);
         new src.data.encounter.EncounterServiceContribution().register(builder);
         new src.data.encountertable.EncounterTableServiceContribution().register(builder);
+        new src.data.hex.HexServiceContribution().register(builder);
         new src.data.party.PartyServiceContribution().register(builder);
         new src.data.sessionplanner.SessionPlannerServiceContribution().register(builder);
         new src.domain.creatures.CreaturesServiceContribution().register(builder);
         new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
         new src.domain.party.PartyServiceContribution().register(builder);
         new src.domain.encounter.EncounterServiceContribution().register(builder);
+        new src.domain.hex.HexServiceContribution().register(builder);
         new src.domain.sessionplanner.SessionPlannerServiceContribution().register(builder);
         return builder.build();
+    }
+
+    private static void assertHexMapShellLayout() {
+        ShellWorkspacePane workspace = new ShellWorkspacePane();
+        ShellBinding binding = new HexMapContribution().bind(
+                new shell.api.ShellRuntimeContext(EmptyInspectorSink.INSTANCE, services()));
+        workspace.showTab(ShellSlotContent.from(binding), ShellLeftBarTabMode.RUNTIME);
+        Stage stage = new Stage();
+        stage.setScene(new Scene(workspace, 1_120.0, 620.0));
+        stage.show();
+        layout(workspace);
+
+        VBox controlsPanel = descendants(workspace).stream()
+                .filter(VBox.class::isInstance)
+                .map(VBox.class::cast)
+                .filter(node -> node.getStyleClass().contains("control-panel"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Hex shell controls panel not found."));
+        CatalogCrudControlsView catalog = descendant(controlsPanel, CatalogCrudControlsView.class);
+        HexMapControlsView controls = descendant(controlsPanel, HexMapControlsView.class);
+        HexMapMainView main = descendant(workspace, HexMapMainView.class);
+        Parent shellStack = descendants(controlsPanel).stream()
+                .filter(Parent.class::isInstance)
+                .map(Parent.class::cast)
+                .filter(parent -> parent instanceof VBox)
+                .filter(parent -> parent.getChildrenUnmodifiable().contains(catalog))
+                .filter(parent -> parent.getChildrenUnmodifiable().contains(controls))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Hex ShellControls.stack VBox not found."));
+
+        assertTrue(VBox.getVgrow(shellStack) == javafx.scene.layout.Priority.ALWAYS,
+                "Hex shared controls stack grows inside shell controls panel");
+        assertTrue(VBox.getVgrow(catalog) == null,
+                "Hex shared catalog is fixed in the ShellControls stack");
+        assertTrue(VBox.getVgrow(controls) == javafx.scene.layout.Priority.ALWAYS,
+                "Hex compact controls are the flexible ShellControls stack child");
+        assertTrue(controls.getStyleClass().contains("control-toolbar"),
+                "Hex controls use the shared compact toolbar styling");
+        assertTrue(main.getHeight() > 0.0, "Hex main map receives visible shell main area");
+        assertTrue(main.getWidth() > 0.0, "Hex main map receives visible shell main width");
+        stage.close();
     }
 
     private static <T extends Node> T descendant(Parent parent, Class<T> type) {
@@ -203,10 +275,15 @@ public final class SessionPlannerShellLayoutHarness {
     private static void registerSidebarTab(
             ShellNavigationSidebar sidebar,
             ShellContributionSpec contributionSpec,
-            String title
+            String title,
+            String expectedGraphicPath
     ) {
+        ShellLeftBarTabSpec tabSpec = (ShellLeftBarTabSpec) contributionSpec;
+        assertTrue(tabSpec.navigationGraphic() != null
+                        && expectedGraphicPath.equals(tabSpec.navigationGraphic().path()),
+                "sidebar tab uses expected navigation resource for " + title);
         sidebar.registerLeftBarTab(
-                (ShellLeftBarTabSpec) contributionSpec,
+                tabSpec,
                 new HarnessShellBinding(title),
                 key -> {
                 });
@@ -223,6 +300,18 @@ public final class SessionPlannerShellLayoutHarness {
         boolean missingGraphic = button.getGraphic().getStyleClass().contains("nav-icon-missing");
         assertTrue(missingGraphic == expectMissingGraphic,
                 "sidebar button missing-graphic state matches expectation for " + title);
+    }
+
+    private static void assertLoadedNavigationGraphic(String path, String message) {
+        Node graphic = ShellNavigationGraphicLoader.load(shell.api.NavigationGraphicResource.of(path));
+        assertTrue(!graphic.getStyleClass().contains("nav-icon-missing"), message);
+        assertTrue(graphic instanceof Region region
+                        && region.getPrefWidth() == 18.0
+                        && region.getPrefHeight() == 18.0,
+                "navigation graphic keeps fixed 18px layout for " + path);
+        assertTrue(descendants(graphic).stream()
+                        .anyMatch(node -> node.getStyleClass().contains("nav-icon-stroke")),
+                "navigation graphic exposes themeable stroke nodes for " + path);
     }
 
     private static void runOnFxThread(ThrowingRunnable action) throws Exception {

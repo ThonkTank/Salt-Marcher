@@ -9,6 +9,7 @@ public record SessionPlannerSessionSnapshot(
         RestAdviceState restAdvice,
         GoldBudgetState goldBudget,
         List<AvailableEncounterPlan> availableEncounterPlans,
+        List<LocationReference> locationReferences,
         String status
 ) {
 
@@ -18,6 +19,7 @@ public record SessionPlannerSessionSnapshot(
         restAdvice = restAdvice == null ? RestAdviceState.empty() : restAdvice;
         goldBudget = goldBudget == null ? GoldBudgetState.placeholder(0) : goldBudget;
         availableEncounterPlans = copy(availableEncounterPlans);
+        locationReferences = copy(locationReferences);
         status = status == null ? "" : status;
     }
 
@@ -26,12 +28,18 @@ public record SessionPlannerSessionSnapshot(
         return List.copyOf(availableEncounterPlans);
     }
 
+    @Override
+    public List<LocationReference> locationReferences() {
+        return List.copyOf(locationReferences);
+    }
+
     public static SessionPlannerSessionSnapshot empty(String status) {
         return new SessionPlannerSessionSnapshot(
                 SessionState.empty(),
                 XpBudgetState.empty(),
                 RestAdviceState.empty(),
                 GoldBudgetState.placeholder(0),
+                List.of(),
                 List.of(),
                 status);
     }
@@ -149,6 +157,16 @@ public record SessionPlannerSessionSnapshot(
             adjustedXp = Math.max(0, adjustedXp);
             difficultyLabel = difficultyLabel == null ? "" : difficultyLabel.trim();
             statusText = statusText == null ? "" : statusText.trim();
+        }
+    }
+
+    public record LocationReference(long locationId, String displayName) {
+
+        public LocationReference {
+            locationId = Math.max(0L, locationId);
+            displayName = displayName == null || displayName.isBlank()
+                    ? "Location #" + locationId
+                    : displayName.trim();
         }
     }
 

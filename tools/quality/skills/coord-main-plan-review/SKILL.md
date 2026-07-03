@@ -29,18 +29,22 @@ Provide only neutral, inspectable facts:
 - accepted CR and CR review paths
 - roadmap, phase-plan, and step-plan paths under review
 - input authority: accepted CR review plus the planning bundle under review
-- required output artifact path: exactly one plan-review path
-- allowed write surface: exactly that plan-review artifact path
+- required output artifact path: exactly one canonical plan-review path,
+  `YYYY-MM-DD-<slug>-plan-review.md`, derived from the CR path
+- allowed write surface: exactly that plan-review artifact path plus
+  guard-readable status/upkeep fields in the reviewed roadmap, phase plans,
+  and authorized step plans
 - dirty baseline boundary and unrelated work
 - owner documents, mandatory skills, proof snippets, source evidence, and
-  unresolved questions needed to judge the bundle
+  unresolved unknowns needed to judge the bundle
 - Initial Concern Hints as hints only
 
-Main assigns the review path before launch and must not write or replace the
-plan-review artifact. If the path or allowed write surface is missing, or if
-the coordinator or required reviewer launch is unavailable, the bundle remains
-WIP/blocked; Main must not self-review, invent a review path, or synthesize
-implementation permission.
+Main assigns the review path and narrow planning-bundle status/upkeep surface
+before launch and must not write or replace them. If the path or allowed write
+surface is missing, or if the coordinator or required reviewer launch is
+unavailable, the bundle remains WIP/blocked; Main must not self-review, invent
+a review path, synthesize implementation permission, or patch plan statuses
+after review.
 
 ## Handoff
 
@@ -53,6 +57,15 @@ assigned path and show:
 - completed `lens-plan-artifact`
 - accepted downstream permission
 - the authorized step-plan paths
+- reviewed roadmap/phase/step `Status`, `Status Authority Role`, and
+  `Status Authority Path` synchronized to the coordinator verdict
+
+Pure plan-review form errors, such as a noncanonical `*-plan-review-r2.md`
+acceptance wrapper, wrong guard-readable header name, missing status authority
+field, or exact `Allowed Write Surface` mismatch, may be sent back to the Plan
+Review Coordinator for direct mechanical repair. Do not start a new planner or
+content re-review unless the correction would change plan content, authorized
+step plans, scope, downstream permission, verdict, or reviewer judgment.
 
 ## References
 

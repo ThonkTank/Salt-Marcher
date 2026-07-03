@@ -19,6 +19,9 @@ PRIMARY_ARTIFACTS = {
     "Phase Plan": ("Planner", "Accepted"),
     "Step Plan": ("Planner", "Accepted"),
 }
+STATUS_AUTHORITY_ROLE = "Planning Review Coordinator"
+CR_REVIEW_PERMISSION = "Roadmap creation may proceed"
+PLAN_REVIEW_PERMISSION = "Implementation may proceed"
 
 
 @dataclass(frozen=True)
@@ -122,6 +125,12 @@ def path_list_matches(value: str, expected_paths: list[Path]) -> bool:
     return actual_resolved == expected_resolved
 
 
+def format_paths(paths: list[Path]) -> str:
+    if not paths:
+        return "None"
+    return ", ".join(str(path) for path in paths)
+
+
 def has_main_role(value: str) -> bool:
     return bool(re.search(r"\bmain\b", value, re.IGNORECASE))
 
@@ -173,6 +182,18 @@ def plan_review_path_for(cr_path: Path) -> Path | None:
     return cr_path.with_name(f"{date}-{slug}-plan-review.md")
 
 
+def noncanonical_plan_reviews(cr_path: Path, canonical_path: Path | None) -> list[Path]:
+    parts = slug_parts(cr_path)
+    if parts is None or canonical_path is None:
+        return []
+    date, slug = parts
+    return [
+        path
+        for path in sorted(cr_path.parent.glob(f"{date}-{slug}-plan-review*.md"))
+        if path != canonical_path
+    ]
+
+
 def load(path: Path, expected_dir: Path, label: str) -> tuple[list[str], Artifact | None]:
     errors = validate_artifact_path(path, expected_dir, label)
     if errors:
@@ -180,12 +201,15 @@ def load(path: Path, expected_dir: Path, label: str) -> tuple[list[str], Artifac
     return [], read_artifact(path)
 
 
-def validate_primary(artifact: Artifact, role: str) -> list[str]:
+def validate_primary(artifact: Artifact, role: str, status_authority_path: Path | None) -> list[str]:
     errors: list[str] = []
     expected_owner, expected_status = PRIMARY_ARTIFACTS[role]
     for duplicate in artifact.duplicate_fields:
         errors.append(f"{artifact.path}: duplicate header field '{duplicate}'")
-    for name in missing_fields(artifact, ("Artifact Role", "Owner Role", "Authored By Role", "Status")):
+    required = ("Artifact Role", "Owner Role", "Authored By Role", "Status")
+    if status_authority_path is not None:
+        required += ("Status Authority Role", "Status Authority Path")
+    for name in missing_fields(artifact, required):
         errors.append(f"{artifact.path}: missing {name}")
     if field(artifact, "Artifact Role") != role:
         errors.append(f"{artifact.path}: Artifact Role must be {role}")
@@ -194,7 +218,15 @@ def validate_primary(artifact: Artifact, role: str) -> list[str]:
     if field(artifact, "Authored By Role") != expected_owner:
         errors.append(f"{artifact.path}: Authored By Role must be {expected_owner}")
     if field(artifact, "Status") != expected_status:
-        errors.append(f"{artifact.path}: {role} Status must be {expected_status}")
+        errors.append(f"{artifact.path}: {role} Status must be {expected_status} through review-owned status upkeep")
+    if status_authority_path is not None:
+        if field(artifact, "Status Authority Role") != STATUS_AUTHORITY_ROLE:
+            errors.append(
+                f"{artifact.path}: Status Authority Role must be {STATUS_AUTHORITY_ROLE} "
+                f"for mechanical status upkeep"
+            )
+        if not same_path(field(artifact, "Status Authority Path"), status_authority_path):
+            errors.append(f"{artifact.path}: Status Authority Path must match {status_authority_path}")
     return errors
 
 
@@ -204,6 +236,7 @@ def validate_review_common(
     expected_reviewed_role: str,
     expected_lens: str,
     expected_permission: str,
+    expected_allowed_surfaces: list[Path],
 ) -> list[str]:
     errors: list[str] = []
     for duplicate in review.duplicate_fields:
@@ -246,11 +279,18 @@ def validate_review_common(
     if field(review, "Verdict") != "Accepted":
         errors.append(f"{review.path}: Verdict must be Accepted")
     if field(review, "Downstream Permission") != expected_permission:
-        errors.append(f"{review.path}: Downstream Permission must be {expected_permission}")
+        actual_permission = field(review, "Downstream Permission") or "<missing>"
+        errors.append(
+            f"{review.path}: Downstream Permission must be exactly {expected_permission}; "
+            f"got {actual_permission}"
+        )
     if not same_path(field(review, "Authored Review Path"), review.path):
         errors.append(f"{review.path}: Authored Review Path does not match file path")
-    if not same_path(field(review, "Allowed Write Surface"), review.path):
-        errors.append(f"{review.path}: Allowed Write Surface must match authored review path")
+    if not path_list_matches(field(review, "Allowed Write Surface"), expected_allowed_surfaces):
+        errors.append(
+            f"{review.path}: Allowed Write Surface must match authored review path plus reviewed artifact upkeep "
+            f"paths: {format_paths(expected_allowed_surfaces)}"
+        )
     return errors
 
 
@@ -264,7 +304,8 @@ def validate_cr_review(cr: Artifact, review_path: Path, expected_dir: Path) -> t
             "CR Review",
             "CR",
             "lens-cr-artifact",
-            "Roadmap creation may proceed",
+            CR_REVIEW_PERMISSION,
+            [review.path, cr.path],
         )
     )
     if not same_path(field(review, "Reviewed Path"), cr.path):
@@ -288,7 +329,8 @@ def validate_plan_review(
             "Plan Review",
             "Planning Bundle",
             "lens-plan-artifact",
-            "Implementation may proceed",
+            PLAN_REVIEW_PERMISSION,
+            [review.path, roadmap.path, *phase_paths, plan.path],
         )
     )
     required = ("Reviewed Roadmap Path", "Reviewed Phase Plan Paths", "Authorized Step Plan Paths")
@@ -322,19 +364,22 @@ def check_chain(
     if cr is None or plan is None:
         return errors
 
-    errors.extend(validate_primary(cr, "CR"))
-    errors.extend(validate_primary(plan, "Step Plan"))
+    cr_review_path = cr_review_path_for(cr.path)
+    errors.extend(validate_primary(cr, "CR", cr_review_path))
 
     parts = slug_parts(cr.path)
     if parts is None:
         errors.append(f"{cr.path}: CR filename does not match generated artifact pattern")
         date = slug = ""
+        plan_review_path = None
     else:
         date, slug = parts
+        plan_review_path = plan_review_path_for(cr.path)
         if not path_matches_chain(plan.path, date, slug, "step"):
             errors.append(f"{plan.path}: step plan does not belong to CR chain {date}-{slug}")
+    errors.extend(validate_primary(plan, "Step Plan", plan_review_path))
 
-    cr_review_errors, cr_review = validate_cr_review(cr, cr_review_path_for(cr.path), expected_dir)
+    cr_review_errors, cr_review = validate_cr_review(cr, cr_review_path, expected_dir)
     errors.extend(cr_review_errors)
 
     roadmap_path = roadmap_path_for(cr.path)
@@ -345,13 +390,25 @@ def check_chain(
         roadmap_errors, roadmap = load(roadmap_path, expected_dir, "roadmap")
         errors.extend(roadmap_errors)
         if roadmap is not None:
-            errors.extend(validate_primary(roadmap, "Roadmap"))
+            errors.extend(validate_primary(roadmap, "Roadmap", plan_review_path))
             if date and slug and not path_matches_chain(roadmap.path, date, slug, "roadmap"):
                 errors.append(f"{roadmap.path}: roadmap does not belong to CR chain {date}-{slug}")
-            plan_review_path = plan_review_path_for(cr.path)
             if plan_review_path is None:
                 errors.append(f"{cr.path}: cannot derive plan review path from CR filename")
             else:
+                for sibling in noncanonical_plan_reviews(cr.path, plan_review_path):
+                    try:
+                        sibling_artifact = read_artifact(sibling)
+                    except OSError:
+                        continue
+                    if field(sibling_artifact, "Artifact Role") == "Plan Review" and field(
+                        sibling_artifact,
+                        "Verdict",
+                    ) == "Accepted":
+                        errors.append(
+                            f"{sibling}: accepted Plan Review is noncanonical; guard authority must be "
+                            f"{plan_review_path}"
+                        )
                 plan_review_errors, plan_review = validate_plan_review(
                     roadmap,
                     plan,
@@ -368,13 +425,73 @@ def check_chain(
         if phase is None:
             continue
         phase_artifacts.append(phase)
-        errors.extend(validate_primary(phase, "Phase Plan"))
+        errors.extend(validate_primary(phase, "Phase Plan", plan_review_path))
         if date and slug and not path_matches_chain(phase.path, date, slug, "phase"):
             errors.append(f"{phase.path}: phase plan does not belong to CR chain {date}-{slug}")
 
     if uses_minimal_chain(cr, cr_review, roadmap, *phase_artifacts, plan, plan_review):
         errors.append("artifact chain uses unauthorized 'minimal chain' shortcut")
     return errors
+
+
+def print_contract(cr_path: Path, plan_path: Path, phase_paths: list[Path]) -> int:
+    cr_path = cr_path.resolve()
+    plan_path = plan_path.resolve()
+    phase_paths = [path.resolve() for path in phase_paths]
+    cr_review_path = cr_review_path_for(cr_path)
+    roadmap_path = roadmap_path_for(cr_path)
+    plan_review_path = plan_review_path_for(cr_path)
+    if roadmap_path is None or plan_review_path is None:
+        print(f"{cr_path}: cannot derive artifact contract from CR filename")
+        return 1
+    plan_allowed = [plan_review_path, roadmap_path, *phase_paths, plan_path]
+    print("Artifact chain contract")
+    print(f"CR: {cr_path}")
+    print(f"CR Review: {cr_review_path}")
+    print(f"Roadmap: {roadmap_path}")
+    print(f"Plan Review: {plan_review_path}")
+    print(f"Step Plan: {plan_path}")
+    print(f"Phase Plans: {format_paths(phase_paths)}")
+    print("")
+    print("Primary artifact header fields:")
+    print("- Artifact Role")
+    print("- Owner Role")
+    print("- Authored By Role")
+    print("- Status: Accepted")
+    print(f"- Status Authority Role: {STATUS_AUTHORITY_ROLE}")
+    print("- Status Authority Path: CR review for CR; plan review for roadmap, phase plans, and step plan")
+    print("")
+    print("CR review header values:")
+    print("- Artifact Role: CR Review")
+    print(f"- Owner Role: {STATUS_AUTHORITY_ROLE}")
+    print(f"- Authored By Role: {STATUS_AUTHORITY_ROLE}")
+    print("- Reviewed Artifact Role: CR")
+    print("- Artifact Lens: lens-cr-artifact")
+    print("- Artifact Lens Status: Completed")
+    print("- Content Review Status: Completed or Not Required")
+    print("- Verdict: Accepted")
+    print(f"- Downstream Permission: {CR_REVIEW_PERMISSION}")
+    print(f"- Reviewed Path: {cr_path}")
+    print(f"- Authored Review Path: {cr_review_path}")
+    print(f"- Allowed Write Surface: {format_paths([cr_review_path, cr_path])}")
+    print("")
+    print("Plan review header values:")
+    print("- Artifact Role: Plan Review")
+    print(f"- Owner Role: {STATUS_AUTHORITY_ROLE}")
+    print(f"- Authored By Role: {STATUS_AUTHORITY_ROLE}")
+    print("- Reviewed Artifact Role: Planning Bundle")
+    print("- Artifact Lens: lens-plan-artifact")
+    print("- Artifact Lens Status: Completed")
+    print("- Content Review Status: Completed or Not Required")
+    print("- Verdict: Accepted")
+    print(f"- Downstream Permission: {PLAN_REVIEW_PERMISSION}")
+    print(f"- Reviewed Path: {roadmap_path}")
+    print(f"- Authored Review Path: {plan_review_path}")
+    print(f"- Allowed Write Surface: {format_paths(plan_allowed)}")
+    print(f"- Reviewed Roadmap Path: {roadmap_path}")
+    print(f"- Reviewed Phase Plan Paths: {format_paths(phase_paths)}")
+    print(f"- Authorized Step Plan Paths: {plan_path}")
+    return 0
 
 
 def write(path: Path, text: str) -> None:
@@ -399,34 +516,46 @@ def self_test() -> int:
 
             phase_required = bool(options.get("phase_required", False))
             minimal = "Minimal Chain: Used\n" if options.get("minimal", False) else ""
+            cr_status = "Review Required" if options.get("stale_cr_status", False) else "Accepted"
+            cr_status_role = "Main" if options.get("main_status_authority", False) else STATUS_AUTHORITY_ROLE
             write(
                 cr,
                 f"Artifact Role: CR\nOwner Role: Main/User\nAuthored By Role: Main/User\n"
-                f"Status: Accepted\n{minimal}\n# CR\n",
+                f"Status: {cr_status}\nStatus Authority Role: {cr_status_role}\n"
+                f"Status Authority Path: {cr_review}\n{minimal}\n# CR\n",
             )
             review_owner = "Main" if options.get("main_review", False) else "Planning Review Coordinator"
             write_cr_review(cr, cr_review, review_owner)
 
             if not options.get("omit_roadmap", False):
+                roadmap_status = "Review Required" if options.get("stale_roadmap_status", False) else "Accepted"
                 write(
                     roadmap,
                     "Artifact Role: Roadmap\nOwner Role: Planner\n"
-                    "Authored By Role: Planner\nStatus: Accepted\n\n# Roadmap\n",
+                    f"Authored By Role: Planner\nStatus: {roadmap_status}\n"
+                    f"Status Authority Role: {STATUS_AUTHORITY_ROLE}\n"
+                    f"Status Authority Path: {plan_review}\n\n# Roadmap\n",
                 )
 
             phases = []
             if phase_required:
                 phases.append(phase)
+                phase_status = "Review Required" if options.get("stale_phase_status", False) else "Accepted"
                 write(
                     phase,
                     "Artifact Role: Phase Plan\nOwner Role: Planner\n"
-                    "Authored By Role: Planner\nStatus: Accepted\n\n# Phase\n",
+                    f"Authored By Role: Planner\nStatus: {phase_status}\n"
+                    f"Status Authority Role: {STATUS_AUTHORITY_ROLE}\n"
+                    f"Status Authority Path: {plan_review}\n\n# Phase\n",
                 )
 
+            plan_status = "Review Required" if options.get("stale_step_status", False) else "Accepted"
             write(
                 plan,
                 "Artifact Role: Step Plan\nOwner Role: Planner\n"
-                "Authored By Role: Planner\nStatus: Accepted\n\n# Plan\n",
+                f"Authored By Role: Planner\nStatus: {plan_status}\n"
+                f"Status Authority Role: {STATUS_AUTHORITY_ROLE}\n"
+                f"Status Authority Path: {plan_review}\n\n# Plan\n",
             )
 
             if options.get("legacy_step_review", False):
@@ -447,15 +576,22 @@ def self_test() -> int:
                     phase_field = ", ".join(path.name for path in phases)
                 else:
                     phase_field = ", ".join(str(path) for path in phases)
+                if options.get("relative_paths", False):
+                    allowed_surfaces = ", ".join([review_path.name for review_path in [plan_review, roadmap, *phases, plan]])
+                else:
+                    allowed_surfaces = ", ".join(str(path) for path in [plan_review, roadmap, *phases, plan])
                 write_plan_review(
                     roadmap,
-                    plan_review,
+                    case_dir / f"{prefix}-plan-review-r2.md" if options.get("noncanonical_plan_review", False) else plan_review,
                     lens,
                     authorized,
                     phase_field,
+                    allowed_surfaces,
                     review_owner,
                     omit_paths=bool(options.get("omit_review_paths", False)),
                     omit_rationale=bool(options.get("omit_content_rationale", False)),
+                    custom_permission=bool(options.get("custom_permission", False)),
+                    wrong_roadmap_header=bool(options.get("wrong_roadmap_header", False)),
                 )
             return cr, plan, phases
 
@@ -469,7 +605,7 @@ def self_test() -> int:
                 "Content Review Rationale: reviewed by selected content lenses\n"
                 "Verdict: Accepted\nDownstream Permission: Roadmap creation may proceed\n"
                 f"Reviewed Path: {reviewed}\nAuthored Review Path: {review}\n"
-                f"Allowed Write Surface: {review}\n\n# Review\n",
+                f"Allowed Write Surface: {review}, {reviewed}\n\n# Review\n",
             )
 
         def write_plan_review(
@@ -478,17 +614,26 @@ def self_test() -> int:
             lens: str,
             authorized_steps: str,
             phases: str,
+            allowed_surfaces: str,
             owner_role: str,
             omit_paths: bool = False,
             omit_rationale: bool = False,
+            custom_permission: bool = False,
+            wrong_roadmap_header: bool = False,
         ) -> None:
             roadmap_field = roadmap.name if "relative-path-fields" in str(review) else str(roadmap)
             review_field = review.name if "relative-path-fields" in str(review) else str(review)
+            reviewed_roadmap_key = "Reviewed Roadmap" if wrong_roadmap_header else "Reviewed Roadmap Path"
+            permission = (
+                f"{PLAN_REVIEW_PERMISSION} for {authorized_steps}"
+                if custom_permission
+                else PLAN_REVIEW_PERMISSION
+            )
             path_fields = "" if omit_paths else (
                 f"Reviewed Path: {roadmap_field}\n"
                 f"Authored Review Path: {review_field}\n"
-                f"Allowed Write Surface: {review_field}\n"
-                f"Reviewed Roadmap Path: {roadmap_field}\n"
+                f"Allowed Write Surface: {allowed_surfaces}\n"
+                f"{reviewed_roadmap_key}: {roadmap_field}\n"
                 f"Reviewed Phase Plan Paths: {phases}\n"
                 f"Authorized Step Plan Paths: {authorized_steps}\n"
             )
@@ -501,7 +646,7 @@ def self_test() -> int:
                 f"Artifact Lens: {lens}\nArtifact Lens Status: Completed\n"
                 "Content Review Status: Completed\n"
                 f"{rationale}"
-                "Verdict: Accepted\nDownstream Permission: Implementation may proceed\n"
+                f"Verdict: Accepted\nDownstream Permission: {permission}\n"
                 f"{path_fields}\n# Review\n",
             )
 
@@ -515,10 +660,50 @@ def self_test() -> int:
         cases = [
             ("valid-bundle", {}, ()),
             ("valid-bundle-with-phase", {"phase_required": True}, ()),
+            (
+                "stale-cr-status",
+                {"stale_cr_status": True},
+                ("CR Status must be Accepted through review-owned status upkeep",),
+            ),
+            (
+                "stale-roadmap-status",
+                {"stale_roadmap_status": True},
+                ("Roadmap Status must be Accepted through review-owned status upkeep",),
+            ),
+            (
+                "stale-step-status",
+                {"stale_step_status": True},
+                ("Step Plan Status must be Accepted through review-owned status upkeep",),
+            ),
+            (
+                "stale-phase-status",
+                {"phase_required": True, "stale_phase_status": True},
+                ("Phase Plan Status must be Accepted through review-owned status upkeep",),
+            ),
+            (
+                "main-post-review-status-authority",
+                {"main_status_authority": True},
+                ("Status Authority Role must be Planning Review Coordinator",),
+            ),
             ("main-owned-review", {"main_review": True}, ("Owner Role must be Planning Review Coordinator",)),
             ("missing-plan-review", {"omit_plan_review": True}, ("missing Plan Review artifact",)),
+            (
+                "noncanonical-plan-review-r2",
+                {"noncanonical_plan_review": True, "omit_plan_review": False},
+                ("accepted Plan Review is noncanonical", "missing Plan Review artifact"),
+            ),
             ("unauthorized-step", {"unauthorized_step": True}, ("Authorized Step Plan Paths must include",)),
             ("wrong-lens", {"wrong_lens": True}, ("Artifact Lens must be lens-plan-artifact",)),
+            (
+                "custom-downstream-permission",
+                {"custom_permission": True},
+                ("Downstream Permission must be exactly Implementation may proceed",),
+            ),
+            (
+                "wrong-reviewed-roadmap-header",
+                {"wrong_roadmap_header": True},
+                ("missing Reviewed Roadmap Path",),
+            ),
             (
                 "legacy-step-review-only",
                 {"omit_plan_review": True, "legacy_step_review": True},
@@ -543,7 +728,7 @@ def self_test() -> int:
                 (
                     "Reviewed Path does not match",
                     "Authored Review Path does not match file path",
-                    "Allowed Write Surface must match authored review path",
+                    "Allowed Write Surface must match authored review path plus reviewed artifact upkeep paths",
                     "Reviewed Roadmap Path does not match",
                     "Reviewed Phase Plan Paths does not match supplied phase plans",
                     "Authorized Step Plan Paths must include",
@@ -581,6 +766,7 @@ def main() -> int:
     parser.add_argument("--cr", type=Path)
     parser.add_argument("--plan", type=Path)
     parser.add_argument("--phase-plan", action="append", type=Path, default=[])
+    parser.add_argument("--print-contract", action="store_true")
     parser.add_argument("--self-test", action="store_true")
     args = parser.parse_args()
 
@@ -588,6 +774,8 @@ def main() -> int:
         return self_test()
     if args.cr is None or args.plan is None:
         parser.error("--cr and --plan are required unless --self-test is used")
+    if args.print_contract:
+        return print_contract(args.cr, args.plan, args.phase_plan)
 
     errors = check_chain(args.cr, args.plan, args.phase_plan)
     if errors:

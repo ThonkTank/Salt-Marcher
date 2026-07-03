@@ -46,7 +46,7 @@ final class DungeonEditorStairDraftRuntimeOperation {
             TransitionDestination transitionDestination
     ) {
         if (!workflow.session().hasSelectedMap()) {
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
         Cell pointerCell = pointerCell(sample, wallSingleClickMode, transitionDestination);
         return switch (action) {
@@ -83,7 +83,7 @@ final class DungeonEditorStairDraftRuntimeOperation {
         StairGeometrySpec spec = result.spec();
         DungeonEditorSessionValues.StairCreatePreview preview = stairPreview(shape, result, "");
         draft = Draft.inactive();
-        return DungeonEditorAuthoredRuntimeOperations.resultFromPublication(effectUseCase.applyEffect(
+        return DungeonEditorRuntimeResultTranslator.fromPublication(effectUseCase.applyEffect(
                 DungeonEditorSessionEffect.apply(preview),
                 mapId -> createStairUseCase.execute(mapId, spec)));
     }
@@ -115,7 +115,7 @@ final class DungeonEditorStairDraftRuntimeOperation {
             String statusText
     ) {
         DungeonEditorSessionValues.StairCreatePreview preview = stairPreview(shape, result, statusText);
-        return DungeonEditorAuthoredRuntimeOperations.resultFromPublication(
+        return DungeonEditorRuntimeResultTranslator.fromPublication(
                 effectUseCase.applyEffect(DungeonEditorSessionEffect.preview(preview), null));
     }
 

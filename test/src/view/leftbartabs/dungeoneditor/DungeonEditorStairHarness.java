@@ -18,6 +18,7 @@ import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
+import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
@@ -98,9 +99,7 @@ final class DungeonEditorStairHarness {
                         "DE-STAIR-005 starts with lower path node at (2,2,0): " + pathRowsBefore));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D anchorCenter = new Point2D(2.5, 2.5);
-        assertEquals("HANDLE", runtimePointerTarget(binding.mapContentModel(), anchorCenter.getX(), anchorCenter.getY())
-                        .targetKind()
-                        .name(),
+        assertEquals(DungeonEditorRuntimePointerTarget.TargetKind.HANDLE, runtimePointerTarget(binding.mapContentModel(), anchorCenter.getX(), anchorCenter.getY()).targetKind(),
                 "DE-STAIR-005 input route resolves the stair anchor as a handle");
 
         fireMapMouse(

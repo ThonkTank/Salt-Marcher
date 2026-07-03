@@ -84,12 +84,12 @@ role with implicit artifact duties.
 | Artifact | Workflow route | Guard-readable artifact role | Caller/launch surface |
 | --- | --- | --- | --- |
 | Goal definition, CR | Main/User | `Main/User` | Main writes intake and CR only; requested plans remain input authority, not downstream permission. |
-| CR review | CR Review Coordinator route | `Planning Review Coordinator` in `Owner Role` and `Authored By Role` | Main launches through `coord-main-cr-review`, assigns exactly one CR review path as the allowed write surface, and must not write or replace it. |
+| CR review | CR Review Coordinator route | `Planning Review Coordinator` in `Owner Role` and `Authored By Role` | Main launches through `coord-main-cr-review`, assigns one CR review path plus CR status/upkeep fields as the allowed write surface, and must not write or replace them. |
 | Roadmap, phase plan, wave/step plan | Planner | `Planner` | Main launches one planner with the accepted CR/review, assigns the roadmap plus any needed phase and step-plan paths, and limits the planner write surface to that bundle. |
-| Planning-bundle review | Plan Review Coordinator route | `Planning Review Coordinator` in `Owner Role` and `Authored By Role` | Main launches through `coord-main-plan-review`, assigns exactly one plan-review path for the roadmap/phase/step bundle as the allowed write surface, and must not write or replace it. |
+| Planning-bundle review | Plan Review Coordinator route | `Planning Review Coordinator` in `Owner Role` and `Authored By Role` | Main launches through `coord-main-plan-review`, assigns one plan-review path plus reviewed planning-bundle status/upkeep fields as the allowed write surface, and must not write or replace them. |
 | Implementation log | Implementation Worker | not guard-checked | Main launches the worker from one accepted step plan, assigns one implementation-log path plus the step-plan write set, and the worker writes that pass log after implementation and worker-local proof. |
 | Final integrated proof | Verification Runner | not guard-checked | Main launches the runner with assigned commands and evidence section or log path as the allowed write surface; Main must not substitute proof. |
-| Review log | Main Aggregator from Implementation Review Coordinator result | not guard-checked | Main assigns the review-log path before review, the coordinator returns a result only, and Main writes the aggregate from accepted coordinator evidence. |
+| Review log | Implementation Review Coordinator | not guard-checked | Main assigns exactly one review-log path as the allowed write surface before review; the coordinator writes that log from coordinator, reviewer, and proof evidence. |
 
 Generated artifact form and guard-readable fields are owned by
 `docs/project/architecture/implementation-artifacts.md`. Role skills repeat the
@@ -97,6 +97,13 @@ fields their authors need; caller skills repeat the write-surface contract their
 launchers need. Split CR and plan review coordinator names are route and lens
 names only; generated CR-review and plan-review artifacts keep the shared
 guard-compatible `Planning Review Coordinator` role value.
+
+Mechanical artifact form errors follow the direct repair rule in
+`implementation-artifacts.md`. Main may directly repair only Main/User-owned
+form fields and may route role-owned form repair to the owning role. A direct
+form repair must be mechanically derivable from the artifact owner, role skill,
+or guard contract, must not change substantive content or acceptance, and must
+be followed by the smallest matching guard or proof.
 
 ## Documentation Routing
 
@@ -172,11 +179,11 @@ document exists.
   check/enforcement packages, build or verification wiring, dependency
   surfaces, or agent-facing instruction surfaces must use
   `coord-main-implementation-review` after implementation logging and
-  Verification Runner proof. The Implementation Review Coordinator owns the
-  required qualitative `code-simplifier` packet, risk-selected specialist
-  review, fix-loop coordination, proof-refresh requests, and final clean/WIP/
-  blocked result. If that coordinator, its required packet, or required
-  tooling is unavailable, the pass remains WIP/blocked; Main must not review or
+  Verification Runner proof. The Implementation Review Coordinator owns
+  qualitative implementation review, risk-selected specialist review, fix-loop
+  coordination, proof-refresh requests, review-log writing, and final clean/
+  WIP/blocked result. If that coordinator or required tooling is unavailable,
+  the pass remains WIP/blocked; Main must not review, write the review log, or
   run proof as a fallback.
 - Review blockers default to
   `Blocker Reflection Gate -> Planner Architecture Check -> Repair Plan ->
@@ -184,7 +191,7 @@ document exists.
   for `Trivial Mechanical Fix` findings with exactly one obvious correction and
   no architecture, owner, code-health, PMD, proof, harness, API, state, shape,
   or target-model decision. Code-health, code-shape, PMD/quality-rule,
-  `code-simplifier`, smell, coupling, indirection, ownership, harness/gate,
+  simplicity, smell, coupling, indirection, ownership, harness/gate,
   repeated-fix, proof-oracle, and multi-repair findings require the global
   planner before repair.
 - Work that runs, plans, changes, or reviews the SaltMarcher
@@ -213,8 +220,8 @@ document exists.
 - Every repo-tracked implementation pass must write the local implementation
   pass log required by `docs/project/architecture/agent-instructions.md` before
   Verification Runner proof and implementation review. Every completed
-  Implementation Review Coordinator cycle must produce the aggregated review
-  pass log required by that standard. Read-only
+  Implementation Review Coordinator cycle must write the review pass log
+  required by that standard. Read-only
   nested specialist reviewers do not write files directly; they read relevant
   available pass logs and report repeated reversals, looped implementation,
   quality degradation, architecture friction, recurring smells, or
@@ -337,7 +344,6 @@ document exists.
 - [Implementation Review Coordinator Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator-implementation-review/SKILL.md:1)
 - [Verification Runner Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/verification-runner/SKILL.md:1)
 - [Planning Reviewer Briefing Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-planning-reviewer/SKILL.md:1)
-- [Installed Code Simplifier Skill](/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/agents/code-simplifier.md:1)
 - [Global Planner Skill](/home/aaron/.codex/skills/local/planner/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
 - [Feature Runtime Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/feature-runtime/SKILL.md:1)

@@ -59,7 +59,7 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
                 effectUseCase.committedGridOrPublishCurrentResult();
         MapSnapshot committedSnapshot = currentGrid.committedSnapshot();
         if (committedSnapshot == null) {
-            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(currentGrid.snapshot());
+            return DungeonEditorRuntimeResultTranslator.fromSnapshot(currentGrid.snapshot());
         }
         PointerAction effectiveAction = DungeonEditorDraftOperationSupport.previewAction(action);
         src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect effect =
@@ -69,7 +69,7 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
                         committedSnapshot,
                         corridorTool,
                         workflow.session().projectionLevel());
-        return DungeonEditorAuthoredRuntimeOperations.resultFromPublication(
+        return DungeonEditorRuntimeResultTranslator.fromPublication(
                 currentGrid.snapshot(),
                 effectUseCase.applyEffect(effect, commitFor(effect.getApplyPreview())));
     }

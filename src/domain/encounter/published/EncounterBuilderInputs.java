@@ -14,7 +14,9 @@ public record EncounterBuilderInputs(
         double amountValue,
         boolean autoDiversity,
         int diversityLevel,
-        List<Long> encounterTableIds
+        List<Long> encounterTableIds,
+        List<Long> worldFactionIds,
+        long worldLocationId
 ) {
 
     private static final int DEFAULT_DIFFICULTY_LEVEL = 2;
@@ -31,6 +33,8 @@ public record EncounterBuilderInputs(
         amountValue = normalizeAmount(amountValue);
         diversityLevel = normalizeDiversity(diversityLevel);
         encounterTableIds = encounterTableIds == null ? List.of() : List.copyOf(encounterTableIds);
+        worldFactionIds = worldFactionIds == null ? List.of() : List.copyOf(worldFactionIds);
+        worldLocationId = Math.max(0L, worldLocationId);
     }
 
     public static EncounterBuilderInputs empty() {
@@ -46,7 +50,9 @@ public record EncounterBuilderInputs(
                 DEFAULT_AMOUNT_VALUE,
                 true,
                 DEFAULT_DIVERSITY_LEVEL,
-                List.of());
+                List.of(),
+                List.of(),
+                0L);
     }
 
     private static int normalizeDifficulty(int value) {

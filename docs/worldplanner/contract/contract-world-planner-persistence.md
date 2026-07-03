@@ -41,13 +41,12 @@ World Planner persistence stores:
   finite or unlimited
 - location identity, display name, notes, linked factions, and linked
   encounter tables
-- post-combat loss confirmations needed to apply durable World Planner
-  lifecycle or inventory changes
 
 World Planner persistence does not store:
 
 - creature statblock fields
 - encounter-table membership rows
+- post-combat runtime state or pending loss-confirmation workflows
 - saved encounter-plan rosters
 - party membership or character details
 - combat HP, initiative, turn order, or runtime result state
@@ -85,9 +84,9 @@ World Planner persistence does not store:
 
 ## Compatibility And Migration
 
-World Planner is a new feature-owned persistence surface. It does not migrate
+World Planner is a feature-owned persistence surface. It does not migrate
 existing Session Planner, Encounter, EncounterTable, Creatures, Party, Dungeon,
-or Hex tables in Wave 1.
+or Hex tables in the current backend slice.
 
 Later migrations may add Session Planner-owned references to World Planner
 locations, but those changes belong to the Session Planner persistence
@@ -95,14 +94,17 @@ contract.
 
 ## Verification Notes
 
-This contract is currently review-owned. Later implementation waves must add
-behavior harness proof for:
+The current backend behavior harness proves:
 
 - NPC, faction, and location persistence round trips
 - finite and unlimited faction inventory semantics
-- post-combat loss confirmation before durable lifecycle mutation
 - defeated NPC reactivation
 - rejection of copied foreign truth
+- confirmed named-NPC combat losses persist as NPC lifecycle changes through
+  the World Planner command boundary
+
+World Planner persistence still does not store Encounter runtime result state
+or pending confirmation workflows.
 
 ## References
 

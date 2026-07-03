@@ -778,10 +778,6 @@ public record DungeonEditorPreparedFrameFacts(
                 default -> EMPTY;
             };
         }
-
-        public String legacyName() {
-            return this == EMPTY ? "" : name();
-        }
     }
 
     public enum PreparedElementKind {
@@ -820,10 +816,6 @@ public record DungeonEditorPreparedFrameFacts(
                 default -> EMPTY;
             };
         }
-
-        public String legacyName() {
-            return this == EMPTY ? "" : name();
-        }
     }
 
     public enum PreparedTopologyKind {
@@ -853,10 +845,6 @@ public record DungeonEditorPreparedFrameFacts(
                 case FEATURE_MARKER -> FEATURE_MARKER;
                 default -> EMPTY;
             };
-        }
-
-        public String legacyName() {
-            return this == EMPTY ? "" : name();
         }
     }
 
@@ -888,10 +876,6 @@ public record DungeonEditorPreparedFrameFacts(
         @SuppressWarnings("PMD.LawOfDemeter")
         static PreparedBoundaryKind fromRuntime(DungeonEditorRuntimePointerTarget.BoundaryKind boundaryKind) {
             return boundaryKind == DungeonEditorRuntimePointerTarget.BoundaryKind.DOOR ? DOOR : WALL;
-        }
-
-        public String legacyName() {
-            return name();
         }
     }
 

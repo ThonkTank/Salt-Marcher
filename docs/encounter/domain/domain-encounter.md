@@ -15,10 +15,11 @@ Context Name: Encounter
 - It also owns runtime encounter-generation policy for creating suggested
   rosters from the active party, creature catalog, and encounter tables.
 - It does not own party truth, creature truth, or encounter-table membership.
-- It consumes foreign application services only:
+- It consumes foreign application services and read models only:
   - `src.domain.party.PartyApplicationService`
   - `src.domain.creatures.CreaturesApplicationService`
   - `src.domain.encountertable.EncounterTableApplicationService`
+  - `src.domain.worldplanner.published.WorldPlannerSnapshotModel`
 
 ## Published Language
 
@@ -54,8 +55,8 @@ ports.
 
 ## Application Boundary
 
-`application/` coordinates foreign party, creature, and encounter-table
-application services, translates foreign `published/` results into encounter
+`application/` coordinates foreign party, creature, encounter-table, and
+world-planner inputs, translates foreign `published/` results into encounter
 application values, and delegates generation or saved-plan work. The root
 application service is command-only and refreshes only the encounter-owned
 session-state `published/*Model` handles instead of exporting the internal
@@ -113,6 +114,8 @@ It derives:
 - party-specific encounter thresholds
 - encounter-ready candidate pools
 - encounter-table-constrained candidate pools
+- world-location and faction constrained encounter-table pools
+- finite world-faction stock caps for generated statblocks
 - role hints for encounter composition
 - ranked encounter alternatives
 - generator diagnostics describing the resolved difficulty/tuning attempt,
@@ -162,6 +165,8 @@ Core invariants:
 - encounter math is computed from public party data, not duplicated persistence
 - selected encounter tables replace creature filter sourcing for that
   generation pass
+- selected world locations and factions may narrow encounter tables and finite
+  stock caps, but they do not transfer world-planner ownership into encounter
 - Auto difficulty and Auto tuning are resolved deterministically from the
   generation seed and request fingerprint before draft enumeration
 - a non-empty candidate pool with no viable draft is distinguished from an

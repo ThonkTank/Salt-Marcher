@@ -7,7 +7,6 @@ import src.domain.hex.published.HexEditorSnapshot;
 
 public final class HexMapControlsContentModel {
 
-    static final String VALUE_DELIMITER = "\u001f";
     private static final List<ToolOption> TOOL_OPTIONS = List.of(
             new ToolOption(HexMapToolContentPartModel.SELECT, HexMapToolContentPartModel.label(HexMapToolContentPartModel.SELECT)),
             new ToolOption(HexMapToolContentPartModel.PAINT_TERRAIN, HexMapToolContentPartModel.label(HexMapToolContentPartModel.PAINT_TERRAIN)),
@@ -25,165 +24,143 @@ public final class HexMapControlsContentModel {
         return projection.get();
     }
 
+    String resolvedToolKey(int optionIndex) {
+        return currentProjection().toolKey(optionIndex);
+    }
+
+    String resolvedToolKey(String candidateToolKey) {
+        return currentProjection().toolKey(candidateToolKey);
+    }
+
+    String resolvedTerrainKey(int optionIndex) {
+        return currentProjection().terrainKey(optionIndex);
+    }
+
+    String resolvedTerrainKey(String candidateTerrainKey) {
+        return currentProjection().terrainKey(candidateTerrainKey);
+    }
+
+    boolean isPaintTerrainTool(String candidateToolKey) {
+        return currentProjection().isTool(candidateToolKey, HexMapToolContentPartModel.PAINT_TERRAIN);
+    }
+
+    boolean isMovePartyTool(String candidateToolKey) {
+        return currentProjection().isTool(candidateToolKey, HexMapToolContentPartModel.MOVE_PARTY);
+    }
+
+    boolean isPlaceMarkerTool(String candidateToolKey) {
+        return currentProjection().isTool(candidateToolKey, HexMapToolContentPartModel.PLACE_MARKER);
+    }
+
     void applySnapshot(HexEditorSnapshot snapshot) {
         projection.set(Projection.from(snapshot));
     }
 
     record Projection(
-            List<MapOption> maps,
-            long selectedMapId,
-            String selectedMapName,
-            int selectedMapRadius,
             boolean mapLoaded,
             List<ToolOption> tools,
             String activeToolKey,
             List<HexMapVocabularyContentPartModel.Option> terrains,
-            String activeTerrainKey,
-            List<HexMapVocabularyContentPartModel.Option> markerTypes,
-            List<MarkerOption> selectedTileMarkers,
-            boolean tileSelected,
-            int selectedQ,
-            int selectedR,
-            String selectedTileText,
-            String statusText,
-            String failureText,
-            String warningText
+            String activeTerrainKey
     ) {
 
         Projection {
-            maps = maps == null ? List.of() : List.copyOf(maps);
-            selectedMapName = safeText(selectedMapName);
             tools = tools == null ? List.of() : List.copyOf(tools);
             activeToolKey = safeText(activeToolKey);
             terrains = terrains == null ? List.of() : List.copyOf(terrains);
             activeTerrainKey = safeText(activeTerrainKey);
-            markerTypes = markerTypes == null ? List.of() : List.copyOf(markerTypes);
-            selectedTileMarkers = selectedTileMarkers == null ? List.of() : List.copyOf(selectedTileMarkers);
-            selectedTileText = safeText(selectedTileText);
-            statusText = safeText(statusText);
-            failureText = safeText(failureText);
-            warningText = safeText(warningText);
         }
 
         static Projection initial() {
             return new Projection(
-                    List.of(),
-                    0L,
-                    "",
-                    2,
                     false,
                     TOOL_OPTIONS,
                     HexMapToolContentPartModel.SELECT,
                     HexMapVocabularyContentPartModel.TERRAIN_OPTIONS,
-                    HexMapVocabularyContentPartModel.DEFAULT_TERRAIN,
-                    HexMapVocabularyContentPartModel.MARKER_TYPE_OPTIONS,
-                    List.of(),
-                    false,
-                    0,
-                    0,
-                    "Kein Hex ausgewaehlt",
-                    "Keine Hex-Karte geladen.",
-                    "",
-                    "");
+                    HexMapVocabularyContentPartModel.DEFAULT_TERRAIN);
         }
 
         static Projection from(HexEditorSnapshot snapshot) {
             HexEditorSnapshot safeSnapshot = snapshot == null
                     ? HexEditorSnapshot.empty("Keine Hex-Karte geladen.")
                     : snapshot;
-            long selectedMapId = safeSnapshot.selectedMap()
-                    .map(map -> map.mapId().value())
-                    .orElse(0L);
-            String selectedMapName = safeSnapshot.selectedMap()
-                    .map(HexEditorSnapshot.MapSnapshot::displayName)
-                    .orElse("");
-            int selectedMapRadius = safeSnapshot.selectedMap()
-                    .map(HexEditorSnapshot.MapSnapshot::radius)
-                    .orElse(2);
-            boolean tileSelected = safeSnapshot.selectedTile().isPresent();
-            int selectedQ = safeSnapshot.selectedTile()
-                    .map(HexEditorSnapshot.TileDetails::q)
-                    .orElse(0);
-            int selectedR = safeSnapshot.selectedTile()
-                    .map(HexEditorSnapshot.TileDetails::r)
-                    .orElse(0);
-            List<MarkerOption> markers = safeSnapshot.selectedTile().stream()
-                    .flatMap(tile -> tile.markers().stream())
-                    .map(MarkerOption::from)
-                    .toList();
             return new Projection(
-                    safeSnapshot.catalog().stream().map(MapOption::from).toList(),
-                    selectedMapId,
-                    selectedMapName,
-                    selectedMapRadius,
                     safeSnapshot.selectedMap().isPresent(),
                     TOOL_OPTIONS,
                     safeSnapshot.activeTool(),
                     HexMapVocabularyContentPartModel.TERRAIN_OPTIONS,
-                    safeSnapshot.activeTerrain(),
-                    HexMapVocabularyContentPartModel.MARKER_TYPE_OPTIONS,
-                    markers,
-                    tileSelected,
-                    selectedQ,
-                    selectedR,
-                    tileSelected ? "Hex " + selectedQ + "," + selectedR : "Kein Hex ausgewaehlt",
-                    safeSnapshot.statusText(),
-                    safeSnapshot.failureText(),
-                    safeSnapshot.warningText());
+                    safeSnapshot.activeTerrain());
         }
 
-        List<String> mapValues() {
-            return maps.stream()
-                    .map(option -> option.mapId() + VALUE_DELIMITER + option.toString())
-                    .toList();
-        }
-
-        List<String> terrainValues() {
+        List<String> terrainLabels() {
             return terrains.stream()
-                    .map(option -> option.key() + VALUE_DELIMITER + option.label())
+                    .map(HexMapVocabularyContentPartModel.Option::label)
                     .toList();
         }
 
-        List<String> markerTypeValues() {
-            return markerTypes.stream()
-                    .map(option -> option.key() + VALUE_DELIMITER + option.label())
+        List<String> toolLabels() {
+            return tools.stream()
+                    .map(ToolOption::label)
                     .toList();
         }
 
-        List<String> markerValues() {
-            return java.util.stream.Stream.concat(
-                            java.util.stream.Stream.of(markerValue(0L, "Neuer Marker", "LANDMARK", "")),
-                            selectedTileMarkers.stream().map(Projection::markerValue))
-                    .toList();
+        int activeToolOptionIndex() {
+            return toolOptionIndex(activeToolKey);
         }
 
-        private static String markerValue(MarkerOption option) {
-            return markerValue(option.markerId(), option.name(), option.typeKey(), option.note());
+        int paintTerrainToolOptionIndex() {
+            return toolOptionIndex(HexMapToolContentPartModel.PAINT_TERRAIN);
         }
 
-        private static String markerValue(long markerId, String name, String type, String note) {
-            return markerId + VALUE_DELIMITER + safeText(name) + VALUE_DELIMITER
-                    + safeText(type) + VALUE_DELIMITER + safeText(note);
-        }
-    }
-
-    record MapOption(long mapId, String label, int radius) {
-
-        MapOption {
-            label = safeText(label);
+        private int toolOptionIndex(String toolKey) {
+            for (int index = 0; index < tools.size(); index++) {
+                if (tools.get(index).key().equals(toolKey)) {
+                    return index;
+                }
+            }
+            return 0;
         }
 
-        static MapOption from(HexEditorSnapshot.MapSummary summary) {
-            return new MapOption(
-                    summary.mapId().value(),
-                    summary.displayName(),
-                    summary.radius());
+        int activeTerrainOptionIndex() {
+            int index = optionIndex(terrains, activeTerrainKey);
+            return index >= 0 ? index : optionIndex(terrains, HexMapVocabularyContentPartModel.DEFAULT_TERRAIN);
         }
 
-        @Override
-        public String toString() {
-            return label.isBlank() ? "Karte " + mapId : label;
+        String terrainKey(int optionIndex) {
+            if (optionIndex >= 0 && optionIndex < terrains.size()) {
+                return terrains.get(optionIndex).key();
+            }
+            return optionKey(terrains, HexMapVocabularyContentPartModel.DEFAULT_TERRAIN);
         }
+
+        String terrainKey(String candidateTerrainKey) {
+            String safeCandidate = safeText(candidateTerrainKey);
+            return terrains.stream()
+                    .map(HexMapVocabularyContentPartModel.Option::key)
+                    .filter(safeCandidate::equals)
+                    .findFirst()
+                    .orElseGet(() -> optionKey(terrains, HexMapVocabularyContentPartModel.DEFAULT_TERRAIN));
+        }
+
+        String toolKey(int optionIndex) {
+            return optionIndex >= 0 && optionIndex < tools.size()
+                    ? tools.get(optionIndex).key()
+                    : HexMapToolContentPartModel.SELECT;
+        }
+
+        String toolKey(String candidateToolKey) {
+            String safeCandidate = safeText(candidateToolKey);
+            return tools.stream()
+                    .map(ToolOption::key)
+                    .filter(safeCandidate::equals)
+                    .findFirst()
+                    .orElse(HexMapToolContentPartModel.SELECT);
+        }
+
+        boolean isTool(String candidateToolKey, String expectedToolKey) {
+            return toolKey(candidateToolKey).equals(expectedToolKey);
+        }
+
     }
 
     record ToolOption(String key, String label) {
@@ -199,31 +176,32 @@ public final class HexMapControlsContentModel {
         }
     }
 
-    record MarkerOption(long markerId, String label, String name, String typeKey, String note) {
-
-        MarkerOption {
-            label = safeText(label);
-            name = safeText(name);
-            typeKey = safeText(typeKey);
-            note = safeText(note);
-        }
-
-        static MarkerOption from(HexEditorSnapshot.MarkerSnapshot marker) {
-            return new MarkerOption(
-                    marker.markerId().value(),
-                    marker.name(),
-                    marker.name(),
-                    marker.type(),
-                    marker.note());
-        }
-
-        @Override
-        public String toString() {
-            return label;
-        }
-    }
-
     private static String safeText(String text) {
         return text == null ? "" : text.trim();
+    }
+
+    private static int optionIndex(
+            List<HexMapVocabularyContentPartModel.Option> options,
+            String key
+    ) {
+        String safeKey = safeText(key);
+        for (int index = 0; index < options.size(); index++) {
+            if (options.get(index).key().equals(safeKey)) {
+                return index;
+            }
+        }
+        return -1;
+    }
+
+    private static String optionKey(
+            List<HexMapVocabularyContentPartModel.Option> options,
+            String fallback
+    ) {
+        String safeFallback = safeText(fallback);
+        return options.stream()
+                .map(HexMapVocabularyContentPartModel.Option::key)
+                .filter(safeFallback::equals)
+                .findFirst()
+                .orElse("");
     }
 }

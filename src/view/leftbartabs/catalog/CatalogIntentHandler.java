@@ -64,6 +64,8 @@ final class CatalogIntentHandler {
                         event.subtypes(),
                         event.biomes(),
                         event.encounterTableIds(),
+                        event.worldFactionIds(),
+                        event.worldLocationId(),
                         CatalogControlsContentModel.SliderProjection.draftDifficulty(
                                 event.difficultyAuto(),
                                 event.difficultyValue(),
@@ -107,7 +109,9 @@ final class CatalogIntentHandler {
                             currentDraftControls.amount().value(),
                             currentDraftControls.diversity().auto(),
                             roundedLevel(currentDraftControls.diversity().value()),
-                            currentDraftControls.encounterTableIds())));
+                            currentDraftControls.encounterTableIds(),
+                            currentDraftControls.worldFactionIds(),
+                            currentDraftControls.worldLocationId())));
         }
     }
 

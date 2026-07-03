@@ -34,12 +34,15 @@ markers without inventing a second map source of truth.
 
 ## Visible Structure
 
-- controls for selecting a map and opening create or edit map actions
-- tool selection for at least `Auswahl` and terrain painting
+- a shared shell catalog CRUD surface for selecting, creating, renaming, and
+  reloading Hex maps
+- compact tool controls for at least `Auswahl`, terrain painting, marker
+  placement, and party-token movement
 - main content as the shared hex map surface in editor mode
-- state or inspector content for active tool and selected tile details
+- state content for selected map metadata, radius changes, active status,
+  selected tile details, and marker editing
 - terrain palette for the active paint tool
-- marker placement controls for name, type, and optional note
+- marker placement controls for name, type, and optional note in the state pane
 
 ## Visible States
 
@@ -55,7 +58,13 @@ markers without inventing a second map source of truth.
 ## Required Behavior
 
 - the editor MUST let the user create and edit hex maps
-- map editing MUST support visible name and radius changes
+- new map creation MUST use the shared catalog `Neu` flow and create a named
+  map with default radius `2`
+- map editing MUST support visible name and radius changes from the state pane
+- the Hex control panel MUST use the shared shell map layout pattern:
+  `CatalogCrudControlsView` as fixed catalog, compact Hex controls as the
+  flexible controls child, Hex rendering in `COCKPIT_MAIN`, and edit details in
+  `COCKPIT_STATE`
 - map radius MUST stay inside the supported `0` through `99` range
 - shrinking a map radius in a way that removes authored terrain or markers MUST
   surface an explicit destructive warning before commit
@@ -101,7 +110,8 @@ The V1 marker vocabulary exposes these visible marker types:
 
 ## Acceptance Criteria
 
-- The user can create a new map and immediately see it as an editable map.
+- The user can create a new map through the shared catalog `Neu` flow and
+  immediately see it as an editable radius-2 map.
 - The user can select a tile and inspect visible tile details.
 - The user can paint terrain and see the changed terrain on the map.
 - The user can place a named marker with a supported type on exactly one tile.
@@ -110,6 +120,9 @@ The V1 marker vocabulary exposes these visible marker types:
   is missing.
 - Destructive radius shrink requires an explicit warning before commit.
 - Save failure produces a visible error outcome.
+- The visible Hex map surface remains available below the controls because the
+  map catalog and compact controls share the shell stack layout used by Dungeon
+  map screens.
 
 ## References
 

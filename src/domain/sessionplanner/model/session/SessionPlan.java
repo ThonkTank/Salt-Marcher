@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+@SuppressWarnings("PMD.CyclomaticComplexity")
 public record SessionPlan(
         long sessionId,
         String displayName,
@@ -131,6 +132,16 @@ public record SessionPlan(
                 selectedEncounterId, "Session-Tage aktualisiert.", nextEncounterId, nextLootId);
     }
 
+    public SessionPlan addScene() {
+        long sceneId = nextEncounterId;
+        List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
+        nextEncounters.add(new SessionEncounter(sceneId, UNRESOLVED_ID, SessionEncounterAllocation.zero()));
+        List<SessionEncounter> rebalanced = rebalanceAllocationsEvenly(nextEncounters);
+        long nextSelected = selectedEncounterId <= UNRESOLVED_ID ? sceneId : selectedEncounterId;
+        return copy(participantRefs, encounterDays, rebalanced, restPlacements, lootPlaceholders, nextSelected,
+                "Szene hinzugefuegt.", nextEncounterId + 1, nextLootId);
+    }
+
     public SessionPlan attachEncounter(long encounterPlanId) {
         if (encounterPlanId <= UNRESOLVED_ID) {
             return this;
@@ -141,7 +152,7 @@ public record SessionPlan(
         List<SessionEncounter> rebalanced = rebalanceAllocationsEvenly(nextEncounters);
         long nextSelected = selectedEncounterId <= UNRESOLVED_ID ? encounterId : selectedEncounterId;
         return copy(participantRefs, encounterDays, rebalanced, restPlacements, lootPlaceholders, nextSelected,
-                "Encounter an Session angehaengt.", nextEncounterId + 1, nextLootId);
+                "Szene mit Encounter angehaengt.", nextEncounterId + 1, nextLootId);
     }
 
     public SessionPlan removeEncounter(long encounterId) {
@@ -216,6 +227,17 @@ public record SessionPlan(
         }
         return copy(participantRefs, encounterDays, nextEncounters, restPlacements, lootPlaceholders, selectedEncounterId,
                 "Encounter-Budget aktualisiert.", nextEncounterId, nextLootId);
+    }
+
+    public SessionPlan updateEncounterScene(long encounterId, String sceneTitle, String sceneNotes, long locationId) {
+        int targetIndex = encounterIndex(encounters, encounterId);
+        if (targetIndex < 0) {
+            return this;
+        }
+        List<SessionEncounter> nextEncounters = new ArrayList<>(encounters);
+        nextEncounters.set(targetIndex, nextEncounters.get(targetIndex).withScene(sceneTitle, sceneNotes, locationId));
+        return copy(participantRefs, encounterDays, nextEncounters, restPlacements, lootPlaceholders, selectedEncounterId,
+                "Szene aktualisiert.", nextEncounterId, nextLootId);
     }
 
     public SessionPlan selectEncounter(long encounterId) {

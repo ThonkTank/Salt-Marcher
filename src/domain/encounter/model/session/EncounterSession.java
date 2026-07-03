@@ -67,7 +67,7 @@ public final class EncounterSession {
                 combatResolution.resultState());
     }
 
-    private void addCreature(SessionRepository access, long creatureId) {
+    private void addCreature(SessionRepository access, long creatureId, long worldNpcId) {
         Optional<CreatureDetailData> detail = access.loadCreature(creatureId);
         if (detail.isEmpty()) {
             context.setStatus(CREATURE_LOAD_FAILURE_STATUS);
@@ -79,13 +79,14 @@ public final class EncounterSession {
             String displayName = combatRosterBuilder.addReinforcement(
                     combatRoster,
                     creature,
+                    worldNpcId,
                     REINFORCEMENT_CREATURE_ROLE,
                     CombatRosterBuilder.defaultMonsterInitiative(creature.initiativeBonus()));
             combatTurnTracker.restore(combatTurns, combatRoster, activeTurnId);
             context.setStatus(displayName + " betritt den laufenden Kampf.");
             return;
         }
-        builder.addCreature(creature, context);
+        builder.addCreature(creature, worldNpcId, context);
     }
 
     private void resetCombatState() {
@@ -180,7 +181,7 @@ public final class EncounterSession {
             handlers.put(EncounterSessionCommand.Action.SHIFT_ALTERNATIVE, (session, command, access) ->
                     session.builder.applyGenerationCommand(command, session.context));
             handlers.put(EncounterSessionCommand.Action.ADD_CREATURE, (session, command, access) ->
-                    session.addCreature(access, command.creatureId()));
+                    session.addCreature(access, command.creatureId(), command.worldNpcId()));
             handlers.put(EncounterSessionCommand.Action.INCREMENT_CREATURE, (session, command, access) ->
                     session.builder.mutateCreature(command, session.context));
             handlers.put(EncounterSessionCommand.Action.DECREMENT_CREATURE, (session, command, access) ->

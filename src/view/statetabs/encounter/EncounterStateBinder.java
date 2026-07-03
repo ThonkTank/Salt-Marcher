@@ -13,6 +13,7 @@ import src.domain.creatures.published.CreatureDetailModel;
 import src.domain.creatures.published.CreatureDetailResult;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterStateModel;
+import src.domain.worldplanner.WorldPlannerApplicationService;
 import src.view.slotcontent.details.creature.CreatureDetailsContentModel;
 import src.view.slotcontent.details.creature.CreatureDetailsView;
 
@@ -29,10 +30,13 @@ final class EncounterStateBinder {
         CreaturesApplicationService creatures = runtimeContext.services().require(CreaturesApplicationService.class);
         EncounterStateModel stateModel = runtimeContext.services().require(EncounterStateModel.class);
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
+        WorldPlannerApplicationService worldPlanner =
+                runtimeContext.services().find(WorldPlannerApplicationService.class).orElse(null);
         EncounterStateContributionModel presentationModel = new EncounterStateContributionModel();
         EncounterStateIntentHandler intentHandler = new EncounterStateIntentHandler(
                 presentationModel,
                 encounters,
+                worldPlanner,
                 creatures,
                 creatureId -> openCreatureDetails(runtimeContext.inspector(), detailModel, creatureId));
         EncounterStateContributionModel.ContentModels contentModels = presentationModel.contentModels();

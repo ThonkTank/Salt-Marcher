@@ -111,6 +111,7 @@ public record EncounterStateSnapshot(
 
     public record RosterCard(
             long creatureId,
+            long worldNpcId,
             String displayName,
             String challengeRating,
             int xpTotal,
@@ -120,6 +121,8 @@ public record EncounterStateSnapshot(
             int count
     ) {
         public RosterCard {
+            creatureId = Math.max(0L, creatureId);
+            worldNpcId = Math.max(0L, worldNpcId);
             displayName = displayName == null ? "" : displayName;
             challengeRating = challengeRating == null ? "" : challengeRating;
             creatureType = creatureType == null ? "" : creatureType;
@@ -174,6 +177,7 @@ public record EncounterStateSnapshot(
             String combatantId,
             String displayName,
             boolean playerCharacter,
+            long worldNpcId,
             boolean activeTurn,
             boolean alive,
             int currentHp,
@@ -186,6 +190,7 @@ public record EncounterStateSnapshot(
         public CombatCard {
             combatantId = combatantId == null ? "" : combatantId;
             displayName = displayName == null ? "" : displayName;
+            worldNpcId = Math.max(0L, worldNpcId);
             detailText = detailText == null ? "" : detailText;
         }
     }
@@ -223,6 +228,8 @@ public record EncounterStateSnapshot(
 
     public record ResultEnemy(
             String displayName,
+            long creatureId,
+            long worldNpcId,
             String statusLabel,
             int hpLoss,
             int xp,
@@ -231,6 +238,8 @@ public record EncounterStateSnapshot(
     ) {
         public ResultEnemy {
             displayName = displayName == null ? "" : displayName;
+            creatureId = Math.max(0L, creatureId);
+            worldNpcId = Math.max(0L, worldNpcId);
             statusLabel = statusLabel == null ? "" : statusLabel;
             loot = loot == null ? "" : loot;
         }

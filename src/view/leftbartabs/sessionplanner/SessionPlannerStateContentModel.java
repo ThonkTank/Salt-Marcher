@@ -18,19 +18,19 @@ public final class SessionPlannerStateContentModel {
     }
 
     record Projection(
-            boolean selectedEncounterAvailable,
-            String selectedEncounterTitle,
-            String selectedEncounterDetail,
-            String selectedEncounterXpSummary,
+            boolean selectedSceneAvailable,
+            String selectedSceneTitle,
+            String selectedSceneDetail,
+            String selectedSceneXpSummary,
             String stateContextLabel,
             String placeholderTitle,
             String placeholderDetail
     ) {
 
         Projection {
-            selectedEncounterTitle = safeText(selectedEncounterTitle);
-            selectedEncounterDetail = safeText(selectedEncounterDetail);
-            selectedEncounterXpSummary = safeText(selectedEncounterXpSummary);
+            selectedSceneTitle = safeText(selectedSceneTitle);
+            selectedSceneDetail = safeText(selectedSceneDetail);
+            selectedSceneXpSummary = safeText(selectedSceneXpSummary);
             stateContextLabel = safeText(stateContextLabel);
             placeholderTitle = safeText(placeholderTitle);
             placeholderDetail = safeText(placeholderDetail);
@@ -39,8 +39,8 @@ public final class SessionPlannerStateContentModel {
         static Projection empty() {
             return new Projection(
                     false,
-                    "Kein Session-Encounter ausgewaehlt",
-                    "Waehle im Planner einen Encounter aus, um den vorbereitenden State-Kontext zu sehen.",
+                    "Keine Session-Szene ausgewaehlt",
+                    "Waehle im Planner eine Szene aus, um den vorbereitenden State-Kontext zu sehen.",
                     "",
                     "",
                     "Katalog-Vorbereitung",
@@ -51,10 +51,10 @@ public final class SessionPlannerStateContentModel {
             SessionPlannerStatePanelProjection safe =
                     projection == null ? SessionPlannerStatePanelProjection.empty() : projection;
             return new Projection(
-                    safe.selectedEncounterAvailable(),
-                    safe.selectedEncounterTitle(),
-                    safe.selectedEncounterDetail(),
-                    safe.selectedEncounterXpSummary(),
+                    safe.selectedSceneAvailable(),
+                    safe.selectedSceneTitle(),
+                    safe.selectedSceneDetail(),
+                    safe.selectedSceneXpSummary(),
                     safe.stateContextLabel(),
                     safe.placeholderTitle(),
                     safe.placeholderDetail());

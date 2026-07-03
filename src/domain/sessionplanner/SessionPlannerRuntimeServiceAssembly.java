@@ -5,7 +5,7 @@ import shell.api.ServiceRegistry;
 import src.domain.sessionplanner.model.session.repository.SessionPlanRepository;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
-import src.domain.sessionplanner.published.SessionPlannerEncountersModel;
+import src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 
@@ -53,8 +53,8 @@ final class SessionPlannerRuntimeServiceAssembly {
         return publishedState.participantsModel(services);
     }
 
-    SessionPlannerEncountersModel encountersModel(ServiceRegistry services) {
-        return publishedState.encountersModel(services);
+    SessionPlannerSceneTimelineModel sceneTimelineModel(ServiceRegistry services) {
+        return publishedState.sceneTimelineModel(services);
     }
 
     SessionPlannerStatePanelModel statePanelModel(ServiceRegistry services) {

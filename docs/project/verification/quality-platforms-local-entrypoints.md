@@ -71,6 +71,13 @@ explicit `--area <area>`. The optional `--with compile-integrity` flag requests
 the normal broad compile integrity checks as Gradle-owned dependencies of the
 focused handoff lifecycle task.
 
+`tools/gradle/run-staged-verification.sh focused-handoff --path
+src/features/dungeon/runtime --area feature-runtime` is a valid focused route
+for feature-runtime source-root placement diagnostics. It selects the
+layering-backed `feature-runtime` surface and does not prove internal
+feature-runtime topology conformance or passive-carrier mirror absence inside
+`src/features/**`.
+
 `focused-handoff` is not a replacement for `production-handoff`, not the proof
 route for shared verification-core lifecycle or routing changes, and not enough
 for public production-code handoff claims. Production-code changes and shared
@@ -216,8 +223,10 @@ builds and bundle descriptors are resolved directly from the active worktree
 layout. Settings evaluation also publishes request-scope engine facts so a
 focused task graph includes only the build-harness, quality-rules,
 quality-rules-errorprone included builds, plus jQAssistant task registration,
-that the selected surface can actually consume. This graph pruning does not
-change the public proof route or the checks behind a requested surface.
+that the selected surface can actually consume. Broad `production-handoff` does
+not register jQAssistant tasks by default; direct jQAssistant requests and
+focused surfaces still do. This graph pruning does not change the public proof
+route or the checks behind a requested surface.
 Direct build-harness diagnostics participate in the same focused-selection
 mechanism: the settings plugin activates the matching layer-surface bundles, or
 all topology-owning bundles for `allBuildHarnessTopologyCheck`, before the
@@ -246,7 +255,9 @@ declared inputs and outputs are unchanged. That reuse comes from normal Gradle
 behavior inside the active worktree.
 Local jQAssistant store reuse is deliberately up-to-date reuse, not a remote
 build-cache contract: scan tasks own bytecode/source scan inputs, while analyze
-tasks own rule directories, rule groups, and reports.
+tasks own rule directories, rule groups, and reports. jQAssistant remains a
+direct or focused diagnostic surface rather than a default broad
+`production-handoff` dependency.
 Focused, documentation, and broad dry-run investigation may also use Gradle's
 configuration cache when the selected graph is compatible. Broad
 `production-handoff` must report configuration-cache store and reuse literally

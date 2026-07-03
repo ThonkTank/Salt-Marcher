@@ -197,11 +197,11 @@ report does not block the build.
 Broader architecture-sprawl signals are therefore intentionally split. Generic
 source smells stay with PMD, objective cycle blockers stay with the generic and
 focused ArchUnit suites, whole-program dead-code reachability stays with
-`checkNoDeadCode`, and jQAssistant owns graph analysis where role-aware traversal
-matters. A jQAssistant rule is blocking only when its selected group runs at
-`BLOCKER` severity; the View-layer `view-layer-cycle-diagnostics` group runs at
-minor severity and remains a graph diagnostic until the View owner defines a
-precise forbidden cycle level.
+`checkNoDeadCode`, and jQAssistant owns direct and focused graph analysis where
+role-aware traversal matters. A jQAssistant rule is blocking only when a direct
+or focused jQAssistant request selects a `BLOCKER` group; the View-layer
+`view-layer-cycle-diagnostics` group runs at minor severity and remains a graph
+diagnostic until the View owner defines a precise forbidden cycle level.
 jQAssistant scan tasks own the classpath and source-root inputs that build the
 local graph store. Analyze tasks own rule directories, analyze groups, and
 reports, so rule-only changes rerun analysis against the existing local store

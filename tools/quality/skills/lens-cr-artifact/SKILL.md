@@ -42,6 +42,18 @@ artifact to use:
 - accepted downstream permission: `Roadmap creation may proceed`
 - `Reviewed Path`, `Authored Review Path`, and `Allowed Write Surface`
 
+The accepted CR-review artifact must be the canonical
+`YYYY-MM-DD-<slug>-cr-review.md` path for the CR chain. The exact
+`Allowed Write Surface`, reviewed path, authored review path, downstream
+permission, and reviewed CR status-authority fields must match the
+Implementation Artifacts Standard.
+
+`Allowed Write Surface` must name the authored review artifact plus the
+reviewed CR path for status/upkeep only. The reviewed CR must carry
+`Status Authority Role: Planning Review Coordinator` and
+`Status Authority Path` pointing to the accepting CR review artifact before
+roadmap creation proceeds.
+
 After the guard-readable fields, require free-prose review sections for
 coordinator evidence pass, CR goals and target claims,
 coordinator-derived risk propositions, content-lens briefings, rejected

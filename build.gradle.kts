@@ -66,7 +66,10 @@ sourceSets {
     test {
         java {
             setSrcDirs(listOf("test"))
+            exclude("src/domain/dungeon/model/core/structure/corridor/**")
+            exclude("src/domain/worldplanner/**")
             exclude("src/view/leftbartabs/dungeoneditor/**")
+            exclude("src/view/leftbartabs/worldplanner/**")
         }
     }
 }
@@ -100,6 +103,32 @@ val hexMapEditorBehaviorHarness by sourceSets.creating {
         include("src/domain/party/**")
         include("test/src/view/leftbartabs/hexmap/**")
         include("test/src/view/statetabs/travel/**")
+    }
+    resources {
+        setSrcDirs(emptyList<String>())
+    }
+    compileClasspath += sourceSets["main"].output
+    compileClasspath += sourceSets["main"].compileClasspath
+    runtimeClasspath += output + compileClasspath + sourceSets["main"].runtimeClasspath
+}
+
+val worldPlannerBackendHarness by sourceSets.creating {
+    java {
+        setSrcDirs(listOf("test"))
+        include("src/domain/worldplanner/**")
+    }
+    resources {
+        setSrcDirs(emptyList<String>())
+    }
+    compileClasspath += sourceSets["main"].output
+    compileClasspath += sourceSets["main"].compileClasspath
+    runtimeClasspath += output + compileClasspath + sourceSets["main"].runtimeClasspath
+}
+
+val worldPlannerUiHarness by sourceSets.creating {
+    java {
+        setSrcDirs(listOf("test"))
+        include("src/view/leftbartabs/worldplanner/**")
     }
     resources {
         setSrcDirs(emptyList<String>())
@@ -407,9 +436,14 @@ behaviorHarnesses.javaExec("dungeonTravelProjectionLevelHarness") {
 
 val catalogInitialLoadHarnessDataDir = layout.buildDirectory.dir("catalog-initial-load-data")
 val catalogCrudControlsHarnessDataDir = layout.buildDirectory.dir("catalog-crud-controls-data")
+val catalogControlsRawInputHarnessDataDir = layout.buildDirectory.dir("catalog-controls-raw-input-data")
+val searchFilterControlsHarnessDataDir = layout.buildDirectory.dir("search-filter-controls-data")
 val hexMapEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-map-editor-behavior-data")
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
+val worldPlannerBackendHarnessDataDir = layout.buildDirectory.dir("world-planner-backend-data")
+val worldPlannerControlsRawInputHarnessDataDir = layout.buildDirectory.dir("world-planner-controls-raw-input-data")
+val worldPlannerUiHarnessDataDir = layout.buildDirectory.dir("world-planner-ui-data")
 
 behaviorHarnesses.javaExec("catalogInitialLoadHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
@@ -443,6 +477,46 @@ behaviorHarnesses.javaExec("catalogCrudControlsHarness") {
         outputs.upToDateWhen { false }
         doFirst {
             val runDataDir = catalogCrudControlsHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+    }
+}
+
+behaviorHarnesses.javaExec("catalogControlsRawInputHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("catalog-controls-raw-input"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the Catalog controls raw-input behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.view.leftbartabs.catalog.CatalogControlsRawInputHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = catalogControlsRawInputHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+    }
+}
+
+behaviorHarnesses.javaExec("searchFilterControlsHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("search-filter-controls"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the shared search/filter controls behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.view.slotcontent.controls.searchfilter.SearchFilterControlsHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = searchFilterControlsHarnessDataDir.get()
                 .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
             mkdir(runDataDir)
             mkdir(runDataDir.dir("salt-marcher"))
@@ -516,6 +590,79 @@ behaviorHarnesses.javaExec("sessionPlannerShellLayoutHarness") {
         outputs.upToDateWhen { false }
         doFirst {
             val runDataDir = sessionPlannerShellLayoutHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+    }
+}
+
+behaviorHarnesses.javaExec("worldPlannerBackendHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("world-planner-backend"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the World Planner backend persistence behavior harness."
+        dependsOn(tasks.named(worldPlannerBackendHarness.classesTaskName))
+        classpath = worldPlannerBackendHarness.runtimeClasspath
+        mainClass.set("src.domain.worldplanner.WorldPlannerBackendHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = worldPlannerBackendHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+    }
+}
+
+behaviorHarnesses.javaExec("worldPlannerEncounterHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("world-planner-encounter"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the World Planner encounter source and finite stock behavior harness."
+        dependsOn(tasks.named(worldPlannerBackendHarness.classesTaskName))
+        classpath = worldPlannerBackendHarness.runtimeClasspath
+        mainClass.set("src.domain.encounter.WorldPlannerEncounterHarness")
+        outputs.upToDateWhen { false }
+    }
+}
+
+behaviorHarnesses.javaExec("worldPlannerControlsRawInputHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("world-planner-controls-raw-input"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the World Planner controls raw-input behavior harness."
+        dependsOn(tasks.named(worldPlannerUiHarness.classesTaskName))
+        classpath = worldPlannerUiHarness.runtimeClasspath
+        mainClass.set("src.view.leftbartabs.worldplanner.WorldPlannerControlsRawInputHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = worldPlannerControlsRawInputHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+    }
+}
+
+behaviorHarnesses.javaExec("worldPlannerUiHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("world-planner-ui"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the World Planner left-bar UI production-route behavior harness."
+        dependsOn(tasks.named(worldPlannerUiHarness.classesTaskName))
+        classpath = worldPlannerUiHarness.runtimeClasspath
+        mainClass.set("src.view.leftbartabs.worldplanner.WorldPlannerUiHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = worldPlannerUiHarnessDataDir.get()
                 .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
             mkdir(runDataDir)
             mkdir(runDataDir.dir("salt-marcher"))

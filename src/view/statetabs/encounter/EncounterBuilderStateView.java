@@ -308,7 +308,7 @@ public final class EncounterBuilderStateView extends VBox {
         ) {
             Button minus = new BuilderStyledButton("-", STYLE_COMPACT);
             minus.setAccessibleText("Anzahl von " + card.name() + " verringern");
-            minus.setDisable(card.count() <= 1);
+            minus.setDisable(card.namedNpc() || card.count() <= 1);
             minus.setOnAction(event -> {
                 if (actions != null) {
                     actions.changeRosterCount(card.creatureId(), -1);
@@ -321,6 +321,7 @@ public final class EncounterBuilderStateView extends VBox {
 
             Button plus = new BuilderStyledButton("+", STYLE_COMPACT);
             plus.setAccessibleText("Anzahl von " + card.name() + " erhoehen");
+            plus.setDisable(card.namedNpc());
             plus.setOnAction(event -> {
                 if (actions != null) {
                     actions.changeRosterCount(card.creatureId(), 1);
@@ -351,6 +352,7 @@ public final class EncounterBuilderStateView extends VBox {
 
             Button remove = new BuilderStyledButton("\u00d7", STYLE_COMPACT, "remove-btn");
             remove.setAccessibleText(card.name() + " aus dem Encounter entfernen");
+            remove.setDisable(card.namedNpc());
             remove.setOnAction(event -> {
                 if (actions != null) {
                     actions.removeCreature(card.creatureId());

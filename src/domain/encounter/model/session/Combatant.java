@@ -6,6 +6,7 @@ public record Combatant(
         String name,
         CombatantKind kind,
         long creatureId,
+        long worldNpcId,
         int currentHp,
         int maxHp,
         int ac,
@@ -29,6 +30,7 @@ public record Combatant(
                 0,
                 0,
                 0,
+                0,
                 initiative,
                 1,
                 0,
@@ -41,6 +43,7 @@ public record Combatant(
             String sourceId,
             String displayName,
             MonsterCombatProfile profile,
+            long worldNpcId,
             int initiative,
             int order,
             int creatureIndex
@@ -50,6 +53,7 @@ public record Combatant(
                 displayName,
                 CombatantKind.MONSTER,
                 profile.creatureId(),
+                worldNpcId,
                 profile.maxHp(),
                 profile.maxHp(),
                 profile.armorClass(),
@@ -70,7 +74,7 @@ public record Combatant(
     }
 
     public boolean sharesMobBucketWith(Combatant other) {
-        return creatureId == other.creatureId() && initiative == other.initiative();
+        return worldNpcId == 0L && other.worldNpcId() == 0L && creatureId == other.creatureId() && initiative == other.initiative();
     }
 
     public String mobName() {
@@ -79,11 +83,11 @@ public record Combatant(
     }
 
     public Combatant withHp(int hitPoints) {
-        return new Combatant(id, name, kind, creatureId, hitPoints, maxHp, ac, initiative, count, xp, detail, loot, order);
+        return new Combatant(id, name, kind, creatureId, worldNpcId, hitPoints, maxHp, ac, initiative, count, xp, detail, loot, order);
     }
 
     public Combatant withInitiative(int value) {
-        return new Combatant(id, name, kind, creatureId, currentHp, maxHp, ac, value, count, xp, detail, loot, order);
+        return new Combatant(id, name, kind, creatureId, worldNpcId, currentHp, maxHp, ac, value, count, xp, detail, loot, order);
     }
 
     public static int compareByHpThenName(Combatant left, Combatant right) {

@@ -26,7 +26,7 @@ Current state:
 
 - the current published surface already exposes focused planner workflow
   commands plus four directly exported read-only planner models for session,
-  participants, encounters, and state-panel context
+  participants, scene timeline, and state-panel context
 
 Target state:
 
@@ -72,15 +72,18 @@ Aggregate Root: SessionPlan
 - user-visible session display name
 - session-local participant references
 - exact `encounterDays` planning input
-- ordered session-encounter references
-- per-encounter budget allocations
-- selected encounter context
+- ordered session-owned scenes
+- optional encounter-plan reference for each scene
+- session-owned scene title, notes, and optional World Planner location
+  reference for each scene
+- per-scene budget allocations when an encounter plan is linked
+- selected scene context
 - placed rests and loot placeholders
 - session-local status and selection truth
 
 It derives:
 
-- total planned encounter XP from encounter-owned summaries
+- total planned encounter XP from linked encounter-owned summaries
 - remaining and exceeded XP budget
 - recommended rest counts
 - importable saved encounter-plan budget summaries
@@ -94,12 +97,15 @@ Commands entering the runtime model are:
 
 - create session plan
 - add or remove session participant reference
-- attach or detach saved encounter-plan reference
-- reorder attached encounter reference
-- change encounter allocation
-- set or clear a rest in one encounter gap
+- add or remove a session scene
+- attach or detach saved encounter-plan reference on a scene
+- update scene title, scene notes, and optional World Planner location
+  reference for a scene
+- reorder scenes
+- change scene allocation when an encounter plan is linked
+- set or clear a rest in one scene gap
 - add or remove a loot placeholder
-- select the current session encounter context
+- select the current session scene context
 
 Core invariants:
 
@@ -107,9 +113,12 @@ Core invariants:
 - session participant count is the number of session participant references
 - the current persistence model holds multiple session records and one current
   session pointer
-- attached encounters keep the session-local order chosen by the planner
-- rests can exist only between adjacent encounters
-- each attached encounter refers to exactly one encounter-owned saved plan
+- scenes keep the session-local order chosen by the planner
+- rests can exist only between adjacent scenes
+- each scene may refer to one encounter-owned saved plan, but scenes may also
+  have no linked encounter
+- each scene may reference one World Planner location by stable ID
+  without copying location detail
 - sessionplanner persists only references and planner-owned metadata, never
   foreign encounter or party internals
 - loot placeholders do not contribute fake XP or fake gold values
@@ -123,12 +132,12 @@ Current state:
   use cases
 - reopening the planner after reload or application restart preserves
   planner-owned
-  participant refs, encounter order, allocations, rests, placeholders, and
-  selection for that current session only
+  participant refs, scene order, scene metadata, location references,
+  allocations, rests, placeholders, and selection for that current session only
 
 Target state:
 
-- reopening a session restores session-owned participant refs, encounter order,
+- reopening a session restores session-owned participant refs, scene order,
   allocations, selection, rests, and placeholders
 - party, encounter, creature, and later loot truth are re-read through their
   owning boundaries instead of being copied into session persistence
