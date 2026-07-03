@@ -60,12 +60,19 @@ handoff/commit state. Main must not author roadmaps, phase plans, step plans,
 implementation diffs, generated review artifacts, role-owned proof, final
 integrated proof, direct specialist reviewer prompts, or review acceptance.
 
-User-provided, confirmed, or requested plans and chat confirmation may seed a
-CR but never grant CR, planning-bundle, implementation, review, proof, or
-handoff authority. `Please implement this plan` still starts with CR creation
-and coordinator-authored CR review for tracked mutations. Before
-implementation, Main MUST run the repo-root artifact-chain guard. Missing
-reviews, role provenance, downstream permission, roadmap, authorized step-plan
+Mutation Authority Gate: before `apply_patch`, staging, proof, handoff, or
+commit for a repo-tracked implementation mutation, Main MUST have the accepted
+CR, accepted CR review, planner-authored planning bundle, accepted plan
+review, and passing artifact-chain guard for the target step plan.
+User-approved plans, assistant `<proposed_plan>` blocks, chat confirmations,
+and "please implement this plan" are goal-definition input only; they do not
+authorize `apply_patch`, staging, proof, handoff, commit, or direct
+Main-owned implementation. If Main already mutated tracked files without that
+authority, stop, mark `WIP - Governance Chain Violated`, make no stable
+handoff claim, and repair through a fresh CR-governed workflow; retroactive
+acceptance does not stabilize the bad pass. Main may directly write only
+Main/User goal-definition and CR artifacts before the gate. Missing reviews,
+role provenance, downstream permission, roadmap, authorized step-plan
 coverage, or any `minimal chain` shortcut keeps WIP.
 
 Implementation uses clean-start `wave-implementation-worker` agents. Workers

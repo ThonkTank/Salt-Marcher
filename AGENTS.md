@@ -20,14 +20,21 @@ Before changing repo-tracked files in SaltMarcher:
    Workflow immediately:
    `Goal Definition -> CR -> CR Review -> Planning Bundle -> Plan Review -> Implementation -> Review -> Commit/Handoff`.
    Read-only and status-only work stays outside that chain because it does not
-   mutate tracked files. User-provided, confirmed, or requested plans and chat
-   confirmation are goal-definition input only; they do not replace CR review,
-   planning-bundle review, implementation authority, Verification Runner proof,
-   Implementation Review Coordinator acceptance, or the artifact-chain guard.
-   Before implementation, run the artifact-chain guard; bad provenance keeps
-   WIP. Main must use the Workflow Artifact Ownership table below before
-   launching any downstream role and must not create generated review
-   artifacts.
+   mutate tracked files. Mutation Authority Gate: before `apply_patch`,
+   staging, proof, handoff, or commit for a repo-tracked implementation
+   mutation, Main must have the accepted CR, accepted CR review,
+   planner-authored planning bundle, accepted plan review, and passing
+   artifact-chain guard for the target step plan. User-approved plans,
+   assistant `<proposed_plan>` blocks, chat confirmations, and "please
+   implement this plan" are goal-definition input only; they do not authorize
+   `apply_patch`, staging, proof, handoff, commit, or direct Main-owned
+   implementation. If Main already mutated tracked files without that
+   authority, stop, mark `WIP - Governance Chain Violated`, make no stable
+   handoff claim, and repair through a fresh CR-governed workflow; retroactive
+   review does not bless the bad pass. Main may directly write only Main/User
+   goal-definition and CR artifacts before the gate. Main must use the Workflow
+   Artifact Ownership table below before launching any downstream role and must
+   not create generated review artifacts.
 4. For the current workflow phase only, read the nearest canonical owner and
    mandatory role/surface skills before covered work. Keep later-phase context
    out of the current role packet.
