@@ -43,16 +43,32 @@ directly. Treat its supported findings as same-run review findings, not as a
 separate Main-owned phase.
 
 Select specialist lenses by concrete handoff risk and brief them through the
-global reviewer-briefing method. Specialist reviewers remain read-only. Scoped
-fix workers may edit only explicitly assigned write sets.
+global reviewer-briefing method. Specialist reviewers remain read-only.
+
+## Repair Gate
+
+Before any fix routing, classify each blocking finding as `Trivial Mechanical
+Fix` or `Planner Repair Required`. `Trivial Mechanical Fix` requires exactly
+one obvious correction and no accepted-plan decision change, owner,
+architecture, code-health, proof, harness, PMD, API, state, shape, or
+target-model concern; examples include a missed bracket, obvious typo, stale
+link, or clearly unused accessor/import.
+
+All other blockers are `Planner Repair Required`, including code-health,
+code-shape, PMD or quality-rule, `code-simplifier`, smell, coupling,
+indirection, ownership, harness/gate mismatch, repeated-fix, proof-oracle, and
+multi-repair findings. Return `WIP - Planner Repair Required` with a neutral
+planner packet instead of a fix-worker brief. Scoped fix workers may edit only
+explicitly assigned write sets for findings classified as
+`Trivial Mechanical Fix`.
 
 ## Proof Freshness
 
 Review layers inspect Verification Runner evidence and report missing or stale
 proof. They do not rerun final proof commands. If the coordinator, qualitative
-packet, specialist reviewer, or scoped fix worker changes tracked files or
-requires file-changing fixes, return `Proof Refresh Required`; wait for Main to
-launch a fresh Verification Runner before final status.
+packet, specialist reviewer, or trivial scoped fix worker changes tracked files
+or requires file-changing fixes, return `Proof Refresh Required`; wait for Main
+to launch a fresh Verification Runner before final status.
 
 ## Output
 
@@ -71,8 +87,8 @@ The coordinator result must include:
 - project-health and baseline-admission disposition
 - final status: `Clean`, `WIP - Objective Not Satisfied`,
   `WIP - Debt Materialization Required`, `WIP - Must Fix Before Handoff`,
-  `WIP - Review Panel Blocked`, `WIP - Verification Blocked`, or
-  `Proof Refresh Required`
+  `WIP - Planner Repair Required`, `WIP - Review Panel Blocked`,
+  `WIP - Verification Blocked`, or `Proof Refresh Required`
 
 ## References
 

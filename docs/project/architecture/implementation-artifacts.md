@@ -170,6 +170,13 @@ Implementation Review Coordinator, qualitative review packets, and commit
 routing must stay compact enough that they do not hide missing technical
 decisions.
 
+Repair plans after `WIP - Planner Repair Required` use the same planner-owned
+roadmap, phase-plan, and wave/step-plan family. They must preserve the
+original goal, literal review finding, architecture check, code-health or
+PMD/quality rationale when present, rejected fast fixes, chosen repair form,
+write set, proof route, and Done When. They are not implementation authority
+until planning-bundle review accepts the repair plan.
+
 Planning is incomplete until every non-clean structural row has a slice,
 blocker/WIP status, project-health route, or explicit user exclusion.
 

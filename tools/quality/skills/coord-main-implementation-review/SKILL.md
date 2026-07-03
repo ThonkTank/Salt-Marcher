@@ -40,10 +40,15 @@ The coordinator prompt must name:
 ## Required Behavior
 
 The coordinator owns reviewability, qualitative packet routing, risk-selected
-specialist review, scoped fix-worker routing, proof-staleness handling, and
-final clean/WIP/blocked status. If coordinator tooling, required reviewer
-launch, or the qualitative packet is unavailable, return WIP/blocked. Main must
-not collapse the panel into self-review.
+specialist review, repair-gate classification, trivial fix-worker routing,
+proof-staleness handling, and final clean/WIP/blocked status. If coordinator
+tooling, required reviewer launch, or the qualitative packet is unavailable,
+return WIP/blocked. Main must not collapse the panel into self-review.
+
+Direct review fixes are limited to coordinator-classified `Trivial Mechanical
+Fix` findings. When the coordinator returns `WIP - Planner Repair Required`,
+Main must launch the global planner with the neutral finding packet and must
+not apply a direct fix, self-review, or shortened proof-refresh loop.
 
 If any coordinator-requested fix changes tracked files, the coordinator returns
 `Proof Refresh Required` and waits for fresh Verification Runner evidence

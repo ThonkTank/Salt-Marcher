@@ -171,18 +171,15 @@ document exists.
   blocked result. If that coordinator, its required packet, or required
   tooling is unavailable, the pass remains WIP/blocked; Main must not review or
   run proof as a fallback.
-- When review results, architecture checks, behavior harnesses, or required
-  proof expose a systemic blocker, Main must use the global `planner` skill to
-  obtain a project-health repair plan before implementing the repair. The
-  planner optimizes for the long-term target architecture, maintainability, and
-  fitting solution shape, not for the shortest immediate unblocker. Systemic
-  blockers include unclear root cause, repeated fix cycles, architecture or
-  harness mismatch, cross-owner repair, or likely edits across multiple
-  packages, documents, checks, or generated surfaces. Adapter stacks,
-  ownership-subverting seams, self-confirming harnesses, and
-  `LEGACY_REMOVE_ON_TOUCH` hits are Clean-Break signals when their scope is
-  larger than an obvious local deletion. Small local blockers with an obvious
-  one-file fix do not require this planner escalation.
+- Review blockers default to
+  `Blocker Reflection Gate -> Planner Architecture Check -> Repair Plan ->
+  Plan Review -> Repair Implementation`. Direct review fixes are allowed only
+  for `Trivial Mechanical Fix` findings with exactly one obvious correction and
+  no architecture, owner, code-health, PMD, proof, harness, API, state, shape,
+  or target-model decision. Code-health, code-shape, PMD/quality-rule,
+  `code-simplifier`, smell, coupling, indirection, ownership, harness/gate,
+  repeated-fix, proof-oracle, and multi-repair findings require the global
+  planner before repair.
 - Work that runs, plans, changes, or reviews the SaltMarcher
   process-autoresearch loop must use the repo-owned
   `autodev-process-optimizer` skill. The process optimizer tunes implementer

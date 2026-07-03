@@ -182,48 +182,13 @@ Review instructions live in skills; mandatory subagent use is authorized.
 - Global review specialist skills remain supplementary lenses; do not create
   repo-local copies unless the user explicitly asks for a SaltMarcher fork.
 
-## Qualitative Simplification Packet
+## Qualitative Simplification And Repair Gate
 
-Covered implementation passes include the installed `code-simplifier` skill as
-a required qualitative packet inside the Implementation Review Coordinator
-cycle. The packet reviews simplicity, elegance, smells, and performance. It
-must not create static-analysis gates, weaken proof, replace specialist review,
-or claim full handoff coverage. If it or a coordinator-scoped fix changes
-tracked files, the coordinator marks proof stale and waits for fresh
-Verification Runner evidence.
+Covered implementation passes include the installed `code-simplifier` packet inside Implementation Review Coordinator review. It checks simplicity, elegance, smells, and performance; it does not create gates, weaken proof, or close architecture/state-ownership/system-of-record risk by itself.
 
-The Implementation Review Coordinator owns disposition of the
-`code-simplifier` packet alongside specialist findings. Findings become
-blocking same-run implementation-review work unless fixed, assigned to a scoped
-fix role, planner-integrated, explicitly user-excluded, blocked/WIP, or closed
-as false-positive/review-owned with evidence. Structural-state findings still
-need architecture evidence; the packet cannot close architecture,
-state-ownership, or system-of-record risk by itself.
+Review blockers default to `Planner Repair Required`. The coordinator may route a direct fix only for `Trivial Mechanical Fix`: exactly one obvious correction, no accepted-plan decision change, and no owner, architecture, code-health, proof, harness, PMD, API, state, shape, or target-model concern. All other blockers, including code-health, PMD/quality-rule, `code-simplifier`, smell, ownership, harness/gate, repeated-fix, proof-oracle, and multi-repair findings, require Blocker Reflection plus a global-planner repair plan.
 
-## Planner Escalation For Systemic Feedback
-
-When review, architecture-check, behavior-harness, or proof feedback indicates
-a systemic problem rather than a local defect, Main obtains a project-health
-repair plan from the global planner before repair. The planner optimizes for
-target architecture and maintainability, not the shortest immediate unblocker.
-
-The Blocker Reflection Gate must run before this escalation decision. A blocker
-classified as `Target Architecture Violation`, `Stale Or Over-Broad Gate`,
-`Governance Gap`, or `Unclear Root Cause` is systemic unless source-backed
-evidence proves it is an isolated local defect.
-
-Escalate when root cause is unclear, the same surface has repeated fix cycles,
-the finding suggests architecture/check/harness mismatch, the repair crosses
-multiple owners, or a quick local fix would damage the target design. Do not
-escalate isolated obvious single-surface fixes such as stale references or
-one-file documentation corrections.
-
-Main gives only neutral evidence: task goal, literal finding or output, changed
-paths, owner documents, proof state, dirty baseline, constraints, and non-goals.
-The planner returns root cause, target-state alignment, chosen approach,
-rejected shortcuts, write set, proof route, risks, and Done When criteria. It
-does not implement, review, run proof, launch workers, or replace
-implementation review.
+For `Planner Repair Required`, Main gives neutral evidence only; the planner weighs the original goal against review findings, rejects fast fixes that harm target architecture or maintainability, and returns repair form, write set, proof route, risks, and Done When. It does not implement or replace review.
 
 ## Problem History Intake
 
