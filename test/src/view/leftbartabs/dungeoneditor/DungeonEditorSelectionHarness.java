@@ -485,24 +485,25 @@ final class DungeonEditorSelectionHarness {
         unsubscribeToolSwitchState.run();
         unsubscribeToolSwitchSurface.run();
         assertEquals("Wand setzen", DungeonMapStateProbe.renderStatusLabel(binding.mapContentModel()),
-                "DE-TOOL-005 tool-only switch updates the canvas status label");
+                "DE-TOOL-007 tool-only switch updates the canvas status label");
         assertEquals(0L, toolSwitchStatePublications.get(),
-                "DE-TOOL-005 tool-only switch does not publish state");
+                "DE-TOOL-007 tool-only switch does not publish state");
         assertEquals(0L, toolSwitchSurfacePublications.get(),
-                "DE-TOOL-005 tool-only switch does not publish map surface");
+                "DE-TOOL-007 tool-only switch does not publish map surface");
         assertRenderAndHitSignaturesUnchanged(
                 beforeToolSwitchMeasurement,
                 DungeonMapStateProbe.snapshot(binding.mapContentModel()),
-                "DE-TOOL-005 tool-only switch from Auswahl to Wand keeps render and hit signatures stable");
+                "DE-TOOL-007 tool-only switch from Auswahl to Wand keeps render and hit signatures stable");
         DungeonMapStateProbe.Snapshot beforeRepeatedToolClickMeasurement =
                 DungeonMapStateProbe.snapshot(binding.mapContentModel());
         click(button(controls, "Wand"));
         assertEquals("Wand setzen", DungeonMapStateProbe.renderStatusLabel(binding.mapContentModel()),
-                "DE-TOOL-005 repeated tool-only selection keeps the canvas status label coherent");
+                "DE-TOOL-007 repeated tool-only selection keeps the canvas status label coherent");
         assertRenderAndHitSignaturesUnchanged(
                 beforeRepeatedToolClickMeasurement,
                 DungeonMapStateProbe.snapshot(binding.mapContentModel()),
-                "DE-TOOL-005 repeated tool-only selection keeps render and hit signatures stable");
+                "DE-TOOL-007 repeated tool-only selection keeps render and hit signatures stable");
+        results.add("DE-TOOL-007 Ready: tool-only switch suppresses state and map-surface publication");
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_MOVED,

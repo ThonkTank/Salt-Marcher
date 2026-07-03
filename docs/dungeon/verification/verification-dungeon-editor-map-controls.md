@@ -44,6 +44,7 @@ This document owns route expectations for map catalog operations, startup respon
 | `DE-TOOL-004` | Secondary option dropdown auto-closes on pointer leave | Family button dropdown | `F0_EMPTY_MAP` | Moving the pointer outside an open dropdown closes it while preserving selected family and last sub-option state. | Ready |
 | `DE-TOOL-005` | Escape resets to selection tool | Map-surface key route | `F0_EMPTY_MAP` | Pressing `Esc` while a non-selection family is active resets snapshot and controls state to `Auswahl` and closes current popups. | Ready |
 | `DE-TOOL-006` | Escape clears secondary-option dropdown intent | Secondary-option dropdown key route | `F0_EMPTY_MAP` | Pressing `Esc` with a dropdown active resets family/sub-option intent to `Auswahl`; reopening the family falls back to first option. | Ready |
+| `DE-TOOL-007` | Tool-only switch suppresses state and map-surface publication | `OwnerSuite=DungeonEditorSelectionHarness`; `ProofType=RealRoute`; controls click from `Auswahl` to `Wand`, then repeated `Wand` click | same mixed route setup used by the selection harness tool-hover policy check | Canvas status label updates and coheres, state and map-surface publication counts remain zero, render and hit signatures stay stable, and authored rows remain unchanged. | Ready |
 
 ## References
 
