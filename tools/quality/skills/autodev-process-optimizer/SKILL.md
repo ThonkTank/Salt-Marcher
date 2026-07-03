@@ -53,14 +53,14 @@ Before running, planning, changing, or reviewing a process experiment:
 The process optimizer MUST NOT treat these as normal experiment knobs:
 
 - mandatory skill routing
-- required qualitative `code-simplifier` review-agent steps for covered
-  implementation work
+- required Implementation Review Coordinator cycles, including the
+  qualitative `code-simplifier` packet for covered implementation work
 - required planner escalation before repair for systemic review, architecture,
   behavior-harness, or proof feedback
 - implementation and review pass-log obligations
 - documentation enforcement, focused handoff, production handoff, desktop
   install, CI, or branch-protection readback requirements
-- Overview-coordinated review and specialist review routing
+- Implementation Review Coordinator and specialist review routing
 - stable publication policy
 - protected intake boundary
 
@@ -92,11 +92,11 @@ surfaces are specific enough for a safe reduced slice.
 
 If no actionable intake item exists, the optimizer MAY select one bounded
 maintenance fallback from repo evidence such as recurring review findings,
-architecture friction, code-simplifier opportunities, performance hot-path
+architecture friction, qualitative review opportunities, performance hot-path
 evidence, verification friction, or duplicated governance text. Fallback slices
 MUST have explicit Done-When bullets, narrow read and write sets, and the normal
-proof and Overview review gates. If no safe fallback can be bounded, record the
-run as `blocked`.
+proof and Implementation Review Coordinator gates. If no safe fallback can be
+bounded, record the run as `blocked`.
 
 Maintenance fallback candidates do not need to be written into protected intake
 unless the user wants to preserve them. Do not use fallback selection to bypass
@@ -136,8 +136,9 @@ and `process_score`.
 
 The optimizer scores verified useful progress over process cost using the fixed
 primary formula from the verification standard. It must penalize proof failure,
-stale proof, missed mandatory skills, missed required `code-simplifier`
-review-agent step, missed required planner escalation, review blockers,
+stale proof, missed mandatory skills, missed required Implementation Review
+Coordinator cycle or qualitative packet, missed required planner escalation,
+review blockers,
 dirty-tree ambiguity, user correction, delayed regressions, and context bloat.
 Until the verification standard changes, score computation may use only the
 documented `score_inputs` keys.
@@ -175,7 +176,8 @@ Promote a process variant into tracked instructions only when:
   documentation surface
 - the promotion pass uses `agent-instruction-engineering` and any relevant
   architecture or verification skills
-- the promotion pass runs the required documentation proof and Overview review
+- the promotion pass runs the required documentation proof and Implementation
+  Review Coordinator review
 
 Promotion is a repo-tracked instruction change, not a private experiment.
 

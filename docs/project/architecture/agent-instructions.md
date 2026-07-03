@@ -46,29 +46,52 @@ Any work on covered surfaces must use that skill first.
 
 ## Standard Coordinated Workflow
 
-Non-trivial repo-tracked implementation, refactor, migration, governance
-repair, systemic repair, repeated-fix, or broad documentation/instruction work
-MUST use the Standard Coordinated Workflow unless the user explicitly asks for
-read-only planning/review or the task is a trivial mechanical edit with no
-semantic workflow, governance, architecture, behavior, proof, or ownership
-effect. The global `wave-coordination` skill operates
-`Goal Definition -> Roadmap Planning -> Phase Planning -> Implementation -> Review -> Commit/Handoff`.
+Every requested repo-tracked mutation MUST use the Standard Coordinated
+Workflow. Read-only planning/review, status reporting, and non-mutating
+inspection stay outside because they do not change tracked files. The global
+`wave-coordination` skill operates
+`Goal Definition -> CR -> CR Review -> Planning Bundle -> Plan Review -> Implementation -> Review -> Commit/Handoff`.
 
-Main owns intake, skill routing, dirty baseline, proof, integration, and
-publication state. Main clarifies goals with the user before delegation. The
-first clean-start planner uses `planner` to write the Main-reviewed roadmap
-with must-do completion goals and required change surfaces. A
-second clean-start planner is required only when scope is broad, dependency
-order is unclear, or phase boundaries need separate decomposition. Later
-planning prepares implementation-ready wave-plan artifacts as needed for each phase or
-slice. Implementation uses clean-start `wave-implementation-worker` agents with
-disjoint write sets; Review uses `code-simplifier` and Overview. Required
-subagent launches are standing user authorization; unavailable subagent tooling
-keeps full handoff WIP unless the direct-pass exception applies and normal
-proof, logging, and review complete.
+Main is coordinator-only after CR intake. Main owns goal clarification, CR
+authorship, role launch packets, artifact paths, allowed write surfaces, dirty
+baseline tracking, deterministic guard/provenance checks, blocker coordination,
+freshness checks, aggregation from accepted coordinator output, and final
+handoff/commit state. Main must not author roadmaps, phase plans, step plans,
+implementation diffs, generated review artifacts, role-owned proof, final
+integrated proof, direct specialist reviewer prompts, or review acceptance.
+
+User-provided, confirmed, or requested plans and chat confirmation may seed a
+CR but never grant CR, planning-bundle, implementation, review, proof, or
+handoff authority. `Please implement this plan` still starts with CR creation
+and coordinator-authored CR review for tracked mutations. Before
+implementation, Main MUST run the repo-root artifact-chain guard. Missing
+reviews, role provenance, downstream permission, roadmap, authorized step-plan
+coverage, or any `minimal chain` shortcut keeps WIP.
+
+Implementation uses clean-start `wave-implementation-worker` agents. Workers
+own worker-local proof in implementation logs. Verification Runner owns final
+integrated proof. One Implementation Review Coordinator owns review, including
+the qualitative `code-simplifier` packet and risk-selected handoff lenses.
+Unavailable required role tooling keeps the pass WIP/blocked; Main may record
+the blocker but must not substitute the missing role.
+
+Main must know write ownership before launching each workflow role:
+
+| Artifact | Writer role | Main launch obligation |
+| --- | --- | --- |
+| Goal definition and CR | Main/User | Main may write these intake artifacts and must keep requested plans as input, not authority. |
+| CR review | CR Review Coordinator | Launch through `coord-main-cr-review`, assign exactly one CR review path, and do not write or replace it from Main. |
+| Roadmap, phase plan, and step plan | Planner | Launch one planner with accepted CR/review and assign the roadmap plus required phase and step-plan paths. |
+| Planning-bundle review | Plan Review Coordinator | Launch through `coord-main-plan-review`, assign exactly one plan-review path for the roadmap/phase/step bundle, and do not write or replace it from Main. |
+| Implementation log | Implementation Worker | The worker writes its assigned implementation pass log after implementation and worker-local proof. |
+| Final integrated proof | Verification Runner | Launch with assigned command surface, evidence section, start time, and unavailable-tool fallback. |
+| Review log | Main Aggregator from Implementation Review Coordinator result | Main writes the aggregate from accepted coordinator evidence. |
+
+The Implementation Artifacts Standard owns artifact roles and guard-readable
+fields. Caller and author skills repeat only role-local field needs.
 
 ## Planning-Time Structural State Preflight
-Before roadmap planning, phase planning, or briefing implementation/refactor/governance repair
+Before planning-bundle creation or briefing implementation/refactor/governance repair
 for stateful domain, runtime, view, view-model, data, command, mapper,
 projection, persistence-row, enum, value-object, draft, session, or
 content-model code, Main MUST classify Structural State Preflight as
@@ -104,60 +127,61 @@ missing.
 
 ## Review Skill Routing
 
-SaltMarcher keeps review instructions in global skills, not in this standard.
-Mandatory subagent use is standing user authorization for the named role.
+Review instructions live in skills; mandatory subagent use is authorized.
 
-- Handoff uses `coord-adversarial-review`, `coord-main-overview`, one Overview
-  coordinator, `coord-overview-reviewer`, and specialist `lens-*` skills after
-  `lens-adversarial-review-agent`.
-- Overview owns reviewer/follow-up launch, reviewability, fix outcomes, and
-  final clean-or-blocked status. Not-reviewable or blocked results keep the
-  pass WIP until fixed, freshly proved, and reviewed again.
-- Overview is a completion gate: it checks original goal, Done When,
-  architecture/quality objectives, proof oracle, and project-health baseline
-  admission. Green proof is necessary but insufficient.
+- CR review uses repo-owned `coord-main-cr-review`, one coordinator,
+  `lens-coordinator-cr-review`, `coord-planning-reviewer`, and
+  `lens-cr-artifact`. Reviewer launch failure or formal-only content-lens
+  review is `Blocked`.
+- Planning-bundle review uses `coord-main-plan-review`, one coordinator,
+  `lens-coordinator-plan-review`, `coord-planning-reviewer`, and
+  `lens-plan-artifact` for the roadmap, phase, and step-plan bundle.
+- Verification Runner executes assigned proof commands for the final integrated
+  state. If the runner or required proof command is unavailable, the pass stays
+  WIP/blocked with no Main fallback.
+- Implementation review uses `coord-main-implementation-review`, one
+  Implementation Review Coordinator, `lens-coordinator-implementation-review`,
+  the required `code-simplifier` packet, and risk-selected specialist lenses.
+  Not-reviewable or blocked results keep the pass WIP until fixed, freshly
+  proved by Verification Runner, and reviewed again.
+- Implementation review is a completion gate: it checks original goal, Done
+  When, architecture/quality objectives, proof oracle, and project-health
+  baseline admission. Green proof is necessary but insufficient.
 - Architecture, refactor, governance, state-ownership, system-of-record,
   adapter/seam, repeated-fix, or Clean-Break work includes the architecture
   lens or reports `WIP - Review Panel Blocked`; add quality/smell/simplicity
   lenses when complexity risk remains.
-- When Structural State Review is triggered, Overview must include a fresh
-  architecture-lens matrix. Missing, incomplete, contradicted, unresolved
+- When Structural State Review is triggered, implementation review must include
+  a fresh architecture-lens matrix. Missing, incomplete, contradicted, unresolved
   `Handoff Blocker`, or unsynchronized `Materialization Required` rows prevent
   `Clean`.
 - Objective-relevant residual debt blocks handoff until fixed, user-excluded,
   or reported WIP/blocker. Incidental supported debt may be materialized only
   through project-health.
-- Required proof tools run only at top-level handoff. Reviewers inspect literal
-  proof and report missing/stale proof. If reviewed paths or behavior change,
-  Main reruns proof and launches a fresh coordinator.
+- Reviewers inspect literal proof and report missing/stale proof. If reviewed
+  paths or behavior change, the coordinator returns `Proof Refresh Required`;
+  Main launches a fresh Verification Runner and waits for the coordinator's
+  final aggregation.
 - Global review specialist skills remain supplementary lenses; do not create
   repo-local copies unless the user explicitly asks for a SaltMarcher fork.
 
-## Qualitative Simplification Pass
+## Qualitative Simplification Packet
 
-SaltMarcher uses `code-simplifier` as a qualitative review-agent coordinator,
-not as an implementation-agent self-check. Covered implementation passes run the
-installed skill after the main edit and before pass logging. It reviews
-simplicity, elegance, smells, and performance; consolidates safe patches or a
-no-op result; and keeps reviewers read-only unless Main assigns a scoped fix.
-It must not create static-analysis gates, weaken proof, replace Overview
-handoff review, or claim full handoff coverage. If it changes repo-tracked
-files, Main reruns required proof before Overview.
+Covered implementation passes include the installed `code-simplifier` skill as
+a required qualitative packet inside the Implementation Review Coordinator
+cycle. The packet reviews simplicity, elegance, smells, and performance. It
+must not create static-analysis gates, weaken proof, replace specialist review,
+or claim full handoff coverage. If it or a coordinator-scoped fix changes
+tracked files, the coordinator marks proof stale and waits for fresh
+Verification Runner evidence.
 
-Main owns disposition of the code-simplifier result. A covered pass is ready for
-Overview only after Main has read the current code-simplifier pass log or worker
-report and handled every finding as fixed with proof rerun, assigned to a
-same-run worker, planner-integrated, explicitly user-excluded, blocked/WIP, or
-closed as false-positive/review-owned with evidence. Findings become blocking
-same-run implementation tasks. `Deferred`, `follow-up`, `later`, `outside write
-set`, or unowned `review-owned` findings block Overview. Overview inspects the
-code-simplifier log with implementation logs.
-
-`code-simplifier` may surface structural smells, but it cannot by itself close
-architecture, state-ownership, or system-of-record risk. Any code-simplifier
-finding in a structural-state family must be disposed as fixed, architecture
-review blocker, planner-integrated, project-health materialized,
-user-excluded, or false positive with code evidence before Overview readiness.
+The Implementation Review Coordinator owns disposition of the
+`code-simplifier` packet alongside specialist findings. Findings become
+blocking same-run implementation-review work unless fixed, assigned to a scoped
+fix role, planner-integrated, explicitly user-excluded, blocked/WIP, or closed
+as false-positive/review-owned with evidence. Structural-state findings still
+need architecture evidence; the packet cannot close architecture,
+state-ownership, or system-of-record risk by itself.
 
 ## Planner Escalation For Systemic Feedback
 
@@ -181,12 +205,13 @@ Main gives only neutral evidence: task goal, literal finding or output, changed
 paths, owner documents, proof state, dirty baseline, constraints, and non-goals.
 The planner returns root cause, target-state alignment, chosen approach,
 rejected shortcuts, write set, proof route, risks, and Done When criteria. It
-does not implement, review, run proof, launch workers, or replace Overview.
+does not implement, review, run proof, launch workers, or replace
+implementation review.
 
 ## Problem History Intake
 
-For non-trivial bug, regression, refactor, governance, systemic-repair, or
-repeated-fix work, Main MUST inspect pass logs before planning. Run `rg` in
+For bug, regression, refactor, governance, systemic-repair, or repeated-fix
+work, Main MUST inspect pass logs before planning. Run `rg` in
 `build/agent-pass-logs/` for surface, symptom, owner, harness, check, and
 repair terms; read newest relevant matches. Cite logs or state none existed.
 
@@ -209,67 +234,83 @@ obtain explicit user exclusion, or keep the pass WIP/blocked.
 SaltMarcher uses local implementation artifacts as generated operational
 evidence for loops, reversals, quality drift, and architecture friction. They
 are not canonical documentation and must not redefine requirements, contracts,
-architecture, domain truth, or verification policy. Roadmaps, wave plans,
+architecture, domain truth, or verification policy. CRs, roadmaps, wave plans,
 implementation logs, review logs, completion audits, filenames, field lists,
-and link rules live in
-`docs/project/architecture/implementation-documentation.md`.
+artifact indexes, link rules, and decision/blocker-log requirements live in
+`docs/project/architecture/implementation-artifacts.md`;
+`docs/project/architecture/implementation-documentation.md` is the routing
+entry standard.
 
-- Implementation agents must write one implementation pass log after each
-  repo-tracked implementation pass and before starting the required Overview
-  handoff review.
-- Review agents must read relevant implementation, code-simplifier, and review
-  pass logs before final review status.
+- Implementation Workers must write one implementation pass log after each
+  repo-tracked implementation pass and worker-local proof.
+- Verification Runner and implementation-review roles must read relevant
+  implementation, qualitative packet, proof, and review pass logs before final
+  status.
 - Nested specialist reviewers remain read-only and include pass-log evidence
   and trend observations in their reviewer output.
-- The required review pass log is an aggregated Overview review cycle log. The
-  main handoff agent writes it after each completed Overview review cycle from
-  the Overview result and reviewer outputs. If nested review orchestration is
-  unavailable and the main agent runs the top-level fallback review route, the
-  main handoff agent writes the aggregated review pass log from the direct
-  reviewer outputs.
-- Pass logs live under `build/agent-pass-logs/` and are generated local
-  evidence. Do not commit them and do not cite them as canonical truth.
-- Pass logs are also local memory for expected wait times. Agents MUST follow
-  the wait-time procedure in `implementation-documentation.md` and record
-  observed durations for recurring long checks they run.
+- The required review pass log is an aggregated Implementation Review
+  Coordinator cycle log from coordinator output, reviewer outputs, qualitative
+  packet evidence, and Verification Runner evidence.
+- Pass logs live under `build/agent-pass-logs/` as generated local evidence.
+  Link them to the roadmap or plan; do not commit or cite them as canonical
+  truth.
+- Pass logs are also local memory for expected wait times. Record observed
+  durations for recurring long checks when they materially affect future
+  pacing or blocker interpretation.
 - Missing pass logs for prior work do not block a pass by themselves, but a
   required current implementation or review pass without its log remains WIP
   until the log is written or the blocker is reported.
 - If the build directory was cleaned, missing logs are unavailable history, not
   evidence that no prior loop or degradation occurred.
 
+## Wait-Time And Polling Evidence
+
+Before launching or waiting on a worker, reviewer, Verification Runner,
+long-running proof/check, or install process, record the exact local start time
+and expected first-poll time. Inspect the newest comparable pass or Gradle run
+log once and use its last duration for the first poll. If no comparable
+duration exists, use observable output or 30-60 second status intervals.
+
+Do not repeatedly rescan history while a process is running, do not launch a
+duplicate long job because it is quiet, and do not treat long runtime as
+failure. Agent roles get at least 30 minutes of quiet runtime unless they
+finish, report a blocker, are explicitly cancelled, or state they will make no
+further changes. When a phase launches several required roles, wait for every
+terminal result before aggregation. Pass logs record wait-time observations for
+recurring process classes: command or role, start time, elapsed time, result,
+evidence log path when one exists, and recommended first-poll interval.
+
 ## Stable-State Barrier For Waiting Agents
 
-When Main is waiting for an implementation, proof, review, or simplification
-agent that may still change the target write set, Main MUST treat that target
-as unstable until the agent finishes, is explicitly cancelled, or reports that
-it will make no further file changes.
+When Main is waiting for an implementation worker, Verification Runner,
+Implementation Review Coordinator, reviewer, or scoped fix role that may still
+change or judge the target write set, Main MUST treat that target as unstable
+until the role finishes, is explicitly cancelled, or reports that it will make
+no further file changes.
 
-While the target is unstable, Main MUST NOT start proof, quality analysis,
-review, code-simplifier, production-handoff, desktop-install, or other sidecar
-work against the same checkout or behavior surface. Main may only do clearly
-independent work, such as reading governance, updating an explicitly requested
-non-overlapping instruction document, checking a launched process, or waiting.
+While the target is unstable, Main MUST NOT launch a Verification Runner,
+quality analysis, implementation review, production-handoff, desktop-install,
+or other sidecar work against the same checkout or behavior surface. Main may
+only do clearly independent work, such as reading governance, updating an
+explicitly requested non-overlapping instruction document, checking a launched
+process, or waiting.
 
-Before launching any proof, review, or expensive local tool after a wait, Main
-MUST refresh the active coordination state: current user instruction, active
-agent status, worktree dirty paths, and whether any open agent owns files or
-behavior that the proposed tool would inspect. If any active agent can still
-change that surface, defer the tool until the agent result is integrated or the
-agent is cancelled. After an interruption, user correction, resume, or context
-compaction, Main MUST repeat this refresh before continuing the workflow.
-Resume summaries, pass-log summaries, and remembered skill lists are orientation only.
-Before any new repo-tracked edit after interruption, Main MUST rerun
-`context-hygiene`, read the nearest owner, or state that no edit is being made.
+Before launching a Verification Runner, review, or expensive tools after a
+wait, Main MUST refresh current user instruction, active role status, dirty
+paths, and open-role ownership. If an active role can still change that
+surface, defer until integrated or cancelled. After interruption, user
+correction, resume, or compaction, repeat this refresh. Summaries and
+remembered skills are
+orientation only; before new repo-tracked edits, rerun `context-hygiene`, read
+the nearest owner, or state that no edit is being made.
 
-If Main intentionally runs independent work while waiting, it must name the
-independence boundary before starting and must not claim the result as evidence
-for the unstable target surface.
+If Main runs independent work while waiting, it must name the independence
+boundary and not use the result as evidence for the unstable target surface.
 
-Implementation artifact filenames, headings, timestamp metadata, content
-fields, code-simplifier evidence, wait-time observations, and Implementation
-Reading Packet fields are owned by the Implementation Documentation Standard.
-Do not duplicate those field lists in instruction surfaces or repo skills.
+Implementation artifact filenames, headings, metadata, fields, qualitative
+packet evidence, wait observations, and Reading Packet fields are owned by the
+Implementation Artifact Standard. Instruction surfaces may include owner-linked
+extracts, not competing field-list sources.
 
 When a review agent sees a systemic trend instead of an isolated defect, it
 must report that trend explicitly. If the trend suggests an architecture-model,
@@ -277,13 +318,11 @@ governance, skill, or mechanical-check change, the review reports it as a
 blocking finding. Main integrates the repair into the same run.
 
 ## Verification Path
-
 - Covered Markdown-only instruction changes that stay inside the documentation
   gate scope use `./gradlew checkDocumentationEnforcement --console=plain`.
-- Covered instruction-only changes that also include `agents/openai.yaml` use
-  `./gradlew checkDocumentationEnforcement --console=plain` for the Markdown
-  instruction surfaces plus explicit derived-metadata consistency review
-  against the governing `SKILL.md`.
+- Instruction-only changes that also include `agents/openai.yaml` use the
+  Markdown gate plus explicit derived-metadata consistency review against the
+  governing `SKILL.md`.
 - Covered changes that also touch non-Markdown code, Gradle, build logic, or
   non-covered surfaces still follow the broader verification path owned by
   `AGENTS.md` and the quality-platform standards.
@@ -291,60 +330,20 @@ blocking finding. Main integrates the repair into the same run.
   the Markdown-focused documentation gate scope.
 
 ## Ownership Rules
-
 - `AGENTS.md` owns project-wide norms only.
-- `AGENTS.md` must stay an early router: it names mandatory triggers,
-  canonical owners, and repo-specific verification surfaces, but it must not
-  become a glossary, feature spec, migration plan, or second copy of a layer
-  standard.
+- `AGENTS.md` stays an early router for triggers, owners, and verification; it
+  must not become a glossary, feature spec, migration plan, or layer-standard
+  copy.
 - `SKILL.md` owns reusable agent workflow and trigger logic for one skill.
-- `docs/project/<type>/*.md` own reusable project-wide rules for one
-  topic.
+- `docs/project/<type>/*.md` own reusable project-wide rules for one topic.
 - Other instruction markdown may exist only when the topic is narrower than a
   reusable standard or skill.
 
-If multiple covered surfaces start repeating the same rule, move the rule to
-the lowest stable canonical owner and replace the others with short summaries or
-links.
+Move repeated rules to the lowest stable canonical owner; replace other
+surfaces with short summaries or links.
 
 ## Review Rules
-
-When a covered artifact changes, reviewers must check:
-
-- Was the global instruction skill used?
-- Does the edited file still own the right topic, without duplicate or
-  conflicting truth, and did neighboring instruction metadata such as
-  `agents/openai.yaml` stay aligned?
-- Does the chosen verification path match the actual changed surfaces?
-- For behavior-changing work, did the pass cover the owning harness and
-  dependencies, including negative assertions against the reported old
-  behavior, or report a concrete `Harness Gap` blocker?
-- Did covered implementation work run `code-simplifier` before pass logging and
-  Overview review, read its result, and dispose every finding before any
-  handoff-readiness claim?
-- For Standard Coordinated Workflow, did phase ownership, clean-start
-  subagents, and WIP/tooling blockers stay explicit?
-- When proof, review, architecture, quality, harness, or gate feedback blocked
-  the pass, did Main run the Blocker Reflection Gate before planning a repair,
-  classify the blocker, compare the target-architecture repair against the
-  shortest local unblocker, obtain planner escalation for systemic feedback,
-  and record the rejected shortcut?
-- For covered repeated or non-trivial work, did Main inspect related pass-log
-  history before planning and avoid repeating failed surface fixes without a
-  deeper root-cause plan?
-- For stateful planning or refactor work, did Main run or explicitly classify
-  Planning-Time Structural State Preflight before the implementation plan or
-  wave-plan artifact, and did every non-clean row receive an allowed
-  disposition?
-- Did the implementing agent obtain a completed global `lens-coordinator-handoff`
-  coordinator result before handoff?
-- Did the Overview result include an objective-completion verdict, baseline
-  admission disposition, required architecture/quality lens coverage, and a
-  global final status rather than treating green proof as sufficient?
-- For stateful or user-reported bugs, did review verify that the proof oracle
-  makes the old failure impossible instead of only proving a new happy path?
-- Did any specialist review skill used for the pass remain a read-only review
-  lens instead of becoming a competing repo-owned workflow?
-- Did implementation and review agents write and use required local pass logs?
-- Did local baseline admission check fresh proof/review, marker/register sync,
-  active debt intake, pass-log trends, and no hidden supported findings?
+When a covered artifact changes, reviewers check global skill use, topic
+ownership, derived metadata, verification fit, accepted artifact chain,
+required pass logs, Verification Runner proof, Implementation Review
+Coordinator coverage, and read-only specialist review.

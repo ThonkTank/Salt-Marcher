@@ -19,12 +19,12 @@ layer, quality-platform, source-reference, or verification standards.
 
 ## Required Context Shape
 
-Every non-trivial SaltMarcher task must reduce its working context to:
+Every SaltMarcher repo-tracked mutation must reduce its working context to:
 
 - `Goal`: the concrete outcome requested in the current turn.
 - `Context`: the current repo facts actually read for this task.
-- `Problem History Intake`: relevant local pass logs inspected for non-trivial
-  bug, regression, refactor, governance, systemic-repair, or repeated-fix work,
+- `Problem History Intake`: relevant local pass logs inspected for bug,
+  regression, refactor, governance, systemic-repair, or repeated-fix work,
   or a statement that no related logs were available.
 - `Project Health`: owner areas, active debt markers, repeated families, and
   whether supported findings are fixed, false positive, WIP, or materialized.
@@ -50,13 +50,13 @@ for a durable plan.
 - Do not turn review, verification, or source-reference handoff evidence into a
   separate changelog, PR template, or ledger unless the user explicitly asks.
 - Generated implementation and review pass logs are the narrow exception:
-  `docs/project/architecture/implementation-documentation.md` owns their
-  artifact fields, and `build/agent-pass-logs/` holds them as operational
+  `docs/project/architecture/implementation-artifacts.md` owns their artifact
+  fields, and `build/agent-pass-logs/` holds them as operational
   evidence, not canonical documentation or a second context ledger.
 - Implementation Reading Packets are implementation-handoff context governed by
-  the Implementation Documentation Standard. Other context surfaces route to
-  that owner instead of repeating the packet field list.
-- For covered non-trivial or repeated-fix work, use those pass logs to detect
+  the Implementation Artifact Standard. Other context surfaces route to that
+  owner instead of repeating the packet field list.
+- For covered mutation or repeated-fix work, use those pass logs to detect
   repeated symptoms, abandoned fixes, and surface-level repair loops before
   planning, review, or continuation. Repeated churn blocks implementation or
   refactor planning until the deeper root-cause repair or WIP/blocker
@@ -124,6 +124,7 @@ Review must flag:
 ## References
 
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
+- [Implementation Artifact Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-artifacts.md:1)
 - [Implementation Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-documentation.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/source-references.md:1)

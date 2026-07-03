@@ -101,11 +101,12 @@ manifests:
     `build/agent-pass-logs/`. Include local cleanup decisions, abandoned
     approaches, reversals, repeated edits, architecture friction, quality
     tradeoffs, and verification results.
-19. Before starting the review step, read and follow the global caller skills
-    `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md` and
-    `/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md`; they require
-    one main-agent-launched Overview coordinator pass that owns nested
-    specialist review and scoped follow-up worker launches before handoff.
+19. Before starting the review step, use the repo-owned
+    `coord-main-implementation-review` route. It launches one Implementation
+    Review Coordinator that applies the global adversarial review and handoff
+    stack, owns the qualitative packet, nested specialist review, scoped
+    follow-up worker routing, proof-staleness handling, and final clean/WIP/
+    blocked result before handoff.
 
 ## Evidence Sources
 
@@ -182,8 +183,8 @@ harness/helper surfaces must not be normalized by conservative slice boundaries.
 Supported structural findings that survive the pass must be `PROJECT_HEALTH_DEBT`
 with a register entry, explicit user exclusion, or WIP/blocker.
 
-Every covered handoff must also report the adversarial review outcome required
-by the global `coord-adversarial-review` caller skill.
+Every covered handoff must also report the Implementation Review Coordinator
+outcome.
 
 Every covered handoff must report `Delete signals`: removed, explicit blocker,
 replacement plan, marker added for new or retained transitional support,
@@ -212,6 +213,6 @@ not claim that global debt is solved because a scoped pass is clean.
 - [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md)
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md)
 - [Project Health Standard](../../../../docs/project/architecture/project-health.md)
-- [Global Main To Overview Coordination Skill](/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md)
+- [Main To Implementation Review Skill](../coord-main-implementation-review/SKILL.md)
 - [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md)
 - [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md)

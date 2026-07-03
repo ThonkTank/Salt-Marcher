@@ -28,8 +28,8 @@ repo-tracked change:
    documentation paths unless the user explicitly asks for that scope.
 6. Treat Implementation Reading Packets and pass-log artifact fields as
    documentation governed by
-   `docs/project/architecture/implementation-documentation.md`, not as
-   repo-tool catalog content.
+   `docs/project/architecture/implementation-artifacts.md`; the implementation
+   documentation standard is only the routing entrypoint.
 
 ## Tool Catalog
 
@@ -73,6 +73,26 @@ repo-tracked change:
   `python3 tools/quality/reporting/project_health_scan.py --intake --planned-path <path>`
   `python3 tools/quality/reporting/project_health_scan.py --intake --worktree`
 
+### Artifact Chain Guard
+
+- Tool path: `tools/quality/reporting/verify_artifact_chain.py`
+- Helps with: read-only verification that a CR and implementation-ready
+  wave/step plan have simple role-authored artifact headers,
+  planning-review-coordinator acceptance, a single planning-bundle review,
+  matching artifact-lens completion, authorized step-plan coverage, and no
+  Main-authored review or `minimal chain` shortcut before implementation
+  starts.
+- Governing skill: this `repo-tools` skill plus the Artifact Chain Guard rule
+  in `docs/project/architecture/agent-instructions.md`.
+- Evidence strength: `Evidence-Proven` for literal artifact fields and
+  matching generated artifact files; it is not a replacement for reviewer
+  judgment, proof, implementation logs, qualitative review packets, or
+  Implementation Review Coordinator review.
+- Typical use:
+  `python3 tools/quality/reporting/verify_artifact_chain.py --cr <cr> --plan <wave-or-step-plan>`
+  Add `--phase-plan <phase-plan>` for each phase plan in the planning bundle.
+  `python3 tools/quality/reporting/verify_artifact_chain.py --self-test`
+
 ## Handoff
 
 Report repo-tool usage only when it affected the work:
@@ -91,4 +111,5 @@ only to record this evidence.
 - [Callchain Tool README](../../../callchain/README.md)
 - [Agent Context Standard](../../../../docs/project/architecture/agent-context.md)
 - [Implementation Documentation Standard](../../../../docs/project/architecture/implementation-documentation.md)
+- [Implementation Artifacts Standard](../../../../docs/project/architecture/implementation-artifacts.md)
 - [Project Health Skill](../project-health/SKILL.md)

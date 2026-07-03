@@ -1,9 +1,8 @@
 # SaltMarcher Working Constitution
 
-This file is the early routing surface for SaltMarcher agents. It defines only
-the repo-specific rules an agent needs before choosing canonical documentation,
-skills, or verification. It does not hold feature specifications, long-form
-target designs, migration plans, or glossary truth.
+This file is the early SaltMarcher routing surface. It defines repo-specific
+rules before agents choose canonical docs, skills, or verification; it does not
+hold feature specs, target designs, migration plans, or glossary truth.
 
 Global workspace rules live in
 `/home/aaron/Schreibtisch/projects/AGENTS.md` and apply to SaltMarcher unless
@@ -17,19 +16,28 @@ Before changing repo-tracked files in SaltMarcher:
    `/home/aaron/Schreibtisch/projects/AGENTS.md`.
 2. Classify the touched surface: production code, check/enforcement package,
    documentation, agent instruction, source-backed decision, or a combination.
-3. Read the nearest canonical owner for that surface before copying nearby
-   implementation shape.
-4. Use every mandatory skill named by the workspace or SaltMarcher routing
-   rules before planning, implementing, refactoring, or reviewing covered work.
-5. Non-trivial repo-tracked implementation, refactor, migration, governance
-   repair, systemic repair, repeated-fix, or broad documentation/instruction
-   work follows the Standard Coordinated Workflow owned by
-   `docs/project/architecture/agent-instructions.md`. Wave Coordination is the
-   normal operating skill for that workflow, not a separate exception path.
-   Artifact shape remains owned by
-   `docs/project/architecture/implementation-documentation.md`.
-6. For non-trivial bug, regression, refactor, governance, systemic-repair, or
-   repeated-fix work, perform the `Problem History Intake` owned by
+3. Every requested repo-tracked mutation enters the Standard Coordinated
+   Workflow immediately:
+   `Goal Definition -> CR -> CR Review -> Planning Bundle -> Plan Review -> Implementation -> Review -> Commit/Handoff`.
+   Read-only and status-only work stays outside that chain because it does not
+   mutate tracked files. User-provided, confirmed, or requested plans and chat
+   confirmation are goal-definition input only; they do not replace CR review,
+   planning-bundle review, implementation authority, Verification Runner proof,
+   Implementation Review Coordinator acceptance, or the artifact-chain guard.
+   Before implementation, run the artifact-chain guard; bad provenance keeps
+   WIP. Main must use the Workflow Artifact Ownership table below before
+   launching any downstream role and must not create generated review
+   artifacts.
+4. For the current workflow phase only, read the nearest canonical owner and
+   mandatory role/surface skills before covered work. Keep later-phase context
+   out of the current role packet.
+5. The Standard Coordinated Workflow is owned by
+   `docs/project/architecture/agent-instructions.md`; Wave Coordination is its
+   normal operating skill. Documentation placement is owned by
+   `documentation.md`; generated artifact shape by
+   `implementation-artifacts.md`, routed by `implementation-documentation.md`.
+6. For bug, regression, refactor, governance, systemic-repair, or repeated-fix
+   work, perform the `Problem History Intake` owned by
    `docs/project/architecture/agent-instructions.md` before implementation
    planning, refactor planning, implementation review, or continuation.
    `context-hygiene` and `code-exploration` own the trigger-time workflow.
@@ -56,6 +64,29 @@ Before changing repo-tracked files in SaltMarcher:
 
 If a touched surface has no clear canonical owner, stop and report the ambiguity
 instead of creating a second source of truth.
+
+## Workflow Artifact Ownership
+
+Before launching another workflow role, Main must name the expected generated
+artifact path and allowed write surface in that role's prompt. A role may write
+only the artifact class assigned here and by the narrower caller skill or plan.
+
+| Artifact | Workflow route | Guard-readable artifact role | Caller/launch surface |
+| --- | --- | --- | --- |
+| Goal definition, CR | Main/User | `Main/User` | Main writes intake and CR only. |
+| CR review | CR Review Coordinator route | `Planning Review Coordinator` in `Owner Role` and `Authored By Role` | Main launches through `coord-main-cr-review`, assigns exactly one CR review path, and must not write or replace it. |
+| Roadmap, phase plan, wave/step plan | Planner | `Planner` | Main launches one planner with the accepted CR/review and assigns the roadmap plus any needed phase and step-plan paths. |
+| Planning-bundle review | Plan Review Coordinator route | `Planning Review Coordinator` in `Owner Role` and `Authored By Role` | Main launches through `coord-main-plan-review`, assigns exactly one plan-review path for the roadmap/phase/step bundle, and must not write or replace it. |
+| Implementation log | Implementation Worker | not guard-checked | The worker writes its assigned pass log after implementation and worker-local proof. |
+| Final integrated proof | Verification Runner | not guard-checked | Main launches the runner with assigned commands and evidence section; Main must not substitute proof. |
+| Review log | Main Aggregator from Implementation Review Coordinator result | not guard-checked | Main writes the aggregate from accepted coordinator evidence. |
+
+Generated artifact form and guard-readable fields are owned by
+`docs/project/architecture/implementation-artifacts.md`. Role skills repeat the
+fields their authors need; caller skills repeat the write-surface contract their
+launchers need. Split CR and plan review coordinator names are route and lens
+names only; generated CR-review and plan-review artifacts keep the shared
+guard-compatible `Planning Review Coordinator` role value.
 
 ## Documentation Routing
 
@@ -110,6 +141,16 @@ document exists.
   governance, architecture, quality, repeated-fix, stale-proof, compatibility,
   or baseline-admission concern must use the repo-owned `project-health` skill
   and the Project Health standard.
+- Documentation or governance artifacts must follow the Documentation
+  Standard's placement, split, naming, and linking rules before adding or
+  extending an owner document, skill, log, or generated artifact.
+- CR review must use `coord-main-cr-review`,
+  `lens-coordinator-cr-review`, `coord-planning-reviewer`, and
+  `lens-cr-artifact`. Planning-bundle review must use
+  `coord-main-plan-review`, `lens-coordinator-plan-review`,
+  `coord-planning-reviewer`, and `lens-plan-artifact`. Main may record fixes
+  but must not synthesize acceptance, edit generated review artifacts, or
+  launch artifact/content reviewers directly.
 - Work that requires implementation planning, refactor planning, or
   implementation review where existing code behavior, workflow routing,
   build/check logic, or repo-local tool behavior affects the decision must use
@@ -119,15 +160,14 @@ document exists.
   `code-exploration-agent` skill before reading or reporting.
 - Repo-tracked implementation passes that change production code,
   check/enforcement packages, build or verification wiring, dependency
-  surfaces, or agent-facing instruction surfaces must run the installed
-  `code-simplifier` skill as a dedicated qualitative review agent after the
-  main edit and before the implementation pass log and Overview handoff review.
-  If the harness does not auto-discover the skill, read
-  `/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/agents/code-simplifier.md`
-  directly. Main handles the result under
-  `docs/project/architecture/agent-instructions.md`; it is not a static gate
-  and does not replace mandatory proof or Overview review. A pass without the
-  required code-simplifier disposition remains WIP.
+  surfaces, or agent-facing instruction surfaces must use
+  `coord-main-implementation-review` after implementation logging and
+  Verification Runner proof. The Implementation Review Coordinator owns the
+  required qualitative `code-simplifier` packet, risk-selected specialist
+  review, fix-loop coordination, proof-refresh requests, and final clean/WIP/
+  blocked result. If that coordinator, its required packet, or required
+  tooling is unavailable, the pass remains WIP/blocked; Main must not review or
+  run proof as a fallback.
 - When review results, architecture checks, behavior harnesses, or required
   proof expose a systemic blocker, Main must use the global `planner` skill to
   obtain a project-health repair plan before implementing the repair. The
@@ -151,49 +191,34 @@ document exists.
   refactoring, or reviewing. The skill is a workflow rule for keeping cleanup
   inside the normal development pass; it does not authorize new gates or
   repo-wide cleanup waves by itself.
-- Every repo-tracked implementation pass must receive a risk-based review panel.
-  The implementing agent must use the global caller coordination skills
-  `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md` and
-  `/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md`, launch
-  exactly one Overview coordinator subagent, and wait for that coordinator's
-  final review/fix result. This mandatory launch is user-authorized governance
-  for covered passes. The Overview coordinator must first use the global
-  `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`.
-  Before launching nested specialist reviewers or scoped follow-up workers, the
-  Overview coordinator must use
-  `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md`, then
-  `/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md`, then the
-  Main-assigned coordinator lens such as
-  `/home/aaron/.codex/skills/local/lens-coordinator-handoff/SKILL.md`. Before
-  launching specialist reviewers, the Overview coordinator must use
-  `/home/aaron/.codex/skills/local/coord-overview-reviewer/SKILL.md`. Every
-  specialist review subagent must first use the global
-  `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`
-  before applying assigned `lens-*` skills.
-  Proof ownership follows the global `coord-adversarial-review` skill and the
-  SaltMarcher verification section below: required proof tools are top-level
-  handoff responsibilities. Lower review layers inspect provided literal
-  results and report missing or stale proof instead of rerunning those tools.
-  The implementing agent must keep reviewed paths and behavior stable while the
-  review panel is running, or rerun the required proof and launch a fresh
-  coordinator if the tested surface changes.
+- Every repo-tracked implementation pass must receive one Implementation
+  Review Coordinator cycle through `coord-main-implementation-review` and
+  `lens-coordinator-implementation-review`. The coordinator applies the global
+  adversarial review, coordinator, reviewer-briefing, and handoff lenses as
+  method evidence without Main directly launching specialist reviewers. Review
+  layers inspect Verification Runner evidence and report stale or missing proof
+  instead of rerunning proof tools. If any review/fix role changes tracked
+  files, final proof is stale; the coordinator returns `Proof Refresh Required`
+  and waits for a fresh Verification Runner result before final aggregation.
   Agent-facing instruction changes must still use
   `agent-instruction-engineering` before that review. A pass without the
-  required completed Overview-coordinated review and fix result remains WIP.
+  completed coordinator result remains WIP.
 - Every repo-tracked implementation pass must write the local implementation
   pass log required by `docs/project/architecture/agent-instructions.md` before
-  the Overview handoff review. Every completed Overview review cycle must
-  produce the aggregated review pass log required by that standard. Read-only
+  Verification Runner proof and implementation review. Every completed
+  Implementation Review Coordinator cycle must produce the aggregated review
+  pass log required by that standard. Read-only
   nested specialist reviewers do not write files directly; they read relevant
   available pass logs and report repeated reversals, looped implementation,
   quality degradation, architecture friction, recurring smells, or
-  governance/check misses in their reviewer output so the Overview
-  coordinator, or main fallback handoff, can aggregate them.
-- When Main is waiting for an implementation, proof, review, or simplification
-  agent that may still change the target write set, Main must not start proof,
-  quality analysis, review, code-simplifier, production-handoff,
-  desktop-install, or other expensive sidecar work against that same unstable
-  checkout or behavior surface. Before launching such work after any wait,
+  governance/check misses in their reviewer output so the Implementation
+  Review Coordinator can aggregate them.
+- When Main is waiting for an implementation, Verification Runner,
+  implementation-review, or fix role that may still change the target write
+  set, Main must not launch a Verification Runner, quality analysis, review,
+  production-handoff, desktop-install, or other expensive sidecar work against
+  that same unstable checkout or behavior surface. Before launching such work
+  after any wait,
   interruption, resume, or user correction, refresh the active user
   instruction, agent status, worktree dirty paths, and ownership boundary. The
   canonical rule is the Stable-State Barrier in
@@ -275,12 +300,7 @@ document exists.
   production-code handoff surface and
   `tools/gradle/run-staged-verification.sh focused-handoff --path
   <repo-package-or-resource-dir> [--area <area>]` for package-focused local
-  proof. The canonical public proof entrypoints are
-  `tools/gradle/run-staged-verification.sh production-handoff` for
-  production-code handoff,
-  `tools/gradle/run-staged-verification.sh focused-handoff --path
-  <repo-package-or-resource-dir> [--area <area>]` for package-focused local
-  proof, and `./gradlew checkDocumentationEnforcement --console=plain` for
+  proof. Use `./gradlew checkDocumentationEnforcement --console=plain` for
   documentation checks.
 - `CODEX_THREAD_ID` and `SALTMARCHER_GRADLE_ISOLATION_ID` remain trace labels
   only when a caller explicitly exports them; they are not part of the local
@@ -294,39 +314,24 @@ document exists.
   non-code planning or review work.
 
 ## References
-
 - [Global Workspace Rules](/home/aaron/Schreibtisch/projects/AGENTS.md:1)
-- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
-- [Implementation Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-documentation.md:1)
-- [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/source-references.md:1)
-- [Global Source References Skill](/home/aaron/.codex/skills/local/source-references/SKILL.md:1)
+- [Implementation Artifact Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-artifacts.md:1)
 - [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
-- [Context Hygiene Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
 - [Context Hygiene Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/context-hygiene/SKILL.md:1)
 - [Repo Tools Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/repo-tools/SKILL.md:1)
-- [Project Health Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/project-health.md:1)
 - [Project Health Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/project-health/SKILL.md:1)
-- [Code Exploration Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/code-exploration/SKILL.md:1)
-- [Code Exploration Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/code-exploration-agent/SKILL.md:1)
+- [Main To CR Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-main-cr-review/SKILL.md:1)
+- [CR Review Coordinator Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator-cr-review/SKILL.md:1)
+- [Main To Plan Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-main-plan-review/SKILL.md:1)
+- [Plan Review Coordinator Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator-plan-review/SKILL.md:1)
+- [Main To Implementation Review Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-main-implementation-review/SKILL.md:1)
+- [Implementation Review Coordinator Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator-implementation-review/SKILL.md:1)
+- [Verification Runner Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/verification-runner/SKILL.md:1)
+- [Planning Reviewer Briefing Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-planning-reviewer/SKILL.md:1)
 - [Installed Code Simplifier Skill](/home/aaron/.codex/plugins/cache/claude-plugins-official/code-simplifier/1.0.0/agents/code-simplifier.md:1)
 - [Global Planner Skill](/home/aaron/.codex/skills/local/planner/SKILL.md:1)
-- [Autodev Process Optimizer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/autodev-process-optimizer/SKILL.md:1)
-- [Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
-- [Global Main To Overview Coordination Skill](/home/aaron/.codex/skills/local/coord-main-overview/SKILL.md:1)
-- [Global Overview To Reviewer Coordination Skill](/home/aaron/.codex/skills/local/coord-overview-reviewer/SKILL.md:1)
-- [Global Coordinator Lens](/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md:1)
-- [Global Handoff Coordinator Lens](/home/aaron/.codex/skills/local/lens-coordinator-handoff/SKILL.md:1)
-- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md:1)
-- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
 - [Feature Runtime Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/feature-runtime/SKILL.md:1)
 - [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
-- [Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/bootstrap.md:1)

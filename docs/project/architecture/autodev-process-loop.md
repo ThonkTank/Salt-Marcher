@@ -66,14 +66,14 @@ evaluation harness for an ordinary process experiment:
 - workspace and SaltMarcher `AGENTS.md` rules
 - mandatory skill routing
 - context hygiene, repo-tool, code-exploration, and layer-skill obligations
-- the required qualitative `code-simplifier` review-agent step for covered
-  implementation work
+- the required Implementation Review Coordinator cycle, including the
+  qualitative `code-simplifier` packet for covered implementation work
 - planner escalation before repairs for systemic review, architecture-check,
   behavior-harness, or proof feedback
 - implementation and review pass-log obligations
 - required proof routes such as documentation enforcement, focused handoff,
   production handoff, and desktop install when applicable
-- Overview-coordinated review and publication rules
+- Implementation Review Coordinator and publication rules
 - branch-protection readback when stable publication is claimed
 
 A process experiment MUST NOT weaken, bypass, or reinterpret these surfaces to
@@ -259,7 +259,7 @@ status: active
 ## Fixed Harness
 
 - Do not weaken SaltMarcher AGENTS rules, mandatory skills, proof routes,
-  code-simplifier, planner escalation, Overview review, pass logs, or
+  Implementation Review Coordinator, planner escalation, pass logs, or
   publication policy.
 - Treat the private intake as optimizer-only context.
 - Give implementers reduced slice briefs only.
@@ -273,7 +273,7 @@ status: active
    fallback.
 4. Produce a reduced implementation brief.
 5. Run the normal SaltMarcher implementation workflow unchanged, including the
-   required code-simplifier review-agent step and planner escalation for
+   required Implementation Review Coordinator cycle and planner escalation for
    covered work.
 6. Capture a feedback packet.
 7. Score the run with the fixed process metrics and primary score formula.
@@ -292,7 +292,7 @@ are true:
 - the promoted wording is reduced to stable instruction or documentation text
 - the change runs through the standard instruction-change workflow, including
   `agent-instruction-engineering`, documentation enforcement, pass logs, and
-  Overview review
+  Implementation Review Coordinator review
 
 Promotion updates the relevant tracked instruction or documentation surface.
 Private experiment files remain untracked.

@@ -30,16 +30,16 @@ Before planning, implementing, refactoring, or reviewing a repo-tracked change:
    completion, including the current implementation pass log and required
    aggregated review pass log state for repo-tracked changes.
 6. When an implementation handoff includes an Implementation Reading Packet,
-   use `docs/project/architecture/implementation-documentation.md` as the
-   packet owner instead of copying the packet fields into this skill.
+   use `docs/project/architecture/implementation-artifacts.md` as the packet
+   field owner instead of copying those fields into this skill.
 7. If the chosen approach knowingly creates or retains transitional support,
    include the `LEGACY_REMOVE_ON_TOUCH` marker and concrete removal condition
    in the planned work and Done When criteria.
 8. Use `project-health` when the task may introduce, discover, retain, or
    close structural debt, stale proof, compatibility seams, repeated fix loops,
    or baseline-admission concerns.
-9. For non-trivial bug, regression, refactor, governance, systemic-repair, or
-   repeated-fix work, perform the `Problem History Intake` owned by
+9. For bug, regression, refactor, governance, systemic-repair, or repeated-fix
+   work, perform the `Problem History Intake` owned by
    `docs/project/architecture/agent-instructions.md`: use `rg` under
    `build/agent-pass-logs/` by surface, symptom, owner, harness, check, and
    proposed repair path before implementation planning, refactor planning,
@@ -70,8 +70,7 @@ Before planning, implementing, refactoring, or reviewing a repo-tracked change:
 - If a workflow repeats across `AGENTS.md`, `SKILL.md`, architecture standards,
   and verification docs, keep the protocol in one owner and reduce other
   surfaces to routing text. For implementation packets and pass-log artifact
-  fields, the owner is
-  `docs/project/architecture/implementation-documentation.md`.
+  fields, the owner is `docs/project/architecture/implementation-artifacts.md`.
 - If external sources influence a decision, use the global `source-references`
   skill and cite the preserved local mirror path.
 
@@ -107,6 +106,7 @@ canonical documentation.
 
 - [Agent Context Standard](../../../../docs/project/architecture/agent-context.md)
 - [Agent Instruction Standard](../../../../docs/project/architecture/agent-instructions.md)
+- [Implementation Artifact Standard](../../../../docs/project/architecture/implementation-artifacts.md)
 - [Implementation Documentation Standard](../../../../docs/project/architecture/implementation-documentation.md)
 - [Project Health Standard](../../../../docs/project/architecture/project-health.md)
 - [Documentation Standard](../../../../docs/project/architecture/documentation.md)
