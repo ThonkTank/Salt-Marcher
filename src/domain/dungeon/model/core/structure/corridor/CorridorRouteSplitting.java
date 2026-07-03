@@ -3,6 +3,7 @@ package src.domain.dungeon.model.core.structure.corridor;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointResolution.ResolvedEndpointResult;
@@ -59,10 +60,10 @@ final class CorridorRouteSplitting {
         return target == null ? null : target.center();
     }
 
-    private static List<CorridorAnchorBinding> routeAnchors(DungeonMap dungeonMap) {
-        List<CorridorAnchorBinding> result = new ArrayList<>();
+    private static List<CorridorAnchor> routeAnchors(DungeonMap dungeonMap) {
+        List<CorridorAnchor> result = new ArrayList<>();
         for (Corridor corridor : dungeonMap.corridors()) {
-            for (CorridorAnchorBinding anchor : corridor.stateBindings().anchorBindings()) {
+            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
                 if (anchor != null) {
                     result.add(anchor);
                 }

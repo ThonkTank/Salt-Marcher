@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.geometry.Cell;
 
 final class CorridorNetworkMovementAnchors {
@@ -14,8 +15,8 @@ final class CorridorNetworkMovementAnchors {
                 continue;
             }
             Set<Cell> anchorCells = new LinkedHashSet<>();
-            for (CorridorAnchorBinding binding : corridor.stateBindings().anchorBindings()) {
-                if (binding != null && !anchorCells.add(binding.absoluteCell())) {
+            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+                if (anchor != null && !anchorCells.add(anchor.position())) {
                     return true;
                 }
             }
@@ -52,9 +53,9 @@ final class CorridorNetworkMovementAnchors {
             if (corridor == null || !corridorIds.contains(corridor.corridorId())) {
                 continue;
             }
-            for (CorridorAnchorBinding binding : corridor.stateBindings().anchorBindings()) {
-                if (binding != null) {
-                    result.put(CorridorNetwork.AnchorKey.from(binding), binding.absoluteCell());
+            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+                if (anchor != null) {
+                    result.put(CorridorNetwork.AnchorKey.from(anchor), anchor.position());
                 }
             }
         }

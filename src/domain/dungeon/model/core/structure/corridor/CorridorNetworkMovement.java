@@ -60,6 +60,7 @@ final class CorridorNetworkMovement {
         CorridorAnchorDependencyUpdate.DependencyUpdateResult dependencyUpdate =
                 ANCHOR_DEPENDENCY_UPDATE.rerouteDependents(
                         currentMap,
+                        sourceMap,
                         snappedCorridors,
                         movedAnchors,
                         normalizedMovedIds);

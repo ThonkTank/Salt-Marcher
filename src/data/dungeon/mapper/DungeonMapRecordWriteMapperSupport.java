@@ -40,7 +40,7 @@ final class DungeonMapRecordWriteMapperSupport {
                 DungeonTopologyElementRecordMapperSupport.toTopologyElementRecords(
                         mapId,
                         resolvedTopologyIndex(dungeonMap, topology, corridors, stairs, transitions)),
-                DungeonCorridorConnectionWriteMapperSupport.toCorridorRecords(corridors),
+                DungeonCorridorConnectionWriteMapperSupport.toCorridorRecords(corridors, dungeonMap.topologyIndex()),
                 DungeonStairRecordMapperSupport.toStairRecords(stairs),
                 DungeonTransitionRecordMapperSupport.toTransitionRecords(transitions),
                 DungeonFeatureMarkerRecordMapperSupport.toFeatureMarkerRecords(

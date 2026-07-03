@@ -176,10 +176,10 @@ public final class PublishDungeonEditorHandlesUseCase {
         for (Corridor corridor : dungeonMap.corridors()) {
             for (int index = 0; index < corridor.stateBindings().anchorBindings().size(); index++) {
                 var anchor = corridor.stateBindings().anchorBindings().get(index);
-                Cell anchorCell = anchor.absoluteCell();
+                Cell anchorCell = anchor.position();
                 result.add(new DungeonEditorHandleProjection(
                         DungeonEditorHandleProjectionKind.CORRIDOR_ANCHOR,
-                        anchor.topologyRef(),
+                        dungeonMap.topologyIndex().corridorAnchorRef(anchor.hostCorridorId(), anchor.anchorId()),
                         anchor.anchorId(),
                         0L,
                         corridor.corridorId(),

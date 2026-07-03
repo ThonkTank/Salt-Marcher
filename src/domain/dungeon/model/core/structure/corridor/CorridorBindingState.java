@@ -11,7 +11,7 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 public record CorridorBindingState(
         List<CorridorWaypoint> waypoints,
         List<CorridorDoorBindingState> doorBindings,
-        List<CorridorAnchorBinding> anchorBindings,
+        List<CorridorAnchor> anchorBindings,
         List<CorridorAnchorRef> anchorRefs
 ) {
 
@@ -28,24 +28,19 @@ public record CorridorBindingState(
 
     public CorridorBindingState withInteriorRouteAnchors(
             CorridorRoutePlan routePlan,
-            List<CorridorAnchorBinding> routeAnchors
+            List<CorridorAnchor> routeAnchors
     ) {
         if (routePlan == null) {
             return this;
         }
         CorridorBindings planned = routePlan.bindInteriorAnchors(
                 toCore(),
-                coreAnchorBindings(routeAnchors));
-        return fromCoreRoutePlan(this, planned, routeAnchors);
+                nonNullAnchorBindings(routeAnchors));
+        return fromCoreRoutePlan(this, planned);
     }
 
-    public CorridorBindingState replaceAnchorBindings(List<CorridorAnchorBinding> updatedBindings) {
-        CorridorBindings updatedCore = toCore()
-                .withAnchorBindings(coreAnchorBindings(updatedBindings));
-        return fromCore(
-                new CorridorBindingState(waypoints, doorBindings, updatedBindings, anchorRefs),
-                updatedCore,
-                null);
+    public CorridorBindingState replaceAnchorBindings(List<CorridorAnchor> updatedBindings) {
+        return new CorridorBindingState(waypoints, doorBindings, updatedBindings, anchorRefs);
     }
 
     public CorridorBindingState replaceWaypoints(List<CorridorWaypoint> updatedWaypoints) {
@@ -56,27 +51,8 @@ public record CorridorBindingState(
         return new CorridorBindings(
                 waypoints,
                 coreDoorBindings(doorBindings),
-                coreAnchorBindings(anchorBindings),
+                anchorBindings,
                 anchorRefs);
-    }
-
-    public CorridorBindings toTopologyIdentityCore() {
-        return new CorridorBindings(
-                List.of(),
-                List.of(),
-                topologyIdentityCoreAnchorBindings(anchorBindings),
-                anchorRefs);
-    }
-
-    public static CorridorBindingState fromTopologyIdentityCore(
-            CorridorBindingState source,
-            CorridorBindings coreBindings
-    ) {
-        return new CorridorBindingState(
-                source.waypoints(),
-                source.doorBindings(),
-                topologyIdentityAnchorBindingsFromCore(coreBindings.anchorBindings(), source),
-                coreBindings.anchorRefs());
     }
 
     public static CorridorBindingState fromCore(
@@ -84,49 +60,22 @@ public record CorridorBindingState(
             CorridorBindings coreBindings,
             CorridorDoorBindingState replacementDoor
     ) {
-        return fromCore(source, coreBindings, replacementDoor, null);
-    }
-
-    public static CorridorBindingState fromCore(
-            CorridorBindingState source,
-            CorridorBindings coreBindings,
-            CorridorDoorBindingState replacementDoor,
-            CorridorAnchorBinding replacementAnchor
-    ) {
         return new CorridorBindingState(
                 coreBindings.waypoints(),
                 doorBindingsFromCore(source.doorBindings(), coreBindings.doorBindings(), replacementDoor),
-                anchorBindingsFromCore(
-                        coreBindings.anchorBindings(),
-                        source.anchorBindings(),
-                        replacementAnchor),
+                coreBindings.anchorBindings(),
                 coreBindings.anchorRefs());
     }
 
     static CorridorBindingState fromCoreRoutePlan(
             CorridorBindingState source,
-            CorridorBindings planned,
-            List<CorridorAnchorBinding> routeAnchors
+            CorridorBindings planned
     ) {
         return new CorridorBindingState(
                 planned.waypoints(),
                 source.doorBindings(),
                 source.anchorBindings(),
-                routeAnchorRefs(
-                        planned.anchorRefs(),
-                        source.anchorRefs(),
-                        routeAnchors));
-    }
-
-    static List<CorridorAnchor> coreAnchorBindings(List<CorridorAnchorBinding> anchorBindings) {
-        List<CorridorAnchor> result = new ArrayList<>();
-        for (CorridorAnchorBinding binding
-                : anchorBindings == null ? List.<CorridorAnchorBinding>of() : anchorBindings) {
-            if (binding != null && binding.topologyRef().present()) {
-                result.add(binding.toCore());
-            }
-        }
-        return List.copyOf(result);
+                routeAnchorRefs(planned.anchorRefs(), source.anchorRefs()));
     }
 
     private static List<CorridorDoorBinding> coreDoorBindings(List<CorridorDoorBindingState> doorBindings) {
@@ -200,77 +149,14 @@ public record CorridorBindingState(
         return null;
     }
 
-    private static List<CorridorAnchor> topologyIdentityCoreAnchorBindings(
-            List<CorridorAnchorBinding> bindings
-    ) {
-        List<CorridorAnchor> result = new ArrayList<>();
-        for (CorridorAnchorBinding binding
-                : bindings == null ? List.<CorridorAnchorBinding>of() : bindings) {
-            if (binding != null && binding.topologyRef().present()) {
-                result.add(new CorridorAnchor(
-                        binding.topologyRef().id(),
-                        binding.hostCorridorId(),
-                        binding.absoluteCell()));
-            }
-        }
-        return List.copyOf(result);
-    }
-
-    private static List<CorridorAnchorBinding> topologyIdentityAnchorBindingsFromCore(
-            List<CorridorAnchor> coreAnchors,
-            CorridorBindingState source
-    ) {
-        List<CorridorAnchorBinding> result = new ArrayList<>();
-        for (CorridorAnchor coreAnchor : coreAnchors) {
-            addMatchingTopologyIdentityAnchorBinding(result, source.anchorBindings(), coreAnchor);
-        }
-        return List.copyOf(result);
-    }
-
-    private static void addMatchingTopologyIdentityAnchorBinding(
-            List<CorridorAnchorBinding> result,
-            List<CorridorAnchorBinding> bindings,
-            CorridorAnchor coreAnchor
-    ) {
-        for (CorridorAnchorBinding binding
-                : bindings == null ? List.<CorridorAnchorBinding>of() : bindings) {
-            if (binding != null
-                    && binding.hostCorridorId() == coreAnchor.hostCorridorId()
-                    && binding.topologyRef().id() == coreAnchor.anchorId()) {
-                result.add(binding);
-                return;
-            }
-        }
-    }
-
-    static List<CorridorAnchorBinding> anchorBindingsFromCore(
-            List<CorridorAnchor> coreAnchors,
-            List<CorridorAnchorBinding> existingBindings,
-            CorridorAnchorBinding replacementBinding
-    ) {
-        List<CorridorAnchorBinding> remaining = nonNullAnchorBindings(existingBindings);
-        List<CorridorAnchorBinding> result = new ArrayList<>();
-        for (CorridorAnchor coreAnchor : coreAnchors) {
-            CorridorAnchorBinding binding = replacementOrExistingAnchorBinding(
-                    coreAnchor,
-                    replacementBinding,
-                    remaining);
-            if (binding != null) {
-                result.add(binding);
-            }
-        }
-        return List.copyOf(result);
-    }
-
     static List<CorridorAnchorRef> routeAnchorRefs(
             List<CorridorAnchorRef> coreRefs,
-            List<CorridorAnchorRef> existingRefs,
-            List<CorridorAnchorBinding> routeAnchors
+            List<CorridorAnchorRef> existingRefs
     ) {
         List<CorridorAnchorRef> remaining = nonNullAnchorRefs(existingRefs);
         List<CorridorAnchorRef> result = new ArrayList<>();
         for (CorridorAnchorRef coreRef : coreRefs) {
-            addIfNewAnchorId(result, matchingExistingRef(coreRef, remaining, routeAnchors));
+            addIfNewAnchorId(result, matchingExistingRef(coreRef, remaining));
         }
         return List.copyOf(result);
     }
@@ -280,61 +166,17 @@ public record CorridorBindingState(
             CorridorAnchorRef candidate
     ) {
         for (CorridorAnchorRef existing : result) {
-            if (existing.anchorId() == candidate.anchorId()) {
+            if (existing.hostCorridorId() == candidate.hostCorridorId()
+                    && existing.anchorId() == candidate.anchorId()) {
                 return;
             }
         }
         result.add(candidate);
     }
 
-    private static List<CorridorAnchorBinding> nonNullAnchorBindings(
-            List<CorridorAnchorBinding> existingBindings
-    ) {
-        List<CorridorAnchorBinding> remaining = new ArrayList<>();
-        for (CorridorAnchorBinding binding
-                : existingBindings == null ? List.<CorridorAnchorBinding>of() : existingBindings) {
-            if (binding != null) {
-                remaining.add(binding);
-            }
-        }
-        return remaining;
-    }
-
-    private static CorridorAnchorBinding matchingExistingAnchorBinding(
-            CorridorAnchor coreAnchor,
-            List<CorridorAnchorBinding> remaining
-    ) {
-        for (int index = 0; index < remaining.size(); index++) {
-            CorridorAnchorBinding candidate = remaining.get(index);
-            if (candidate.anchorId() == coreAnchor.anchorId()) {
-                return remaining.remove(index);
-            }
-        }
-        return null;
-    }
-
-    private static CorridorAnchorBinding replacementOrExistingAnchorBinding(
-            CorridorAnchor coreAnchor,
-            CorridorAnchorBinding replacementBinding,
-            List<CorridorAnchorBinding> remaining
-    ) {
-        if (replacementBinding != null && replacementBinding.anchorId() == coreAnchor.anchorId()) {
-            return replacementBinding;
-        }
-        CorridorAnchorBinding existing = matchingExistingAnchorBinding(coreAnchor, remaining);
-        return existing == null
-                ? new CorridorAnchorBinding(
-                        coreAnchor.anchorId(),
-                        coreAnchor.hostCorridorId(),
-                        coreAnchor.position(),
-                        DungeonTopologyRef.corridorAnchor(coreAnchor.anchorId()))
-                : existing;
-    }
-
     private static CorridorAnchorRef matchingExistingRef(
             CorridorAnchorRef coreRef,
-            List<CorridorAnchorRef> remaining,
-            List<CorridorAnchorBinding> routeAnchors
+            List<CorridorAnchorRef> remaining
     ) {
         for (int index = 0; index < remaining.size(); index++) {
             CorridorAnchorRef candidate = remaining.get(index);
@@ -342,26 +184,7 @@ public record CorridorBindingState(
                 return remaining.remove(index);
             }
         }
-        CorridorAnchorBinding routeAnchor = routeAnchorFor(coreRef, routeAnchors);
-        if (routeAnchor != null) {
-            return new CorridorAnchorRef(routeAnchor.hostCorridorId(), routeAnchor.topologyRef().id());
-        }
         return coreRef;
-    }
-
-    private static CorridorAnchorBinding routeAnchorFor(
-            CorridorAnchorRef coreRef,
-            List<CorridorAnchorBinding> routeAnchors
-    ) {
-        for (CorridorAnchorBinding anchor
-                : routeAnchors == null ? List.<CorridorAnchorBinding>of() : routeAnchors) {
-            if (anchor != null
-                    && anchor.hostCorridorId() == coreRef.hostCorridorId()
-                    && anchor.anchorId() == coreRef.anchorId()) {
-                return anchor;
-            }
-        }
-        return null;
     }
 
     private static List<CorridorAnchorRef> nonNullAnchorRefs(
@@ -374,5 +197,17 @@ public record CorridorBindingState(
             }
         }
         return remaining;
+    }
+
+    private static List<CorridorAnchor> nonNullAnchorBindings(
+            List<CorridorAnchor> source
+    ) {
+        List<CorridorAnchor> result = new ArrayList<>();
+        for (CorridorAnchor anchor : source == null ? List.<CorridorAnchor>of() : source) {
+            if (anchor != null) {
+                result.add(anchor);
+            }
+        }
+        return List.copyOf(result);
     }
 }

@@ -3,6 +3,7 @@ package src.domain.dungeon.model.core.structure.corridor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
@@ -21,9 +22,9 @@ public final class CorridorConnectionNormalization {
     }
 
     public List<Corridor> pruneDetachedAnchors(List<Corridor> corridors) {
-        return CorridorNetwork.fromAuthored(corridors)
+        return new CorridorNetwork(corridors)
                 .withoutDetachedAnchors()
-                .toAuthored(corridors);
+                .corridors();
     }
 
     public DungeonMap copyWithConnections(
@@ -53,12 +54,12 @@ public final class CorridorConnectionNormalization {
     List<Corridor> snapOwnedAnchors(List<Corridor> corridors, CorridorHostCells hostCells) {
         List<Corridor> result = new ArrayList<>();
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
-            List<CorridorAnchorBinding> snapped = new ArrayList<>();
-            for (CorridorAnchorBinding binding : corridor.stateBindings().anchorBindings()) {
-                if (binding != null) {
-                    snapped.add(binding.withAbsoluteCell(hostCells.snapToHostCell(
-                            binding.hostCorridorId(),
-                            binding.absoluteCell())));
+            List<CorridorAnchor> snapped = new ArrayList<>();
+            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+                if (anchor != null) {
+                    snapped.add(anchor.withPosition(hostCells.snapToHostCell(
+                            anchor.hostCorridorId(),
+                            anchor.position())));
                 }
             }
             result.add(corridor.withStateBindings(corridor.stateBindings().replaceAnchorBindings(snapped)));

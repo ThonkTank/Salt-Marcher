@@ -38,7 +38,10 @@ public final class DungeonMapRecordMapper {
         FeatureMarkerCatalog featureMarkers =
                 DungeonFeatureMarkerRecordMapperSupport.toFeatureMarkers(resolvedRecord.featureMarkers());
         DungeonMapTopology topologyIndex =
-                DungeonTopologyElementRecordMapperSupport.toTopologyIndex(resolvedRecord.topologyElements());
+                DungeonMapTopology.merge(
+                        new DungeonMapTopology(DungeonCorridorConnectionReadMapperSupport.toAnchorTopologyBindings(
+                                resolvedRecord.corridors())),
+                        DungeonTopologyElementRecordMapperSupport.toTopologyIndex(resolvedRecord.topologyElements()));
         return DungeonMapAuthoring.authored(
                 new DungeonMapIdentity(resolvedRecord.mapId()),
                 resolvedRecord.name(),

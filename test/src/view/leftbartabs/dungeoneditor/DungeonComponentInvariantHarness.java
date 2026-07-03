@@ -9,7 +9,6 @@ import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 
 final class DungeonComponentInvariantHarness {
@@ -37,7 +36,7 @@ final class DungeonComponentInvariantHarness {
                 results,
                 OWNER,
                 "DGI-CMP-003",
-                "Corridor binding components keep local door, waypoint, and anchor-ref values plus adapter compatibility");
+                "Corridor binding components keep local door, waypoint, and anchor-ref values");
     }
 
     private static void assertStairExitInvariants() {
@@ -80,7 +79,6 @@ final class DungeonComponentInvariantHarness {
         assertEquals(new Cell(9, 10, 3), moved.position(), "moved anchor position");
 
         assertThrowsNullAnchorPosition();
-        assertRetainedAnchorAdapterCompatibility();
     }
 
     private static void assertThrowsNullAnchorPosition() {
@@ -90,33 +88,6 @@ final class DungeonComponentInvariantHarness {
             return;
         }
         throw new IllegalStateException("CorridorAnchor must reject null position");
-    }
-
-    private static void assertRetainedAnchorAdapterCompatibility() {
-        CorridorAnchorBinding defaulted = new CorridorAnchorBinding(-4L, -6L, null, null);
-        assertEquals(0L, defaulted.anchorId(), "adapter anchor id lower bound");
-        assertEquals(0L, defaulted.hostCorridorId(), "adapter host id lower bound");
-        assertEquals(new Cell(0, 0, 0), defaulted.absoluteCell(), "adapter null anchor cell default");
-        assertEquals(DungeonTopologyRef.corridorAnchor(0L), defaulted.topologyRef(), "adapter default topology ref");
-
-        CorridorAnchorBinding retained = new CorridorAnchorBinding(
-                8L,
-                13L,
-                new Cell(2, 3, 0),
-                DungeonTopologyRef.corridorAnchor(8L));
-        assertEquals(8L, retained.anchorId(), "adapter anchor id preservation");
-        assertEquals(13L, retained.hostCorridorId(), "adapter host id preservation");
-
-        CorridorAnchorBinding moved = retained.withAbsoluteCell(new Cell(4, 5, 1));
-        assertEquals(8L, moved.anchorId(), "moved adapter anchor id preservation");
-        assertEquals(13L, moved.hostCorridorId(), "moved adapter host id preservation");
-        assertEquals(
-                DungeonTopologyRef.corridorAnchor(8L),
-                moved.topologyRef(),
-                "moved adapter topology ref preservation");
-        assertEquals(new Cell(4, 5, 1), moved.absoluteCell(), "adapter moved anchor cell");
-        assertTrue(moved.toCore().matchesPosition(new Cell(4, 5, 1)), "adapter cell match");
-        assertFalse(moved.toCore().matchesPosition(new Cell(4, 6, 1)), "adapter cell mismatch");
     }
 
     private static void assertCorridorBindingComponentInvariants() {

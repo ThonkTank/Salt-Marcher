@@ -1,10 +1,10 @@
 package src.domain.dungeon.model.core.structure.corridor;
 
 import java.util.List;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapAuthoring;
 import src.domain.dungeon.model.core.structure.DungeonMapAuthoring.AuthoredContent;
@@ -63,16 +63,14 @@ public final class DungeonCorridorDeletionOwnerProbe {
                         List.of(new CorridorWaypoint(blocker.clusterId(), relativeWaypoint, 0)),
                         List.of(),
                         List.of(
-                                new CorridorAnchorBinding(
+                                new CorridorAnchor(
                                         1L,
                                         CORRIDOR_ID,
-                                        new Cell(0, 0, 0),
-                                        DungeonTopologyRef.corridorAnchor(1L)),
-                                new CorridorAnchorBinding(
+                                        new Cell(0, 0, 0)),
+                                new CorridorAnchor(
                                         2L,
                                         CORRIDOR_ID,
-                                        new Cell(2, 0, 0),
-                                        DungeonTopologyRef.corridorAnchor(2L))),
+                                        new Cell(2, 0, 0))),
                         List.of(
                                 new CorridorAnchorRef(CORRIDOR_ID, 1L),
                                 new CorridorAnchorRef(CORRIDOR_ID, 2L))));

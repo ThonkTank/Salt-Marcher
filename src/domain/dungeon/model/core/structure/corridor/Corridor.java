@@ -2,7 +2,6 @@ package src.domain.dungeon.model.core.structure.corridor;
 
 import java.util.List;
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.CorridorDoorBinding;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
@@ -107,7 +106,7 @@ public record Corridor(
 
     public Corridor withResolvedEndpoint(
             CorridorResolvedEndpoint endpoint,
-            @Nullable CorridorDoorBindingState replacementDoor
+            CorridorDoorBindingState replacementDoor
     ) {
         Objects.requireNonNull(endpoint, "endpoint");
         Corridor resolvedCore = endpoint.applyTo(coreIdentity());
@@ -117,16 +116,7 @@ public record Corridor(
     public static Corridor fromCore(
             Corridor source,
             Corridor coreCorridor,
-            @Nullable CorridorDoorBindingState replacementDoor
-    ) {
-        return fromCore(source, coreCorridor, replacementDoor, null);
-    }
-
-    public static Corridor fromCore(
-            Corridor source,
-            Corridor coreCorridor,
-            @Nullable CorridorDoorBindingState replacementDoor,
-            @Nullable CorridorAnchorBinding replacementAnchor
+            CorridorDoorBindingState replacementDoor
     ) {
         return new Corridor(
                 coreCorridor.corridorId(),
@@ -136,8 +126,7 @@ public record Corridor(
                 CorridorBindingState.fromCore(
                         source.stateBindings(),
                         coreCorridor.coreBindings(),
-                        replacementDoor,
-                        replacementAnchor));
+                        replacementDoor));
     }
 
     private Corridor withDoorBinding(CorridorDoorBindingState binding) {

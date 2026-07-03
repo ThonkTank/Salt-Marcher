@@ -7,10 +7,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
-import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
@@ -25,21 +25,21 @@ final class CorridorHostEndpointQuery {
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom,
-            Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef
+            Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey
     ) {
         List<CorridorHostEndpoint> result = new ArrayList<>();
         appendRoomEndpoints(result, corridor, clustersById, roomsById, roomCellsByRoom);
-        appendAnchorEndpoints(result, corridor, anchorsByRef);
+        appendAnchorEndpoints(result, corridor, anchorsByKey);
         return List.copyOf(result);
     }
 
-    Map<DungeonTopologyRef, CorridorAnchorBinding> anchorBindingsByRef(List<Corridor> corridors) {
-        Map<DungeonTopologyRef, CorridorAnchorBinding> result = new LinkedHashMap<>();
+    Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey(List<Corridor> corridors) {
+        Map<CorridorNetwork.AnchorKey, CorridorAnchor> result = new LinkedHashMap<>();
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             if (corridor != null) {
-                for (CorridorAnchorBinding binding : corridor.stateBindings().anchorBindings()) {
-                    if (binding != null && binding.topologyRef().present()) {
-                        result.put(binding.topologyRef(), binding);
+                for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+                    if (anchor != null) {
+                        result.put(CorridorNetwork.AnchorKey.from(anchor), anchor);
                     }
                 }
             }
@@ -116,10 +116,10 @@ final class CorridorHostEndpointQuery {
     private static void appendAnchorEndpoints(
             List<CorridorHostEndpoint> result,
             Corridor corridor,
-            Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef
+            Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey
     ) {
         for (CorridorAnchorRef anchorRef : corridor.stateBindings().anchorRefs()) {
-            CorridorHostEndpoint endpoint = anchorEndpoint(anchorRef, anchorsByRef);
+            CorridorHostEndpoint endpoint = anchorEndpoint(anchorRef, anchorsByKey);
             if (endpoint != null) {
                 result.add(endpoint);
             }
@@ -128,15 +128,15 @@ final class CorridorHostEndpointQuery {
 
     private static @Nullable CorridorHostEndpoint anchorEndpoint(
             @Nullable CorridorAnchorRef anchorRef,
-            Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef
+            Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey
     ) {
         if (anchorRef == null || !anchorRef.present()) {
             return null;
         }
-        CorridorAnchorBinding binding = anchorsByRef.get(DungeonTopologyRef.corridorAnchor(anchorRef.anchorId()));
-        return binding == null
+        CorridorAnchor anchor = anchorsByKey.get(CorridorNetwork.AnchorKey.from(anchorRef));
+        return anchor == null
                 ? null
-                : new CorridorHostEndpoint(false, NO_ROOM_ID, binding.hostCorridorId(), binding.absoluteCell());
+                : new CorridorHostEndpoint(false, NO_ROOM_ID, anchor.hostCorridorId(), anchor.position());
     }
 
 }

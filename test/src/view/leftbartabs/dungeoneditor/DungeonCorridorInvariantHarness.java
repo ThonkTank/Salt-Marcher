@@ -15,7 +15,6 @@ import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
-import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorEndpointMaterialization;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
@@ -288,15 +287,14 @@ final class DungeonCorridorInvariantHarness {
     }
 
     private static DungeonMap anchorMoveMap(boolean duplicateTarget) {
-        CorridorAnchorBinding movedAnchor = new CorridorAnchorBinding(
+        CorridorAnchor movedAnchor = new CorridorAnchor(
                 1L,
                 10L,
-                new Cell(1, 0, 0),
-                DungeonTopologyRef.corridorAnchor(1L));
-        List<CorridorAnchorBinding> anchors = duplicateTarget
+                new Cell(1, 0, 0));
+        List<CorridorAnchor> anchors = duplicateTarget
                 ? List.of(
                         movedAnchor,
-                        new CorridorAnchorBinding(2L, 10L, new Cell(2, 0, 0), DungeonTopologyRef.corridorAnchor(2L)))
+                        new CorridorAnchor(2L, 10L, new Cell(2, 0, 0)))
                 : List.of(movedAnchor);
         Corridor host = new Corridor(
                 10L,

@@ -6,6 +6,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 
@@ -55,11 +56,11 @@ public final class RoomClusterCorridorMovement {
             Map<CorridorNetwork.AnchorKey, Cell> sourceAnchors,
             Map<CorridorNetwork.AnchorKey, Cell> movedAnchors
     ) {
-        for (CorridorAnchorBinding binding : corridor.stateBindings().anchorBindings()) {
-            if (binding == null) {
+        for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+            if (anchor == null) {
                 continue;
             }
-            CorridorNetwork.AnchorKey key = CorridorNetwork.AnchorKey.from(binding);
+            CorridorNetwork.AnchorKey key = CorridorNetwork.AnchorKey.from(anchor);
             Cell sourceCell = sourceAnchors.get(key);
             Cell movedCell = movedAnchors.get(key);
             if (sourceCell != null && movedCell != null && !sourceCell.equals(movedCell)) {
@@ -80,9 +81,9 @@ public final class RoomClusterCorridorMovement {
             if (corridor == null) {
                 continue;
             }
-            for (CorridorAnchorBinding binding : corridor.stateBindings().anchorBindings()) {
-                if (binding != null) {
-                    result.put(CorridorNetwork.AnchorKey.from(binding), binding.absoluteCell());
+            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+                if (anchor != null) {
+                    result.put(CorridorNetwork.AnchorKey.from(anchor), anchor.position());
                 }
             }
         }

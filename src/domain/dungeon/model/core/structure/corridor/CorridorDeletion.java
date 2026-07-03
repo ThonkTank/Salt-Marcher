@@ -5,10 +5,13 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.corridor.CorridorTargetDeletion.AnchorTarget;
 import src.domain.dungeon.model.core.structure.corridor.CorridorTargetDeletion.DoorBindingTarget;
 import src.domain.dungeon.model.core.structure.corridor.CorridorTargetDeletion.WaypointTarget;
+import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology.DungeonTopologyBinding;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 
 final class CorridorDeletion {
@@ -47,7 +50,7 @@ final class CorridorDeletion {
                     roomId,
                     waypointIndex);
         }
-        CorridorNetwork network = CorridorNetwork.fromAuthored(dungeonMap.corridors());
+        CorridorNetwork network = new CorridorNetwork(dungeonMap.corridors());
         if (!network.canDeleteCorridor(corridorId)) {
             return dungeonMap;
         }
@@ -55,7 +58,7 @@ final class CorridorDeletion {
                 dungeonMap.stairs().withoutCorridorBoundStairs(corridorId);
         return CONNECTION_NORMALIZATION.copyWithConnections(
                 dungeonMap,
-                network.withoutCorridor(corridorId).toAuthored(dungeonMap.corridors()),
+                network.withoutCorridor(corridorId).corridors(),
                 withoutCorridorStairs,
                 dungeonMap.transitionCatalog());
     }
@@ -71,7 +74,7 @@ final class CorridorDeletion {
         Corridor updatedCore = TARGET_DELETION.deleteTarget(
                 existing,
                 targetKind,
-                topologyRefId,
+                targetTopologyRefId(dungeonMap, existing, targetKind, topologyRefId),
                 roomId,
                 waypointIndex,
                 doorTargets(dungeonMap, existing),
@@ -90,6 +93,23 @@ final class CorridorDeletion {
                 candidateCorridors,
                 dungeonMap.stairs(),
                 dungeonMap.transitionCatalog());
+    }
+
+    private static long targetTopologyRefId(
+            DungeonMap dungeonMap,
+            Corridor corridor,
+            String targetKind,
+            long topologyRefId
+    ) {
+        if (!"CORRIDOR_ANCHOR".equals(targetKind) || topologyRefId <= NO_ID) {
+            return topologyRefId;
+        }
+        DungeonTopologyBinding binding = dungeonMap.topologyIndex().binding(
+                new DungeonTopologyRef(DungeonTopologyElementKind.CORRIDOR_ANCHOR, topologyRefId));
+        if (binding != null && binding.corridorId() == corridor.corridorId() && binding.localElementId() > NO_ID) {
+            return binding.localElementId();
+        }
+        return topologyRefId;
     }
 
     private static List<Corridor> withUpdatedCorridor(DungeonMap dungeonMap, Corridor updated) {
@@ -115,9 +135,9 @@ final class CorridorDeletion {
 
     private static List<AnchorTarget> anchorTargets(Corridor corridor) {
         List<AnchorTarget> result = new ArrayList<>();
-        for (CorridorAnchorBinding binding : corridor.stateBindings().anchorBindings()) {
-            if (binding != null) {
-                result.add(new AnchorTarget(binding.absoluteCell()));
+        for (var anchor : corridor.stateBindings().anchorBindings()) {
+            if (anchor != null) {
+                result.add(new AnchorTarget(anchor.position()));
             }
         }
         return List.copyOf(result);

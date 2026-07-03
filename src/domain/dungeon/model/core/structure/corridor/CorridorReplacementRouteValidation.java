@@ -3,8 +3,8 @@ package src.domain.dungeon.model.core.structure.corridor;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
@@ -48,7 +48,7 @@ final class CorridorReplacementRouteValidation {
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom,
-            Map<DungeonTopologyRef, CorridorAnchorBinding> anchorBindingsByRef,
+            Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey,
             Set<Cell> allRoomCells
     ) {
         static ValidationContext from(
@@ -64,7 +64,7 @@ final class CorridorReplacementRouteValidation {
                     ROOM_CELLS.clustersById(dungeonMap),
                     ROOM_CELLS.roomsById(dungeonMap),
                     roomCellsByRoom,
-                    ENDPOINTS.anchorBindingsByRef(candidateCorridors),
+                    ENDPOINTS.anchorsByKey(candidateCorridors),
                     ROOM_CELLS.allRoomCells(roomCellsByRoom));
         }
 
@@ -87,7 +87,7 @@ final class CorridorReplacementRouteValidation {
                     clustersById,
                     roomsById,
                     roomCellsByRoom,
-                    anchorBindingsByRef);
+                    anchorsByKey);
             List<Cell> backbone = corridor.stateBindings().waypoints().isEmpty()
                     ? BACKBONE_CELLS.endpointBackbone(endpoints)
                     : BACKBONE_CELLS.authoredBackbone(corridor.stateBindings().waypoints(), clustersById, endpoints);

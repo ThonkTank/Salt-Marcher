@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
@@ -23,7 +22,8 @@ final class CorridorHostCellQuery {
         Map<Long, DungeonRoom> roomsById = ROOM_CELLS.roomsById(dungeonMap);
         Map<Long, List<Cell>> roomCellsByRoom = ROOM_CELLS.roomCellsByRoom(dungeonMap);
         Set<Cell> allRoomCells = ROOM_CELLS.allRoomCells(roomCellsByRoom);
-        Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef = ENDPOINTS.anchorBindingsByRef(corridors);
+        Map<CorridorNetwork.AnchorKey, src.domain.dungeon.model.core.component.CorridorAnchor> anchorsByKey =
+                ENDPOINTS.anchorsByKey(corridors);
         Map<Long, List<Cell>> result = new LinkedHashMap<>();
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             if (corridor != null && corridor.isReadable()) {
@@ -37,7 +37,7 @@ final class CorridorHostCellQuery {
                                         clustersById,
                                         roomsById,
                                         roomCellsByRoom,
-                                        anchorsByRef),
+                                        anchorsByKey),
                                 allRoomCells));
             }
         }

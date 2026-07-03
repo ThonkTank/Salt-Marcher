@@ -3,6 +3,7 @@ package src.domain.dungeon.model.core.structure.corridor;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
@@ -12,6 +13,7 @@ import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMutation;
 import src.domain.dungeon.model.core.structure.room.RoomTopologyRebuilder.RebuildResult;
+import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology.DungeonTopologyBinding;
 
 /**
  * Owns authored corridor endpoint resolution and materialization.
@@ -74,7 +76,11 @@ final class CorridorEndpointResolution {
             CorridorHostCells hostCells
     ) {
         CorridorAnchorEndpointMaterialization.AuthoredEndpointMaterialization resolved =
-                CorridorAnchorEndpointMaterialization.materializeAuthored(dungeonMap.corridors(), endpoint, hostCells);
+                CorridorAnchorEndpointMaterialization.materializeAuthored(
+                        dungeonMap.corridors(),
+                        endpoint,
+                        localAnchorId(dungeonMap, endpoint),
+                        hostCells);
         if (resolved == null) {
             return null;
         }
@@ -89,7 +95,7 @@ final class CorridorEndpointResolution {
                         dungeonMap.transitionCatalog(),
                         dungeonMap.revision() + 1L)
                 : dungeonMap;
-        return new ResolvedEndpointResult(resolvedMap, resolvedAnchor(resolved.anchorBinding()), null);
+        return new ResolvedEndpointResult(resolvedMap, resolvedAnchor(resolved.anchor()), null);
     }
 
     private static DungeonMap ensureDoorBoundary(DungeonMap dungeonMap, long clusterId, Edge edge) {
@@ -128,9 +134,19 @@ final class CorridorEndpointResolution {
         return cluster.boundaryAt(edge);
     }
 
-    private static CorridorResolvedEndpoint resolvedAnchor(CorridorAnchorBinding binding) {
-        CorridorAnchorRef ref = new CorridorAnchorRef(binding.hostCorridorId(), binding.topologyRef().id());
+    private static CorridorResolvedEndpoint resolvedAnchor(CorridorAnchor anchor) {
+        CorridorAnchorRef ref = new CorridorAnchorRef(anchor.hostCorridorId(), anchor.anchorId());
         return CorridorResolvedEndpoint.forAnchor(ref);
+    }
+
+    private static long localAnchorId(DungeonMap dungeonMap, DungeonCorridorEndpoint endpoint) {
+        DungeonTopologyBinding binding = dungeonMap.topologyIndex().binding(endpoint.topologyRef());
+        if (binding != null
+                && binding.corridorId() == endpoint.hostCorridorId()
+                && binding.localElementId() > 0L) {
+            return binding.localElementId();
+        }
+        return 0L;
     }
 
     record ResolvedEndpointResult(

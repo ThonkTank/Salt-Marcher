@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.Set;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology.DungeonTopologyBinding;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 
 /**
@@ -78,7 +79,7 @@ public final class CorridorBindingMovement {
                     movedCorridors,
                     corridor,
                     bindingIndex,
-                    topologyRef,
+                    localAnchorId(dungeonMap, corridor, topologyRef),
                     deltaQ,
                     deltaR,
                     deltaLevel) || changed;
@@ -145,7 +146,7 @@ public final class CorridorBindingMovement {
             List<Corridor> movedCorridors,
             Corridor corridor,
             int bindingIndex,
-            DungeonTopologyRef topologyRef,
+            long anchorId,
             int deltaQ,
             int deltaR,
             int deltaLevel
@@ -153,7 +154,7 @@ public final class CorridorBindingMovement {
         CorridorBindingState movedBindings = CorridorBindingStateMovement.moveAnchorBinding(
                 corridor.stateBindings(),
                 bindingIndex,
-                topologyRef,
+                anchorId,
                 deltaQ,
                 deltaR,
                 deltaLevel);
@@ -197,6 +198,19 @@ public final class CorridorBindingMovement {
 
     private static boolean stationary(int deltaQ, int deltaR, int deltaLevel) {
         return deltaQ == 0 && deltaR == 0 && deltaLevel == 0;
+    }
+
+    private static long localAnchorId(DungeonMap dungeonMap, Corridor corridor, DungeonTopologyRef topologyRef) {
+        if (topologyRef == null || !topologyRef.present()) {
+            return 0L;
+        }
+        DungeonTopologyBinding binding = dungeonMap.topologyIndex().binding(topologyRef);
+        if (binding != null
+                && binding.corridorId() == corridor.corridorId()
+                && binding.localElementId() > 0L) {
+            return binding.localElementId();
+        }
+        return topologyRef.id();
     }
 
     private static CorridorDoorBindingState doorBinding(

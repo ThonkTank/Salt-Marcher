@@ -4,11 +4,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
-import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
-import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
@@ -32,8 +32,8 @@ public final class DungeonCorridorReadProjection {
         DungeonCorridorProjectionAssembler result =
                 new DungeonCorridorProjectionAssembler(boundaryIdCursor, existingDoorIdsByKey);
         Set<Cell> allRoomCells = allRoomCells(roomCellsByRoom);
-        Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef =
-                ENDPOINT_RESOLVER.anchorBindingsByRef(corridors);
+        Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey =
+                ENDPOINT_RESOLVER.anchorsByKey(corridors);
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
             if (corridor == null || !corridor.isReadable()) {
                 continue;
@@ -43,7 +43,7 @@ public final class DungeonCorridorReadProjection {
                     clustersById,
                     roomsById,
                     roomCellsByRoom,
-                    anchorsByRef);
+                    anchorsByKey);
             result.addCorridor(
                     corridor,
                     endpoints,

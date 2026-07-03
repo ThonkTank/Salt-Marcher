@@ -73,20 +73,18 @@ final class DungeonStructureInvariantHarness {
                         + "anchor snapping/materialization to the nearest host cell with level/row/column tie-breaks "
                         + "and fallback behavior, host-cell lookup by corridor id, "
                         + "plus target-local waypoint or anchor-ref removal rules");
-        assertRetainedAdapterPreservesTopologyRefIdentity();
+        assertCoreAnchorIdentityReplacement();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
                 OWNER,
                 "DGI-STR-002",
-                "Retained corridor bindings adapter preserves anchor topology-ref identity "
-                        + "without moving topology ownership into core structure");
+                "Corridor binding state stores and replaces core anchors by host/local anchor identity");
         assertCorridorRoutePlanInvariants();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
                 OWNER,
                 "DGI-STR-003",
-                "Corridor structure owns interior route-anchor selection and waypoint planning while topology "
-                        + "identity remains adapter-owned");
+                "Corridor structure owns interior route-anchor selection and waypoint planning by core anchor identity");
         assertCorridorTargetDeleteInvariants();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -98,8 +96,7 @@ final class DungeonStructureInvariantHarness {
                 results,
                 OWNER,
                 "DGI-STR-005",
-                "Corridor network owns protected corridor delete and detached-anchor pruning while the retained "
-                        + "adapter preserves topology-ref identity");
+                "Corridor network owns protected corridor delete and detached-anchor pruning by core anchor identity");
         assertStairStructureInvariants();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -359,65 +356,46 @@ final class DungeonStructureInvariantHarness {
                 "missing waypoint cluster leaves bindings unchanged");
     }
 
-    private static void assertRetainedAdapterPreservesTopologyRefIdentity() {
-        src.domain.dungeon.model.core.graph.DungeonTopologyRef stableRef =
-                src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(30L);
-        src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding first =
-                new src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding(
-                        3L,
-                        12L,
-                        new Cell(1, 1, 0),
-                        stableRef);
-        src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding replacement =
-                new src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding(
-                        5L,
-                        12L,
-                        new Cell(2, 2, 0),
-                        stableRef);
+    private static void assertCoreAnchorIdentityReplacement() {
+        CorridorAnchor first = new CorridorAnchor(3L, 12L, new Cell(1, 1, 0));
+        CorridorAnchor replacement = new CorridorAnchor(5L, 12L, new Cell(2, 2, 0));
         CorridorBindingState bindings = new CorridorBindingState(List.of(), List.of(), List.of(first), List.of());
 
         CorridorBindingState replaced = bindings.replaceAnchorBindings(List.of(replacement));
         assertEquals(List.of(replacement), replaced.anchorBindings(),
-                "adapter anchor replacement follows topology ref when anchor id differs");
+                "core anchor replacement follows local anchor identity");
 
-        CorridorAnchorRef firstRef = new CorridorAnchorRef(12L, stableRef.id());
-        CorridorAnchorRef replacementRef = new CorridorAnchorRef(20L, stableRef.id());
+        CorridorAnchorRef firstRef = new CorridorAnchorRef(12L, first.anchorId());
+        CorridorAnchorRef replacementRef = new CorridorAnchorRef(20L, first.anchorId());
         CorridorBindings refBindings =
                 new CorridorBindings(List.of(), List.of(), List.of(), List.of(firstRef));
         assertEquals(List.of(replacementRef), refBindings.withAnchorRef(replacementRef).anchorRefs(),
-                "core anchor ref replacement follows topology ref when host id differs");
+                "core anchor ref replacement follows host/local anchor identity");
 
-        src.domain.dungeon.model.core.graph.DungeonTopologyRef splitAnchorRef =
-                src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(70L);
-        src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding splitAnchor =
-                new src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding(
-                        7L,
-                        40L,
-                        new Cell(1, 0, 0),
-                        splitAnchorRef);
+        CorridorAnchor splitAnchor = new CorridorAnchor(7L, 40L, new Cell(1, 0, 0));
         CorridorBindingState splitBindings = CorridorBindingState.empty().withInteriorRouteAnchors(
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
                         10L,
                         new Cell(0, 0, 0)),
                 List.of(splitAnchor));
-        assertEquals(List.of(new CorridorAnchorRef(40L, splitAnchorRef.id())),
+        assertEquals(List.of(new CorridorAnchorRef(40L, splitAnchor.anchorId())),
                 splitBindings.anchorRefs(),
-                "adapter route split preserves selected anchor topology ref");
+                "core route split preserves selected local anchor id");
         CorridorBindingState existingCustomRef = new CorridorBindingState(
                 List.of(),
                 List.of(),
                 List.of(),
-                List.of(new CorridorAnchorRef(40L, splitAnchorRef.id())));
+                List.of(new CorridorAnchorRef(40L, splitAnchor.anchorId())));
         CorridorBindingState deduplicatedSplitBindings = existingCustomRef.withInteriorRouteAnchors(
                 new CorridorRoutePlan(
                         List.of(new Cell(0, 0, 0), new Cell(1, 0, 0), new Cell(2, 0, 0)),
                         10L,
                         new Cell(0, 0, 0)),
                 List.of(splitAnchor));
-        assertEquals(List.of(new CorridorAnchorRef(40L, splitAnchorRef.id())),
+        assertEquals(List.of(new CorridorAnchorRef(40L, splitAnchor.anchorId())),
                 deduplicatedSplitBindings.anchorRefs(),
-                "adapter route split deduplicates existing custom topology ref");
+                "core route split deduplicates existing local anchor ref");
     }
 
     private static void assertRetainedCorridorRoomSetAdapterCompatibility() {
@@ -517,8 +495,6 @@ final class DungeonStructureInvariantHarness {
                 "core network prunes detached owned anchors");
         assertEquals(List.of(), prunedOrphanRef.stateBindings().anchorRefs(),
                 "core network prunes refs to missing hosted anchors");
-
-        assertRetainedCorridorNetworkAdapterCompatibility();
     }
 
     private static List<Long> corridorIds(CorridorNetwork network) {
@@ -527,47 +503,6 @@ final class DungeonStructureInvariantHarness {
             result.add(corridor.corridorId());
         }
         return List.copyOf(result);
-    }
-
-    private static void assertRetainedCorridorNetworkAdapterCompatibility() {
-        src.domain.dungeon.model.core.graph.DungeonTopologyRef stableRef =
-                src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(70L);
-        src.domain.dungeon.model.core.graph.DungeonTopologyRef detachedRef =
-                src.domain.dungeon.model.core.graph.DungeonTopologyRef.corridorAnchor(71L);
-        src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding referencedAnchor =
-                new src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding(
-                        7L,
-                        10L,
-                        new Cell(6, 5, 0),
-                        stableRef);
-        src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding detachedAnchor =
-                new src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding(
-                        8L,
-                        10L,
-                        new Cell(6, 6, 0),
-                        detachedRef);
-        Corridor owner = new Corridor(
-                10L,
-                3L,
-                0,
-                List.of(),
-                new CorridorBindingState(List.of(), List.of(), List.of(referencedAnchor, detachedAnchor), List.of()));
-        Corridor dependent = new Corridor(
-                20L,
-                3L,
-                0,
-                List.of(),
-                new CorridorBindingState(
-                        List.of(),
-                        List.of(),
-                        List.of(),
-                        List.of(new CorridorAnchorRef(10L, stableRef.id()))));
-        src.domain.dungeon.model.core.structure.corridor.CorridorConnectionNormalization normalization =
-                new src.domain.dungeon.model.core.structure.corridor.CorridorConnectionNormalization();
-
-        assertEquals(List.of(referencedAnchor),
-                normalization.pruneDetachedAnchors(List.of(owner, dependent)).getFirst().stateBindings().anchorBindings(),
-                "adapter pruning preserves referenced anchor by topology ref");
     }
 
     private static void assertRoomStructureInvariants() {

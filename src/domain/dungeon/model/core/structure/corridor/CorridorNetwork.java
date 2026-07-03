@@ -19,27 +19,6 @@ public record CorridorNetwork(List<Corridor> corridors) {
         return List.copyOf(corridors);
     }
 
-    public static CorridorNetwork fromAuthored(List<Corridor> corridors) {
-        List<Corridor> result = new ArrayList<>();
-        for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
-            if (corridor != null) {
-                result.add(topologyIdentity(corridor));
-            }
-        }
-        return new CorridorNetwork(result);
-    }
-
-    public List<Corridor> toAuthored(List<Corridor> sources) {
-        List<Corridor> result = new ArrayList<>();
-        for (Corridor coreCorridor : corridors) {
-            Corridor source = corridorById(sources, coreCorridor.corridorId());
-            if (source != null) {
-                result.add(fromTopologyIdentity(source, coreCorridor));
-            }
-        }
-        return List.copyOf(result);
-    }
-
     public boolean canDeleteCorridor(long corridorId) {
         Corridor corridor = corridorById(corridorId);
         return corridor != null && !ownedAnchorStillReferenced(corridor);
@@ -97,24 +76,6 @@ public record CorridorNetwork(List<Corridor> corridors) {
             }
         }
         return null;
-    }
-
-    private static Corridor topologyIdentity(Corridor corridor) {
-        return new Corridor(
-                corridor.corridorId(),
-                corridor.mapId(),
-                corridor.level(),
-                new CorridorRoomSet(corridor.roomIds()),
-                corridor.stateBindings().toTopologyIdentityCore());
-    }
-
-    private static Corridor fromTopologyIdentity(Corridor source, Corridor coreCorridor) {
-        return new Corridor(
-                coreCorridor.corridorId(),
-                coreCorridor.mapId(),
-                coreCorridor.level(),
-                coreCorridor.roomIds(),
-                CorridorBindingState.fromTopologyIdentityCore(source.stateBindings(), coreCorridor.coreBindings()));
     }
 
     private boolean ownedAnchorStillReferenced(Corridor owner) {
@@ -204,16 +165,12 @@ public record CorridorNetwork(List<Corridor> corridors) {
         }
     }
 
-    record AnchorKey(long hostCorridorId, long anchorId) {
-        static AnchorKey from(CorridorAnchor anchor) {
+    public record AnchorKey(long hostCorridorId, long anchorId) {
+        public static AnchorKey from(CorridorAnchor anchor) {
             return new AnchorKey(anchor.hostCorridorId(), anchor.anchorId());
         }
 
-        static AnchorKey from(CorridorAnchorBinding binding) {
-            return new AnchorKey(binding.hostCorridorId(), binding.anchorId());
-        }
-
-        static AnchorKey from(CorridorAnchorRef ref) {
+        public static AnchorKey from(CorridorAnchorRef ref) {
             return new AnchorKey(ref.hostCorridorId(), ref.anchorId());
         }
     }

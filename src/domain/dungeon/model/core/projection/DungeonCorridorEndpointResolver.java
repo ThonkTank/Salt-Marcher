@@ -7,13 +7,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.component.CorridorAnchorRef;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
-import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorBinding;
+import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingState;
 import src.domain.dungeon.model.core.structure.corridor.CorridorDoorBindingGeometry;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
@@ -30,7 +31,7 @@ final class DungeonCorridorEndpointResolver {
             Map<Long, DungeonRoomCluster> clustersById,
             Map<Long, DungeonRoom> roomsById,
             Map<Long, List<Cell>> roomCellsByRoom,
-            Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef
+            Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey
     ) {
         List<CorridorEndpoint> endpoints = new ArrayList<>();
         appendRoomEndpoints(
@@ -40,16 +41,16 @@ final class DungeonCorridorEndpointResolver {
                 clustersById,
                 roomsById,
                 roomCellsByRoom);
-        appendAnchorEndpoints(endpoints, corridor, anchorsByRef);
+        appendAnchorEndpoints(endpoints, corridor, anchorsByKey);
         return List.copyOf(endpoints);
     }
 
-    Map<DungeonTopologyRef, CorridorAnchorBinding> anchorBindingsByRef(List<Corridor> corridors) {
-        Map<DungeonTopologyRef, CorridorAnchorBinding> result = new LinkedHashMap<>();
+    Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey(List<Corridor> corridors) {
+        Map<CorridorNetwork.AnchorKey, CorridorAnchor> result = new LinkedHashMap<>();
         for (Corridor corridor : corridors == null ? List.<Corridor>of() : corridors) {
-            for (CorridorAnchorBinding binding : corridor.stateBindings().anchorBindings()) {
-                if (binding != null && binding.topologyRef().present()) {
-                    result.put(binding.topologyRef(), binding);
+            for (CorridorAnchor anchor : corridor.stateBindings().anchorBindings()) {
+                if (anchor != null) {
+                    result.put(CorridorNetwork.AnchorKey.from(anchor), anchor);
                 }
             }
         }
@@ -100,10 +101,10 @@ final class DungeonCorridorEndpointResolver {
     private static void appendAnchorEndpoints(
             List<CorridorEndpoint> endpoints,
             Corridor corridor,
-            Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef
+            Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey
     ) {
         for (CorridorAnchorRef anchorRef : corridor.stateBindings().anchorRefs()) {
-            CorridorEndpoint endpoint = anchorEndpoint(anchorRef, anchorsByRef);
+            CorridorEndpoint endpoint = anchorEndpoint(anchorRef, anchorsByKey);
             if (endpoint != null) {
                 endpoints.add(endpoint);
             }
@@ -112,22 +113,22 @@ final class DungeonCorridorEndpointResolver {
 
     private static @Nullable CorridorEndpoint anchorEndpoint(
             @Nullable CorridorAnchorRef anchorRef,
-            Map<DungeonTopologyRef, CorridorAnchorBinding> anchorsByRef
+            Map<CorridorNetwork.AnchorKey, CorridorAnchor> anchorsByKey
     ) {
         if (anchorRef == null || !anchorRef.present()) {
             return null;
         }
-        CorridorAnchorBinding anchorBinding = anchorsByRef.get(DungeonTopologyRef.corridorAnchor(anchorRef.anchorId()));
-        if (anchorBinding == null) {
+        CorridorAnchor anchor = anchorsByKey.get(CorridorNetwork.AnchorKey.from(anchorRef));
+        if (anchor == null) {
             return null;
         }
         return new CorridorEndpoint(
                 CorridorEndpointKind.ANCHOR,
                 null,
-                anchorBinding.hostCorridorId(),
-                anchorBinding.absoluteCell(),
+                anchor.hostCorridorId(),
+                anchor.position(),
                 null,
-                anchorBinding.topologyRef());
+                DungeonTopologyRef.corridorAnchor(anchor.anchorId()));
     }
 
     private static @Nullable CorridorEndpoint derivedEndpoint(

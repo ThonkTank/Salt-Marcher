@@ -2,6 +2,7 @@ package src.domain.dungeon.model.core.structure.corridor;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -15,6 +16,7 @@ final class CorridorAnchorDependencyUpdate {
             new CorridorReplacementRouteValidation();
 
     DependencyUpdateResult rerouteDependents(
+            DungeonMap currentMap,
             DungeonMap sourceMap,
             List<Corridor> snappedCorridors,
             Map<CorridorNetwork.AnchorKey, AnchorMovement> movedAnchors,
@@ -23,24 +25,34 @@ final class CorridorAnchorDependencyUpdate {
         if (movedAnchors.isEmpty()) {
             return DependencyUpdateResult.success(snappedCorridors);
         }
-        CorridorNetwork network = CorridorNetwork.fromAuthored(snappedCorridors);
+        CorridorNetwork network = new CorridorNetwork(snappedCorridors);
         Set<Long> impactedCorridorIds = network.corridorsReferencing(movedAnchors.keySet());
-        if (impactedCorridorIds.isEmpty()) {
+        Set<Long> dependentCorridorIds = dependentCorridorIds(impactedCorridorIds, movedCorridorIds);
+        if (dependentCorridorIds.isEmpty()) {
             return DependencyUpdateResult.success(snappedCorridors);
         }
         List<Corridor> rerouted = new ArrayList<>();
         for (Corridor corridor : snappedCorridors) {
-            if (corridor == null || movedCorridorIds.contains(corridor.corridorId())
-                    || !impactedCorridorIds.contains(corridor.corridorId())) {
+            if (corridor == null || !dependentCorridorIds.contains(corridor.corridorId())) {
                 rerouted.add(corridor);
                 continue;
             }
-            rerouted.add(reroutedDependent(sourceMap, corridor, movedAnchors));
+            rerouted.add(reroutedDependent(sourceMap, currentMap, corridor, movedAnchors));
         }
         List<Corridor> result = List.copyOf(rerouted);
-        return hasValidReplacementRoutes(sourceMap, result, impactedCorridorIds)
+        return hasValidReplacementRoutes(currentMap, result, dependentCorridorIds)
                 ? DependencyUpdateResult.success(result)
                 : DependencyUpdateResult.rejected();
+    }
+
+    private static Set<Long> dependentCorridorIds(Set<Long> impactedCorridorIds, Set<Long> movedCorridorIds) {
+        Set<Long> result = new LinkedHashSet<>();
+        for (Long corridorId : impactedCorridorIds == null ? Set.<Long>of() : impactedCorridorIds) {
+            if (corridorId != null && (movedCorridorIds == null || !movedCorridorIds.contains(corridorId))) {
+                result.add(corridorId);
+            }
+        }
+        return Set.copyOf(result);
     }
 
     private static boolean hasValidReplacementRoutes(
@@ -62,6 +74,7 @@ final class CorridorAnchorDependencyUpdate {
 
     private static Corridor reroutedDependent(
             DungeonMap sourceMap,
+            DungeonMap currentMap,
             Corridor corridor,
             Map<CorridorNetwork.AnchorKey, AnchorMovement> movedAnchors
     ) {
@@ -75,7 +88,7 @@ final class CorridorAnchorDependencyUpdate {
         List<CorridorWaypoint> updatedWaypoints = new ArrayList<>();
         boolean changed = false;
         for (CorridorWaypoint waypoint : corridor.stateBindings().waypoints()) {
-            CorridorWaypoint updated = reroutedWaypoint(sourceMap, waypoint, referencedAnchorMoves);
+            CorridorWaypoint updated = reroutedWaypoint(sourceMap, currentMap, waypoint, referencedAnchorMoves);
             updatedWaypoints.add(updated);
             changed = changed || !updated.equals(waypoint);
         }
@@ -86,22 +99,27 @@ final class CorridorAnchorDependencyUpdate {
 
     private static CorridorWaypoint reroutedWaypoint(
             DungeonMap sourceMap,
+            DungeonMap currentMap,
             CorridorWaypoint waypoint,
             Map<CorridorNetwork.AnchorKey, AnchorMovement> referencedAnchorMoves
     ) {
-        Cell center = CorridorMapLookup.clusterCenterOrOrigin(
+        Cell sourceCenter = CorridorMapLookup.clusterCenterOrOrigin(
                 sourceMap,
                 waypoint.clusterId(),
                 waypoint.level());
-        Cell absoluteCell = waypoint.absoluteCell(center);
+        Cell currentCenter = CorridorMapLookup.clusterCenterOrOrigin(
+                currentMap,
+                waypoint.clusterId(),
+                waypoint.level());
+        Cell absoluteCell = waypoint.absoluteCell(sourceCenter);
         for (AnchorMovement movement : referencedAnchorMoves.values()) {
             if (movement.previousCell().equals(absoluteCell) && !movement.nextCell().equals(absoluteCell)) {
                 Cell nextCell = movement.nextCell();
                 return new CorridorWaypoint(
                         waypoint.clusterId(),
                         new Cell(
-                                nextCell.q() - center.q(),
-                                nextCell.r() - center.r(),
+                                nextCell.q() - currentCenter.q(),
+                                nextCell.r() - currentCenter.r(),
                                 nextCell.level()),
                         nextCell.level());
             }

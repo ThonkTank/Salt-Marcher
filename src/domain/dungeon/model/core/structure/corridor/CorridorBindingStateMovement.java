@@ -2,9 +2,9 @@ package src.domain.dungeon.model.core.structure.corridor;
 
 import java.util.ArrayList;
 import java.util.List;
+import src.domain.dungeon.model.core.component.CorridorAnchor;
 import src.domain.dungeon.model.core.component.CorridorWaypoint;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 final class CorridorBindingStateMovement {
     private CorridorBindingStateMovement() {
@@ -46,22 +46,21 @@ final class CorridorBindingStateMovement {
     static CorridorBindingState moveAnchorBinding(
             CorridorBindingState source,
             int bindingIndex,
-            DungeonTopologyRef topologyRef,
+            long anchorId,
             int deltaQ,
             int deltaR,
             int deltaLevel
     ) {
-        DungeonTopologyRef safeTopologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
-        List<CorridorAnchorBinding> sourceAnchorBindings = source.anchorBindings();
-        List<CorridorAnchorBinding> updated = new ArrayList<>();
+        List<CorridorAnchor> sourceAnchorBindings = source.anchorBindings();
+        List<CorridorAnchor> updated = new ArrayList<>();
         boolean changed = false;
         for (int index = 0; index < sourceAnchorBindings.size(); index++) {
-            CorridorAnchorBinding binding = sourceAnchorBindings.get(index);
-            if (index == bindingIndex || binding.topologyRef().equals(safeTopologyRef)) {
-                updated.add(binding.withAbsoluteCell(movedCell(binding.absoluteCell(), deltaQ, deltaR, deltaLevel)));
+            CorridorAnchor anchor = sourceAnchorBindings.get(index);
+            if (index == bindingIndex || anchor.anchorId() == anchorId) {
+                updated.add(anchor.withPosition(movedCell(anchor.position(), deltaQ, deltaR, deltaLevel)));
                 changed = true;
             } else {
-                updated.add(binding);
+                updated.add(anchor);
             }
         }
         return changed ? source.replaceAnchorBindings(updated) : source;
