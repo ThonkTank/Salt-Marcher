@@ -1,0 +1,7 @@
+interface:
+  display_name: "Verification"
+  short_description: "Qualification, traceability, and proof ownership"
+  default_prompt: "Use $verification before creating, changing, reviewing, or planning project-wide or feature-owned verification docs."
+
+policy:
+  allow_implicit_invocation: true

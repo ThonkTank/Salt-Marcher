@@ -1,0 +1,7 @@
+interface:
+  display_name: "Lens: Coordinator"
+  short_description: "Generic review panel coordinator method"
+  default_prompt: "Use $lens-coordinator inside an Overview coordinator after $lens-adversarial-review-agent and $coord-adversarial-review to inspect evidence, define slices, choose lenses, launch reviewers through $coord-overview-reviewer, and aggregate findings."
+
+policy:
+  allow_implicit_invocation: true

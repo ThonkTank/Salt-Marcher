@@ -2,7 +2,7 @@ Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-06-25
 Source of Truth: Governance for agent instruction surfaces, the mandatory
-global instruction skill, and ownership boundaries between instruction
+repo-owned instruction skill, and ownership boundaries between instruction
 artifacts.
 
 # Agent Instruction Standard
@@ -10,7 +10,7 @@ artifacts.
 ## Goal
 
 SaltMarcher treats agent-facing instructions as governed engineering artifacts.
-Changes to those artifacts must use the global `agent-instruction-engineering`
+Changes to those artifacts must use the repo-owned `agent-instruction-engineering`
 skill and must preserve a single canonical owner for each instruction topic.
 
 ## Covered Surfaces
@@ -31,24 +31,24 @@ docs, or ADRs unless those files are themselves defining agent behavior.
 
 ## Mandatory Skill
 
-The global skill is:
+The SaltMarcher-owned skill is:
 
 - source path:
-  `/home/aaron/.codex/skills/local/agent-instruction-engineering/`
+  `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/agent-instruction-engineering/`
 
 Any work on covered surfaces must use that skill first.
 
-- The global copy is the canonical skill source.
-- If the harness does not auto-discover global skills, read and apply the
-  global `SKILL.md` directly before editing covered artifacts.
-- The governing workflow lives in the global `SKILL.md`.
+- The repo-local copy is the canonical SaltMarcher skill source.
+- If the harness does not auto-discover repo-local skills, read and apply the
+  repo-local `SKILL.md` directly before editing covered artifacts.
+- The governing workflow lives in the repo-local `SKILL.md`.
 - `agents/openai.yaml` must not become a second source of truth for workflow.
 
 ## Standard Coordinated Workflow
 
 Every requested repo-tracked mutation MUST use the Standard Coordinated
 Workflow. Read-only planning/review, status reporting, and non-mutating
-inspection stay outside because they do not change tracked files. The global
+inspection stay outside because they do not change tracked files. The repo-owned
 `wave-coordination` skill operates
 `Goal Definition -> CR -> CR Review -> Planning Bundle -> Plan Review -> Implementation -> Review -> Commit/Handoff`.
 
@@ -186,8 +186,8 @@ Review instructions live in skills; mandatory subagent use is authorized.
   paths or behavior change, the coordinator returns `Proof Refresh Required`;
   Main launches a fresh Verification Runner and waits for the coordinator's
   final aggregation.
-- Global review specialist skills remain supplementary lenses; do not create
-  repo-local copies unless the user explicitly asks for a SaltMarcher fork.
+- Repo-owned review specialist skills remain supplementary lenses for
+  SaltMarcher review routing.
 
 ## Qualitative Simplification And Repair Gate
 
@@ -198,7 +198,7 @@ maintainability, and project-health disposition through normal coordinator and
 risk-selected lens review; it does not create a separate agent, weaken proof,
 or close architecture/state-ownership/system-of-record risk by itself.
 
-Review blockers default to `Planner Repair Required`. The coordinator may route a direct fix only for `Trivial Mechanical Fix`: exactly one obvious correction, no accepted-plan decision change, and no owner, architecture, code-health, proof, harness, PMD, API, state, shape, or target-model concern. All other blockers, including code-health, PMD/quality-rule, simplicity, smell, ownership, harness/gate, repeated-fix, proof-oracle, and multi-repair findings, require Blocker Reflection plus a global-planner repair plan.
+Review blockers default to `Planner Repair Required`. The coordinator may route a direct fix only for `Trivial Mechanical Fix`: exactly one obvious correction, no accepted-plan decision change, and no owner, architecture, code-health, proof, harness, PMD, API, state, shape, or target-model concern. All other blockers, including code-health, PMD/quality-rule, simplicity, smell, ownership, harness/gate, repeated-fix, proof-oracle, and multi-repair findings, require Blocker Reflection plus a repo-owned planner repair plan.
 
 For `Planner Repair Required`, Main gives neutral evidence only; the planner weighs the original goal against review findings, rejects fast fixes that harm target architecture or maintainability, and returns repair form, write set, proof route, risks, and Done When. It does not implement or replace review.
 
@@ -336,7 +336,7 @@ Move repeated rules to the lowest stable canonical owner; replace other
 surfaces with short summaries or links.
 
 ## Review Rules
-When a covered artifact changes, reviewers check global skill use, topic
+When a covered artifact changes, reviewers check repo-owned skill use, topic
 ownership, derived metadata, verification fit, accepted artifact chain,
 required pass logs, Verification Runner proof, Implementation Review
 Coordinator coverage, and read-only specialist review.

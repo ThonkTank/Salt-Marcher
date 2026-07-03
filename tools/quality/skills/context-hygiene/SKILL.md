@@ -71,7 +71,7 @@ Before planning, implementing, refactoring, or reviewing a repo-tracked change:
   and verification docs, keep the protocol in one owner and reduce other
   surfaces to routing text. For implementation packets and pass-log artifact
   fields, the owner is `docs/project/architecture/implementation-artifacts.md`.
-- If external sources influence a decision, use the global `source-references`
+- If external sources influence a decision, use the repo-owned `source-references`
   skill and cite the preserved local mirror path.
 
 ## Handoff

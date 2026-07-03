@@ -1,0 +1,7 @@
+interface:
+  display_name: "Architecture"
+  short_description: "Architecture standards, ADRs, coverage, and quality scenarios"
+  default_prompt: "Use $architecture before creating, changing, reviewing, or planning project-wide or feature-owned architecture docs."
+
+policy:
+  allow_implicit_invocation: true

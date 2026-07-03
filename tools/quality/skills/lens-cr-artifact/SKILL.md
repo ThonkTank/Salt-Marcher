@@ -9,7 +9,7 @@ description: Review SaltMarcher Change Request artifacts as a specialist lens in
 
 Use this specialist lens only after applying:
 
-- `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`
+- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`
 
 Follow that skill's Specialist Lens Contract. This file adds CR-specific
 criteria only.

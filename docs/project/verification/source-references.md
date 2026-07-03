@@ -164,4 +164,4 @@ reference mirrors.
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
-- [Global Source References Skill](/home/aaron/.codex/skills/local/source-references/SKILL.md:1)
+- [Source References Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/source-references/SKILL.md:1)

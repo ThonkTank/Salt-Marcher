@@ -10,13 +10,13 @@ description: Use inside a SaltMarcher Implementation Review Coordinator after im
 Use this skill only inside an Implementation Review Coordinator. Mandatory
 skills, in order:
 
-- `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`
-- `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md`
-- `/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md`
+- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`
+- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-adversarial-review/SKILL.md`
+- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator/SKILL.md`
 
 This skill adds SaltMarcher implementation-review behavior. It reuses the
-global handoff coordinator and reviewer-briefing stack as method evidence; it
-does not fork global specialist lenses.
+repo-owned handoff coordinator and reviewer-briefing stack as method evidence; it
+does not fork repo-owned specialist lenses.
 
 ## Reviewability
 
@@ -39,12 +39,12 @@ debt disposition, and residual risk.
 Treat simplicity, elegance, smells, coupling, indirection, performance,
 maintainability, and project-health disposition as built-in implementation
 review concerns. Cover them in the coordinator evidence pass and through
-risk-selected global lenses when a concrete handoff risk needs specialist
+risk-selected repo-owned lenses when a concrete handoff risk needs specialist
 judgment. Do not launch a standalone simplifier agent or require an external
 qualitative review artifact.
 
 Select specialist lenses by concrete handoff risk and brief them through the
-global reviewer-briefing method. Specialist reviewers remain read-only.
+repo-owned reviewer-briefing method. Specialist reviewers remain read-only.
 
 ## Repair Gate
 
@@ -103,6 +103,6 @@ the form-repair path.
 
 - [Main To Implementation Review](../coord-main-implementation-review/SKILL.md)
 - [Verification Runner](../verification-runner/SKILL.md)
-- [Global Coordinator Lens](/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md)
-- [Global Overview Reviewer Briefing](/home/aaron/.codex/skills/local/coord-overview-reviewer/SKILL.md)
-- [Global Handoff Coordinator Lens](/home/aaron/.codex/skills/local/lens-coordinator-handoff/SKILL.md)
+- [Coordinator Lens](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator/SKILL.md)
+- [Overview Reviewer Briefing](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-overview-reviewer/SKILL.md)
+- [Handoff Coordinator Lens](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator-handoff/SKILL.md)

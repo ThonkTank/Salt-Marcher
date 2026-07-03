@@ -1,0 +1,7 @@
+interface:
+  display_name: "Coord: Overview To Reviewer"
+  short_description: "Launch contract for specialist reviewers"
+  default_prompt: "Use $coord-overview-reviewer before an Overview coordinator launches specialist reviewers: give each reviewer an isolated slice, required first skill, assigned lens, and no conversation history or outcome anchoring."
+
+policy:
+  allow_implicit_invocation: true

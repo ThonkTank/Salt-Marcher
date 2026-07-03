@@ -9,7 +9,7 @@ description: Review SaltMarcher planning bundles as a specialist lens inside a p
 
 Use this specialist lens only after applying:
 
-- `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`
+- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`
 
 Follow that skill's Specialist Lens Contract. This file adds SaltMarcher
 planning-bundle criteria only.

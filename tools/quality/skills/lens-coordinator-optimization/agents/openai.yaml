@@ -1,0 +1,7 @@
+interface:
+  display_name: "Lens: Optimization Coordinator"
+  short_description: "Coordinates optimization and Clean-Break review"
+  default_prompt: "Use $lens-coordinator-optimization with $lens-coordinator when the goal is to critique the current state, when Clean-Break signals appear, compare cleaner alternatives, and separate current-pass improvements from broader slices."
+
+policy:
+  allow_implicit_invocation: true

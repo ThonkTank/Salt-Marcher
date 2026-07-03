@@ -138,16 +138,15 @@ document exists.
   implementation work. Detailed verification policy lives in
   `docs/project/verification/quality-platforms.md`.
 - Work on `AGENTS.md`, any `SKILL.md`, `agents/openai.yaml`, or other
-  agent-facing instruction surface must use the global
+  agent-facing instruction surface must use the repo-owned
   `agent-instruction-engineering` skill and follow
   `docs/project/architecture/agent-instructions.md`.
 - Work that uses external sources or local source evidence for decisions must
-  use the global `source-references` skill and follow
+  use the repo-owned `source-references` skill and follow
   `docs/project/verification/source-references.md`.
-- Global review-specialist routing lives in
-  `docs/project/architecture/agent-instructions.md` and in the global
-  `coord-*` / `lens-*` review skills; do not create
-  SaltMarcher-local copies without an explicit user request.
+- Review-specialist routing lives in
+  `docs/project/architecture/agent-instructions.md` and in the repo-owned
+  `coord-*` / `lens-*` review skills.
 - Work that plans, implements, refactors, or reviews a SaltMarcher repo-tracked
   change must use the repo-owned `context-hygiene` skill before relying on
   nearby files as precedent. The skill is a routing and context-budget rule; it
@@ -192,7 +191,7 @@ document exists.
   no architecture, owner, code-health, PMD, proof, harness, API, state, shape,
   or target-model decision. Code-health, code-shape, PMD/quality-rule,
   simplicity, smell, coupling, indirection, ownership, harness/gate,
-  repeated-fix, proof-oracle, and multi-repair findings require the global
+  repeated-fix, proof-oracle, and multi-repair findings require the repo-owned
   planner before repair.
 - Work that runs, plans, changes, or reviews the SaltMarcher
   process-autoresearch loop must use the repo-owned
@@ -207,7 +206,8 @@ document exists.
   repo-wide cleanup waves by itself.
 - Every repo-tracked implementation pass must receive one Implementation
   Review Coordinator cycle through `coord-main-implementation-review` and
-  `lens-coordinator-implementation-review`. The coordinator applies the global
+  `lens-coordinator-implementation-review`. The coordinator applies the
+  repo-owned
   adversarial review, coordinator, reviewer-briefing, and handoff lenses as
   method evidence without Main directly launching specialist reviewers. Review
   layers inspect Verification Runner evidence and report stale or missing proof
@@ -332,7 +332,7 @@ document exists.
 - [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
 - [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
 - [Implementation Artifact Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-artifacts.md:1)
-- [Global Agent Instruction Engineering Skill](/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md:1)
+- [Agent Instruction Engineering Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/agent-instruction-engineering/SKILL.md:1)
 - [Context Hygiene Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/context-hygiene/SKILL.md:1)
 - [Repo Tools Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/repo-tools/SKILL.md:1)
 - [Project Health Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/project-health/SKILL.md:1)
@@ -344,7 +344,7 @@ document exists.
 - [Implementation Review Coordinator Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator-implementation-review/SKILL.md:1)
 - [Verification Runner Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/verification-runner/SKILL.md:1)
 - [Planning Reviewer Briefing Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-planning-reviewer/SKILL.md:1)
-- [Global Planner Skill](/home/aaron/.codex/skills/local/planner/SKILL.md:1)
+- [Planner Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/planner/SKILL.md:1)
 - [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
 - [Feature Runtime Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/feature-runtime/SKILL.md:1)
 - [View Layer MVVM Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/view-layer-mvvm/SKILL.md:1)

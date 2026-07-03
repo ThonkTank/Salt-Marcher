@@ -1,0 +1,6 @@
+interface:
+  display_name: "Wave Mapper"
+  short_description: "Runs bounded Explorer subagents and produces a wave roadmap in build/agent-pass-logs."
+  default_prompt: "Use $wave-mapper for the Mapping phase. Run parallel Explorer subagents with bounded read scopes and create a wave roadmap in build/agent-pass-logs before planning starts."
+  policy:
+    allow_implicit_invocation: true

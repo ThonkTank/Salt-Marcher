@@ -1,0 +1,7 @@
+interface:
+  display_name: "Agent Instruction Engineering"
+  short_description: "Prompt and skill instruction governance"
+  default_prompt: "Use $agent-instruction-engineering when editing AGENTS.md, SKILL.md, agents/openai.yaml, or other agent-facing instruction artifacts."
+
+policy:
+  allow_implicit_invocation: true

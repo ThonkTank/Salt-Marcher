@@ -1,0 +1,7 @@
+interface:
+  display_name: "Domain"
+  short_description: "Domain truth, invariants, and write-model ownership"
+  default_prompt: "Use $domain before creating, changing, reviewing, or planning project-wide or feature-owned domain docs."
+
+policy:
+  allow_implicit_invocation: true

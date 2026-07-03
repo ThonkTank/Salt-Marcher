@@ -19,9 +19,9 @@ review log, self-review, or substitute final proof.
 The coordinator prompt must name:
 
 - required skills, in order:
-  `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`,
-  `/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md`,
-  `/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md`, and
+  `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`,
+  `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-adversarial-review/SKILL.md`,
+  `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator/SKILL.md`, and
   `tools/quality/skills/lens-coordinator-implementation-review/SKILL.md`
 - accepted wave/step plan and plan-review paths
 - implementation log paths and changed paths
@@ -49,7 +49,7 @@ self-review or write the review log as a fallback.
 
 Direct review fixes are limited to coordinator-classified `Trivial Mechanical
 Fix` findings. When the coordinator returns `WIP - Planner Repair Required`,
-Main must launch the global planner with the neutral finding packet and must
+Main must launch the repo-owned planner with the neutral finding packet and must
 not apply a direct fix, self-review, or shortened proof-refresh loop.
 
 Review-log form errors are a narrower mechanical artifact repair path. If the

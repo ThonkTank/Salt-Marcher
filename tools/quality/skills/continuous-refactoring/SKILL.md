@@ -103,7 +103,7 @@ manifests:
     tradeoffs, and verification results.
 19. Before starting the review step, use the repo-owned
     `coord-main-implementation-review` route. It launches one Implementation
-    Review Coordinator that applies the global adversarial review and handoff
+    Review Coordinator that applies the repo-owned adversarial review and handoff
     stack, owns qualitative implementation review, nested specialist review,
     scoped follow-up worker routing, proof-staleness handling, review-log
     writing, and final clean/WIP/blocked result before handoff.
@@ -214,5 +214,5 @@ not claim that global debt is solved because a scoped pass is clean.
 - [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md)
 - [Project Health Standard](../../../../docs/project/architecture/project-health.md)
 - [Main To Implementation Review Skill](../coord-main-implementation-review/SKILL.md)
-- [Global Adversarial Review Caller Skill](/home/aaron/.codex/skills/local/coord-adversarial-review/SKILL.md)
-- [Global Adversarial Review Agent Skill](/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md)
+- [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-adversarial-review/SKILL.md)
+- [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md)

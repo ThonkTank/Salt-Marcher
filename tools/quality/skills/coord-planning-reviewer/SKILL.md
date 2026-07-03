@@ -13,14 +13,14 @@ review.
 
 Mandatory coordinator skills before this skill:
 
-- `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`
-- `/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md`
+- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`
+- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator/SKILL.md`
 - `tools/quality/skills/lens-coordinator-cr-review/SKILL.md` for CR review,
   or `tools/quality/skills/lens-coordinator-plan-review/SKILL.md` for
   planning-bundle review
 
 This skill is a briefing contract. It does not review artifacts, select the
-final verdict, replace the matching artifact lens, or fork global `lens-*`
+final verdict, replace the matching artifact lens, or fork repo-owned `lens-*`
 criteria.
 
 ## Reviewer Isolation
@@ -56,7 +56,7 @@ Each artifact-lens reviewer prompt must include:
 - `Constraints`: read-only, no edits, no staging, no commits, no formatters,
   no proof reruns, no subagent launches.
 - `Required First Skill`:
-  `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`.
+  `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`.
 - `Assigned Lens`: exact artifact-lens skill path.
 
 Artifact lenses may report missing specialist coverage when the artifact risk
@@ -72,7 +72,7 @@ gates intact, or restates upstream obligations.
 
 Each content-lens reviewer prompt must include:
 
-- `Role`: one assigned global content lens.
+- `Role`: one assigned repo-owned content lens.
 - `Risk Reason`: the concrete artifact signal that selected this lens.
 - `Scope`: reviewed artifact plus the owner docs, code, logs, or proof evidence
   needed to judge the risk.
@@ -101,8 +101,8 @@ Each content-lens reviewer prompt must include:
 - `Constraints`: read-only, no edits, no staging, no commits, no formatters,
   no proof reruns, no subagent launches.
 - `Required First Skill`:
-  `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`.
-- `Assigned Lens`: exact global `lens-*` skill path.
+  `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`.
+- `Assigned Lens`: exact repo-owned `lens-*` skill path.
 
 Content-lens prompts must ask for a verdict on the assigned substantive risk:
 target fit, baseline truth, alternative/tradeoff quality, missed blockers,

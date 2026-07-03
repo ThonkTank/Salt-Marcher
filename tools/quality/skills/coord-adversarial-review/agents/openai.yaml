@@ -1,0 +1,7 @@
+interface:
+  display_name: "Coord: Adversarial Review"
+  short_description: "Neutral caller contract for review subagents"
+  default_prompt: "Use $coord-adversarial-review before launching any review, Overview coordinator, or fallback reviewer so review starts from neutral facts, reviewers do not receive conversation history, every review subagent reads $lens-adversarial-review-agent, and the final result completes before handoff claims."
+
+policy:
+  allow_implicit_invocation: true

@@ -10,8 +10,8 @@ description: Use inside a SaltMarcher CR Review Coordinator. Selects lens-cr-art
 Use this skill only inside the coordinator subagent for CR review. Mandatory
 skills, in order:
 
-- `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`
-- `/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md`
+- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`
+- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator/SKILL.md`
 
 This skill adds CR-review behavior only. The coordinator establishes
 reviewability, performs a neutral evidence pass, launches `lens-cr-artifact`
@@ -37,7 +37,7 @@ Classify Main hints as hints only. Derive 3-7 falsifiable CR risk propositions
 before selecting content lenses.
 
 Always launch `tools/quality/skills/lens-cr-artifact/SKILL.md` as a separate
-reviewer. Select global content lenses only for concrete CR risk. If selected
+reviewer. Select repo-owned content lenses only for concrete CR risk. If selected
 content reviewers cannot answer coordinator-derived risk propositions with
 specialist evidence, return `Blocked` or rebrief them.
 

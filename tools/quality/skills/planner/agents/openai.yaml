@@ -1,0 +1,4 @@
+interface:
+  display_name: "Planner"
+  short_description: "Plans coordinated work into must-do roadmap goals, dependency-ordered phases, or implementation-ready wave-plan artifacts."
+  default_prompt: "Use $planner for Roadmap Planning, Phase Planning, or Implementation-Ready Planning. Preserve Main/User goals, define must-do completion goals in the roadmap, decompose broad scope into phases when needed, and create local-contract wave-plan artifacts only when implementation readiness requires them. Do not launch implementation workers."

@@ -10,8 +10,8 @@ description: Use inside a SaltMarcher Plan Review Coordinator. Selects lens-plan
 Use this skill only inside the coordinator subagent for planning-bundle review.
 Mandatory skills, in order:
 
-- `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`
-- `/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md`
+- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`
+- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator/SKILL.md`
 
 The coordinator establishes reviewability, performs a neutral evidence pass,
 launches `lens-plan-artifact` and any risk-selected content lenses through

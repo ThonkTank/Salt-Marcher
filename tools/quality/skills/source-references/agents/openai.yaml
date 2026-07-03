@@ -1,0 +1,7 @@
+interface:
+  display_name: "Source References"
+  short_description: "Global evidence mirror and citation discipline"
+  default_prompt: "Use $source-references before making source-backed decisions, mirror accessible original full texts into /home/aaron/Schreibtisch/projects/references/, and do not keep metadata-only reference placeholders."
+
+policy:
+  allow_implicit_invocation: true

@@ -16,8 +16,8 @@ role values; generated CR review headers use the shared
 
 Main launches exactly one clean coordinator using:
 
-1. `/home/aaron/.codex/skills/local/lens-adversarial-review-agent/SKILL.md`
-2. `/home/aaron/.codex/skills/local/lens-coordinator/SKILL.md`
+1. `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`
+2. `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-coordinator/SKILL.md`
 3. `tools/quality/skills/lens-coordinator-cr-review/SKILL.md`
 4. `tools/quality/skills/coord-planning-reviewer/SKILL.md` before reviewers
 
