@@ -1,20 +1,29 @@
 package src.features.dungeon.runtime;
 
-
 record DungeonEditorMainViewInput(
         double canvasX,
         double canvasY,
         boolean primaryButtonDown,
         boolean secondaryButtonDown,
         boolean wallSingleClickMode,
-        DungeonEditorMainViewPointerTarget target,
+        boolean doorDeleteSelected,
+        DungeonEditorRuntimePointerTarget boundaryInputTarget,
         TransitionDestination transitionDestination
 ) {
     DungeonEditorMainViewInput {
-        target = target == null ? DungeonEditorMainViewPointerTarget.empty() : target;
+        boundaryInputTarget = boundaryInputTarget == null
+                ? DungeonEditorRuntimePointerTarget.empty()
+                : boundaryInputTarget;
         transitionDestination = transitionDestination == null
                 ? TransitionDestination.empty()
                 : transitionDestination;
+    }
+
+    DungeonEditorRuntimePointerTarget target() {
+        if (!doorDeleteSelected) {
+            return boundaryInputTarget;
+        }
+        return DungeonEditorMainViewInputBoundaryTranslationHelper.doorDeleteBoundaryTarget(boundaryInputTarget);
     }
 
     static DungeonEditorMainViewInput empty() {
@@ -24,7 +33,8 @@ record DungeonEditorMainViewInput(
                 false,
                 false,
                 false,
-                DungeonEditorMainViewPointerTarget.empty(),
+                false,
+                DungeonEditorRuntimePointerTarget.empty(),
                 TransitionDestination.empty());
     }
 }

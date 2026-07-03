@@ -8,6 +8,11 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonTopology;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.graph.DungeonTraversalEndpoint;
+import src.domain.dungeon.model.core.graph.DungeonTraversalLink;
+import src.domain.dungeon.model.core.graph.DungeonTraversalLinkProjection;
+import src.domain.dungeon.model.core.graph.DungeonTraversalSource;
+import src.domain.dungeon.model.core.graph.DungeonTraversalSourceKind;
 import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
@@ -19,15 +24,20 @@ import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionKind;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurfaceProjectionMapper;
+import src.domain.dungeon.model.runtime.travel.projection.TravelDungeonSessionProjectionMapper;
 import src.domain.dungeon.model.runtime.travel.projection.TravelHeading;
 import src.domain.dungeon.model.runtime.travel.projection.TravelPositionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceProjection;
 import src.domain.dungeon.model.runtime.travel.projection.TravelTransitionTarget;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionMovement.MoveResultData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState.ActiveTravelStateData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSnapshot.SnapshotData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.PositionData;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.SurfaceData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.LocationKind;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.MoveStatus;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.OverworldTarget;
 import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
 import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
 import src.domain.dungeon.model.runtime.usecase.ApplyTravelDungeonMovementUseCase;
@@ -50,6 +60,7 @@ import src.domain.dungeon.model.core.structure.room.RoomClusterFloorMap;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
+import src.domain.dungeon.model.core.structure.transition.TransitionAnchor;
 
 final class DungeonRuntimeProjectionInvariantHarness {
 
@@ -64,7 +75,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 results,
                 OWNER,
                 "DGI-PATH-005",
-                "Runtime travel traversal actions recompute from authored area and boundary facts");
+                "Runtime travel traversal actions consume the authored derived traversal-link source");
         assertRuntimeTransitionProjection();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
@@ -97,7 +108,8 @@ final class DungeonRuntimeProjectionInvariantHarness {
                         30L,
                         "Tuer",
                         Edge.sideOf(source, Direction.EAST),
-                        DungeonTopologyRef.empty())));
+                        DungeonTopologyRef.empty())),
+                List.of(traversalLink(30L, "Tuer", source, 10L, "Start", target, 20L, "Ziel")));
         TravelSurfaceFacts surface = project(map, derived, new Cell(0, 0, 0));
         TravelActionFacts traversal = firstActionOfKind(surface, TravelActionKind.TRAVERSAL);
 
@@ -108,6 +120,64 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 "runtime path projection recomputes traversal target from authored boundary facts");
         assertEquals(null, traversal.transitionTarget(),
                 "runtime path projection keeps traversal state outside transition targets");
+
+        TravelSurfaceFacts noLinkSurface = project(map, derivedState(derived.map().areas(), derived.map().boundaries()),
+                new Cell(0, 0, 0));
+        assertEquals(null, firstActionOfKind(noLinkSurface, TravelActionKind.TRAVERSAL),
+                "runtime path projection must not rebuild traversal links outside derived state");
+        assertRuntimeCorridorTraversalProjection();
+    }
+
+    private static void assertRuntimeCorridorTraversalProjection() {
+        Cell roomTile = new Cell(0, 0, 0);
+        Cell corridorStart = new Cell(1, 0, 0);
+        Cell corridorEnd = new Cell(2, 0, 0);
+        DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(31L), "Runtime Corridors");
+        List<DungeonAreaFacts> areas = List.of(
+                new DungeonAreaFacts(DungeonAreaType.ROOM, 310L, "Start", List.of(roomTile)),
+                new DungeonAreaFacts(DungeonAreaType.CORRIDOR, 320L, "Gang 320", List.of(corridorStart, corridorEnd)));
+        DungeonMapFacts mapFacts = new DungeonMapFacts(DungeonTopology.SQUARE, 3, 1, areas, List.of());
+        DungeonDerivedState withCorridorLinks = new DungeonDerivedState(
+                mapFacts,
+                List.of(),
+                null,
+                new DungeonTraversalLinkProjection().project(map, mapFacts));
+        TravelSurfaceFacts surface = project(map, withCorridorLinks, corridorStart);
+        TravelActionFacts traversal = firstActionOfKind(surface, TravelActionKind.TRAVERSAL);
+
+        assertEquals("Gang 320", surface.areaLabel(),
+                "runtime corridor traversal projection resolves active corridor area");
+        assertTrue(traversal != null,
+                "runtime corridor traversal projection publishes corridor traversal action from derived links");
+        assertEquals("Gang 320", traversal.label(),
+                "runtime corridor traversal projection keeps corridor source label");
+        assertEquals(corridorEnd, traversal.targetPosition().tile(),
+                "runtime corridor traversal projection follows the derived corridor segment target");
+
+        TravelSurfaceFacts noLinkSurface = project(map, derivedState(areas, List.of()), corridorStart);
+        assertEquals(null, firstActionOfKind(noLinkSurface, TravelActionKind.TRAVERSAL),
+                "runtime corridor traversal projection must not rebuild corridor links from corridor cells");
+        assertCrossLevelCorridorCellsDoNotCreateCorridorTraversal();
+    }
+
+    private static void assertCrossLevelCorridorCellsDoNotCreateCorridorTraversal() {
+        Cell lower = new Cell(4, 0, 0);
+        Cell upper = new Cell(4, 0, 1);
+        DungeonMap map = DungeonMapAuthoring.empty(new DungeonMapIdentity(32L), "Runtime Vertical Corridors");
+        List<DungeonAreaFacts> areas = List.of(
+                new DungeonAreaFacts(DungeonAreaType.CORRIDOR, 330L, "Vertical Gang", List.of(lower, upper)));
+        DungeonMapFacts mapFacts = new DungeonMapFacts(DungeonTopology.SQUARE, 5, 1, areas, List.of());
+        DungeonDerivedState derived = new DungeonDerivedState(
+                mapFacts,
+                List.of(),
+                null,
+                new DungeonTraversalLinkProjection().project(map, mapFacts));
+        TravelSurfaceFacts surface = project(map, derived, lower);
+
+        assertTrue(derived.traversalLinks().isEmpty(),
+                "runtime corridor traversal projection must not derive cross-level corridor links");
+        assertEquals(null, firstActionOfKind(surface, TravelActionKind.TRAVERSAL),
+                "runtime corridor traversal projection keeps cross-level travel stair-owned");
     }
 
     private static void assertRuntimeTransitionProjection() {
@@ -116,7 +186,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
         DungeonMap map = emptyMap.withTransitionCatalog(emptyMap.transitionCatalog().withCreated(
                 40L,
                 emptyMap.metadata().mapId().value(),
-                anchor,
+                TransitionAnchor.cell(anchor),
                 TransitionDestination.dungeonMap(9L, 12L)));
         DungeonDerivedState derived = derivedState(
                 List.of(new DungeonAreaFacts(DungeonAreaType.ROOM, 11L, "Portalraum", List.of(anchor))),
@@ -137,6 +207,83 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 "runtime transition projection recomputes local transition position from authored facts");
         assertEquals(TravelTransitionTarget.dungeonMap(9L, 12L), transition.transitionTarget(),
                 "runtime transition projection recomputes transition target from authored destination facts");
+
+        DungeonMap unlinkedMap = emptyMap.withTransitionCatalog(emptyMap.transitionCatalog().withCreated(
+                41L,
+                emptyMap.metadata().mapId().value(),
+                TransitionAnchor.cell(anchor),
+                TransitionDestination.unlinkedEntrance()));
+        TravelSurfaceFacts unlinkedSurface = project(unlinkedMap, derived, new Cell(2, 0, 0));
+        TravelActionFacts unlinkedTransition = firstActionOfKind(unlinkedSurface, TravelActionKind.TRANSITION);
+        assertTrue(unlinkedTransition != null, "runtime transition projection publishes unlinked entrance action");
+        assertEquals("Kein Ziel verknuepft", unlinkedTransition.destinationLabel(),
+                "runtime transition projection explains missing unlinked entrance destination");
+        assertEquals(null, unlinkedTransition.transitionTarget(),
+                "runtime transition projection blocks travel target for unlinked entrance");
+        assertUnlinkedTransitionMovementBlocked(unlinkedMap, unlinkedTransition);
+    }
+
+    private static void assertUnlinkedTransitionMovementBlocked(
+            DungeonMap unlinkedMap,
+            TravelActionFacts unlinkedTransition
+    ) {
+        DungeonMapRepository repository = repositoryOf(
+                unlinkedMap,
+                DungeonMapAuthoring.empty(new DungeonMapIdentity(99L), "Unused Target"));
+        LoadDungeonMapUseCase loadDungeonMapUseCase = new LoadDungeonMapUseCase(repository);
+        BuildDungeonDerivedStateUseCase deriveStateUseCase = new BuildDungeonDerivedStateUseCase();
+        MoveDungeonTravelActionUseCase moveUseCase = new MoveDungeonTravelActionUseCase(
+                loadDungeonMapUseCase,
+                repository,
+                deriveStateUseCase);
+        TravelPositionFacts transitionPosition = java.util.Objects.requireNonNull(
+                unlinkedTransition.targetPosition(),
+                "unlinkedTransition.targetPosition");
+        TravelPositionFacts position = new TravelPositionFacts(
+                unlinkedMap.metadata().mapId().value(),
+                TravelPositionFacts.LocationKind.TILE,
+                0L,
+                transitionPosition.tile(),
+                TravelHeading.SOUTH);
+
+        MoveResultData moveResult = moveUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
+                position,
+                unlinkedTransition.actionId()));
+        assertEquals(MoveStatus.TARGET_UNAVAILABLE, moveResult.status(),
+                "runtime unlinked entrance movement must report missing destination");
+        assertContains(moveResult.surface().statusLabel(), "Übergangsziel ist nicht verfügbar.",
+                "runtime unlinked entrance movement explains missing destination");
+        assertEquals(null, moveResult.externalTarget(),
+                "runtime unlinked entrance movement must not publish an external target");
+
+        CountingTravelPartyPositionRepository partyPositions = new CountingTravelPartyPositionRepository();
+        TravelPartyStateRepository partyStateRepository =
+                () -> new ActiveTravelStateData(List.of(12L), null);
+        LoadDungeonTravelSurfaceUseCase loadSurfaceUseCase = new LoadDungeonTravelSurfaceUseCase(
+                loadDungeonMapUseCase,
+                deriveStateUseCase);
+        ApplyTravelDungeonMovementUseCase applyUseCase = new ApplyTravelDungeonMovementUseCase(
+                partyStateRepository,
+                partyPositions,
+                loadSurfaceUseCase,
+                moveUseCase);
+        SurfaceData currentSurface = TravelDungeonSessionProjectionMapper.toRuntimeSurface(
+                new TravelSurfaceProjection().project(
+                        TravelAuthoredSurfaceProjectionMapper.from(
+                                unlinkedMap,
+                                deriveStateUseCase.execute(unlinkedMap)),
+                        position,
+                        ""));
+        SurfaceData applied = applyUseCase.move(
+                currentSurface.position(),
+                currentSurface,
+                unlinkedTransition.actionId());
+        assertContains(applied.statusLabel(), "Übergangsziel ist nicht verfügbar.",
+                "runtime unlinked entrance apply path explains missing destination");
+        assertEquals(0, partyPositions.savedDungeonPositions(),
+                "runtime unlinked entrance must not save dungeon movement");
+        assertEquals(0, partyPositions.savedOverworldPositions(),
+                "runtime unlinked entrance must not save overworld movement");
     }
 
     private static void assertRuntimePositionProjectionDefaults() {
@@ -158,7 +305,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
                         70L,
                         5L,
                         "",
-                        new Cell(0, 0, 0),
+                        TransitionAnchor.cell(new Cell(0, 0, 0)),
                         TransitionDestination.dungeonMap(8L, 9L),
                         null)));
 
@@ -194,21 +341,21 @@ final class DungeonRuntimeProjectionInvariantHarness {
                                 90L,
                                 6L,
                                 "",
-                                new Cell(6, 2, 0),
+                                TransitionAnchor.cell(new Cell(6, 2, 0)),
                                 TransitionDestination.dungeonMap(10L, 11L),
                                 null),
                         new src.domain.dungeon.model.core.structure.transition.Transition(
                                 80L,
                                 6L,
                                 "",
-                                lowerIdAnchor,
+                                TransitionAnchor.cell(lowerIdAnchor),
                                 TransitionDestination.dungeonMap(10L, 12L),
                                 null),
                         new src.domain.dungeon.model.core.structure.transition.Transition(
                                 70L,
                                 6L,
                                 "",
-                                null,
+                                TransitionAnchor.none(),
                                 TransitionDestination.dungeonMap(10L, 13L),
                                 null)));
 
@@ -253,7 +400,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
                         100L,
                         7L,
                         "",
-                        null,
+                        TransitionAnchor.none(),
                         TransitionDestination.dungeonMap(12L, 14L),
                         null)));
 
@@ -421,7 +568,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
         return map.withTransitionCatalog(map.transitionCatalog().withCreated(
                 transitionId,
                 mapId,
-                transitionAnchor,
+                TransitionAnchor.cell(transitionAnchor),
                 TransitionDestination.dungeonMap(99L, 7L)));
     }
 
@@ -480,11 +627,36 @@ final class DungeonRuntimeProjectionInvariantHarness {
             List<DungeonAreaFacts> areas,
             List<DungeonBoundaryFacts> boundaries
     ) {
+        return derivedState(areas, boundaries, List.of());
+    }
+
+    private static DungeonDerivedState derivedState(
+            List<DungeonAreaFacts> areas,
+            List<DungeonBoundaryFacts> boundaries,
+            List<DungeonTraversalLink> traversalLinks
+    ) {
         return new DungeonDerivedState(
                 new DungeonMapFacts(DungeonTopology.SQUARE, 2, 1, areas, boundaries),
                 List.of(),
                 null,
-                List.of());
+                traversalLinks);
+    }
+
+    private static DungeonTraversalLink traversalLink(
+            long sourceId,
+            String label,
+            Cell first,
+            long firstAreaId,
+            String firstAreaLabel,
+            Cell second,
+            long secondAreaId,
+            String secondAreaLabel
+    ) {
+        return new DungeonTraversalLink(
+                "door:" + sourceId + ":" + first + ":" + second,
+                new DungeonTraversalSource(DungeonTraversalSourceKind.DOOR, sourceId, label),
+                new DungeonTraversalEndpoint(first, firstAreaId, firstAreaLabel),
+                new DungeonTraversalEndpoint(second, secondAreaId, secondAreaLabel));
     }
 
     private static TravelActionFacts firstActionOfKind(TravelSurfaceFacts surface, TravelActionKind kind) {
@@ -502,9 +674,42 @@ final class DungeonRuntimeProjectionInvariantHarness {
         }
     }
 
+    private static void assertContains(String actual, String expectedFragment, String message) {
+        if (actual == null || !actual.contains(expectedFragment)) {
+            throw new IllegalStateException(message + " expected to contain <"
+                    + expectedFragment + "> but was <" + actual + ">.");
+        }
+    }
+
     private static void assertTrue(boolean value, String message) {
         if (!value) {
             throw new IllegalStateException(message);
+        }
+    }
+
+    private static final class CountingTravelPartyPositionRepository implements TravelPartyPositionRepository {
+
+        private int savedDungeonPositions;
+        private int savedOverworldPositions;
+
+        @Override
+        public boolean saveDungeonPosition(PositionData position, List<Long> characterIds) {
+            savedDungeonPositions++;
+            return true;
+        }
+
+        @Override
+        public boolean saveOverworldPosition(OverworldTarget target, List<Long> characterIds) {
+            savedOverworldPositions++;
+            return true;
+        }
+
+        private int savedDungeonPositions() {
+            return savedDungeonPositions;
+        }
+
+        private int savedOverworldPositions() {
+            return savedOverworldPositions;
         }
     }
 }

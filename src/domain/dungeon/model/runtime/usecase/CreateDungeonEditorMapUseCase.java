@@ -2,6 +2,7 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
@@ -26,7 +27,7 @@ public final class CreateDungeonEditorMapUseCase {
                 Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
     }
 
-    public void execute(String mapName) {
+    public DungeonEditorSessionSnapshot.SnapshotData execute(String mapName) {
         createMapUseCase.execute(mapName);
         DungeonEditorWorkspaceValues.MapId nextMapId = dungeonState.currentFacts(
                 workflow.session().selectedMapId(),
@@ -34,6 +35,9 @@ public final class CreateDungeonEditorMapUseCase {
                 workflow.session().preview()).mutationMapId();
         workflow.applyMapLifecycle(DungeonEditorSessionWorkflow.MAP_CREATED, nextMapId);
         snapshotBuilder.refreshAuthoredSnapshot(workflow.session());
-        snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
+        DungeonEditorSessionSnapshot.SnapshotData snapshot =
+                workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
+        snapshotPublicationUseCase.execute(snapshot);
+        return snapshot;
     }
 }

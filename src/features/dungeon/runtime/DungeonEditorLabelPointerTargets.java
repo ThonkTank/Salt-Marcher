@@ -11,7 +11,6 @@ import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 
 final class DungeonEditorLabelPointerTargets {
     private static final String CLUSTER_LABEL_KIND = "CLUSTER_LABEL";
-    private static final String FEATURE_LABEL_KIND = "FEATURE_LABEL";
 
     private DungeonEditorLabelPointerTargets() {
     }
@@ -22,7 +21,6 @@ final class DungeonEditorLabelPointerTargets {
             DungeonEditorMapSurfaceSnapshot snapshot
     ) {
         addClusterLabelTargets(targets, map, snapshot);
-        addFeatureLabelTargets(targets, map, snapshot);
     }
 
     private static void addClusterLabelTargets(
@@ -44,34 +42,13 @@ final class DungeonEditorLabelPointerTargets {
                             ref.clusterId(),
                             ref.topologyRef(),
                             CLUSTER_LABEL_KIND).value(),
-                    DungeonEditorRuntimePointerTargetFactory.label(
-                            CLUSTER_LABEL_KIND,
+                    DungeonEditorRuntimePointerTarget.label(
+                            DungeonEditorRuntimePointerTarget.LabelKind.CLUSTER_LABEL,
                             ref.ownerId(),
                             ref.clusterId(),
-                            ref.topologyRef()));
-        }
-    }
-
-    private static void addFeatureLabelTargets(
-            Map<String, DungeonEditorRuntimePointerTarget> targets,
-            DungeonEditorMapSnapshot map,
-            DungeonEditorMapSurfaceSnapshot snapshot
-    ) {
-        for (DungeonEditorMapSnapshot.Feature feature : map.features()) {
-            if (feature.cells().isEmpty()
-                    || !DungeonEditorProjectionLevelInclusion.includes(snapshot, feature.cells().getFirst().level())) {
-                continue;
-            }
-            targets.put(DungeonEditorMapHitRef.label(
-                            feature.id(),
-                            0L,
-                            feature.topologyRef(),
-                            FEATURE_LABEL_KIND).value(),
-                    DungeonEditorRuntimePointerTargetFactory.label(
-                            FEATURE_LABEL_KIND,
-                            feature.id(),
-                            0L,
-                            feature.topologyRef()));
+                            DungeonEditorRuntimePointerTarget.TopologyKind.fromLegacy(
+                                    DungeonEditorMapHitRef.topologyKind(ref.topologyRef())),
+                            DungeonEditorMapHitRef.topologyId(ref.topologyRef())));
         }
     }
 }

@@ -97,7 +97,7 @@ public class DungeonMapView extends BorderPane {
         }
         ChangeListener<DungeonMapContentModel.CanvasState> canvasStateListener =
                 (ignored, before, after) -> {
-                    redraw(after);
+                    redraw(after, presentationModel);
                     showInlineLabelEditor(presentationModel.currentInlineLabelEditorPresentation(), true);
                 };
         ChangeListener<InlineLabelEditState> inlineLabelEditListener =
@@ -110,7 +110,7 @@ public class DungeonMapView extends BorderPane {
                     }
                 };
         InvalidationListener canvasSizeListener = ignored -> {
-            redraw(presentationModel.currentCanvasState());
+            redraw(presentationModel.currentCanvasState(), presentationModel);
             showInlineLabelEditor(presentationModel.currentInlineLabelEditorPresentation(), true);
         };
         presentationModel.canvasStateProperty().addListener(canvasStateListener);
@@ -123,7 +123,7 @@ public class DungeonMapView extends BorderPane {
             canvas.widthProperty().removeListener(canvasSizeListener);
             canvas.heightProperty().removeListener(canvasSizeListener);
         };
-        redraw(presentationModel.currentCanvasState());
+        redraw(presentationModel.currentCanvasState(), presentationModel);
         showInlineLabelEditor(presentationModel.currentInlineLabelEditorPresentation(), false);
     }
 
@@ -131,16 +131,26 @@ public class DungeonMapView extends BorderPane {
         viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 
-    private void redraw(DungeonMapContentModel.CanvasState canvasState) {
+    private void redraw(
+            DungeonMapContentModel.CanvasState canvasState,
+            DungeonMapContentModel measurementSink
+    ) {
         if (canvasState == null) {
             return;
         }
-        CanvasRenderer.render(
-                this,
-                CanvasSurface.graphicsContext(canvas),
-                canvasState,
-                CanvasSurface.renderWidth(canvas),
+        long startedNanos = System.nanoTime();
+        try {
+            CanvasRenderer.render(
+                    this,
+                    CanvasSurface.graphicsContext(canvas),
+                    canvasState,
+                    CanvasSurface.renderWidth(canvas),
                 CanvasSurface.renderHeight(canvas));
+        } finally {
+            if (measurementSink != null) {
+                measurementSink.recordCanvasRedraw(System.nanoTime() - startedNanos);
+            }
+        }
         ViewChrome.showOverlay(overlayMessage, canvasState);
     }
 
@@ -632,13 +642,13 @@ public class DungeonMapView extends BorderPane {
             drawRelations(gc, renderScene.relations(), viewport);
             drawSurfaces(view, gc, renderScene.baseSurfaces(), viewport);
             drawBoundaries(gc, renderScene.baseBoundaries(), viewport);
-            drawSurfaces(view, gc, renderScene.actors(), viewport);
             drawGlyphs(view, gc, renderScene.baseGlyphs(), viewport);
             drawTexts(gc, renderScene.baseTexts(), viewport);
             drawSurfaces(view, gc, canvasState.hoverSurfaces(), viewport);
             drawBoundaries(gc, canvasState.hoverBoundaries(), viewport);
             drawGlyphs(view, gc, canvasState.hoverGlyphs(), viewport);
             drawTexts(gc, canvasState.hoverTexts(), viewport);
+            drawSurfaces(view, gc, renderScene.actors(), viewport);
         }
 
         static void clear(GraphicsContext gc, double width, double height) {

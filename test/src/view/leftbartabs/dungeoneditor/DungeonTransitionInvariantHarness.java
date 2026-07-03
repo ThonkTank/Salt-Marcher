@@ -2,7 +2,9 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.structure.transition.Transition;
+import src.domain.dungeon.model.core.structure.transition.TransitionAnchor;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
@@ -41,17 +43,33 @@ final class DungeonTransitionInvariantHarness {
         TransitionDestination dungeonDestination = TransitionDestination.dungeonMap(12L, 20L);
         TransitionDestination overworldDestination = TransitionDestination.overworldTile(5L, 9L);
         Transition invalid = new Transition(-1L, -4L, null, null, null, -2L);
-        Transition transition = new Transition(1L, 4L, " source ", new Cell(0, 0, 0), dungeonDestination, null);
+        Transition transition = new Transition(
+                1L,
+                4L,
+                " source ",
+                TransitionAnchor.cell(new Cell(0, 0, 0)),
+                dungeonDestination,
+                null);
         Transition linkedTransition =
-                new Transition(2L, 4L, "", new Cell(1, 0, 0), overworldDestination, 7L);
+                new Transition(
+                        2L,
+                        4L,
+                        "",
+                        TransitionAnchor.cell(new Cell(1, 0, 0)),
+                        overworldDestination,
+                        7L);
 
         assertEquals(0L, invalid.transitionId(), "transition owner normalizes invalid id");
         assertEquals(0L, invalid.mapId(), "transition owner normalizes invalid map id");
         assertEquals("", invalid.description(), "transition owner normalizes null description");
         assertFalse(invalid.isPlaced(), "transition owner reports missing anchor as unplaced");
         assertFalse(invalid.hasLinkedTransition(), "transition owner rejects invalid linked transition id");
-        assertEquals(TransitionDestination.overworldTile(0L, 0L), invalid.destination(),
-                "transition owner normalizes null destination to default");
+        assertEquals(TransitionDestination.unlinkedEntrance(), invalid.destination(),
+                "transition owner normalizes null destination to unlinked entrance");
+        assertTrue(invalid.destination().isValid(),
+                "transition owner treats unlinked entrance as valid authoring placeholder");
+        assertEquals("Dungeon-Eingang (unverbunden)", invalid.destination().label(),
+                "transition destination label explains unlinked entrance");
         assertEquals(7L, linkedTransition.linkedTransitionId(),
                 "transition owner preserves valid local linked transition id");
         assertTrue(dungeonDestination.isValid(), "transition destination validates dungeon map id");
@@ -62,23 +80,58 @@ final class DungeonTransitionInvariantHarness {
                 "transition destination label uses tile id");
         assertEquals(1L, transition.transitionId(), "transition owner preserves valid id");
         assertEquals(4L, transition.mapId(), "transition owner preserves valid map id");
-        assertEquals(new Cell(0, 0, 0), transition.anchor(), "transition owner preserves anchor cell");
+        assertEquals(TransitionAnchor.cell(new Cell(0, 0, 0)), transition.anchor(),
+                "transition owner preserves cell anchor value");
+        assertEquals(new Cell(0, 0, 0), transition.anchorCell(),
+                "transition owner exposes derived display cell without storing a second anchor fact");
         assertEquals("source", transition.description(), "transition owner trims description");
         assertEquals("Übergang 1", transition.label(), "transition owner derives stable label from id");
         assertTrue(transition.isPlaced(), "transition owner reports placed anchor");
+        assertIllegalTransitionAnchor(
+                () -> TransitionAnchor.cell(null),
+                "transition anchor rejects null cell for CELL anchor");
+        assertIllegalTransitionAnchor(
+                () -> TransitionAnchor.edge(new Cell(2, 2, 0), null),
+                "transition anchor rejects null direction for EDGE anchor");
+        assertEquals(TransitionAnchor.edge(new Cell(2, 2, 0), Direction.EAST),
+                TransitionAnchor.edge(new Cell(2, 2, 0), Direction.EAST),
+                "transition anchor preserves edge coordinate and direction");
+        TransitionAnchor edgeAnchor = TransitionAnchor.edge(new Cell(2, 2, 0), Direction.EAST);
+        assertEquals(TransitionAnchor.Kind.EDGE, edgeAnchor.kind(),
+                "transition anchor preserves EDGE kind");
+        assertEquals(Direction.EAST, edgeAnchor.edgeDirection(),
+                "transition anchor preserves edge direction");
+        assertTrue(edgeAnchor.isPlaced(),
+                "transition anchor reports edge anchors as placed");
+        assertEquals(new Cell(2, 2, 0), edgeAnchor.displayCell(),
+                "transition anchor exposes edge display cell as derived current projection input");
+        assertEquals(new Cell(2, 2, 0), edgeAnchor.travelCell(),
+                "transition anchor exposes edge travel cell as derived current projection input");
         assertEquals("updated", transition.withDescription(" updated ").description(),
                 "transition owner replaces description through value operation");
         assertEquals(overworldDestination, transition.withDestination(overworldDestination).destination(),
                 "transition owner replaces destination through value operation");
     }
 
+    private static void assertIllegalTransitionAnchor(
+            Runnable action,
+            String message
+    ) {
+        try {
+            action.run();
+            throw new AssertionError(message);
+        } catch (IllegalArgumentException expected) {
+            // Expected by the invariant under test.
+        }
+    }
+
     private static void assertTransitionLinkCollection() {
         TransitionDestination dungeonDestination = TransitionDestination.dungeonMap(12L, 20L);
         TransitionDestination overworldDestination = TransitionDestination.overworldTile(5L, 9L);
-        Transition source = new Transition(1L, 4L, "", new Cell(0, 0, 0), dungeonDestination, null);
-        Transition oldTarget = new Transition(2L, 4L, "", new Cell(1, 0, 0), overworldDestination, 1L);
-        Transition target = new Transition(3L, 4L, "", new Cell(1, 1, 0), overworldDestination, null);
-        Transition sameIdDifferentMap = new Transition(1L, 5L, "", new Cell(2, 0, 0), overworldDestination, null);
+        Transition source = transition(1L, 4L, new Cell(0, 0, 0), dungeonDestination, null);
+        Transition oldTarget = transition(2L, 4L, new Cell(1, 0, 0), overworldDestination, 1L);
+        Transition target = transition(3L, 4L, new Cell(1, 1, 0), overworldDestination, null);
+        Transition sameIdDifferentMap = transition(1L, 5L, new Cell(2, 0, 0), overworldDestination, null);
         java.util.ArrayList<Transition> transitions =
                 new java.util.ArrayList<>(List.of(source, oldTarget, target, sameIdDifferentMap));
         transitions.add(null);
@@ -111,16 +164,16 @@ final class DungeonTransitionInvariantHarness {
 
     private static void assertProtectedDeletePolicy() {
         TransitionDestination overworldDestination = TransitionDestination.overworldTile(5L, 9L);
-        Transition linked = new Transition(1L, 4L, "", new Cell(0, 0, 0), overworldDestination, 3L);
-        Transition destinationReferenced = new Transition(2L, 4L, "", new Cell(1, 0, 0), overworldDestination, null);
+        Transition linked = transition(1L, 4L, new Cell(0, 0, 0), overworldDestination, 3L);
+        Transition destinationReferenced = transition(2L, 4L, new Cell(1, 0, 0), overworldDestination, null);
         Transition reverseLinked = new Transition(
                 3L,
                 4L,
                 "",
-                new Cell(1, 1, 0),
+                TransitionAnchor.cell(new Cell(1, 1, 0)),
                 TransitionDestination.dungeonMap(4L, 2L),
                 null);
-        Transition deletable = new Transition(4L, 4L, "", new Cell(2, 0, 0), overworldDestination, null);
+        Transition deletable = transition(4L, 4L, new Cell(2, 0, 0), overworldDestination, null);
         TransitionCatalog catalog = new TransitionCatalog(List.of(linked, destinationReferenced, reverseLinked, deletable));
 
         assertFalse(catalog.canDelete(1L), "transition catalog rejects linked transition delete");
@@ -131,6 +184,22 @@ final class DungeonTransitionInvariantHarness {
                 "transition catalog removes deletable transition");
         assertEquals(List.of(1L, 2L, 3L, 4L), transitionIds(catalog.withoutTransition(2L)),
                 "transition catalog preserves protected transition");
+    }
+
+    private static Transition transition(
+            long transitionId,
+            long mapId,
+            Cell anchor,
+            TransitionDestination destination,
+            Long linkedTransitionId
+    ) {
+        return new Transition(
+                transitionId,
+                mapId,
+                "",
+                TransitionAnchor.cell(anchor),
+                destination,
+                linkedTransitionId);
     }
 
     private static AuthoredTransitionLink link(

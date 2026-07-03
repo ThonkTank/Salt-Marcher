@@ -2,7 +2,9 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Locale;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 
 public final class SaveDungeonEditorStairGeometryUseCase {
@@ -22,7 +24,7 @@ public final class SaveDungeonEditorStairGeometryUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    public void execute(StairGeometryInput input) {
+    public DungeonEditorSessionSnapshot.@Nullable SnapshotData execute(StairGeometryInput input) {
         StairGeometryInput safeInput = input == null ? StairGeometryInput.empty() : input;
         StairShape shape = supportedShape(safeInput.shapeName());
         if (!workflow.session().hasSelectedMap()
@@ -38,8 +40,7 @@ public final class SaveDungeonEditorStairGeometryUseCase {
                         safeInput.dimension1(),
                         safeInput.dimension2())) {
             workflow.clearPreviewWithStatus(INVALID_STAIR_GEOMETRY_STATUS);
-            effectUseCase.publishCurrent();
-            return;
+            return effectUseCase.publishCurrent();
         }
         saveStairGeometryUseCase.execute(
                 workflow.session().selectedMapId(),
@@ -49,7 +50,7 @@ public final class SaveDungeonEditorStairGeometryUseCase {
                 safeInput.dimension1(),
                 safeInput.dimension2());
         workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-        effectUseCase.publishCurrent();
+        return effectUseCase.publishCurrent();
     }
 
     private static boolean validCardinalDirection(String value) {

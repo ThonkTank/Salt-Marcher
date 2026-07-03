@@ -5,12 +5,11 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnaps
 public interface DungeonEditorSnapshotPublishedStateRepository {
     void publishEditorSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot);
 
-    void publishEditorToolSelection(ToolSelectionPublication publication);
+    void publishEditorControlsSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot);
 
-    record ToolSelectionPublication(String selectedToolName, String statusText) {
-        public ToolSelectionPublication {
-            selectedToolName = selectedToolName == null ? "" : selectedToolName;
-            statusText = statusText == null ? "" : statusText;
-        }
-    }
+    void publishEditorControls(DungeonEditorSessionSnapshot.ControlsData controls);
+
+    void publishEditorSessionFrame(DungeonEditorSessionSnapshot.SessionFrameData frameData);
+
+    void publishEditorSessionFramePreservingSurface(DungeonEditorSessionSnapshot.SessionFrameData frameData);
 }

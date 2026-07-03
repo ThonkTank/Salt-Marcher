@@ -2,8 +2,14 @@ package src.domain.dungeon.model.core.projection;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.transition.Transition;
+import src.domain.dungeon.model.core.structure.transition.TransitionAnchor;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 
 final class DungeonTransitionFeatureProjection {
@@ -22,15 +28,20 @@ final class DungeonTransitionFeatureProjection {
                 continue;
             }
             TransitionDestination destination = transition.destination();
+            DungeonRelationGraph.FeatureRelation relation = transitionRelation(transition, destination);
             features.add(new DungeonFeatureFacts(
                     DungeonFeatureType.TRANSITION,
                     transition.transitionId(),
                     transition.label(),
-                    List.of(transition.anchor()),
+                    transitionCells(transition),
                     transitionDescription(transition),
                     destinationLabel(destination),
-                    transitionFacts(destination)));
-            relations.add(transitionRelation(transition, destination));
+                    transitionFacts(destination),
+                    transitionTopologyRef(transition),
+                    transitionAnchorEdge(transition)));
+            if (relation != null) {
+                relations.add(relation);
+            }
             appendReverseLinkRelation(relations, transition);
         }
     }
@@ -54,6 +65,13 @@ final class DungeonTransitionFeatureProjection {
         return List.copyOf(facts);
     }
 
+    private static List<Cell> transitionCells(Transition transition) {
+        if (transition == null || transition.anchor().isEdge() || transition.anchorCell() == null) {
+            return List.of();
+        }
+        return List.of(transition.anchorCell());
+    }
+
     private static void appendDestinationDetailFacts(List<String> facts, TransitionDestination destination) {
         if (destination.isOverworldTile()) {
             facts.add("destinationTileId: " + destination.tileId());
@@ -61,6 +79,18 @@ final class DungeonTransitionFeatureProjection {
         if (destination.transitionId() != null) {
             facts.add("destinationTransitionId: " + destination.transitionId());
         }
+    }
+
+    private static DungeonTopologyRef transitionTopologyRef(Transition transition) {
+        return new DungeonTopologyRef(DungeonTopologyElementKind.TRANSITION, transition.transitionId());
+    }
+
+    private static @Nullable Edge transitionAnchorEdge(Transition transition) {
+        TransitionAnchor anchor = transition == null ? TransitionAnchor.none() : transition.anchor();
+        Cell cell = anchor.cell();
+        return anchor.isEdge() && cell != null && anchor.edgeDirection() != null
+                ? anchor.edgeDirection().edgeOf(cell)
+                : null;
     }
 
     private static void appendReverseLinkRelation(
@@ -100,11 +130,6 @@ final class DungeonTransitionFeatureProjection {
                     targetKind,
                     "targets");
         }
-        return new DungeonRelationGraph.FeatureRelation(
-                transition.transitionId(),
-                FEATURE_KIND_TRANSITION,
-                0L,
-                "unknown",
-                "targets");
+        return null;
     }
 }

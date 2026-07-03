@@ -2,16 +2,16 @@ package src.features.dungeon.runtime;
 
 import java.util.Objects;
 import java.util.Optional;
+import src.domain.dungeon.published.DungeonEditorTool;
 
 final class DungeonEditorPointerSession {
-    private static final String SELECT_TOOL = "SELECT";
     private static final double VERTEX_SNAP_DISTANCE = 0.22;
 
     private Optional<HoverSample> lastHoverSample = Optional.empty();
 
     boolean accept(
             PointerAction action,
-            String toolKey,
+            DungeonEditorTool tool,
             PointerSample sample,
             int projectionLevel
     ) {
@@ -19,7 +19,7 @@ final class DungeonEditorPointerSession {
             clear();
             return true;
         }
-        HoverSample nextSample = HoverSample.from(toolKey, sample, projectionLevel);
+        HoverSample nextSample = HoverSample.from(tool, sample, projectionLevel);
         if (lastHoverSample.filter(nextSample::matches).isPresent()) {
             return false;
         }
@@ -32,7 +32,7 @@ final class DungeonEditorPointerSession {
     }
 
     private record HoverSample(
-            String tool,
+            DungeonEditorTool tool,
             int projectionLevel,
             int cellQ,
             int cellR,
@@ -42,7 +42,7 @@ final class DungeonEditorPointerSession {
             DungeonEditorRuntimePointerTarget target
     ) {
         private static HoverSample from(
-                String tool,
+                DungeonEditorTool tool,
                 PointerSample sample,
                 int projectionLevel
         ) {
@@ -55,7 +55,7 @@ final class DungeonEditorPointerSession {
                     safeSample.sceneX() - vertexQ,
                     safeSample.sceneY() - vertexR) <= VERTEX_SNAP_DISTANCE;
             return new HoverSample(
-                    tool == null || tool.isBlank() ? SELECT_TOOL : tool,
+                    tool == null ? DungeonEditorTool.SELECT : tool,
                     projectionLevel,
                     (int) Math.floor(safeSample.sceneX()),
                     (int) Math.floor(safeSample.sceneY()),

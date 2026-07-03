@@ -1,6 +1,8 @@
 package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 
 public final class SaveDungeonEditorTransitionLinkUseCase {
@@ -20,10 +22,10 @@ public final class SaveDungeonEditorTransitionLinkUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    public void execute(TransitionLinkInput input) {
+    public DungeonEditorSessionSnapshot.@Nullable SnapshotData execute(TransitionLinkInput input) {
         TransitionLinkInput safeInput = input == null ? TransitionLinkInput.empty() : input;
         if (!workflow.session().hasSelectedMap()) {
-            return;
+            return null;
         }
         boolean saved = saveTransitionLinkUseCase.execute(
                 workflow.session().selectedMapId(),
@@ -33,8 +35,9 @@ public final class SaveDungeonEditorTransitionLinkUseCase {
                 safeInput.bidirectional());
         if (saved) {
             workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-            effectUseCase.publishCurrent();
+            return effectUseCase.publishCurrent();
         }
+        return null;
     }
 
     public record TransitionLinkInput(

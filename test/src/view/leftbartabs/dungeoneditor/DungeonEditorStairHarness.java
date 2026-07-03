@@ -98,8 +98,7 @@ final class DungeonEditorStairHarness {
                         "DE-STAIR-005 starts with lower path node at (2,2,0): " + pathRowsBefore));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D anchorCenter = new Point2D(2.5, 2.5);
-        assertEquals("HANDLE", binding.mapContentModel()
-                        .resolvePointerTarget(anchorCenter.getX(), anchorCenter.getY())
+        assertEquals("HANDLE", runtimePointerTarget(binding.mapContentModel(), anchorCenter.getX(), anchorCenter.getY())
                         .targetKind()
                         .name(),
                 "DE-STAIR-005 input route resolves the stair anchor as a handle");

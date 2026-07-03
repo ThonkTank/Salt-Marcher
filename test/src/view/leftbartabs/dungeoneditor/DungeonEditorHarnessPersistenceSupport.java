@@ -135,6 +135,17 @@ class DungeonEditorHarnessPersistenceSupport {
             return count("SELECT COUNT(*) FROM dungeon_maps WHERE name=?", mapName);
         }
 
+        long mapIdByName(String mapName) {
+            try (Connection connection = open();
+                 PreparedStatement statement = connection.prepareStatement(
+                         "SELECT dungeon_map_id FROM dungeon_maps WHERE name=?")) {
+                bind(statement, mapName);
+                return scalar(statement);
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to find dungeon map by name.", exception);
+            }
+        }
+
         void clearDungeonData() {
             try (Connection connection = open();
                  Statement statement = connection.createStatement()) {
@@ -909,7 +920,8 @@ class DungeonEditorHarnessPersistenceSupport {
                         state,
                         "dungeon_transitions",
                         "SELECT transition_id, dungeon_map_id, description, cell_x, cell_y,"
-                                + " level_z, destination_type, target_overworld_map_id,"
+                                + " level_z, anchor_type, anchor_edge_direction,"
+                                + " destination_type, target_overworld_map_id,"
                                 + " target_overworld_tile_id, target_dungeon_map_id,"
                                 + " target_transition_id, linked_transition_id"
                                 + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id",
@@ -1242,7 +1254,8 @@ class DungeonEditorHarnessPersistenceSupport {
                         state,
                         "dungeon_transitions",
                         "SELECT transition_id, dungeon_map_id, cell_x, cell_y,"
-                                + " level_z, destination_type, target_overworld_map_id,"
+                                + " level_z, anchor_type, anchor_edge_direction,"
+                                + " destination_type, target_overworld_map_id,"
                                 + " target_overworld_tile_id, target_dungeon_map_id,"
                                 + " target_transition_id, linked_transition_id"
                                 + " FROM dungeon_transitions WHERE dungeon_map_id=? ORDER BY transition_id",
@@ -1346,6 +1359,272 @@ class DungeonEditorHarnessPersistenceSupport {
                 connection.commit();
             } catch (SQLException exception) {
                 throw new IllegalStateException("Failed to seed transition link fixture.", exception);
+            }
+        }
+
+        void seedTransitionAnchorRoundtripFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                long targetMapId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_maps(name) VALUES(?)",
+                        "Transition Anchor Destination Target");
+                insertTransition(connection, mapId, "Cell anchor transition.", 5, 2, 0);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Dungeon map destination transition.",
+                        7,
+                        2,
+                        0,
+                        "CELL",
+                        null,
+                        "DUNGEON_MAP",
+                        null,
+                        null,
+                        targetMapId,
+                        null);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "None anchor transition.",
+                        null,
+                        null,
+                        null,
+                        "NONE",
+                        null);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Edge anchor transition.",
+                        6,
+                        2,
+                        0,
+                        "EDGE",
+                        "EAST");
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed transition anchor roundtrip fixture.", exception);
+            }
+        }
+
+        void seedMalformedUnknownAnchorFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Malformed unknown anchor.",
+                        1,
+                        1,
+                        0,
+                        "PORTAL",
+                        null);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed malformed unknown transition anchor fixture.", exception);
+            }
+        }
+
+        void seedMalformedPartialAnchorCoordinateFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Malformed partial coordinate anchor.",
+                        1,
+                        null,
+                        null,
+                        "CELL",
+                        null);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed malformed partial coordinate fixture.", exception);
+            }
+        }
+
+        void seedMalformedNoneAnchorWithCoordinateFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Malformed none coordinate anchor.",
+                        null,
+                        1,
+                        null,
+                        "NONE",
+                        null);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed malformed none coordinate fixture.", exception);
+            }
+        }
+
+        void seedMalformedIncompleteEdgeAnchorFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Malformed incomplete edge anchor.",
+                        2,
+                        1,
+                        0,
+                        "EDGE",
+                        "UP");
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed malformed incomplete edge fixture.", exception);
+            }
+        }
+
+        void seedMalformedImplicitAnchorWithEdgeDirectionFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Malformed implicit anchor edge direction.",
+                        2,
+                        1,
+                        0,
+                        null,
+                        "EAST");
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed malformed implicit edge fixture.", exception);
+            }
+        }
+
+        void seedMalformedDestinationTypeFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Malformed destination.",
+                        3,
+                        1,
+                        0,
+                        "CELL",
+                        null,
+                        "PORTAL_TARGET");
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed malformed destination type fixture.", exception);
+            }
+        }
+
+        void seedMalformedDestinationTargetFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Malformed destination target.",
+                        4,
+                        1,
+                        0,
+                        "CELL",
+                        null,
+                        "OVERWORLD_TILE",
+                        null,
+                        88L,
+                        null,
+                        null);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed malformed destination target fixture.", exception);
+            }
+        }
+
+        void seedMalformedDungeonMapDestinationIdFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Malformed dungeon map destination id.",
+                        4,
+                        2,
+                        0,
+                        "CELL",
+                        null,
+                        "DUNGEON_MAP",
+                        null,
+                        null,
+                        0L,
+                        null);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed malformed dungeon map destination fixture.", exception);
+            }
+        }
+
+        void seedMalformedDungeonTransitionDestinationIdFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                long targetMapId = insertAndReturnId(
+                        connection,
+                        "INSERT INTO dungeon_maps(name) VALUES(?)",
+                        "Malformed Destination Target Map");
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Malformed dungeon transition destination id.",
+                        4,
+                        3,
+                        0,
+                        "CELL",
+                        null,
+                        "DUNGEON_MAP",
+                        null,
+                        null,
+                        targetMapId,
+                        -1L);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException(
+                        "Failed to seed malformed dungeon transition destination fixture.",
+                        exception);
+            }
+        }
+
+        void seedMalformedOverworldTileDestinationIdFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Malformed overworld tile destination id.",
+                        4,
+                        4,
+                        0,
+                        "CELL",
+                        null,
+                        "OVERWORLD_TILE",
+                        77L,
+                        0L,
+                        null,
+                        null);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException(
+                        "Failed to seed malformed overworld tile destination fixture.",
+                        exception);
             }
         }
 
@@ -2163,15 +2442,103 @@ class DungeonEditorHarnessPersistenceSupport {
                 int cellY,
                 int level
         ) throws SQLException {
+            long transitionId = insertTransitionWithAnchor(
+                    connection,
+                    mapId,
+                    description,
+                    cellX,
+                    cellY,
+                    level,
+                    "CELL",
+                    null);
+            return transitionId;
+        }
+
+        static long insertTransitionWithAnchor(
+                Connection connection,
+                long mapId,
+                String description,
+                Integer cellX,
+                Integer cellY,
+                Integer level,
+                String anchorType,
+                String anchorEdgeDirection
+        ) throws SQLException {
+            return insertTransitionWithAnchor(
+                    connection,
+                    mapId,
+                    description,
+                    cellX,
+                    cellY,
+                    level,
+                    anchorType,
+                    anchorEdgeDirection,
+                    "OVERWORLD_TILE");
+        }
+
+        static long insertTransitionWithAnchor(
+                Connection connection,
+                long mapId,
+                String description,
+                Integer cellX,
+                Integer cellY,
+                Integer level,
+                String anchorType,
+                String anchorEdgeDirection,
+                String destinationType
+        ) throws SQLException {
+            return insertTransitionWithAnchor(
+                    connection,
+                    mapId,
+                    description,
+                    cellX,
+                    cellY,
+                    level,
+                    anchorType,
+                    anchorEdgeDirection,
+                    destinationType,
+                    77L,
+                    88L,
+                    null,
+                    null);
+        }
+
+        static long insertTransitionWithAnchor(
+                Connection connection,
+                long mapId,
+                String description,
+                Integer cellX,
+                Integer cellY,
+                Integer level,
+                String anchorType,
+                String anchorEdgeDirection,
+                String destinationType,
+                Long targetOverworldMapId,
+                Long targetOverworldTileId,
+                Long targetDungeonMapId,
+                Long targetTransitionId
+        ) throws SQLException {
             long transitionId;
             try (PreparedStatement statement = connection.prepareStatement(
                     "INSERT INTO dungeon_transitions("
                             + "dungeon_map_id, description, cell_x, cell_y, level_z,"
+                            + " anchor_type, anchor_edge_direction,"
                             + " destination_type, target_overworld_map_id, target_overworld_tile_id,"
                             + " target_dungeon_map_id, target_transition_id, linked_transition_id"
-                            + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL)",
+                            + ") VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)",
                     Statement.RETURN_GENERATED_KEYS)) {
-                bind(statement, mapId, description, cellX, cellY, level, "OVERWORLD_TILE", 77L, 88L);
+                statement.setLong(1, mapId);
+                statement.setString(2, description);
+                setNullableInteger(statement, 3, cellX);
+                setNullableInteger(statement, 4, cellY);
+                setNullableInteger(statement, 5, level);
+                statement.setString(6, anchorType);
+                statement.setString(7, anchorEdgeDirection);
+                statement.setString(8, destinationType);
+                setNullableLong(statement, 9, targetOverworldMapId);
+                setNullableLong(statement, 10, targetOverworldTileId);
+                setNullableLong(statement, 11, targetDungeonMapId);
+                setNullableLong(statement, 12, targetTransitionId);
                 statement.executeUpdate();
                 try (ResultSet resultSet = statement.getGeneratedKeys()) {
                     if (!resultSet.next()) {
@@ -2182,6 +2549,30 @@ class DungeonEditorHarnessPersistenceSupport {
             }
             insertFeatureTopologyElement(connection, mapId, transitionId, "TRANSITION", "Übergang " + transitionId, 500);
             return transitionId;
+        }
+
+        private static void setNullableInteger(
+                PreparedStatement statement,
+                int parameterIndex,
+                Integer value
+        ) throws SQLException {
+            if (value == null) {
+                statement.setNull(parameterIndex, java.sql.Types.INTEGER);
+                return;
+            }
+            statement.setInt(parameterIndex, value);
+        }
+
+        private static void setNullableLong(
+                PreparedStatement statement,
+                int parameterIndex,
+                Long value
+        ) throws SQLException {
+            if (value == null) {
+                statement.setNull(parameterIndex, java.sql.Types.INTEGER);
+                return;
+            }
+            statement.setLong(parameterIndex, value);
         }
 
         static void updateLinkedTransition(

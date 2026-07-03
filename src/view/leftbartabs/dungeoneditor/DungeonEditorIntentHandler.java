@@ -12,6 +12,7 @@ import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorPointerInteractionOperations;
 import src.features.dungeon.runtime.DungeonEditorRuntimeLabelTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations;
+import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 import src.features.dungeon.runtime.DungeonEditorStatePanelDraftOperations;
 import src.features.dungeon.runtime.DungeonEditorTransitionStairOperations;
 import src.features.dungeon.runtime.ExitNarration;
@@ -233,12 +234,14 @@ final class DungeonEditorIntentHandler {
     private void consumeTransitionDestinationWhenPresent(DungeonEditorStateViewInputEvent event) {
         if (event.transitionDestinationInputObserved()) {
             statePanelDraftOperations.updateStatePanelTransitionDestinationDraft(
-                    new TransitionDestinationDraftInput(
-                            event.transitionDestinationType(),
-                            event.transitionDestinationMapId(),
-                            event.transitionDestinationTileId(),
-                            event.transitionDestinationTransitionId(),
-                            event.transitionDestinationBidirectional()));
+                    TransitionDestinationDraftInput.fromExternalName(
+                            new TransitionDestinationDraftInput.ExternalFields(
+                                    DungeonEditorStateContentModel.transitionDestinationTypeKey(
+                                            event.transitionDestinationTypeOptionIndex()),
+                                    event.transitionDestinationMapId(),
+                                    event.transitionDestinationTileId(),
+                                    event.transitionDestinationTransitionId(),
+                                    event.transitionDestinationBidirectional())));
             if (event.transitionDestinationSaveRequested()) {
                 consumeTransitionLinkSave(event);
             }
@@ -472,15 +475,15 @@ final class DungeonEditorIntentHandler {
             mapContentModel.clearHoverTarget();
             return;
         }
-        updateHoverTarget(event, DungeonEditorContributionModel.neutralPointerTarget(result.hoverTarget()));
+        updateHoverTarget(event, result.hoverTarget());
     }
 
     private void updateHoverTarget(
             DungeonMapViewInputEvent event,
-            DungeonMapContentModel.PointerTarget pointerTarget
+            DungeonEditorRuntimePointerTarget pointerTarget
     ) {
         if (event.input().mouseMoved()) {
-            mapContentModel.updateHoverTarget(pointerTarget);
+            mapContentModel.updateRuntimeHoverDisplayTarget(pointerTarget);
             return;
         }
         if (event.input().mouseExited()) {
@@ -501,20 +504,14 @@ final class DungeonEditorIntentHandler {
             double sceneY
     ) {
         int projectionLevel = presentationModel.currentInteractionState().currentProjectionLevel();
-        return new PointerInteractionTargets(
+        return PointerInteractionTargets.fromHitTargets(
                 sceneX,
                 sceneY,
                 event.buttons().primaryButtonDown(),
                 event.buttons().secondaryButtonDown(),
-                DungeonEditorContributionModel.runtimePointerTarget(
-                        mapContentModel.resolvePointerTarget(sceneX, sceneY),
-                        projectionLevel),
-                DungeonEditorContributionModel.runtimePointerTarget(
-                        mapContentModel.resolvePointerTarget(sceneX, sceneY, true),
-                        projectionLevel),
-                DungeonEditorContributionModel.runtimePointerTarget(
-                        mapContentModel.wallBoundaryHoverTargetAt(sceneX, sceneY),
-                        projectionLevel));
+                mapContentModel.pointerHitRefsAt(sceneX, sceneY),
+                mapContentModel.currentPointerTargetFrames(),
+                projectionLevel);
     }
 
     private boolean beginInlineLabelEdit(
@@ -528,7 +525,7 @@ final class DungeonEditorIntentHandler {
             return false;
         }
         DungeonMapContentModel.PointerTarget editTarget = event.modifiers().shiftDown()
-                ? mapContentModel.resolveRoomLabelPointerTarget(sceneX, sceneY)
+                ? DungeonMapContentModel.PointerTarget.empty()
                 : mapContentModel.resolveClusterLabelPointerTarget(sceneX, sceneY);
         if (!editTarget.isLabelTarget()) {
             return false;
@@ -663,11 +660,7 @@ final class DungeonEditorIntentHandler {
     }
 
     private TransitionDestination transitionDestination() {
-        return new TransitionDestination(
-                stateContentModel.currentTransitionDestinationType(),
-                stateContentModel.currentTransitionDestinationMapId(),
-                stateContentModel.currentTransitionDestinationTileId(),
-                stateContentModel.currentTransitionDestinationTransitionId());
+        return presentationModel.currentInteractionState().currentTransitionDestination();
     }
 
     private PointerWorkflowGesture pointerWorkflowGesture(DungeonMapViewInputEvent event) {
@@ -937,7 +930,7 @@ final class DungeonEditorIntentHandler {
     }
 
     private long selectedTransitionId() {
-        return stateContentModel.currentSelectedTransitionId();
+        return presentationModel.currentInteractionState().currentSelectedTransitionId();
     }
 
     private static long parseLongOrZero(@Nullable String raw) {

@@ -154,10 +154,17 @@ final class DungeonMapEditorProjectionContentPartModel {
             boolean selected,
             boolean preview
     ) {
+        DungeonEdgeRef anchorEdge = feature.anchorEdge();
+        double markerQ = center.q();
+        double markerR = center.r();
+        if (!invalidEdge(anchorEdge)) {
+            markerQ = (anchorEdge.from().q() + anchorEdge.to().q()) / 2.0;
+            markerR = (anchorEdge.from().r() + anchorEdge.to().r()) / 2.0;
+        }
         return new Marker(
                 featureMarkerLabel(feature.kind()),
-                center.q(),
-                center.r(),
+                markerQ,
+                markerR,
                 level,
                 featureMarkerKind(feature.kind()),
                 selected,
@@ -166,7 +173,41 @@ final class DungeonMapEditorProjectionContentPartModel {
                         (int) Math.floor(center.q()),
                         (int) Math.floor(center.r()),
                         level),
-                preview);
+                preview,
+                invalidEdge(anchorEdge) ? null : anchorEdge,
+                feature.label());
+    }
+
+    static boolean hasFeatureMarkerPlacement(
+            DungeonEditorMapSnapshot.Feature feature,
+            List<Cell> featureCells
+    ) {
+        return featureCells != null && !featureCells.isEmpty()
+                || !invalidEdge(feature == null ? null : feature.anchorEdge());
+    }
+
+    static CellCenter featureMarkerCenter(
+            DungeonEditorMapSnapshot.Feature feature,
+            List<Cell> featureCells
+    ) {
+        DungeonEdgeRef anchorEdge = feature == null ? null : feature.anchorEdge();
+        if (!invalidEdge(anchorEdge)) {
+            return new CellCenter(
+                    (anchorEdge.from().q() + anchorEdge.to().q()) / 2.0,
+                    (anchorEdge.from().r() + anchorEdge.to().r()) / 2.0);
+        }
+        return centerOfCells(featureCells);
+    }
+
+    static int featureMarkerLevel(
+            DungeonEditorMapSnapshot.Feature feature,
+            List<Cell> featureCells
+    ) {
+        if (featureCells != null && !featureCells.isEmpty()) {
+            return featureCells.getFirst().z();
+        }
+        DungeonEdgeRef anchorEdge = feature == null ? null : feature.anchorEdge();
+        return invalidEdge(anchorEdge) ? 0 : anchorEdge.from().level();
     }
 
     static Marker handleMarker(
@@ -413,11 +454,11 @@ final class DungeonMapEditorProjectionContentPartModel {
     static CellCenter centerOfCells(List<Cell> cells) {
         double q = 0.0;
         double r = 0.0;
-        for (Cell cell : cells) {
+        for (Cell cell : cells == null ? List.<Cell>of() : cells) {
             q += cell.q() + 0.5;
             r += cell.r() + 0.5;
         }
-        int count = Math.max(1, cells.size());
+        int count = Math.max(1, cells == null ? 0 : cells.size());
         return new CellCenter(q / count, r / count);
     }
 
@@ -467,7 +508,7 @@ final class DungeonMapEditorProjectionContentPartModel {
             DungeonFeatureKind kind
     ) {
         return switch (kind == null ? DungeonFeatureKind.STAIR : kind) {
-            case TRANSITION -> MarkerKind.WAYPOINT;
+            case TRANSITION -> MarkerKind.TRANSITION;
             case STAIR -> MarkerKind.STAIR;
             case OBJECT -> MarkerKind.FEATURE_OBJECT;
             case ENCOUNTER -> MarkerKind.FEATURE_ENCOUNTER;
@@ -477,7 +518,7 @@ final class DungeonMapEditorProjectionContentPartModel {
 
     static String featureMarkerLabel(DungeonFeatureKind kind) {
         return switch (kind == null ? DungeonFeatureKind.STAIR : kind) {
-            case TRANSITION -> "->";
+            case TRANSITION -> "";
             case STAIR -> "z";
             case OBJECT -> "O";
             case ENCOUNTER -> "E";

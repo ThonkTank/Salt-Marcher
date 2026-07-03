@@ -6,12 +6,11 @@ import org.jspecify.annotations.Nullable;
 import src.data.dungeon.model.DungeonTransitionRecord;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.transition.Transition;
+import src.domain.dungeon.model.core.structure.transition.TransitionAnchor;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestinationType;
 
 final class DungeonTransitionRecordMapperSupport {
-
-    private static final String DESTINATION_DUNGEON_MAP = "DUNGEON_MAP";
-    private static final String DESTINATION_OVERWORLD_TILE = "OVERWORLD_TILE";
 
     private DungeonTransitionRecordMapperSupport() {
     }
@@ -23,8 +22,8 @@ final class DungeonTransitionRecordMapperSupport {
                     record.transitionId(),
                     record.mapId(),
                     record.description(),
-                    transitionAnchor(record),
-                    transitionDestination(record),
+                    DungeonTransitionAnchorRecordMapper.toAnchor(record),
+                    DungeonTransitionDestinationRecordMapper.toDestination(record),
                     record.linkedTransitionId()));
         }
         return List.copyOf(result);
@@ -39,37 +38,19 @@ final class DungeonTransitionRecordMapperSupport {
         return List.copyOf(result);
     }
 
-    private static @Nullable Cell transitionAnchor(DungeonTransitionRecord record) {
-        if (record.cellX() == null) {
-            return null;
-        }
-        return new Cell(
-                record.cellX(),
-                record.cellY() == null ? 0 : record.cellY(),
-                record.levelZ() == null ? 0 : record.levelZ());
-    }
-
-    private static TransitionDestination transitionDestination(DungeonTransitionRecord record) {
-        if (DESTINATION_DUNGEON_MAP.equalsIgnoreCase(record.destinationType())) {
-            return TransitionDestination.dungeonMap(
-                    record.targetDungeonMapId() == null ? 0L : record.targetDungeonMapId(),
-                    record.targetTransitionId());
-        }
-        return TransitionDestination.overworldTile(
-                record.targetOverworldMapId() == null ? 0L : record.targetOverworldMapId(),
-                record.targetOverworldTileId() == null ? 0L : record.targetOverworldTileId());
-    }
-
     private static DungeonTransitionRecord toTransitionRecord(Transition transition) {
-        Cell anchor = transition.anchor();
+        TransitionAnchor anchor = transition.anchor();
+        Cell anchorCell = anchor.displayCell();
         DestinationRecord destination = destinationRecord(transition.destination());
         return new DungeonTransitionRecord(
                 transition.transitionId(),
                 transition.mapId(),
                 transition.description(),
-                anchor == null ? null : anchor.q(),
-                anchor == null ? null : anchor.r(),
-                anchor == null ? null : anchor.level(),
+                anchorCell == null ? null : anchorCell.q(),
+                anchorCell == null ? null : anchorCell.r(),
+                anchorCell == null ? null : anchorCell.level(),
+                anchor.kind().name(),
+                anchor.edgeDirection() == null ? null : anchor.edgeDirection().name(),
                 destination.destinationType(),
                 destination.targetOverworldMapId(),
                 destination.targetOverworldTileId(),
@@ -81,7 +62,7 @@ final class DungeonTransitionRecordMapperSupport {
     private static DestinationRecord destinationRecord(TransitionDestination destination) {
         if (destination != null && destination.isDungeonMap()) {
             return new DestinationRecord(
-                    DESTINATION_DUNGEON_MAP,
+                    TransitionDestinationType.DUNGEON_MAP.name(),
                     null,
                     null,
                     destination.mapId(),
@@ -89,13 +70,13 @@ final class DungeonTransitionRecordMapperSupport {
         }
         if (destination != null && destination.isOverworldTile()) {
             return new DestinationRecord(
-                    DESTINATION_OVERWORLD_TILE,
+                    TransitionDestinationType.OVERWORLD_TILE.name(),
                     destination.mapId(),
                     destination.tileId(),
                     null,
                     null);
         }
-        return new DestinationRecord(DESTINATION_OVERWORLD_TILE, 0L, 0L, null, null);
+        return new DestinationRecord(TransitionDestinationType.UNLINKED_ENTRANCE.name(), null, null, null, null);
     }
 
     private record DestinationRecord(

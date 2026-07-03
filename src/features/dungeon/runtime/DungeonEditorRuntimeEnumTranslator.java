@@ -6,12 +6,13 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleTy
 import src.domain.dungeon.published.DungeonEditorTool;
 
 final class DungeonEditorRuntimeEnumTranslator {
+    private static final DungeonEditorToolRegistry TOOL_REGISTRY = DungeonEditorToolRegistry.current();
 
     private DungeonEditorRuntimeEnumTranslator() {
     }
 
     static String toolName(String value) {
-        return DungeonEditorRuntimeWorkflowMapping.toolName(value);
+        return TOOL_REGISTRY.toolName(value);
     }
 
     static String viewModeName(String value) {
@@ -19,7 +20,7 @@ final class DungeonEditorRuntimeEnumTranslator {
     }
 
     static @Nullable DungeonEditorTool editorTool(String value) {
-        return DungeonEditorRuntimeWorkflowMapping.toolFromKey(value);
+        return TOOL_REGISTRY.toolFromKey(value);
     }
 
     static DungeonEditorHandleType handleType(String value) {
@@ -39,6 +40,6 @@ final class DungeonEditorRuntimeEnumTranslator {
     }
 
     static String normalizedEnumName(String value) {
-        return DungeonEditorRuntimeWorkflowMapping.normalizedEnumName(value);
+        return DungeonEditorToolRegistry.normalizedToolKey(value);
     }
 }

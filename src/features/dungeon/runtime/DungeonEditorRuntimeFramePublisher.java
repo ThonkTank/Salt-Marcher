@@ -4,38 +4,36 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
-import src.domain.dungeon.published.DungeonEditorControlsModel;
-import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
+import java.util.function.Supplier;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateModel;
-import src.domain.dungeon.published.DungeonEditorStateSnapshot;
-import src.domain.dungeon.published.DungeonMapId;
-import src.domain.dungeon.published.DungeonMapSummary;
-import src.domain.dungeon.published.DungeonOverlaySettings;
 
 final class DungeonEditorRuntimeFramePublisher {
-    private final DungeonEditorControlsModel controlsModel;
+    private static final DungeonEditorSelector<Long> DRAFT_SESSION_REVISION =
+            DungeonEditorSelector.of(DungeonEditorStoreState::draftSessionRevision);
+
+    private final DungeonEditorStore store;
     private final DungeonEditorMapSurfaceModel mapSurfaceModel;
     private final DungeonEditorStateModel stateModel;
     private final DungeonEditorRuntimeDraftSession draftSession;
+    private final DungeonEditorRuntimeFrameFactsAssembler frameFactsAssembler;
     private final List<Consumer<DungeonEditorRuntimePublication>> subscribers = new ArrayList<>();
-
-    private DungeonEditorMapSurfaceSnapshot preparedFactsMapSurfaceSnapshot = DungeonEditorMapSurfaceSnapshot.empty();
-    private DungeonEditorPreparedFrameFacts.MapInteractionFrame preparedFactsMapInteractionFrame =
-            DungeonEditorPreparedFrameFacts.MapInteractionFrame.empty();
+    private long runtimeFramePublicationCount;
+    private int stateModelFrameDeferralDepth;
+    private boolean stateModelFrameSuppressedDuringDeferral;
 
     DungeonEditorRuntimeFramePublisher(
-            DungeonEditorControlsModel controlsModel,
+            DungeonEditorStore store,
             DungeonEditorMapSurfaceModel mapSurfaceModel,
             DungeonEditorStateModel stateModel,
             DungeonEditorRuntimeDraftSession draftSession
     ) {
-        this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
+        this.store = Objects.requireNonNull(store, "store");
         this.mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
         this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
         this.draftSession = Objects.requireNonNull(draftSession, "draftSession");
-        this.stateModel.subscribe(ignored -> publishCurrentToSubscribers());
+        frameFactsAssembler = new DungeonEditorRuntimeFrameFactsAssembler(store);
+        this.stateModel.subscribe(ignored -> publishStateModelFrame());
     }
 
     DungeonEditorRuntimePublication currentPublication() {
@@ -55,109 +53,68 @@ final class DungeonEditorRuntimeFramePublisher {
      * Thread-bound consumers must route delivery at their own seam.
      */
     void publishCurrentToSubscribers() {
+        runtimeFramePublicationCount++;
         DungeonEditorRuntimePublication publication = currentPublication();
         for (Consumer<DungeonEditorRuntimePublication> subscriber : List.copyOf(subscribers)) {
             subscriber.accept(publication);
         }
     }
 
+    <T> StateModelFrameDeferral<T> deferStateModelFramePublication(Supplier<T> action) {
+        Supplier<T> safeAction = Objects.requireNonNull(action, "action");
+        boolean outermostDeferral = stateModelFrameDeferralDepth == 0;
+        if (outermostDeferral) {
+            stateModelFrameSuppressedDuringDeferral = false;
+        }
+        stateModelFrameDeferralDepth++;
+        try {
+            T result = safeAction.get();
+            return new StateModelFrameDeferral<>(result, stateModelFrameSuppressedDuringDeferral);
+        } finally {
+            stateModelFrameDeferralDepth--;
+            if (outermostDeferral) {
+                stateModelFrameSuppressedDuringDeferral = false;
+            }
+        }
+    }
+
+    void markDraftSessionChanged() {
+        store.dispatch(new DungeonEditorAction.MarkDraftSessionChanged());
+    }
+
+    void publishDraftSessionChanged() {
+        markDraftSessionChanged();
+        publishCurrentToSubscribers();
+    }
+
+    private void publishStateModelFrame() {
+        if (stateModelFrameDeferralDepth > 0) {
+            stateModelFrameSuppressedDuringDeferral = true;
+            return;
+        }
+        publishCurrentToSubscribers();
+    }
+
     private DungeonEditorRenderFrame currentFrame() {
-        DungeonEditorControlsSnapshot controls = controlsModel.current();
-        DungeonEditorMapSurfaceSnapshot mapSurface = mapSurfaceModel.current();
-        DungeonEditorStateSnapshot state = stateModel.current();
-        DungeonEditorRuntimeDraftFrame drafts = draftSession.draftFrame(controls, state);
+        DungeonEditorRuntimeReadbackFrameInputs readbackInputs =
+                DungeonEditorRuntimeReadbackFrameInputs.from(store, mapSurfaceModel, stateModel);
+        verifyCurrentDraftSessionRevision();
+        DungeonEditorRuntimeDraftFrame drafts = draftSession.draftFrame(
+                readbackInputs.controls(),
+                readbackInputs.state());
         return new DungeonEditorRenderFrame(
-                controls,
-                mapSurface,
-                state,
-                preparedFacts(controls, mapSurface),
-                drafts.roomNarrationDrafts(),
-                drafts.labelNameDraft(),
-                drafts.corridorPointDraft(),
-                drafts.transitionDescriptionDraft(),
-                drafts.transitionDestinationDraft(),
-                drafts.stairGeometryDraft(),
-                drafts.inlineLabelEditSession());
+                frameFactsAssembler.preparedFacts(readbackInputs.mapSurface(), readbackInputs.state(), drafts),
+                drafts.inlineLabelEditSession(),
+                frameFactsAssembler.measurementSnapshot(runtimeFramePublicationCount));
     }
 
-    private DungeonEditorPreparedFrameFacts preparedFacts(
-            DungeonEditorControlsSnapshot controlsSnapshot,
-            DungeonEditorMapSurfaceSnapshot mapSurfaceSnapshot
-    ) {
-        DungeonEditorControlsSnapshot safeControls = controlsSnapshot == null
-                ? DungeonEditorControlsSnapshot.empty("")
-                : controlsSnapshot;
-        var mapEntries = safeControls.maps().stream()
-                .map(DungeonEditorRuntimeFramePublisher::toMapEntry)
-                .toList();
-        DungeonMapId selectedMapId = safeControls.selectedMapId();
-        var reachableLevels = safeControls.reachableLevels();
-        int projectionLevel = safeControls.projectionLevel();
-        DungeonOverlaySettings overlaySettings = safeControls.overlaySettings() == null
-                ? DungeonOverlaySettings.defaults()
-                : safeControls.overlaySettings();
-        String viewModeKey = safeControls.viewMode() == null ? "GRID" : safeControls.viewMode().name();
-        String selectedToolKey = safeControls.selectedTool() == null ? "SELECT" : safeControls.selectedTool().name();
-        String selectedToolLabel = safeControls.selectedTool() == null ? "" : safeControls.selectedTool().displayLabel();
-        return new DungeonEditorPreparedFrameFacts(
-                mapEntries,
-                keyOf(selectedMapId),
-                selectedMapId == null ? 0L : selectedMapId.value(),
-                reachableLevels,
-                false,
-                statusTextFor(safeControls, mapEntries),
-                viewModeKey,
-                DungeonEditorPreparedFrameFacts.labelForViewMode(viewModeKey),
-                overlaySettings,
-                DungeonEditorPreparedFrameFacts.OverlayFrame.from(overlaySettings),
-                projectionLevel,
-                selectedToolKey,
-                selectedToolLabel,
-                mapInteractionFrameFor(mapSurfaceSnapshot));
+    private void verifyCurrentDraftSessionRevision() {
+        DungeonEditorSelectorResult<Long> revision = store.select(DRAFT_SESSION_REVISION);
+        revision.requireFreshAgainst(
+                store.state(),
+                "Dungeon editor draft-session selector result is stale");
     }
 
-    private DungeonEditorPreparedFrameFacts.MapInteractionFrame mapInteractionFrameFor(
-            DungeonEditorMapSurfaceSnapshot mapSurfaceSnapshot
-    ) {
-        DungeonEditorMapSurfaceSnapshot safeSnapshot = mapSurfaceSnapshot == null
-                ? DungeonEditorMapSurfaceSnapshot.empty()
-                : mapSurfaceSnapshot;
-        if (safeSnapshot == preparedFactsMapSurfaceSnapshot) {
-            return preparedFactsMapInteractionFrame;
-        }
-        preparedFactsMapSurfaceSnapshot = safeSnapshot;
-        preparedFactsMapInteractionFrame = DungeonEditorPreparedFrameFacts.MapInteractionFrame.from(safeSnapshot);
-        return preparedFactsMapInteractionFrame;
-    }
-
-    private static DungeonEditorPreparedFrameFacts.MapEntry toMapEntry(DungeonMapSummary summary) {
-        DungeonMapSummary safeSummary = summary == null
-                ? new DungeonMapSummary(new DungeonMapId(1L), "Dungeon Map", 0L)
-                : summary;
-        return new DungeonEditorPreparedFrameFacts.MapEntry(
-                keyOf(safeSummary.mapId()),
-                safeSummary.mapId() == null ? 0L : safeSummary.mapId().value(),
-                safeSummary.mapName(),
-                safeSummary.revision());
-    }
-
-    private static String keyOf(DungeonMapId mapId) {
-        return mapId == null ? "" : Long.toString(mapId.value());
-    }
-
-    private static String statusTextFor(
-            DungeonEditorControlsSnapshot controls,
-            List<DungeonEditorPreparedFrameFacts.MapEntry> mapEntries
-    ) {
-        if (controls.surfaceLoaded()) {
-            return controls.statusText();
-        }
-        if (mapEntries.isEmpty()) {
-            return "Keine Dungeon-Maps vorhanden.";
-        }
-        if (controls.selectedMapId() == null) {
-            return "Kein Dungeon ausgewählt.";
-        }
-        return controls.statusText();
+    record StateModelFrameDeferral<T>(T result, boolean stateModelFrameSuppressed) {
     }
 }

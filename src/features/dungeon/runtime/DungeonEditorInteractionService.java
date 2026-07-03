@@ -4,11 +4,19 @@ import java.util.Objects;
 
 final class DungeonEditorInteractionService implements DungeonEditorPointerInteractionOperations {
     private final DungeonEditorPointerOperationDispatcher operationDispatcher;
+    private final DungeonEditorStore store;
+    private final DungeonEditorRuntimeFramePublisher framePublisher;
     private final DungeonEditorPointerSession pointerSession = new DungeonEditorPointerSession();
 
-    DungeonEditorInteractionService(DungeonEditorAuthoredRuntimeOperations operationOwner) {
+    DungeonEditorInteractionService(
+            DungeonEditorAuthoredRuntimeOperations operationOwner,
+            DungeonEditorStore store,
+            DungeonEditorRuntimeFramePublisher framePublisher
+    ) {
         operationDispatcher = new DungeonEditorPointerOperationDispatcher(
                 Objects.requireNonNull(operationOwner, "operationOwner"));
+        this.store = Objects.requireNonNull(store, "store");
+        this.framePublisher = Objects.requireNonNull(framePublisher, "framePublisher");
     }
 
     @Override
@@ -16,14 +24,15 @@ final class DungeonEditorInteractionService implements DungeonEditorPointerInter
         PointerInteractionRequest safeRequest = request == null
                 ? emptyRequest()
                 : request;
-        PointerWorkflowIntent intent = pointerWorkflowIntent(safeRequest.selectedTool(), safeRequest.gesture());
+        PointerWorkflowIntent intent =
+                DungeonEditorPointerWorkflowIntentResolver.resolve(safeRequest.selectedTool(), safeRequest.gesture());
         if (!intent.workflowAccepted()) {
             clearPointerSession();
             return PointerInteractionResult.ignored();
         }
         PointerInteractionTargets targets = safeRequest.targets();
         DungeonEditorRuntimePointerTarget primaryTarget = targets.primaryTarget(intent.boundaryTargetsPreferred());
-        PointerInteractionDecision decision = pointerInteractionDecision(
+        PointerInteractionDecision decision = DungeonEditorPointerWorkflowIntentResolver.resolveInteraction(
                 safeRequest.action(),
                 intent,
                 new PointerInteractionCandidates(primaryTarget));
@@ -40,45 +49,24 @@ final class DungeonEditorInteractionService implements DungeonEditorPointerInter
                 hoverTarget,
                 safeRequest.projectionLevel());
         PointerSample sample = DungeonEditorPointerSamplePolicy.pointerSample(targets, sampleTarget, intent);
-        boolean accepted = acceptPointerSession(
+        boolean accepted = pointerSession.accept(
                 safeRequest.action(),
-                intent.effectiveToolKey(),
+                intent.effectiveTool(),
                 sample,
                 safeRequest.projectionLevel());
         boolean dispatched = accepted && safeRequest.action() != null;
         if (dispatched) {
-            operationDispatcher.applyPointer(
-                    safeRequest.action(),
-                    intent.effectiveToolKey(),
-                    sample,
-                    intent.wallSingleClickMode(),
-                    safeRequest.transitionDestination());
+            DungeonEditorRuntimeOperationPublisher.apply(
+                    store,
+                    framePublisher,
+                    () -> operationDispatcher.applyPointer(
+                            safeRequest.action(),
+                            intent.effectiveTool(),
+                            sample,
+                            intent.wallSingleClickMode(),
+                            safeRequest.transitionDestination()));
         }
         return new PointerInteractionResult(true, hoverTarget);
-    }
-
-    private PointerWorkflowIntent pointerWorkflowIntent(
-            String selectedTool,
-            PointerWorkflowGesture gesture
-    ) {
-        return DungeonEditorPointerWorkflowIntentResolver.resolve(selectedTool, gesture);
-    }
-
-    private PointerInteractionDecision pointerInteractionDecision(
-            PointerAction action,
-            PointerWorkflowIntent intent,
-            PointerInteractionCandidates candidates
-    ) {
-        return DungeonEditorPointerWorkflowIntentResolver.resolveInteraction(action, intent, candidates);
-    }
-
-    private boolean acceptPointerSession(
-            PointerAction action,
-            String toolKey,
-            PointerSample sample,
-            int projectionLevel
-    ) {
-        return pointerSession.accept(action, toolKey, sample, projectionLevel);
     }
 
     @Override

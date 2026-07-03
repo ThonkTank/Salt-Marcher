@@ -11,48 +11,59 @@ final class DungeonEditorRuntimeStatePanelDraftPort implements DungeonEditorStat
     private final DungeonEditorRuntimeDraftSession draftSession;
     private final DungeonEditorRuntimeFramePublisher framePublisher;
     private final DungeonEditorAuthoredRuntimeOperations operationOwner;
+    private final DungeonEditorStore store;
 
     DungeonEditorRuntimeStatePanelDraftPort(
             DungeonEditorControlsModel controlsModel,
             DungeonEditorStateModel stateModel,
             DungeonEditorRuntimeDraftSession draftSession,
             DungeonEditorRuntimeFramePublisher framePublisher,
-            DungeonEditorAuthoredRuntimeOperations operationOwner
+            DungeonEditorAuthoredRuntimeOperations operationOwner,
+            DungeonEditorStore store
     ) {
         this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
         this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
         this.draftSession = Objects.requireNonNull(draftSession, "draftSession");
         this.framePublisher = Objects.requireNonNull(framePublisher, "framePublisher");
         this.operationOwner = Objects.requireNonNull(operationOwner, "operationOwner");
+        this.store = Objects.requireNonNull(store, "store");
     }
 
     @Override
     public void updateStatePanelRoomNarrationDraft(RoomNarrationDraftInput input) {
         draftSession.updateRoomNarrationDraft(currentSelectedMapIdValue(), input);
-        framePublisher.publishCurrentToSubscribers();
+        framePublisher.publishDraftSessionChanged();
     }
 
     @Override
     public void updateStatePanelLabelNameDraft(DungeonEditorRuntimeLabelTarget target, String name) {
         draftSession.updateLabelNameDraft(currentSelectedMapIdValue(), target, name);
-        framePublisher.publishCurrentToSubscribers();
+        framePublisher.publishDraftSessionChanged();
     }
 
     @Override
     public void updateStatePanelCorridorPointDraft(String q, String r) {
         draftSession.updateCorridorPointDraft(currentSelectedMapIdValue(), currentStateSelection(), q, r);
-        framePublisher.publishCurrentToSubscribers();
+        framePublisher.publishDraftSessionChanged();
     }
 
     @Override
     public void moveStatePanelCorridorPoint(int q, int r) {
-        draftSession.moveCorridorPoint(currentSelectedMapIdValue(), currentStateSelection(), q, r, operationOwner);
+        DungeonEditorRuntimeOperationPublisher.apply(
+                store,
+                framePublisher,
+                () -> draftSession.moveCorridorPoint(
+                        currentSelectedMapIdValue(),
+                        currentStateSelection(),
+                        q,
+                        r,
+                        operationOwner));
     }
 
     @Override
     public void updateStatePanelTransitionDescriptionDraft(long transitionId, String description) {
         draftSession.updateTransitionDescriptionDraft(currentSelectedMapIdValue(), transitionId, description);
-        framePublisher.publishCurrentToSubscribers();
+        framePublisher.publishDraftSessionChanged();
     }
 
     @Override
@@ -62,13 +73,13 @@ final class DungeonEditorRuntimeStatePanelDraftPort implements DungeonEditorStat
                 controlsModel.current(),
                 stateModel.current(),
                 input);
-        framePublisher.publishCurrentToSubscribers();
+        framePublisher.publishDraftSessionChanged();
     }
 
     @Override
     public void updateStatePanelStairGeometryDraft(StairGeometryDraftInput input) {
         draftSession.updateStairGeometryDraft(currentSelectedMapIdValue(), input);
-        framePublisher.publishCurrentToSubscribers();
+        framePublisher.publishDraftSessionChanged();
     }
 
     private DungeonEditorStateSnapshot.Selection currentStateSelection() {

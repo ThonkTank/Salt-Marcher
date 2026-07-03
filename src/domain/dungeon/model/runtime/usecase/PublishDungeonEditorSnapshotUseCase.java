@@ -1,10 +1,8 @@
 package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSession;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository;
-import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository.ToolSelectionPublication;
 
 public final class PublishDungeonEditorSnapshotUseCase {
     private final DungeonEditorSnapshotPublishedStateRepository publication;
@@ -17,10 +15,19 @@ public final class PublishDungeonEditorSnapshotUseCase {
         publication.publishEditorSnapshot(Objects.requireNonNull(snapshot, "snapshot"));
     }
 
-    public void executeToolSelection(DungeonEditorSession session) {
-        DungeonEditorSession safeSession = session == null ? DungeonEditorSession.empty() : session;
-        publication.publishEditorToolSelection(new ToolSelectionPublication(
-                safeSession.selectedTool().name(),
-                safeSession.statusText()));
+    public void executeControlsSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
+        publication.publishEditorControlsSnapshot(Objects.requireNonNull(snapshot, "snapshot"));
+    }
+
+    public void executeControls(DungeonEditorSessionSnapshot.ControlsData controls) {
+        publication.publishEditorControls(Objects.requireNonNull(controls, "controls"));
+    }
+
+    public void executeSessionFrame(DungeonEditorSessionSnapshot.SessionFrameData frameData) {
+        publication.publishEditorSessionFrame(Objects.requireNonNull(frameData, "frameData"));
+    }
+
+    public void executeSessionFramePreservingSurface(DungeonEditorSessionSnapshot.SessionFrameData frameData) {
+        publication.publishEditorSessionFramePreservingSurface(Objects.requireNonNull(frameData, "frameData"));
     }
 }

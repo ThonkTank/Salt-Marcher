@@ -70,7 +70,7 @@ final class DungeonEditorBinder {
     ) {
         contributionModel.applyFrame(frame);
         mapContentModel.applyInlineLabelEditProjection(inlineLabelProjection(frame.inlineLabelEditSession()));
-        mapContentModel.applyEditorSurfaceFrame(frame.mapSurface(), contributionModel.currentMapInteractionFrame());
+        mapContentModel.applyEditorRenderFrame(frame);
     }
 
     private static InlineLabelEditProjection inlineLabelProjection(

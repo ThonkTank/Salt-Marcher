@@ -14,6 +14,12 @@ public record DungeonTraversalSource(
 
     private static String defaultLabel(DungeonTraversalSourceKind kind, long id) {
         DungeonTraversalSourceKind safeKind = kind == null ? DungeonTraversalSourceKind.DOOR : kind;
-        return safeKind == DungeonTraversalSourceKind.STAIR ? "Treppe " + id : "Tür " + id;
+        if (safeKind == DungeonTraversalSourceKind.STAIR) {
+            return "Treppe " + id;
+        }
+        if (safeKind == DungeonTraversalSourceKind.CORRIDOR) {
+            return "Gang " + id;
+        }
+        return "Tür " + id;
     }
 }

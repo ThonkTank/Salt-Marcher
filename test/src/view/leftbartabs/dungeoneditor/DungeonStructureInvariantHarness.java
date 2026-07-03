@@ -46,6 +46,7 @@ import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
 import src.domain.dungeon.model.core.structure.transition.Transition;
+import src.domain.dungeon.model.core.structure.transition.TransitionAnchor;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
@@ -952,7 +953,7 @@ final class DungeonStructureInvariantHarness {
                         1L,
                         4L,
                         " source ",
-                        new Cell(0, 0, 0),
+                        TransitionAnchor.cell(new Cell(0, 0, 0)),
                         TransitionDestination.dungeonMap(4L, 2L),
                         null);
         Transition oldTarget =
@@ -960,7 +961,7 @@ final class DungeonStructureInvariantHarness {
                         2L,
                         4L,
                         "",
-                        new Cell(1, 0, 0),
+                        TransitionAnchor.cell(new Cell(1, 0, 0)),
                         TransitionDestination.overworldTile(5L, 9L),
                         1L);
         Transition target =
@@ -968,7 +969,7 @@ final class DungeonStructureInvariantHarness {
                         3L,
                         4L,
                         "",
-                        new Cell(1, 1, 0),
+                        TransitionAnchor.cell(new Cell(1, 1, 0)),
                         TransitionDestination.overworldTile(5L, 9L),
                         null);
         Transition remoteReference =
@@ -976,7 +977,7 @@ final class DungeonStructureInvariantHarness {
                         4L,
                         4L,
                         "",
-                        new Cell(2, 0, 0),
+                        TransitionAnchor.cell(new Cell(2, 0, 0)),
                         TransitionDestination.dungeonMap(14L, 3L),
                         null);
         src.domain.dungeon.model.core.structure.DungeonMap map = transitionMap(source, oldTarget, target, remoteReference);

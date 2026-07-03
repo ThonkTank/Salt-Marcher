@@ -2,6 +2,7 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
@@ -26,7 +27,7 @@ public final class RenameDungeonEditorMapUseCase {
                 Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
     }
 
-    public void execute(long mapId, String mapName) {
+    public DungeonEditorSessionSnapshot.SnapshotData execute(long mapId, String mapName) {
         if (DungeonEditorWorkspaceValues.hasId(mapId)) {
             renameMapUseCase.execute(new DungeonEditorWorkspaceValues.MapId(mapId), mapName);
         }
@@ -36,6 +37,9 @@ public final class RenameDungeonEditorMapUseCase {
                 workflow.session().preview()).mutationMapId();
         workflow.applyMapLifecycle(DungeonEditorSessionWorkflow.MAP_RENAMED, nextMapId);
         snapshotBuilder.refreshAuthoredSnapshot(workflow.session());
-        snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
+        DungeonEditorSessionSnapshot.SnapshotData snapshot =
+                workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
+        snapshotPublicationUseCase.execute(snapshot);
+        return snapshot;
     }
 }

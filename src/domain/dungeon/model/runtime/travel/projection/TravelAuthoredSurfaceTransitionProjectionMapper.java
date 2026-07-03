@@ -2,7 +2,7 @@ package src.domain.dungeon.model.runtime.travel.projection;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface.TransitionDestination;
 
@@ -15,24 +15,28 @@ final class TravelAuthoredSurfaceTransitionProjectionMapper {
         List<TravelAuthoredSurface.Transition> result = new ArrayList<>();
         for (Transition transition : source == null ? List.<Transition>of() : source) {
             if (transition != null) {
+                Cell travelCell = transition.anchor().travelCell();
                 result.add(new TravelAuthoredSurface.Transition(
                         transition.transitionId(),
                         transition.label(),
                         transition.description(),
-                        transition.anchor() == null
+                        travelCell == null
                                 ? null
-                                : TravelGeometryProjectionMapper.cellOrOrigin(transition.anchor()),
+                                : TravelGeometryProjectionMapper.cellOrOrigin(travelCell),
                         toDestination(transition.destination())));
             }
         }
         return List.copyOf(result);
     }
 
-    private static @Nullable TransitionDestination toDestination(
+    private static TransitionDestination toDestination(
             src.domain.dungeon.model.core.structure.transition.TransitionDestination destination
     ) {
         if (destination == null) {
-            return null;
+            return TransitionDestination.unlinkedEntrance();
+        }
+        if (destination.isUnlinkedEntrance()) {
+            return TransitionDestination.unlinkedEntrance();
         }
         if (destination.isOverworldTile()) {
             return TransitionDestination.overworldTile(destination.mapId(), destination.tileId());
@@ -42,6 +46,6 @@ final class TravelAuthoredSurfaceTransitionProjectionMapper {
                     destination.mapId(),
                     destination.transitionId());
         }
-        return null;
+        return TransitionDestination.unlinkedEntrance();
     }
 }

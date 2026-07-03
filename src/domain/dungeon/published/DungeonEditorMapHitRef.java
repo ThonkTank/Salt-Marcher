@@ -140,15 +140,6 @@ public record DungeonEditorMapHitRef(String value) {
     public static DungeonEditorMapHitRef label(
             long ownerId,
             long clusterId,
-            DungeonEditorTopologyElementRef topologyRef,
-            String labelKind
-    ) {
-        return label(ownerId, clusterId, topologyKind(topologyRef), topologyId(topologyRef), labelKind);
-    }
-
-    public static DungeonEditorMapHitRef label(
-            long ownerId,
-            long clusterId,
             DungeonTopologyElementRef topologyRef,
             String labelKind
     ) {

@@ -2,7 +2,9 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorRoomNarrationInput;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
@@ -21,18 +23,18 @@ public final class SaveDungeonEditorRoomNarrationUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    public void execute(RoomNarrationInput roomNarrationInput) {
+    public DungeonEditorSessionSnapshot.@Nullable SnapshotData execute(RoomNarrationInput roomNarrationInput) {
         DungeonEditorRoomNarrationInput roomNarration = roomNarrationInput == null
                 ? DungeonEditorRoomNarrationInput.empty()
                 : roomNarrationInput.roomNarration();
         if (roomNarration == null || !DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
-            return;
+            return null;
         }
         if (workflow.session().selectedMapId() != null) {
             saveRoomNarrationUseCase.execute(workflow.session().selectedMapId(), roomNarration);
         }
         workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-        effectUseCase.publishCurrent();
+        return effectUseCase.publishCurrent();
     }
 
     public record RoomNarrationInput(

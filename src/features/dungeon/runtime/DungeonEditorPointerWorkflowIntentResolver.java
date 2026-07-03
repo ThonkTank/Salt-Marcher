@@ -3,6 +3,8 @@ package src.features.dungeon.runtime;
 import src.domain.dungeon.published.DungeonEditorTool;
 
 final class DungeonEditorPointerWorkflowIntentResolver {
+    private static final DungeonEditorToolRegistry TOOL_REGISTRY = DungeonEditorToolRegistry.current();
+
     private DungeonEditorPointerWorkflowIntentResolver() {
     }
 
@@ -11,7 +13,7 @@ final class DungeonEditorPointerWorkflowIntentResolver {
             PointerWorkflowGesture gesture
     ) {
         PointerWorkflowGesture safeGesture = gesture == null ? PointerWorkflowGesture.empty() : gesture;
-        DungeonEditorTool effectiveTool = DungeonEditorRuntimeWorkflowMapping.effectivePointerTool(
+        DungeonEditorTool effectiveTool = TOOL_REGISTRY.effectivePointerTool(
                 selectedTool,
                 safeGesture);
         if (effectiveTool == null) {
@@ -19,9 +21,9 @@ final class DungeonEditorPointerWorkflowIntentResolver {
         }
         return new PointerWorkflowIntent(
                 true,
-                effectiveTool.name(),
-                DungeonEditorRuntimeWorkflowMapping.prefersBoundaryTargets(effectiveTool),
-                DungeonEditorRuntimeWorkflowMapping.wallSingleClickMode(effectiveTool, safeGesture));
+                effectiveTool,
+                TOOL_REGISTRY.prefersBoundaryTargets(effectiveTool),
+                TOOL_REGISTRY.wallSingleClickMode(effectiveTool, safeGesture));
     }
 
     static PointerInteractionDecision resolveInteraction(
@@ -46,11 +48,8 @@ final class DungeonEditorPointerWorkflowIntentResolver {
             PointerWorkflowIntent intent,
             DungeonEditorRuntimePointerTarget primaryTarget
     ) {
-        DungeonEditorTool tool = DungeonEditorRuntimeWorkflowMapping.toolFromKey(intent.effectiveToolKey());
+        DungeonEditorTool tool = intent.effectiveTool();
         DungeonEditorRuntimePointerTarget safeTarget = safeTarget(primaryTarget);
-        if (tool == null) {
-            return PointerTargetChoice.empty();
-        }
         return switch (tool) {
             case SELECT -> selectableHoverTarget(safeTarget)
                     ? PointerTargetChoice.primary()
@@ -69,7 +68,10 @@ final class DungeonEditorPointerWorkflowIntentResolver {
             PointerAction action,
             PointerWorkflowIntent intent
     ) {
-        DungeonEditorTool tool = DungeonEditorRuntimeWorkflowMapping.toolFromKey(intent.effectiveToolKey());
+        DungeonEditorTool tool = intent.effectiveTool();
+        if (tool == DungeonEditorTool.TRANSITION_CREATE) {
+            return PointerTargetChoice.transitionPlacement();
+        }
         if (tool == DungeonEditorTool.WALL_CREATE) {
             return PointerTargetChoice.hoverTarget();
         }
@@ -101,6 +103,7 @@ final class DungeonEditorPointerWorkflowIntentResolver {
         }
         return safeTarget.isHandleTarget()
                 || safeTarget.isSelectableLabelTarget()
+                || safeTarget.isSelectableMarkerTarget()
                 || safeTarget.isGraphNodeTarget()
                 || safeTarget.isSelectableCellTarget()
                 || safeTarget.isDoorBoundaryTarget();

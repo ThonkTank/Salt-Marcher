@@ -28,6 +28,8 @@ import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
+import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
+import src.features.dungeon.runtime.PointerInteractionTargets;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
@@ -73,7 +75,6 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
     static final int LARGE_CURRENT_GEOMETRY_FIXTURE_WIDTH = 240;
     static final int LARGE_CURRENT_GEOMETRY_FIXTURE_HEIGHT = 234;
     static final long LARGE_CURRENT_GEOMETRY_FIXTURE_MIN_FLOOR_CELLS = 56_000L;
-    static final long LARGE_CURRENT_GEOMETRY_STARTUP_MAX_MILLIS = 5_000L;
     static final long LARGE_CURRENT_GEOMETRY_INPUT_MAX_MILLIS = 500L;
     static final long PREVIEW_LATENCY_BUDGET_MS = 250L;
     static final Color MAP_BACKGROUND = Color.rgb(0x12, 0x18, 0x1c);
@@ -134,7 +135,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             long targetTransitionId,
             boolean bidirectional
     ) {
-        selectComboItem(comboBox(stateView, "Übergang Zieltyp"), "DUNGEON_MAP");
+        selectComboItem(comboBox(stateView, "Übergang Zieltyp"), "Dungeon-Eingang");
         textField(stateView, "Übergang Zielkarte").setText(Long.toString(targetMapId));
         textField(stateView, "Übergang Zieluebergang").setText(Long.toString(targetTransitionId));
         CheckBox bidirectionalBox = checkBox(stateView, "Übergang bidirektional verknuepfen");
@@ -1030,6 +1031,8 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                 message + " render scene contains active-level feature marker cell");
         assertTrue(renderHasGlyphAt(mapContentModel, ref, q + 0.5, r + 0.5, false),
                 message + " render scene shows committed feature marker glyph");
+        assertTrue(!renderHasTextForRef(mapContentModel, ref),
+                message + " render scene omits committed feature marker label text");
     }
 
     static void assertFeatureMarkerAbsentFromSnapshotAndRender(
@@ -1165,8 +1168,123 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             String message
     ) {
         assertEquals(expectedKind,
-                mapContentModel.resolvePointerTarget(scenePoint.getX(), scenePoint.getY()).targetKind().name(),
-                message + " input route resolves expected map hit target");
+                runtimePointerTarget(mapContentModel, scenePoint.getX(), scenePoint.getY()).targetKind().name(),
+                message + " input route resolves expected runtime map hit target");
+    }
+
+    static HarnessRuntimePointerTarget runtimePointerTarget(
+            DungeonMapContentModel mapContentModel,
+            double sceneX,
+            double sceneY
+    ) {
+        return runtimePointerTarget(mapContentModel, sceneX, sceneY, false);
+    }
+
+    static HarnessRuntimePointerTarget runtimePointerTarget(
+            DungeonMapContentModel mapContentModel,
+            double sceneX,
+            double sceneY,
+            boolean boundaryPreferred
+    ) {
+        return runtimePointerTarget(mapContentModel, sceneX, sceneY, boundaryPreferred, 0);
+    }
+
+    static HarnessRuntimePointerTarget runtimePointerTarget(
+            DungeonMapContentModel mapContentModel,
+            double sceneX,
+            double sceneY,
+            boolean boundaryPreferred,
+            int projectionLevel
+    ) {
+        return new HarnessRuntimePointerTarget(PointerInteractionTargets.fromHitTargets(
+                sceneX,
+                sceneY,
+                false,
+                false,
+                mapContentModel.pointerHitRefsAt(sceneX, sceneY),
+                mapContentModel.currentPointerTargetFrames(),
+                projectionLevel).primaryTarget(boundaryPreferred));
+    }
+
+    static void updateHoverTarget(
+            DungeonMapContentModel mapContentModel,
+            HarnessRuntimePointerTarget target
+    ) {
+        mapContentModel.updateRuntimeHoverDisplayTarget(target.rawTarget());
+    }
+
+    record HarnessRuntimePointerTarget(DungeonEditorRuntimePointerTarget rawTarget) {
+        HarnessRuntimePointerTarget {
+            rawTarget = rawTarget == null ? DungeonEditorRuntimePointerTarget.empty() : rawTarget;
+        }
+
+        DungeonEditorRuntimePointerTarget.TargetKind targetKind() {
+            return rawTarget.targetKind();
+        }
+
+        String labelKind() {
+            return rawTarget.labelKind().legacyName();
+        }
+
+        String elementKind() {
+            return rawTarget.elementKind().legacyName();
+        }
+
+        long ownerId() {
+            return rawTarget.ownerId();
+        }
+
+        long clusterId() {
+            return rawTarget.clusterId();
+        }
+
+        String topologyKind() {
+            return rawTarget.topologyKind().legacyName();
+        }
+
+        long topologyId() {
+            return rawTarget.topologyId();
+        }
+
+        src.domain.dungeon.published.DungeonEditorHandleRef handleRef() {
+            return rawTarget.handleRef();
+        }
+
+        DungeonEditorRuntimePointerTarget.BoundaryTarget boundaryRef() {
+            return rawTarget.boundary();
+        }
+
+        DungeonEditorRuntimePointerTarget.CellTarget cellRef() {
+            return rawTarget.cell();
+        }
+
+        boolean isEmptyTarget() {
+            return rawTarget.targetKind() == DungeonEditorRuntimePointerTarget.TargetKind.EMPTY;
+        }
+
+        boolean isBoundaryTarget() {
+            return rawTarget.isBoundaryTarget();
+        }
+
+        boolean isCellTarget() {
+            return rawTarget.isCellTarget();
+        }
+
+        boolean isHandleTarget() {
+            return rawTarget.isHandleTarget();
+        }
+
+        boolean isLabelTarget() {
+            return rawTarget.isLabelTarget();
+        }
+
+        boolean isMarkerTarget() {
+            return rawTarget.isMarkerTarget();
+        }
+
+        boolean isGraphNodeTarget() {
+            return rawTarget.isGraphNodeTarget();
+        }
     }
 
     static Set<String> persistedClusterCellsThroughRepository(long mapId, long clusterId, int level) {
@@ -1293,6 +1411,15 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                         && surface.style().strokeWidth() > (2.0 / DEFAULT_GRID_SIZE));
     }
 
+    static boolean renderHasSurfacePrimitive(
+            DungeonMapContentModel mapContentModel,
+            DungeonEditorTopologyElementRef ref
+    ) {
+        String selectionRef = ref.kind() + ":" + ref.id();
+        return mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
+                .anyMatch(surface -> selectionRef.equals(surface.selectionRef()));
+    }
+
     static boolean renderHasSelectedGlyphPrimitive(
             DungeonMapContentModel mapContentModel,
             DungeonEditorTopologyElementRef ref
@@ -1367,6 +1494,23 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                     return new Point2D(x, y);
                 })
                 .anyMatch(point -> point.distance(expectedX, expectedY) < 0.000_001);
+    }
+
+    static boolean renderHasTextForRef(
+            DungeonMapContentModel mapContentModel,
+            DungeonEditorTopologyElementRef ref
+    ) {
+        String selectionRef = ref.kind() + ":" + ref.id();
+        return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
+                .anyMatch(text -> selectionRef.equals(text.selectionRef()));
+    }
+
+    static boolean renderHasHoverText(
+            DungeonMapContentModel mapContentModel,
+            String expectedText
+    ) {
+        return mapContentModel.canvasStateProperty().get().hoverTexts().stream()
+                .anyMatch(text -> expectedText.equals(text.text()));
     }
 
     static DungeonEditorTopologyElementRef editorTopologyRef(DungeonTopologyElementRef ref) {
@@ -1635,6 +1779,34 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         int y = clampPixel((int) Math.round(sceneY * DEFAULT_GRID_SIZE), (int) image.getHeight());
         Color color = image.getPixelReader().getColor(x, y);
         assertTrue(colorDistance(color, MAP_BACKGROUND) > 0.025, message + " pixel=" + color);
+    }
+
+    static void assertCanvasPaintedNearScene(
+            DungeonMapView mapView,
+            double sceneX,
+            double sceneY,
+            int radiusPixels,
+            String message
+    ) {
+        Canvas canvas = mapCanvas(mapView);
+        WritableImage image = canvas.snapshot(null, null);
+        int x = clampPixel((int) Math.round(sceneX * DEFAULT_GRID_SIZE), (int) image.getWidth());
+        int y = clampPixel((int) Math.round(sceneY * DEFAULT_GRID_SIZE), (int) image.getHeight());
+        int radius = Math.max(0, radiusPixels);
+        for (int dy = -radius; dy <= radius; dy++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                if ((dx * dx) + (dy * dy) > radius * radius) {
+                    continue;
+                }
+                int sampleX = clampPixel(x + dx, (int) image.getWidth());
+                int sampleY = clampPixel(y + dy, (int) image.getHeight());
+                Color color = image.getPixelReader().getColor(sampleX, sampleY);
+                if (colorDistance(color, MAP_BACKGROUND) > 0.025) {
+                    return;
+                }
+            }
+        }
+        assertTrue(false, message + " centerPixel=" + image.getPixelReader().getColor(x, y));
     }
 
     static void assertCanvasHasPaintedContent(DungeonMapView mapView, String message) {
@@ -2184,4 +2356,96 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
     }
 
 
+}
+
+final class DungeonMapStateProbe {
+    private DungeonMapStateProbe() {
+    }
+
+    static Snapshot snapshot(DungeonMapContentModel model) {
+        DungeonMapContentModel.CanvasState canvasState = model.canvasStateProperty().get();
+        DungeonMapContentModel.RenderScene baseScene = canvasState.baseRenderScene();
+        DungeonMapContentModel.RenderScene renderedScene = canvasState.renderScene();
+        DungeonMapContentModel.InlineLabelEditState inlineLabel = model.currentInlineLabelEditState();
+        return new Snapshot(
+                projectionLevel(baseScene),
+                renderGeometrySignature(baseScene),
+                hitTargetSignature(baseScene),
+                System.identityHashCode(canvasState),
+                hoverPrimitiveCount(renderedScene),
+                inlineLabel.active() ? inlineLabel.text().length() : 0);
+    }
+
+    static String renderStatusLabel(DungeonMapContentModel model) {
+        return model.canvasStateProperty().get().baseRenderScene().statusLabel();
+    }
+
+    private static long projectionLevel(DungeonMapContentModel.RenderScene scene) {
+        return Math.max(maxSurfaceLevel(scene), maxBoundaryLevel(scene));
+    }
+
+    private static long maxSurfaceLevel(DungeonMapContentModel.RenderScene scene) {
+        return scene.surfaces().stream()
+                .mapToInt(DungeonMapContentModel.MapCanvasPolygonPrimitive::z)
+                .max()
+                .orElse(0);
+    }
+
+    private static long maxBoundaryLevel(DungeonMapContentModel.RenderScene scene) {
+        return scene.boundaries().stream()
+                .mapToInt(DungeonMapContentModel.BoundaryPrimitive::z)
+                .max()
+                .orElse(0);
+    }
+
+    private static String renderGeometrySignature(DungeonMapContentModel.RenderScene scene) {
+        return scene.surfaces()
+                + "|"
+                + scene.boundaries()
+                + "|"
+                + scene.glyphs()
+                + "|"
+                + scene.texts()
+                + "|"
+                + scene.relations()
+                + "|"
+                + scene.actors();
+    }
+
+    private static String hitTargetSignature(DungeonMapContentModel.RenderScene scene) {
+        return scene.surfaces().stream()
+                .map(DungeonMapContentModel.MapCanvasPolygonPrimitive::hitRef)
+                .filter(hitRef -> !hitRef.isBlank())
+                .sorted()
+                .toList()
+                + "|"
+                + scene.boundaries().stream()
+                .map(DungeonMapContentModel.BoundaryPrimitive::hitRef)
+                .filter(hitRef -> !hitRef.isBlank())
+                .sorted()
+                .toList()
+                + "|"
+                + scene.glyphs().stream()
+                .map(DungeonMapContentModel.GlyphPrimitive::hitRef)
+                .filter(hitRef -> !hitRef.isBlank())
+                .sorted()
+                .toList();
+    }
+
+    private static long hoverPrimitiveCount(DungeonMapContentModel.RenderScene scene) {
+        return scene.hoverSurfaces().size()
+                + scene.hoverBoundaries().size()
+                + scene.hoverGlyphs().size()
+                + scene.hoverTexts().size();
+    }
+
+    record Snapshot(
+            long projectionLevel,
+            String renderGeometrySignature,
+            String hitTargetSignature,
+            int canvasStateIdentity,
+            long hoverOverlayPrimitiveCount,
+            int inlineLabelDraftLength
+    ) {
+    }
 }

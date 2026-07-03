@@ -49,6 +49,9 @@ final class DungeonEditorTransitionHarness {
 
     static void run(List<String> results) throws Exception {
         route(results, () -> verifyTransitionCreateThroughMapView(results));
+        route(results, () -> verifyEdgeTransitionCreateThroughMapView(results));
+        route(results, () -> verifyTransitionAnchorRoundtripThroughPersistence(results));
+        route(results, () -> verifyMalformedTransitionAnchorsRejectReload(results));
         route(results, () -> verifyTransitionDescriptionThroughStateView(results));
         route(results, () -> verifyBidirectionalTransitionLinkThroughStateView(results));
         route(results, () -> verifyTransitionDeleteThroughMapView(results));
@@ -132,7 +135,7 @@ final class DungeonEditorTransitionHarness {
                 "DE-TRN-004 state panel readback shows saved transition description");
         assertTrue(renderHasSelectedGlyphPrimitive(binding.mapContentModel(), transitionRef),
                 "DE-TRN-004 render scene keeps the selected transition marker");
-        assertCanvasPaintedAtScene(mapView, transitionCenter.getX(), transitionCenter.getY(),
+        assertCanvasPaintedNearScene(mapView, transitionCenter.getX(), transitionCenter.getY(), 18,
                 "DE-TRN-004 rendered canvas paints the selected transition marker");
 
         selectMap(controls, "Transition Description Reload Hop");
@@ -205,11 +208,11 @@ final class DungeonEditorTransitionHarness {
 
         ComboBox<?> entranceDestinationType = comboBox(stateView, "Eingangslink Zieltyp");
         entranceDestinationType.requestFocus();
-        selectComboItem(entranceDestinationType, "DUNGEON_MAP");
+        selectComboItem(entranceDestinationType, "Dungeon-Eingang");
         entranceDestinationType = comboBox(stateView, "Eingangslink Zieltyp");
         assertTrue(entranceDestinationType.isFocused(),
                 "DE-TRN-003 runtime draft publication keeps entrance-link destination-type focus");
-        assertEquals("DUNGEON_MAP", String.valueOf(entranceDestinationType.getValue()),
+        assertEquals("Dungeon-Eingang", String.valueOf(entranceDestinationType.getValue()),
                 "DE-TRN-003 runtime draft publication keeps entrance-link destination type");
         textField(stateView, "Eingangslink Zielkarte").setText(Long.toString(targetMapId));
         TextField targetTransitionField = textField(stateView, "Eingangslink Zieluebergang");
@@ -347,7 +350,7 @@ final class DungeonEditorTransitionHarness {
     private static void assertTransitionEntranceLinkCard(DungeonEditorStateView stateView) {
         assertTransitionStateTextPresent(stateView, "Übergang-Ziel / Eingangslink");
         assertTransitionStateTextPresent(stateView, "Quelle: ausgewaehlter Übergang");
-        assertTransitionStateTextPresent(stateView, "Eingangslink: Zieltyp DUNGEON_MAP und Ziel-Eingang wählen");
+        assertTransitionStateTextPresent(stateView, "Eingangslink: Dungeon-Eingang als Ziel wählen");
         assertTransitionStateTextPresent(stateView, "Ziel-Eingang");
         assertTrue(button(stateView, "Eingangslink speichern").isVisible(),
                 "DE-TRN-003 entrance-link route exposes the selected-source save button");
@@ -356,9 +359,9 @@ final class DungeonEditorTransitionHarness {
         ComboBox<?> destinationType = comboBox(stateView, "Eingangslink Zieltyp");
         assertTrue(destinationType.isVisible(),
                 "DE-TRN-003 entrance-link route keeps target type visible for honest selected-transition readback");
-        assertTrue(comboBoxContainsDisplayText(destinationType, "OVERWORLD_TILE"),
+        assertTrue(comboBoxContainsDisplayText(destinationType, "Weltkarte"),
                 "DE-TRN-003 entrance-link route exposes overworld destination option");
-        assertTrue(comboBoxContainsDisplayText(destinationType, "DUNGEON_MAP"),
+        assertTrue(comboBoxContainsDisplayText(destinationType, "Dungeon-Eingang"),
                 "DE-TRN-003 entrance-link route exposes dungeon destination option");
         assertTrue(textField(stateView, "Eingangslink Zielkarte").isVisible(),
                 "DE-TRN-003 entrance-link route exposes the target-map field");
@@ -377,7 +380,7 @@ final class DungeonEditorTransitionHarness {
             String message
     ) {
         assertTransitionEntranceLinkCard(stateView);
-        assertEquals("DUNGEON_MAP", String.valueOf(comboBox(stateView, "Eingangslink Zieltyp").getValue()),
+        assertEquals("Dungeon-Eingang", String.valueOf(comboBox(stateView, "Eingangslink Zieltyp").getValue()),
                 message + " target type");
         assertEquals(Long.toString(targetMapId), textField(stateView, "Eingangslink Zielkarte").getText(),
                 message + " target map");
@@ -391,7 +394,7 @@ final class DungeonEditorTransitionHarness {
         ComboBox<?> destinationType = comboBox(stateView, "Eingangslink Zieltyp");
         assertTrue(destinationType.isVisible(),
                 "DE-TRN-003 selected overworld-backed transition keeps visible target type");
-        assertEquals("OVERWORLD_TILE", String.valueOf(destinationType.getValue()),
+        assertEquals("Weltkarte", String.valueOf(destinationType.getValue()),
                 "DE-TRN-003 selected overworld-backed transition does not masquerade as dungeon map");
         assertEquals("77", textField(stateView, "Eingangslink Zielkarte").getText(),
                 "DE-TRN-003 selected overworld-backed transition reads persisted overworld map");
@@ -413,7 +416,7 @@ final class DungeonEditorTransitionHarness {
             long targetTransitionId,
             boolean bidirectional
     ) {
-        selectComboItem(comboBox(stateView, "Eingangslink Zieltyp"), "DUNGEON_MAP");
+        selectComboItem(comboBox(stateView, "Eingangslink Zieltyp"), "Dungeon-Eingang");
         textField(stateView, "Eingangslink Zielkarte").setText(Long.toString(targetMapId));
         textField(stateView, "Eingangslink Zieluebergang").setText(Long.toString(targetTransitionId));
         CheckBox bidirectionalBox = checkBox(stateView, "Ruecklink zum ausgewaehlten Eingang speichern");
@@ -460,22 +463,130 @@ final class DungeonEditorTransitionHarness {
         assertEquals("TRANSITION_CREATE", runtime.controlsModel().current().selectedTool().name(),
                 "DE-TRN-001 transition family selects transition creation");
         ComboBox<?> destinationType = comboBox(stateView, "Übergang Zieltyp");
-        assertTrue(comboBoxContainsDisplayText(destinationType, "OVERWORLD_TILE"),
+        assertTrue(comboBoxContainsDisplayText(destinationType, "Weltkarte"),
                 "DE-TRN-001 destination surface exposes overworld destination option");
-        assertTrue(comboBoxContainsDisplayText(destinationType, "DUNGEON_MAP"),
+        assertTrue(comboBoxContainsDisplayText(destinationType, "Dungeon-Eingang"),
                 "DE-TRN-001 destination surface exposes dungeon destination option");
+        assertTrue(comboBoxContainsDisplayText(destinationType, "Kein Ziel"),
+                "DE-TRN-001 destination surface exposes unlinked entrance option");
+        assertEquals("Kein Ziel", String.valueOf(destinationType.getValue()),
+                "DE-TRN-001 transition create defaults to unlinked entrance");
+        assertTrue(textField(stateView, "Übergang Zielkarte").isDisabled(),
+                "DE-TRN-001 unlinked entrance disables target map field");
+        assertTrue(textField(stateView, "Übergang Zielkachel").isDisabled(),
+                "DE-TRN-001 unlinked entrance disables target tile field");
+        assertTrue(textField(stateView, "Übergang Zieluebergang").isDisabled(),
+                "DE-TRN-001 unlinked entrance disables target transition field");
+
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        clickMap(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(4.5),
+                viewport.sceneToScreenY(2.5),
+                false);
+        long unlinkedTransitionId = runtime.database().transitionIdAt(mapId, 4, 2, 0);
+        List<String> unlinkedRowsAfterCreate = runtime.database().transitionStableState(mapId);
+        assertTrue(unlinkedRowsAfterCreate.stream().anyMatch(row ->
+                        row.startsWith("dungeon_transitions|transition_id=" + unlinkedTransitionId)
+                                && row.contains("|cell_x=4")
+                                && row.contains("|cell_y=2")
+                                && row.contains("|level_z=0")
+                                && row.contains("|anchor_type=CELL")
+                                && row.contains("|anchor_edge_direction=<null>")
+                                && row.contains("|destination_type=UNLINKED_ENTRANCE")
+                                && row.contains("|target_overworld_map_id=<null>")
+                                && row.contains("|target_overworld_tile_id=<null>")
+                                && row.contains("|target_dungeon_map_id=<null>")
+                                && row.contains("|target_transition_id=<null>")),
+                "DE-TRN-001 persists unlinked transition placeholder: " + unlinkedRowsAfterCreate);
+        DungeonEditorTopologyElementRef unlinkedTransitionRef =
+                new DungeonEditorTopologyElementRef("TRANSITION", unlinkedTransitionId);
+        assertTransitionCreatedInSnapshot(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                unlinkedTransitionId,
+                4,
+                2,
+                0,
+                4.5,
+                2.5,
+                "Dungeon-Eingang (unverbunden)",
+                "DE-TRN-001 committed unlinked entrance create");
+        assertTrue(!renderHasTextForRef(binding.mapContentModel(), unlinkedTransitionRef),
+                "DE-TRN-001 cell transition does not render a committed feature label");
+        var unlinkedMarkerTarget = runtimePointerTarget(binding.mapContentModel(), 4.5, 2.5, false);
+        assertEquals("MARKER", unlinkedMarkerTarget.targetKind().name(),
+                "DE-TRN-001 cell transition marker hit resolves through marker target kind");
+        updateHoverTarget(binding.mapContentModel(), unlinkedMarkerTarget);
+        assertTrue(renderHasHoverText(binding.mapContentModel(), "Übergang " + unlinkedTransitionId),
+                "DE-TRN-001 cell transition label appears only in marker hover overlay");
+
+        click(button(controls, "Auswahl"));
+        Point2D unlinkedCenter = glyphCenterForRef(binding.mapContentModel(), unlinkedTransitionRef);
+        viewport = binding.mapContentModel().currentViewport();
+        fireMapMousePressed(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(unlinkedCenter.getX()),
+                viewport.sceneToScreenY(unlinkedCenter.getY()),
+                false);
+        assertEquals(unlinkedTransitionRef, runtime.stateModel().current().selection().topologyRef(),
+                "DE-TRN-001 unlinked entrance remains selectable");
+        assertEquals("Kein Ziel", String.valueOf(comboBox(stateView, "Eingangslink Zieltyp").getValue()),
+                "DE-TRN-001 selected unlinked entrance reads back placeholder destination type");
+        TextArea unlinkedDescription = textArea(stateView, "Übergang Beschreibung");
+        unlinkedDescription.setText("Unmarked cave mouth.");
+        click(buttonWithAccessibleText(stateView, "Übergang " + unlinkedTransitionId + " speichern"));
+        assertEquals(1L, runtime.database().countTransitionDescription(
+                        mapId,
+                        unlinkedTransitionId,
+                        "Unmarked cave mouth."),
+                "DE-TRN-001 unlinked entrance description persists");
+
+        selectMap(controls, "Transition Create Reload Hop");
+        selectMap(controls, "Transition Create Map");
+        assertTransitionCreatedInSnapshot(
+                runtime.mapSurfaceModel().current(),
+                binding.mapContentModel(),
+                unlinkedTransitionId,
+                4,
+                2,
+                0,
+                4.5,
+                2.5,
+                "Dungeon-Eingang (unverbunden)",
+                "DE-TRN-001 reloaded unlinked entrance");
+        assertTrue(renderHasGlyphAt(binding.mapContentModel(), unlinkedTransitionRef, 4.5, 2.5, false),
+                "DE-TRN-001 reload render keeps unlinked transition marker");
+
+        click(button(controls, "Übergang"));
+        viewport = binding.mapContentModel().currentViewport();
+        clickMap(
+                mapView,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(4.5),
+                viewport.sceneToScreenY(2.5),
+                false);
+        assertEquals(0L, runtime.database().countTransitionById(mapId, unlinkedTransitionId),
+                "DE-TRN-001 deletes unlinked entrance placeholder");
+        assertTrue(!renderHasGlyphAt(binding.mapContentModel(), unlinkedTransitionRef, 4.5, 2.5, false),
+                "DE-TRN-001 render removes deleted unlinked entrance");
+
+        click(button(controls, "Übergang"));
+        destinationType = comboBox(stateView, "Übergang Zieltyp");
         destinationType.requestFocus();
-        selectComboItem(destinationType, "DUNGEON_MAP");
+        selectComboItem(destinationType, "Dungeon-Eingang");
         destinationType = comboBox(stateView, "Übergang Zieltyp");
         assertTrue(destinationType.isFocused(),
                 "DE-TRN-001 runtime draft publication keeps create destination-type focus");
-        assertEquals("DUNGEON_MAP", String.valueOf(destinationType.getValue()),
+        assertEquals("Dungeon-Eingang", String.valueOf(destinationType.getValue()),
                 "DE-TRN-001 runtime draft publication keeps create destination type");
-        selectComboItem(destinationType, "OVERWORLD_TILE");
+        selectComboItem(destinationType, "Weltkarte");
         destinationType = comboBox(stateView, "Übergang Zieltyp");
         assertTrue(destinationType.isFocused(),
                 "DE-TRN-001 runtime draft publication keeps create destination-type focus after second change");
-        assertEquals("OVERWORLD_TILE", String.valueOf(destinationType.getValue()),
+        assertEquals("Weltkarte", String.valueOf(destinationType.getValue()),
                 "DE-TRN-001 runtime draft publication keeps create overworld destination type");
         TextField destinationMapField = textField(stateView, "Übergang Zielkarte");
         destinationMapField.requestFocus();
@@ -493,7 +604,7 @@ final class DungeonEditorTransitionHarness {
                 "DE-TRN-001 runtime draft publication keeps create target-tile text");
         textField(stateView, "Übergang Zieluebergang").setText("");
 
-        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        viewport = binding.mapContentModel().currentViewport();
         clickMap(
                 mapView,
                 MouseButton.PRIMARY,
@@ -509,6 +620,8 @@ final class DungeonEditorTransitionHarness {
                         && row.contains("|cell_x=5")
                         && row.contains("|cell_y=2")
                         && row.contains("|level_z=0")
+                        && row.contains("|anchor_type=CELL")
+                        && row.contains("|anchor_edge_direction=<null>")
                         && row.contains("|destination_type=OVERWORLD_TILE")
                         && row.contains("|target_overworld_map_id=77")
                         && row.contains("|target_overworld_tile_id=88")),
@@ -552,6 +665,323 @@ final class DungeonEditorTransitionHarness {
                 + " -> DungeonMapView primary create -> SQLite transition/topology -> render");
     }
 
+    private static void verifyEdgeTransitionCreateThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Transition Edge Create Map");
+        runtime.database().seedF4WalledRoomWithDoor(mapId);
+        createMapThroughControls(controls, runtime, "Transition Edge Create Reload Hop");
+        selectMap(controls, "Transition Edge Create Map");
+        assertTrue(runtime.database().transitionStableState(mapId).isEmpty(),
+                "DE-TRN-005 fixture starts without transition rows");
+
+        click(button(controls, "Übergang"));
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        Point2D wallMidpoint = boundaryMidpointNear(binding.mapContentModel(), "WALL", 2.0, 1.5);
+        assertEquals("BOUNDARY", runtimePointerTarget(binding.mapContentModel(), wallMidpoint.getX(), wallMidpoint.getY(), true)
+                        .targetKind()
+                        .name(),
+                "DE-TRN-005 transition create samples a wall boundary target");
+        clickMap(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(wallMidpoint.getX()),
+                viewport.sceneToScreenY(wallMidpoint.getY()),
+                false);
+
+        List<String> stableRowsAfter = runtime.database().transitionStableState(mapId);
+        assertEquals(1L, stableRowsAfter.size(),
+                "DE-TRN-005 wall-boundary click creates exactly one transition row: " + stableRowsAfter);
+        long transitionId = transitionIdFromStableRow(stableRowsAfter.getFirst());
+        assertTransitionRowContains(
+                stableRowsAfter,
+                transitionId,
+                List.of(
+                        "cell_x=1",
+                        "cell_y=1",
+                        "level_z=0",
+                        "anchor_type=EDGE",
+                        "anchor_edge_direction=NORTH",
+                        "destination_type=UNLINKED_ENTRANCE"),
+                "DE-TRN-005 wall-boundary click persists EDGE transition anchor");
+        assertTrue(stableRowsAfter.stream().noneMatch(row -> row.startsWith(
+                        "dungeon_transitions|transition_id=" + transitionId) && row.contains("|anchor_type=CELL")),
+                "DE-TRN-005 wall-boundary click does not fall back to a CELL transition row");
+
+        DungeonEditorTopologyElementRef transitionRef = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
+        DungeonEditorMapSurfaceSnapshot committedSurface = runtime.mapSurfaceModel().current();
+        assertTrue(committedSurface.surface().map().features().stream()
+                        .filter(feature -> "TRANSITION".equals(feature.kind()))
+                        .filter(feature -> feature.id() == transitionId)
+                        .anyMatch(feature -> feature.anchorEdge() != null
+                                && feature.cells().isEmpty()
+                                && "Dungeon-Eingang (unverbunden)".equals(feature.destinationLabel())
+                                && feature.anchorEdge().from().q() == 1
+                                && feature.anchorEdge().from().r() == 1
+                                && feature.anchorEdge().to().q() == 2
+                                && feature.anchorEdge().to().r() == 1),
+                "DE-TRN-005 published transition feature carries source-edge geometry without feature cells");
+        assertEdgeTransitionGlyph(binding.mapContentModel(), transitionRef, "DE-TRN-005");
+        assertTrue(!renderHasSurfacePrimitive(binding.mapContentModel(), transitionRef),
+                "DE-TRN-005 edge transition does not render a transition cell surface");
+        assertTrue(!renderHasTextForRef(binding.mapContentModel(), transitionRef),
+                "DE-TRN-005 edge transition does not render a committed feature label");
+        var transitionMarkerTarget = runtimePointerTarget(binding.mapContentModel(), wallMidpoint.getX(), wallMidpoint.getY(), false);
+        assertEquals("MARKER", transitionMarkerTarget.targetKind().name(),
+                "DE-TRN-005 edge transition marker hit resolves through marker target kind");
+        assertEquals("TRANSITION", transitionMarkerTarget.topologyKind(),
+                "DE-TRN-005 edge transition marker hit carries transition topology kind");
+        updateHoverTarget(binding.mapContentModel(), transitionMarkerTarget);
+        assertTrue(renderHasHoverText(binding.mapContentModel(), "Übergang " + transitionId),
+                "DE-TRN-005 edge transition label appears only in marker hover overlay");
+
+        clickMap(
+                mapView,
+                MouseButton.SECONDARY,
+                viewport.sceneToScreenX(wallMidpoint.getX()),
+                viewport.sceneToScreenY(wallMidpoint.getY()),
+                false);
+        assertEquals(0L, runtime.database().countTransitionById(mapId, transitionId),
+                "DE-TRN-005 transition delete still works on boundary-positioned transition marker targets");
+        assertTrue(!renderHasGlyphAt(binding.mapContentModel(), transitionRef, wallMidpoint.getX(), wallMidpoint.getY(), false),
+                "DE-TRN-005 render removes deleted edge transition marker");
+
+        results.add("DE-TRN-005 Ready: DungeonMapView wall-boundary transition create -> SQLite EDGE anchor"
+                + " -> boundary marker render/delete");
+    }
+
+
+    private static void verifyTransitionAnchorRoundtripThroughPersistence(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+        DungeonEditorStateView stateView = binding.stateView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Transition Anchor Roundtrip Map");
+        runtime.database().seedTransitionAnchorRoundtripFixture(mapId);
+        long cellTransitionId = runtime.database().transitionIdByDescription(mapId, "Cell anchor transition.");
+        long dungeonMapDestinationTransitionId = runtime.database()
+                .transitionIdByDescription(mapId, "Dungeon map destination transition.");
+        long noneTransitionId = runtime.database().transitionIdByDescription(mapId, "None anchor transition.");
+        long edgeTransitionId = runtime.database().transitionIdByDescription(mapId, "Edge anchor transition.");
+        long dungeonMapDestinationTargetMapId = runtime.database()
+                .mapIdByName("Transition Anchor Destination Target");
+        List<String> seededRows = runtime.database().transitionStableState(mapId);
+        assertTransitionRowContains(
+                seededRows,
+                cellTransitionId,
+                List.of(
+                        "cell_x=5",
+                        "cell_y=2",
+                        "level_z=0",
+                        "anchor_type=CELL",
+                        "anchor_edge_direction=<null>"),
+                "DE-TRN-001 seeded CELL anchor row is explicit");
+        assertTransitionRowContains(
+                seededRows,
+                dungeonMapDestinationTransitionId,
+                List.of(
+                        "destination_type=DUNGEON_MAP",
+                        "target_overworld_map_id=<null>",
+                        "target_overworld_tile_id=<null>",
+                        "target_dungeon_map_id=" + dungeonMapDestinationTargetMapId,
+                        "target_transition_id=<null>"),
+                "DE-TRN-001 seeded DUNGEON_MAP destination may target a map without a transition");
+        assertTransitionRowContains(
+                seededRows,
+                noneTransitionId,
+                List.of(
+                        "cell_x=<null>",
+                        "cell_y=<null>",
+                        "level_z=<null>",
+                        "anchor_type=NONE",
+                        "anchor_edge_direction=<null>"),
+                "DE-TRN-001 seeded NONE anchor row is explicit");
+        assertTransitionRowContains(
+                seededRows,
+                edgeTransitionId,
+                List.of(
+                        "cell_x=6",
+                        "cell_y=2",
+                        "level_z=0",
+                        "anchor_type=EDGE",
+                        "anchor_edge_direction=EAST"),
+                "DE-TRN-001 seeded EDGE anchor row is explicit");
+
+        createMapThroughControls(controls, runtime, "Transition Anchor Roundtrip Reload Hop");
+        selectMap(controls, "Transition Anchor Roundtrip Map");
+        click(button(controls, "Auswahl"));
+        DungeonEditorTopologyElementRef cellRef = new DungeonEditorTopologyElementRef("TRANSITION", cellTransitionId);
+        Point2D cellCenter = glyphCenterForRef(binding.mapContentModel(), cellRef);
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        fireMapMousePressed(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(cellCenter.getX()),
+                viewport.sceneToScreenY(cellCenter.getY()),
+                false);
+        TextArea descriptionArea = textArea(stateView, "Übergang Beschreibung");
+        descriptionArea.setText("Cell anchor transition resaved.");
+        click(buttonWithAccessibleText(stateView, "Übergang " + cellTransitionId + " speichern"));
+
+        List<String> resavedRows = runtime.database().transitionStableState(mapId);
+        assertTransitionRowContains(
+                resavedRows,
+                cellTransitionId,
+                List.of("anchor_type=CELL", "anchor_edge_direction=<null>"),
+                "DE-TRN-001 reload and re-save preserves CELL anchor type");
+        assertTransitionRowContains(
+                resavedRows,
+                dungeonMapDestinationTransitionId,
+                List.of(
+                        "destination_type=DUNGEON_MAP",
+                        "target_dungeon_map_id=" + dungeonMapDestinationTargetMapId,
+                        "target_transition_id=<null>"),
+                "DE-TRN-001 reload and re-save preserves map-only DUNGEON_MAP destination");
+        assertTransitionRowContains(
+                resavedRows,
+                noneTransitionId,
+                List.of(
+                        "cell_x=<null>",
+                        "cell_y=<null>",
+                        "level_z=<null>",
+                        "anchor_type=NONE",
+                        "anchor_edge_direction=<null>"),
+                "DE-TRN-001 reload and re-save preserves NONE anchor row");
+        assertTransitionRowContains(
+                resavedRows,
+                edgeTransitionId,
+                List.of(
+                        "cell_x=6",
+                        "cell_y=2",
+                        "level_z=0",
+                        "anchor_type=EDGE",
+                        "anchor_edge_direction=EAST"),
+                "DE-TRN-001 reload and re-save preserves EDGE anchor row");
+        assertTrue(runtime.mapSurfaceModel().current().surface().map().features().stream().noneMatch(feature ->
+                        feature.id() == noneTransitionId && "TRANSITION".equals(feature.kind())),
+                "DE-TRN-001 NONE anchor does not publish a placed transition marker");
+        DungeonEditorTopologyElementRef edgeRef = new DungeonEditorTopologyElementRef("TRANSITION", edgeTransitionId);
+        DungeonEditorMapSurfaceSnapshot resavedSurface = runtime.mapSurfaceModel().current();
+        assertTrue(resavedSurface.surface().map().features().stream()
+                        .filter(feature -> "TRANSITION".equals(feature.kind()))
+                        .filter(feature -> feature.id() == edgeTransitionId)
+                        .anyMatch(feature -> feature.anchorEdge() != null
+                                && feature.cells().isEmpty()
+                                && "Overworld-Feld 88".equals(feature.destinationLabel())
+                                && feature.anchorEdge().from().q() == 7
+                                && feature.anchorEdge().from().r() == 2
+                                && feature.anchorEdge().to().q() == 7
+                                && feature.anchorEdge().to().r() == 3),
+                "DE-TRN-001 EDGE anchor uses derived source edge for current marker projection");
+        assertEdgeTransitionGlyph(binding.mapContentModel(), edgeRef, "DE-TRN-001 roundtrip");
+        assertTrue(!renderHasSurfacePrimitive(binding.mapContentModel(), edgeRef),
+                "DE-TRN-001 roundtrip EDGE anchor does not render a transition cell surface");
+        assertTrue(!renderHasTextForRef(binding.mapContentModel(), edgeRef),
+                "DE-TRN-001 roundtrip EDGE anchor does not render a committed feature label");
+        var edgeMarkerTarget = runtimePointerTarget(binding.mapContentModel(), 7.0, 2.5, false);
+        assertEquals("MARKER", edgeMarkerTarget.targetKind().name(),
+                "DE-TRN-001 roundtrip EDGE anchor marker hit resolves through marker target kind");
+        updateHoverTarget(binding.mapContentModel(), edgeMarkerTarget);
+        assertTrue(renderHasHoverText(binding.mapContentModel(), "Übergang " + edgeTransitionId),
+                "DE-TRN-001 roundtrip EDGE anchor label appears only in marker hover overlay");
+
+        results.add("DE-TRN-001 Ready: SQLite transition anchors CELL/NONE/EDGE reload and re-save"
+                + " without losing anchor_type or edge direction");
+    }
+
+    private static void verifyMalformedTransitionAnchorsRejectReload(List<String> results) {
+        verifyMalformedTransitionRejectsReload(
+                "Malformed Unknown Anchor Map",
+                (database, mapId) -> database.seedMalformedUnknownAnchorFixture(mapId),
+                "DE-TRN-001 unknown anchor_type rejects reload");
+        verifyMalformedTransitionRejectsReload(
+                "Malformed Partial Coordinate Map",
+                (database, mapId) -> database.seedMalformedPartialAnchorCoordinateFixture(mapId),
+                "DE-TRN-001 partial anchor coordinate rejects reload");
+        verifyMalformedTransitionRejectsReload(
+                "Malformed None Coordinate Map",
+                (database, mapId) -> database.seedMalformedNoneAnchorWithCoordinateFixture(mapId),
+                "DE-TRN-001 NONE anchor with coordinate rejects reload");
+        verifyMalformedTransitionRejectsReload(
+                "Malformed Edge Direction Map",
+                (database, mapId) -> database.seedMalformedIncompleteEdgeAnchorFixture(mapId),
+                "DE-TRN-001 incomplete EDGE anchor rejects reload");
+        verifyMalformedTransitionRejectsReload(
+                "Malformed Compatibility Edge Direction Map",
+                (database, mapId) -> database.seedMalformedImplicitAnchorWithEdgeDirectionFixture(mapId),
+                "DE-TRN-001 implicit anchor with edge direction rejects reload");
+        verifyMalformedTransitionRejectsReload(
+                "Malformed Destination Type Map",
+                (database, mapId) -> database.seedMalformedDestinationTypeFixture(mapId),
+                "DE-TRN-001 unknown destination_type rejects reload");
+        verifyMalformedTransitionRejectsReload(
+                "Malformed Destination Target Map",
+                (database, mapId) -> database.seedMalformedDestinationTargetFixture(mapId),
+                "DE-TRN-001 malformed destination target columns reject reload");
+        verifyMalformedTransitionRejectsReload(
+                "Malformed Dungeon Map Destination Id Map",
+                (database, mapId) -> database.seedMalformedDungeonMapDestinationIdFixture(mapId),
+                "DE-TRN-001 non-positive dungeon map destination id rejects reload");
+        verifyMalformedTransitionRejectsReload(
+                "Malformed Dungeon Transition Destination Id Map",
+                (database, mapId) -> database.seedMalformedDungeonTransitionDestinationIdFixture(mapId),
+                "DE-TRN-001 non-positive dungeon transition destination id rejects reload");
+        verifyMalformedTransitionRejectsReload(
+                "Malformed Overworld Tile Destination Id Map",
+                (database, mapId) -> database.seedMalformedOverworldTileDestinationIdFixture(mapId),
+                "DE-TRN-001 non-positive overworld tile destination id rejects reload");
+
+        results.add("DE-TRN-001 Ready: malformed transition anchor/destination rows reject reload"
+                + " instead of becoming authored absence");
+    }
+
+    private static void verifyMalformedTransitionRejectsReload(
+            String mapName,
+            MalformedTransitionSeeder seeder,
+            String message
+    ) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+
+        long mapId = createMapThroughControls(controls, runtime, mapName);
+        seeder.seed(runtime.database(), mapId);
+        createMapThroughControls(controls, runtime, mapName + " Reload Hop");
+
+        RuntimeException exception = expectRuntimeFailure(
+                () -> selectMap(controls, mapName),
+                message);
+        assertTrue(exception.getMessage() != null
+                        && exception.getMessage().contains("Malformed dungeon transition record"),
+                message + " reports the malformed source row");
+        assertTrue(runtime.mapSurfaceModel().current() != null,
+                message + " leaves the shell alive");
+    }
+
+    @FunctionalInterface
+    private interface MalformedTransitionSeeder {
+        void seed(DungeonEditorHarnessPersistenceSupport.DatabaseAssertions database, long mapId);
+    }
+
+    private static RuntimeException expectRuntimeFailure(
+            DungeonEditorBehaviorHarnessSupport.ThrowingRunnable action,
+            String message
+    ) {
+        try {
+            action.run();
+        } catch (RuntimeException exception) {
+            return exception;
+        } catch (Exception exception) {
+            throw new AssertionError(message + " threw checked exception.", exception);
+        }
+        throw new AssertionError(message + " did not fail.");
+    }
+
 
     private static void verifyTransitionDeleteThroughMapView(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
@@ -569,19 +999,17 @@ final class DungeonEditorTransitionHarness {
 
         DungeonEditorTopologyElementRef transitionRef = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
         Point2D transitionCenter = glyphCenterForRef(binding.mapContentModel(), transitionRef);
-        assertEquals("CELL", binding.mapContentModel()
-                        .resolvePointerTarget(transitionCenter.getX(), transitionCenter.getY())
+        assertEquals("MARKER", runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
                         .targetKind()
                         .name(),
                 "DE-TRN-002 transition marker resolves as a real map pointer target");
-        assertEquals("TRANSITION", binding.mapContentModel()
-                        .resolvePointerTarget(transitionCenter.getX(), transitionCenter.getY())
+        assertEquals("TRANSITION", runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
                         .elementKind(),
-                "DE-TRN-002 transition marker resolves through transition cell semantics");
-        assertEquals("TRANSITION", binding.mapContentModel()
-                        .resolvePointerTarget(transitionCenter.getX(), transitionCenter.getY())
+                "DE-TRN-002 transition marker resolves through transition marker semantics");
+        assertEquals("TRANSITION", runtimePointerTarget(binding.mapContentModel(), transitionCenter.getX(), transitionCenter.getY())
                         .topologyKind(),
                 "DE-TRN-002 transition marker carries a transition topology ref");
+        assertCompactTransitionGlyph(binding.mapContentModel(), transitionRef, "DE-TRN-002");
         click(button(controls, "Übergang"));
         assertEquals("TRANSITION_CREATE", runtime.controlsModel().current().selectedTool().name(),
                 "DE-TRN-002 transition family selects the transition family tool");
@@ -708,6 +1136,67 @@ final class DungeonEditorTransitionHarness {
                 scenario + " keeps preview empty");
         assertTrue(renderHasGlyphAt(binding.mapContentModel(), transitionRef, transitionCenter.getX(), transitionCenter.getY(), false),
                 scenario + " keeps rendered transition marker");
+    }
+
+    private static void assertCompactTransitionGlyph(
+            DungeonMapContentModel mapContentModel,
+            DungeonEditorTopologyElementRef ref,
+            String scenario
+    ) {
+        DungeonMapContentModel.GlyphPrimitive glyph = glyphPrimitiveForRef(mapContentModel, ref);
+        assertEquals("", glyph.label(), scenario + " transition glyph does not render waypoint text");
+        assertTrue(glyphMajorAxis(glyph) < 0.5,
+                scenario + " transition glyph uses compact transition marker geometry");
+    }
+
+    private static long transitionIdFromStableRow(String row) {
+        String prefix = "dungeon_transitions|transition_id=";
+        if (row == null || !row.startsWith(prefix)) {
+            throw new AssertionError("Transition stable row has no transition id: " + row);
+        }
+        int end = row.indexOf('|', prefix.length());
+        String value = end < 0 ? row.substring(prefix.length()) : row.substring(prefix.length(), end);
+        return Long.parseLong(value);
+    }
+
+    private static void assertEdgeTransitionGlyph(
+            DungeonMapContentModel mapContentModel,
+            DungeonEditorTopologyElementRef ref,
+            String scenario
+    ) {
+        DungeonMapContentModel.GlyphPrimitive glyph = glyphPrimitiveForRef(mapContentModel, ref);
+        assertEquals("", glyph.label(), scenario + " edge transition glyph does not render waypoint text");
+        assertTrue(glyphMajorAxis(glyph) < 0.5,
+                scenario + " edge transition glyph uses compact door-like marker geometry");
+        assertTrue(glyphMajorAxis(glyph) > 0.3,
+                scenario + " edge transition glyph is a boundary pill, not the cell portal diamond");
+    }
+
+    private static DungeonMapContentModel.GlyphPrimitive glyphPrimitiveForRef(
+            DungeonMapContentModel mapContentModel,
+            DungeonEditorTopologyElementRef ref
+    ) {
+        String selectionRef = ref.kind() + ":" + ref.id();
+        return mapContentModel.canvasStateProperty().get().renderScene().glyphs().stream()
+                .filter(glyph -> selectionRef.equals(glyph.selectionRef()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Glyph not found for " + selectionRef));
+    }
+
+    private static double glyphMajorAxis(DungeonMapContentModel.GlyphPrimitive glyph) {
+        return Math.max(glyphAxis(glyph, true), glyphAxis(glyph, false));
+    }
+
+    private static double glyphAxis(DungeonMapContentModel.GlyphPrimitive glyph, boolean xAxis) {
+        double min = glyph.polygon().stream()
+                .mapToDouble(point -> xAxis ? point.x() : point.y())
+                .min()
+                .orElseThrow();
+        double max = glyph.polygon().stream()
+                .mapToDouble(point -> xAxis ? point.x() : point.y())
+                .max()
+                .orElseThrow();
+        return max - min;
     }
 
 }

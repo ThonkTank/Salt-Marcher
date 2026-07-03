@@ -1,19 +1,13 @@
 package src.domain.dungeon;
 
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository;
-import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository.ToolSelectionPublication;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
-import src.domain.dungeon.published.DungeonEditorPreview;
-import src.domain.dungeon.published.DungeonEditorPreviewDiff;
 import src.domain.dungeon.published.DungeonEditorStateModel;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
-import src.domain.dungeon.published.DungeonEditorSurface;
-import src.domain.dungeon.published.DungeonEditorTool;
 
 final class DungeonEditorPublishedStateServiceAssembly implements DungeonEditorSnapshotPublishedStateRepository {
 
@@ -57,84 +51,42 @@ final class DungeonEditorPublishedStateServiceAssembly implements DungeonEditorS
     }
 
     @Override
-    public void publishEditorToolSelection(ToolSelectionPublication publication) {
-        ToolSelectionPublication safePublication = publication == null
-                ? new ToolSelectionPublication(DungeonEditorSessionValues.Tool.defaultTool().name(), "")
-                : publication;
-        DungeonEditorTool publishedTool = DungeonEditorValueProjectionServiceAssembly.tool(
-                DungeonEditorSessionValues.Tool.fromName(safePublication.selectedToolName()));
-        String safeStatusText = safePublication.statusText();
-        controls.publish(controlsSnapshot(controls.current(), publishedTool, safeStatusText));
-        mapSurface.publish(mapSurfaceSnapshot(mapSurface.current(), publishedTool));
-        state.publish(stateSnapshot(state.current(), publishedTool, safeStatusText));
+    public void publishEditorControlsSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
+        DungeonEditorSessionSnapshot.SnapshotData safeSnapshot =
+                snapshot == null ? DungeonEditorSessionSnapshot.empty("") : snapshot;
+        DungeonEditorSurfaceContextServiceAssembly.ControlsContext surfaceContext =
+                DungeonEditorSurfaceContextServiceAssembly.controlsContext(
+                        safeSnapshot.surface(),
+                        safeSnapshot.projectionLevel());
+        controls.publish(DungeonEditorControlsProjectionServiceAssembly.snapshot(safeSnapshot, surfaceContext));
     }
 
-    private static DungeonEditorControlsSnapshot controlsSnapshot(
-            DungeonEditorControlsSnapshot current,
-            DungeonEditorTool selectedTool,
-            String statusText
-    ) {
-        DungeonEditorControlsSnapshot safeCurrent = current == null
-                ? DungeonEditorControlsSnapshot.empty(statusText)
-                : current;
-        return new DungeonEditorControlsSnapshot(
-                safeCurrent.maps(),
-                safeCurrent.selectedMapId(),
-                safeCurrent.viewMode(),
-                selectedTool,
-                safeCurrent.projectionLevel(),
-                safeCurrent.overlaySettings(),
-                safeCurrent.reachableLevels(),
-                safeCurrent.surfaceLoaded(),
-                statusText);
+    @Override
+    public void publishEditorControls(DungeonEditorSessionSnapshot.ControlsData controlsData) {
+        controls.publish(DungeonEditorControlsProjectionServiceAssembly.snapshot(controlsData, controls.current()));
     }
 
-    private static DungeonEditorMapSurfaceSnapshot mapSurfaceSnapshot(
-            DungeonEditorMapSurfaceSnapshot current,
-            DungeonEditorTool selectedTool
-    ) {
-        DungeonEditorMapSurfaceSnapshot safeCurrent = current == null
-                ? DungeonEditorMapSurfaceSnapshot.empty()
-                : current;
-        return new DungeonEditorMapSurfaceSnapshot(
-                committedSurface(safeCurrent.surface()),
-                safeCurrent.selection(),
-                DungeonEditorPreview.none(),
-                safeCurrent.viewMode(),
-                safeCurrent.overlaySettings(),
-                safeCurrent.projectionLevel(),
-                selectedTool);
+    @Override
+    public void publishEditorSessionFrame(DungeonEditorSessionSnapshot.SessionFrameData frameData) {
+        DungeonEditorSessionSnapshot.SessionFrameData safeFrameData =
+                frameData == null ? DungeonEditorSessionSnapshot.sessionFrameData(null) : frameData;
+        controls.publish(DungeonEditorControlsProjectionServiceAssembly.snapshot(
+                safeFrameData.controlsData(),
+                controls.current()));
+        mapSurface.publish(DungeonEditorMapSurfaceProjectionServiceAssembly.snapshot(safeFrameData, mapSurface.current()));
+        state.publish(DungeonEditorStateProjectionServiceAssembly.snapshot(safeFrameData, state.current()));
     }
 
-    private static DungeonEditorSurface committedSurface(DungeonEditorSurface surface) {
-        if (surface == null) {
-            return null;
-        }
-        return new DungeonEditorSurface(
-                surface.mapName(),
-                surface.revision(),
-                surface.map(),
-                null,
-                DungeonEditorPreviewDiff.empty(),
-                surface.inspector());
-    }
-
-    private static DungeonEditorStateSnapshot stateSnapshot(
-            DungeonEditorStateSnapshot current,
-            DungeonEditorTool selectedTool,
-            String statusText
-    ) {
-        DungeonEditorStateSnapshot safeCurrent = current == null
-                ? DungeonEditorStateSnapshot.empty(statusText)
-                : current;
-        return new DungeonEditorStateSnapshot(
-                safeCurrent.selection(),
-                safeCurrent.inspector(),
-                DungeonEditorPreview.none(),
-                statusText,
-                safeCurrent.viewMode(),
-                selectedTool,
-                safeCurrent.overlaySettings(),
-                safeCurrent.projectionLevel());
+    @Override
+    public void publishEditorSessionFramePreservingSurface(DungeonEditorSessionSnapshot.SessionFrameData frameData) {
+        DungeonEditorSessionSnapshot.SessionFrameData safeFrameData =
+                frameData == null ? DungeonEditorSessionSnapshot.sessionFrameData(null) : frameData;
+        controls.publish(DungeonEditorControlsProjectionServiceAssembly.snapshot(
+                safeFrameData.controlsData(),
+                controls.current()));
+        mapSurface.publish(DungeonEditorMapSurfaceProjectionServiceAssembly.snapshotPreservingSurface(
+                safeFrameData,
+                mapSurface.current()));
+        state.publish(DungeonEditorStateProjectionServiceAssembly.snapshot(safeFrameData, state.current()));
     }
 }

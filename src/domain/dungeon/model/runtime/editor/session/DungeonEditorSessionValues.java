@@ -122,6 +122,10 @@ public final class DungeonEditorSessionValues {
             return this == DOOR_CREATE || this == DOOR_DELETE;
         }
 
+        public boolean isSelect() {
+            return this == SELECT;
+        }
+
         public boolean deleteMode() {
             return this == ROOM_DELETE
                     || this == WALL_DELETE

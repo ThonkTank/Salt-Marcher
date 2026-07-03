@@ -1,7 +1,11 @@
 package src.features.dungeon.runtime;
 
+import java.util.List;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
+import src.domain.dungeon.published.DungeonCellRef;
+import src.domain.dungeon.published.DungeonEdgeRef;
+import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.features.dungeon.runtime.DungeonEditorInteractionValues.VertexTarget;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.BoundaryTarget;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.HitKind;
@@ -9,6 +13,10 @@ import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.HitTa
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.PointerState;
 
 final class DungeonEditorMainViewInputBoundaryTranslationHelper {
+    private static final String ROOM_KIND = "ROOM";
+    private static final String CORRIDOR_KIND = "CORRIDOR";
+    private static final String STAIR_KIND = "STAIR";
+    private static final String TRANSITION_KIND = "TRANSITION";
     private static final double VERTEX_SNAP_DISTANCE = 0.22;
 
     PointerState resolvePointerState(
@@ -18,7 +26,7 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
             boolean primaryButtonDown,
             boolean secondaryButtonDown,
             boolean wallSingleClickMode,
-            DungeonEditorMainViewPointerTarget target
+            DungeonEditorRuntimePointerTarget target
     ) {
         int q = (int) Math.floor(canvasX);
         int r = (int) Math.floor(canvasY);
@@ -39,38 +47,53 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 effectiveBoundaryTarget);
     }
 
-    private static HitTarget toHitTarget(DungeonEditorMainViewPointerTarget target) {
-        DungeonEditorMainViewPointerTarget safeTarget =
-                target == null ? DungeonEditorMainViewPointerTarget.empty() : target;
-        return switch (safeTarget.targetKind().category()) {
-            case EMPTY -> HitTarget.empty();
-            case SIMPLE -> simpleTarget(toHitKind(safeTarget.elementKind()), safeTarget);
-            case LABEL -> labelTarget(HitKind.LABEL, safeTarget);
-            case HANDLE -> handleTarget(safeTarget.handleRef());
-            case BOUNDARY -> boundaryTarget(safeTarget);
+    static DungeonEditorRuntimePointerTarget doorDeleteBoundaryTarget(DungeonEditorRuntimePointerTarget target) {
+        DungeonEditorRuntimePointerTarget safeTarget = target == null
+                ? DungeonEditorRuntimePointerTarget.empty()
+                : target;
+        DungeonEditorWorkspaceValues.HandleRef handle = toRuntimeHandleRef(safeTarget.handleRef());
+        if (!safeTarget.isHandleTarget()
+                || !DungeonEditorMainViewInteractionValues.handleKind(
+                        handle,
+                        DungeonEditorMainViewInteractionValues.DOOR_KIND)
+                || !handle.hasSourceEdge()) {
+            return safeTarget;
+        }
+        return DungeonEditorRuntimePointerTarget.boundary(new DungeonEditorRuntimePointerTarget.BoundaryTarget(
+                DungeonEditorRuntimePointerTarget.BoundaryKind.DOOR,
+                "",
+                handle.ownerId(),
+                DungeonEditorRuntimePointerTarget.TopologyKind.fromLegacy(handle.topologyRef().kind().name()),
+                handle.topologyRef().id(),
+                handle.sourceEdge().from().q(),
+                handle.sourceEdge().from().r(),
+                handle.sourceEdge().from().level(),
+                handle.sourceEdge().to().q(),
+                handle.sourceEdge().to().r(),
+                handle.sourceEdge().to().level()));
+    }
+
+    @SuppressWarnings("PMD.CyclomaticComplexity")
+    private static HitTarget toHitTarget(DungeonEditorRuntimePointerTarget target) {
+        DungeonEditorRuntimePointerTarget safeTarget =
+                target == null ? DungeonEditorRuntimePointerTarget.empty() : target;
+        return switch (safeTarget.targetKind()) {
+            case EMPTY, VERTEX -> HitTarget.empty();
+            case CELL, MARKER, GRAPH_NODE -> authoredTarget(toHitKind(safeTarget), safeTarget);
+            case LABEL -> authoredTarget(HitKind.LABEL, safeTarget);
+            case HANDLE -> handleTarget(toRuntimeHandleRef(safeTarget.handleRef()));
+            case BOUNDARY -> boundaryTarget(safeTarget.boundary());
         };
     }
 
-    private static HitTarget simpleTarget(HitKind kind, DungeonEditorMainViewPointerTarget target) {
+    private static HitTarget authoredTarget(HitKind kind, DungeonEditorRuntimePointerTarget target) {
         return new HitTarget(
                 kind,
                 target.ownerId(),
                 target.clusterId(),
-                target.topologyRef().kind().name(),
-                target.topologyRef().id(),
-                target.labelKind(),
-                DungeonEditorWorkspaceValues.HandleRef.empty(),
-                BoundaryTarget.empty());
-    }
-
-    private static HitTarget labelTarget(HitKind kind, DungeonEditorMainViewPointerTarget target) {
-        return new HitTarget(
-                kind,
-                target.ownerId(),
-                target.clusterId(),
-                target.topologyRef().kind().name(),
-                target.topologyRef().id(),
-                target.labelKind(),
+                target.topologyKind().legacyName(),
+                target.topologyId(),
+                target.labelKind().legacyName(),
                 DungeonEditorWorkspaceValues.HandleRef.empty(),
                 BoundaryTarget.empty());
     }
@@ -89,19 +112,20 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 BoundaryTarget.empty());
     }
 
-    private static HitTarget boundaryTarget(DungeonEditorMainViewPointerTarget target) {
-        DungeonEditorMainViewPointerTarget safeTarget =
-                target == null ? DungeonEditorMainViewPointerTarget.empty() : target;
+    private static HitTarget boundaryTarget(DungeonEditorRuntimePointerTarget.BoundaryTarget target) {
+        DungeonEditorRuntimePointerTarget.BoundaryTarget safeTarget =
+                target == null ? DungeonEditorRuntimePointerTarget.BoundaryTarget.empty() : target;
+        String topologyKind = safeTarget.topologyKind().legacyName();
         BoundaryTarget boundaryTarget = new BoundaryTarget(
-                safeTarget.boundaryPresent(),
-                safeTarget.boundaryKind().name(),
-                safeTarget.boundaryKey(),
+                safeTarget.ownerId() > 0L || !topologyKind.isBlank() || !safeTarget.key().isBlank(),
+                safeTarget.boundaryKind().workspaceKind().name(),
+                safeTarget.key(),
                 safeTarget.ownerId(),
-                safeTarget.clusterId(),
-                safeTarget.topologyRef().kind().name(),
-                safeTarget.topologyRef().id(),
-                toCellTarget(safeTarget.boundaryStart()),
-                toCellTarget(safeTarget.boundaryEnd()));
+                0L,
+                topologyKind,
+                safeTarget.topologyId(),
+                toCellTarget(safeTarget.startQ(), safeTarget.startR(), safeTarget.startLevel()),
+                toCellTarget(safeTarget.endQ(), safeTarget.endR(), safeTarget.endLevel()));
         return new HitTarget(
                 HitKind.BOUNDARY,
                 boundaryTarget.ownerId(),
@@ -113,32 +137,79 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 boundaryTarget);
     }
 
-    private static HitKind toHitKind(DungeonTopologyElementKind kind) {
-        DungeonTopologyElementKind safeKind = kind == null ? DungeonTopologyElementKind.EMPTY : kind;
-        if (safeKind == DungeonTopologyElementKind.ROOM) {
+    private static HitKind toHitKind(DungeonEditorRuntimePointerTarget target) {
+        DungeonEditorRuntimePointerTarget safeTarget = target == null
+                ? DungeonEditorRuntimePointerTarget.empty()
+                : target;
+        String elementKind = safeTarget.elementKind().legacyName();
+        DungeonTopologyElementKind topologyElementKind = safeTarget.topologyElementKind();
+        String hitKind = elementKind.isBlank() ? topologyElementKind.name() : elementKind;
+        if (ROOM_KIND.equals(hitKind)) {
             return HitKind.ROOM;
         }
-        if (safeKind == DungeonTopologyElementKind.CORRIDOR) {
+        if (CORRIDOR_KIND.equals(hitKind)) {
             return HitKind.CORRIDOR;
         }
-        if (safeKind == DungeonTopologyElementKind.STAIR) {
+        if (STAIR_KIND.equals(hitKind)) {
             return HitKind.STAIR;
         }
-        if (safeKind == DungeonTopologyElementKind.TRANSITION) {
+        if (TRANSITION_KIND.equals(hitKind)) {
             return HitKind.TRANSITION;
         }
         return HitKind.EMPTY;
     }
 
     private static src.features.dungeon.runtime.DungeonEditorInteractionValues.CellTarget toCellTarget(
-            DungeonEditorWorkspaceValues.Cell cell
+            double q,
+            double r,
+            int level
     ) {
-        DungeonEditorWorkspaceValues.Cell safeCell =
-                cell == null ? DungeonEditorWorkspaceValues.Cell.empty() : cell;
+        DungeonEditorWorkspaceValues.Cell cell = DungeonEditorRuntimeInputValues.cell(q, r, level);
         return new src.features.dungeon.runtime.DungeonEditorInteractionValues.CellTarget(
-                safeCell.q(),
-                safeCell.r(),
-                safeCell.level());
+                cell.q(),
+                cell.r(),
+                cell.level());
+    }
+
+    private static DungeonEditorWorkspaceValues.HandleRef toRuntimeHandleRef(DungeonEditorHandleRef handle) {
+        DungeonEditorHandleRef safeHandle = handle == null
+                ? DungeonEditorHandleRef.empty()
+                : handle;
+        DungeonCellRef cell = safeHandle.cell();
+        DungeonEdgeRef primarySourceEdge = safeHandle.sourceEdge();
+        DungeonEditorWorkspaceValues.Edge runtimeSourceEdge = primarySourceEdge == null
+                || primarySourceEdge.from() == null
+                || primarySourceEdge.to() == null
+                ? null
+                : new DungeonEditorWorkspaceValues.Edge(
+                        new DungeonEditorWorkspaceValues.Cell(
+                                primarySourceEdge.from().q(),
+                                primarySourceEdge.from().r(),
+                                primarySourceEdge.from().level()),
+                        new DungeonEditorWorkspaceValues.Cell(
+                                primarySourceEdge.to().q(),
+                                primarySourceEdge.to().r(),
+                                primarySourceEdge.to().level()));
+        List<DungeonEditorWorkspaceValues.Edge> runtimeSourceEdges = safeHandle.sourceEdges().stream()
+                .filter(edge -> edge != null && edge.from() != null && edge.to() != null)
+                .map(edge -> new DungeonEditorWorkspaceValues.Edge(
+                        new DungeonEditorWorkspaceValues.Cell(edge.from().q(), edge.from().r(), edge.from().level()),
+                        new DungeonEditorWorkspaceValues.Cell(edge.to().q(), edge.to().r(), edge.to().level())))
+                .toList();
+        return new DungeonEditorWorkspaceValues.HandleRef(
+                DungeonEditorRuntimeEnumTranslator.handleType(safeHandle.kind().name()),
+                DungeonEditorRuntimeInputValues.topologyRef(
+                        safeHandle.topologyRef().kind().name(),
+                        safeHandle.topologyRef().id()),
+                safeHandle.ownerId(),
+                safeHandle.clusterId(),
+                safeHandle.corridorId(),
+                safeHandle.roomId(),
+                safeHandle.index(),
+                new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level()),
+                safeHandle.direction(),
+                runtimeSourceEdge,
+                runtimeSourceEdges);
     }
 
     private static VertexTarget toVertexTarget(double canvasX, double canvasY, int level) {
@@ -150,5 +221,4 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
         }
         return new VertexTarget(true, vertexQ, vertexR, level);
     }
-
 }

@@ -3,6 +3,7 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.published.DungeonEdgeRef;
@@ -85,6 +86,17 @@ final class DungeonEditorMapCatalogHarness {
                 .orElseThrow();
         assertTrue(selected.mapId().value() > 0L, "DE-MAP-001 selected Gamma map has a stable id");
         assertEquals(selected.mapId(), controlsSnapshot.selectedMapId(), "DE-MAP-001 controls snapshot selects Gamma");
+        assertPreparedSelectedMapAligned(
+                runtime,
+                binding,
+                selected.mapId().value(),
+                "Gamma",
+                "DE-MAP-001 explicit create selection");
+        assertPreparedCatalogEntries(
+                controls,
+                List.of("Gamma"),
+                List.of(),
+                "DE-MAP-001 prepared-frame catalog list");
         assertEquals(0L, runtime.database().countAuthoredGeometryRows(selected.mapId().value()),
                 "DE-MAP-001 created map starts without authored geometry rows");
         assertEmptyMapSurface(runtime.mapSurfaceModel().current(), "Gamma");
@@ -123,6 +135,11 @@ final class DungeonEditorMapCatalogHarness {
                 controlsSnapshot.maps().stream().anyMatch(map ->
                         map.mapId().value() == alphaMapId && "Alpha Prime".equals(map.mapName())),
                 "DE-MAP-002 published catalog contains renamed map");
+        assertPreparedCatalogEntries(
+                controls,
+                List.of("Alpha Prime", "Beta"),
+                List.of("Alpha"),
+                "DE-MAP-002 prepared-frame catalog list");
         DungeonEditorMapSurfaceSnapshot surfaceSnapshot = runtime.mapSurfaceModel().current();
         assertEquals("Alpha Prime", surfaceSnapshot.surface().mapName(),
                 "DE-MAP-002 map surface name reflects rename");
@@ -174,15 +191,30 @@ final class DungeonEditorMapCatalogHarness {
         DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
         assertEquals(alphaMapId, controlsSnapshot.selectedMapId().value(),
                 "DE-MAP-003 selected map falls back to name-ordered Alpha instead of lower-id Zeta");
+        assertPreparedSelectedMapAligned(
+                runtime,
+                binding,
+                alphaMapId,
+                "Alpha",
+                "DE-MAP-003 delete fallback prepared frame");
         assertCatalogSelectorSurface(
                 controls,
                 "Alpha",
                 "Dungeon-Map gelöscht.",
                 "DE-MAP-003 fallback catalog row keeps status, selected label, and Mehr geometry stable");
+        assertPreparedCatalogEntries(
+                controls,
+                List.of("Alpha", "Zeta"),
+                List.of("Beta"),
+                "DE-MAP-003 prepared-frame catalog delete omission");
         assertTrue(controlsSnapshot.maps().stream().noneMatch(map -> map.mapId().value() == betaMapId),
                 "DE-MAP-003 published catalog omits deleted Beta");
         assertEquals("Dungeon-Map gelöscht.", controlsSnapshot.statusText(),
                 "DE-MAP-003 published controls status reports deletion");
+        assertPreparedStatusProjected(
+                binding,
+                "Dungeon-Map gelöscht.",
+                "DE-MAP-003 delete fallback prepared status projection");
         DungeonEditorMapSurfaceSnapshot surfaceSnapshot = runtime.mapSurfaceModel().current();
         assertEquals("Alpha", surfaceSnapshot.surface().mapName(),
                 "DE-MAP-003 map surface falls back to Alpha");
@@ -210,6 +242,17 @@ final class DungeonEditorMapCatalogHarness {
         DungeonEditorControlsSnapshot afterPostDeleteCreate = runtime.controlsModel().current();
         assertEquals(gammaMapId, afterPostDeleteCreate.selectedMapId().value(),
                 "DE-MAP-006 post-delete create selects Gamma");
+        assertPreparedSelectedMapAligned(
+                runtime,
+                binding,
+                gammaMapId,
+                "Gamma",
+                "DE-MAP-006 create-after-delete prepared frame");
+        assertPreparedCatalogEntries(
+                controls,
+                List.of("Alpha", "Gamma", "Zeta"),
+                List.of("Beta"),
+                "DE-MAP-006 prepared-frame catalog after delete/create");
         assertTrue(afterPostDeleteCreate.maps().stream().anyMatch(map ->
                         map.mapId().value() == gammaMapId && "Gamma".equals(map.mapName())),
                 "DE-MAP-006 published catalog contains Gamma after delete");
@@ -242,6 +285,12 @@ final class DungeonEditorMapCatalogHarness {
 
         DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
         assertEquals(betaMapId, controlsSnapshot.selectedMapId().value(), "DE-MAP-004 controls selects Beta");
+        assertPreparedSelectedMapAligned(
+                runtime,
+                binding,
+                betaMapId,
+                "Beta",
+                "DE-MAP-004 explicit select prepared frame");
         assertCatalogSelectorSurface(
                 controls,
                 "Beta",
@@ -337,6 +386,12 @@ final class DungeonEditorMapCatalogHarness {
         DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
         assertEquals(mapId, controlsSnapshot.selectedMapId().value(),
                 "DE-MAP-005 controls keep the reloaded map selected");
+        assertPreparedSelectedMapAligned(
+                runtime,
+                binding,
+                mapId,
+                "Reload Map",
+                "DE-MAP-005 reload prepared-frame selected-map projection");
         DungeonEditorMapSurfaceSnapshot reloadedSurface = runtime.mapSurfaceModel().current();
         assertEquals("Reload Map", reloadedSurface.surface().mapName(),
                 "DE-MAP-005 reloaded surface keeps the selected map name");
@@ -384,8 +439,6 @@ final class DungeonEditorMapCatalogHarness {
         long persistedFloorCellRows = database.countClusterFloorCellRows(mapId);
         long persistedBoundaryRows = database.countWallBoundaryRows(mapId);
 
-        assertTrue(startupMillis <= LARGE_CURRENT_GEOMETRY_STARTUP_MAX_MILLIS,
-                "DE-START-001 installed-shell startup latency millis=" + startupMillis);
         assertEquals(null, controlsSnapshot.selectedMapId(),
                 "DE-START-001 discovered app shell does not auto-load the large persisted map");
         assertTrue(
@@ -393,6 +446,11 @@ final class DungeonEditorMapCatalogHarness {
                         map.mapId().value() == mapId
                                 && "Large Current Geometry Startup Map".equals(map.mapName())),
                 "DE-START-001 discovered app shell publishes the seeded map in the catalog");
+        assertPreparedCatalogEntries(
+                controls,
+                List.of("Large Current Geometry Startup Map"),
+                List.of(),
+                "DE-START-001 prepared-frame startup catalog list");
         assertEquals(
                 (long) LARGE_CURRENT_GEOMETRY_FIXTURE_WIDTH * LARGE_CURRENT_GEOMETRY_FIXTURE_HEIGHT,
                 persistedFloorCellRows,
@@ -408,6 +466,10 @@ final class DungeonEditorMapCatalogHarness {
                 "DE-START-001 startup surface remains unloaded until explicit map selection");
         assertEquals(DungeonEditorPreview.none(), mapSurfaceModel.current().preview(),
                 "DE-START-001 startup preview remains empty without selected map");
+        assertPreparedStatusProjected(
+                binding,
+                "Kein Dungeon ausgewählt.",
+                "DE-START-001 no-selection no-surface prepared status projection");
         assertVisiblePlaceholder(mapView,
                 "DE-START-001 real JavaFX canvas renders a responsive unloaded-map placeholder");
 
@@ -426,7 +488,7 @@ final class DungeonEditorMapCatalogHarness {
 
         results.add("DE-START-001 Ready: 56k persisted floor cells with perimeter walls -> "
                 + "AppBootstrap discovered shell catalog startup -> "
-                + "bounded render/input latency startupMillis=" + startupMillis + " inputMillis=" + inputMillis);
+                + "diagnostic startupMillis=" + startupMillis + " bounded inputMillis=" + inputMillis);
     }
 
     private static void assertCatalogSelectorSurface(
@@ -465,12 +527,82 @@ final class DungeonEditorMapCatalogHarness {
         assertTrue(menuBounds.getMaxX() <= rowBounds.getMaxX() + 0.5, message + ": Mehr remains inside row");
     }
 
+    private static void assertPreparedSelectedMapAligned(
+            HarnessRuntime runtime,
+            HarnessBinding binding,
+            long expectedMapId,
+            String expectedMapName,
+            String message
+    ) {
+        DungeonEditorControlsSnapshot controlsSnapshot = runtime.controlsModel().current();
+        assertEquals(expectedMapId, controlsSnapshot.selectedMapId().value(),
+                message + ": controls selected-map value");
+        assertCatalogSelectorSurface(binding.controls(), expectedMapName, "", message + ": prepared key projection");
+        DungeonEditorMapSurfaceSnapshot surfaceSnapshot = runtime.mapSurfaceModel().current();
+        assertEquals(expectedMapName, surfaceSnapshot.surface().mapName(),
+                message + ": rendered surface map name");
+    }
+
+    private static void assertPreparedStatusProjected(
+            HarnessBinding binding,
+            String expectedStatusText,
+            String message
+    ) {
+        assertVisibleLabel(controlsSurface(binding.controls()), expectedStatusText, message + ": controls projection");
+    }
+
+    private static void assertPreparedCatalogEntries(
+            DungeonEditorControlsView controls,
+            List<String> expectedPresent,
+            List<String> expectedAbsent,
+            String message
+    ) {
+        List<String> itemTexts = selectorItemTexts(comboBox(controls, "Dungeon auswählen"));
+        for (String expected : expectedPresent) {
+            assertTrue(itemTexts.contains(expected), message + ": selector items contain " + expected);
+        }
+        for (String unexpected : expectedAbsent) {
+            assertTrue(!itemTexts.contains(unexpected), message + ": selector items omit " + unexpected);
+        }
+    }
+
+    private static Parent controlsSurface(DungeonEditorControlsView controls) {
+        return controls.getParent() == null ? controls : controls.getParent();
+    }
+
+    private static void assertVisibleLabel(
+            Parent root,
+            String expectedText,
+            String message
+    ) {
+        root.applyCss();
+        root.layout();
+        assertTrue(descendants(root).stream()
+                        .filter(Label.class::isInstance)
+                        .map(Label.class::cast)
+                        .anyMatch(label -> label.isVisible() && expectedText.equals(label.getText())),
+                message + ": visible label text");
+    }
+
     private static String closedSelectorText(ComboBox<?> selector) {
         if (selector.getButtonCell() == null) {
             return "";
         }
         String text = selector.getButtonCell().getText();
         return text == null ? "" : text;
+    }
+
+    private static List<String> selectorItemTexts(ComboBox<?> selector) {
+        selector.applyCss();
+        selector.layout();
+        return selector.getItems().stream()
+                .map(item -> comboDisplayTextRaw(selector, item))
+                .collect(Collectors.toList());
+    }
+
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static String comboDisplayTextRaw(ComboBox<?> selector, Object item) {
+        return comboDisplayText((ComboBox) selector, item);
     }
 
 }

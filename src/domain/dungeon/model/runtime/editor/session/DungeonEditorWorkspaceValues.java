@@ -332,7 +332,8 @@ public final class DungeonEditorWorkspaceValues {
             List<Cell> cells,
             String description,
             String destinationLabel,
-            DungeonTopologyRef topologyRef
+            DungeonTopologyRef topologyRef,
+            @Nullable Edge anchorEdge
     ) {
         public Feature {
             kind = kind == null ? DungeonFeatureType.STAIR : kind;

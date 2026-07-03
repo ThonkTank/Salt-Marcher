@@ -7,7 +7,7 @@ public record Transition(
         long transitionId,
         long mapId,
         String description,
-        @Nullable Cell anchor,
+        TransitionAnchor anchor,
         TransitionDestination destination,
         @Nullable Long linkedTransitionId
 ) {
@@ -17,7 +17,8 @@ public record Transition(
         transitionId = Math.max(0L, transitionId);
         mapId = Math.max(0L, mapId);
         description = description == null ? "" : description.trim();
-        destination = destination == null ? TransitionDestination.overworldTile(0L, 0L) : destination;
+        anchor = anchor == null ? TransitionAnchor.none() : anchor;
+        destination = destination == null ? TransitionDestination.unlinkedEntrance() : destination;
         linkedTransitionId = normalizedLinkedTransitionId(linkedTransitionId);
     }
 
@@ -26,7 +27,11 @@ public record Transition(
     }
 
     public boolean isPlaced() {
-        return anchor != null;
+        return anchor.isPlaced();
+    }
+
+    public @Nullable Cell anchorCell() {
+        return anchor.displayCell();
     }
 
     public boolean hasLinkedTransition() {

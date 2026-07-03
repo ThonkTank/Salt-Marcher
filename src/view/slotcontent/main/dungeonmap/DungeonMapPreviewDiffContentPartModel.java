@@ -6,36 +6,46 @@ import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
-import src.domain.dungeon.published.DungeonEditorPreviewDiff;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 
 final class DungeonMapPreviewDiffContentPartModel {
-    private static final String FEATURE_LABEL_KIND = "FEATURE_LABEL";
-
-    void addPreviewDiff(
+    void addPreviewRenderDiff(
             List<DungeonMapContentModel.DungeonMapRenderState.Cell> cells,
             List<DungeonMapContentModel.DungeonMapRenderState.Edge> edges,
             List<DungeonMapContentModel.DungeonMapRenderState.Label> labels,
             List<DungeonMapContentModel.DungeonMapRenderState.Marker> markers,
-            DungeonEditorPreviewDiff previewDiff,
+            PreviewRenderDiffFrame previewRenderDiff,
             DungeonMapContentModel.MapInteractionFrame interactionFrame,
             DungeonEditorStateSnapshot.Selection selection,
             DungeonMapRoomLabelPlacementContentPartModel roomLabelPlacementContentPartModel
     ) {
-        DungeonEditorPreviewDiff safePreviewDiff = previewDiff == null
-                ? DungeonEditorPreviewDiff.empty()
-                : previewDiff;
-        if (safePreviewDiff.isEmpty()) {
+        PreviewRenderDiffFrame safePreviewRenderDiff = previewRenderDiff == null
+                ? PreviewRenderDiffFrame.empty()
+                : previewRenderDiff;
+        if (safePreviewRenderDiff.isEmpty()) {
             return;
         }
-        addPreviewAreaDiff(cells, labels, safePreviewDiff.changedAreas(), selection, roomLabelPlacementContentPartModel, false);
-        addPreviewAreaDiff(cells, labels, safePreviewDiff.removedAreas(), selection, roomLabelPlacementContentPartModel, true);
-        addPreviewBoundaryDiff(edges, safePreviewDiff.changedBoundaries(), selection);
-        addPreviewBoundaryDiff(edges, safePreviewDiff.removedBoundaries(), selection);
-        addPreviewHandleDiff(markers, safePreviewDiff.changedHandles(), interactionFrame, selection);
-        addPreviewHandleDiff(markers, safePreviewDiff.removedHandles(), interactionFrame, selection);
-        addPreviewFeatureDiff(cells, labels, markers, safePreviewDiff.changedFeatures(), selection, false);
-        addPreviewFeatureDiff(cells, labels, markers, safePreviewDiff.removedFeatures(), selection, true);
+        addPreviewAreaDiff(
+                cells,
+                labels,
+                safePreviewRenderDiff.changedAreas(),
+                selection,
+                roomLabelPlacementContentPartModel,
+                false);
+        addPreviewAreaDiff(
+                cells,
+                labels,
+                safePreviewRenderDiff.removedAreas(),
+                selection,
+                roomLabelPlacementContentPartModel,
+                true);
+        addPreviewBoundaryDiff(edges, safePreviewRenderDiff.changedBoundaries(), selection);
+        addPreviewBoundaryDiff(edges, safePreviewRenderDiff.removedBoundaries(), selection);
+        addPreviewHandleDiff(markers, safePreviewRenderDiff.changedHandles(), interactionFrame, selection);
+        addPreviewHandleDiff(markers, safePreviewRenderDiff.removedHandles(), interactionFrame, selection);
+        addPreviewFeatureDiff(cells, labels, markers, safePreviewRenderDiff.changedFeatures(), selection, false);
+        addPreviewFeatureDiff(cells, labels, markers, safePreviewRenderDiff.removedFeatures(), selection, true);
     }
 
     private void addPreviewAreaDiff(
@@ -186,29 +196,16 @@ final class DungeonMapPreviewDiffContentPartModel {
             featureCells.add(DungeonMapEditorProjectionContentPartModel.featureCell(feature, cell, selected, true, destructive));
         }
         cells.addAll(featureCells);
-        if (featureCells.isEmpty()) {
+        if (!DungeonMapEditorProjectionContentPartModel.hasFeatureMarkerPlacement(feature, featureCells)) {
             return;
         }
         DungeonMapEditorProjectionContentPartModel.CellCenter center =
-                DungeonMapEditorProjectionContentPartModel.centerOfCells(featureCells);
+                DungeonMapEditorProjectionContentPartModel.featureMarkerCenter(feature, featureCells);
         addStairPreviewLevelLabels(labels, feature);
-        labels.add(new DungeonMapContentModel.DungeonMapRenderState.Label(
-                feature.label(),
-                center.q(),
-                center.r(),
-                featureCells.getFirst().z(),
-                feature.id(),
-                0L,
-                DungeonMapEditorProjectionContentPartModel.featureTopologyRef(feature),
-                FEATURE_LABEL_KIND,
-                selected,
-                true,
-                0.0,
-                0.0));
         markers.add(DungeonMapEditorProjectionContentPartModel.featureMarker(
                 feature,
                 center,
-                featureCells.getFirst().z(),
+                DungeonMapEditorProjectionContentPartModel.featureMarkerLevel(feature, featureCells),
                 selected,
                 true));
     }

@@ -3,6 +3,7 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.published.DungeonEdgeRef;
@@ -75,6 +76,12 @@ final class DungeonEditorMapControlsHarness {
         DungeonEditorMapSurfaceSnapshot surfaceBefore = runtime.mapSurfaceModel().current();
 
         DungeonMapContentModel.Viewport initialViewport = mapContentModel.currentViewport();
+        AtomicInteger canvasStateChanges = new AtomicInteger();
+        mapContentModel.canvasStateProperty().addListener((observable, oldValue, newValue) ->
+                canvasStateChanges.incrementAndGet());
+        mapContentModel.resetCamera();
+        assertEquals(0L, canvasStateChanges.get(),
+                "DE-CAM-007 resetCamera at initial viewport does not notify unchanged canvas state");
         dragMap(mapView, MouseButton.MIDDLE, 300, 300, 420, 300);
         assertEquals(surfaceBefore, runtime.mapSurfaceModel().current(),
                 "DE-CAM-001 pan right leaves published map surface unchanged");
@@ -137,6 +144,7 @@ final class DungeonEditorMapControlsHarness {
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-CAM-004 leaves authored DB rows unchanged");
         results.add("DE-CAM-004 Ready: DungeonMapView middle-drag up -> SQLite unchanged -> render shifts up");
+        results.add("DE-CAM-007 Ready: unchanged camera reset skips redundant canvas-state notification");
     }
 
 
@@ -282,6 +290,13 @@ final class DungeonEditorMapControlsHarness {
         selectMap(controls, "Tool Dropdown Map");
         List<String> authoredStateBefore = runtime.database().authoredGeometryState(mapId);
         ButtonBase stairFamily = button(controls, "Treppe");
+        DungeonEditorMapSurfaceSnapshot surfaceBeforeStairSelection = runtime.mapSurfaceModel().current();
+        AtomicInteger stairSelectionSurfacePublications = new AtomicInteger();
+        AtomicInteger stairSelectionStatePublications = new AtomicInteger();
+        Runnable unsubscribeStairSelectionSurface =
+                runtime.mapSurfaceModel().subscribe(ignored -> stairSelectionSurfacePublications.incrementAndGet());
+        Runnable unsubscribeStairSelectionState =
+                runtime.stateModel().subscribe(ignored -> stairSelectionStatePublications.incrementAndGet());
 
         click(stairFamily);
         Parent dropdown = popupContainer();
@@ -296,6 +311,14 @@ final class DungeonEditorMapControlsHarness {
         assertPopupOptionSelected("Gerade", "DE-TOOL-002 first option is preselected by default");
         assertEquals("STAIR_CREATE", runtime.controlsModel().current().selectedTool().name(),
                 "DE-TOOL-002 stair family activates the stair creation tool");
+        unsubscribeStairSelectionSurface.run();
+        unsubscribeStairSelectionState.run();
+        assertEquals(surfaceBeforeStairSelection, runtime.mapSurfaceModel().current(),
+                "DE-TOOL-002 stair family leaves published map surface unchanged");
+        assertEquals(0L, stairSelectionSurfacePublications.get(),
+                "DE-TOOL-002 stair family does not publish map surface");
+        assertEquals(0L, stairSelectionStatePublications.get(),
+                "DE-TOOL-002 stair family does not publish state");
         assertTrue(stairFamily.getAccessibleText().contains("Gerade"),
                 "DE-TOOL-002 family button announces the selected secondary option");
         assertEquals(authoredStateBefore, runtime.database().authoredGeometryState(mapId),
@@ -326,12 +349,25 @@ final class DungeonEditorMapControlsHarness {
 
         click(stairFamily);
         assertPopupOptionSelected("Eckspirale", "DE-TOOL-006 starts with the remembered stair option");
+        DungeonEditorMapSurfaceSnapshot surfaceBeforeDropdownEscape = runtime.mapSurfaceModel().current();
+        AtomicInteger dropdownEscapeSurfacePublications = new AtomicInteger();
+        AtomicInteger dropdownEscapeStatePublications = new AtomicInteger();
+        Runnable unsubscribeDropdownEscapeSurface =
+                runtime.mapSurfaceModel().subscribe(ignored -> dropdownEscapeSurfacePublications.incrementAndGet());
+        Runnable unsubscribeDropdownEscapeState =
+                runtime.stateModel().subscribe(ignored -> dropdownEscapeStatePublications.incrementAndGet());
         firePopupShortcut(popupContainer(), KeyCode.ESCAPE);
+        unsubscribeDropdownEscapeSurface.run();
+        unsubscribeDropdownEscapeState.run();
         assertTrue(!popupButtonVisible("Eckspirale"), "DE-TOOL-006 Esc closes the secondary option dropdown");
         assertEquals("SELECT", runtime.controlsModel().current().selectedTool().name(),
                 "DE-TOOL-006 controls selected tool resets to Auswahl");
-        assertEquals("SELECT", runtime.mapSurfaceModel().current().selectedTool().name(),
-                "DE-TOOL-006 map surface selected tool resets to Auswahl");
+        assertEquals(surfaceBeforeDropdownEscape, runtime.mapSurfaceModel().current(),
+                "DE-TOOL-006 dropdown Esc leaves published map surface unchanged");
+        assertEquals(0L, dropdownEscapeSurfacePublications.get(),
+                "DE-TOOL-006 dropdown Esc does not publish map surface");
+        assertEquals(0L, dropdownEscapeStatePublications.get(),
+                "DE-TOOL-006 dropdown Esc does not publish state");
         click(stairFamily);
         assertPopupOptionSelected("Gerade", "DE-TOOL-006 Esc clears remembered secondary option intent");
         firePopupMouseExited(popupContainer());
@@ -363,12 +399,23 @@ final class DungeonEditorMapControlsHarness {
         assertEquals(surfaceBeforeShiftSecondary, runtime.mapSurfaceModel().current(),
                 "DE-TOOL-005 shift-secondary leaves the published map surface unchanged");
 
+        DungeonEditorMapSurfaceSnapshot surfaceBeforeMapEscape = runtime.mapSurfaceModel().current();
+        AtomicInteger mapEscapeSurfacePublications = new AtomicInteger();
+        AtomicInteger mapEscapeStatePublications = new AtomicInteger();
+        Runnable unsubscribeMapEscapeSurface =
+                runtime.mapSurfaceModel().subscribe(ignored -> mapEscapeSurfacePublications.incrementAndGet());
+        Runnable unsubscribeMapEscapeState =
+                runtime.stateModel().subscribe(ignored -> mapEscapeStatePublications.incrementAndGet());
         fireMapShortcut(mapView, KeyCode.ESCAPE);
+        unsubscribeMapEscapeSurface.run();
+        unsubscribeMapEscapeState.run();
 
         DungeonEditorControlsSnapshot resetControls = runtime.controlsModel().current();
         DungeonEditorMapSurfaceSnapshot resetSurface = runtime.mapSurfaceModel().current();
         assertEquals("SELECT", resetControls.selectedTool().name(), "DE-TOOL-005 controls selected tool resets");
-        assertEquals("SELECT", resetSurface.selectedTool().name(), "DE-TOOL-005 map surface selected tool resets");
+        assertEquals(surfaceBeforeMapEscape, resetSurface, "DE-TOOL-005 map Esc leaves published map surface unchanged");
+        assertEquals(0L, mapEscapeSurfacePublications.get(), "DE-TOOL-005 map Esc does not publish map surface");
+        assertEquals(0L, mapEscapeStatePublications.get(), "DE-TOOL-005 map Esc does not publish state");
         assertTrue(toggleSelected(controls, "Auswahl"), "DE-TOOL-005 selection tool appears active");
         assertTrue(!popupButtonVisible("Raum malen"), "DE-TOOL-005 no room popup is visible after Esc");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
@@ -378,14 +425,27 @@ final class DungeonEditorMapControlsHarness {
         assertEquals("ROOM_PAINT", runtime.controlsModel().current().selectedTool().name(),
                 "DE-TOOL-005 room family can be selected from the controls before controls-focused Esc");
 
+        DungeonEditorMapSurfaceSnapshot surfaceBeforeControlsEscape = runtime.mapSurfaceModel().current();
+        AtomicInteger controlsEscapeSurfacePublications = new AtomicInteger();
+        AtomicInteger controlsEscapeStatePublications = new AtomicInteger();
+        Runnable unsubscribeControlsEscapeSurface =
+                runtime.mapSurfaceModel().subscribe(ignored -> controlsEscapeSurfacePublications.incrementAndGet());
+        Runnable unsubscribeControlsEscapeState =
+                runtime.stateModel().subscribe(ignored -> controlsEscapeStatePublications.incrementAndGet());
         fireControlsShortcut(button(controls, "Raum"), KeyCode.ESCAPE);
+        unsubscribeControlsEscapeSurface.run();
+        unsubscribeControlsEscapeState.run();
 
         DungeonEditorControlsSnapshot controlsFocusedReset = runtime.controlsModel().current();
         DungeonEditorMapSurfaceSnapshot controlsFocusedSurface = runtime.mapSurfaceModel().current();
         assertEquals("SELECT", controlsFocusedReset.selectedTool().name(),
                 "DE-TOOL-005 controls-focused Esc resets controls selected tool");
-        assertEquals("SELECT", controlsFocusedSurface.selectedTool().name(),
-                "DE-TOOL-005 controls-focused Esc resets map surface selected tool");
+        assertEquals(surfaceBeforeControlsEscape, controlsFocusedSurface,
+                "DE-TOOL-005 controls-focused Esc leaves published map surface unchanged");
+        assertEquals(0L, controlsEscapeSurfacePublications.get(),
+                "DE-TOOL-005 controls-focused Esc does not publish map surface");
+        assertEquals(0L, controlsEscapeStatePublications.get(),
+                "DE-TOOL-005 controls-focused Esc does not publish state");
         assertTrue(toggleSelected(controls, "Auswahl"),
                 "DE-TOOL-005 controls-focused Esc makes Auswahl active");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),

@@ -1,23 +1,21 @@
 package src.features.dungeon.runtime;
 
+import src.domain.dungeon.published.DungeonEditorTool;
 
 record PointerWorkflowIntent(
         boolean workflowAccepted,
-        String effectiveToolKey,
+        DungeonEditorTool effectiveTool,
         boolean boundaryTargetsPreferred,
         boolean wallSingleClickMode
 ) {
     PointerWorkflowIntent {
-        effectiveToolKey = safeText(effectiveToolKey, "");
+        effectiveTool = effectiveTool == null ? DungeonEditorTool.SELECT : effectiveTool;
     }
 
     static PointerWorkflowIntent ignored() {
-        return new PointerWorkflowIntent(false, "", false, false);
+        return new PointerWorkflowIntent(false, DungeonEditorTool.SELECT, false, false);
     }
 
-    private static String safeText(String value, String fallback) {
-        return value == null ? fallback : value.trim();
-    }
 }
 
 record PointerInteractionCandidates(
@@ -90,7 +88,7 @@ enum PointerTargetChoice {
                 int projectionLevel
         ) {
             return DungeonEditorRuntimePointerTarget.syntheticCell(
-                    "ROOM",
+                    DungeonEditorRuntimePointerTarget.ElementKind.ROOM,
                     (int) targets.sceneX(),
                     (int) targets.sceneY(),
                     projectionLevel);
@@ -119,6 +117,26 @@ enum PointerTargetChoice {
                 int projectionLevel
         ) {
             return targets.wallBoundaryHoverTarget();
+        }
+    },
+    TRANSITION_PLACEMENT {
+        @Override
+        DungeonEditorRuntimePointerTarget target(
+                PointerInteractionTargets targets,
+                DungeonEditorRuntimePointerTarget primaryTarget,
+                DungeonEditorRuntimePointerTarget hoverTarget,
+                int projectionLevel
+        ) {
+            DungeonEditorRuntimePointerTarget safePrimary =
+                    primaryTarget == null ? DungeonEditorRuntimePointerTarget.empty() : primaryTarget;
+            if (safePrimary.isBoundaryTarget() || safePrimary.isCellTarget()) {
+                return safePrimary;
+            }
+            return DungeonEditorRuntimePointerTarget.syntheticCell(
+                    DungeonEditorRuntimePointerTarget.ElementKind.TRANSITION,
+                    (int) Math.floor(targets.sceneX()),
+                    (int) Math.floor(targets.sceneY()),
+                    projectionLevel);
         }
     },
     HOVER_TARGET {
@@ -157,6 +175,10 @@ enum PointerTargetChoice {
 
     static PointerTargetChoice wallBoundaryHover() {
         return WALL_BOUNDARY_HOVER;
+    }
+
+    static PointerTargetChoice transitionPlacement() {
+        return TRANSITION_PLACEMENT;
     }
 
     static PointerTargetChoice hoverTarget() {

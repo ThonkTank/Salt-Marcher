@@ -22,25 +22,25 @@ final class DungeonEditorRuntimeInlineLabelPort implements DungeonEditorInlineLa
     @Override
     public void beginInlineLabelEdit(DungeonEditorInlineLabelEditSession session) {
         draftSession.beginInlineLabelEdit(session);
-        framePublisher.publishCurrentToSubscribers();
+        framePublisher.publishDraftSessionChanged();
     }
 
     @Override
     public void updateInlineLabelEditDraft(String text) {
         draftSession.updateInlineLabelEditDraft(text);
-        framePublisher.publishCurrentToSubscribers();
+        framePublisher.publishDraftSessionChanged();
     }
 
     @Override
     public void cancelInlineLabelEdit() {
         draftSession.clearInlineLabelEditSession();
-        framePublisher.publishCurrentToSubscribers();
+        framePublisher.publishDraftSessionChanged();
     }
 
     @Override
     public void commitInlineLabelEdit(String text) {
         DungeonEditorInlineLabelEditSession editSession = draftSession.takeInlineLabelEditSession();
-        framePublisher.publishCurrentToSubscribers();
+        framePublisher.publishDraftSessionChanged();
         if (!editSession.active() || !editSession.target().present() || text == null || text.isBlank()) {
             return;
         }

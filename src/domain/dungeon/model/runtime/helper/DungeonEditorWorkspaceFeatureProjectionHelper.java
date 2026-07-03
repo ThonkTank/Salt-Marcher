@@ -29,12 +29,21 @@ public final class DungeonEditorWorkspaceFeatureProjectionHelper {
                 List.copyOf(cells),
                 feature.description(),
                 feature.destinationLabel(),
-                feature.topologyRef());
+                feature.topologyRef(),
+                edge(feature.anchorEdge()));
     }
 
     private static DungeonEditorWorkspaceValues.Cell cell(@Nullable Cell cell) {
         return cell == null
                 ? DungeonEditorWorkspaceValues.Cell.empty()
                 : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level());
+    }
+
+    private static DungeonEditorWorkspaceValues.Edge edge(
+            src.domain.dungeon.model.core.geometry.Edge edge
+    ) {
+        return edge == null
+                ? null
+                : new DungeonEditorWorkspaceValues.Edge(cell(edge.from()), cell(edge.to()));
     }
 }

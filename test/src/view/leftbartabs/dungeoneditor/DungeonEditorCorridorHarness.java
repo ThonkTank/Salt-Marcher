@@ -97,19 +97,16 @@ final class DungeonEditorCorridorHarness {
                         "DE-COR-005 starts with A1 anchored at (6,5,0): " + anchorRowsBefore));
         assertTrue(a1AnchorRow.contains("|cell_y=5|"),
                 "DE-COR-005 captures exact A1 anchor row at (6,5,0): " + a1AnchorRow);
-        assertTrue(!"HANDLE".equals(binding.mapContentModel()
-                        .resolvePointerTarget(corridorAnchor.markerQ(), corridorAnchor.markerR())
+        assertTrue(!"HANDLE".equals(runtimePointerTarget(binding.mapContentModel(), corridorAnchor.markerQ(), corridorAnchor.markerR())
                         .targetKind()
                         .name()),
                 "DE-SEL-006 corridor anchor marker does not resolve as a draggable handle");
         Point2D corridorBody = new Point2D(corridorAnchor.markerQ() + 0.05, corridorAnchor.markerR() + 0.05);
-        assertEquals("CELL", binding.mapContentModel()
-                        .resolvePointerTarget(corridorBody.getX(), corridorBody.getY())
+        assertEquals("CELL", runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
                         .targetKind()
                         .name(),
                 "DE-SEL-006 corridor anchor body resolves as a generic corridor cell");
-        assertEquals("CORRIDOR", binding.mapContentModel()
-                        .resolvePointerTarget(corridorBody.getX(), corridorBody.getY())
+        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
                         .elementKind(),
                 "DE-SEL-006 corridor anchor body keeps corridor element identity");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
@@ -604,8 +601,7 @@ final class DungeonEditorCorridorHarness {
                 "DE-COR-014");
         Point2D fallbackCorridorBody = new Point2D(4.05, 5.05);
         assertPointerTarget(binding.mapContentModel(), fallbackCorridorBody, "CELL", "DE-COR-014 fallback body");
-        assertEquals("CORRIDOR", binding.mapContentModel()
-                        .resolvePointerTarget(fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
+        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
                         .elementKind(),
                 "DE-COR-014 fallback body remains a semantic corridor target");
         selectMap(controls, "Corridor Vertical Fallback Reload Hop");
@@ -618,8 +614,7 @@ final class DungeonEditorCorridorHarness {
                 "DE-COR-014 reload");
         assertPointerTarget(binding.mapContentModel(), fallbackCorridorBody, "CELL",
                 "DE-COR-014 reload fallback body");
-        assertEquals("CORRIDOR", binding.mapContentModel()
-                        .resolvePointerTarget(fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
+        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), fallbackCorridorBody.getX(), fallbackCorridorBody.getY())
                         .elementKind(),
                 "DE-COR-014 reload fallback body remains a semantic corridor target");
 
@@ -715,8 +710,7 @@ final class DungeonEditorCorridorHarness {
         long corridorId = anchorHandle.ref().corridorId();
         DungeonEditorTopologyElementRef anchorRef = editorTopologyRef(anchorHandle.ref().topologyRef());
         Point2D anchorCenter = new Point2D(anchorHandle.markerQ() + 0.05, anchorHandle.markerR() + 0.05);
-        assertEquals("CELL", binding.mapContentModel()
-                        .resolvePointerTarget(anchorCenter.getX(), anchorCenter.getY())
+        assertEquals("CELL", runtimePointerTarget(binding.mapContentModel(), anchorCenter.getX(), anchorCenter.getY())
                         .targetKind()
                         .name(),
                 "DE-COR-006 existing anchor delete uses a corridor body point, not a rendered anchor handle");
@@ -843,8 +837,7 @@ final class DungeonEditorCorridorHarness {
                 genericCorridorPoint,
                 "CELL",
                 "DE-COR-013 existing-anchor corridor body");
-        assertEquals("CORRIDOR", binding.mapContentModel()
-                        .resolvePointerTarget(genericCorridorPoint.getX(), genericCorridorPoint.getY())
+        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), genericCorridorPoint.getX(), genericCorridorPoint.getY())
                         .elementKind(),
                 "DE-COR-013 existing-anchor body hit resolves as a generic corridor cell instead of the anchor handle");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
@@ -923,8 +916,7 @@ final class DungeonEditorCorridorHarness {
                 genericCorridorPoint,
                 "CELL",
                 "DE-COR-013 new-anchor corridor body");
-        assertEquals("CORRIDOR", binding.mapContentModel()
-                        .resolvePointerTarget(genericCorridorPoint.getX(), genericCorridorPoint.getY())
+        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), genericCorridorPoint.getX(), genericCorridorPoint.getY())
                         .elementKind(),
                 "DE-COR-013 new-anchor body hit resolves as a generic corridor cell instead of an anchor handle");
         AuthoredCorridorState beforeFirstClick = AuthoredCorridorState.capture(runtime, binding, mapId);
@@ -1080,8 +1072,7 @@ final class DungeonEditorCorridorHarness {
         Point2D roomInterior = new Point2D(1.5, 2.5);
         Point2D doorTwo = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 8.0, 2.5);
         assertPointerTarget(binding.mapContentModel(), roomInterior, "LABEL", "DE-COR-013 generic-room start");
-        assertEquals("ROOM", binding.mapContentModel()
-                        .resolvePointerTarget(roomInterior.getX(), roomInterior.getY())
+        assertEquals("ROOM", runtimePointerTarget(binding.mapContentModel(), roomInterior.getX(), roomInterior.getY())
                         .elementKind(),
                 "DE-COR-013 generic-room start resolves as a room target rather than a door target");
         assertPointerTarget(binding.mapContentModel(), doorTwo, "HANDLE", "DE-COR-013 generic-room second door");

@@ -14,6 +14,7 @@ import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.transition.Transition;
+import src.domain.dungeon.model.core.structure.transition.TransitionAnchor;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.AuthoredTransitionLink;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
@@ -266,7 +267,7 @@ final class DungeonTopologyInvariantHarness {
         return map.withTransitionCatalog(map.transitionCatalog().withCreated(
                 transitionId,
                 map.metadata().mapId().value(),
-                anchor,
+                TransitionAnchor.cell(anchor),
                 destination));
     }
 

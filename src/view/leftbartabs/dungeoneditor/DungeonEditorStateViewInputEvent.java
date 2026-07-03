@@ -20,7 +20,7 @@ public record DungeonEditorStateViewInputEvent(
         String transitionDescription,
         boolean transitionDescriptionInputObserved,
         boolean transitionDescriptionSaveRequested,
-        String transitionDestinationType,
+        int transitionDestinationTypeOptionIndex,
         String transitionDestinationMapId,
         String transitionDestinationTileId,
         String transitionDestinationTransitionId,
@@ -51,7 +51,7 @@ public record DungeonEditorStateViewInputEvent(
         corridorPointR = corridorPointR == null ? "" : corridorPointR;
         transitionId = Math.max(0L, transitionId);
         transitionDescription = transitionDescription == null ? "" : transitionDescription;
-        transitionDestinationType = transitionDestinationType == null ? "" : transitionDestinationType;
+        transitionDestinationTypeOptionIndex = Math.max(-1, transitionDestinationTypeOptionIndex);
         transitionDestinationMapId = transitionDestinationMapId == null ? "" : transitionDestinationMapId;
         transitionDestinationTileId = transitionDestinationTileId == null ? "" : transitionDestinationTileId;
         transitionDestinationTransitionId =
@@ -87,7 +87,7 @@ public record DungeonEditorStateViewInputEvent(
                 "",
                 false,
                 false,
-                "",
+                -1,
                 "",
                 "",
                 "",
@@ -128,7 +128,7 @@ public record DungeonEditorStateViewInputEvent(
                 "",
                 false,
                 false,
-                "",
+                -1,
                 "",
                 "",
                 "",
@@ -167,7 +167,7 @@ public record DungeonEditorStateViewInputEvent(
                 "",
                 false,
                 false,
-                "",
+                -1,
                 "",
                 "",
                 "",
@@ -206,7 +206,7 @@ public record DungeonEditorStateViewInputEvent(
                 description,
                 true,
                 saveRequested,
-                "",
+                -1,
                 "",
                 "",
                 "",
@@ -248,7 +248,7 @@ public record DungeonEditorStateViewInputEvent(
                 "",
                 false,
                 false,
-                "",
+                -1,
                 "",
                 "",
                 "",
@@ -265,7 +265,7 @@ public record DungeonEditorStateViewInputEvent(
     }
 
     public DungeonEditorStateViewInputEvent(
-            String transitionDestinationType,
+            int transitionDestinationTypeOptionIndex,
             String transitionDestinationMapId,
             String transitionDestinationTileId,
             String transitionDestinationTransitionId,
@@ -290,7 +290,7 @@ public record DungeonEditorStateViewInputEvent(
                 "",
                 false,
                 false,
-                transitionDestinationType,
+                transitionDestinationTypeOptionIndex,
                 transitionDestinationMapId,
                 transitionDestinationTileId,
                 transitionDestinationTransitionId,

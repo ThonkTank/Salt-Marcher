@@ -1,10 +1,5 @@
 package src.features.dungeon.runtime;
 
-import static src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction.DRAG;
-import static src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction.HOVER;
-import static src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction.PRESS;
-import static src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction.RELEASE;
-
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
@@ -31,12 +26,11 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
                 "authoredOperationUseCase");
     }
 
-    static @Nullable DungeonEditorTool corridorTool(String toolKey) {
-        DungeonEditorTool tool = DungeonEditorRuntimeEnumTranslator.editorTool(toolKey);
-        return tool == DungeonEditorTool.CORRIDOR_CREATE || tool == DungeonEditorTool.CORRIDOR_DELETE ? tool : null;
+    static boolean handles(DungeonEditorTool tool) {
+        return tool == DungeonEditorTool.CORRIDOR_CREATE || tool == DungeonEditorTool.CORRIDOR_DELETE;
     }
 
-    void apply(
+    DungeonEditorRuntimeOperationResult apply(
             PointerAction action,
             DungeonEditorTool corridorTool,
             PointerSample sample,
@@ -48,45 +42,36 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
                 wallSingleClickMode,
                 transitionDestination);
         if (corridorTool == DungeonEditorTool.CORRIDOR_CREATE) {
-            applyWorkflow(action, input, DungeonEditorSessionValues.Tool.CORRIDOR_CREATE);
+            return applyWorkflow(action, input, DungeonEditorSessionValues.Tool.CORRIDOR_CREATE);
         } else if (corridorTool == DungeonEditorTool.CORRIDOR_DELETE) {
-            applyWorkflow(action, input, DungeonEditorSessionValues.Tool.CORRIDOR_DELETE);
+            return applyWorkflow(action, input, DungeonEditorSessionValues.Tool.CORRIDOR_DELETE);
         } else {
             throw new IllegalArgumentException("Unsupported corridor draft tool: " + corridorTool);
         }
     }
 
-    private void applyWorkflow(
+    private DungeonEditorRuntimeOperationResult applyWorkflow(
             PointerAction action,
             DungeonEditorMainViewInput input,
             DungeonEditorSessionValues.Tool corridorTool
     ) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
+        ApplyDungeonEditorSessionEffectUseCase.CurrentGridPublication currentGrid =
+                effectUseCase.committedGridOrPublishCurrentResult();
+        MapSnapshot committedSnapshot = currentGrid.committedSnapshot();
         if (committedSnapshot == null) {
-            return;
+            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(currentGrid.snapshot());
         }
-        PointerAction effectiveAction = previewAction(action);
+        PointerAction effectiveAction = DungeonEditorDraftOperationSupport.previewAction(action);
         src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect effect =
                 mainViewInterpreter.corridor(
-                        pointerAction(effectiveAction),
+                        DungeonEditorDraftOperationSupport.pointerAction(effectiveAction),
                         input,
                         committedSnapshot,
                         corridorTool,
                         workflow.session().projectionLevel());
-        effectUseCase.applyEffect(effect, commitFor(effect.getApplyPreview()));
-    }
-
-    private static PointerAction previewAction(PointerAction action) {
-        return PointerAction.orMoved(action);
-    }
-
-    private static InterpretDungeonEditorMainViewInputUseCase.PointerAction pointerAction(PointerAction action) {
-        return switch (action) {
-            case PRESSED -> PRESS;
-            case DRAGGED -> DRAG;
-            case RELEASED -> RELEASE;
-            case MOVED -> HOVER;
-        };
+        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(DungeonEditorDraftOperationSupport.latestSnapshot(
+                currentGrid.snapshot(),
+                effectUseCase.applyEffect(effect, commitFor(effect.getApplyPreview()))));
     }
 
     private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit commitFor(
@@ -109,4 +94,5 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
             case null, default -> null;
         };
     }
+
 }

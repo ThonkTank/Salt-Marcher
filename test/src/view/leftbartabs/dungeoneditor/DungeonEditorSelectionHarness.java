@@ -2,17 +2,12 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonEditorControlsModel;
-import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
-import src.domain.dungeon.published.DungeonEditorHandleRef;
-import src.domain.dungeon.published.DungeonEditorMapHitRef;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorPreviewDiff;
@@ -21,11 +16,10 @@ import src.domain.dungeon.published.DungeonEditorSurface;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonEditorViewMode;
-import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
-import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
-import src.domain.dungeon.published.DungeonTopologyElementRef;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
+import src.features.dungeon.runtime.DungeonEditorRenderFrame;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import javafx.event.ActionEvent;
@@ -60,6 +54,7 @@ final class DungeonEditorSelectionHarness {
         route(results, () -> verifyDoorSelectionThroughMapView(results));
         route(results, () -> verifyStairSelectionThroughMapView(results));
         route(results, () -> verifyCorridorSelectionThroughMapView(results));
+        route(results, () -> verifyToolSwitchClearsSelectionThroughMapView(results));
         route(results, () -> verifyToolSpecificHoverPolicyThroughMapView(results));
     }
 
@@ -110,6 +105,12 @@ final class DungeonEditorSelectionHarness {
                 roomFloorQ,
                 roomFloorR,
                 "DE-SEL-006 room floor hover stays on the exact rendered cell");
+        assertRuntimeCellTargetPreservesExactCell(
+                binding.mapContentModel(),
+                roomFloorQ,
+                roomFloorR,
+                0,
+                "DE-SEL-006 room floor runtime pointer target preserves exact cell coordinates");
         assertHoverStylesOnlySyntheticBoundaryEdge(
                 "DE-SEL-006 boundary hover stays on the exact rendered edge");
         assertSelectHoverIgnoresWallBoundary(
@@ -217,15 +218,13 @@ final class DungeonEditorSelectionHarness {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("DE-SEL-002 door boundary not loaded."));
         Point2D doorMidpoint = boundaryMidpointNear(binding.mapContentModel(), "DOOR", 4.0, 2.5);
-        var doorMidpointTarget = binding.mapContentModel()
-                .resolvePointerTarget(doorMidpoint.getX(), doorMidpoint.getY());
+        var doorMidpointTarget = runtimePointerTarget(binding.mapContentModel(), doorMidpoint.getX(), doorMidpoint.getY());
         assertEquals("HANDLE",
                 doorMidpointTarget.targetKind().name(),
                 "DE-SEL-002 render hit index resolves the centered door drag affordance at the door midpoint: "
                         + doorMidpointTarget);
         Point2D doorSelectionPoint = new Point2D(doorMidpoint.getX(), doorMidpoint.getY() - 0.42);
-        var doorPointerTarget = binding.mapContentModel()
-                .resolvePointerTarget(doorSelectionPoint.getX(), doorSelectionPoint.getY());
+        var doorPointerTarget = runtimePointerTarget(binding.mapContentModel(), doorSelectionPoint.getX(), doorSelectionPoint.getY());
         assertEquals("BOUNDARY",
                 doorPointerTarget.targetKind().name(),
                 "DE-SEL-002 render hit index resolves the free door segment as a boundary: "
@@ -303,8 +302,7 @@ final class DungeonEditorSelectionHarness {
         assertTrue(stairFeature.cells().stream()
                         .anyMatch(cell -> cell.q() == 2 && cell.r() == 0 && cell.level() == 1),
                 "DE-SEL-003 published stair feature includes upper exit coordinate");
-        assertEquals("HANDLE", binding.mapContentModel()
-                        .resolvePointerTarget(
+        assertEquals("HANDLE", runtimePointerTarget(binding.mapContentModel(),
                                 glyphCenterForRef(binding.mapContentModel(), stairRef).getX(),
                                 glyphCenterForRef(binding.mapContentModel(), stairRef).getY())
                         .targetKind()
@@ -384,13 +382,11 @@ final class DungeonEditorSelectionHarness {
                 .orElseThrow(() -> new IllegalStateException("F5_CORRIDOR_WITH_ANCHOR corridor area not loaded."));
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         Point2D corridorBody = new Point2D(corridorAnchor.markerQ() + 0.05, corridorAnchor.markerR() + 0.05);
-        assertEquals("CELL", binding.mapContentModel()
-                        .resolvePointerTarget(corridorBody.getX(), corridorBody.getY())
+        assertEquals("CELL", runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
                         .targetKind()
                         .name(),
                 "DE-SEL-004 corridor body resolves as a body cell instead of an anchor handle");
-        assertEquals("CORRIDOR", binding.mapContentModel()
-                        .resolvePointerTarget(corridorBody.getX(), corridorBody.getY())
+        assertEquals("CORRIDOR", runtimePointerTarget(binding.mapContentModel(), corridorBody.getX(), corridorBody.getY())
                         .elementKind(),
                 "DE-SEL-004 corridor body keeps corridor element identity");
         assertHoverStylesOnlySurfaceAt(
@@ -444,7 +440,69 @@ final class DungeonEditorSelectionHarness {
         selectMap(controls, "Tool Hover Policy Map");
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
 
+        click(button(controls, "Auswahl"));
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(10.12),
+                viewport.sceneToScreenY(10.02),
+                false);
+        DungeonMapStateProbe.Snapshot emptyHoverSnapshot =
+                DungeonMapStateProbe.snapshot(binding.mapContentModel());
+        AtomicInteger statePublications = new AtomicInteger();
+        Runnable unsubscribeStateCounter = runtime.stateModel().subscribe(ignored -> statePublications.incrementAndGet());
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_MOVED,
+                MouseButton.NONE,
+                viewport.sceneToScreenX(10.12),
+                viewport.sceneToScreenY(10.02),
+                false);
+        unsubscribeStateCounter.run();
+        assertEquals(0L, statePublications.get(),
+                "DE-HOVER-002 repeated empty selection hover does not publish a full editor snapshot");
+        assertProjectionAndDraftUnchanged(
+                emptyHoverSnapshot,
+                DungeonMapStateProbe.snapshot(binding.mapContentModel()),
+                "DE-HOVER-002 repeated empty selection hover does not publish a runtime frame");
+        assertCanvasAndHoverStateUnchanged(
+                emptyHoverSnapshot,
+                DungeonMapStateProbe.snapshot(binding.mapContentModel()),
+                "DE-HOVER-002 repeated empty selection hover does not publish canvas or hover state");
+        assertNoSyntheticHoverOverlay(binding.mapContentModel(),
+                "DE-HOVER-002 empty selection hover remains view-local");
+
+        DungeonMapStateProbe.Snapshot beforeToolSwitchMeasurement =
+                DungeonMapStateProbe.snapshot(binding.mapContentModel());
+        AtomicInteger toolSwitchStatePublications = new AtomicInteger();
+        AtomicInteger toolSwitchSurfacePublications = new AtomicInteger();
+        Runnable unsubscribeToolSwitchState =
+                runtime.stateModel().subscribe(ignored -> toolSwitchStatePublications.incrementAndGet());
+        Runnable unsubscribeToolSwitchSurface =
+                runtime.mapSurfaceModel().subscribe(ignored -> toolSwitchSurfacePublications.incrementAndGet());
         click(button(controls, "Wand"));
+        unsubscribeToolSwitchState.run();
+        unsubscribeToolSwitchSurface.run();
+        assertEquals("Wand setzen", DungeonMapStateProbe.renderStatusLabel(binding.mapContentModel()),
+                "DE-TOOL-005 tool-only switch updates the canvas status label");
+        assertEquals(0L, toolSwitchStatePublications.get(),
+                "DE-TOOL-005 tool-only switch does not publish state");
+        assertEquals(0L, toolSwitchSurfacePublications.get(),
+                "DE-TOOL-005 tool-only switch does not publish map surface");
+        assertRenderAndHitSignaturesUnchanged(
+                beforeToolSwitchMeasurement,
+                DungeonMapStateProbe.snapshot(binding.mapContentModel()),
+                "DE-TOOL-005 tool-only switch from Auswahl to Wand keeps render and hit signatures stable");
+        DungeonMapStateProbe.Snapshot beforeRepeatedToolClickMeasurement =
+                DungeonMapStateProbe.snapshot(binding.mapContentModel());
+        click(button(controls, "Wand"));
+        assertEquals("Wand setzen", DungeonMapStateProbe.renderStatusLabel(binding.mapContentModel()),
+                "DE-TOOL-005 repeated tool-only selection keeps the canvas status label coherent");
+        assertRenderAndHitSignaturesUnchanged(
+                beforeRepeatedToolClickMeasurement,
+                DungeonMapStateProbe.snapshot(binding.mapContentModel()),
+                "DE-TOOL-005 repeated tool-only selection keeps render and hit signatures stable");
         fireMapMouse(
                 mapView,
                 MouseEvent.MOUSE_MOVED,
@@ -517,6 +575,110 @@ final class DungeonEditorSelectionHarness {
                 "DE-HOVER-001 corridor hover keeps wall and door edges eligible");
 
         results.add("DE-HOVER-001 Ready: DungeonMapView hover policy follows active editor tool geometry");
+        results.add("DE-HOVER-002 Ready: empty selection hover stays off the state publication path");
+    }
+
+    private static void verifyToolSwitchClearsSelectionThroughMapView(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+        DungeonEditorStateView stateView = binding.stateView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Tool Switch Selection Clear Map");
+        runtime.database().seedTransitionDescriptionFixture(mapId);
+        createMapThroughControls(controls, runtime, "Tool Switch Selection Clear Reload Hop");
+        selectMap(controls, "Tool Switch Selection Clear Map");
+        long transitionId = runtime.database().transitionIdByDescription(mapId, "Initial transition.");
+        DungeonEditorTopologyElementRef transitionRef = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
+
+        click(button(controls, "Auswahl"));
+        Point2D transitionCenter = glyphCenterForRef(binding.mapContentModel(), transitionRef);
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        fireMapMousePressed(
+                mapView,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(transitionCenter.getX()),
+                viewport.sceneToScreenY(transitionCenter.getY()),
+                false);
+
+        assertEquals(transitionRef, runtime.stateModel().current().selection().topologyRef(),
+                "DE-SEL-014 precondition selects transition in state model");
+        assertEquals(transitionRef, runtime.mapSurfaceModel().current().selection().topologyRef(),
+                "DE-SEL-014 precondition selects transition on map surface");
+        assertTrue(renderHasSelectedGlyphPrimitive(binding.mapContentModel(), transitionRef),
+                "DE-SEL-014 precondition renders selected transition highlight");
+        assertTrue(textArea(stateView, "Übergang Beschreibung").isVisible(),
+                "DE-SEL-014 precondition shows transition description card");
+        assertTrue(comboBox(stateView, "Eingangslink Zieltyp").isVisible(),
+                "DE-SEL-014 precondition shows selected-transition destination card");
+
+        click(button(controls, "Tür"));
+
+        DungeonEditorStateSnapshot clearedState = runtime.stateModel().current();
+        DungeonEditorMapSurfaceSnapshot clearedSurface = runtime.mapSurfaceModel().current();
+        assertEquals("DOOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
+                "DE-SEL-014 tool switch applies the requested non-selection tool");
+        assertEmptySelection(clearedState.selection(), "DE-SEL-014 state model after non-selection tool switch");
+        assertEmptySelection(clearedSurface.selection(), "DE-SEL-014 map surface after non-selection tool switch");
+        assertTrue(clearedState.inspector() == null, "DE-SEL-014 inspector clears after non-selection tool switch");
+        assertTrue(!renderHasSelectedGlyphPrimitive(binding.mapContentModel(), transitionRef),
+                "DE-SEL-014 render scene removes selected transition highlight");
+        assertVisibleAccessibleTextAbsent(stateView, "Übergang Beschreibung",
+                "DE-SEL-014 transition description card hides after non-selection tool switch");
+        assertVisibleAccessibleTextAbsent(stateView, "Eingangslink Zieltyp",
+                "DE-SEL-014 selected-transition destination card hides after non-selection tool switch");
+
+        click(button(controls, "Auswahl"));
+        assertEmptySelection(runtime.stateModel().current().selection(),
+                "DE-SEL-014 switching back to selection does not invent a selection");
+
+        results.add("DE-SEL-014 Ready: non-selection tool switch clears selection, inspector,"
+                + " map highlight, and selected-transition state cards");
+    }
+
+    private static void assertVisibleAccessibleTextAbsent(
+            Parent parent,
+            String accessibleText,
+            String message
+    ) {
+        boolean found = descendants(parent).stream()
+                .filter(node -> accessibleText.equals(node.getAccessibleText()))
+                .anyMatch(javafx.scene.Node::isVisible);
+        assertTrue(!found, message);
+    }
+
+    private static void assertProjectionAndDraftUnchanged(
+            DungeonMapStateProbe.Snapshot before,
+            DungeonMapStateProbe.Snapshot after,
+            String message
+    ) {
+        assertEquals(before.projectionLevel(), after.projectionLevel(), message + " projectionLevel");
+        assertEquals(before.inlineLabelDraftLength(), after.inlineLabelDraftLength(),
+                message + " inlineLabelDraftLength");
+    }
+
+    private static void assertCanvasAndHoverStateUnchanged(
+            DungeonMapStateProbe.Snapshot before,
+            DungeonMapStateProbe.Snapshot after,
+            String message
+    ) {
+        assertRenderAndHitSignaturesUnchanged(before, after, message);
+        assertEquals(before.canvasStateIdentity(), after.canvasStateIdentity(),
+                message + " canvasStateIdentity");
+        assertEquals(before.hoverOverlayPrimitiveCount(), after.hoverOverlayPrimitiveCount(),
+                message + " hoverOverlayPrimitiveCount");
+    }
+
+    private static void assertRenderAndHitSignaturesUnchanged(
+            DungeonMapStateProbe.Snapshot before,
+            DungeonMapStateProbe.Snapshot after,
+            String message
+    ) {
+        assertEquals(before.renderGeometrySignature(), after.renderGeometrySignature(),
+                message + " renderGeometrySignature");
+        assertEquals(before.hitTargetSignature(), after.hitTargetSignature(),
+                message + " hitTargetSignature");
     }
 
     private static void assertHoverHighlightsSurface(
@@ -569,7 +731,7 @@ final class DungeonEditorSelectionHarness {
             double sceneY,
             String message
     ) {
-        DungeonMapContentModel.PointerTarget target = mapContentModel.resolvePointerTarget(sceneX, sceneY, true);
+        var target = runtimePointerTarget(mapContentModel, sceneX, sceneY, true);
         assertEquals("BOUNDARY", target.targetKind().name(), message + " resolves a boundary target");
         String selectionRef = target.topologyKind() + ":" + target.topologyId();
         double normalStroke = boundaryStrokeWidth(mapContentModel, selectionRef);
@@ -584,6 +746,20 @@ final class DungeonEditorSelectionHarness {
         assertTrue(hoverStroke > normalStroke,
                 message + " uses a boundary hover stroke distinct from normal and selected styling"
                         + " (normal=" + normalStroke + ", hover=" + hoverStroke + ")");
+    }
+
+    private static void assertRuntimeCellTargetPreservesExactCell(
+            DungeonMapContentModel mapContentModel,
+            double sceneX,
+            double sceneY,
+            int projectionLevel,
+            String message
+    ) {
+        var runtimeTarget = runtimePointerTarget(mapContentModel, sceneX, sceneY, false, projectionLevel);
+        assertTrue(runtimeTarget.cellRef().exact(), message + " publishes an exact runtime cell target");
+        assertEquals((int) Math.floor(sceneX), runtimeTarget.cellRef().q(), message + " preserves q");
+        assertEquals((int) Math.floor(sceneY), runtimeTarget.cellRef().r(), message + " preserves r");
+        assertEquals(projectionLevel, runtimeTarget.cellRef().level(), message + " preserves level");
     }
 
     private static void assertHoverHighlightsGlyph(
@@ -625,7 +801,7 @@ final class DungeonEditorSelectionHarness {
                 viewport.sceneToScreenX(8.5),
                 viewport.sceneToScreenY(8.5),
                 false);
-        DungeonMapContentModel.PointerTarget target = mapContentModel.resolvePointerTarget(sceneX, sceneY);
+        var target = runtimePointerTarget(mapContentModel, sceneX, sceneY);
         assertEquals("CELL", target.targetKind().name(), message + " resolves a cell target");
         String selectionRef = selectionRef(ref);
         DungeonMapContentModel.MapCanvasPolygonPrimitive hoveredBefore =
@@ -669,8 +845,8 @@ final class DungeonEditorSelectionHarness {
                 .findFirst()
                 .orElseThrow(() -> new AssertionError(message + " fixture has no rendered wall boundary"));
         Point2D midpoint = boundaryMidpoint(plainWall);
-        DungeonMapContentModel.PointerTarget rawTarget =
-                mapContentModel.resolvePointerTarget(midpoint.getX(), midpoint.getY(), true);
+        var rawTarget =
+                runtimePointerTarget(mapContentModel, midpoint.getX(), midpoint.getY(), true);
         assertEquals("BOUNDARY", rawTarget.targetKind().name(), message + " raw hit index still exposes boundary");
         assertEquals("WALL", rawTarget.boundaryRef().boundaryKind().legacyName(),
                 message + " raw boundary is a wall");
@@ -718,11 +894,11 @@ final class DungeonEditorSelectionHarness {
     ) {
         Point2D labelCenter = labelCenterForRef(mapContentModel, roomRef);
         DungeonMapContentModel.TextPrimitive labelBefore = textPrimitiveForRef(mapContentModel, roomRef);
-        assertEquals("EMPTY",
-                mapContentModel.resolveRoomLabelPointerTarget(labelCenter.getX(), labelCenter.getY())
+        assertTrue(!runtimePointerTarget(mapContentModel, labelCenter.getX(), labelCenter.getY())
                         .targetKind()
-                        .name(),
-                message + " room label is not a direct label target");
+                        .name()
+                        .equals("LABEL"),
+                message + " room label is not a runtime label target");
 
         fireMapMouse(
                 mapView,
@@ -760,12 +936,10 @@ final class DungeonEditorSelectionHarness {
                 secondEdge,
                 wallRef);
         DungeonEditorMapSurfaceSnapshot snapshot = syntheticBoundarySnapshot(firstBoundary, secondBoundary);
-        mapContentModel.applyEditorSurfaceFrame(
-                snapshot,
-                syntheticBoundaryInteractionFrame(firstBoundary, secondBoundary));
+        mapContentModel.applyEditorRenderFrame(syntheticBoundaryRenderFrame(snapshot));
         double sceneX = 0.5;
         double sceneY = 0.0;
-        DungeonMapContentModel.PointerTarget target = mapContentModel.resolvePointerTarget(sceneX, sceneY, true);
+        var target = runtimePointerTarget(mapContentModel, sceneX, sceneY, true);
         assertEquals("BOUNDARY", target.targetKind().name(), message + " resolves a boundary target");
         String selectionRef = target.topologyKind() + ":" + target.topologyId();
         DungeonMapContentModel.BoundaryPrimitive hoveredBefore =
@@ -775,7 +949,7 @@ final class DungeonEditorSelectionHarness {
         double normalHoverEdgeStroke = hoveredBefore.style().strokeWidth();
         double normalSiblingStroke = siblingBefore.style().strokeWidth();
 
-        mapContentModel.updateHoverTarget(target);
+        updateHoverTarget(mapContentModel, target);
 
         DungeonMapContentModel.BoundaryPrimitive hoveredAfter =
                 boundaryPrimitiveAt(mapContentModel, selectionRef, sceneX, sceneY);
@@ -785,6 +959,41 @@ final class DungeonEditorSelectionHarness {
                 message + " increases the hovered edge stroke");
         assertEquals(normalSiblingStroke, siblingAfter.style().strokeWidth(),
                 message + " leaves sibling edge stroke unchanged");
+    }
+
+    private static DungeonEditorRenderFrame syntheticBoundaryRenderFrame(
+            DungeonEditorMapSurfaceSnapshot snapshot
+    ) {
+        DungeonEditorMapSurfaceSnapshot safeSnapshot = snapshot == null
+                ? DungeonEditorMapSurfaceSnapshot.empty()
+                : snapshot;
+        DungeonEditorPreparedFrameFacts facts = new DungeonEditorPreparedFrameFacts(
+                List.of(),
+                "",
+                0L,
+                List.of(safeSnapshot.projectionLevel()),
+                false,
+                "",
+                safeSnapshot.viewMode().name(),
+                DungeonEditorPreparedFrameFacts.labelForViewMode(safeSnapshot.viewMode().name()),
+                safeSnapshot.overlaySettings(),
+                DungeonEditorPreparedFrameFacts.OverlayFrame.from(safeSnapshot.overlaySettings()),
+                safeSnapshot.projectionLevel(),
+                safeSnapshot.selectedTool().name(),
+                safeSnapshot.selectedTool().displayLabel(),
+                new DungeonEditorPreparedFrameFacts.MapSurfaceFrame(
+                        safeSnapshot.surface(),
+                        safeSnapshot.selection(),
+                        safeSnapshot.preview(),
+                        DungeonEditorPreparedFrameFacts.PreviewRenderFrame.from(safeSnapshot),
+                        DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame.from(safeSnapshot),
+                        safeSnapshot.viewMode(),
+                        safeSnapshot.overlaySettings(),
+                        safeSnapshot.projectionLevel(),
+                        safeSnapshot.selectedTool()),
+                DungeonEditorPreparedFrameFacts.MapInteractionFrame.from(safeSnapshot),
+                DungeonEditorPreparedFrameFacts.StatePanelFrame.empty());
+        return new DungeonEditorRenderFrame(facts, null, null);
     }
 
     private static DungeonEditorMapSurfaceSnapshot syntheticBoundarySnapshot(
@@ -813,53 +1022,6 @@ final class DungeonEditorSelectionHarness {
                 DungeonOverlaySettings.defaults(),
                 0,
                 DungeonEditorTool.SELECT);
-    }
-
-    private static DungeonMapContentModel.MapInteractionFrame syntheticBoundaryInteractionFrame(
-            DungeonEditorMapSnapshot.Boundary firstBoundary,
-            DungeonEditorMapSnapshot.Boundary secondBoundary
-    ) {
-        return new DungeonMapContentModel.MapInteractionFrame(Map.of(
-                boundaryHitRef(firstBoundary), boundaryPointerTarget(firstBoundary),
-                boundaryHitRef(secondBoundary), boundaryPointerTarget(secondBoundary)), List.of());
-    }
-
-    private static String boundaryHitRef(DungeonEditorMapSnapshot.Boundary boundary) {
-        return DungeonEditorMapHitRef.edge(
-                "WALL",
-                boundary.id(),
-                boundary.topologyRef(),
-                boundary.edge()).value();
-    }
-
-    private static DungeonMapContentModel.PointerTarget boundaryPointerTarget(
-            DungeonEditorMapSnapshot.Boundary boundary
-    ) {
-        DungeonEdgeRef edge = boundary.edge();
-        DungeonMapContentModel.BoundaryTarget boundaryTarget =
-                new DungeonMapContentModel.BoundaryTarget(
-                        "WALL",
-                        boundaryHitRef(boundary),
-                        boundary.id(),
-                        boundary.topologyRef().kind(),
-                        boundary.topologyRef().id(),
-                        edge.from().q(),
-                        edge.from().r(),
-                        edge.from().level(),
-                        edge.to().q(),
-                        edge.to().r(),
-                        edge.to().level());
-        return DungeonMapContentModel.PointerTarget.target(
-                "BOUNDARY",
-                "",
-                "WALL",
-                boundary.id(),
-                0L,
-                boundary.topologyRef().kind(),
-                boundary.topologyRef().id(),
-                DungeonEditorHandleRef.empty(),
-                boundaryTarget,
-                "NONE");
     }
 
     private static String selectionRef(DungeonEditorTopologyElementRef ref) {

@@ -12,12 +12,17 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleKind;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeon.published.DungeonTravelHeading;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.MapSurfaceFrame;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedBoundaryTargetFrame;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame;
+import src.features.dungeon.runtime.DungeonEditorRenderFrame;
+import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 
 public final class DungeonMapContentModel {
 
@@ -37,8 +42,6 @@ public final class DungeonMapContentModel {
             new DungeonMapRenderSceneContentPartModel();
     private final DungeonMapViewportContentPartModel viewportContentPartModel =
             new DungeonMapViewportContentPartModel();
-    private final DungeonMapPointerTargetContentPartModel pointerTargetContentPartModel =
-            new DungeonMapPointerTargetContentPartModel();
     private final DungeonMapHitGeometryContentPartModel hitGeometryContentPartModel =
             new DungeonMapHitGeometryContentPartModel();
     private final DungeonMapPreviewDiffContentPartModel previewDiffContentPartModel =
@@ -50,6 +53,7 @@ public final class DungeonMapContentModel {
     private final DungeonMapSnapshotProjectionContentPartModel snapshotProjectionContentPartModel =
             new DungeonMapSnapshotProjectionContentPartModel();
     private DungeonMapRenderState renderState;
+    private Map<String, PreparedPointerTargetFrame> currentPointerTargetFrames = Map.of();
 
     // Public ContentModel API
 
@@ -59,16 +63,14 @@ public final class DungeonMapContentModel {
                 RenderScene.empty(this.placeholderTitle),
                 viewportContentPartModel.currentViewport()));
         renderState = DungeonMapRenderState.empty(this.placeholderTitle, editorMode);
-        showRenderScene(renderSceneContentPartModel.toSceneProjection(
-                renderState,
-                PointerTarget.empty()), true);
+        showRenderScene(rebuildRenderSceneProjection(PointerTarget.empty()), true);
     }
 
     public ReadOnlyObjectProperty<CanvasState> canvasStateProperty() {
         return canvasState.getReadOnlyProperty();
     }
 
-    public ReadOnlyObjectProperty<InlineLabelEditState> inlineLabelEditStateProperty() {
+    ReadOnlyObjectProperty<InlineLabelEditState> inlineLabelEditStateProperty() {
         return inlineLabelUiStateContentPartModel.inlineLabelEditStateProperty();
     }
 
@@ -112,21 +114,14 @@ public final class DungeonMapContentModel {
         refreshCanvasViewport(viewportContentPartModel.zoomAround(canvasX, canvasY, factor));
     }
 
-    public PointerTarget resolvePointerTarget(double sceneX, double sceneY) {
-        return resolvePointerTarget(sceneX, sceneY, false);
+    public List<String> pointerHitRefsAt(double sceneX, double sceneY) {
+        return hitsAt(sceneX, sceneY).stream()
+                .map(DungeonMapHitGeometryContentPartModel.CanvasHit::hitRef)
+                .toList();
     }
 
-    public PointerTarget resolvePointerTarget(double sceneX, double sceneY, boolean preferBoundary) {
-        return pointerTargetContentPartModel.choosePrimary(
-                hitsAt(sceneX, sceneY),
-                frameConsumptionContentPartModel.currentPointerTargets(),
-                sceneX,
-                sceneY,
-                preferBoundary);
-    }
-
-    public PointerTarget wallBoundaryHoverTargetAt(double sceneX, double sceneY) {
-        return PointerTarget.syntheticBoundary(nearestUnitEdge(sceneX, sceneY, renderState.projectionLevel()));
+    public Map<String, PreparedPointerTargetFrame> currentPointerTargetFrames() {
+        return Map.copyOf(currentPointerTargetFrames);
     }
 
     public void updateHoverTarget(PointerTarget target) {
@@ -137,13 +132,15 @@ public final class DungeonMapContentModel {
         showHoverOverlay(hoverTarget);
     }
 
+    public void updateRuntimeHoverDisplayTarget(DungeonEditorRuntimePointerTarget target) {
+        updateHoverTarget(runtimeHoverDisplayTarget(target));
+    }
+
     public void clearHoverTarget() {
         if (!frameConsumptionContentPartModel.clearHoverTarget()) {
             return;
         }
-        setCanvasState(canvasState.get().withHoverOverlay(
-                DungeonMapRenderSceneContentPartModel.SceneBuckets.empty(),
-                viewportContentPartModel.currentViewport()));
+        publishHoverOverlay(DungeonMapRenderSceneContentPartModel.SceneBuckets.empty());
     }
 
     public PointerTarget resolveLabelPointerTarget(double sceneX, double sceneY, String labelKind) {
@@ -155,10 +152,6 @@ public final class DungeonMapContentModel {
                 return labelPointerTarget(label);
             }
         }
-        return PointerTarget.empty();
-    }
-
-    public PointerTarget resolveRoomLabelPointerTarget(double sceneX, double sceneY) {
         return PointerTarget.empty();
     }
 
@@ -174,18 +167,29 @@ public final class DungeonMapContentModel {
         inlineLabelUiStateContentPartModel.applyInlineLabelEditProjection(projection);
     }
 
-    public void applyEditorSurfaceFrame(
-            DungeonEditorMapSurfaceSnapshot editorSnapshot,
+    public void applyEditorRenderFrame(DungeonEditorRenderFrame frame) {
+        DungeonEditorRenderFrame safeFrame = frame == null ? DungeonEditorRenderFrame.empty() : frame;
+        DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
+        DungeonEditorPreparedFrameFacts.MapInteractionFrame interactionFrame = facts.mapInteractionFrame();
+        currentPointerTargetFrames = preparedPointerTargets(interactionFrame.pointerTargets());
+        applyEditorSurfaceFrame(
+                facts.mapSurfaceFrame(),
+                mapInteractionFrame(interactionFrame));
+    }
+
+    private void applyEditorSurfaceFrame(
+            MapSurfaceFrame editorSurfaceFrame,
             MapInteractionFrame interactionFrame
     ) {
         DungeonMapFrameConsumptionContentPartModel.EditorSurfaceFrame frame =
-                frameConsumptionContentPartModel.consumeEditorSurfaceFrame(editorSnapshot, interactionFrame);
+                frameConsumptionContentPartModel.consumeEditorSurfaceFrame(editorSurfaceFrame, interactionFrame);
         if (!frame.changed()) {
+            updateRenderStateMetadata(frame.editorSurfaceFrame());
             return;
         }
         showRenderState(snapshotProjectionContentPartModel.mapEditorSurface(
                 placeholderTitle,
-                frame.editorSnapshot(),
+                frame.editorSurfaceFrame(),
                 frame.interactionFrame(),
                 roomLabelPlacementContentPartModel,
                 previewDiffContentPartModel), frame.interactionFrame());
@@ -198,15 +202,175 @@ public final class DungeonMapContentModel {
                 roomLabelPlacementContentPartModel), frameConsumptionContentPartModel.consumeTravelSnapshot());
     }
 
+    private void updateRenderStateMetadata(MapSurfaceFrame editorSurfaceFrame) {
+        renderState = renderState.withSelectedTool(selectedToolLabel(editorSurfaceFrame));
+        setCanvasState(canvasState.get().withRenderSceneMetadata(
+                canvasState.get().baseRenderScene().withStatusLabel(renderState.statusLabel()),
+                viewportContentPartModel.currentViewport()));
+    }
+
+    private static String selectedToolLabel(MapSurfaceFrame editorSurfaceFrame) {
+        MapSurfaceFrame safeFrame = editorSurfaceFrame == null
+                ? MapSurfaceFrame.empty()
+                : editorSurfaceFrame;
+        return DungeonEditorTool.labelFor(safeFrame.selectedTool());
+    }
+
+    private static MapInteractionFrame mapInteractionFrame(DungeonEditorPreparedFrameFacts.MapInteractionFrame frame) {
+        DungeonEditorPreparedFrameFacts.MapInteractionFrame safeFrame = frame == null
+                ? DungeonEditorPreparedFrameFacts.MapInteractionFrame.empty()
+                : frame;
+        return new MapInteractionFrame(
+                renderPointerTargets(safeFrame.pointerTargets()),
+                safeFrame.previewHandleHitRefs());
+    }
+
+    private static Map<String, PreparedPointerTargetFrame> preparedPointerTargets(
+            Map<String, PreparedPointerTargetFrame> targets
+    ) {
+        return targets == null || targets.isEmpty() ? Map.of() : Map.copyOf(targets);
+    }
+
+    private static Map<String, PointerTarget> renderPointerTargets(
+            Map<String, PreparedPointerTargetFrame> targets
+    ) {
+        if (targets == null || targets.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, PointerTarget> neutralTargets = new java.util.LinkedHashMap<>();
+        for (Map.Entry<String, PreparedPointerTargetFrame> entry : targets.entrySet()) {
+            neutralTargets.put(entry.getKey(), renderPointerTarget(entry.getValue()));
+        }
+        return Map.copyOf(neutralTargets);
+    }
+
+    private static PointerTarget renderPointerTarget(PreparedPointerTargetFrame target) {
+        PreparedPointerTargetFrame safeTarget = target == null
+                ? DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame.empty()
+                : target;
+        if (safeTarget.cell().exact()) {
+            return PointerTarget.syntheticCell(
+                    safeTarget.elementKind().legacyName(),
+                    safeTarget.cell().q(),
+                    safeTarget.cell().r(),
+                    safeTarget.cell().level());
+        }
+        if (safeTarget.vertex().exact()) {
+            return PointerTarget.syntheticVertex(
+                    safeTarget.vertex().q(),
+                    safeTarget.vertex().r(),
+                    safeTarget.vertex().level());
+        }
+        return PointerTarget.target(
+                safeTarget.targetKind().name(),
+                safeTarget.labelKind().legacyName(),
+                safeTarget.elementKind().legacyName(),
+                safeTarget.ownerId(),
+                safeTarget.clusterId(),
+                safeTarget.topologyKind().legacyName(),
+                safeTarget.topologyId(),
+                safeTarget.handleRef(),
+                renderBoundaryTarget(safeTarget.boundary()),
+                safeTarget.syntheticHoverKind().name());
+    }
+
+    private static BoundaryTarget renderBoundaryTarget(PreparedBoundaryTargetFrame boundary) {
+        PreparedBoundaryTargetFrame safeBoundary = boundary == null
+                ? DungeonEditorPreparedFrameFacts.PreparedBoundaryTargetFrame.empty()
+                : boundary;
+        return new BoundaryTarget(
+                safeBoundary.boundaryKind().legacyName(),
+                safeBoundary.key(),
+                safeBoundary.ownerId(),
+                safeBoundary.topologyKind().legacyName(),
+                safeBoundary.topologyId(),
+                safeBoundary.startQ(),
+                safeBoundary.startR(),
+                safeBoundary.startLevel(),
+                safeBoundary.endQ(),
+                safeBoundary.endR(),
+                safeBoundary.endLevel());
+    }
+
+    private static PointerTarget runtimeHoverDisplayTarget(DungeonEditorRuntimePointerTarget target) {
+        DungeonEditorRuntimePointerTarget safeTarget = target == null
+                ? DungeonEditorRuntimePointerTarget.empty()
+                : target;
+        if (safeTarget.isSyntheticCellHover() && safeTarget.cell().exact()) {
+            return PointerTarget.syntheticCell(
+                    legacyName(safeTarget.elementKind()),
+                    safeTarget.cellQ(),
+                    safeTarget.cellR(),
+                    safeTarget.cellLevel());
+        }
+        if (safeTarget.isVertexTarget() && safeTarget.vertex().exact()) {
+            return PointerTarget.syntheticVertex(
+                    safeTarget.vertexQ(),
+                    safeTarget.vertexR(),
+                    safeTarget.vertexLevel());
+        }
+        return PointerTarget.target(
+                safeTarget.targetKind().name(),
+                legacyName(safeTarget.labelKind()),
+                legacyName(safeTarget.elementKind()),
+                safeTarget.ownerId(),
+                safeTarget.clusterId(),
+                legacyName(safeTarget.topologyKind()),
+                safeTarget.topologyId(),
+                safeTarget.handleRef(),
+                runtimeHoverDisplayBoundaryTarget(safeTarget.boundary()),
+                safeTarget.syntheticHoverKind().name());
+    }
+
+    private static String legacyName(DungeonEditorRuntimePointerTarget.LabelKind labelKind) {
+        return labelKind == null ? "" : labelKind.legacyName();
+    }
+
+    private static String legacyName(DungeonEditorRuntimePointerTarget.ElementKind elementKind) {
+        return elementKind == null ? "" : elementKind.legacyName();
+    }
+
+    private static String legacyName(DungeonEditorRuntimePointerTarget.TopologyKind topologyKind) {
+        return topologyKind == null ? "" : topologyKind.legacyName();
+    }
+
+    private static BoundaryTarget runtimeHoverDisplayBoundaryTarget(
+            DungeonEditorRuntimePointerTarget.BoundaryTarget boundary
+    ) {
+        DungeonEditorRuntimePointerTarget.BoundaryTarget safeBoundary = boundary == null
+                ? DungeonEditorRuntimePointerTarget.BoundaryTarget.empty()
+                : boundary;
+        return new BoundaryTarget(
+                safeBoundary.boundaryKind().legacyName(),
+                safeBoundary.key(),
+                safeBoundary.ownerId(),
+                legacyName(safeBoundary.topologyKind()),
+                safeBoundary.topologyId(),
+                safeBoundary.startQ(),
+                safeBoundary.startR(),
+                safeBoundary.startLevel(),
+                safeBoundary.endQ(),
+                safeBoundary.endR(),
+                safeBoundary.endLevel());
+    }
+
+    void recordCanvasRedraw(long elapsedNanos) {
+        // Retained as the canvas redraw hook; Wave 08 removed the unused local accumulator.
+    }
+
     private void showRenderState(DungeonMapRenderState nextRenderState, MapInteractionFrame interactionFrame) {
         renderState = nextRenderState == null ? renderState : nextRenderState;
         PointerTarget retainedHoverTarget = frameConsumptionContentPartModel.consumeRenderFrame(interactionFrame);
-        showRenderScene(renderSceneContentPartModel.toSceneProjection(
-                renderState,
-                PointerTarget.empty()), true);
+        showRenderScene(rebuildRenderSceneProjection(PointerTarget.empty()), true);
         if (!retainedHoverTarget.isEmptyTarget()) {
             showHoverOverlay(retainedHoverTarget);
         }
+    }
+
+    private DungeonMapRenderSceneContentPartModel.RenderSceneProjection rebuildRenderSceneProjection(
+            PointerTarget hoverTarget
+    ) {
+        return renderSceneContentPartModel.toSceneProjection(renderState, hoverTarget);
     }
 
     private void showRenderScene(
@@ -227,6 +391,10 @@ public final class DungeonMapContentModel {
     private void showHoverOverlay(PointerTarget hoverTarget) {
         DungeonMapRenderSceneContentPartModel.SceneBuckets hoverOverlay =
                 renderSceneContentPartModel.toHoverOverlay(renderState, hoverTarget);
+        publishHoverOverlay(hoverOverlay);
+    }
+
+    private void publishHoverOverlay(DungeonMapRenderSceneContentPartModel.SceneBuckets hoverOverlay) {
         setCanvasState(canvasState.get().withHoverOverlay(
                 hoverOverlay,
                 viewportContentPartModel.currentViewport()));
@@ -234,56 +402,6 @@ public final class DungeonMapContentModel {
 
     private List<DungeonMapHitGeometryContentPartModel.CanvasHit> hitsAt(double sceneX, double sceneY) {
         return hitGeometryContentPartModel.hitsAt(sceneX, sceneY, currentViewport().gridSize());
-    }
-
-    private static BoundaryTarget nearestUnitEdge(
-            double sceneX,
-            double sceneY,
-            int level
-    ) {
-        int cellQ = (int) Math.floor(sceneX);
-        int cellR = (int) Math.floor(sceneY);
-        double localQ = sceneX - cellQ;
-        double localR = sceneY - cellR;
-        double distanceWest = Math.abs(localQ);
-        double distanceEast = Math.abs(1.0 - localQ);
-        double distanceNorth = Math.abs(localR);
-        double distanceSouth = Math.abs(1.0 - localR);
-        double best = Math.min(Math.min(distanceWest, distanceEast), Math.min(distanceNorth, distanceSouth));
-        if (best == distanceNorth) {
-            return syntheticBoundaryTarget(cellQ, cellR, level, cellQ + 1, cellR, level);
-        }
-        if (best == distanceSouth) {
-            return syntheticBoundaryTarget(cellQ, cellR + 1, level, cellQ + 1, cellR + 1, level);
-        }
-        if (best == distanceWest) {
-            return syntheticBoundaryTarget(cellQ, cellR, level, cellQ, cellR + 1, level);
-        }
-        return syntheticBoundaryTarget(cellQ + 1, cellR, level, cellQ + 1, cellR + 1, level);
-    }
-
-    private static BoundaryTarget syntheticBoundaryTarget(
-            double startQ,
-            double startR,
-            int startLevel,
-            double endQ,
-            double endR,
-            int endLevel
-    ) {
-        String key = "hover-boundary:" + WALL_KIND + ":" + startQ + ":" + startR + ":" + startLevel
-                + ":" + endQ + ":" + endR + ":" + endLevel;
-        return new BoundaryTarget(
-                WALL_KIND,
-                key,
-                0L,
-                EMPTY_KIND,
-                0L,
-                startQ,
-                startR,
-                startLevel,
-                endQ,
-                endR,
-                endLevel);
     }
 
     private static boolean labelContains(DungeonMapRenderState.Label label, double sceneX, double sceneY) {
@@ -307,6 +425,9 @@ public final class DungeonMapContentModel {
     }
 
     private void setCanvasState(CanvasState nextState) {
+        if (canvasState.get().sameAs(nextState)) {
+            return;
+        }
         canvasState.set(nextState);
     }
 
@@ -389,8 +510,19 @@ public final class DungeonMapContentModel {
                     nextViewport);
         }
 
+        private CanvasState withRenderSceneMetadata(RenderScene nextRenderScene, Viewport nextViewport) {
+            return new CanvasState(nextRenderScene, hoverOverlay, nextViewport);
+        }
+
         private CanvasState withViewport(Viewport nextViewport) {
             return new CanvasState(renderScene, hoverOverlay, nextViewport);
+        }
+
+        private boolean sameAs(CanvasState other) {
+            return other != null
+                    && Objects.equals(renderScene, other.renderScene)
+                    && Objects.equals(hoverOverlay, other.hoverOverlay)
+                    && Objects.equals(viewport, other.viewport);
         }
     }
 
@@ -719,6 +851,28 @@ public final class DungeonMapContentModel {
                     safeOverlay.texts());
         }
 
+        RenderScene withStatusLabel(String nextStatusLabel) {
+            return new RenderScene(
+                    title,
+                    subtitle,
+                    modeLabel,
+                    nextStatusLabel,
+                    summaryLabel,
+                    sceneLoaded,
+                    overlayMessage,
+                    gridView,
+                    surfaces,
+                    boundaries,
+                    glyphs,
+                    texts,
+                    relations,
+                    actors,
+                    hoverSurfaces,
+                    hoverBoundaries,
+                    hoverGlyphs,
+                    hoverTexts);
+        }
+
         public boolean gridView() {
             return gridView;
         }
@@ -728,14 +882,14 @@ public final class DungeonMapContentModel {
                     || containsAnnotationPrimitives();
         }
 
-        public boolean containsSurfacePrimitives() {
+        private boolean containsSurfacePrimitives() {
             return !surfaces.isEmpty()
                     || !boundaries.isEmpty()
                     || !glyphs.isEmpty()
                     || !actors.isEmpty();
         }
 
-        public boolean containsAnnotationPrimitives() {
+        private boolean containsAnnotationPrimitives() {
             return !texts.isEmpty() || !relations.isEmpty();
         }
 
@@ -992,18 +1146,18 @@ public final class DungeonMapContentModel {
         }
     }
 
-    public record MapInteractionFrame(
+    record MapInteractionFrame(
             Map<String, PointerTarget> pointerTargets,
             List<String> previewHandleHitRefs
     ) {
-        public MapInteractionFrame {
+        MapInteractionFrame {
             pointerTargets = pointerTargets == null ? Map.of() : Map.copyOf(pointerTargets);
             previewHandleHitRefs = previewHandleHitRefs == null
                     ? List.of()
                     : List.copyOf(previewHandleHitRefs);
         }
 
-        public static MapInteractionFrame empty() {
+        static MapInteractionFrame empty() {
             return new MapInteractionFrame(Map.of(), List.of());
         }
     }
@@ -1148,10 +1302,6 @@ public final class DungeonMapContentModel {
             this.legacyName = legacyName;
         }
 
-        public String legacyName() {
-            return legacyName;
-        }
-
         static BoundaryTargetKind fromLegacy(String value) {
             String normalized = normalizeKind(value, WALL_KIND);
             for (BoundaryTargetKind kind : values()) {
@@ -1168,6 +1318,7 @@ public final class DungeonMapContentModel {
         HANDLE,
         BOUNDARY,
         LABEL,
+        MARKER,
         CELL,
         GRAPH_NODE,
         VERTEX;
@@ -1296,23 +1447,6 @@ public final class DungeonMapContentModel {
                     VertexTarget.empty());
         }
 
-        public static PointerTarget syntheticBoundary(BoundaryTarget boundaryTarget) {
-            BoundaryTarget safeBoundary = boundaryTarget == null ? BoundaryTarget.empty() : boundaryTarget;
-            return new PointerTarget(
-                    PointerTargetKind.BOUNDARY,
-                    EMPTY_LABEL_KIND,
-                    safeBoundary.boundaryKind().legacyName(),
-                    safeBoundary.ownerId(),
-                    0L,
-                    safeBoundary.topologyKind(),
-                    safeBoundary.topologyId(),
-                    DungeonEditorHandleRef.empty(),
-                    safeBoundary,
-                    "BOUNDARY",
-                    CellTarget.empty(),
-                    VertexTarget.empty());
-        }
-
         public static PointerTarget syntheticVertex(int q, int r, int level) {
             return new PointerTarget(
                     PointerTargetKind.VERTEX,
@@ -1329,7 +1463,7 @@ public final class DungeonMapContentModel {
                     new VertexTarget(true, q, r, level));
         }
 
-        public PointerTarget withCellRef(CellTarget nextCellRef) {
+        PointerTarget withCellRef(CellTarget nextCellRef) {
             return new PointerTarget(
                     targetKind,
                     labelKind,
@@ -1373,14 +1507,6 @@ public final class DungeonMapContentModel {
             return targetKind == PointerTargetKind.GRAPH_NODE && topologyId > 0L && !EMPTY_KIND.equals(topologyKind);
         }
 
-        public int vertexQ() {
-            return vertexRef.q();
-        }
-
-        public int vertexR() {
-            return vertexRef.r();
-        }
-
         public String topologyKind() {
             return topologyKind;
         }
@@ -1391,6 +1517,10 @@ public final class DungeonMapContentModel {
 
         public boolean isLabelTarget() {
             return targetKind == PointerTargetKind.LABEL;
+        }
+
+        public boolean isMarkerTarget() {
+            return targetKind == PointerTargetKind.MARKER;
         }
 
         public boolean isClusterLabelTarget() {
@@ -1914,11 +2044,26 @@ public final class DungeonMapContentModel {
             DungeonMapRenderState.MarkerKind kind,
             boolean selected,
             DungeonMapRenderState.MarkerHandle handle,
-            boolean preview
+            boolean preview,
+            @Nullable DungeonEdgeRef sourceEdge,
+            String hoverLabel
     ) {
+        Marker(
+                String label,
+                double q,
+                double r,
+                int z,
+                DungeonMapRenderState.MarkerKind kind,
+                boolean selected,
+                DungeonMapRenderState.MarkerHandle handle,
+                boolean preview
+        ) {
+            this(label, q, r, z, kind, selected, handle, preview, null, "");
+        }
 
         Marker {
             label = label == null ? "" : label;
+            hoverLabel = hoverLabel == null ? "" : hoverLabel.trim();
             kind = kind == null ? MarkerKind.DOOR : kind;
             handle = handle == null
                     ? new MarkerHandle(null, 0, 0, 0, null)
@@ -1927,6 +2072,10 @@ public final class DungeonMapContentModel {
 
         boolean isDoorMarker() {
             return kind == MarkerKind.DOOR;
+        }
+
+        boolean isTransitionMarker() {
+            return kind == MarkerKind.TRANSITION;
         }
 
         boolean isWallRunMarker() {

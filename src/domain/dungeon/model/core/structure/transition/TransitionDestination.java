@@ -10,13 +10,14 @@ public record TransitionDestination(
 ) {
     private static final String OVERWORLD_TILE_LABEL = "Overworld-Feld ";
     private static final String DUNGEON_LABEL = "Dungeon ";
+    private static final String UNLINKED_ENTRANCE_LABEL = "Dungeon-Eingang (unverbunden)";
     private static final String TRANSITION_LABEL = " / Übergang ";
 
     public TransitionDestination {
         type = TransitionDestinationType.normalize(type);
-        mapId = Math.max(0L, mapId);
+        mapId = type.isUnlinkedEntrance() ? 0L : Math.max(0L, mapId);
         tileId = type.isOverworldTile() ? Math.max(0L, tileId) : 0L;
-        transitionId = positiveTransitionId(transitionId);
+        transitionId = normalizedTransitionId(type, transitionId);
     }
 
     public static TransitionDestination dungeonMap(long mapId, @Nullable Long transitionId) {
@@ -27,6 +28,10 @@ public record TransitionDestination(
         return new TransitionDestination(TransitionDestinationType.OVERWORLD_TILE, mapId, tileId, null);
     }
 
+    public static TransitionDestination unlinkedEntrance() {
+        return new TransitionDestination(TransitionDestinationType.UNLINKED_ENTRANCE, 0L, 0L, null);
+    }
+
     public boolean isDungeonMap() {
         return type.isDungeonMap();
     }
@@ -35,7 +40,14 @@ public record TransitionDestination(
         return type.isOverworldTile();
     }
 
+    public boolean isUnlinkedEntrance() {
+        return type.isUnlinkedEntrance();
+    }
+
     public boolean isValid() {
+        if (isUnlinkedEntrance()) {
+            return true;
+        }
         return isOverworldTile()
                 ? mapId > 0L && tileId > 0L
                 : isDungeonMap() && mapId > 0L;
@@ -54,6 +66,9 @@ public record TransitionDestination(
                     ? DUNGEON_LABEL + mapId
                     : DUNGEON_LABEL + mapId + TRANSITION_LABEL + transitionId;
         }
+        if (isUnlinkedEntrance()) {
+            return UNLINKED_ENTRANCE_LABEL;
+        }
         return "";
     }
 
@@ -62,5 +77,15 @@ public record TransitionDestination(
             return null;
         }
         return candidate;
+    }
+
+    private static @Nullable Long normalizedTransitionId(
+            TransitionDestinationType type,
+            @Nullable Long candidate
+    ) {
+        if (type.isUnlinkedEntrance()) {
+            return null;
+        }
+        return positiveTransitionId(candidate);
     }
 }

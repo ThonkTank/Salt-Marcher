@@ -12,6 +12,44 @@ final class DungeonEditorControlsProjectionServiceAssembly {
             src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot.SnapshotData snapshot,
             DungeonEditorSurfaceContextServiceAssembly.SurfaceContext surfaceContext
     ) {
+        return snapshot(snapshot, surfaceContext.reachableLevels(), surfaceContext.surfacePresent());
+    }
+
+    static src.domain.dungeon.published.DungeonEditorControlsSnapshot snapshot(
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot.SnapshotData snapshot,
+            DungeonEditorSurfaceContextServiceAssembly.ControlsContext surfaceContext
+    ) {
+        return snapshot(snapshot, surfaceContext.reachableLevels(), surfaceContext.surfacePresent());
+    }
+
+    static src.domain.dungeon.published.DungeonEditorControlsSnapshot snapshot(
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot.ControlsData controls,
+            src.domain.dungeon.published.DungeonEditorControlsSnapshot current
+    ) {
+        src.domain.dungeon.published.DungeonEditorControlsSnapshot safeCurrent = current == null
+                ? src.domain.dungeon.published.DungeonEditorControlsSnapshot.empty("")
+                : current;
+        src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot.ControlsData safeControls =
+                controls == null
+                        ? src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot.controlsData(null)
+                        : controls;
+        return new src.domain.dungeon.published.DungeonEditorControlsSnapshot(
+                safeCurrent.maps(),
+                toPublishedMapId(safeControls.selectedMapId()),
+                DungeonEditorValueProjectionServiceAssembly.viewMode(safeControls.viewMode()),
+                DungeonEditorValueProjectionServiceAssembly.tool(safeControls.selectedTool()),
+                safeControls.projectionLevel(),
+                DungeonEditorValueProjectionServiceAssembly.overlay(safeControls.overlaySettings()),
+                safeCurrent.reachableLevels(),
+                safeCurrent.surfaceLoaded(),
+                safeControls.statusText());
+    }
+
+    private static src.domain.dungeon.published.DungeonEditorControlsSnapshot snapshot(
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot.SnapshotData snapshot,
+            List<Integer> reachableLevels,
+            boolean surfacePresent
+    ) {
         return new src.domain.dungeon.published.DungeonEditorControlsSnapshot(
                 publishedMapSummaries(snapshot.maps()),
                 toPublishedMapId(snapshot.selectedMapId()),
@@ -19,8 +57,8 @@ final class DungeonEditorControlsProjectionServiceAssembly {
                 DungeonEditorValueProjectionServiceAssembly.tool(snapshot.selectedTool()),
                 snapshot.projectionLevel(),
                 DungeonEditorValueProjectionServiceAssembly.overlay(snapshot.overlaySettings()),
-                surfaceContext.reachableLevels(),
-                surfaceContext.surfacePresent(),
+                reachableLevels,
+                surfacePresent,
                 snapshot.statusText());
     }
 

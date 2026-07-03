@@ -48,7 +48,10 @@ final class DungeonPublishedMapProjectionServiceAssembly {
                         feature.cells().stream().map(PublishedProjectionSupport::cell).toList(),
                         feature.description(),
                         feature.destinationLabel(),
-                        PublishedProjectionSupport.topologyRef(feature.topologyRef()))).toList(),
+                        PublishedProjectionSupport.topologyRef(feature.topologyRef()),
+                        feature.anchorEdge() == null
+                                ? null
+                                : PublishedProjectionSupport.edge(feature.anchorEdge()))).toList(),
                 safeHandles.stream().map(PublishedProjectionSupport::handle).toList());
     }
 

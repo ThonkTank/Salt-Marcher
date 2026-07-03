@@ -34,7 +34,22 @@ final class DungeonEditorMapInteractionFrameAssembler {
                     safeSnapshot);
         }
         return new DungeonEditorPreparedFrameFacts.MapInteractionFrame(
-                targets,
+                preparedTargets(targets),
                 DungeonEditorHandlePointerTargets.previewHandleHitRefs(safeSnapshot, selection));
+    }
+
+    private static Map<String, DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame> preparedTargets(
+            Map<String, DungeonEditorRuntimePointerTarget> targets
+    ) {
+        if (targets == null || targets.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame> preparedTargets = new LinkedHashMap<>();
+        for (Map.Entry<String, DungeonEditorRuntimePointerTarget> entry : targets.entrySet()) {
+            preparedTargets.put(
+                    entry.getKey(),
+                    DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame.fromRuntime(entry.getValue()));
+        }
+        return Map.copyOf(preparedTargets);
     }
 }

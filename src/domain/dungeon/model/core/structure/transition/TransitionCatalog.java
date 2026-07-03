@@ -3,7 +3,6 @@ package src.domain.dungeon.model.core.structure.transition;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.core.geometry.Cell;
 
 public record TransitionCatalog(List<Transition> transitions) {
     private static final long NO_TRANSITION_ID = 0L;
@@ -17,21 +16,23 @@ public record TransitionCatalog(List<Transition> transitions) {
         return List.copyOf(transitions);
     }
 
-    public boolean canCreate(@Nullable Cell anchor, @Nullable TransitionDestination destination) {
-        return anchor != null && destination != null && destination.isValid();
+    public boolean canCreate(@Nullable TransitionAnchor anchor, @Nullable TransitionDestination destination) {
+        TransitionAnchor safeAnchor = anchor == null ? TransitionAnchor.none() : anchor;
+        return safeAnchor.isPlaced() && destination != null && destination.isValid();
     }
 
     public TransitionCatalog withCreated(
             long transitionId,
             long mapId,
-            @Nullable Cell anchor,
+            @Nullable TransitionAnchor anchor,
             @Nullable TransitionDestination destination
     ) {
         if (!canCreate(anchor, destination)) {
             return this;
         }
+        TransitionAnchor safeAnchor = anchor == null ? TransitionAnchor.none() : anchor;
         List<Transition> result = new ArrayList<>(transitions);
-        result.add(new Transition(transitionId, mapId, "", anchor, destination, null));
+        result.add(new Transition(transitionId, mapId, "", safeAnchor, destination, null));
         return new TransitionCatalog(result);
     }
 

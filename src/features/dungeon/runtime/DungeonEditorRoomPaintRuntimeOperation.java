@@ -37,7 +37,7 @@ final class DungeonEditorRoomPaintRuntimeOperation {
         return null;
     }
 
-    void apply(
+    DungeonEditorRuntimeOperationResult apply(
             PointerAction action,
             DungeonEditorSessionValues.Tool tool,
             PointerSample sample,
@@ -45,43 +45,50 @@ final class DungeonEditorRoomPaintRuntimeOperation {
             TransitionDestination transitionDestination
     ) {
         if (action == null || tool == null || PointerAction.isMoved(action)) {
-            return;
+            return DungeonEditorRuntimeOperationResult.none();
         }
         DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
                 sample,
                 wallSingleClickMode,
                 transitionDestination);
         switch (action) {
-            case PRESSED -> applyRoom(
+            case PRESSED -> {
+                return applyRoom(
                     InterpretDungeonEditorMainViewInputUseCase.PointerAction.PRESS,
                     input,
                     tool);
-            case DRAGGED -> applyRoom(
+            }
+            case DRAGGED -> {
+                return applyRoom(
                     InterpretDungeonEditorMainViewInputUseCase.PointerAction.DRAG,
                     input,
                     tool);
-            case RELEASED -> applyRoom(
+            }
+            case RELEASED -> {
+                return applyRoom(
                     InterpretDungeonEditorMainViewInputUseCase.PointerAction.RELEASE,
                     input,
                     tool);
+            }
             default -> throw new IllegalStateException("Unsupported room paint pointer action: " + action);
         }
     }
 
-    private void applyRoom(
+    private DungeonEditorRuntimeOperationResult applyRoom(
             InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
             DungeonEditorMainViewInput input,
             DungeonEditorSessionValues.Tool tool
     ) {
         if (effectUseCase.committedGridOrPublishCurrent() == null) {
-            return;
+            return DungeonEditorRuntimeOperationResult.none();
         }
         DungeonEditorRoomPaintInterpretation interpretation = mainViewInterpreter.roomPaintOperation(
                 action,
                 input,
                 tool,
                 workflow.session().projectionLevel());
-        effectUseCase.applyEffect(interpretation.effect(), commitFor(interpretation.commitSession()));
+        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(
+                effectUseCase.applyEffect(interpretation.effect(), commitFor(interpretation.commitSession())));
     }
 
     private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit commitFor(PaintSession paintSession) {

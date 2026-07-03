@@ -1,7 +1,9 @@
 package src.domain.dungeon.model.core.projection;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
@@ -13,7 +15,8 @@ public record DungeonFeatureFacts(
         String description,
         String destinationLabel,
         List<String> facts,
-        DungeonTopologyRef topologyRef
+        DungeonTopologyRef topologyRef,
+        @Nullable Edge anchorEdge
 ) {
 
     public DungeonFeatureFacts(
@@ -33,7 +36,21 @@ public record DungeonFeatureFacts(
                 description,
                 destinationLabel,
                 facts,
-                defaultTopologyRef(kind, id));
+                defaultTopologyRef(kind, id),
+                null);
+    }
+
+    public DungeonFeatureFacts(
+            DungeonFeatureType kind,
+            long id,
+            String label,
+            List<Cell> cells,
+            String description,
+            String destinationLabel,
+            List<String> facts,
+            DungeonTopologyRef topologyRef
+    ) {
+        this(kind, id, label, cells, description, destinationLabel, facts, topologyRef, null);
     }
 
     public DungeonFeatureFacts {

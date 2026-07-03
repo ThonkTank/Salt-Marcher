@@ -48,7 +48,8 @@ public final class DungeonTravelProjectionLevelHarness {
     private static void verifyProjectionLevelControls(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
         long mapId = runtime.database().createPersistedMap("Travel Visible Level Controls Map");
-        runtime.database().seedF6MultiLevelFloors(mapId);
+        runtime.database().seedTransitionDescriptionFixture(mapId);
+        long transitionId = runtime.database().transitionIdByDescription(mapId, "Initial transition.");
         runtime.partyState().moveToMap(mapId);
         runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
                 .applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
@@ -67,6 +68,13 @@ public final class DungeonTravelProjectionLevelHarness {
                 DungeonEditorBehaviorHarnessSupport.labelVisible(binding.controlsRoot(), "Ebene z=0"),
                 "DT-LVL-001 visible travel level label starts at z=0");
         assertRenderedLevel(binding.mapContentModel(), 0, "DT-LVL-001 renders level 0");
+        assertTravelTransitionMarkerTopologyRef(
+                binding.mapContentModel(),
+                transitionId,
+                "DT-LVL-001 travel transition marker carries topology ref");
+        DungeonEditorBehaviorHarnessSupport.assertTrue(
+                !binding.mapContentModel().canvasStateProperty().get().baseRenderScene().actors().isEmpty(),
+                "DT-LVL-001 travel map keeps the party token in the actor layer");
 
         DungeonEditorBehaviorHarnessSupport.click(DungeonEditorBehaviorHarnessSupport.button(binding.controlsRoot(), "+"));
 
@@ -122,6 +130,18 @@ public final class DungeonTravelProjectionLevelHarness {
         DungeonEditorBehaviorHarnessSupport.assertTrue(
                 renderedCells.stream().allMatch(cell -> cell.endsWith("," + expectedLevel)),
                 message + " rendered cells=" + renderedCells);
+    }
+
+    private static void assertTravelTransitionMarkerTopologyRef(
+            DungeonMapContentModel mapContentModel,
+            long transitionId,
+            String message
+    ) {
+        String selectionRef = "TRANSITION:" + transitionId;
+        DungeonEditorBehaviorHarnessSupport.assertTrue(
+                mapContentModel.canvasStateProperty().get().renderScene().glyphs().stream()
+                        .anyMatch(glyph -> selectionRef.equals(glyph.selectionRef())),
+                message);
     }
 
     private static void assertNoTravelTruthMutation(

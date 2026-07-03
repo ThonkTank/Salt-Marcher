@@ -11,89 +11,116 @@ final class DungeonEditorPointerOperationDispatcher {
         this.operationOwner = Objects.requireNonNull(operationOwner, "operationOwner");
     }
 
-    void applyPointer(
+    DungeonEditorRuntimeOperationResult applyPointer(
             PointerAction action,
-            String toolKey,
+            DungeonEditorTool tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        if (applyDraftPointer(action, toolKey, sample, wallSingleClickMode, transitionDestination)) {
-            return;
+        DraftPointerResult draftResult =
+                applyDraftPointer(action, tool, sample, wallSingleClickMode, transitionDestination);
+        if (draftResult.handled()) {
+            return draftResult.result();
         }
-        if (applyPointPointer(action, toolKey, sample, wallSingleClickMode, transitionDestination)) {
-            return;
+        DungeonEditorRuntimeOperationResult pointResult =
+                applyPointPointer(action, tool, sample, wallSingleClickMode, transitionDestination);
+        if (pointResult != null) {
+            return pointResult;
         }
-        applySelectionPointer(action, toolKey, sample, wallSingleClickMode, transitionDestination);
+        DungeonEditorRuntimeOperationResult selectionResult =
+                applySelectionPointer(action, tool, sample, wallSingleClickMode, transitionDestination);
+        return selectionResult == null ? DungeonEditorRuntimeOperationResult.none() : selectionResult;
     }
 
-    private boolean applyDraftPointer(
+    private DraftPointerResult applyDraftPointer(
             PointerAction action,
-            String toolKey,
+            DungeonEditorTool tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        DungeonEditorTool wallTool = DungeonEditorWallBoundaryDraftRuntimeOperation.wallTool(toolKey);
-        if (wallTool != null) {
-            operationOwner.applyWallBoundaryDraft(action, wallTool, sample, wallSingleClickMode, transitionDestination);
-            return true;
+        if (DungeonEditorWallBoundaryDraftRuntimeOperation.handles(tool)) {
+            return DraftPointerResult.handled(operationOwner.applyWallBoundaryDraft(
+                    action,
+                    tool,
+                    sample,
+                    wallSingleClickMode,
+                    transitionDestination));
         }
-        DungeonEditorTool doorTool = DungeonEditorDoorBoundaryDraftRuntimeOperation.doorTool(toolKey);
-        if (doorTool != null) {
-            operationOwner.applyDoorBoundaryDraft(action, doorTool, sample, wallSingleClickMode, transitionDestination);
-            return true;
+        if (DungeonEditorDoorBoundaryDraftRuntimeOperation.handles(tool)) {
+            return DraftPointerResult.handled(operationOwner.applyDoorBoundaryDraft(
+                    action,
+                    tool,
+                    sample,
+                    wallSingleClickMode,
+                    transitionDestination));
         }
-        DungeonEditorTool corridorTool = DungeonEditorCorridorDraftRuntimeOperation.corridorTool(toolKey);
-        if (corridorTool != null) {
-            operationOwner.applyCorridorDraft(action, corridorTool, sample, wallSingleClickMode, transitionDestination);
-            return true;
+        if (DungeonEditorCorridorDraftRuntimeOperation.handles(tool)) {
+            return DraftPointerResult.handled(operationOwner.applyCorridorDraft(
+                    action,
+                    tool,
+                    sample,
+                    wallSingleClickMode,
+                    transitionDestination));
         }
-        DungeonEditorTool stairTool = DungeonEditorStairDraftRuntimeOperation.stairTool(toolKey);
-        if (stairTool != null) {
-            operationOwner.applyStairDraft(action, stairTool, sample, wallSingleClickMode, transitionDestination);
-            return true;
+        if (DungeonEditorStairDraftRuntimeOperation.handles(tool)) {
+            return DraftPointerResult.handled(operationOwner.applyStairDraft(
+                    action,
+                    tool,
+                    sample,
+                    wallSingleClickMode,
+                    transitionDestination));
         }
-        return false;
+        return DraftPointerResult.notHandled();
     }
 
-    private boolean applyPointPointer(
+    private DungeonEditorRuntimeOperationResult applyPointPointer(
             PointerAction action,
-            String toolKey,
+            DungeonEditorTool editorTool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        DungeonEditorTool editorTool = DungeonEditorRuntimeEnumTranslator.editorTool(toolKey);
         DungeonEditorSessionValues.Tool roomTool = DungeonEditorRoomPaintRuntimeOperation.roomTool(editorTool);
         if (roomTool != null) {
-            operationOwner.applyRoomPaint(action, roomTool, sample, wallSingleClickMode, transitionDestination);
-            return true;
+            return operationOwner.applyRoomPaint(action, roomTool, sample, wallSingleClickMode, transitionDestination);
         }
         if (DungeonEditorStairDeleteRuntimeOperation.handles(editorTool)) {
-            operationOwner.applyStairDelete(action, sample, wallSingleClickMode, transitionDestination);
-            return true;
+            return operationOwner.applyStairDelete(action, sample, wallSingleClickMode, transitionDestination);
         }
         if (DungeonEditorTransitionRuntimeOperation.handles(editorTool)) {
-            operationOwner.applyTransition(action, editorTool, sample, wallSingleClickMode, transitionDestination);
-            return true;
+            return operationOwner.applyTransition(action, editorTool, sample, wallSingleClickMode, transitionDestination);
         }
         if (DungeonEditorFeatureMarkerRuntimeOperation.handles(editorTool)) {
-            operationOwner.applyFeatureMarker(action, editorTool, sample, wallSingleClickMode, transitionDestination);
-            return true;
+            return operationOwner.applyFeatureMarker(action, editorTool, sample, wallSingleClickMode, transitionDestination);
         }
-        return false;
+        return null;
     }
 
-    private void applySelectionPointer(
+    private DungeonEditorRuntimeOperationResult applySelectionPointer(
             PointerAction action,
-            String toolKey,
+            DungeonEditorTool tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        if (DungeonEditorTool.SELECT == DungeonEditorRuntimeEnumTranslator.editorTool(toolKey)) {
-            operationOwner.applySelectionHandlePreview(action, sample, wallSingleClickMode, transitionDestination);
+        if (DungeonEditorTool.SELECT == tool) {
+            return operationOwner.applySelectionHandlePreview(action, sample, wallSingleClickMode, transitionDestination);
+        }
+        return null;
+    }
+
+    private record DraftPointerResult(
+            boolean handled,
+            DungeonEditorRuntimeOperationResult result
+    ) {
+        static DraftPointerResult handled(DungeonEditorRuntimeOperationResult result) {
+            return new DraftPointerResult(true, result);
+        }
+
+        static DraftPointerResult notHandled() {
+            return new DraftPointerResult(false, DungeonEditorRuntimeOperationResult.none());
         }
     }
 }

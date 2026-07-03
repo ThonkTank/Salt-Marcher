@@ -11,33 +11,44 @@ final class DungeonEditorRuntimeTransitionStairPort implements DungeonEditorTran
     private final DungeonEditorRuntimeDraftSession draftSession;
     private final DungeonEditorRuntimeFramePublisher framePublisher;
     private final DungeonEditorAuthoredRuntimeOperations operationOwner;
+    private final DungeonEditorStore store;
 
     DungeonEditorRuntimeTransitionStairPort(
             DungeonEditorControlsModel controlsModel,
             DungeonEditorStateModel stateModel,
             DungeonEditorRuntimeDraftSession draftSession,
             DungeonEditorRuntimeFramePublisher framePublisher,
-            DungeonEditorAuthoredRuntimeOperations operationOwner
+            DungeonEditorAuthoredRuntimeOperations operationOwner,
+            DungeonEditorStore store
     ) {
         this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
         this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
         this.draftSession = Objects.requireNonNull(draftSession, "draftSession");
         this.framePublisher = Objects.requireNonNull(framePublisher, "framePublisher");
         this.operationOwner = Objects.requireNonNull(operationOwner, "operationOwner");
+        this.store = Objects.requireNonNull(store, "store");
     }
 
     @Override
     public void saveRoomNarration(RoomNarration narration) {
         long roomId = narration == null ? 0L : narration.roomId();
         draftSession.clearRoomNarrationDraft(currentSelectedMapIdValue(), roomId);
-        operationOwner.saveRoomNarration(narration);
+        framePublisher.markDraftSessionChanged();
+        DungeonEditorRuntimeOperationPublisher.apply(
+                store,
+                framePublisher,
+                () -> operationOwner.saveRoomNarration(narration));
     }
 
     @Override
     public void saveLabelName(DungeonEditorRuntimeLabelTarget target, String name) {
         DungeonEditorRuntimeLabelTarget safeTarget = DungeonEditorRuntimeLabelTarget.orEmpty(target);
         draftSession.clearLabelNameDraft(currentSelectedMapIdValue(), safeTarget);
-        operationOwner.saveLabelName(safeTarget, name);
+        framePublisher.markDraftSessionChanged();
+        DungeonEditorRuntimeOperationPublisher.apply(
+                store,
+                framePublisher,
+                () -> operationOwner.saveLabelName(safeTarget, name));
     }
 
     @Override
@@ -48,17 +59,28 @@ final class DungeonEditorRuntimeTransitionStairPort implements DungeonEditorTran
             boolean bidirectional
     ) {
         long selectedMapIdValue = currentSelectedMapIdValue();
-        operationOwner.saveTransitionLink(sourceTransitionId, targetMapId, targetTransitionId, bidirectional);
-        if (transitionLinkCommitted(sourceTransitionId, targetMapId, targetTransitionId)) {
-            draftSession.clearTransitionDestinationDraft(selectedMapIdValue, sourceTransitionId);
-            framePublisher.publishCurrentToSubscribers();
-        }
+        DungeonEditorRuntimeOperationPublisher.apply(
+                store,
+                framePublisher,
+                () -> operationOwner.saveTransitionLink(
+                        sourceTransitionId,
+                        targetMapId,
+                        targetTransitionId,
+                        bidirectional),
+                result -> clearTransitionDestinationDraftWhenCommitted(
+                        selectedMapIdValue,
+                        sourceTransitionId,
+                        result));
     }
 
     @Override
     public void saveTransitionDescription(long transitionId, String description) {
         draftSession.clearTransitionDescriptionDraft(currentSelectedMapIdValue(), transitionId);
-        operationOwner.saveTransitionDescription(transitionId, description);
+        framePublisher.markDraftSessionChanged();
+        DungeonEditorRuntimeOperationPublisher.apply(
+                store,
+                framePublisher,
+                () -> operationOwner.saveTransitionDescription(transitionId, description));
     }
 
     @Override
@@ -70,17 +92,38 @@ final class DungeonEditorRuntimeTransitionStairPort implements DungeonEditorTran
             int dimension2
     ) {
         draftSession.clearStairGeometryDraft(currentSelectedMapIdValue(), stairId);
-        operationOwner.saveStairGeometry(stairId, shapeName, directionName, dimension1, dimension2);
+        framePublisher.markDraftSessionChanged();
+        DungeonEditorRuntimeOperationPublisher.apply(
+                store,
+                framePublisher,
+                () -> operationOwner.saveStairGeometry(
+                        stairId,
+                        shapeName,
+                        directionName,
+                        dimension1,
+                        dimension2));
     }
 
-    private boolean transitionLinkCommitted(long sourceTransitionId, long targetMapId, long targetTransitionId) {
+    private boolean transitionLinkCommitted(
+            long sourceTransitionId,
+            DungeonEditorRuntimeOperationResult result
+    ) {
         DungeonEditorStateSnapshot state = stateModel.current();
         return DungeonEditorRuntimeDraftSession.selectedTransitionId(state == null ? null : state.selection())
                 == sourceTransitionId
-                && DungeonEditorTransitionLinkCommitEvidence.matches(
-                state == null ? null : state.inspector(),
-                targetMapId,
-                targetTransitionId);
+                && result != null
+                && result.shouldPublish(false);
+    }
+
+    private void clearTransitionDestinationDraftWhenCommitted(
+            long selectedMapIdValue,
+            long sourceTransitionId,
+            DungeonEditorRuntimeOperationResult result
+    ) {
+        if (transitionLinkCommitted(sourceTransitionId, result)) {
+            draftSession.clearTransitionDestinationDraft(selectedMapIdValue, sourceTransitionId);
+            framePublisher.markDraftSessionChanged();
+        }
     }
 
     private long currentSelectedMapIdValue() {

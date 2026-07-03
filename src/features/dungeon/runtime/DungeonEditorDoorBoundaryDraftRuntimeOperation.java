@@ -1,10 +1,5 @@
 package src.features.dungeon.runtime;
 
-import static src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction.DRAG;
-import static src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction.HOVER;
-import static src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction.PRESS;
-import static src.features.dungeon.runtime.InterpretDungeonEditorMainViewInputUseCase.PointerAction.RELEASE;
-
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -34,63 +29,53 @@ final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
                 "authoredOperationUseCase");
     }
 
-    static @Nullable DungeonEditorTool doorTool(String toolKey) {
-        DungeonEditorTool tool = DungeonEditorRuntimeEnumTranslator.editorTool(toolKey);
-        return tool == DungeonEditorTool.DOOR_CREATE || tool == DungeonEditorTool.DOOR_DELETE ? tool : null;
+    static boolean handles(DungeonEditorTool tool) {
+        return tool == DungeonEditorTool.DOOR_CREATE || tool == DungeonEditorTool.DOOR_DELETE;
     }
 
-    void apply(
+    DungeonEditorRuntimeOperationResult apply(
             PointerAction action,
             DungeonEditorTool doorTool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
-    ) {
+        ) {
         DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
-                doorTool.name(),
                 sample,
                 wallSingleClickMode,
+                doorTool == DungeonEditorTool.DOOR_DELETE,
                 transitionDestination);
         if (doorTool == DungeonEditorTool.DOOR_CREATE) {
-            applyWorkflow(action, input, DungeonEditorSessionValues.Tool.DOOR_CREATE);
+            return applyWorkflow(action, input, DungeonEditorSessionValues.Tool.DOOR_CREATE);
         } else if (doorTool == DungeonEditorTool.DOOR_DELETE) {
-            applyWorkflow(action, input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
+            return applyWorkflow(action, input, DungeonEditorSessionValues.Tool.DOOR_DELETE);
         } else {
             throw new IllegalArgumentException("Unsupported door draft tool: " + doorTool);
         }
     }
 
-    private void applyWorkflow(
+    private DungeonEditorRuntimeOperationResult applyWorkflow(
             PointerAction action,
             DungeonEditorMainViewInput input,
             DungeonEditorSessionValues.Tool doorTool
     ) {
-        MapSnapshot committedSnapshot = effectUseCase.committedGridOrPublishCurrent();
+        ApplyDungeonEditorSessionEffectUseCase.CurrentGridPublication currentGrid =
+                effectUseCase.committedGridOrPublishCurrentResult();
+        MapSnapshot committedSnapshot = currentGrid.committedSnapshot();
         if (committedSnapshot == null) {
-            return;
+            return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(currentGrid.snapshot());
         }
-        PointerAction effectiveAction = previewAction(action);
+        PointerAction effectiveAction = DungeonEditorDraftOperationSupport.previewAction(action);
         DungeonEditorDoorBoundaryDraftInterpretation interpretation =
                 mainViewInterpreter.doorBoundaryOperation(
-                        pointerAction(effectiveAction),
+                        DungeonEditorDraftOperationSupport.pointerAction(effectiveAction),
                         input,
                         committedSnapshot,
                         doorTool,
                         workflow.session().projectionLevel());
-        effectUseCase.applyEffect(interpretation.effect(), commitFor(interpretation.commit()));
-    }
-
-    private static PointerAction previewAction(PointerAction action) {
-        return PointerAction.orMoved(action);
-    }
-
-    private static InterpretDungeonEditorMainViewInputUseCase.PointerAction pointerAction(PointerAction action) {
-        return switch (action) {
-            case PRESSED -> PRESS;
-            case DRAGGED -> DRAG;
-            case RELEASED -> RELEASE;
-            case MOVED -> HOVER;
-        };
+        return DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(DungeonEditorDraftOperationSupport.latestSnapshot(
+                currentGrid.snapshot(),
+                effectUseCase.applyEffect(interpretation.effect(), commitFor(interpretation.commit()))));
     }
 
     private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit commitFor(
@@ -105,4 +90,5 @@ final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
                 DungeonEditorWorkspaceCoreGeometry.edges(List.of(commit.edge().toEdgeRef())),
                 commit.deleteMode());
     }
+
 }

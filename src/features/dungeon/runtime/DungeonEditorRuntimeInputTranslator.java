@@ -13,23 +13,50 @@ final class DungeonEditorRuntimeInputTranslator {
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        return DungeonEditorPointerInputTranslator.mainViewInput(
-                sample,
+        PointerSample safeSample = sample == null
+                ? new PointerSample(0.0, 0.0, false, false, DungeonEditorRuntimePointerTarget.empty())
+                : sample;
+        return buildMainViewInput(
+                safeSample,
                 wallSingleClickMode,
+                false,
                 transitionDestination);
     }
 
     static DungeonEditorMainViewInput mainViewInput(
-            String toolKey,
             PointerSample sample,
             boolean wallSingleClickMode,
+            boolean doorDeleteSelected,
             TransitionDestination transitionDestination
     ) {
-        return DungeonEditorPointerInputTranslator.mainViewInput(
-                toolKey,
-                sample,
+        PointerSample safeSample = sample == null
+                ? new PointerSample(0.0, 0.0, false, false, DungeonEditorRuntimePointerTarget.empty())
+                : sample;
+        return buildMainViewInput(
+                safeSample,
                 wallSingleClickMode,
+                doorDeleteSelected,
                 transitionDestination);
+    }
+
+    private static DungeonEditorMainViewInput buildMainViewInput(
+            PointerSample sample,
+            boolean wallSingleClickMode,
+            boolean doorDeleteSelected,
+            TransitionDestination transitionDestination
+    ) {
+        TransitionDestination safeDestination = transitionDestination == null
+                ? TransitionDestination.empty()
+                : transitionDestination;
+        return new DungeonEditorMainViewInput(
+                sample.sceneX(),
+                sample.sceneY(),
+                sample.primaryButtonDown(),
+                sample.secondaryButtonDown(),
+                wallSingleClickMode,
+                doorDeleteSelected,
+                sample.target(),
+                safeDestination);
     }
 
     static String toolName(String value) {

@@ -205,12 +205,18 @@ public final class TravelSurfaceProjection {
             if (destination.isDungeonMapDestination()) {
                 return TravelTransitionTarget.dungeonMap(destination.mapId(), destination.transitionId());
             }
+            if (destination.isUnlinkedEntranceDestination()) {
+                return null;
+            }
             return null;
         }
 
         private static String destinationLabel(TransitionDestination destination) {
             if (destination == null) {
-                return "";
+                return "Kein Ziel verknuepft";
+            }
+            if (destination.isUnlinkedEntranceDestination()) {
+                return "Kein Ziel verknuepft";
             }
             if (destination.isOverworldTileDestination()) {
                 return "Overworld-Feld " + destination.tileId();

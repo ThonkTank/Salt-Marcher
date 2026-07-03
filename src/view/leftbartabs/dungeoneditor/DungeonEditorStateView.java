@@ -232,6 +232,13 @@ public final class DungeonEditorStateView extends VBox {
         return comboBox;
     }
 
+    private static ComboBox<String> destinationTypeBox(List<String> values, String selected) {
+        ComboBox<String> comboBox = new ComboBox<>();
+        comboBox.getItems().addAll(values);
+        comboBox.getSelectionModel().select(selected == null || selected.isBlank() ? values.getFirst() : selected);
+        return comboBox;
+    }
+
     private static boolean integerFieldText(String text) {
         if (text == null || text.isEmpty()) {
             return true;
@@ -311,9 +318,9 @@ public final class DungeonEditorStateView extends VBox {
             TextField transitionIdField,
             CheckBox bidirectionalBox,
             boolean saveRequested
-    ) {
+        ) {
         viewInputEventHandler.accept(new DungeonEditorStateViewInputEvent(
-                destinationTypeBox.getValue(),
+                destinationTypeBox.getSelectionModel().getSelectedIndex(),
                 mapIdField.getText(),
                 tileIdField.getText(),
                 transitionIdField.getText(),
@@ -922,25 +929,23 @@ public final class DungeonEditorStateView extends VBox {
                 boolean busy,
                 String statusText
         ) {
-            boolean linkMode = transitionDestination.sourceTransitionId() > 0L;
-            TransitionDestinationControls controls = createControls(transitionDestination, linkMode, statusText);
+            TransitionDestinationControls controls = createControls(transitionDestination, statusText);
             HBox destinationRow = destinationRow(controls);
             HBox targetRow = targetRow(controls);
-            Runnable updateDestinationMode = () -> updateDestinationMode(linkMode, busy, controls);
+            Runnable updateDestinationMode = () -> updateDestinationMode(transitionDestination, controls);
             installInputListeners(controls, updateDestinationMode);
             updateDestinationMode.run();
-            configureLinkControls(linkMode, controls);
+            configureLinkControls(transitionDestination.controlState(), controls);
             controls.save().setOnAction(event -> emitTransitionDestinationInput(controls, true));
-            addCardChildren(transitionDestination, linkMode, controls, destinationRow, targetRow);
+            addCardChildren(transitionDestination, transitionDestination.controlState(), controls, destinationRow, targetRow);
             getStyleClass().addAll(CARD_SURFACE_STYLE, CONTENT_CARD_STYLE);
         }
 
         private TransitionDestinationControls createControls(
                 DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
-                boolean linkMode,
                 String statusText
         ) {
-            return linkMode
+            return transitionDestination.controlState().linkMode()
                     ? createLinkControls(transitionDestination, statusText)
                     : createDestinationControls(transitionDestination, statusText);
         }
@@ -949,8 +954,9 @@ public final class DungeonEditorStateView extends VBox {
                 DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
                 String statusText
         ) {
-            ComboBox<String> destinationTypeBox =
-                    comboBox(List.of("OVERWORLD_TILE", "DUNGEON_MAP"), transitionDestination.destinationType());
+            ComboBox<String> destinationTypeBox = destinationTypeBox(
+                    transitionDestination.destinationTypeLabels(),
+                    transitionDestination.selectedDestinationTypeLabel());
             TextField mapIdField = transitionDestinationField(transitionDestination.mapId(), "Eingangslink Zielkarte");
             TextField tileIdField = transitionDestinationField(
                     transitionDestination.tileId(),
@@ -963,7 +969,7 @@ public final class DungeonEditorStateView extends VBox {
             destinationTypeBox.setAccessibleText("Eingangslink Zieltyp");
             bidirectionalBox.setAccessibleText("Ruecklink zum ausgewaehlten Eingang speichern");
             Label sourceLabel = muted("Quelle: ausgewaehlter Übergang");
-            Label targetHintLabel = muted("Eingangslink: Zieltyp DUNGEON_MAP und Ziel-Eingang wählen");
+            Label targetHintLabel = muted(transitionDestination.linkTargetHintText());
             Label destinationTypeLabel = labeled("Zieltyp", destinationTypeBox);
             Label mapIdLabel = labeled("Zielkarte", mapIdField);
             Label tileIdLabel = labeled("Zielkachel", tileIdField);
@@ -991,8 +997,9 @@ public final class DungeonEditorStateView extends VBox {
                 DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
                 String statusText
         ) {
-            ComboBox<String> destinationTypeBox =
-                    comboBox(List.of("OVERWORLD_TILE", "DUNGEON_MAP"), transitionDestination.destinationType());
+            ComboBox<String> destinationTypeBox = destinationTypeBox(
+                    transitionDestination.destinationTypeLabels(),
+                    transitionDestination.selectedDestinationTypeLabel());
             TextField mapIdField = transitionDestinationField(transitionDestination.mapId(), "Übergang Zielkarte");
             TextField tileIdField = transitionDestinationField(transitionDestination.tileId(), "Übergang Zielkachel");
             TextField transitionIdField = transitionDestinationField(
@@ -1042,60 +1049,28 @@ public final class DungeonEditorStateView extends VBox {
         }
 
         private void updateDestinationMode(
-                boolean linkMode,
-                boolean busy,
+                DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
                 TransitionDestinationControls controls
         ) {
-            boolean dungeonMapDestination = "DUNGEON_MAP".equals(controls.destinationTypeBox().getValue());
-            boolean readOnlySelectedOverworld = linkMode && !dungeonMapDestination;
-            boolean targetFieldsComplete = completeIntegerText(controls.mapIdField().getText())
-                    && completeIntegerText(controls.transitionIdField().getText());
-            controls.destinationTypeBox().setDisable(busy);
-            controls.mapIdField().setDisable(mapIdDisabled(busy, readOnlySelectedOverworld));
-            controls.tileIdField().setDisable(tileIdDisabled(busy, dungeonMapDestination, readOnlySelectedOverworld));
-            controls.transitionIdField().setDisable(transitionIdDisabled(busy, dungeonMapDestination));
-            controls.bidirectionalBox().setDisable(bidirectionalDisabled(busy, linkMode, dungeonMapDestination));
-            controls.mapIdLabel().setDisable(readOnlySelectedOverworld);
-            controls.tileIdLabel().setDisable(tileIdLabelDisabled(dungeonMapDestination, readOnlySelectedOverworld));
-            controls.transitionIdLabel().setDisable(!dungeonMapDestination);
-            controls.save().setDisable(saveDisabled(busy, linkMode, dungeonMapDestination, targetFieldsComplete));
+            applyControlState(transitionDestination.controlStateForOptionIndex(
+                    controls.destinationTypeBox().getSelectionModel().getSelectedIndex(),
+                    controls.mapIdField().getText(),
+                    controls.transitionIdField().getText()), controls);
         }
 
-        private boolean mapIdDisabled(boolean busy, boolean readOnlySelectedOverworld) {
-            return busy || readOnlySelectedOverworld;
-        }
-
-        private boolean tileIdDisabled(
-                boolean busy,
-                boolean dungeonMapDestination,
-                boolean readOnlySelectedOverworld
+        private void applyControlState(
+                DungeonEditorStateContentModel.TransitionDestinationControlState controlState,
+                TransitionDestinationControls controls
         ) {
-            return busy || dungeonMapDestination || readOnlySelectedOverworld;
-        }
-
-        private boolean transitionIdDisabled(boolean busy, boolean dungeonMapDestination) {
-            return busy || !dungeonMapDestination;
-        }
-
-        private boolean bidirectionalDisabled(
-                boolean busy,
-                boolean linkMode,
-                boolean dungeonMapDestination
-        ) {
-            return busy || !linkMode || !dungeonMapDestination;
-        }
-
-        private boolean tileIdLabelDisabled(boolean dungeonMapDestination, boolean readOnlySelectedOverworld) {
-            return dungeonMapDestination || readOnlySelectedOverworld;
-        }
-
-        private boolean saveDisabled(
-                boolean busy,
-                boolean linkMode,
-                boolean dungeonMapDestination,
-                boolean targetFieldsComplete
-        ) {
-            return busy || !linkMode || !dungeonMapDestination || !targetFieldsComplete;
+            controls.destinationTypeBox().setDisable(controlState.destinationTypeDisabled());
+            controls.mapIdField().setDisable(controlState.mapIdDisabled());
+            controls.tileIdField().setDisable(controlState.tileIdDisabled());
+            controls.transitionIdField().setDisable(controlState.transitionIdDisabled());
+            controls.bidirectionalBox().setDisable(controlState.bidirectionalDisabled());
+            controls.mapIdLabel().setDisable(controlState.mapIdLabelDisabled());
+            controls.tileIdLabel().setDisable(controlState.tileIdLabelDisabled());
+            controls.transitionIdLabel().setDisable(controlState.transitionIdLabelDisabled());
+            controls.save().setDisable(controlState.saveDisabled());
         }
 
         private void installInputListeners(
@@ -1125,26 +1100,29 @@ public final class DungeonEditorStateView extends VBox {
             });
         }
 
-        private void configureLinkControls(boolean linkMode, TransitionDestinationControls controls) {
-            controls.save().setVisible(linkMode);
-            controls.save().setManaged(linkMode);
-            controls.bidirectionalBox().setVisible(linkMode);
-            controls.bidirectionalBox().setManaged(linkMode);
+        private void configureLinkControls(
+                DungeonEditorStateContentModel.TransitionDestinationControlState controlState,
+                TransitionDestinationControls controls
+        ) {
+            controls.save().setVisible(controlState.linkMode());
+            controls.save().setManaged(controlState.linkMode());
+            controls.bidirectionalBox().setVisible(controlState.linkMode());
+            controls.bidirectionalBox().setManaged(controlState.linkMode());
         }
 
         private void addCardChildren(
                 DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
-                boolean linkMode,
+                DungeonEditorStateContentModel.TransitionDestinationControlState controlState,
                 TransitionDestinationControls controls,
                 HBox destinationRow,
                 HBox targetRow
         ) {
             getChildren().add(new PanelTitle(transitionDestination.label()));
-            if (linkMode) {
+            if (controlState.linkMode()) {
                 getChildren().add(controls.sourceLabel());
             }
             getChildren().add(destinationRow);
-            if (linkMode) {
+            if (controlState.linkMode()) {
                 getChildren().add(controls.targetHintLabel());
             }
             getChildren().addAll(targetRow, controls.bidirectionalBox(), controls.status(), controls.save());

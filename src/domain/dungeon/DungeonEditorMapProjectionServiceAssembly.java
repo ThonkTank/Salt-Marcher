@@ -127,7 +127,8 @@ final class DungeonEditorMapProjectionServiceAssembly {
                     List.of(),
                     "",
                     "",
-                    src.domain.dungeon.published.DungeonEditorTopologyElementRef.empty());
+                    src.domain.dungeon.published.DungeonEditorTopologyElementRef.empty(),
+                    null);
         }
         return new DungeonEditorMapSnapshot.Feature(
                 feature.kind().name(),
@@ -136,7 +137,10 @@ final class DungeonEditorMapProjectionServiceAssembly {
                 DungeonEditorValueProjectionServiceAssembly.cells(feature.cells()),
                 feature.description(),
                 feature.destinationLabel(),
-                DungeonEditorValueProjectionServiceAssembly.topologyRef(feature.topologyRef()));
+                DungeonEditorValueProjectionServiceAssembly.topologyRef(feature.topologyRef()),
+                feature.anchorEdge() == null
+                        ? null
+                        : DungeonEditorValueProjectionServiceAssembly.edge(feature.anchorEdge()));
     }
 
     private static List<src.domain.dungeon.published.DungeonEditorHandleSnapshot> handles(

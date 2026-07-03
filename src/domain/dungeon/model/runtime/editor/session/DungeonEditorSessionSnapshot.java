@@ -65,4 +65,76 @@ public final class DungeonEditorSessionSnapshot {
             map = map == null ? DungeonEditorWorkspaceValues.MapSnapshot.empty() : map;
         }
     }
+
+    public static ControlsData controlsData(@Nullable DungeonEditorSession session) {
+        DungeonEditorSession safeSession = session == null ? DungeonEditorSession.empty() : session;
+        return new ControlsData(
+                safeSession.selectedMapId(),
+                safeSession.viewMode(),
+                safeSession.selectedTool(),
+                safeSession.projectionLevel(),
+                safeSession.overlaySettings(),
+                safeSession.statusText());
+    }
+
+    public static SessionFrameData sessionFrameData(@Nullable DungeonEditorSession session) {
+        DungeonEditorSession safeSession = session == null ? DungeonEditorSession.empty() : session;
+        return new SessionFrameData(
+                controlsData(safeSession),
+                safeSession.selection(),
+                safeSession.preview());
+    }
+
+    public record ControlsData(
+            @Nullable MapId selectedMapId,
+            DungeonEditorSessionValues.ViewMode viewMode,
+            DungeonEditorSessionValues.Tool selectedTool,
+            int projectionLevel,
+            DungeonEditorSessionValues.OverlaySettings overlaySettings,
+            String statusText
+    ) {
+        public ControlsData {
+            viewMode = viewMode == null ? DungeonEditorSessionValues.ViewMode.defaultMode() : viewMode;
+            selectedTool = selectedTool == null ? DungeonEditorSessionValues.Tool.defaultTool() : selectedTool;
+            overlaySettings = overlaySettings == null ? DungeonEditorSessionValues.OverlaySettings.defaults() : overlaySettings;
+            statusText = statusText == null ? "" : statusText;
+        }
+
+        @Override
+        public DungeonEditorSessionValues.Tool selectedTool() {
+            return DungeonEditorSessionValues.Tool.valueOf(selectedTool.name());
+        }
+    }
+
+    public record SessionFrameData(
+            ControlsData controlsData,
+            DungeonEditorSessionValues.Selection selection,
+            DungeonEditorSessionValues.Preview preview
+    ) {
+        public SessionFrameData {
+            controlsData = controlsData == null ? DungeonEditorSessionSnapshot.controlsData(null) : controlsData;
+            selection = selection == null ? DungeonEditorSessionValues.Selection.empty() : selection;
+            preview = preview == null ? DungeonEditorSessionValues.Preview.none() : preview;
+        }
+
+        public DungeonEditorSessionValues.ViewMode viewMode() {
+            return controlsData.viewMode();
+        }
+
+        public DungeonEditorSessionValues.Tool selectedTool() {
+            return controlsData.selectedTool();
+        }
+
+        public int projectionLevel() {
+            return controlsData.projectionLevel();
+        }
+
+        public DungeonEditorSessionValues.OverlaySettings overlaySettings() {
+            return controlsData.overlaySettings();
+        }
+
+        public String statusText() {
+            return controlsData.statusText();
+        }
+    }
 }

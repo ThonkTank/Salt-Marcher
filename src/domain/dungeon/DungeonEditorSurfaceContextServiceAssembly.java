@@ -17,6 +17,17 @@ final class DungeonEditorSurfaceContextServiceAssembly {
             DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
             int fallbackLevel
     ) {
+        ControlsContext controlsContext = controlsContext(surface, fallbackLevel);
+        return new SurfaceContext(
+                DungeonEditorMapProjectionServiceAssembly.surface(surface),
+                controlsContext.reachableLevels(),
+                controlsContext.surfacePresent());
+    }
+
+    static ControlsContext controlsContext(
+            DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
+            int fallbackLevel
+    ) {
         SortedSet<Integer> levels = new TreeSet<>();
         if (surface != null && surface.map() != null) {
             addWorkspaceMapLevels(levels, surface.map());
@@ -27,7 +38,7 @@ final class DungeonEditorSurfaceContextServiceAssembly {
         if (levels.isEmpty()) {
             levels.add(fallbackLevel);
         }
-        return new SurfaceContext(DungeonEditorMapProjectionServiceAssembly.surface(surface), new ArrayList<>(levels), surface != null);
+        return new ControlsContext(new ArrayList<>(levels), surface != null);
     }
 
     private static void addWorkspaceMapLevels(
@@ -57,6 +68,12 @@ final class DungeonEditorSurfaceContextServiceAssembly {
 
     record SurfaceContext(
             @Nullable DungeonEditorSurface surface,
+            List<Integer> reachableLevels,
+            boolean surfacePresent
+    ) {
+    }
+
+    record ControlsContext(
             List<Integer> reachableLevels,
             boolean surfacePresent
     ) {

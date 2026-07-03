@@ -3,7 +3,9 @@ package src.domain.dungeon;
 import java.util.ArrayList;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
+import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
 
 final class DungeonEditorStateProjectionServiceAssembly {
@@ -24,6 +26,26 @@ final class DungeonEditorStateProjectionServiceAssembly {
                 DungeonEditorValueProjectionServiceAssembly.tool(snapshot.selectedTool()),
                 DungeonEditorValueProjectionServiceAssembly.overlay(snapshot.overlaySettings()),
                 snapshot.projectionLevel());
+    }
+
+    static DungeonEditorStateSnapshot snapshot(
+            DungeonEditorSessionSnapshot.SessionFrameData frameData,
+            DungeonEditorStateSnapshot current
+    ) {
+        DungeonEditorSessionSnapshot.SessionFrameData safeFrameData =
+                frameData == null ? DungeonEditorSessionSnapshot.sessionFrameData(null) : frameData;
+        DungeonEditorStateSnapshot safeCurrent = current == null
+                ? DungeonEditorStateSnapshot.empty(safeFrameData.statusText())
+                : current;
+        return new DungeonEditorStateSnapshot(
+                selection(safeFrameData.selection()),
+                safeCurrent.inspector(),
+                preview(safeFrameData.preview()),
+                safeFrameData.statusText(),
+                DungeonEditorValueProjectionServiceAssembly.viewMode(safeFrameData.viewMode()),
+                DungeonEditorValueProjectionServiceAssembly.tool(safeFrameData.selectedTool()),
+                DungeonEditorValueProjectionServiceAssembly.overlay(safeFrameData.overlaySettings()),
+                safeFrameData.projectionLevel());
     }
 
     static src.domain.dungeon.published.DungeonEditorStateSnapshot.Selection selection(

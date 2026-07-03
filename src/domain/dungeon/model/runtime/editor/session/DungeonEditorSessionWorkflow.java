@@ -43,8 +43,14 @@ public final class DungeonEditorSessionWorkflow {
     }
 
     public void setTool(String toolName) {
-        session.replace(session.current().withSelectedTool(DungeonEditorSessionValues.Tool.fromName(toolName))
-                .clearTransientState(""));
+        DungeonEditorSessionValues.Tool nextTool = DungeonEditorSessionValues.Tool.fromName(toolName);
+        DungeonEditorSession nextSession = session.current()
+                .withSelectedTool(nextTool)
+                .clearTransientState("");
+        if (!nextTool.isSelect()) {
+            nextSession = nextSession.clearSelection();
+        }
+        session.replace(nextSession);
     }
 
     public void shiftProjectionLevel(int projectionLevelDelta) {

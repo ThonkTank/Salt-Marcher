@@ -149,6 +149,46 @@ inputs. New editor-authored stair creation is governed by the requirements-owned
 visible shapes and must not require a schema change to avoid those older enum
 values.
 
+## Transition Destination Storage Semantics
+
+`dungeon_transitions` stores authored transition facts for one dungeon map:
+
+- `transition_id` stores the stable map-owned transition id
+- `dungeon_map_id` stores the owning authored map
+- `anchor_type` stores the transition anchor kind: `NONE`, `CELL`, or `EDGE`
+- `cell_x`, `cell_y`, and `level_z` store the transition anchor coordinate for
+  `CELL` and `EDGE` anchors and are null for `NONE`
+- `anchor_edge_direction` stores the cardinal edge direction only for `EDGE`
+  anchors
+- `destination_type` stores the domain destination type
+- destination target columns store only the fields required by that
+  destination type
+- `description` stores the authored transition description
+
+SQLite adapters MUST preserve these destination row shapes:
+
+- `UNLINKED_ENTRANCE`: all target columns are null. This is a valid authored
+  entrance placeholder, not malformed persistence input.
+- `OVERWORLD_TILE`: `target_overworld_map_id` and
+  `target_overworld_tile_id` are present; `target_dungeon_map_id` and
+  `target_transition_id` are null.
+- `DUNGEON_MAP`: `target_dungeon_map_id` is present,
+  `target_transition_id` is present when the destination names a placed target
+  entrance, and the overworld target columns are null.
+
+Runtime travel targets are derived projection/session state. A null runtime
+travel target for `UNLINKED_ENTRANCE` is not stored authored truth and MUST NOT
+be backfilled into a fake overworld tile or dungeon transition target by the
+adapter.
+
+Rows with missing or null `anchor_type` are compatibility input: adapters derive
+`CELL` when the coordinate columns are present and `NONE` when they are absent.
+Rows with missing, blank, or null `anchor_type` and a non-null
+`anchor_edge_direction` are malformed and must reject reload instead of being
+repaired into authored absence. The compatibility derivation is source-local
+mapping behavior and must not reintroduce nullable-cell transition placement as
+a domain owner.
+
 ## Feature Marker Storage Semantics
 
 `dungeon_feature_markers` stores authored feature marker facts for one dungeon

@@ -39,15 +39,19 @@ final class TraversalActionCatalog {
                 Set<Cell> activeSurfaceCells,
                 TravelPositionFacts position
         ) {
-            List<TraversalCandidate> candidates = collectCandidates(traversalLinks, activeSurfaceCells);
+            List<TraversalCandidate> candidates = collectCandidates(
+                    traversalLinks,
+                    activeSurfaceCells,
+                    position.tile());
             List<TravelActionFacts> actions = new ArrayList<>();
             int doorNumber = 1;
             for (TraversalCandidate candidate : candidates) {
-                String label = candidate.link().source().kind().isDoor()
+                TraversalSourceKind sourceKind = candidate.link().source().kind();
+                String label = sourceKind.isDoor()
                         ? "Tür " + doorNumber
                         : candidate.link().source().label();
                 String destinationLabel = TraversalDestinationLabelResolver.resolve(authoredSurface, activeArea, candidate);
-                if (candidate.link().source().kind().isDoor()) {
+                if (sourceKind.isDoor()) {
                     doorNumber++;
                 }
                 actions.add(new TravelActionFacts(
@@ -74,11 +78,12 @@ final class TraversalActionCatalog {
 
         private static List<TraversalCandidate> collectCandidates(
                 List<TraversalLink> traversalLinks,
-                Set<Cell> activeSurfaceCells
+                Set<Cell> activeSurfaceCells,
+                Cell activeTile
         ) {
             List<TraversalCandidate> candidates = new ArrayList<>();
             for (TraversalLink link : traversalLinks) {
-                TraversalCandidate candidate = candidate(link, activeSurfaceCells);
+                TraversalCandidate candidate = candidate(link, activeSurfaceCells, activeTile);
                 if (candidate != null) {
                     candidates.add(candidate);
                 }
@@ -89,12 +94,15 @@ final class TraversalActionCatalog {
 
         private static @Nullable TraversalCandidate candidate(
                 TraversalLink link,
-                Set<Cell> activeSurfaceCells
+                Set<Cell> activeSurfaceCells,
+                Cell activeTile
         ) {
             if (link == null) {
                 return null;
             }
-            TraversalEndpoint source = link.endpointFrom(activeSurfaceCells);
+            TraversalEndpoint source = link.source().kind().isCorridor()
+                    ? link.endpointFrom(Set.of(activeTile))
+                    : link.endpointFrom(activeSurfaceCells);
             if (source == null) {
                 return null;
             }
@@ -147,6 +155,10 @@ final class TraversalActionCatalog {
                         ? tileLabel(candidate.target().tile())
                         : candidate.target().areaLabel();
                 return "Über " + candidate.link().source().label() + " gelangt ihr zu " + target + ".";
+            }
+            if (candidate.link().source().kind().isCorridor()) {
+                return "Ihr folgt " + candidate.link().source().label()
+                        + " zu " + tileLabel(candidate.target().tile()) + ".";
             }
             String subject = narratedExit(authoredSurface, activeArea, candidate);
             if (subject.isBlank()) {

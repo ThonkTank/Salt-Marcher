@@ -86,6 +86,11 @@ val dungeonEditorBehaviorHarness by sourceSets.creating {
     runtimeClasspath += output + compileClasspath + sourceSets["main"].runtimeClasspath
 }
 
+tasks.named<JavaCompile>(dungeonEditorBehaviorHarness.compileJavaTaskName) {
+    dependsOn(tasks.named(sourceSets["main"].classesTaskName))
+    classpath += sourceSets["main"].output + sourceSets["main"].compileClasspath
+}
+
 val hexMapEditorBehaviorHarness by sourceSets.creating {
     java {
         setSrcDirs(listOf("."))

@@ -2,6 +2,7 @@ package src.domain.dungeon.published;
 
 import java.util.List;
 import java.util.Locale;
+import org.jspecify.annotations.Nullable;
 
 public record DungeonEditorMapSnapshot(
         String topology,
@@ -76,9 +77,9 @@ public record DungeonEditorMapSnapshot(
             List<DungeonCellRef> cells,
             String description,
             String destinationLabel,
-            DungeonEditorTopologyElementRef topologyRef
+            DungeonEditorTopologyElementRef topologyRef,
+            @Nullable DungeonEdgeRef anchorEdge
     ) {
-
         public Feature {
             kind = kind == null || kind.isBlank() ? "STAIR" : kind.trim();
             id = Math.max(1L, id);

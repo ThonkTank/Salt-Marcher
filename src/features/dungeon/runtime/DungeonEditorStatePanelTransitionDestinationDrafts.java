@@ -1,13 +1,14 @@
 package src.features.dungeon.runtime;
 
-import java.util.Locale;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestinationType;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 
 public final class DungeonEditorStatePanelTransitionDestinationDrafts {
-    private static final String DEFAULT_DESTINATION_TYPE = "OVERWORLD_TILE";
+    private static final TransitionDestinationType DEFAULT_DESTINATION_TYPE =
+            TransitionDestinationType.UNLINKED_ENTRANCE;
     private Key draftKey = Key.empty();
     private DraftValue draftValue = DraftValue.defaultValue();
 
@@ -74,7 +75,7 @@ public final class DungeonEditorStatePanelTransitionDestinationDrafts {
     public record Draft(
             boolean targetPresent,
             long sourceTransitionId,
-            String destinationType,
+            TransitionDestinationType destinationType,
             String mapId,
             String tileId,
             String transitionId,
@@ -94,13 +95,17 @@ public final class DungeonEditorStatePanelTransitionDestinationDrafts {
             return new Draft(false, 0L, DEFAULT_DESTINATION_TYPE, "", "", "", true, false);
         }
 
+        public String destinationTypeKey() {
+            return destinationType.name();
+        }
+
         static Draft target(long sourceTransitionId) {
             return new Draft(true, sourceTransitionId, DEFAULT_DESTINATION_TYPE, "", "", "", true, false);
         }
     }
 
     private record DraftValue(
-            String destinationType,
+            TransitionDestinationType destinationType,
             String mapId,
             String tileId,
             String transitionId,
@@ -151,9 +156,8 @@ public final class DungeonEditorStatePanelTransitionDestinationDrafts {
         }
     }
 
-    private static String normalizeDestinationType(String destinationType) {
-        String normalized = cleanValue(destinationType).toUpperCase(Locale.ROOT);
-        return normalized.isBlank() ? DEFAULT_DESTINATION_TYPE : normalized;
+    private static TransitionDestinationType normalizeDestinationType(TransitionDestinationType destinationType) {
+        return destinationType == null ? DEFAULT_DESTINATION_TYPE : destinationType;
     }
 
     private static String cleanValue(String value) {

@@ -30,7 +30,8 @@ public final class TravelAuthoredSurfaceProjectionMapper {
                         TravelSurfaceMapProjectionMapper.toRuntimeMap(safeFacts),
                         TravelAuthoredSurfaceTransitionProjectionMapper.toTransitions(
                                 safeMap.transitionCatalog().transitions()),
-                        TravelAuthoredSurfaceTraversalProjectionMapper.toTraversalLinks(safeMap, safeFacts),
+                        TravelAuthoredSurfaceTraversalProjectionMapper.toTraversalLinks(
+                                derived == null ? null : derived.traversalLinks()),
                         TravelAuthoredSurfaceRelationProjectionMapper.toConnections(
                                 derived == null ? null : derived.relations()),
                         TravelAuthoredSurfaceNarrationProjectionMapper.toRoomNarrations(safeMap.rooms().rooms())));

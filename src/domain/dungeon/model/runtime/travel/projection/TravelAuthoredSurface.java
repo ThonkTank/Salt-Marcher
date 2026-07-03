@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.runtime.travel.projection;
 
 import java.util.List;
+import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
@@ -90,12 +91,13 @@ public final class TravelAuthoredSurface {
             String label,
             String description,
             @Nullable Cell anchor,
-            @Nullable TransitionDestination destination
+            TransitionDestination destination
     ) {
         public Transition {
             transitionId = Math.max(0L, transitionId);
             label = label == null ? "" : label.trim();
             description = description == null ? "" : description.trim();
+            destination = Objects.requireNonNull(destination, "destination");
         }
     }
 
@@ -103,28 +105,65 @@ public final class TravelAuthoredSurface {
             TransitionDestinationKind kind,
             long mapId,
             long tileId,
-            @Nullable Long transitionId
+            long targetTransitionId
     ) {
+        TransitionDestination {
+            kind = Objects.requireNonNull(kind, "kind");
+            mapId = kind.isUnlinkedEntrance() ? 0L : Math.max(0L, mapId);
+            tileId = kind.isOverworldTile() ? Math.max(0L, tileId) : 0L;
+            targetTransitionId = kind.isDungeonMap() ? Math.max(0L, targetTransitionId) : 0L;
+        }
+
         static TransitionDestination dungeonMap(long mapId, @Nullable Long transitionId) {
-            return new TransitionDestination(TransitionDestinationKind.DUNGEON_MAP, mapId, 0L, transitionId);
+            return new TransitionDestination(
+                    TransitionDestinationKind.DUNGEON_MAP,
+                    mapId,
+                    0L,
+                    transitionId == null ? 0L : transitionId);
         }
 
         static TransitionDestination overworldTile(long mapId, long tileId) {
-            return new TransitionDestination(TransitionDestinationKind.OVERWORLD_TILE, mapId, tileId, null);
+            return new TransitionDestination(TransitionDestinationKind.OVERWORLD_TILE, mapId, tileId, 0L);
+        }
+
+        static TransitionDestination unlinkedEntrance() {
+            return new TransitionDestination(TransitionDestinationKind.UNLINKED_ENTRANCE, 0L, 0L, 0L);
         }
 
         boolean isDungeonMapDestination() {
-            return kind == TransitionDestinationKind.DUNGEON_MAP;
+            return kind.isDungeonMap();
         }
 
         boolean isOverworldTileDestination() {
-            return kind == TransitionDestinationKind.OVERWORLD_TILE;
+            return kind.isOverworldTile();
         }
+
+        boolean isUnlinkedEntranceDestination() {
+            return kind.isUnlinkedEntrance();
+        }
+
+        @Nullable Long transitionId() {
+            return targetTransitionId > 0L ? targetTransitionId : null;
+        }
+
     }
 
     enum TransitionDestinationKind {
         DUNGEON_MAP,
-        OVERWORLD_TILE
+        OVERWORLD_TILE,
+        UNLINKED_ENTRANCE;
+
+        private boolean isDungeonMap() {
+            return this == DUNGEON_MAP;
+        }
+
+        private boolean isOverworldTile() {
+            return this == OVERWORLD_TILE;
+        }
+
+        private boolean isUnlinkedEntrance() {
+            return this == UNLINKED_ENTRANCE;
+        }
     }
 
     record TraversalLinkInput(

@@ -1,8 +1,8 @@
 package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
-import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.transition.TransitionAnchor;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
@@ -27,7 +27,7 @@ public final class CreateDungeonEditorAuthoredTransitionUseCase {
         this.repository = Objects.requireNonNull(repository, "repository");
     }
 
-    public void execute(MapId mapId, Cell anchor, TransitionDestination destination) {
+    public void execute(MapId mapId, TransitionAnchor anchor, TransitionDestination destination) {
         Objects.requireNonNull(mapId, "mapId");
         Objects.requireNonNull(anchor, "anchor");
         Objects.requireNonNull(destination, "destination");
@@ -42,11 +42,13 @@ public final class CreateDungeonEditorAuthoredTransitionUseCase {
         publishMutationUseCase.execute(result);
     }
 
-    public boolean canExecute(MapId mapId, Cell anchor, TransitionDestination destination) {
+    public boolean canExecute(MapId mapId, TransitionAnchor anchor, TransitionDestination destination) {
         return mapId != null
                 && anchor != null
                 && destination != null
-                && loadDungeonMapUseCase.execute(domainMapId(mapId)).transitionCatalog().canCreate(anchor, destination);
+                && loadDungeonMapUseCase.execute(domainMapId(mapId))
+                        .transitionCatalog()
+                        .canCreate(anchor, destination);
     }
 
     private static DungeonMapIdentity domainMapId(MapId mapId) {

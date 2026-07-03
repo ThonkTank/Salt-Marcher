@@ -1,48 +1,40 @@
 package src.features.dungeon.runtime;
 
 import java.util.Objects;
-import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
-import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 
 public record DungeonEditorRenderFrame(
-        DungeonEditorControlsSnapshot controls,
-        DungeonEditorMapSurfaceSnapshot mapSurface,
-        DungeonEditorStateSnapshot state,
         DungeonEditorPreparedFrameFacts preparedFacts,
-        DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts statePanelRoomNarrationDrafts,
-        DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft,
-        DungeonEditorStatePanelCorridorPointDrafts.Draft statePanelCorridorPointDraft,
-        DungeonEditorStatePanelTransitionDescriptionDrafts.Draft statePanelTransitionDescriptionDraft,
-        DungeonEditorStatePanelTransitionDestinationDrafts.Draft statePanelTransitionDestinationDraft,
-        DungeonEditorStatePanelStairGeometryDrafts.Draft statePanelStairGeometryDraft,
-        DungeonEditorInlineLabelEditSession inlineLabelEditSession
+        DungeonEditorInlineLabelEditSession inlineLabelEditSession,
+        MeasurementSnapshot measurement
 ) {
     public DungeonEditorRenderFrame {
-        controls = Objects.requireNonNull(controls, "controls");
-        mapSurface = Objects.requireNonNull(mapSurface, "mapSurface");
-        state = Objects.requireNonNull(state, "state");
         preparedFacts = Objects.requireNonNull(preparedFacts, "preparedFacts");
-        statePanelRoomNarrationDrafts = statePanelRoomNarrationDrafts == null
-                ? DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty()
-                : statePanelRoomNarrationDrafts;
-        statePanelLabelNameDraft = statePanelLabelNameDraft == null
-                ? DungeonEditorStatePanelLabelNameDrafts.Draft.empty()
-                : statePanelLabelNameDraft;
-        statePanelCorridorPointDraft = statePanelCorridorPointDraft == null
-                ? DungeonEditorStatePanelCorridorPointDrafts.Draft.empty()
-                : statePanelCorridorPointDraft;
-        statePanelTransitionDescriptionDraft = statePanelTransitionDescriptionDraft == null
-                ? DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty()
-                : statePanelTransitionDescriptionDraft;
-        statePanelTransitionDestinationDraft = statePanelTransitionDestinationDraft == null
-                ? DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty()
-                : statePanelTransitionDestinationDraft;
-        statePanelStairGeometryDraft = statePanelStairGeometryDraft == null
-                ? DungeonEditorStatePanelStairGeometryDrafts.Draft.empty()
-                : statePanelStairGeometryDraft;
         inlineLabelEditSession = inlineLabelEditSession == null
                 ? DungeonEditorInlineLabelEditSession.inactive()
                 : inlineLabelEditSession;
+        measurement = measurement == null ? MeasurementSnapshot.empty() : measurement;
+    }
+
+    public static DungeonEditorRenderFrame empty() {
+        return new DungeonEditorRenderFrame(
+                DungeonEditorPreparedFrameFacts.empty(),
+                DungeonEditorInlineLabelEditSession.inactive(),
+                MeasurementSnapshot.empty());
+    }
+
+    public record MeasurementSnapshot(
+            long runtimeFramePublicationCount,
+            long mapInteractionFrameRecomputeCount,
+            long mapInteractionFrameRecomputeNanos
+    ) {
+        public MeasurementSnapshot {
+            runtimeFramePublicationCount = Math.max(0L, runtimeFramePublicationCount);
+            mapInteractionFrameRecomputeCount = Math.max(0L, mapInteractionFrameRecomputeCount);
+            mapInteractionFrameRecomputeNanos = Math.max(0L, mapInteractionFrameRecomputeNanos);
+        }
+
+        static MeasurementSnapshot empty() {
+            return new MeasurementSnapshot(0L, 0L, 0L);
+        }
     }
 }

@@ -141,14 +141,17 @@ final class DungeonEditorFeatureMarkerHarness {
                 2,
                 0,
                 "DE-FEATURE-003 committed create");
-        var pointerTarget = binding.mapContentModel().resolvePointerTarget(5.5, 2.5);
-        assertEquals("CELL", pointerTarget.targetKind().name(),
-                "DE-FEATURE-004 authored feature marker cell resolves as a normal cell target");
+        var pointerTarget = runtimePointerTarget(binding.mapContentModel(), 5.5, 2.5);
+        assertEquals("MARKER", pointerTarget.targetKind().name(),
+                "DE-FEATURE-004 authored feature marker resolves as a marker target");
         assertEquals("FEATURE_MARKER", pointerTarget.elementKind(),
-                "DE-FEATURE-004 authored feature marker cell publishes FEATURE_MARKER element kind");
+                "DE-FEATURE-004 authored feature marker publishes FEATURE_MARKER element kind");
         assertEquals("FEATURE_MARKER", pointerTarget.topologyKind(),
-                "DE-FEATURE-004 authored feature marker cell carries the FEATURE_MARKER topology ref");
-        assertCanvasPaintedAtScene(mapView, 5.5, 2.5,
+                "DE-FEATURE-004 authored feature marker carries the FEATURE_MARKER topology ref");
+        updateHoverTarget(binding.mapContentModel(), pointerTarget);
+        assertTrue(renderHasHoverText(binding.mapContentModel(), "POI " + markerId),
+                "DE-FEATURE-004 authored feature marker label appears only in hover overlay");
+        assertCanvasPaintedNearScene(mapView, 5.5, 2.5, 18,
                 "DE-FEATURE-003 rendered canvas paints the created POI marker");
         DungeonEditorStateSnapshot selectedState = runtime.stateModel().current();
         assertEquals(markerRef, selectedState.selection().topologyRef(),
@@ -293,9 +296,9 @@ final class DungeonEditorFeatureMarkerHarness {
                 "DE-FEATURE-007 setup keeps the middle POI marker row");
         assertEquals(1L, runtime.database().countFeatureMarkerById(mapId, rightPoiId),
                 "DE-FEATURE-007 setup keeps the right POI marker row");
-        var deletePointerTarget = binding.mapContentModel().resolvePointerTarget(9.5, 2.5);
-        assertEquals("CELL", deletePointerTarget.targetKind().name(),
-                "DE-FEATURE-007 authored delete target resolves as a feature-marker cell");
+        var deletePointerTarget = runtimePointerTarget(binding.mapContentModel(), 9.5, 2.5);
+        assertEquals("MARKER", deletePointerTarget.targetKind().name(),
+                "DE-FEATURE-007 authored delete target resolves as a feature-marker marker");
         assertEquals("FEATURE_MARKER", deletePointerTarget.elementKind(),
                 "DE-FEATURE-007 authored delete target keeps FEATURE_MARKER element identity");
         fireMapMousePressed(

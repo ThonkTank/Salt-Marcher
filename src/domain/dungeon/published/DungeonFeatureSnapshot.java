@@ -1,6 +1,7 @@
 package src.domain.dungeon.published;
 
 import java.util.List;
+import org.jspecify.annotations.Nullable;
 
 public record DungeonFeatureSnapshot(
         DungeonFeatureKind kind,
@@ -9,7 +10,8 @@ public record DungeonFeatureSnapshot(
         List<DungeonCellRef> cells,
         String description,
         String destinationLabel,
-        DungeonTopologyElementRef topologyRef
+        DungeonTopologyElementRef topologyRef,
+        @Nullable DungeonEdgeRef anchorEdge
 ) {
 
     public DungeonFeatureSnapshot(
@@ -20,7 +22,7 @@ public record DungeonFeatureSnapshot(
             String description,
             String destinationLabel
     ) {
-        this(kind, id, label, cells, description, destinationLabel, defaultTopologyRef(kind, id));
+        this(kind, id, label, cells, description, destinationLabel, defaultTopologyRef(kind, id), null);
     }
 
     public DungeonFeatureSnapshot {

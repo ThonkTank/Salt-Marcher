@@ -1,43 +1,26 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.Direction;
-import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
-import src.domain.dungeon.published.DungeonEditorStateSnapshot;
-import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonEditorViewMode;
-import src.domain.dungeon.published.DungeonInspectorSnapshot;
-import src.domain.dungeon.published.DungeonMapSummary;
-import src.domain.dungeon.published.DungeonOverlaySettings;
-import src.domain.dungeon.published.DungeonTopologyElementRef;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 import javafx.event.ActionEvent;
-import javafx.geometry.Bounds;
-import javafx.geometry.Point2D;
 import javafx.scene.Parent;
 import javafx.scene.control.ButtonBase;
-import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
-import javafx.stage.Window;
 import static src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorHarnessSupport.*;
 
 final class DungeonEditorProjectionOverlayHarness {
@@ -53,8 +36,10 @@ final class DungeonEditorProjectionOverlayHarness {
         route(results, () -> verifyProjectionLevelShortcutsThroughMapView(results));
         route(results, () -> verifyViewModeControlsThroughControlsView(results));
         route(results, () -> verifyViewModeClearsActiveInteractionSession(results));
+        route(results, () -> verifyViewModeClearsInlineLabelDraft(results));
         route(results, () -> verifyOverlayControlsThroughControlsView(results));
         route(results, () -> verifyOverlayPopupThroughControlsView(results));
+        route(results, () -> verifyOverlayPreservesActivePreviewSurface(results));
     }
 
     private static void route(
@@ -69,9 +54,14 @@ final class DungeonEditorProjectionOverlayHarness {
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
 
-        long mapId = createMapThroughControls(controls, runtime, "Visible Level Controls Map");
+        String mapName = "Visible Level Controls Map";
+        long mapId = createMapThroughControls(controls, runtime, mapName);
         runtime.database().seedF6MultiLevelFloors(mapId);
+        createMapThroughControls(controls, runtime, "Visible Level Controls Reload Hop");
+        selectMap(controls, mapName);
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        DungeonMapStateProbe.Snapshot beforeProjectionSnapshot =
+                DungeonMapStateProbe.snapshot(binding.mapContentModel());
 
         click(button(controls, "+"));
 
@@ -85,6 +75,10 @@ final class DungeonEditorProjectionOverlayHarness {
                 "DE-LVL-001 visible level label updates");
         assertCanvasPaintedAtScene(binding.mapView(), 2.5, 2.5,
                 "DE-LVL-001 rendered canvas paints level 1 room coordinates");
+        assertProjectionRenderStateChanged(
+                beforeProjectionSnapshot,
+                DungeonMapStateProbe.snapshot(binding.mapContentModel()),
+                "DE-LVL-001 projection-level change updates render and hit signatures");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-LVL-001 leaves authored DB rows unchanged");
 
@@ -107,13 +101,28 @@ final class DungeonEditorProjectionOverlayHarness {
         results.add("DE-LVL-002 Ready: DungeonEditorControlsView - button -> SQLite unchanged -> projection z=0");
     }
 
+    private static void assertProjectionRenderStateChanged(
+            DungeonMapStateProbe.Snapshot before,
+            DungeonMapStateProbe.Snapshot after,
+            String message
+    ) {
+        assertTrue(after.projectionLevel() > before.projectionLevel(), message + " projectionLevel");
+        assertTrue(!after.renderGeometrySignature().equals(before.renderGeometrySignature()),
+                message + " renderGeometrySignature");
+        assertTrue(!after.hitTargetSignature().equals(before.hitTargetSignature()),
+                message + " hitTargetSignature");
+    }
+
     private static void verifyProjectionLevelButtonsReachEmptyLevels(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
 
-        long mapId = createMapThroughControls(controls, runtime, "Empty Level Expansion Map");
+        String mapName = "Empty Level Expansion Map";
+        long mapId = createMapThroughControls(controls, runtime, mapName);
         runtime.database().seedF1SingleRoom(mapId, "R1", 0, 1, 1);
+        createMapThroughControls(controls, runtime, "Empty Level Expansion Reload Hop");
+        selectMap(controls, mapName);
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
 
         click(button(controls, "+"));
@@ -180,8 +189,11 @@ final class DungeonEditorProjectionOverlayHarness {
         DungeonEditorControlsView controls = binding.controls();
         DungeonMapView mapView = binding.mapView();
 
-        long mapId = createMapThroughControls(controls, runtime, "F6 Multi Level Floors");
+        String mapName = "F6 Multi Level Floors";
+        long mapId = createMapThroughControls(controls, runtime, mapName);
         runtime.database().seedF6MultiLevelFloors(mapId);
+        createMapThroughControls(controls, runtime, "F6 Multi Level Floors Reload Hop");
+        selectMap(controls, mapName);
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
 
         fireMapShortcut(mapView, KeyCode.E);
@@ -226,8 +238,11 @@ final class DungeonEditorProjectionOverlayHarness {
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
 
-        long mapId = createMapThroughControls(controls, runtime, "View Mode Controls Map");
+        String mapName = "View Mode Controls Map";
+        long mapId = createMapThroughControls(controls, runtime, mapName);
         runtime.database().seedF1SingleRoom(mapId, "R1", 0, 1, 1);
+        createMapThroughControls(controls, runtime, "View Mode Controls Reload Hop");
+        selectMap(controls, mapName);
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
 
         click(button(controls, "Graph"));
@@ -320,14 +335,91 @@ final class DungeonEditorProjectionOverlayHarness {
                 + " -> interaction reset -> stale release writes nothing");
     }
 
+    private static void verifyViewModeClearsInlineLabelDraft(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+
+        String mapName = "View Mode Clears Inline Label Map";
+        long mapId = createMapThroughControls(controls, runtime, mapName);
+        runtime.database().seedF1SingleRoom(mapId, "R1", 0, 1, 1);
+        createMapThroughControls(controls, runtime, "View Mode Clears Inline Label Reload Hop");
+        selectMap(controls, mapName);
+        click(button(controls, "Auswahl"));
+
+        RoomClusterIds ids = runtime.database().roomByComponent(mapId, 2, 2, 0);
+        LabelCenter clusterLabelCenter = labelCenter(
+                binding.mapContentModel(),
+                "Cluster " + ids.clusterId(),
+                "DE-VIEW-004 cluster label");
+        doubleClickRenderedLabel(binding, clusterLabelCenter);
+        TextField inlineEditor = textField(binding.mapView(), "Dungeon map label editor");
+        assertTrue(inlineEditor.isVisible(), "DE-VIEW-004 opens inline label editor before view-mode change");
+
+        inlineEditor.selectRange(0, inlineEditor.getLength());
+        typeInlineEditorTextSequentially(inlineEditor, "   View Mode Stale Draft   ");
+        assertTrue(binding.mapContentModel().currentInlineLabelEditState().active(),
+                "DE-VIEW-004 starts from active inline-label projection");
+        assertEquals("   View Mode Stale Draft   ",
+                binding.mapContentModel().currentInlineLabelEditState().text(),
+                "DE-VIEW-004 projects inline-label draft before view-mode change");
+
+        click(button(controls, "Graph"));
+
+        assertTrue(!inlineEditor.isVisible(), "DE-VIEW-004 view-mode change hides inline label editor");
+        assertTrue(!binding.mapContentModel().currentInlineLabelEditState().active(),
+                "DE-VIEW-004 view-mode change clears runtime inline-label projection");
+        assertEquals("", runtime.database().clusterName(ids.clusterId()),
+                "DE-VIEW-004 view-mode change does not persist inline-label draft");
+
+        fireControlsShortcut(inlineEditor, KeyCode.ENTER);
+
+        assertEquals("", runtime.database().clusterName(ids.clusterId()),
+                "DE-VIEW-004 stale inline-label Enter after view-mode change writes nothing");
+
+        results.add("DE-VIEW-004 Ready: active inline label draft + view-mode switch"
+                + " -> draft reset -> stale Enter writes nothing");
+    }
+
+    private static void doubleClickRenderedLabel(HarnessBinding binding, LabelCenter center) {
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        fireMapMouseClickCount(
+                binding.mapView(),
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(center.q()),
+                viewport.sceneToScreenY(center.r()),
+                2);
+    }
+
+    private static void typeInlineEditorTextSequentially(TextField inlineEditor, String text) {
+        inlineEditor.requestFocus();
+        for (int index = 0; index < text.length(); index++) {
+            inlineEditor.replaceSelection(String.valueOf(text.charAt(index)));
+        }
+    }
+
+    private static LabelCenter labelCenter(DungeonMapContentModel mapContentModel, String text, String message) {
+        return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
+                .filter(label -> text.equals(label.text()))
+                .map(label -> new LabelCenter(label.centerX(), label.centerY()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError(message + " label not rendered: " + text));
+    }
+
+    private record LabelCenter(double q, double r) {
+    }
 
     private static void verifyOverlayControlsThroughControlsView(List<String> results) {
         HarnessRuntime runtime = HarnessRuntime.create();
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
 
-        long mapId = createMapThroughControls(controls, runtime, "Overlay Controls Map");
+        String mapName = "Overlay Controls Map";
+        long mapId = createMapThroughControls(controls, runtime, mapName);
         runtime.database().seedF6MultiLevelFloors(mapId);
+        createMapThroughControls(controls, runtime, "Overlay Controls Reload Hop");
+        selectMap(controls, mapName);
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
         ComboBox<?> overlayModeSelector = comboBoxWithDisplayedItem(controls, "Nahe Ebenen");
 
@@ -388,8 +480,11 @@ final class DungeonEditorProjectionOverlayHarness {
         HarnessBinding binding = bindHarness(runtime);
         DungeonEditorControlsView controls = binding.controls();
 
-        long mapId = createMapThroughControls(controls, runtime, "Overlay Popup Map");
+        String mapName = "Overlay Popup Map";
+        long mapId = createMapThroughControls(controls, runtime, mapName);
         runtime.database().seedF6MultiLevelFloors(mapId);
+        createMapThroughControls(controls, runtime, "Overlay Popup Reload Hop");
+        selectMap(controls, mapName);
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
         ButtonBase overlayTrigger = button(controls, "Overlay: Aus");
 
@@ -420,6 +515,56 @@ final class DungeonEditorProjectionOverlayHarness {
         assertTrue(!popupContainerVisible(), "DE-OVR-004 overlay popup can dismiss after editing");
 
         results.add("DE-OVR-004 Ready: DungeonEditorControlsView overlay popup -> SQLite unchanged -> NEARBY");
+    }
+
+    private static void verifyOverlayPreservesActivePreviewSurface(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        HarnessBinding binding = bindHarness(runtime);
+        DungeonEditorControlsView controls = binding.controls();
+        DungeonMapView mapView = binding.mapView();
+
+        long mapId = createMapThroughControls(controls, runtime, "Overlay Preserves Preview Map");
+        long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
+        click(button(controls, "Raum"));
+        DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
+        double dragEndX = viewport.sceneToScreenX(3.5);
+        double dragEndY = viewport.sceneToScreenY(3.5);
+
+        fireMapMouse(
+                mapView,
+                MouseEvent.MOUSE_PRESSED,
+                MouseButton.PRIMARY,
+                viewport.sceneToScreenX(1.5),
+                viewport.sceneToScreenY(1.5),
+                false);
+        fireMapMouse(mapView, MouseEvent.MOUSE_DRAGGED, MouseButton.PRIMARY, dragEndX, dragEndY, false);
+
+        assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.RoomRectanglePreview,
+                "DE-OVR-005 starts from a live room preview before overlay change");
+        assertTrue(renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(1, 1, 3, 3, 0)),
+                "DE-OVR-005 preview render is visible before overlay change");
+
+        ComboBox<?> overlayModeSelector = comboBoxWithDisplayedItem(controls, "Nahe Ebenen");
+        selectComboItem(overlayModeSelector, "Nahe Ebenen");
+
+        assertOverlaySettings(runtime.controlsModel().current().overlaySettings(), "NEARBY", 2, 0.35, List.of(),
+                "DE-OVR-005 controls overlay settings");
+        assertOverlaySettings(runtime.mapSurfaceModel().current().overlaySettings(), "NEARBY", 2, 0.35, List.of(),
+                "DE-OVR-005 map surface overlay settings");
+        assertTrue(runtime.mapSurfaceModel().current().preview() instanceof DungeonEditorPreview.RoomRectanglePreview,
+                "DE-OVR-005 overlay change preserves active room preview");
+        assertTrue(renderPreviewSurfaceCellOriginsWithZ(binding.mapContentModel()).containsAll(cellRect(1, 1, 3, 3, 0)),
+                "DE-OVR-005 overlay change preserves preview render");
+        assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
+                "DE-OVR-005 overlay change writes no authored geometry");
+
+        fireMapMouse(mapView, MouseEvent.MOUSE_RELEASED, MouseButton.PRIMARY, dragEndX, dragEndY, false);
+
+        assertTrue(runtime.database().countAuthoredGeometryRows(mapId) > geometryRowsBefore,
+                "DE-OVR-005 stale release after overlay change still commits active room draft");
+
+        results.add("DE-OVR-005 Ready: active room preview + overlay change"
+                + " -> preview surface retained -> release commits draft");
     }
 
 }

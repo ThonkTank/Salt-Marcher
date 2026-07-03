@@ -29,7 +29,8 @@ final class DungeonSqliteTransitionPersistence {
     private static void upsertTransition(Connection connection, DungeonTransitionRecord transition) throws SQLException {
         try (PreparedStatement update = connection.prepareStatement(
                 "UPDATE " + DungeonPersistenceSchema.TRANSITIONS_TABLE
-                        + " SET description=?, cell_x=?, cell_y=?, level_z=?, destination_type=?,"
+                        + " SET description=?, cell_x=?, cell_y=?, level_z=?, anchor_type=?,"
+                        + " anchor_edge_direction=?, destination_type=?,"
                         + " target_overworld_map_id=?, target_overworld_tile_id=?, target_dungeon_map_id=?,"
                         + " target_transition_id=?, linked_transition_id=?"
                         + " WHERE transition_id=? AND dungeon_map_id=?")) {
@@ -41,9 +42,10 @@ final class DungeonSqliteTransitionPersistence {
         try (PreparedStatement insert = connection.prepareStatement(
                 INSERT_INTO + DungeonPersistenceSchema.TRANSITIONS_TABLE
                         + "(transition_id, dungeon_map_id, description, cell_x, cell_y, level_z,"
-                        + " destination_type, target_overworld_map_id, target_overworld_tile_id,"
+                        + " anchor_type, anchor_edge_direction, destination_type,"
+                        + " target_overworld_map_id, target_overworld_tile_id,"
                         + " target_dungeon_map_id, target_transition_id, linked_transition_id)"
-                        + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?)")) {
+                        + " VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
             bindTransition(insert, transition, true);
             insert.executeUpdate();
         }
@@ -68,6 +70,10 @@ final class DungeonSqliteTransitionPersistence {
         DungeonSqliteStatementSupport.setNullableInteger(statement, index, transition.cellY());
         index++;
         DungeonSqliteStatementSupport.setNullableInteger(statement, index, transition.levelZ());
+        index++;
+        statement.setString(index, transition.anchorType());
+        index++;
+        statement.setString(index, transition.anchorEdgeDirection());
         index++;
         statement.setString(index, transition.destinationType());
         index++;

@@ -4,6 +4,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonFacts;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSession;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
@@ -46,14 +47,18 @@ final class DungeonEditorPreviewLifecycleUseCase {
             DungeonEditorSessionEffect effect,
             ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit authoredCommit
     ) {
-        if (effect == null) {
-            return preparePublishCurrent();
+        if (effect == null || effect.isNoop()) {
+            return PublicationOutcome.UNCHANGED_PREVIEW_NOOP;
         }
-        DungeonEditorSessionValues.Preview previousPreview = workflow.session().preview();
+        DungeonEditorSession previousSession = workflow.session();
+        DungeonEditorSessionValues.Preview previousPreview = previousSession.preview();
         DungeonEditorSessionValues.Preview applyPreview = workflow.applyEffect(effect);
         if (applyPreview != null) {
             applyAuthoredPreview(applyPreview, authoredCommit);
             return prepareAuthoredPreviewApplied();
+        }
+        if (onlyStatusChanged(previousSession, workflow.session())) {
+            return PublicationOutcome.STATUS_ONLY_CONTROLS_PUBLISHED;
         }
         if (!DungeonEditorSessionPreviewHelper.inMemoryDragPreview(effect.getPreview())) {
             return preparePublishCurrent();
@@ -62,6 +67,14 @@ final class DungeonEditorPreviewLifecycleUseCase {
             return PublicationOutcome.UNCHANGED_PREVIEW_NOOP;
         }
         return prepareInMemoryPreviewPublication();
+    }
+
+    private static boolean onlyStatusChanged(
+            DungeonEditorSession previousSession,
+            DungeonEditorSession currentSession
+    ) {
+        return !Objects.equals(previousSession.statusText(), currentSession.statusText())
+                && previousSession.withStatusText(currentSession.statusText()).equals(currentSession);
     }
 
     private PublicationOutcome prepareCurrentReadback() {
@@ -107,23 +120,34 @@ final class DungeonEditorPreviewLifecycleUseCase {
     }
 
     enum PublicationOutcome {
-        COMMITTED_GRID_AVAILABLE(false),
-        PUBLISH_CURRENT(true),
-        AUTHORED_PREVIEW_APPLIED(true),
-        DIRECT_AUTHORED_DRAG_PREVIEW_PUBLISHED(true),
-        IN_MEMORY_PREVIEW_PUBLISHED(true),
-        UNCHANGED_PREVIEW_NOOP(false),
-        CURRENT_READBACK_PUBLISHED(true);
+        COMMITTED_GRID_AVAILABLE(PublicationChannel.NONE),
+        PUBLISH_CURRENT(PublicationChannel.FULL),
+        AUTHORED_PREVIEW_APPLIED(PublicationChannel.FULL),
+        DIRECT_AUTHORED_DRAG_PREVIEW_PUBLISHED(PublicationChannel.FULL),
+        IN_MEMORY_PREVIEW_PUBLISHED(PublicationChannel.FULL),
+        STATUS_ONLY_CONTROLS_PUBLISHED(PublicationChannel.CONTROLS),
+        UNCHANGED_PREVIEW_NOOP(PublicationChannel.NONE),
+        CURRENT_READBACK_PUBLISHED(PublicationChannel.FULL);
 
-        private final boolean publishesSnapshot;
+        private final PublicationChannel publicationChannel;
 
-        PublicationOutcome(boolean publishesSnapshot) {
-            this.publishesSnapshot = publishesSnapshot;
+        PublicationOutcome(PublicationChannel publicationChannel) {
+            this.publicationChannel = publicationChannel;
         }
 
         boolean publishesSnapshot() {
-            return publishesSnapshot;
+            return publicationChannel != PublicationChannel.NONE;
         }
+
+        boolean controlsOnly() {
+            return publicationChannel == PublicationChannel.CONTROLS;
+        }
+    }
+
+    private enum PublicationChannel {
+        NONE,
+        CONTROLS,
+        FULL
     }
 
     record CurrentGridResult(

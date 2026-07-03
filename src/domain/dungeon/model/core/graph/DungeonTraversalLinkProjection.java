@@ -21,11 +21,14 @@ import src.domain.dungeon.model.core.structure.DungeonMap;
 public final class DungeonTraversalLinkProjection {
 
     private static final String DOOR_KIND = "door";
+    private static final DungeonCorridorTraversalLinkProjection CORRIDOR_LINKS =
+            new DungeonCorridorTraversalLinkProjection();
 
     public List<DungeonTraversalLink> project(@Nullable DungeonMap dungeonMap, DungeonMapFacts map) {
         CellAreaIndex index = CellAreaIndex.from(map);
         List<DungeonTraversalLink> result = new ArrayList<>();
         result.addAll(doorTraversalLinks(map, index));
+        result.addAll(CORRIDOR_LINKS.project(map));
         if (dungeonMap != null) {
             result.addAll(stairTraversalLinks(dungeonMap, index));
         }

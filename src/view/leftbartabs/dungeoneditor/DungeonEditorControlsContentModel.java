@@ -7,10 +7,34 @@ import java.util.stream.Collectors;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 
 final class DungeonEditorControlsContentModel {
+    private static final String SELECT_TOOL = "SELECT";
+    private static final String ROOM_PAINT_TOOL = "ROOM_PAINT";
+    private static final String WALL_CREATE_TOOL = "WALL_CREATE";
+    private static final String DOOR_CREATE_TOOL = "DOOR_CREATE";
+    private static final String CORRIDOR_CREATE_TOOL = "CORRIDOR_CREATE";
+    private static final String STAIR_CREATE_TOOL = "STAIR_CREATE";
+    private static final String STAIR_CREATE_SQUARE_TOOL = "STAIR_CREATE_SQUARE";
+    private static final String STAIR_CREATE_CIRCULAR_TOOL = "STAIR_CREATE_CIRCULAR";
+    private static final String TRANSITION_CREATE_TOOL = "TRANSITION_CREATE";
+    private static final String FEATURE_POI_CREATE_TOOL = "FEATURE_POI_CREATE";
+    private static final String FEATURE_OBJECT_CREATE_TOOL = "FEATURE_OBJECT_CREATE";
+    private static final String FEATURE_ENCOUNTER_CREATE_TOOL = "FEATURE_ENCOUNTER_CREATE";
+    private static final Map<String, String> TOOL_LABELS = Map.ofEntries(
+            Map.entry(SELECT_TOOL, "Auswahl"),
+            Map.entry(ROOM_PAINT_TOOL, "Raum malen"),
+            Map.entry(WALL_CREATE_TOOL, "Wand setzen"),
+            Map.entry(DOOR_CREATE_TOOL, "Tür setzen"),
+            Map.entry(CORRIDOR_CREATE_TOOL, "Korridor erstellen"),
+            Map.entry(STAIR_CREATE_TOOL, "Treppe erstellen"),
+            Map.entry(STAIR_CREATE_SQUARE_TOOL, "Treppe erstellen"),
+            Map.entry(STAIR_CREATE_CIRCULAR_TOOL, "Treppe erstellen"),
+            Map.entry(TRANSITION_CREATE_TOOL, "Übergang erstellen"),
+            Map.entry(FEATURE_POI_CREATE_TOOL, "POI erstellen"),
+            Map.entry(FEATURE_OBJECT_CREATE_TOOL, "Objekt erstellen"),
+            Map.entry(FEATURE_ENCOUNTER_CREATE_TOOL, "Encounter erstellen"));
 
     private final ReadOnlyObjectWrapper<MapProjection> mapProjection =
             new ReadOnlyObjectWrapper<>(MapProjection.empty());
@@ -68,7 +92,7 @@ final class DungeonEditorControlsContentModel {
         return List.of(
                 new OverlayModeOption(overlayOffMode(), "Aus", false, false),
                 new OverlayModeOption(overlayNearbyMode(), "Nahe Ebenen", true, false),
-                new OverlayModeOption(overlaySelectedMode(), DungeonEditorTool.SELECT.displayLabel(), false, true));
+                new OverlayModeOption(overlaySelectedMode(), defaultToolLabel(), false, true));
     }
 
     ToolControls toolControls() {
@@ -422,7 +446,7 @@ final class DungeonEditorControlsContentModel {
                     defaultToolLabel(),
                     gridViewLabel(),
                     graphViewLabel(),
-                    new ToolButton(defaultToolLabel(), defaultToolLabel(), DungeonEditorTool.SELECT.name()),
+                    new ToolButton(defaultToolLabel(), defaultToolLabel(), SELECT_TOOL),
                     ToolFamily.ROOM.toButton(selectedFamilyOptionKeys),
                     ToolFamily.WALL.toButton(selectedFamilyOptionKeys),
                     ToolFamily.DOOR.toButton(selectedFamilyOptionKeys),
@@ -476,69 +500,69 @@ final class DungeonEditorControlsContentModel {
     }
 
     enum ToolFamily {
-        ROOM("ROOM", "Raum", DungeonEditorTool.ROOM_PAINT),
+        ROOM("ROOM", "Raum", ROOM_PAINT_TOOL),
         WALL(
                 "WALL",
                 "Wand",
-                DungeonEditorTool.WALL_CREATE,
+                WALL_CREATE_TOOL,
                 new ToolOptionSpec(
                         wallPathModeOptionKey(),
                         "Pfad",
-                        DungeonEditorTool.WALL_CREATE,
+                        WALL_CREATE_TOOL,
                         true),
                 new ToolOptionSpec(
                         wallSingleClickModeOptionKey(),
                         "Einzeln",
-                        DungeonEditorTool.WALL_CREATE,
+                        WALL_CREATE_TOOL,
                         true)),
-        DOOR("DOOR", "Tür", DungeonEditorTool.DOOR_CREATE),
-        CORRIDOR("CORRIDOR", "Korridor", DungeonEditorTool.CORRIDOR_CREATE),
+        DOOR("DOOR", "Tür", DOOR_CREATE_TOOL),
+        CORRIDOR("CORRIDOR", "Korridor", CORRIDOR_CREATE_TOOL),
         FEATURE(
                 "FEATURE",
                 "Feature",
-                DungeonEditorTool.FEATURE_POI_CREATE,
+                FEATURE_POI_CREATE_TOOL,
                 new ToolOptionSpec(
                         "FEATURE_POI",
                         "POI",
-                        DungeonEditorTool.FEATURE_POI_CREATE,
+                        FEATURE_POI_CREATE_TOOL,
                         true),
                 new ToolOptionSpec(
                         "FEATURE_OBJECT",
                         "Objekt",
-                        DungeonEditorTool.FEATURE_OBJECT_CREATE,
+                        FEATURE_OBJECT_CREATE_TOOL,
                         true),
                 new ToolOptionSpec(
                         "FEATURE_ENCOUNTER",
                         "Encounter",
-                        DungeonEditorTool.FEATURE_ENCOUNTER_CREATE,
+                        FEATURE_ENCOUNTER_CREATE_TOOL,
                         true)),
         STAIR(
                 "STAIR",
                 "Treppe",
-                DungeonEditorTool.STAIR_CREATE,
+                STAIR_CREATE_TOOL,
                 new ToolOptionSpec(
                         "STAIR_STRAIGHT",
                         "Gerade",
-                        DungeonEditorTool.STAIR_CREATE,
+                        STAIR_CREATE_TOOL,
                         true),
                 new ToolOptionSpec(
                         "STAIR_ANGULAR_SPIRAL",
                         "Eckspirale",
-                        DungeonEditorTool.STAIR_CREATE_SQUARE,
+                        STAIR_CREATE_SQUARE_TOOL,
                         true),
                 new ToolOptionSpec(
                         "STAIR_ROUND_SPIRAL",
                         "Rundspirale",
-                        DungeonEditorTool.STAIR_CREATE_CIRCULAR,
+                        STAIR_CREATE_CIRCULAR_TOOL,
                         true)),
-        TRANSITION("TRANSITION", "Übergang", DungeonEditorTool.TRANSITION_CREATE);
+        TRANSITION("TRANSITION", "Übergang", TRANSITION_CREATE_TOOL);
 
         private final String key;
         private final String label;
-        private final DungeonEditorTool primaryTool;
+        private final String primaryTool;
         private final List<ToolOptionSpec> optionSpecs;
 
-        ToolFamily(String key, String label, DungeonEditorTool primaryTool, ToolOptionSpec... optionSpecs) {
+        ToolFamily(String key, String label, String primaryTool, ToolOptionSpec... optionSpecs) {
             this.key = key;
             this.label = label;
             this.primaryTool = primaryTool;
@@ -559,7 +583,7 @@ final class DungeonEditorControlsContentModel {
         }
 
         private boolean containsToolKey(@Nullable String toolKey) {
-            if (primaryTool.name().equals(toolKey)) {
+            if (primaryTool.equals(toolKey)) {
                 return true;
             }
             for (ToolButton option : toolOptions()) {
@@ -589,16 +613,16 @@ final class DungeonEditorControlsContentModel {
             return optionSpecs.stream()
                     .map(option -> new ToolButton(
                             option.label(),
-                            labelOf(DungeonEditorTool.valueOf(option.toolKey())),
+                            labelOf(option.toolKey()),
                             option.key(),
                             option.toolKey(),
                             option.enabled()))
                     .toList();
         }
 
-        private static ToolButton toToolButton(DungeonEditorTool tool) {
+        private static ToolButton toToolButton(String tool) {
             String label = labelOf(tool);
-            return new ToolButton(label, label, tool.name());
+            return new ToolButton(label, label, tool);
         }
 
         private static @Nullable ToolFamily fromKey(@Nullable String familyKey) {
@@ -627,10 +651,6 @@ final class DungeonEditorControlsContentModel {
     }
 
     private record ToolOptionSpec(String key, String label, String toolKey, boolean enabled) {
-        ToolOptionSpec(String key, String label, DungeonEditorTool tool, boolean enabled) {
-            this(key, label, tool == null ? "" : tool.name(), enabled);
-        }
-
         ToolOptionSpec {
             key = key == null ? "" : key;
             label = label == null ? "" : label;
@@ -640,7 +660,7 @@ final class DungeonEditorControlsContentModel {
     }
 
     static String defaultToolLabel() {
-        return DungeonEditorTool.SELECT.displayLabel();
+        return labelOf(SELECT_TOOL);
     }
 
     static String gridViewLabel() {
@@ -663,7 +683,7 @@ final class DungeonEditorControlsContentModel {
         return wallSingleClickModeOptionKey().equals(selectedFamilyOptionKeys.get(ToolFamily.WALL));
     }
 
-    static String labelOf(@Nullable DungeonEditorTool tool) {
+    static String labelOf(@Nullable String tool) {
         return ToolPresentation.labelOf(tool);
     }
 
@@ -672,28 +692,22 @@ final class DungeonEditorControlsContentModel {
     }
 
     static String normalizedToolKey(@Nullable String selectedToolKey) {
-        return ToolPresentation.toPublishedToolKey(selectedToolKey).name();
+        return ToolPresentation.toPublishedToolKey(selectedToolKey);
     }
 
     private interface ToolPresentation {
 
-        static String labelOf(@Nullable DungeonEditorTool tool) {
-            return DungeonEditorTool.labelFor(tool);
+        static String labelOf(@Nullable String tool) {
+            return TOOL_LABELS.get(toPublishedToolKey(tool));
         }
 
         static String normalizeViewModeKey(@Nullable String viewModeKey) {
             return graphViewLabel().equals(viewModeKey) ? graphViewLabel() : gridViewLabel();
         }
 
-        static DungeonEditorTool toPublishedToolKey(@Nullable String selectedToolKey) {
-            if (selectedToolKey == null || selectedToolKey.isBlank()) {
-                return DungeonEditorTool.SELECT;
-            }
-            try {
-                return DungeonEditorTool.valueOf(selectedToolKey.trim());
-            } catch (IllegalArgumentException ignored) {
-                return DungeonEditorTool.SELECT;
-            }
+        static String toPublishedToolKey(@Nullable String selectedToolKey) {
+            String safeToolKey = selectedToolKey == null ? "" : selectedToolKey.trim();
+            return TOOL_LABELS.containsKey(safeToolKey) ? safeToolKey : SELECT_TOOL;
         }
     }
 

@@ -165,6 +165,27 @@ hex coordinates, transition destinations, or travel actions. They may publish
 as feature facts for editor selection and authored readback. Runtime travel
 surfaces still treat only stairs and transitions as travel features.
 
+## Transition Anchor Domain Truth
+
+`Transition` owns authored placement through one `TransitionAnchor` value:
+
+- `NONE` means the authored transition exists without a placed entrance marker
+- `CELL` means the transition is placed at one authored map cell
+- `EDGE` means the transition is placed at one authored map cell plus one
+  cardinal edge direction
+
+`TransitionAnchor` is the only durable placement fact for transitions. Editor
+map clicks create `CELL` anchors from cell hits and `EDGE` anchors from wall or
+door boundary hits. Destination
+`UNLINKED_ENTRANCE` remains separate from anchor `NONE`: the former means a
+placed or unplaced entrance has no destination, while the latter means the
+transition has no placed entrance marker.
+
+For `EDGE` anchors, the anchor cell is the authored edge owner and travel
+entry cell; it is not a renderable transition feature cell. Editor render and
+hit-test projection derive an edge marker from the anchor edge, while cell
+surfaces remain reserved for `CELL` anchors.
+
 ## Domain-Owned External Boundaries
 
 - `DungeonMapRepository`
@@ -190,6 +211,9 @@ Active root boundaries:
 ## Invariants
 
 - authored dungeon truth has one aggregate owner per map
+- transition placement has one `TransitionAnchor` owner; travel cells and
+  render marker placement are derived from that value and must not become
+  independent anchor facts
 - stable topology refs identify selectable and mutable map elements
 - authored feature markers use `FEATURE_MARKER` topology refs and do not reuse
   stair or transition identity

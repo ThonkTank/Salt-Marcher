@@ -1,5 +1,6 @@
 package src.features.dungeon.runtime;
 
+import src.domain.dungeon.model.core.structure.transition.TransitionDestinationType;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 
@@ -46,14 +47,14 @@ final class DungeonEditorRuntimeDraftSession {
         statePanelCorridorPointDrafts.update(selectedMapIdValue, selection, q, r);
     }
 
-    void moveCorridorPoint(
+    DungeonEditorRuntimeOperationResult moveCorridorPoint(
             long selectedMapIdValue,
             DungeonEditorStateSnapshot.Selection selection,
             int q,
             int r,
             DungeonEditorAuthoredRuntimeOperations operationOwner
     ) {
-        statePanelCorridorPointDrafts.move(selectedMapIdValue, selection, q, r, operationOwner);
+        return statePanelCorridorPointDrafts.move(selectedMapIdValue, selection, q, r, operationOwner);
     }
 
     void updateTransitionDescriptionDraft(long selectedMapIdValue, long transitionId, String description) {
@@ -71,7 +72,12 @@ final class DungeonEditorRuntimeDraftSession {
             TransitionDestinationDraftInput input
     ) {
         TransitionDestinationDraftInput safeInput = input == null
-                ? new TransitionDestinationDraftInput("", "", "", "", true)
+                ? new TransitionDestinationDraftInput(
+                        TransitionDestinationType.UNLINKED_ENTRANCE,
+                        "",
+                        "",
+                        "",
+                        true)
                 : input;
         DungeonEditorStatePanelTransitionDestinationDrafts.Target target =
                 DungeonEditorStatePanelTransitionDestinationDrafts.target(controls, state);

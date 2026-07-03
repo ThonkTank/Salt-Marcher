@@ -94,7 +94,7 @@ cards.
 - apply MUST commit only on explicit gesture completion
 - corridor editing MUST support visible create and delete flows
 - stair editing MUST support visible create and delete flows plus stair shape, direction, and exit-level configuration
-- transition editing MUST support visible create and delete flows plus destination selection for dungeon or overworld outcomes
+- transition editing MUST support visible create and delete flows plus destination selection for dungeon, overworld, or an explicit unlinked entrance placeholder
 - cluster and room naming MUST support default and custom names through the
   state panel; only cluster labels may also use direct label editing
 
@@ -118,8 +118,7 @@ cards.
 - selecting a room floor area MUST select that room without exposing cluster
   corner or wall-run handles; selecting the cluster label MUST expose the
   owning cluster corner and wall-run handles
-- selection hover feedback MUST appear only for stable selectable objects:
-  room/corridor/stair/transition/feature cells, visible handles, cluster or feature labels, graph nodes, and door boundaries. Plain wall boundaries, room labels, and tool-only synthetic geometry MUST stay visually passive in selection mode.
+- selection hover feedback MUST appear only for stable selectable objects: room/corridor/stair cells, transition/feature markers, visible handles, cluster labels, graph nodes, and door boundaries. Plain wall boundaries, room labels, feature hover labels, and tool-only synthetic geometry MUST stay visually passive in selection mode.
 - door handles MUST be visible canvas handles, hittable through the shared
   handle route, draggable with live preview, and committed as authored door
   boundary movement
@@ -134,6 +133,14 @@ cards.
 - stair create and delete flows with visible shape and exit configuration
 - transition create and delete flows with description, destination, and
   bidirectional-link options
+- transition creation MUST accept both map-cell placement and wall or door edge placement; cell placements behave like compact stair-style entrance glyphs, while edge placements behave like compact door-style boundary glyphs
+- transition creation MUST allow an unlinked entrance placeholder without requiring an overworld tile or dungeon transition target at creation time
+- unlinked entrance placeholders MUST persist, render, reload, select, accept description edits, and delete like other unreferenced authored transitions
+- rendered transition markers MUST be unlabeled and transition-specific; they may resemble stairs or doors by placement, but must remain visually distinguishable from ordinary stair and door affordances
+- edge-anchored transitions MUST render and hit-test through the edge marker,
+  not through a transition cell surface
+- runtime travel MUST NOT execute an unlinked entrance; it MUST leave travel on the current authored surface and surface a clear missing-destination outcome through the travel action failure path
+- committed object, encounter, point-of-interest, and transition markers MUST NOT render persistent feature labels; marker names MAY appear as hover-only overlay text and must not become selectable label targets
 - committed object, encounter, or point-of-interest feature markers must remain selectable by stable marker topology ref and must not create travel actions
 - custom cluster name editing through state-panel fields and direct map-label
   editing; custom room name editing through state-panel fields
@@ -305,7 +312,7 @@ Delete and corridor binding behavior:
 ## Acceptance Criteria
 
 - Preview, cancel, rejection, and invalid edits never persist authored truth; supported commits persist, publish, render, and reload the same authored result.
-- Authored object, encounter, and point-of-interest markers publish with marker category and stable marker identity; travel affordances still include only stairs and transitions.
+- Authored object, encounter, and point-of-interest markers publish with marker category and stable marker identity, render without persistent feature labels, and may show names only as hover-only overlay text; travel affordances still include only stairs and transitions.
 - Map CRUD, selection clearing, room paint/delete/merge/adjacency, room narration, door create/delete/protected-delete, and transition link save preserve the behavior described above without partial mutation.
 - Tool-family controls stay directly visible, fit the `960px` tool-panel
   target, use shared map gestures, remember dropdown sub-options, close

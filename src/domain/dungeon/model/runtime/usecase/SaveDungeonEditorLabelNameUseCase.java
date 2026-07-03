@@ -1,6 +1,8 @@
 package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 
 public final class SaveDungeonEditorLabelNameUseCase {
@@ -18,7 +20,7 @@ public final class SaveDungeonEditorLabelNameUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    public void execute(LabelNameInput input) {
+    public DungeonEditorSessionSnapshot.@Nullable SnapshotData execute(LabelNameInput input) {
         LabelNameInput safeInput = input == null ? LabelNameInput.empty() : input;
         if (workflow.session().selectedMapId() != null) {
             saveLabelNameUseCase.execute(
@@ -28,7 +30,7 @@ public final class SaveDungeonEditorLabelNameUseCase {
                     safeInput.name());
         }
         workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-        effectUseCase.publishCurrent();
+        return effectUseCase.publishCurrent();
     }
 
     public record LabelNameInput(String targetKind, long targetId, String name) {

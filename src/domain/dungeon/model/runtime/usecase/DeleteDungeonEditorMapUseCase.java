@@ -26,7 +26,7 @@ public final class DeleteDungeonEditorMapUseCase {
                 Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
     }
 
-    public void execute(long mapId) {
+    public DungeonEditorSessionSnapshot.SnapshotData execute(long mapId) {
         if (DungeonEditorWorkspaceValues.hasId(mapId)) {
             deleteMapUseCase.execute(new DungeonEditorWorkspaceValues.MapId(mapId));
         }
@@ -35,7 +35,10 @@ public final class DeleteDungeonEditorMapUseCase {
         DungeonEditorWorkspaceValues.MapId nextMapId = firstMapId(refreshedSnapshot.maps());
         workflow.applyMapLifecycle(DungeonEditorSessionWorkflow.MAP_DELETED, nextMapId);
         snapshotBuilder.refreshAuthoredSnapshot(workflow.session());
-        snapshotPublicationUseCase.execute(workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session())));
+        DungeonEditorSessionSnapshot.SnapshotData snapshot =
+                workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
+        snapshotPublicationUseCase.execute(snapshot);
+        return snapshot;
     }
 
     private static DungeonEditorWorkspaceValues.MapId firstMapId(List<MapSummary> maps) {

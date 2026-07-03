@@ -13,18 +13,24 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     private final DungeonEditorMainViewInteractionState interactionState;
     private final DungeonEditorAuthoredRuntimeOperations operationOwner;
     private final DungeonEditorInteractionService interactionService;
+    private final DungeonEditorStore store;
     private final DungeonEditorRuntimeDraftSession draftSession;
+    private final DungeonEditorRuntimeControlController controlsController;
+    private final DungeonEditorRuntimeMapCatalogController mapCatalogController;
     private final DungeonEditorRuntimeFramePublisher framePublisher;
 
     public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
         ServiceRegistry safeRegistry = Objects.requireNonNull(registry, "registry");
         DungeonEditorMainViewInteractionState interactionState = new DungeonEditorMainViewInteractionState();
+        DungeonEditorAuthoredRuntimeAssembly.AssemblyResult runtime =
+                DungeonEditorAuthoredRuntimeAssembly.create(safeRegistry, interactionState);
         return new DungeonEditorFeatureRuntimeRoot(
                 safeRegistry.require(DungeonEditorControlsModel.class),
                 safeRegistry.require(DungeonEditorMapSurfaceModel.class),
                 safeRegistry.require(DungeonEditorStateModel.class),
                 interactionState,
-                DungeonEditorAuthoredRuntimeAssembly.create(safeRegistry, interactionState));
+                runtime.operations(),
+                runtime.initialResult());
     }
 
     private DungeonEditorFeatureRuntimeRoot(
@@ -32,19 +38,36 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
             DungeonEditorMapSurfaceModel mapSurfaceModel,
             DungeonEditorStateModel stateModel,
             DungeonEditorMainViewInteractionState interactionState,
-            DungeonEditorAuthoredRuntimeOperations operationOwner
+            DungeonEditorAuthoredRuntimeOperations operationOwner,
+            DungeonEditorRuntimeOperationResult initialResult
     ) {
         this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
         this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
         this.interactionState = Objects.requireNonNull(interactionState, "interactionState");
         this.operationOwner = Objects.requireNonNull(operationOwner, "operationOwner");
-        interactionService = new DungeonEditorInteractionService(this.operationOwner);
+        store = new DungeonEditorStore();
+        applyInitialRuntimeResult(initialResult);
         draftSession = new DungeonEditorRuntimeDraftSession();
         framePublisher = new DungeonEditorRuntimeFramePublisher(
-                this.controlsModel,
+                store,
                 mapSurfaceModel,
                 this.stateModel,
                 draftSession);
+        interactionService = new DungeonEditorInteractionService(this.operationOwner, store, framePublisher);
+        controlsController = new DungeonEditorRuntimeControlController(
+                store,
+                this.interactionState,
+                pointer(),
+                draftSession,
+                this.operationOwner,
+                framePublisher,
+                mapSurfaceModel);
+        mapCatalogController = new DungeonEditorRuntimeMapCatalogController(
+                store,
+                this.interactionState,
+                draftSession,
+                this.operationOwner,
+                framePublisher);
     }
 
     public DungeonEditorRuntimeOperations operations() {
@@ -53,16 +76,12 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     @Override
     public DungeonEditorMapCatalogOperations catalog() {
-        return new DungeonEditorRuntimeMapCatalogPort(interactionState, draftSession, operationOwner);
+        return new DungeonEditorRuntimeMapCatalogPort(mapCatalogController);
     }
 
     @Override
     public DungeonEditorControlOperations controls() {
-        return new DungeonEditorRuntimeControlPort(
-                interactionState,
-                pointer(),
-                draftSession,
-                operationOwner);
+        return new DungeonEditorRuntimeControlPort(controlsController);
     }
 
     @Override
@@ -77,7 +96,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 stateModel,
                 draftSession,
                 framePublisher,
-                operationOwner);
+                operationOwner,
+                store);
     }
 
     @Override
@@ -92,7 +112,8 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
                 stateModel,
                 draftSession,
                 framePublisher,
-                operationOwner);
+                operationOwner,
+                store);
     }
 
     public DungeonEditorRuntimePublication currentPublication() {
@@ -101,5 +122,14 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
 
     public Runnable subscribe(Consumer<DungeonEditorRuntimePublication> subscriber) {
         return framePublisher.subscribe(subscriber);
+    }
+
+    private void applyInitialRuntimeResult(DungeonEditorRuntimeOperationResult initialResult) {
+        DungeonEditorRuntimeOperationResult safeInitialResult = initialResult == null
+                ? DungeonEditorRuntimeOperationResult.none()
+                : initialResult;
+        for (DungeonEditorAction action : safeInitialResult.actions()) {
+            store.dispatch(action);
+        }
     }
 }

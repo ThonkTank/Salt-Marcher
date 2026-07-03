@@ -3,6 +3,7 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.published.DungeonEdgeRef;
@@ -490,7 +491,7 @@ final class DungeonEditorRoomWallDoorHarness {
         double handleHitQ = handleQ + 0.22;
         assertEquals(
                 DungeonEditorHandleKind.CLUSTER_WALL_RUN,
-                binding.mapContentModel().resolvePointerTarget(handleHitQ, handleR).handleRef().kind(),
+                runtimePointerTarget(binding.mapContentModel(), handleHitQ, handleR).handleRef().kind(),
                 "DE-WALLRUN-DOOR-001 selected wall-run pill resolves as one wall-run drag handle");
 
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
@@ -626,7 +627,7 @@ final class DungeonEditorRoomWallDoorHarness {
         assertEquals(Set.of("1,1,0", "4,1,0", "4,4,0", "1,4,0"),
                 runtime.database().authoredClusterBoundaryCorners(roomIds.clusterId()),
                 "DE-SEL-008 starts with authored boundary corners");
-        assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(4.0, 4.0).targetKind().name(),
+        assertEquals("HANDLE", runtimePointerTarget(binding.mapContentModel(), 4.0, 4.0).targetKind().name(),
                 "DE-SEL-008 input route resolves the south-east corner as a handle");
 
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
@@ -1161,7 +1162,7 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-SEL-010 reload publishes a cluster-corner handle at the boundary-derived corner");
         assertTrue(renderHasGlyphAt(binding.mapContentModel(), roomRef, 4.0, 4.0, false),
                 "DE-SEL-010 reload render shows the corner handle glyph");
-        assertEquals("HANDLE", binding.mapContentModel().resolvePointerTarget(4.0, 4.0).targetKind().name(),
+        assertEquals("HANDLE", runtimePointerTarget(binding.mapContentModel(), 4.0, 4.0).targetKind().name(),
                 "DE-SEL-010 reload pointer route resolves the corner as a handle");
 
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
@@ -1310,8 +1311,8 @@ final class DungeonEditorRoomWallDoorHarness {
         click(button(controls, "Tür"));
         assertEquals("DOOR_CREATE", runtime.controlsModel().current().selectedTool().name(),
                 "DE-DOOR-001 door family selects door-create tool");
-        DungeonMapContentModel.PointerTarget nearCornerTarget =
-                binding.mapContentModel().resolvePointerTarget(3.96, 1.20, true);
+        var nearCornerTarget =
+                runtimePointerTarget(binding.mapContentModel(), 3.96, 1.20, true);
         assertEquals("BOUNDARY", nearCornerTarget.targetKind().name(),
                 "DE-DOOR-001 boundary-preferred resolver chooses an authored boundary near a room corner");
         assertEquals("WALL", nearCornerTarget.boundaryRef().boundaryKind().legacyName(),
@@ -2625,6 +2626,10 @@ final class DungeonEditorRoomWallDoorHarness {
         Set<String> renderCellsBefore = renderSurfaceCellOriginsWithZ(binding.mapContentModel());
 
         click(button(controls, "Wand"));
+        AtomicInteger rejectionMapSurfacePublications = new AtomicInteger();
+        AtomicInteger rejectionStatePublications = new AtomicInteger();
+        runtime.mapSurfaceModel().subscribe(ignored -> rejectionMapSurfacePublications.incrementAndGet());
+        runtime.stateModel().subscribe(ignored -> rejectionStatePublications.incrementAndGet());
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMouse(
                 mapView,
@@ -2654,6 +2659,10 @@ final class DungeonEditorRoomWallDoorHarness {
                 "DE-WALL-014 exterior delete rejection leaves rendered geometry unchanged");
         assertTrue(runtime.controlsModel().current().statusText().contains("Aussenwand"),
                 "DE-WALL-014 exterior delete rejection publishes a concrete status");
+        assertEquals(0L, rejectionMapSurfacePublications.get(),
+                "DE-WALL-014 exterior delete rejection does not publish map surface");
+        assertEquals(0L, rejectionStatePublications.get(),
+                "DE-WALL-014 exterior delete rejection does not publish state");
 
         results.add("DE-WALL-014 Ready: wall secondary exterior delete rejects without geometry, preview, or selection mutation");
         results.add("DE-CLUSTER-004 Ready: cluster exterior wall delete publishes rejection status"

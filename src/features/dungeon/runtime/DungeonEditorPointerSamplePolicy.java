@@ -1,9 +1,8 @@
 package src.features.dungeon.runtime;
 
+import src.domain.dungeon.published.DungeonEditorTool;
 
 final class DungeonEditorPointerSamplePolicy {
-    private static final String WALL_CREATE_TOOL = "WALL_CREATE";
-
     private DungeonEditorPointerSamplePolicy() {
     }
 
@@ -43,7 +42,7 @@ final class DungeonEditorPointerSamplePolicy {
             DungeonEditorRuntimePointerTarget target,
             PointerWorkflowIntent intent
     ) {
-        if (!WALL_CREATE_TOOL.equals(intent.effectiveToolKey())) {
+        if (intent.effectiveTool() != DungeonEditorTool.WALL_CREATE) {
             return targets.sceneX();
         }
         if (intent.wallSingleClickMode() && target.isBoundaryTarget()) {
@@ -60,7 +59,7 @@ final class DungeonEditorPointerSamplePolicy {
             DungeonEditorRuntimePointerTarget target,
             PointerWorkflowIntent intent
     ) {
-        if (!WALL_CREATE_TOOL.equals(intent.effectiveToolKey())) {
+        if (intent.effectiveTool() != DungeonEditorTool.WALL_CREATE) {
             return targets.sceneY();
         }
         if (intent.wallSingleClickMode() && target.isBoundaryTarget()) {

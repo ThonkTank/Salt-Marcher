@@ -3,9 +3,7 @@ package src.domain.dungeon.model.runtime.travel.projection;
 import java.util.ArrayList;
 import java.util.List;
 import src.domain.dungeon.model.core.graph.DungeonTraversalLink;
-import src.domain.dungeon.model.core.graph.DungeonTraversalLinkProjection;
-import src.domain.dungeon.model.core.projection.DungeonMapFacts;
-import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.graph.DungeonTraversalSourceKind;
 
 final class TravelAuthoredSurfaceTraversalProjectionMapper {
 
@@ -13,12 +11,10 @@ final class TravelAuthoredSurfaceTraversalProjectionMapper {
     }
 
     static List<TravelAuthoredSurface.TraversalLinkInput> toTraversalLinks(
-            DungeonMap dungeonMap,
-            DungeonMapFacts mapFacts
+            List<DungeonTraversalLink> traversalLinks
     ) {
         List<TravelAuthoredSurface.TraversalLinkInput> result = new ArrayList<>();
-        for (DungeonTraversalLink link
-                : new DungeonTraversalLinkProjection().project(dungeonMap, mapFacts)) {
+        for (DungeonTraversalLink link : traversalLinks == null ? List.<DungeonTraversalLink>of() : traversalLinks) {
             if (link != null) {
                 result.add(toTraversalLink(link));
             }
@@ -30,7 +26,7 @@ final class TravelAuthoredSurfaceTraversalProjectionMapper {
         return new TravelAuthoredSurface.TraversalLinkInput(
                 link.key(),
                 new TraversalSource(
-                        TraversalSourceKind.valueOf(link.source().kind().name()),
+                        toRuntimeSourceKind(link.source().kind()),
                         link.source().id(),
                         link.source().label()),
                 new TraversalEndpoint(
@@ -41,5 +37,16 @@ final class TravelAuthoredSurfaceTraversalProjectionMapper {
                         TravelGeometryProjectionMapper.cellOrOrigin(link.secondEndpoint().tile()),
                         link.secondEndpoint().areaId(),
                         link.secondEndpoint().areaLabel()));
+    }
+
+    private static TraversalSourceKind toRuntimeSourceKind(DungeonTraversalSourceKind kind) {
+        if (kind == null) {
+            return TraversalSourceKind.DOOR;
+        }
+        return switch (kind) {
+            case DOOR -> TraversalSourceKind.door();
+            case CORRIDOR -> TraversalSourceKind.corridor();
+            case STAIR -> TraversalSourceKind.stair();
+        };
     }
 }

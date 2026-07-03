@@ -9,6 +9,8 @@ public record DungeonTransitionRecord(
         @Nullable Integer cellX,
         @Nullable Integer cellY,
         @Nullable Integer levelZ,
+        String anchorType,
+        @Nullable String anchorEdgeDirection,
         String destinationType,
         @Nullable Long targetOverworldMapId,
         @Nullable Long targetOverworldTileId,
@@ -19,8 +21,14 @@ public record DungeonTransitionRecord(
 
     public DungeonTransitionRecord {
         description = description == null ? "" : description.trim();
-        destinationType = destinationType == null || destinationType.isBlank()
-                ? "OVERWORLD_TILE"
-                : destinationType.trim();
+        anchorType = anchorType == null ? "" : anchorType.trim();
+        anchorEdgeDirection = normalizedAnchorEdgeDirection(anchorEdgeDirection);
+        destinationType = destinationType == null ? "" : destinationType.trim();
+    }
+
+    private static @Nullable String normalizedAnchorEdgeDirection(@Nullable String anchorEdgeDirection) {
+        return anchorEdgeDirection == null || anchorEdgeDirection.isBlank()
+                ? null
+                : anchorEdgeDirection.trim();
     }
 }

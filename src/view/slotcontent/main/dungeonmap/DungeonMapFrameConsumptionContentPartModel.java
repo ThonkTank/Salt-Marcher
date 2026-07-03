@@ -4,46 +4,46 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import src.domain.dungeon.published.DungeonEditorMapHitRef;
-import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.MapSurfaceFrame;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.CellTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.MapInteractionFrame;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTarget;
 
 final class DungeonMapFrameConsumptionContentPartModel {
-    private DungeonEditorMapSurfaceSnapshot currentEditorSurfaceSnapshot = DungeonEditorMapSurfaceSnapshot.empty();
+    private MapSurfaceFrame currentEditorSurfaceFrame = MapSurfaceFrame.empty();
     private MapInteractionFrame currentMapInteractionFrame = MapInteractionFrame.empty();
-    private boolean editorSurfaceSnapshotCurrent;
+    private boolean editorSurfaceFrameCurrent;
     private PointerTarget currentHoverTarget = PointerTarget.empty();
     private SyntheticHoverContext currentSurfaceContext = SyntheticHoverContext.empty();
     private SyntheticHoverContext currentHoverContext = SyntheticHoverContext.empty();
-    private Map<String, PointerTarget> pointerTargets = Map.of();
 
     EditorSurfaceFrame consumeEditorSurfaceFrame(
-            DungeonEditorMapSurfaceSnapshot editorSnapshot,
+            MapSurfaceFrame editorSurfaceFrame,
             MapInteractionFrame interactionFrame
     ) {
-        DungeonEditorMapSurfaceSnapshot safeSnapshot = editorSnapshot == null
-                ? DungeonEditorMapSurfaceSnapshot.empty()
-                : editorSnapshot;
+        MapSurfaceFrame safeSurfaceFrame = editorSurfaceFrame == null
+                ? MapSurfaceFrame.empty()
+                : editorSurfaceFrame;
         MapInteractionFrame safeFrame = interactionFrame == null ? MapInteractionFrame.empty() : interactionFrame;
-        SyntheticHoverContext nextSurfaceContext = SyntheticHoverContext.from(safeSnapshot);
-        if (editorSurfaceSnapshotCurrent
-                && safeSnapshot.equals(currentEditorSurfaceSnapshot)
-                && safeFrame.equals(currentMapInteractionFrame)
-                && nextSurfaceContext.equals(currentSurfaceContext)) {
+        SyntheticHoverContext nextSurfaceContext = SyntheticHoverContext.from(safeSurfaceFrame);
+        if (editorSurfaceFrameCurrent
+                && sameRenderRelevantSurface(safeSurfaceFrame, currentEditorSurfaceFrame)
+                && sameRenderRelevantInteractionFrame(safeFrame, currentMapInteractionFrame)) {
+            currentEditorSurfaceFrame = safeSurfaceFrame;
+            currentMapInteractionFrame = safeFrame;
             currentSurfaceContext = nextSurfaceContext;
-            return EditorSurfaceFrame.unchanged(safeSnapshot, safeFrame);
+            return EditorSurfaceFrame.unchanged(safeSurfaceFrame, safeFrame);
         }
-        currentEditorSurfaceSnapshot = safeSnapshot;
+        currentEditorSurfaceFrame = safeSurfaceFrame;
         currentMapInteractionFrame = safeFrame;
         currentSurfaceContext = nextSurfaceContext;
-        editorSurfaceSnapshotCurrent = true;
-        return EditorSurfaceFrame.changed(safeSnapshot, safeFrame);
+        editorSurfaceFrameCurrent = true;
+        return EditorSurfaceFrame.changed(safeSurfaceFrame, safeFrame);
     }
 
     MapInteractionFrame consumeTravelSnapshot() {
-        editorSurfaceSnapshotCurrent = false;
-        currentEditorSurfaceSnapshot = DungeonEditorMapSurfaceSnapshot.empty();
+        editorSurfaceFrameCurrent = false;
+        currentEditorSurfaceFrame = MapSurfaceFrame.empty();
         currentMapInteractionFrame = MapInteractionFrame.empty();
         currentSurfaceContext = SyntheticHoverContext.empty();
         currentHoverContext = SyntheticHoverContext.empty();
@@ -53,7 +53,7 @@ final class DungeonMapFrameConsumptionContentPartModel {
 
     PointerTarget consumeRenderFrame(MapInteractionFrame interactionFrame) {
         MapInteractionFrame safeFrame = interactionFrame == null ? MapInteractionFrame.empty() : interactionFrame;
-        pointerTargets = withExactCellTargets(safeFrame.pointerTargets());
+        Map<String, PointerTarget> pointerTargets = withExactCellTargets(safeFrame.pointerTargets());
         currentHoverTarget = retainedHoverTarget(
                 currentHoverTarget,
                 pointerTargets,
@@ -63,10 +63,6 @@ final class DungeonMapFrameConsumptionContentPartModel {
             currentHoverContext = SyntheticHoverContext.empty();
         }
         return currentHoverTarget;
-    }
-
-    Map<String, PointerTarget> currentPointerTargets() {
-        return pointerTargets;
     }
 
     PointerTarget currentHoverTarget() {
@@ -126,13 +122,13 @@ final class DungeonMapFrameConsumptionContentPartModel {
             return new SyntheticHoverContext("", 0);
         }
 
-        static SyntheticHoverContext from(DungeonEditorMapSurfaceSnapshot snapshot) {
-            DungeonEditorMapSurfaceSnapshot safeSnapshot = snapshot == null
-                    ? DungeonEditorMapSurfaceSnapshot.empty()
-                    : snapshot;
+        static SyntheticHoverContext from(MapSurfaceFrame frame) {
+            MapSurfaceFrame safeFrame = frame == null
+                    ? MapSurfaceFrame.empty()
+                    : frame;
             return new SyntheticHoverContext(
-                    safeSnapshot.viewMode().name(),
-                    safeSnapshot.projectionLevel());
+                    safeFrame.viewMode().name(),
+                    safeFrame.projectionLevel());
         }
     }
 
@@ -146,6 +142,7 @@ final class DungeonMapFrameConsumptionContentPartModel {
             case HANDLE -> safeFirst.handleRef().equals(safeSecond.handleRef());
             case BOUNDARY -> sameBoundaryTarget(safeFirst, safeSecond);
             case LABEL -> sameLabelTarget(safeFirst, safeSecond);
+            case MARKER -> sameCellOwner(safeFirst, safeSecond);
             case CELL -> sameCellTarget(safeFirst, safeSecond);
             case GRAPH_NODE -> sameCellOwner(safeFirst, safeSecond);
             case VERTEX -> sameVertexTarget(safeFirst, safeSecond);
@@ -224,28 +221,49 @@ final class DungeonMapFrameConsumptionContentPartModel {
         return sameOwner && first.boundaryRef().equals(second.boundaryRef());
     }
 
+    private static boolean sameRenderRelevantSurface(
+            MapSurfaceFrame first,
+            MapSurfaceFrame second
+    ) {
+        return Objects.equals(first.surface(), second.surface())
+                && Objects.equals(first.selection(), second.selection())
+                && Objects.equals(first.previewRender(), second.previewRender())
+                && Objects.equals(first.previewRenderDiff(), second.previewRenderDiff())
+                && first.viewMode() == second.viewMode()
+                && Objects.equals(first.overlaySettings(), second.overlaySettings())
+                && first.projectionLevel() == second.projectionLevel();
+    }
+
+    private static boolean sameRenderRelevantInteractionFrame(
+            MapInteractionFrame first,
+            MapInteractionFrame second
+    ) {
+        return Objects.equals(first.pointerTargets(), second.pointerTargets())
+                && Objects.equals(first.previewHandleHitRefs(), second.previewHandleHitRefs());
+    }
+
     private static boolean exactBoundaryAvailable(PointerTarget first, PointerTarget second) {
         return !first.boundaryRef().key().isBlank() && !second.boundaryRef().key().isBlank();
     }
 
     record EditorSurfaceFrame(
             boolean changed,
-            DungeonEditorMapSurfaceSnapshot editorSnapshot,
+            MapSurfaceFrame editorSurfaceFrame,
             MapInteractionFrame interactionFrame
     ) {
 
         private static EditorSurfaceFrame changed(
-                DungeonEditorMapSurfaceSnapshot editorSnapshot,
+                MapSurfaceFrame editorSurfaceFrame,
                 MapInteractionFrame interactionFrame
         ) {
-            return new EditorSurfaceFrame(true, editorSnapshot, interactionFrame);
+            return new EditorSurfaceFrame(true, editorSurfaceFrame, interactionFrame);
         }
 
         private static EditorSurfaceFrame unchanged(
-                DungeonEditorMapSurfaceSnapshot editorSnapshot,
+                MapSurfaceFrame editorSurfaceFrame,
                 MapInteractionFrame interactionFrame
         ) {
-            return new EditorSurfaceFrame(false, editorSnapshot, interactionFrame);
+            return new EditorSurfaceFrame(false, editorSurfaceFrame, interactionFrame);
         }
     }
 }

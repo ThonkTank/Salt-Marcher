@@ -67,7 +67,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
     private DungeonEditorAuthoredRuntimeAssembly() {
     }
 
-    static DungeonEditorAuthoredRuntimeOperations create(
+    static AssemblyResult create(
             ServiceRegistry registry,
             DungeonEditorMainViewInteractionState interactionState
     ) {
@@ -96,15 +96,26 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 dungeonState,
                 snapshotBuilder,
                 snapshotPublicationUseCase);
-        effectUseCase.publishCurrent();
-        return operations(runtimeUseCases(
+        DungeonEditorRuntimeOperationResult initialResult =
+                DungeonEditorAuthoredRuntimeOperations.resultFromSnapshot(effectUseCase.publishCurrent());
+        return new AssemblyResult(operations(runtimeUseCases(
                 authored,
                 dungeonState,
                 workflow,
                 mainViewInterpreter,
                 snapshotBuilder,
                 snapshotPublicationUseCase,
-                effectUseCase));
+                effectUseCase)), initialResult);
+    }
+
+    record AssemblyResult(
+            DungeonEditorAuthoredRuntimeOperations operations,
+            DungeonEditorRuntimeOperationResult initialResult
+    ) {
+        AssemblyResult {
+            operations = Objects.requireNonNull(operations, "operations");
+            initialResult = initialResult == null ? DungeonEditorRuntimeOperationResult.none() : initialResult;
+        }
     }
 
     private static DungeonEditorAuthoredRuntimeOperations operations(RuntimeUseCases runtime) {
@@ -155,18 +166,16 @@ final class DungeonEditorAuthoredRuntimeAssembly {
         return new DungeonEditorAuthoredRuntimeOperationUseCases.ProjectionUseCases(
                 new SetDungeonEditorViewModeUseCase(
                         runtime.workflow(),
-                        runtime.snapshotBuilder(),
                         runtime.snapshotPublicationUseCase()),
                 new SetDungeonEditorToolUseCase(
                         runtime.workflow(),
+                        runtime.snapshotBuilder(),
                         runtime.snapshotPublicationUseCase()),
                 new ShiftDungeonEditorProjectionLevelUseCase(
                         runtime.workflow(),
-                        runtime.snapshotBuilder(),
                         runtime.snapshotPublicationUseCase()),
                 new SetDungeonEditorOverlayUseCase(
                         runtime.workflow(),
-                        runtime.snapshotBuilder(),
                         runtime.snapshotPublicationUseCase()));
     }
 

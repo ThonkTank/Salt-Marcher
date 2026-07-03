@@ -136,7 +136,7 @@ final class DungeonMapRenderSceneContentPartModel {
             }
             addCellHoverOverlays(displayModel, hoverTarget, surfaces);
             addEdgeHoverOverlays(displayModel, hoverTarget, boundaries);
-            addMarkerHoverOverlays(displayModel, hoverTarget, glyphs);
+            addMarkerHoverOverlays(displayModel, hoverTarget, glyphs, texts);
             addLabelHoverOverlays(displayModel, hoverTarget, texts);
             return new SceneBuckets(
                     surfaces,
@@ -186,7 +186,8 @@ final class DungeonMapRenderSceneContentPartModel {
         private void addMarkerHoverOverlays(
                 DungeonMapRenderState displayModel,
                 PointerTarget hoverTarget,
-                List<GlyphPrimitive> glyphs
+                List<GlyphPrimitive> glyphs,
+                List<TextPrimitive> texts
         ) {
             for (DungeonMapRenderState.Marker marker : displayModel.markers()) {
                 if (LevelFilter.includeLevel(displayModel, marker.z()) && HoverFacts.hoveredMarker(hoverTarget, marker)) {
@@ -198,8 +199,31 @@ final class DungeonMapRenderSceneContentPartModel {
                             MarkerStyler.style(marker, displayModel, true),
                             SceneGeometry.Marker.markerText(marker),
                             ScenePalette.LABEL_TEXT));
+                    addMarkerHoverLabel(marker, texts);
                 }
             }
+        }
+
+        private void addMarkerHoverLabel(
+                DungeonMapRenderState.Marker marker,
+                List<TextPrimitive> texts
+        ) {
+            if (marker.hoverLabel().isBlank()) {
+                return;
+            }
+            texts.add(new TextPrimitive(
+                    "",
+                    SceneIdentity.selectionRef(marker.handle().topologyRef()),
+                    marker.z(),
+                    marker.hoverLabel(),
+                    marker.q(),
+                    marker.r() - 0.42,
+                    SceneGeometry.Label.labelWidthScene(marker.hoverLabel()),
+                    SceneGeometry.Label.labelHeightScene(),
+                    0.0,
+                    LabelTypography.mapLabel(),
+                    new PaintStyle(null, null, 0.0, 1.0, false),
+                    ScenePalette.LABEL_TEXT));
         }
 
         private void addLabelHoverOverlays(
@@ -581,8 +605,12 @@ final class DungeonMapRenderSceneContentPartModel {
 
         private static boolean hoveredMarker(PointerTarget target, DungeonMapRenderState.Marker marker) {
             DungeonMapContentModel.PointerTarget safeTarget = DungeonMapContentModel.selectableHoverTarget(target);
-            return safeTarget.isHandleTarget()
-                    && safeTarget.handleRef().equals(marker.handle().ref());
+            if (safeTarget.isHandleTarget()) {
+                return safeTarget.handleRef().equals(marker.handle().ref());
+            }
+            return safeTarget.isMarkerTarget()
+                    && sameTopologyRef(safeTarget.topologyRef(), marker.handle().topologyRef())
+                    && safeTarget.ownerId() == marker.handle().topologyRef().id();
         }
 
         private static boolean hoveredLabel(PointerTarget target, DungeonMapRenderState.Label label) {
@@ -697,15 +725,15 @@ final class DungeonMapRenderSceneContentPartModel {
             if (handle.kind() == null) {
                 DungeonMapRenderState.TopologyRef topologyRef = handle.topologyRef();
                 return topologyRef.equals(DungeonMapRenderState.TopologyRef.empty())
-                        || !"TRANSITION".equals(topologyRef.kind())
+                        || !featureMarkerTopology(topologyRef)
                         ? ""
                         : DungeonEditorMapHitRef.featureMarker(
                                 topologyRef.kind(),
                                 topologyRef.id(),
-                                marker.handle().topologyRef().id(),
-                                handle.q(),
-                                handle.r(),
-                                handle.level())
+                                topologyRef.id(),
+                                (int) Math.floor(marker.q()),
+                                (int) Math.floor(marker.r()),
+                                marker.z())
                         .value();
             }
             return DungeonEditorMapHitRef.marker(
@@ -718,6 +746,10 @@ final class DungeonMapRenderSceneContentPartModel {
 
         private static String graphNodeHitRef(DungeonMapRenderState.GraphNode node) {
             return DungeonEditorMapHitRef.graphNode(node.id(), node.clusterId()).value();
+        }
+
+        private static boolean featureMarkerTopology(DungeonMapRenderState.TopologyRef topologyRef) {
+            return "TRANSITION".equals(topologyRef.kind()) || "FEATURE_MARKER".equals(topologyRef.kind());
         }
 
     }
@@ -890,6 +922,9 @@ final class DungeonMapRenderSceneContentPartModel {
                 if (marker.isClusterCornerMarker()) {
                     return circle(marker.q(), marker.r(), 0.16, 16);
                 }
+                if (marker.isTransitionMarker()) {
+                    return marker.sourceEdge() == null ? diamond(marker.q(), marker.r(), 0.22) : transitionEdgePill(marker);
+                }
                 if (marker.isWallRunMarker() || marker.isDoorMarker()) {
                     return handlePill(marker);
                 }
@@ -907,7 +942,10 @@ final class DungeonMapRenderSceneContentPartModel {
             }
 
             private static String markerText(DungeonMapRenderState.Marker marker) {
-                if (marker.isClusterCornerMarker() || marker.isWallRunMarker() || marker.isDoorMarker()) {
+                if (marker.isClusterCornerMarker()
+                        || marker.isWallRunMarker()
+                        || marker.isDoorMarker()
+                        || marker.isTransitionMarker()) {
                     return "";
                 }
                 return SceneGeometry.Label.abbreviateLabel(marker.label(), marker.isDoorMarker() ? 1 : 3);
@@ -922,8 +960,16 @@ final class DungeonMapRenderSceneContentPartModel {
                         : verticalPill(marker.q(), marker.r(), halfLength, halfThickness);
             }
 
+            private static List<MapCanvasPoint> transitionEdgePill(DungeonMapRenderState.Marker marker) {
+                return horizontalMarker(marker)
+                        ? horizontalPill(marker.q(), marker.r(), 0.16, 0.07)
+                        : verticalPill(marker.q(), marker.r(), 0.16, 0.07);
+            }
+
             private static boolean horizontalMarker(DungeonMapRenderState.Marker marker) {
-                DungeonEdgeRef sourceEdge = marker.handle().sourceEdge();
+                DungeonEdgeRef sourceEdge = marker.sourceEdge() == null
+                        ? marker.handle().sourceEdge()
+                        : marker.sourceEdge();
                 if (sourceEdge != null) {
                     return sourceEdge.from().r() == sourceEdge.to().r();
                 }
@@ -959,6 +1005,14 @@ final class DungeonMapRenderSceneContentPartModel {
                         new MapCanvasPoint(centerQ + halfThickness, centerR + halfLength),
                         new MapCanvasPoint(centerQ, centerR + halfLength + halfThickness),
                         new MapCanvasPoint(centerQ - halfThickness, centerR + halfLength));
+            }
+
+            private static List<MapCanvasPoint> diamond(double centerQ, double centerR, double radius) {
+                return List.of(
+                        new MapCanvasPoint(centerQ, centerR - radius),
+                        new MapCanvasPoint(centerQ + radius, centerR),
+                        new MapCanvasPoint(centerQ, centerR + radius),
+                        new MapCanvasPoint(centerQ - radius, centerR));
             }
 
             private static List<MapCanvasPoint> circle(double centerQ, double centerR, double radius, int points) {

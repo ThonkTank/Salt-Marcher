@@ -9,9 +9,8 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
-import src.domain.dungeon.published.DungeonEditorStateSnapshot;
-import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
+import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelCorridorPointDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelLabelNameDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelRoomNarrationDrafts;
@@ -23,54 +22,54 @@ final class DungeonEditorStateContentModel {
     private static final long NO_TRANSITION_ID = 0L;
     private static final long NO_SELECTED_MAP_ID = 0L;
     private static final String STAIR_KIND = "STAIR";
-    private static final String OVERWORLD_TILE_DESTINATION = "OVERWORLD_TILE";
     private static final String TRANSITION_CREATE_TOOL = "TRANSITION_CREATE";
+    private static final String DEFAULT_TOOL_LABEL = "Auswahl";
+    private static final String DESTINATION_DUNGEON_MAP = "DUNGEON_MAP";
+    private static final String DESTINATION_OVERWORLD_TILE = "OVERWORLD_TILE";
+    private static final String DESTINATION_UNLINKED_ENTRANCE = "UNLINKED_ENTRANCE";
+    private static final List<DestinationTypeOption> DESTINATION_TYPE_OPTIONS = List.of(
+            new DestinationTypeOption(DESTINATION_UNLINKED_ENTRANCE, "Kein Ziel"),
+            new DestinationTypeOption(DESTINATION_OVERWORLD_TILE, "Weltkarte"),
+            new DestinationTypeOption(DESTINATION_DUNGEON_MAP, "Dungeon-Eingang"));
 
     private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
             new ReadOnlyObjectWrapper<>(StateProjection.initial());
-    private StateProjectionContext currentContext = StateProjectionContext.empty();
-    private long currentSelectedTransitionId;
+    private DungeonEditorPreparedFrameFacts.StatePanelFrame currentFrame =
+            DungeonEditorPreparedFrameFacts.StatePanelFrame.empty();
 
     ReadOnlyObjectProperty<StateProjection> stateProjectionProperty() {
         return stateProjection.getReadOnlyProperty();
     }
 
-    void apply(
-            @Nullable DungeonEditorStateSnapshot snapshot,
-            StateProjectionContext context
-    ) {
-        DungeonEditorStateSnapshot safeSnapshot = snapshot == null
-                ? DungeonEditorStateSnapshot.empty("")
-                : snapshot;
-        StateProjectionContext safeContext = context == null
-                ? StateProjectionContext.empty()
-                : context;
-        currentContext = safeContext;
+    void apply(DungeonEditorPreparedFrameFacts.StatePanelFrame frame) {
+        DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame = frame == null
+                ? DungeonEditorPreparedFrameFacts.StatePanelFrame.empty()
+                : frame;
+        currentFrame = safeFrame;
         List<RoomNarrationCardProjection> narrationCards = narrationCards(
-                safeSnapshot.inspector(),
-                safeContext.statePanelRoomNarrationDrafts());
+                safeFrame.inspector(),
+                safeFrame.roomNarrationDrafts());
         String narrationRenderStructureKey = narrationRenderStructureKey(
                 narrationCards,
-                safeContext.busy(),
-                safeContext.statusText());
+                safeFrame.busy(),
+                safeFrame.statusText());
         TransitionDescriptionProjection transitionDescription = transitionDescriptionProjection(
-                safeSnapshot.selection(),
-                safeSnapshot.inspector());
+                safeFrame.selectionTopologyRef(),
+                safeFrame.inspector());
         TransitionDestinationProjection transitionDestination = transitionDestinationProjection(
-                safeContext,
-                safeSnapshot.selection(),
-                safeSnapshot.inspector());
+                safeFrame,
+                safeFrame.selectionTopologyRef(),
+                safeFrame.inspector());
         StairGeometryProjection stairGeometry = stairGeometryProjection(
-                safeSnapshot.selection(),
-                safeSnapshot.inspector());
-        currentSelectedTransitionId = selectedTransitionId(safeSnapshot.selection());
+                safeFrame.selectionTopologyRef(),
+                safeFrame.inspector());
         stateProjection.set(new StateProjection(
-                ProjectionTextSupport.stateTextFor(safeSnapshot, safeContext),
-                safeContext.statusText(),
-                safeContext.busy(),
+                ProjectionTextSupport.stateTextFor(safeFrame),
+                safeFrame.statusText(),
+                safeFrame.busy(),
                 narrationRenderStructureKey,
                 narrationCards,
-                nameProjection(safeSnapshot.inspector()),
+                nameProjection(safeFrame.inspector()),
                 corridorPointProjection(),
                 transitionDestination,
                 transitionDescription,
@@ -90,31 +89,10 @@ final class DungeonEditorStateContentModel {
         return null;
     }
 
-    String currentTransitionDestinationType() {
-        return currentTransitionDestinationProjection().destinationType();
-    }
-
-    long currentTransitionDestinationMapId() {
-        return positiveLong(currentTransitionDestinationProjection().mapId());
-    }
-
-    long currentTransitionDestinationTileId() {
-        return positiveLong(currentTransitionDestinationProjection().tileId());
-    }
-
-    long currentTransitionDestinationTransitionId() {
-        return positiveLong(currentTransitionDestinationProjection().transitionId());
-    }
-
-    long currentSelectedTransitionId() {
-        return currentSelectedTransitionId;
-    }
-
-    private TransitionDestinationProjection currentTransitionDestinationProjection() {
-        StateProjection currentProjection = stateProjection.get();
-        return currentProjection == null || currentProjection.transitionDestination() == null
-                ? new TransitionDestinationProjection("Übergang-Ziel", 0L, OVERWORLD_TILE_DESTINATION, "", "", "", true)
-                : currentProjection.transitionDestination();
+    static String transitionDestinationTypeKey(int optionIndex) {
+        return optionIndex >= 0 && optionIndex < DESTINATION_TYPE_OPTIONS.size()
+                ? DESTINATION_TYPE_OPTIONS.get(optionIndex).key()
+                : DESTINATION_UNLINKED_ENTRANCE;
     }
 
     private static List<RoomNarrationCardProjection> narrationCards(
@@ -200,7 +178,7 @@ final class DungeonEditorStateContentModel {
     }
 
     private @Nullable NameProjection nameProjection(@Nullable DungeonInspectorSnapshot inspector) {
-        DungeonEditorStatePanelLabelNameDrafts.Draft target = currentContext.statePanelLabelNameDraft();
+        DungeonEditorStatePanelLabelNameDrafts.Draft target = currentFrame.labelNameDraft();
         if (!target.targetPresent()) {
             return null;
         }
@@ -217,7 +195,7 @@ final class DungeonEditorStateContentModel {
     }
 
     private @Nullable CorridorPointProjection corridorPointProjection() {
-        DungeonEditorStatePanelCorridorPointDrafts.Draft draft = currentContext.statePanelCorridorPointDraft();
+        DungeonEditorStatePanelCorridorPointDrafts.Draft draft = currentFrame.corridorPointDraft();
         if (!draft.targetPresent()) {
             return null;
         }
@@ -229,14 +207,11 @@ final class DungeonEditorStateContentModel {
     }
 
     private @Nullable TransitionDescriptionProjection transitionDescriptionProjection(
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorTopologyElementRef topologyRef,
             @Nullable DungeonInspectorSnapshot inspector
     ) {
-        DungeonEditorTopologyElementRef topologyRef = selection == null
-                ? DungeonEditorTopologyElementRef.empty()
-                : selection.topologyRef();
         DungeonEditorStatePanelTransitionDescriptionDrafts.Draft runtimeDraft =
-                currentContext.statePanelTransitionDescriptionDraft();
+                currentFrame.transitionDescriptionDraft();
         if (!runtimeDraft.targetPresent() || !"TRANSITION".equals(topologyRef.kind())
                 || topologyRef.id() != runtimeDraft.transitionId()) {
             return null;
@@ -252,19 +227,19 @@ final class DungeonEditorStateContentModel {
     }
 
     private @Nullable TransitionDestinationProjection transitionDestinationProjection(
-            StateProjectionContext context,
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorPreparedFrameFacts.StatePanelFrame frame,
+            DungeonEditorTopologyElementRef topologyRef,
             @Nullable DungeonInspectorSnapshot inspector
     ) {
-        if (context.selectedMapIdValue() <= NO_SELECTED_MAP_ID) {
+        if (frame.selectedMapIdValue() <= NO_SELECTED_MAP_ID) {
             return null;
         }
-        long selectedTransitionId = selectedTransitionId(selection);
-        if (!TRANSITION_CREATE_TOOL.equals(context.selectedToolKey()) && selectedTransitionId <= NO_TRANSITION_ID) {
+        long selectedTransitionId = selectedTransitionId(topologyRef);
+        if (!TRANSITION_CREATE_TOOL.equals(frame.selectedToolKey()) && selectedTransitionId <= NO_TRANSITION_ID) {
             return null;
         }
         DungeonEditorStatePanelTransitionDestinationDrafts.Draft runtimeDraft =
-                context.statePanelTransitionDestinationDraft();
+                frame.transitionDestinationDraft();
         if (!runtimeDraft.targetPresent()) {
             return null;
         }
@@ -275,32 +250,33 @@ final class DungeonEditorStateContentModel {
         return new TransitionDestinationProjection(
                 runtimeDraft.sourceTransitionId() > NO_TRANSITION_ID ? "Übergang-Ziel / Eingangslink" : "Übergang-Ziel",
                 runtimeDraft.sourceTransitionId(),
-                draft.destinationType(),
+                draft.destinationTypeKey(),
                 draft.mapId(),
                 draft.tileId(),
                 draft.transitionId(),
-                draft.bidirectional());
+                draft.bidirectional(),
+                frame.busy());
     }
 
-    private static long selectedTransitionId(DungeonEditorStateSnapshot.Selection selection) {
-        DungeonEditorTopologyElementRef topologyRef = selection == null
+    private static long selectedTransitionId(DungeonEditorTopologyElementRef topologyRef) {
+        DungeonEditorTopologyElementRef safeTopologyRef = topologyRef == null
                 ? DungeonEditorTopologyElementRef.empty()
-                : selection.topologyRef();
-        return "TRANSITION".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
+                : topologyRef;
+        return "TRANSITION".equals(safeTopologyRef.kind()) ? safeTopologyRef.id() : 0L;
     }
 
-    private static long selectedStairId(DungeonEditorStateSnapshot.Selection selection) {
-        DungeonEditorTopologyElementRef topologyRef = selection == null
+    private static long selectedStairId(DungeonEditorTopologyElementRef topologyRef) {
+        DungeonEditorTopologyElementRef safeTopologyRef = topologyRef == null
                 ? DungeonEditorTopologyElementRef.empty()
-                : selection.topologyRef();
-        return STAIR_KIND.equals(topologyRef.kind()) ? topologyRef.id() : 0L;
+                : topologyRef;
+        return STAIR_KIND.equals(safeTopologyRef.kind()) ? safeTopologyRef.id() : 0L;
     }
 
     private @Nullable StairGeometryProjection stairGeometryProjection(
-            DungeonEditorStateSnapshot.Selection selection,
+            DungeonEditorTopologyElementRef topologyRef,
             @Nullable DungeonInspectorSnapshot inspector
     ) {
-        long stairId = selectedStairId(selection);
+        long stairId = selectedStairId(topologyRef);
         if (stairId <= 0L || inspector == null) {
             return null;
         }
@@ -321,7 +297,7 @@ final class DungeonEditorStateContentModel {
 
     private StairGeometryFacts currentStairGeometryFacts(long stairId, StairGeometryFacts fallback) {
         DungeonEditorStatePanelStairGeometryDrafts.Draft runtimeDraft =
-                currentContext.statePanelStairGeometryDraft();
+                currentFrame.stairGeometryDraft();
         if (!runtimeStairDraftMatches(runtimeDraft, stairId)) {
             return fallback;
         }
@@ -369,68 +345,6 @@ final class DungeonEditorStateContentModel {
             targetId = Math.max(0L, targetId);
             label = label == null || label.isBlank() ? "Name" : label;
             name = name == null ? "" : name;
-        }
-    }
-
-    record StateProjectionContext(
-            long selectedMapIdValue,
-            String statusText,
-            boolean busy,
-            String selectedToolLabel,
-            String selectedToolKey,
-            String viewModeLabel,
-            int projectionLevel,
-            String overlayLabel,
-            DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts statePanelRoomNarrationDrafts,
-            DungeonEditorStatePanelLabelNameDrafts.Draft statePanelLabelNameDraft,
-            DungeonEditorStatePanelCorridorPointDrafts.Draft statePanelCorridorPointDraft,
-            DungeonEditorStatePanelTransitionDescriptionDrafts.Draft statePanelTransitionDescriptionDraft,
-            DungeonEditorStatePanelTransitionDestinationDrafts.Draft statePanelTransitionDestinationDraft,
-            DungeonEditorStatePanelStairGeometryDrafts.Draft statePanelStairGeometryDraft
-    ) {
-        StateProjectionContext {
-            selectedMapIdValue = Math.max(0L, selectedMapIdValue);
-            statusText = statusText == null ? "" : statusText;
-            selectedToolLabel = selectedToolLabel == null ? DungeonEditorTool.SELECT.displayLabel() : selectedToolLabel;
-            selectedToolKey = selectedToolKey == null ? "" : selectedToolKey;
-            viewModeLabel = normalizeViewModeKey(viewModeLabel);
-            overlayLabel = overlayLabel == null ? "" : overlayLabel;
-            statePanelRoomNarrationDrafts = statePanelRoomNarrationDrafts == null
-                    ? DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty()
-                    : statePanelRoomNarrationDrafts;
-            statePanelLabelNameDraft = statePanelLabelNameDraft == null
-                    ? DungeonEditorStatePanelLabelNameDrafts.Draft.empty()
-                    : statePanelLabelNameDraft;
-            statePanelCorridorPointDraft = statePanelCorridorPointDraft == null
-                    ? DungeonEditorStatePanelCorridorPointDrafts.Draft.empty()
-                    : statePanelCorridorPointDraft;
-            statePanelTransitionDescriptionDraft = statePanelTransitionDescriptionDraft == null
-                    ? DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty()
-                    : statePanelTransitionDescriptionDraft;
-            statePanelTransitionDestinationDraft = statePanelTransitionDestinationDraft == null
-                    ? DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty()
-                    : statePanelTransitionDestinationDraft;
-            statePanelStairGeometryDraft = statePanelStairGeometryDraft == null
-                    ? DungeonEditorStatePanelStairGeometryDrafts.Draft.empty()
-                    : statePanelStairGeometryDraft;
-        }
-
-        static StateProjectionContext empty() {
-            return new StateProjectionContext(
-                    0L,
-                    "",
-                    false,
-                    DungeonEditorTool.SELECT.displayLabel(),
-                    "",
-                    "Grid",
-                    0,
-                    "",
-                    DungeonEditorStatePanelRoomNarrationDrafts.VisibleDrafts.empty(),
-                    DungeonEditorStatePanelLabelNameDrafts.Draft.empty(),
-                    DungeonEditorStatePanelCorridorPointDrafts.Draft.empty(),
-                    DungeonEditorStatePanelTransitionDescriptionDrafts.Draft.empty(),
-                    DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty(),
-                    DungeonEditorStatePanelStairGeometryDrafts.Draft.empty());
         }
     }
 
@@ -495,19 +409,147 @@ final class DungeonEditorStateContentModel {
     record TransitionDestinationProjection(
             String label,
             long sourceTransitionId,
-            String destinationType,
+            String destinationTypeKey,
             String mapId,
             String tileId,
             String transitionId,
-            boolean bidirectional
+            boolean bidirectional,
+            boolean busy
     ) {
         TransitionDestinationProjection {
             label = label == null || label.isBlank() ? "Übergang-Ziel" : label;
             sourceTransitionId = Math.max(0L, sourceTransitionId);
-            destinationType = transitionDestinationType(destinationType);
+            destinationTypeKey = normalizeDestinationTypeKey(destinationTypeKey);
             mapId = mapId == null ? "" : mapId.strip();
             tileId = tileId == null ? "" : tileId.strip();
             transitionId = transitionId == null ? "" : transitionId.strip();
+        }
+
+        TransitionDestinationControlState controlState() {
+            return controlStateFor(destinationTypeKey, mapId, transitionId);
+        }
+
+        List<String> destinationTypeLabels() {
+            return DESTINATION_TYPE_OPTIONS.stream()
+                    .map(DestinationTypeOption::label)
+                    .toList();
+        }
+
+        String selectedDestinationTypeLabel() {
+            return destinationTypeLabel(destinationTypeKey);
+        }
+
+        String linkTargetHintText() {
+            return "Eingangslink: Dungeon-Eingang als Ziel wählen";
+        }
+
+        TransitionDestinationControlState controlStateForOptionIndex(
+                int selectedDestinationTypeOptionIndex,
+                String candidateMapId,
+                String candidateTransitionId
+        ) {
+            return controlStateFor(
+                    transitionDestinationTypeKey(selectedDestinationTypeOptionIndex),
+                    candidateMapId,
+                    candidateTransitionId);
+        }
+
+        TransitionDestinationControlState controlStateFor(
+                String selectedDestinationTypeKey,
+                String candidateMapId,
+                String candidateTransitionId
+        ) {
+            String safeDestinationType = normalizeDestinationTypeKey(selectedDestinationTypeKey);
+            boolean linkMode = sourceTransitionId > NO_TRANSITION_ID;
+            boolean dungeonMapDestination = DESTINATION_DUNGEON_MAP.equals(safeDestinationType);
+            boolean unlinkedEntrance = DESTINATION_UNLINKED_ENTRANCE.equals(safeDestinationType);
+            boolean readOnlySelectedOverworld = linkMode
+                    && !dungeonMapDestination
+                    && !unlinkedEntrance;
+            boolean targetFieldsComplete = completeIntegerText(candidateMapId)
+                    && completeIntegerText(candidateTransitionId);
+            return new TransitionDestinationControlState(
+                    linkMode,
+                    busy,
+                    mapIdDisabled(busy, readOnlySelectedOverworld, unlinkedEntrance),
+                    tileIdDisabled(busy, dungeonMapDestination, readOnlySelectedOverworld, unlinkedEntrance),
+                    transitionIdDisabled(busy, dungeonMapDestination, unlinkedEntrance),
+                    bidirectionalDisabled(busy, linkMode, dungeonMapDestination),
+                    readOnlySelectedOverworld || unlinkedEntrance,
+                    tileIdLabelDisabled(dungeonMapDestination, readOnlySelectedOverworld, unlinkedEntrance),
+                    !dungeonMapDestination || unlinkedEntrance,
+                    saveDisabled(busy, linkMode, dungeonMapDestination, targetFieldsComplete));
+        }
+
+        private static boolean mapIdDisabled(
+                boolean busy,
+                boolean readOnlySelectedOverworld,
+                boolean unlinkedEntrance
+        ) {
+            return busy || readOnlySelectedOverworld || unlinkedEntrance;
+        }
+
+        private static boolean tileIdDisabled(
+                boolean busy,
+                boolean dungeonMapDestination,
+                boolean readOnlySelectedOverworld,
+                boolean unlinkedEntrance
+        ) {
+            return busy || dungeonMapDestination || readOnlySelectedOverworld || unlinkedEntrance;
+        }
+
+        private static boolean transitionIdDisabled(
+                boolean busy,
+                boolean dungeonMapDestination,
+                boolean unlinkedEntrance
+        ) {
+            return busy || !dungeonMapDestination || unlinkedEntrance;
+        }
+
+        private static boolean bidirectionalDisabled(
+                boolean busy,
+                boolean linkMode,
+                boolean dungeonMapDestination
+        ) {
+            return busy || !linkMode || !dungeonMapDestination;
+        }
+
+        private static boolean tileIdLabelDisabled(
+                boolean dungeonMapDestination,
+                boolean readOnlySelectedOverworld,
+                boolean unlinkedEntrance
+        ) {
+            return dungeonMapDestination || readOnlySelectedOverworld || unlinkedEntrance;
+        }
+
+        private static boolean saveDisabled(
+                boolean busy,
+                boolean linkMode,
+                boolean dungeonMapDestination,
+                boolean targetFieldsComplete
+        ) {
+            return busy || !linkMode || !dungeonMapDestination || !targetFieldsComplete;
+        }
+    }
+
+    record TransitionDestinationControlState(
+            boolean linkMode,
+            boolean destinationTypeDisabled,
+            boolean mapIdDisabled,
+            boolean tileIdDisabled,
+            boolean transitionIdDisabled,
+            boolean bidirectionalDisabled,
+            boolean mapIdLabelDisabled,
+            boolean tileIdLabelDisabled,
+            boolean transitionIdLabelDisabled,
+            boolean saveDisabled
+    ) {
+    }
+
+    private record DestinationTypeOption(String key, String label) {
+        DestinationTypeOption {
+            key = key == null ? "" : key.strip().toUpperCase(Locale.ROOT);
+            label = label == null || label.isBlank() ? key : label;
         }
     }
 
@@ -567,21 +609,21 @@ final class DungeonEditorStateContentModel {
     }
 
     private record TransitionDestinationDraft(
-            String destinationType,
+            String destinationTypeKey,
             String mapId,
             String tileId,
             String transitionId,
             boolean bidirectional
     ) {
         TransitionDestinationDraft {
-            destinationType = transitionDestinationType(destinationType);
+            destinationTypeKey = normalizeDestinationTypeKey(destinationTypeKey);
             mapId = mapId == null ? "" : mapId.strip();
             tileId = tileId == null ? "" : tileId.strip();
             transitionId = transitionId == null ? "" : transitionId.strip();
         }
 
         static TransitionDestinationDraft defaultDraft() {
-            return new TransitionDestinationDraft(OVERWORLD_TILE_DESTINATION, "", "", "", true);
+            return new TransitionDestinationDraft(DESTINATION_UNLINKED_ENTRANCE, "", "", "", true);
         }
 
         static TransitionDestinationDraft fromInspector(@Nullable DungeonInspectorSnapshot inspector) {
@@ -590,7 +632,7 @@ final class DungeonEditorStateContentModel {
             }
             Map<String, String> facts = factMap(inspector.facts());
             return new TransitionDestinationDraft(
-                    facts.getOrDefault("destinationtype", OVERWORLD_TILE_DESTINATION),
+                    normalizeDestinationTypeKey(facts.get("destinationtype")),
                     facts.getOrDefault("destinationmapid", ""),
                     facts.getOrDefault("destinationtileid", ""),
                     facts.getOrDefault("destinationtransitionid", ""),
@@ -603,7 +645,7 @@ final class DungeonEditorStateContentModel {
             DungeonEditorStatePanelTransitionDestinationDrafts.Draft safeDraft =
                     draft == null ? DungeonEditorStatePanelTransitionDestinationDrafts.Draft.empty() : draft;
             return new TransitionDestinationDraft(
-                    safeDraft.destinationType(),
+                    safeDraft.destinationTypeKey(),
                     safeDraft.mapId(),
                     safeDraft.tileId(),
                     safeDraft.transitionId(),
@@ -637,7 +679,7 @@ final class DungeonEditorStateContentModel {
         }
     }
 
-    private static Map<String, String> factMap(List<String> facts) {
+    static Map<String, String> factMap(List<String> facts) {
         Map<String, String> values = new HashMap<>();
         for (String fact : facts == null ? List.<String>of() : facts) {
             int separator = fact.indexOf(':');
@@ -650,39 +692,41 @@ final class DungeonEditorStateContentModel {
         return values;
     }
 
-    private static String transitionDestinationType(String value) {
+    static String normalizeDestinationTypeKey(String value) {
         String normalized = value == null ? "" : value.strip().toUpperCase(Locale.ROOT);
-        if (normalized.isBlank()) {
-            return OVERWORLD_TILE_DESTINATION;
-        }
-        if ("DUNGEON_MAP".equals(normalized) || OVERWORLD_TILE_DESTINATION.equals(normalized)) {
-            return normalized;
-        }
-        return normalized;
+        return destinationTypeOptionIndex(normalized) >= 0 ? normalized : DESTINATION_UNLINKED_ENTRANCE;
     }
 
-    private static long positiveLong(String value) {
-        if (value == null || value.isBlank()) {
-            return 0L;
+    private static int destinationTypeOptionIndex(String key) {
+        String safeKey = key == null ? "" : key.strip().toUpperCase(Locale.ROOT);
+        for (int index = 0; index < DESTINATION_TYPE_OPTIONS.size(); index++) {
+            if (DESTINATION_TYPE_OPTIONS.get(index).key().equals(safeKey)) {
+                return index;
+            }
         }
-        try {
-            return Math.max(0L, Long.parseLong(value.strip()));
-        } catch (NumberFormatException ignored) {
-            return 0L;
-        }
+        return -1;
+    }
+
+    private static String destinationTypeLabel(String key) {
+        int index = destinationTypeOptionIndex(key);
+        return index >= 0 ? DESTINATION_TYPE_OPTIONS.get(index).label() : DESTINATION_TYPE_OPTIONS.getFirst().label();
+    }
+
+    private static boolean completeIntegerText(String text) {
+        return text != null && !text.isBlank() && !"-".equals(text);
     }
 
     private static final class ProjectionTextSupport {
-        private static String stateTextFor(
-                DungeonEditorStateSnapshot snapshot,
-                StateProjectionContext context
-        ) {
-            return "Werkzeug: " + context.selectedToolLabel()
-                    + "\nAnsicht: " + context.viewModeLabel()
-                    + "\nEbene: z=" + context.projectionLevel()
-                    + "\n" + context.overlayLabel()
-                    + "\n" + selectionTextFor(SelectionData.from(snapshot.selection()), snapshot.inspector())
-                    + "\n" + previewTextFor(snapshot.preview());
+        private static String stateTextFor(DungeonEditorPreparedFrameFacts.StatePanelFrame frame) {
+            DungeonEditorPreparedFrameFacts.StatePanelFrame safeFrame = frame == null
+                    ? DungeonEditorPreparedFrameFacts.StatePanelFrame.empty()
+                    : frame;
+            return "Werkzeug: " + safeFrame.selectedToolLabel()
+                    + "\nAnsicht: " + normalizeViewModeKey(safeFrame.viewModeLabel())
+                    + "\nEbene: z=" + safeFrame.projectionLevel()
+                    + "\n" + safeFrame.overlayLabel()
+                    + "\n" + selectionTextFor(SelectionData.from(safeFrame.selectionTopologyRef()), safeFrame.inspector())
+                    + "\n" + previewTextFor(safeFrame.preview());
         }
 
         private static String selectionTextFor(
@@ -748,11 +792,11 @@ final class DungeonEditorStateContentModel {
             id = Math.max(0L, id);
         }
 
-        private static SelectionData from(DungeonEditorStateSnapshot.Selection selection) {
-            DungeonEditorStateSnapshot.Selection safeSelection = selection == null
-                    ? DungeonEditorStateSnapshot.Selection.empty()
-                    : selection;
-            return new SelectionData(safeSelection.topologyRef().kind(), safeSelection.topologyRef().id());
+        private static SelectionData from(DungeonEditorTopologyElementRef topologyRef) {
+            DungeonEditorTopologyElementRef safeTopologyRef = topologyRef == null
+                    ? DungeonEditorTopologyElementRef.empty()
+                    : topologyRef;
+            return new SelectionData(safeTopologyRef.kind(), safeTopologyRef.id());
         }
 
         private boolean isEmpty() {

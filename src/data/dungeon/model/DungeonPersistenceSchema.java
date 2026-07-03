@@ -207,6 +207,8 @@ public final class DungeonPersistenceSchema {
                     + "cell_x                   INTEGER,"
                     + "cell_y                   INTEGER,"
                     + "level_z                  INTEGER,"
+                    + "anchor_type              TEXT,"
+                    + "anchor_edge_direction    TEXT,"
                     + "destination_type         TEXT NOT NULL,"
                     + "target_overworld_map_id  INTEGER,"
                     + "target_overworld_tile_id INTEGER,"

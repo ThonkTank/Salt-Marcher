@@ -2,59 +2,55 @@ package src.features.dungeon.runtime;
 
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.published.DungeonEditorTool;
+import src.domain.dungeon.published.DungeonEditorViewMode;
+import src.domain.dungeon.published.DungeonOverlaySettings;
 
 final class DungeonEditorRuntimeControlPort implements DungeonEditorControlOperations {
-    private final DungeonEditorMainViewInteractionState interactionState;
-    private final DungeonEditorPointerInteractionOperations pointerOperations;
-    private final DungeonEditorRuntimeDraftSession draftSession;
-    private final DungeonEditorAuthoredRuntimeOperations operationOwner;
+    private final DungeonEditorRuntimeControlController controller;
 
-    DungeonEditorRuntimeControlPort(
-            DungeonEditorMainViewInteractionState interactionState,
-            DungeonEditorPointerInteractionOperations pointerOperations,
-            DungeonEditorRuntimeDraftSession draftSession,
-            DungeonEditorAuthoredRuntimeOperations operationOwner
-    ) {
-        this.interactionState = Objects.requireNonNull(interactionState, "interactionState");
-        this.pointerOperations = Objects.requireNonNull(pointerOperations, "pointerOperations");
-        this.draftSession = Objects.requireNonNull(draftSession, "draftSession");
-        this.operationOwner = Objects.requireNonNull(operationOwner, "operationOwner");
+    DungeonEditorRuntimeControlPort(DungeonEditorRuntimeControlController controller) {
+        this.controller = Objects.requireNonNull(controller, "controller");
     }
 
     @Override
     public void setViewMode(String viewModeKey) {
-        interactionState.clear();
-        operationOwner.setViewMode(viewModeKey);
+        controller.selectViewMode(toViewMode(viewModeKey));
     }
 
     @Override
     public void setTool(String toolKey) {
-        interactionState.clear();
-        pointerOperations.clearPointerSession();
-        draftSession.clearInlineLabelEditSession();
-        operationOwner.setTool(toolKey);
+        controller.selectTool(toTool(toolKey));
     }
 
     @Override
     public void cancelActivePreviewSession() {
-        interactionState.clear();
-        pointerOperations.clearPointerSession();
-        draftSession.clearInlineLabelEditSession();
-        operationOwner.cancelActivePreviewSession();
+        controller.cancelActivePreviewSession();
     }
 
     @Override
     public void shiftProjectionLevel(int levelShift) {
-        operationOwner.shiftProjectionLevel(levelShift);
+        controller.shiftProjectionLevel(levelShift);
     }
 
     @Override
     public void setOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
-        operationOwner.setOverlay(modeKey, levelRange, opacity, selectedLevels);
+        DungeonOverlaySettings overlaySettings =
+                new DungeonOverlaySettings(modeKey, levelRange, opacity, selectedLevels);
+        controller.setOverlay(overlaySettings);
     }
 
     @Override
     public void scrollSelection(int levelDelta) {
-        operationOwner.scrollSelection(levelDelta);
+        controller.scrollSelection(levelDelta);
+    }
+
+    private static DungeonEditorTool toTool(String value) {
+        DungeonEditorTool tool = DungeonEditorRuntimeEnumTranslator.editorTool(value);
+        return tool == null ? DungeonEditorTool.SELECT : tool;
+    }
+
+    private static DungeonEditorViewMode toViewMode(String value) {
+        return DungeonEditorViewMode.valueOf(DungeonEditorRuntimeEnumTranslator.viewModeName(value));
     }
 }

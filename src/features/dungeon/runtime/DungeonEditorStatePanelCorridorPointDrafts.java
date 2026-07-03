@@ -24,7 +24,7 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
         draftR = cleanCoordinate(r);
     }
 
-    void move(
+    DungeonEditorRuntimeOperationResult move(
             long selectedMapIdValue,
             DungeonEditorStateSnapshot.Selection selection,
             int q,
@@ -34,12 +34,12 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
         DungeonEditorWorkspaceValues.HandleRef target = DungeonEditorStatePanelCorridorPointTarget.from(selection);
         Key key = Key.from(selectedMapIdValue, target);
         if (!key.valid() || operationOwner == null) {
-            return;
+            return DungeonEditorRuntimeOperationResult.none();
         }
         if (draftKey.equals(key)) {
             clearDraft();
         }
-        operationOwner.moveCorridorPoint(target, q, r);
+        return operationOwner.moveCorridorPoint(target, q, r);
     }
 
     Draft current(long selectedMapIdValue, DungeonEditorStateSnapshot.Selection selection) {
