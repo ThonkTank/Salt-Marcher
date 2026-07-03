@@ -140,7 +140,7 @@ final class DungeonEditorCorridorTargetHelper {
                     || hit.handleRef() == null
                     || !DungeonEditorMainViewInteractionValues.handleKind(
                             hit.handleRef(),
-                            DungeonEditorMainViewInteractionValues.CORRIDOR_ANCHOR_KIND)) {
+                            DungeonEditorHandleType.CORRIDOR_ANCHOR)) {
                 return null;
             }
             long hostCorridorId = hit.handleRef().corridorId();
@@ -172,7 +172,7 @@ final class DungeonEditorCorridorTargetHelper {
                     || hit.handleRef() == null
                     || !DungeonEditorMainViewInteractionValues.handleKind(
                             hit.handleRef(),
-                            DungeonEditorMainViewInteractionValues.CORRIDOR_WAYPOINT_KIND)
+                            DungeonEditorHandleType.CORRIDOR_WAYPOINT)
                     || !DungeonEditorWorkspaceValues.hasId(hit.handleRef().corridorId())) {
                 return null;
             }
@@ -216,7 +216,7 @@ final class DungeonEditorCorridorTargetHelper {
                     && hit.handleRef() != null
                     && DungeonEditorMainViewInteractionValues.handleKind(
                             hit.handleRef(),
-                            DungeonEditorMainViewInteractionValues.DOOR_KIND)
+                            DungeonEditorHandleType.DOOR)
                     && DungeonEditorWorkspaceValues.hasId(hit.handleRef().roomId())
                     && DungeonEditorWorkspaceValues.hasId(hit.handleRef().clusterId())
                     && !hit.handleRef().direction().isBlank()
@@ -247,7 +247,7 @@ final class DungeonEditorCorridorTargetHelper {
 
         private static long resolveCorridorId(HitTarget hit) {
             if (DungeonEditorWorkspaceValues.hasId(hit.topologyRefId())
-                    && DungeonTopologyElementKind.valueOf(hit.topologyRefKind()).isCorridor()) {
+                    && hit.topologyKind().isCorridor()) {
                 return hit.topologyRefId();
             }
             return hit.kind() == HitKind.CORRIDOR ? hit.ownerId() : 0L;
@@ -269,7 +269,7 @@ final class DungeonEditorCorridorTargetHelper {
         ) {
             if (hit == null
                     || snapshot == null
-                    || DungeonTopologyElementKind.valueOf(hit.topologyRefKind()) != DungeonTopologyElementKind.DOOR
+                    || !hit.topologyKind().isDoor()
                     || !DungeonEditorWorkspaceValues.hasId(hit.topologyRefId())) {
                 return null;
             }
@@ -594,9 +594,7 @@ final class DungeonEditorCorridorTargetHelper {
     }
 
     private static DungeonTopologyRef boundaryRef(BoundaryTarget boundary) {
-        return new DungeonTopologyRef(
-                DungeonEditorMainViewInteractionValues.toTopologyKind(boundary.topologyRefKind()),
-                boundary.topologyRefId());
+        return boundary.topologyRef();
     }
 
     private static String wallKey(BoundaryTarget boundary, long roomId) {
@@ -619,7 +617,7 @@ final class DungeonEditorCorridorTargetHelper {
 
     private static boolean roomLabelHit(HitTarget hit) {
         return hit.kind() == HitKind.LABEL
-                && DungeonEditorMainViewInteractionValues.ROOM_KIND.equals(hit.topologyRefKind())
+                && hit.topologyKind().isRoom()
                 && DungeonEditorWorkspaceValues.hasId(hit.topologyRefId());
     }
 

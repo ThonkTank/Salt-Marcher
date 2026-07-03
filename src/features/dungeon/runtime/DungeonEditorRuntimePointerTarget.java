@@ -4,7 +4,6 @@ import java.util.Locale;
 import java.util.Objects;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 
 public record DungeonEditorRuntimePointerTarget(
@@ -162,7 +161,7 @@ public record DungeonEditorRuntimePointerTarget(
 
     public static DungeonEditorRuntimePointerTarget handle(DungeonEditorHandleRef handleRef) {
         DungeonEditorHandleRef safeHandle = handleRef == null ? DungeonEditorHandleRef.empty() : handleRef;
-        TopologyKind topologyKind = TopologyKind.fromLegacy(safeHandle.topologyRef().kind().name());
+        TopologyKind topologyKind = TopologyKind.fromPublished(safeHandle.topologyRef().kind());
         return new DungeonEditorRuntimePointerTarget(
                 TargetKind.HANDLE,
                 LabelKind.EMPTY,
@@ -219,16 +218,16 @@ public record DungeonEditorRuntimePointerTarget(
                 ? DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame.empty()
                 : target;
         return new DungeonEditorRuntimePointerTarget(
-                TargetKind.fromLegacy(safeTarget.targetKind().name()),
-                LabelKind.fromLegacy(safeTarget.labelKind().name()),
-                ElementKind.fromLegacy(safeTarget.elementKind().name()),
+                TargetKind.fromPrepared(safeTarget.targetKind()),
+                LabelKind.fromPrepared(safeTarget.labelKind()),
+                ElementKind.fromPrepared(safeTarget.elementKind()),
                 safeTarget.ownerId(),
                 safeTarget.clusterId(),
-                TopologyKind.fromLegacy(safeTarget.topologyKind().name()),
+                TopologyKind.fromPrepared(safeTarget.topologyKind()),
                 safeTarget.topologyId(),
                 safeTarget.handleRef(),
                 runtimeBoundaryTarget(safeTarget.boundary()),
-                SyntheticHoverKind.fromLegacy(safeTarget.syntheticHoverKind().name()),
+                SyntheticHoverKind.fromPrepared(safeTarget.syntheticHoverKind()),
                 runtimeCellTarget(safeTarget),
                 new VertexTarget(
                         safeTarget.vertex().exact(),
@@ -253,10 +252,10 @@ public record DungeonEditorRuntimePointerTarget(
                 ? DungeonEditorPreparedFrameFacts.PreparedBoundaryTargetFrame.empty()
                 : boundary;
         return new BoundaryTarget(
-                BoundaryKind.fromLegacy(safeBoundary.boundaryKind().name()),
+                BoundaryKind.fromPrepared(safeBoundary.boundaryKind()),
                 safeBoundary.key(),
                 safeBoundary.ownerId(),
-                TopologyKind.fromLegacy(safeBoundary.topologyKind().name()),
+                TopologyKind.fromPrepared(safeBoundary.topologyKind()),
                 safeBoundary.topologyId(),
                 safeBoundary.startQ(),
                 safeBoundary.startR(),
@@ -267,15 +266,11 @@ public record DungeonEditorRuntimePointerTarget(
     }
 
     DungeonTopologyElementKind topologyElementKind() {
-        try {
-            return DungeonTopologyElementKind.valueOf(topologyKind.legacyName());
-        } catch (IllegalArgumentException ignored) {
-            return DungeonTopologyElementKind.EMPTY;
-        }
+        return topologyKind.domainKind();
     }
 
     DungeonTopologyRef topologyRef() {
-        return DungeonEditorRuntimeInputValues.topologyRef(topologyKind.legacyName(), topologyId);
+        return topologyKind.ref(topologyId);
     }
 
     private static SyntheticHoverKind syntheticHoverKind(
@@ -285,17 +280,10 @@ public record DungeonEditorRuntimePointerTarget(
             long topologyId,
             BoundaryTarget boundary
     ) {
-        if (targetKind == TargetKind.VERTEX) {
-            return SyntheticHoverKind.VERTEX;
-        }
-        if (targetKind == TargetKind.CELL && ownerId == EMPTY_ID
-                && (topologyKind == TopologyKind.EMPTY || topologyId == EMPTY_ID)) {
-            return SyntheticHoverKind.CELL;
-        }
-        if (targetKind == TargetKind.BOUNDARY && boundary != null && boundary.key().startsWith("hover-boundary:")) {
-            return SyntheticHoverKind.BOUNDARY;
-        }
-        return SyntheticHoverKind.NONE;
+        TargetKind safeTargetKind = targetKind == null ? TargetKind.EMPTY : targetKind;
+        TopologyKind safeTopologyKind = topologyKind == null ? TopologyKind.defaultKind() : topologyKind;
+        BoundaryTarget safeBoundary = boundary == null ? BoundaryTarget.empty() : boundary;
+        return safeTargetKind.syntheticHoverKind(ownerId, safeTopologyKind, topologyId, safeBoundary);
     }
 
     public boolean hasSyntheticHover() {
@@ -335,11 +323,11 @@ public record DungeonEditorRuntimePointerTarget(
     }
 
     public boolean isRoomLabelTarget() {
-        return labelKind == LabelKind.ROOM_LABEL;
+        return labelKind.isRoomLabel();
     }
 
     public boolean isClusterLabelTarget() {
-        return labelKind == LabelKind.CLUSTER_LABEL;
+        return labelKind.isClusterLabel();
     }
 
     public boolean isSelectableLabelTarget() {
@@ -355,7 +343,7 @@ public record DungeonEditorRuntimePointerTarget(
     }
 
     public boolean isDoorBoundaryTarget() {
-        return isBoundaryTarget() && boundary.boundaryKind() == BoundaryKind.DOOR;
+        return isBoundaryTarget() && boundary.boundaryKind().isDoor();
     }
 
     public boolean isCorridorCellTarget() {
@@ -375,12 +363,11 @@ public record DungeonEditorRuntimePointerTarget(
     }
 
     public boolean isWallOrDoorBoundaryTarget() {
-        return isBoundaryTarget()
-                && (boundary.boundaryKind() == BoundaryKind.WALL || boundary.boundaryKind() == BoundaryKind.DOOR);
+        return isBoundaryTarget();
     }
 
     private boolean stableTopology() {
-        return topologyId > EMPTY_ID && topologyKind != TopologyKind.EMPTY;
+        return topologyId > EMPTY_ID && !topologyKind.isEmpty();
     }
 
     public int cellQ() {
@@ -409,25 +396,57 @@ public record DungeonEditorRuntimePointerTarget(
 
     public enum TargetKind {
         EMPTY,
-        CELL,
+        CELL {
+            @Override
+            SyntheticHoverKind syntheticHoverKind(
+                    long ownerId,
+                    TopologyKind topologyKind,
+                    long topologyId,
+                    BoundaryTarget boundary
+            ) {
+                return topologyKind.syntheticCellHover(ownerId, topologyId)
+                        ? SyntheticHoverKind.CELL
+                        : SyntheticHoverKind.NONE;
+            }
+        },
         LABEL,
         MARKER,
         GRAPH_NODE,
         HANDLE,
-        BOUNDARY,
-        VERTEX;
+        BOUNDARY {
+            @Override
+            SyntheticHoverKind syntheticHoverKind(
+                    long ownerId,
+                    TopologyKind topologyKind,
+                    long topologyId,
+                    BoundaryTarget boundary
+            ) {
+                return boundary.hoverBoundary() ? SyntheticHoverKind.BOUNDARY : SyntheticHoverKind.NONE;
+            }
+        },
+        VERTEX {
+            @Override
+            SyntheticHoverKind syntheticHoverKind(
+                    long ownerId,
+                    TopologyKind topologyKind,
+                    long topologyId,
+                    BoundaryTarget boundary
+            ) {
+                return SyntheticHoverKind.VERTEX;
+            }
+        };
 
-        public static TargetKind fromLegacy(String value) {
-            return switch (normalized(value)) {
-                case "CELL" -> CELL;
-                case "LABEL" -> LABEL;
-                case "MARKER" -> MARKER;
-                case "GRAPH_NODE" -> GRAPH_NODE;
-                case "HANDLE" -> HANDLE;
-                case "BOUNDARY" -> BOUNDARY;
-                case "VERTEX" -> VERTEX;
-                default -> EMPTY;
-            };
+        static TargetKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedTargetKind kind) {
+            return kind == null ? EMPTY : TargetKind.valueOf(kind.name());
+        }
+
+        SyntheticHoverKind syntheticHoverKind(
+                long ownerId,
+                TopologyKind topologyKind,
+                long topologyId,
+                BoundaryTarget boundary
+        ) {
+            return SyntheticHoverKind.NONE;
         }
     }
 
@@ -437,17 +456,20 @@ public record DungeonEditorRuntimePointerTarget(
         CLUSTER_LABEL,
         FEATURE_LABEL;
 
-        public static LabelKind fromLegacy(String value) {
-            return switch (normalized(value)) {
-                case "ROOM_LABEL" -> ROOM_LABEL;
-                case "CLUSTER_LABEL" -> CLUSTER_LABEL;
-                case "FEATURE_LABEL" -> FEATURE_LABEL;
-                default -> EMPTY;
-            };
+        static LabelKind defaultKind() {
+            return EMPTY;
         }
 
-        public String legacyName() {
-            return this == EMPTY ? "" : name();
+        static LabelKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedLabelKind kind) {
+            return kind == null ? EMPTY : LabelKind.valueOf(kind.name());
+        }
+
+        boolean isRoomLabel() {
+            return this == ROOM_LABEL;
+        }
+
+        boolean isClusterLabel() {
+            return this == CLUSTER_LABEL;
         }
     }
 
@@ -501,11 +523,11 @@ public record DungeonEditorRuntimePointerTarget(
         }
 
         public static ElementKind fromBoundary(BoundaryKind boundaryKind) {
-            return boundaryKind == BoundaryKind.DOOR ? DOOR : WALL;
+            return boundaryKind != null && boundaryKind.isDoor() ? DOOR : WALL;
         }
 
-        public String legacyName() {
-            return this == EMPTY ? "" : name();
+        static ElementKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedElementKind kind) {
+            return kind == null ? EMPTY : ElementKind.valueOf(kind.name());
         }
     }
 
@@ -534,6 +556,60 @@ public record DungeonEditorRuntimePointerTarget(
             };
         }
 
+        public static TopologyKind fromDomain(DungeonTopologyElementKind kind) {
+            return kind == null ? EMPTY : fromLegacy(kind.name());
+        }
+
+        public static TopologyKind fromPublished(src.domain.dungeon.published.DungeonTopologyElementKind kind) {
+            return kind == null ? EMPTY : fromLegacy(kind.name());
+        }
+
+        static TopologyKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedTopologyKind kind) {
+            return kind == null ? EMPTY : TopologyKind.valueOf(kind.name());
+        }
+
+        static TopologyKind defaultKind() {
+            return EMPTY;
+        }
+
+        DungeonTopologyElementKind domainKind() {
+            return switch (this) {
+                case ROOM -> DungeonTopologyElementKind.ROOM;
+                case CORRIDOR -> DungeonTopologyElementKind.CORRIDOR;
+                case CORRIDOR_ANCHOR -> DungeonTopologyElementKind.CORRIDOR_ANCHOR;
+                case DOOR -> DungeonTopologyElementKind.DOOR;
+                case WALL -> DungeonTopologyElementKind.WALL;
+                case STAIR -> DungeonTopologyElementKind.STAIR;
+                case TRANSITION -> DungeonTopologyElementKind.TRANSITION;
+                case FEATURE_MARKER -> DungeonTopologyElementKind.FEATURE_MARKER;
+                default -> DungeonTopologyElementKind.EMPTY;
+            };
+        }
+
+        DungeonTopologyRef ref(long id) {
+            return new DungeonTopologyRef(domainKind(), Math.max(EMPTY_ID, id));
+        }
+
+        boolean isEmpty() {
+            return this == EMPTY;
+        }
+
+        boolean isRoom() {
+            return this == ROOM;
+        }
+
+        boolean isDoor() {
+            return this == DOOR;
+        }
+
+        boolean isCorridor() {
+            return domainKind().isCorridor();
+        }
+
+        boolean syntheticCellHover(long ownerId, long topologyId) {
+            return ownerId == EMPTY_ID && (isEmpty() || topologyId == EMPTY_ID);
+        }
+
         public String legacyName() {
             return this == EMPTY ? "" : name();
         }
@@ -547,10 +623,16 @@ public record DungeonEditorRuntimePointerTarget(
             return "DOOR".equals(normalized(value)) ? DOOR : WALL;
         }
 
-        DungeonEditorWorkspaceValues.BoundaryKind workspaceKind() {
-            return this == DOOR
-                    ? DungeonEditorWorkspaceValues.BoundaryKind.DOOR
-                    : DungeonEditorWorkspaceValues.BoundaryKind.WALL;
+        static BoundaryKind defaultKind() {
+            return WALL;
+        }
+
+        static BoundaryKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedBoundaryKind kind) {
+            return kind == null ? WALL : BoundaryKind.valueOf(kind.name());
+        }
+
+        boolean isDoor() {
+            return this == DOOR;
         }
 
         public String legacyName() {
@@ -564,13 +646,8 @@ public record DungeonEditorRuntimePointerTarget(
         BOUNDARY,
         VERTEX;
 
-        public static SyntheticHoverKind fromLegacy(String value) {
-            return switch (normalized(value)) {
-                case "CELL" -> CELL;
-                case "BOUNDARY" -> BOUNDARY;
-                case "VERTEX" -> VERTEX;
-                default -> NONE;
-            };
+        static SyntheticHoverKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedSyntheticHoverKind kind) {
+            return kind == null ? NONE : SyntheticHoverKind.valueOf(kind.name());
         }
     }
 
@@ -613,10 +690,10 @@ public record DungeonEditorRuntimePointerTarget(
 
         public static BoundaryTarget empty() {
             return new BoundaryTarget(
-                    BoundaryKind.WALL,
+                    BoundaryKind.defaultKind(),
                     "",
                     0L,
-                    TopologyKind.EMPTY,
+                    TopologyKind.defaultKind(),
                     0L,
                     0.0,
                     0.0,
@@ -626,6 +703,9 @@ public record DungeonEditorRuntimePointerTarget(
                     0);
         }
 
+        boolean hoverBoundary() {
+            return key.startsWith("hover-boundary:");
+        }
     }
 
     private static String normalized(String value) {

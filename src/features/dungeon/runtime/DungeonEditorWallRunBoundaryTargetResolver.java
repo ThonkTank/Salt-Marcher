@@ -4,6 +4,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.features.dungeon.runtime.DungeonEditorInteractionValues.CellTarget;
@@ -21,7 +22,7 @@ final class DungeonEditorWallRunBoundaryTargetResolver {
         var handle = input.hitTarget().handleRef();
         if (!DungeonEditorMainViewInteractionValues.handleKind(
                 handle,
-                DungeonEditorMainViewInteractionValues.CLUSTER_WALL_RUN_KIND)
+                DungeonEditorHandleType.CLUSTER_WALL_RUN)
                 || currentSelection == null
                 || !currentSelection.clusterSelection()
                 || currentSelection.clusterId() != handle.clusterId()) {
@@ -53,11 +54,11 @@ final class DungeonEditorWallRunBoundaryTargetResolver {
     ) {
         return new BoundaryTarget(
                 true,
-                DungeonEditorMainViewInteractionValues.WALL_KIND,
+                DungeonEditorRuntimePointerTarget.BoundaryKind.WALL,
                 "",
                 handle.ownerId(),
                 handle.clusterId(),
-                handle.topologyRef().kind().name(),
+                DungeonEditorMainViewInteractionValues.topologyKind(handle.topologyRef().kind()),
                 handle.topologyRef().id(),
                 new CellTarget(edge.from().q(), edge.from().r(), edge.from().level()),
                 new CellTarget(edge.to().q(), edge.to().r(), edge.to().level()));

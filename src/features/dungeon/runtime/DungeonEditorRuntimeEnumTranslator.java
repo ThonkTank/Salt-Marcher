@@ -1,7 +1,6 @@
 package src.features.dungeon.runtime;
 
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.published.DungeonEditorTool;
 
@@ -28,14 +27,6 @@ final class DungeonEditorRuntimeEnumTranslator {
             return DungeonEditorHandleType.valueOf(normalizedEnumName(value));
         } catch (IllegalArgumentException ignored) {
             return DungeonEditorHandleType.CLUSTER_LABEL;
-        }
-    }
-
-    static DungeonTopologyElementKind topologyKind(String value) {
-        try {
-            return DungeonTopologyElementKind.valueOf(normalizedEnumName(value));
-        } catch (IllegalArgumentException ignored) {
-            return DungeonTopologyElementKind.EMPTY;
         }
     }
 

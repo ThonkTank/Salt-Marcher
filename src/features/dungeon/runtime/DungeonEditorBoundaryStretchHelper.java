@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.BoundaryStretchOrientation;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.features.dungeon.runtime.DungeonEditorInteractionValues.CellKey;
@@ -68,7 +68,7 @@ final class DungeonEditorBoundaryStretchHelper {
         ) {
             if (DungeonEditorMainViewInteractionValues.handleKind(
                     input.hitTarget().handleRef(),
-                    DungeonEditorMainViewInteractionValues.CLUSTER_WALL_RUN_KIND)) {
+                    DungeonEditorHandleType.CLUSTER_WALL_RUN)) {
                 return handleSourceEdges(input.hitTarget().handleRef());
             }
             return edges.resolve(snapshot, clusterId, boundaryTarget, orientation);
@@ -89,7 +89,7 @@ final class DungeonEditorBoundaryStretchHelper {
             }
             if (DungeonEditorMainViewInteractionValues.handleKind(
                     input.hitTarget().handleRef(),
-                    DungeonEditorMainViewInteractionValues.CLUSTER_WALL_RUN_KIND)) {
+                    DungeonEditorHandleType.CLUSTER_WALL_RUN)) {
                 return DungeonEditorWallRunBoundaryTargetResolver.resolve(input, currentSelection);
             }
             BoundaryTarget boundaryTarget = input.boundaryTarget();
@@ -153,9 +153,7 @@ final class DungeonEditorBoundaryStretchHelper {
 
         private static DungeonEditorSessionValues.Selection boundarySelection(BoundaryTarget boundaryTarget, long clusterId) {
             return new DungeonEditorSessionValues.Selection(
-                    new DungeonTopologyRef(
-                            DungeonEditorMainViewInteractionValues.toTopologyKind(boundaryTarget.topologyRefKind()),
-                            boundaryTarget.topologyRefId()),
+                    boundaryTarget.topologyRef(),
                     clusterId,
                     true,
                     DungeonEditorSessionValues.emptyHandleRef());
