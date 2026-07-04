@@ -8,7 +8,7 @@ Source of Truth: Compatibility mirror for canonical documentation at `docs/encou
 This legacy path remains build-visible during the documentation-taxonomy
 migration. Canonical feature-owned documentation lives at:
 
-- [Encounter Table Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/domain/domain-encountertable.md:1)
+- [Encounter Table Domain Model](docs/encountertable/domain/domain-encountertable.md:1)
 
 ## Context Role
 
@@ -47,4 +47,4 @@ membership without leaking adapter exceptions.
 
 ## References
 
-- [Encounter Table Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/domain/domain-encountertable.md:1)
+- [Encounter Table Domain Model](docs/encountertable/domain/domain-encountertable.md:1)

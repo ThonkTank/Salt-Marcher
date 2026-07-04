@@ -8,7 +8,7 @@ Source of Truth: Compatibility mirror for canonical documentation at `docs/encou
 This legacy path remains build-visible during the documentation-taxonomy
 migration. Canonical feature-owned documentation lives at:
 
-- [Encounter Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/domain/domain-encounter.md:1)
+- [Encounter Domain Model](docs/encounter/domain/domain-encounter.md:1)
 
 ## Context Role
 
@@ -91,4 +91,4 @@ session runtime state.
 
 ## References
 
-- [Encounter Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/domain/domain-encounter.md:1)
+- [Encounter Domain Model](docs/encounter/domain/domain-encounter.md:1)

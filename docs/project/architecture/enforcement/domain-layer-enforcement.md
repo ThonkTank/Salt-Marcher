@@ -10,13 +10,13 @@ boundaries in legacy and non-migrated `src/domain/**`.
 ## Goal
 
 Architectural truth for the domain layer lives only in the
-[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+[Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1).
 This document owns only the layer-wide enforcement inventory, focused
 verification surface, and current mechanical drift.
 
 Migrated `src/features/**` packages are out of scope for this catalog. Their
 architecture is review-owned under the
-[Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
+[Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
 until a later canonical owner names a specific gate.
 
 It answers three questions for legacy and non-migrated `src/domain/**` as one
@@ -82,17 +82,17 @@ Technical diagnostic route:
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Domain Context Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-context-enforcement.md:1)
-- [Domain ApplicationService Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)
-- [Domain UseCase Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
-- [Domain Published Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-published-enforcement.md:1)
-- [Domain Port Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-port-enforcement.md:1)
-- [Domain Repository Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-repository-enforcement.md:1)
-- [Domain Model Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-model-enforcement.md:1)
-- [Domain Helper Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-helper-enforcement.md:1)
-- [Domain Constants Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-constants-enforcement.md:1)
-- [Spring Modulith Verification](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/spring-modulith-verification.md:1)
-- [Spring Modulith Fundamentals](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/spring-modulith-fundamentals.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [Domain Context Enforcement](docs/project/architecture/enforcement/domain-context-enforcement.md:1)
+- [Domain ApplicationService Enforcement](docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)
+- [Domain UseCase Enforcement](docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
+- [Domain Published Enforcement](docs/project/architecture/enforcement/domain-published-enforcement.md:1)
+- [Domain Port Enforcement](docs/project/architecture/enforcement/domain-port-enforcement.md:1)
+- [Domain Repository Enforcement](docs/project/architecture/enforcement/domain-repository-enforcement.md:1)
+- [Domain Model Enforcement](docs/project/architecture/enforcement/domain-model-enforcement.md:1)
+- [Domain Helper Enforcement](docs/project/architecture/enforcement/domain-helper-enforcement.md:1)
+- [Domain Constants Enforcement](docs/project/architecture/enforcement/domain-constants-enforcement.md:1)
+- [Spring Modulith Verification](references/architecture-patterns/sessionplanner-gate-model/spring-modulith-verification.md:1)
+- [Spring Modulith Fundamentals](references/architecture-patterns/sessionplanner-gate-model/spring-modulith-fundamentals.md:1)

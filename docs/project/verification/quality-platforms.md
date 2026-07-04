@@ -94,14 +94,14 @@ complete report, but a violating gate must not produce a successful `check` or
 
 ## Detailed Operating Subdocuments
 
-- [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
+- [Quality Platforms Local Gates](docs/project/verification/quality-platforms-local-gates.md:1)
   owns the detailed local gate inventory
-- [Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1)
+- [Quality Platforms Local Entrypoints](docs/project/verification/quality-platforms-local-entrypoints.md:1)
   owns aggregate entrypoints, staged handoff routing, and local concurrent-work
   coordination policy
-- [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
+- [Verification Core Architecture](docs/project/architecture/verification-core.md:1)
   owns the Gradle-side verification-core architecture behind those surfaces
-- [Quality Platforms CI And Branch Protection](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
+- [Quality Platforms CI And Branch Protection](docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
   owns the detailed GitHub Actions, service-setup, branch-protection, and
   review-governance policy
 
@@ -183,7 +183,7 @@ for the selected scope and surfaces repeated pass-log families; wrapper intake
 proves only that matching active registered debt was found or absent. Neither
 proves feature behavior or replaces staged verification.
 Agents use the repo-owned
-[Continuous Refactoring Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/continuous-refactoring/SKILL.md:1)
+[Continuous Refactoring Skill](tools/quality/skills/continuous-refactoring/SKILL.md:1)
 for production-code, check/enforcement, and dependency work so existing
 quality evidence is considered inside the normal development pass.
 
@@ -195,7 +195,7 @@ adversarial-review is owned by the repo-owned adversarial review skills. Neither
 workflow is owned by this quality-platform standard.
 
 This follows the external workflow references mirrored under
-`/home/aaron/Schreibtisch/projects/references/continuous-refactoring/`:
+`references/continuous-refactoring/`:
 clean-as-you-code new-code scope, small-change review practice,
 pull-request-scoped quality feedback, Dependabot pull requests, dry-run-first
 mechanical refactoring, and Codex small validated refactoring passes.
@@ -306,7 +306,7 @@ input validation, but handoff claims must report the selected scope and the
 engine-specific surfaces that actually ran.
 
 Public verification-surface ownership is architecture-owned by
-[Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1):
+[Verification Core Architecture](docs/project/architecture/verification-core.md:1):
 runtime wrappers forward the canonical public entrypoints, the verification
 core owns the public Gradle lifecycle tasks, and private bundles or rule
 engines stay behind those surfaces.
@@ -323,28 +323,27 @@ enforced, the enforcement document is the canonical classification.
 
 ## References
 
-- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
-- [Layering Architecture Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
-- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
-- [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
-- [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
-- [Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1)
-- [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
-- [Quality Platforms CI And Branch Protection](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
-- [PMD Java Design Rules Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/pmd-java-design-rules.md:1)
-- [PMD CPD Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/pmd-cpd.md:1)
-- [Lizard README Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/lizard-readme.md:1)
-- [SpotBugs Gradle Plugin Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/spotbugs-gradle-plugin.md:1)
-- [CKJM Metrics Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/ckjm-metrics.md:1)
-- [CK Metric Reference Values](/home/aaron/Schreibtisch/projects/references/quality-platforms/ck-metric-reference-values.md:1)
-- [Clean as You Code](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/sonar-clean-as-you-code.md:1)
-- [Small CLs](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/google-small-cls.md:1)
-- [The Standard of Code Review](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/google-code-review-standard.md:1)
-- [GitLab Code Quality](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/gitlab-code-quality.md:1)
-- [GitHub Pull Request Code Scanning Alerts](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-code-scanning-pr-alerts.md:1)
-- [Dependabot Version Updates](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-dependabot-version-updates.md:1)
-- [Dependabot Options Reference](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/github-dependabot-options.md:1)
-- [OpenAI Codex Refactor Your Codebase](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-refactor-your-codebase.md:1)
-- [OpenAI Codex Worktrees](/home/aaron/Schreibtisch/projects/references/continuous-refactoring/openai-codex-worktrees.md:1)
-- [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-adversarial-review/SKILL.md:1)
-- [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md:1)
+- [Architecture Overview](docs/project/architecture/overview.md:1)
+- [Layering Architecture Enforcement](docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
+- [Documentation Standard](docs/project/architecture/documentation.md:1)
+- [Styling Standard](docs/project/architecture/patterns/styling.md:1)
+- [Quality Platforms Local Gates](docs/project/verification/quality-platforms-local-gates.md:1)
+- [Quality Platforms Local Entrypoints](docs/project/verification/quality-platforms-local-entrypoints.md:1)
+- [Verification Core Architecture](docs/project/architecture/verification-core.md:1)
+- [Quality Platforms CI And Branch Protection](docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
+- [PMD Java Design Rules Reference](references/quality-platforms/pmd-java-design-rules.md:1)
+- [PMD CPD Reference](references/quality-platforms/pmd-cpd.md:1)
+- [Lizard README Reference](references/quality-platforms/lizard-readme.md:1)
+- [SpotBugs Gradle Plugin Reference](references/quality-platforms/spotbugs-gradle-plugin.md:1)
+- [CKJM Metrics Reference](references/quality-platforms/ckjm-metrics.md:1)
+- [CK Metric Reference Values](references/quality-platforms/ck-metric-reference-values.md:1)
+- [Clean as You Code](references/continuous-refactoring/sonar-clean-as-you-code.md:1)
+- [Small CLs](references/continuous-refactoring/google-small-cls.md:1)
+- [The Standard of Code Review](references/continuous-refactoring/google-code-review-standard.md:1)
+- [GitLab Code Quality](references/continuous-refactoring/gitlab-code-quality.md:1)
+- [GitHub Pull Request Code Scanning Alerts](references/continuous-refactoring/github-code-scanning-pr-alerts.md:1)
+- [Dependabot Version Updates](references/continuous-refactoring/github-dependabot-version-updates.md:1)
+- [Dependabot Options Reference](references/continuous-refactoring/github-dependabot-options.md:1)
+- [OpenAI Codex Refactor Your Codebase](references/continuous-refactoring/openai-codex-refactor-your-codebase.md:1)
+- [OpenAI Codex Worktrees](references/continuous-refactoring/openai-codex-worktrees.md:1)
+- [Code Quality Lens](tools/quality/skills/lens-code-quality/SKILL.md:1)

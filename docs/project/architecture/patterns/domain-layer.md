@@ -14,7 +14,7 @@ the view layer. It does not own UI translation, persistence mechanics,
 data-source records, SQL, filesystem, network, or framework concerns.
 
 This standard does not govern migrated `src/features/**`; those packages follow
-the [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1).
+the [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1).
 This document is the sole architectural source of truth for legacy and
 non-migrated `src/domain/**`. Domain enforcement docs may inventory gates,
 candidate rows, review-owned rows, and drift, but must not redefine the pattern.
@@ -346,4 +346,4 @@ Rules:
   references, encounter order, allocations, rest placement, placeholders, and
   selected encounter context.
 - `worldplanner`: `Roster Truth Context`; owns authored NPC, faction, and location state while storing foreign creature statblock and encounter-table references by stable id only.
-References: [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1), [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1), [Domain Context Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-context-enforcement.md:1)
+References: [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1), [Domain Layer Enforcement](docs/project/architecture/enforcement/domain-layer-enforcement.md:1), [Domain Context Enforcement](docs/project/architecture/enforcement/domain-context-enforcement.md:1)

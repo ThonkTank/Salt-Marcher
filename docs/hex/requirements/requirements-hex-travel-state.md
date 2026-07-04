@@ -73,4 +73,4 @@ Define the compact read-mostly travel-state surface shown in the runtime
 
 - [Hex Feature Requirements](./requirements-hex.md)
 - [Hex Travel Requirements](./requirements-hex-travel.md)
-- [Travel State Tab UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/requirements/requirements-travel-state-tab.md:1)
+- [Travel State Tab UI](docs/project/requirements/requirements-travel-state-tab.md:1)

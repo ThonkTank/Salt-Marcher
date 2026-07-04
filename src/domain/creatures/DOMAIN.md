@@ -8,7 +8,7 @@ Source of Truth: Compatibility mirror for canonical documentation at `docs/creat
 This legacy path remains build-visible during the documentation-taxonomy
 migration. Canonical feature-owned documentation lives at:
 
-- [Creatures Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/domain/domain-creatures.md:1)
+- [Creatures Domain Model](docs/creatures/domain/domain-creatures.md:1)
 
 ## Context Role
 
@@ -53,4 +53,4 @@ policy.
 
 ## References
 
-- [Creatures Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/domain/domain-creatures.md:1)
+- [Creatures Domain Model](docs/creatures/domain/domain-creatures.md:1)

@@ -20,7 +20,7 @@ being forced back through the old view/domain role chain.
 This document is a routing summary, not the owner of layer rules. View-layer
 roles, seams, reusable `slotcontent/**` rules, and presentation-state cycles
 are owned only by the
-[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 
 ## Repository Shape
 
@@ -48,7 +48,7 @@ tools/       build infrastructure, quality platforms, and engineering scripts
   layering gate transition: one feature-owned runtime boundary, typed target
   resolution, preview, operation dispatch, publication, render frames,
   raw-input UI, storage, and shell wiring as defined only by the
-  [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
+  [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
 - `src/view/leftbartabs/<entry>/` owns one left-bar tab contribution, its
   Binder, aggregate `ContributionModel`, optional
   `IntentHandler`, and feature-specific colocated Views
@@ -60,11 +60,11 @@ tools/       build infrastructure, quality platforms, and engineering scripts
   `IntentHandler`, and feature-specific colocated Views
 - `src/view/slotcontent/**` owns reusable generic UI units; the internal role
   shape and all reusable-view rules are owned only by the
-  [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+  [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
 - `src/domain/<context>/` owns the legacy and non-migrated application core:
   domain truth, internal models, family-scoped application services, published
   language, repositories, and ports; detailed role and seam rules are owned only by the
-  [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
+  [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
 - `src/data/<feature>/` owns legacy and non-migrated outer adapters that
   satisfy domain-owned repository abstractions and confront concrete sources
   such as SQLite, files, imports, or remote systems
@@ -86,11 +86,11 @@ Dependencies point inward toward the application core:
 - migrated `src/features/**` code reaches shell public contracts and documented
   persistence/authored-fact seams; the internal feature-runtime contract is owned
   only by the
-  [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
+  [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
 - legacy view contributions reach shell public contracts and the documented
   domain public boundaries; the internal View/Binder/Model/IntentHandler contract is
   owned only by the
-  [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+  [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
 - domain code owns business rules, internal models, published language,
   repositories, and ports
 - data code satisfies domain-owned repository abstractions and externalizes
@@ -125,19 +125,19 @@ capabilities through service contributions.
 
 The view layer follows SaltMarcher's cockpit view-layer model. Detailed rules
 live only in the dedicated
-[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 
 ## Canonical Architecture Owners
 
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
-- [Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/bootstrap.md:1)
-- [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
-- [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [Shell Layer Standard](docs/project/architecture/patterns/shell-layer.md:1)
+- [Bootstrap Standard](docs/project/architecture/patterns/bootstrap.md:1)
+- [Styling Standard](docs/project/architecture/patterns/styling.md:1)
+- [Verification Core Architecture](docs/project/architecture/verification-core.md:1)
 
 ## Mechanical Enforcement Owners
 
@@ -174,37 +174,37 @@ live only in the dedicated
 
 ## References
 
-- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
-- [Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/bootstrap.md:1)
-- [Shell Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/shell-layer-enforcement.md:1)
-- [Shell AppShell Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/shell-app-shell-enforcement.md:1)
-- [Shell RuntimeContext Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/shell-runtime-context-enforcement.md:1)
-- [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
-- [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
-- [Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
-- [View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1)
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
-- [View Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-layer-enforcement.md:1)
-- [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
-- [Domain Context Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-context-enforcement.md:1)
-- [Domain ApplicationService Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)
-- [Domain UseCase Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
-- [Domain Published Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-published-enforcement.md:1)
-- [Domain Port Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-port-enforcement.md:1)
-- [Domain Repository Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-repository-enforcement.md:1)
-- [Domain Model Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-model-enforcement.md:1)
-- [Domain Helper Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-helper-enforcement.md:1)
-- [Domain Constants Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-constants-enforcement.md:1)
-- [Data Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-layer-enforcement.md:1)
-- [Data ServiceContribution Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-service-contribution-enforcement.md:1)
-- [Data Repository Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-repository-enforcement.md:1)
-- [Data Query Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-query-enforcement.md:1)
-- [Data Gateway Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-gateway-enforcement.md:1)
-- [Data Model Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-model-enforcement.md:1)
-- [Data Mapper Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-mapper-enforcement.md:1)
-- [Data Persistencecore Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-persistencecore-enforcement.md:1)
+- [Documentation Standard](docs/project/architecture/documentation.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [Shell Layer Standard](docs/project/architecture/patterns/shell-layer.md:1)
+- [Bootstrap Standard](docs/project/architecture/patterns/bootstrap.md:1)
+- [Shell Layer Enforcement](docs/project/architecture/enforcement/shell-layer-enforcement.md:1)
+- [Shell AppShell Enforcement](docs/project/architecture/enforcement/shell-app-shell-enforcement.md:1)
+- [Shell RuntimeContext Enforcement](docs/project/architecture/enforcement/shell-runtime-context-enforcement.md:1)
+- [Styling Standard](docs/project/architecture/patterns/styling.md:1)
+- [Verification Core Architecture](docs/project/architecture/verification-core.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
+- [Styling Layer Enforcement](docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
+- [View Styling Enforcement](docs/project/architecture/enforcement/styling-view-enforcement.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
+- [View Layer Enforcement](docs/project/architecture/enforcement/view-layer-enforcement.md:1)
+- [Domain Layer Enforcement](docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
+- [Domain Context Enforcement](docs/project/architecture/enforcement/domain-context-enforcement.md:1)
+- [Domain ApplicationService Enforcement](docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)
+- [Domain UseCase Enforcement](docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
+- [Domain Published Enforcement](docs/project/architecture/enforcement/domain-published-enforcement.md:1)
+- [Domain Port Enforcement](docs/project/architecture/enforcement/domain-port-enforcement.md:1)
+- [Domain Repository Enforcement](docs/project/architecture/enforcement/domain-repository-enforcement.md:1)
+- [Domain Model Enforcement](docs/project/architecture/enforcement/domain-model-enforcement.md:1)
+- [Domain Helper Enforcement](docs/project/architecture/enforcement/domain-helper-enforcement.md:1)
+- [Domain Constants Enforcement](docs/project/architecture/enforcement/domain-constants-enforcement.md:1)
+- [Data Layer Enforcement](docs/project/architecture/enforcement/data-layer-enforcement.md:1)
+- [Data ServiceContribution Enforcement](docs/project/architecture/enforcement/data-service-contribution-enforcement.md:1)
+- [Data Repository Enforcement](docs/project/architecture/enforcement/data-repository-enforcement.md:1)
+- [Data Query Enforcement](docs/project/architecture/enforcement/data-query-enforcement.md:1)
+- [Data Gateway Enforcement](docs/project/architecture/enforcement/data-gateway-enforcement.md:1)
+- [Data Model Enforcement](docs/project/architecture/enforcement/data-model-enforcement.md:1)
+- [Data Mapper Enforcement](docs/project/architecture/enforcement/data-mapper-enforcement.md:1)
+- [Data Persistencecore Enforcement](docs/project/architecture/enforcement/data-persistencecore-enforcement.md:1)

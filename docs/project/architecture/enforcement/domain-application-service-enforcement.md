@@ -9,7 +9,7 @@ surface for root family `*ApplicationService` boundaries in `src/domain/**`.
 ## Goal
 
 Architectural truth for `ApplicationService` lives only in the
-[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+[Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1).
 This document owns only the role-local enforcement inventory, focused
 verification surface, and current mechanical drift.
 
@@ -80,12 +80,12 @@ work.
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
-- [Domain UseCase Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
-- [Domain Published Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-published-enforcement.md:1)
-- [Domain Port Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-port-enforcement.md:1)
-- [Domain Repository Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-repository-enforcement.md:1)
-- [Spring Modulith Verification](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/spring-modulith-verification.md:1)
-- [eShopOnContainers Command Handler Example](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/eshop-create-order-command-handler.md:1)
-- [Modular Monolith Command Handler Example](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/modular-monolith-create-meeting-command-handler.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Domain Layer Enforcement](docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
+- [Domain UseCase Enforcement](docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
+- [Domain Published Enforcement](docs/project/architecture/enforcement/domain-published-enforcement.md:1)
+- [Domain Port Enforcement](docs/project/architecture/enforcement/domain-port-enforcement.md:1)
+- [Domain Repository Enforcement](docs/project/architecture/enforcement/domain-repository-enforcement.md:1)
+- [Spring Modulith Verification](references/architecture-patterns/sessionplanner-gate-model/spring-modulith-verification.md:1)
+- [eShopOnContainers Command Handler Example](references/architecture-patterns/sessionplanner-gate-model/eshop-create-order-command-handler.md:1)
+- [Modular Monolith Command Handler Example](references/architecture-patterns/sessionplanner-gate-model/modular-monolith-create-meeting-command-handler.md:1)

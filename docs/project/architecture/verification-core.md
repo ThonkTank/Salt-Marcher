@@ -343,8 +343,8 @@ claims must report the literal store or reuse result. Parallel local safety is c
 
 ## References
 
-- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
-- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
-- [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
-- [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
-- [Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1)
+- [Architecture Overview](docs/project/architecture/overview.md:1)
+- [Documentation Standard](docs/project/architecture/documentation.md:1)
+- [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
+- [Quality Platforms Local Gates](docs/project/verification/quality-platforms-local-gates.md:1)
+- [Quality Platforms Local Entrypoints](docs/project/verification/quality-platforms-local-entrypoints.md:1)

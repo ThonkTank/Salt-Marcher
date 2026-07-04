@@ -40,5 +40,5 @@ state tab.
 
 ## References
 
-- [Encounter Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/domain/domain-encounter.md:1)
-- [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter-state-tab.md:1)
+- [Encounter Domain Model](docs/encounter/domain/domain-encounter.md:1)
+- [Encounter UI](docs/encounter/requirements/requirements-encounter-state-tab.md:1)

@@ -135,6 +135,6 @@ Target state:
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Party Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/contract/contract-party-persistence.md:1)
-- [Party UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/requirements/requirements-party-dropdown.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Party Persistence](docs/party/contract/contract-party-persistence.md:1)
+- [Party UI](docs/party/requirements/requirements-party-dropdown.md:1)

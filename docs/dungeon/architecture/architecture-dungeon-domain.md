@@ -10,7 +10,7 @@ and dependency direction below `src/domain/dungeon/**`.
 
 This document owns the feature-specific architecture of the Dungeon domain.
 It explains how Dungeon domain code is structured inside the project-wide
-[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+[Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1).
 
 It does not own Dungeon business truth, editor behavior, persistence shape, or
 proof rows. Those live in the neighboring domain, requirements, contract, and
@@ -134,5 +134,5 @@ and the tool-specific editor catalogs.
 - [Dungeon Persistence Contract](../contract/contract-dungeon-persistence.md)
 - [Dungeon Core Model Invariants](../verification/verification-dungeon-core-model-invariants.md)
 - [Dungeon Editor-Wide Invariants](../verification/verification-dungeon-editor-wide-invariants.md)
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Domain Layer Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/domain-layer/SKILL.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Domain Layer Skill](tools/quality/skills/domain-layer/SKILL.md:1)

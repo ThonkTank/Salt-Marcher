@@ -11,12 +11,12 @@ platforms.
 
 This subordinate standard defines the CI-facing and repository-configuration
 operating model beneath the umbrella
-[Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1).
+[Quality Platforms Standard](docs/project/verification/quality-platforms.md:1).
 
 ## GitHub Actions
 
 The workflow lives in
-[.github/workflows/quality-platforms.yml](/home/aaron/Schreibtisch/projects/SaltMarcher/.github/workflows/quality-platforms.yml:1)
+[.github/workflows/quality-platforms.yml](.github/workflows/quality-platforms.yml:1)
 and defines four jobs.
 
 | Job | Status | Current policy |
@@ -191,9 +191,8 @@ The quality platforms do not replace review judgment.
 
 ## References
 
-- [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
-- [.github/workflows/quality-platforms.yml](/home/aaron/Schreibtisch/projects/SaltMarcher/.github/workflows/quality-platforms.yml:1)
-- [GitHub Protected Branches REST Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/github-rest-branch-protection.md:1)
-- [GitHub Repository Rules REST Reference](/home/aaron/Schreibtisch/projects/references/quality-platforms/github-rest-repository-rules.md:1)
-- [Adversarial Review Caller Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/coord-adversarial-review/SKILL.md:1)
-- [Adversarial Review Agent Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md:1)
+- [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
+- [.github/workflows/quality-platforms.yml](.github/workflows/quality-platforms.yml:1)
+- [GitHub Protected Branches REST Reference](references/quality-platforms/github-rest-branch-protection.md:1)
+- [GitHub Repository Rules REST Reference](references/quality-platforms/github-rest-repository-rules.md:1)
+- [Code Quality Lens](tools/quality/skills/lens-code-quality/SKILL.md:1)

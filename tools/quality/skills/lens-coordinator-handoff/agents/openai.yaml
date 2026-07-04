@@ -1,7 +1,0 @@
-interface:
-  display_name: "Lens: Handoff Coordinator"
-  short_description: "Coordinates handoff review, debt triage, and fix loops"
-  default_prompt: "Use $lens-coordinator-handoff with $lens-coordinator to coordinate implementation handoff: classify reviewability, baseline structural debt, and handoff findings; launch nested specialist reviewers and scoped fix workers; report stale proof to main when fixes change the reviewed surface; and return the final clean-or-blocked result."
-
-policy:
-  allow_implicit_invocation: true

@@ -54,7 +54,7 @@ participate in automatic debt intake. `Related Symbols` are searchable context
 only; add a matching path or owner token to `Intake Trigger` when a symbol
 should pull debt into a later pass.
 Resolver field transitions are defined by the
-[Project Health resolver dispositions](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/project-health.md:1).
+[Project Health resolver dispositions](docs/project/architecture/project-health.md:1).
 
 ## Active Debt
 
@@ -81,5 +81,5 @@ No active project-health debt has been registered under this governance.
 
 ## References
 
-- [Project Health Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/project-health.md:1)
-- [Project Health Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/project-health/SKILL.md:1)
+- [Project Health Standard](docs/project/architecture/project-health.md:1)
+- [Project Health Skill](tools/quality/skills/project-health/SKILL.md:1)

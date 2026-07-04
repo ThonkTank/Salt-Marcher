@@ -1,7 +1,0 @@
-interface:
-  display_name: "Contract"
-  short_description: "API, schema, persistence, and boundary contracts"
-  default_prompt: "Use $contract before creating, changing, reviewing, or planning project-wide or feature-owned contract docs."
-
-policy:
-  allow_implicit_invocation: true

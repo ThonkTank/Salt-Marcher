@@ -12,11 +12,11 @@ This verification standard defines how SaltMarcher proves that source-backed
 claims were based on preserved evidence rather than on uncited public URLs,
 memory, or silently transformed extracts.
 
-`/home/aaron/Schreibtisch/projects/references/` is the global local reference
+`references/` is the global local reference
 mirror. It is intentionally outside this repository and must not be copied into
 project-local reference mirror folders.
 
-`/home/aaron/Schreibtisch/projects/references/` is not a staging area for
+`references/` is not a staging area for
 product import corpora, production database source material, generated catalog
 inputs, or other runtime data sources. Keep those in a dedicated local data
 cache or the owning production-data location, and cite their concrete local
@@ -30,7 +30,7 @@ This document governs proof for:
   delivery, verification, tooling, prompt, and review claims
 - local repository files cited as evidence for SaltMarcher decisions
 - readable extracted mirrors kept under
-  `/home/aaron/Schreibtisch/projects/references/<topic>/`
+  `references/<topic>/`
 - original preserved source files kept under the global mirror tooling roots or
   topic folders
 
@@ -61,7 +61,7 @@ A source-backed claim passes this verification standard only when all relevant
 criteria below are satisfied:
 
 - an external-source-backed claim cites a readable extracted source path under
-  `/home/aaron/Schreibtisch/projects/references/`
+  `references/`
 - the extracted source identifies its original source through the required
   metadata
 - the cited local original path exists at the location recorded in the extract
@@ -93,15 +93,15 @@ tooling, standards, prompt work, or review decisions:
 
 - save the original source locally before relying on it for a decision
 - prefer an HTML original under
-  `/home/aaron/Schreibtisch/projects/references/.tools/html/<slug>.html`
-- use `/home/aaron/Schreibtisch/projects/references/.tools/markdown/<slug>.md`
+  `references/.tools/html/<slug>.html`
+- use `references/.tools/markdown/<slug>.md`
   only when the publisher provides source Markdown or the original is already
   Markdown
 - keep PDFs or other binary originals in the most specific
-  `/home/aaron/Schreibtisch/projects/references/<topic>/` folder when HTML is
+  `references/<topic>/` folder when HTML is
   not the useful original form
 - create or update a directly readable extracted text under
-  `/home/aaron/Schreibtisch/projects/references/<topic>/<slug>.md`
+  `references/<topic>/<slug>.md`
 - choose the topic folder by subject matter, not by the task that found the
   source
 - do not store source originals under new top-level roots
@@ -118,12 +118,12 @@ the original source's content and meaning. Agents may edit extraction artifacts
 only to restore readability when an automatic parser has distorted structure,
 ordering, whitespace, navigation noise, or formatting. They must not summarize,
 reinterpret, condense, editorialize, or semantically distance the source in the
-`/home/aaron/Schreibtisch/projects/references/<topic>/` end result.
+`references/<topic>/` end result.
 
 ## Local Source Rules
 
 Local repository sources do not need to be mirrored into
-`/home/aaron/Schreibtisch/projects/references/`. When an agent uses a local
+`references/`. When an agent uses a local
 file, standard, ADR, source file, schema, or skill as evidence, cite the repo
 path directly, with a line number when practical.
 
@@ -132,7 +132,7 @@ The repository file is already the local source.
 
 Do not move product import corpora, production database source material, or
 generated catalog inputs into
-`/home/aaron/Schreibtisch/projects/references/`. They are local sources, not
+`references/`. They are local sources, not
 reference mirrors.
 
 ## Maintenance Rules
@@ -161,7 +161,7 @@ reference mirrors.
 
 ## References
 
-- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
-- [Source References Skill](/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/source-references/SKILL.md:1)
+- [Documentation Standard](docs/project/architecture/documentation.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [Agent Instruction Standard](docs/project/architecture/agent-instructions.md:1)
+- [Source References Skill](tools/quality/skills/source-references/SKILL.md:1)

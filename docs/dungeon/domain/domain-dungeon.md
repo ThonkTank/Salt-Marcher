@@ -255,12 +255,12 @@ Active root boundaries:
 
 ## References
 
-- [Dungeon Feature Docs](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/README.md:1)
-- [Dungeon Domain Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/architecture/architecture-dungeon-domain.md:1)
-- [Dungeon Feature Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/requirements/requirements-dungeon.md:1)
-- [Dungeon Editor Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/requirements/requirements-dungeon-editor.md:1)
-- [Dungeon Map Adoption Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
-- [Dungeon Map Surface Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-dungeon-surface.md:1)
-- [Dungeon Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/contract/contract-dungeon-persistence.md:1)
-- [Dungeon Core Model Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-core-model-invariants.md:1)
-- [Dungeon Editor-Wide Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md:1)
+- [Dungeon Feature Docs](docs/dungeon/README.md:1)
+- [Dungeon Domain Architecture](docs/dungeon/architecture/architecture-dungeon-domain.md:1)
+- [Dungeon Feature Requirements](docs/dungeon/requirements/requirements-dungeon.md:1)
+- [Dungeon Editor Requirements](docs/dungeon/requirements/requirements-dungeon-editor.md:1)
+- [Dungeon Map Adoption Architecture](docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
+- [Dungeon Map Surface Contract](docs/maps/contract/contract-maps-dungeon-surface.md:1)
+- [Dungeon Persistence Contract](docs/dungeon/contract/contract-dungeon-persistence.md:1)
+- [Dungeon Core Model Invariants](docs/dungeon/verification/verification-dungeon-core-model-invariants.md:1)
+- [Dungeon Editor-Wide Invariants](docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md:1)

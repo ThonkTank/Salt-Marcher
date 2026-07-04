@@ -63,4 +63,4 @@ generation, campaign clocks, or encounter simulation.
 
 - [Hex Travel Requirements](../requirements/requirements-hex-travel.md)
 - [Hex Travel State Requirements](../requirements/requirements-hex-travel-state.md)
-- [Travel State Tab UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/requirements/requirements-travel-state-tab.md:1)
+- [Travel State Tab UI](docs/project/requirements/requirements-travel-state-tab.md:1)

@@ -1,6 +1,0 @@
-interface:
-  display_name: "Wave Coordination"
-  short_description: "Coordinates planner-first goals, roadmap planning, phase planning, implementation, review, and handoff."
-  default_prompt: "Use $wave-coordination to coordinate this broad goal through clean-start Goal Definition -> Roadmap Planning -> Phase Planning -> Implementation -> Review -> Commit/Handoff roles. Main/User clarify goals first; a planner writes the roadmap and must-do completion goals before optional phase decomposition and implementation-ready wave plans."
-  policy:
-    allow_implicit_invocation: true

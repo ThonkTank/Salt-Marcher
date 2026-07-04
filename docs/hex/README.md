@@ -38,9 +38,9 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
 ### Related Maps Docs
 
-- [Maps Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/README.md:1)
-- [Maps Canvas Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/requirements/requirements-maps-canvas.md:1)
-- [Hex Map Adoption Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-hex-adoption.md:1)
+- [Maps Feature Overview](docs/maps/README.md:1)
+- [Maps Canvas Requirements](docs/maps/requirements/requirements-maps-canvas.md:1)
+- [Hex Map Adoption Architecture](docs/maps/architecture/architecture-maps-hex-adoption.md:1)
 
 ## Current State
 
@@ -55,4 +55,4 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
 ## References
 
-- [Maps Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/README.md:1)
+- [Maps Feature Overview](docs/maps/README.md:1)

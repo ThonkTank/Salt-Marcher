@@ -133,8 +133,8 @@ Core invariants:
 
 ## References
 
-- [World Planner Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/requirements/requirements-world-planner.md:1)
-- [World Planner Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/architecture/architecture-world-planner.md:1)
-- [World Planner Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/contract/contract-world-planner-persistence.md:1)
-- [Creatures Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/domain/domain-creatures.md:1)
-- [Encounter Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/domain/domain-encounter.md:1)
+- [World Planner Requirements](docs/worldplanner/requirements/requirements-world-planner.md:1)
+- [World Planner Architecture](docs/worldplanner/architecture/architecture-world-planner.md:1)
+- [World Planner Persistence Contract](docs/worldplanner/contract/contract-world-planner-persistence.md:1)
+- [Creatures Domain Model](docs/creatures/domain/domain-creatures.md:1)
+- [Encounter Domain Model](docs/encounter/domain/domain-encounter.md:1)

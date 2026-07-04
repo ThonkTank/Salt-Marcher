@@ -61,5 +61,5 @@ XP, thresholds, labels, readiness, or business state.
 
 ## References
 
-- [Anchored Popup](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/requirements/requirements-anchored-popup.md:1)
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+- [Anchored Popup](docs/project/requirements/requirements-anchored-popup.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)

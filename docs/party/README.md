@@ -14,5 +14,5 @@ public backend boundary formed by
 
 ## Documentation Set
 
-- [Party Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/domain/domain-party.md:1)
-- [Party Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/contract/contract-party-persistence.md:1)
+- [Party Domain Model](docs/party/domain/domain-party.md:1)
+- [Party Persistence](docs/party/contract/contract-party-persistence.md:1)

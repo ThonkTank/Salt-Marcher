@@ -20,7 +20,7 @@ It answers three questions for active styling ownership across `resources/`,
 - how active code MAY and MUST NOT communicate with centralized styling truth
 
 Passive `View`-specific direct-render semantics live in the dedicated
-[View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1)
+[View Styling Enforcement](docs/project/architecture/enforcement/styling-view-enforcement.md:1)
 document. Desktop packaging policy, bootstrap feature-independence, and
 passive-`View` legality remain owned by their neighboring enforcement bundles
 except where those surfaces also prove a styling invariant documented here.
@@ -75,9 +75,9 @@ Technical diagnostic route:
 
 ## References
 
-- [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
-- [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
-- [Layering Architecture Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
-- [Bootstrap Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/bootstrap-enforcement.md:1)
-- [Shell Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/shell-layer-enforcement.md:1)
-- [View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1)
+- [Styling Standard](docs/project/architecture/patterns/styling.md:1)
+- [Quality Platforms Local Gates](docs/project/verification/quality-platforms-local-gates.md:1)
+- [Layering Architecture Enforcement](docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
+- [Bootstrap Enforcement](docs/project/architecture/enforcement/bootstrap-enforcement.md:1)
+- [Shell Layer Enforcement](docs/project/architecture/enforcement/shell-layer-enforcement.md:1)
+- [View Styling Enforcement](docs/project/architecture/enforcement/styling-view-enforcement.md:1)

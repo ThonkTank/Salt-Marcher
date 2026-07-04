@@ -17,7 +17,7 @@ Current state:
 - The tab shows the original static travel placeholder context when no approved
   feature-owned live readback is registered for the active party.
 - Hex travel-state readback is implemented. The Hex behavior is owned by
-  `/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/requirements/requirements-hex-travel-state.md:1`
+  `docs/hex/requirements/requirements-hex-travel-state.md:1`
   and replaces the placeholder when the party token points at a valid Hex tile.
 - Other live travel state remains owned by the Travel left-bar tab and later
   dungeon travel runtime work.
@@ -75,6 +75,6 @@ Target state:
 
 ## References
 
-- [Encounter Runtime State UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter-state-tab.md:1)
-- [Hex Travel State Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/requirements/requirements-hex-travel-state.md:1)
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+- [Encounter Runtime State UI](docs/encounter/requirements/requirements-encounter-state-tab.md:1)
+- [Hex Travel State Requirements](docs/hex/requirements/requirements-hex-travel-state.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)

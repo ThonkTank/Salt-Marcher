@@ -41,7 +41,7 @@ maps, or hex maps.
 
 ## References
 
-- [Creatures Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/README.md:1)
-- [Encounter Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/README.md:1)
-- [Encounter Table Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/README.md:1)
-- [Session Planner Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/README.md:1)
+- [Creatures Feature Overview](docs/creatures/README.md:1)
+- [Encounter Feature Overview](docs/encounter/README.md:1)
+- [Encounter Table Feature Overview](docs/encountertable/README.md:1)
+- [Session Planner Feature Overview](docs/sessionplanner/README.md:1)

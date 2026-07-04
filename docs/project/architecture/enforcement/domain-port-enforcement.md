@@ -9,7 +9,7 @@ surface for inbound `Port` listener ownership in `src/domain/**`.
 ## Goal
 
 Architectural truth for `Port` lives only in the
-[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+[Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1).
 This document owns only the role-local enforcement inventory, focused
 verification surface, and current mechanical coverage for the target inbound
 listener role.
@@ -52,7 +52,7 @@ Technical diagnostic route:
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
-- [Domain Published Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-published-enforcement.md:1)
-- [Domain Repository Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-repository-enforcement.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Domain Layer Enforcement](docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
+- [Domain Published Enforcement](docs/project/architecture/enforcement/domain-published-enforcement.md:1)
+- [Domain Repository Enforcement](docs/project/architecture/enforcement/domain-repository-enforcement.md:1)

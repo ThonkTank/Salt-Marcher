@@ -248,6 +248,6 @@ state, render state, or travel behavior.
 
 ## References
 
-- [Dungeon Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/domain/domain-dungeon.md:1)
-- [Dungeon Map Surface Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-dungeon-surface.md:1)
-- [Maps Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/README.md:1)
+- [Dungeon Domain Model](docs/dungeon/domain/domain-dungeon.md:1)
+- [Dungeon Map Surface Contract](docs/maps/contract/contract-maps-dungeon-surface.md:1)
+- [Maps Feature Overview](docs/maps/README.md:1)

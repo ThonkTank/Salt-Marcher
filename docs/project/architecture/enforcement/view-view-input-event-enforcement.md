@@ -12,7 +12,7 @@ This document owns the complete architecture-enforcement catalog for the
 `*ViewInputEvent` role itself.
 
 Architectural truth for `*ViewInputEvent` lives only in the
-[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 This document owns only carrier-local enforcement inventory and current
 mechanical drift.
 
@@ -90,8 +90,8 @@ Technical diagnostic route:
 
 ## References
 
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [View Binder Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-binder-enforcement.md:1)
-- [View IntentHandler Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-intent-handler-enforcement.md:1)
-- [View Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-view-enforcement.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [View Binder Enforcement](docs/project/architecture/enforcement/view-binder-enforcement.md:1)
+- [View IntentHandler Enforcement](docs/project/architecture/enforcement/view-intent-handler-enforcement.md:1)
+- [View Enforcement](docs/project/architecture/enforcement/view-view-enforcement.md:1)

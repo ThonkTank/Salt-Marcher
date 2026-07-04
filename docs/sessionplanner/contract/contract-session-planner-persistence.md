@@ -125,6 +125,6 @@ The session record does not persist:
 
 ## References
 
-- [Session Planner Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/domain/domain-session-planner.md:1)
-- [Session Planner Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/architecture/architecture-session-planner.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
+- [Session Planner Domain Model](docs/sessionplanner/domain/domain-session-planner.md:1)
+- [Session Planner Architecture](docs/sessionplanner/architecture/architecture-session-planner.md:1)
+- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)

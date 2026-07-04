@@ -1,7 +1,0 @@
-interface:
-  display_name: "Coord: Main To Overview"
-  short_description: "Launch contract for Overview coordinators"
-  default_prompt: "Use $coord-main-overview when launching an Overview coordinator: provide only neutral scoped facts, assign the coordinator lens, state the baseline-debt policy, require $lens-adversarial-review-agent and $coord-adversarial-review, do not pass conversation history, and wait for the coordinator's final result."
-
-policy:
-  allow_implicit_invocation: true

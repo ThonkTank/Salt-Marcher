@@ -86,7 +86,7 @@ def is_repo_tool_instruction_surface(surface: str) -> bool:
     return surface in {
         "tools/quality/skills/repo-tools/SKILL.md",
         "tools/quality/skills/code-exploration/SKILL.md",
-        "tools/quality/skills/code-exploration-agent/SKILL.md",
+        "tools/quality/skills/code-exploration/SKILL.md",
     }
 
 
@@ -135,8 +135,6 @@ def governing_skill_for_agent_metadata(surface: str) -> str | None:
 def code_exploration_owner(surface: str) -> str | None:
     if not is_code_exploration_surface(surface):
         return None
-    if surface == "tools/quality/skills/code-exploration-agent/SKILL.md":
-        return "tools/quality/skills/code-exploration-agent/SKILL.md"
     return "tools/quality/skills/code-exploration/SKILL.md"
 
 
@@ -163,7 +161,7 @@ def surface_class(surface: str) -> str:
 
 
 def mandatory_skills(surface: str) -> tuple[str, ...]:
-    skills = ["context-hygiene", "repo-tools"]
+    skills = ["repo-tools", "code-exploration"]
     if is_code_exploration_surface(surface):
         skills.append("code-exploration")
     if is_agent_instruction(surface):
@@ -193,16 +191,16 @@ def mandatory_skills(surface: str) -> tuple[str, ...]:
 
 def owner_candidates(surface: str) -> tuple[str, ...]:
     paths = [
-        "/home/aaron/Schreibtisch/projects/AGENTS.md",
+        "workspace AGENTS.md",
         "AGENTS.md",
         "docs/project/architecture/agent-context.md",
-        "tools/quality/skills/context-hygiene/SKILL.md",
+        "tools/quality/skills/code-exploration/SKILL.md",
         "tools/quality/skills/repo-tools/SKILL.md",
     ]
     if is_agent_instruction(surface):
         paths.extend([
             "docs/project/architecture/agent-instructions.md",
-            "/home/aaron/.codex/skills/local/agent-instruction-engineering/SKILL.md",
+            "tools/quality/skills/agent-instruction-engineering/SKILL.md",
         ])
         sibling_skill = governing_skill_for_agent_metadata(surface)
         if sibling_skill is not None:

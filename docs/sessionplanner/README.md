@@ -35,5 +35,5 @@ loot truth, or gold-economy rules.
 
 ## References
 
-- [Party Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/README.md:1)
-- [Encounter Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/README.md:1)
+- [Party Feature Overview](docs/party/README.md:1)
+- [Encounter Feature Overview](docs/encounter/README.md:1)

@@ -1,7 +1,0 @@
-interface:
-  display_name: "Requirements"
-  short_description: "Project-wide or feature-owned requirements docs"
-  default_prompt: "Use $requirements before creating, changing, reviewing, or planning project-wide or feature-owned requirements docs."
-
-policy:
-  allow_implicit_invocation: true

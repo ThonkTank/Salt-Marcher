@@ -10,9 +10,9 @@ platforms.
 
 This subordinate standard defines the detailed local gate inventory beneath
 the umbrella
-[Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1).
+[Quality Platforms Standard](docs/project/verification/quality-platforms.md:1).
 Aggregate entrypoints and local invocation plus concurrent-work policy live in
-[Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1).
+[Quality Platforms Local Entrypoints](docs/project/verification/quality-platforms-local-entrypoints.md:1).
 
 ## Local Gate Inventory
 
@@ -247,10 +247,10 @@ packaging policies that are not language-level architecture rules.
 The styling rules behind the stylesheet and selector gates, plus the remaining
 direct-render styling invariants for passive `View` surfaces, are defined in
 the
-[Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1),
-[Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1),
+[Styling Standard](docs/project/architecture/patterns/styling.md:1),
+[Styling Layer Enforcement](docs/project/architecture/enforcement/styling-layer-enforcement.md:1),
 and
-[View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1).
+[View Styling Enforcement](docs/project/architecture/enforcement/styling-view-enforcement.md:1).
 The styling-layer mechanical diagnostic route is `./gradlew
 checkStylingEnforcement`; it aggregates the stylesheet, selector,
 bundle-local stylesheet-owner, compile-side inline-style, manual-node-layout
@@ -262,7 +262,7 @@ tasks listed above.
 
 ## References
 
-- [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
-- [Quality Platforms Local Entrypoints](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-entrypoints.md:1)
-- [Layering Architecture Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
-- [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
+- [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
+- [Quality Platforms Local Entrypoints](docs/project/verification/quality-platforms-local-entrypoints.md:1)
+- [Layering Architecture Enforcement](docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
+- [Styling Standard](docs/project/architecture/patterns/styling.md:1)

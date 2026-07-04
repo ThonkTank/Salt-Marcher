@@ -115,9 +115,9 @@ verification route for production-code changes.
 
 ## References
 
-- [World Planner Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/requirements/requirements-world-planner.md:1)
-- [World Planner Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/domain/domain-world-planner.md:1)
-- [World Planner Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/contract/contract-world-planner-persistence.md:1)
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+- [World Planner Requirements](docs/worldplanner/requirements/requirements-world-planner.md:1)
+- [World Planner Domain Model](docs/worldplanner/domain/domain-world-planner.md:1)
+- [World Planner Persistence Contract](docs/worldplanner/contract/contract-world-planner-persistence.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)

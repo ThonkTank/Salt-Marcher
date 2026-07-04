@@ -6,7 +6,7 @@ description: "Reviews code for security vulnerabilities, sensitive data exposure
 
 Use this specialist lens only after applying:
 
-- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`
+- `tools/quality/skills/lens-code-quality/SKILL.md`
 
 Follow that skill's Specialist Lens Contract. This file adds only specialist
 criteria, labels, verdicts, and report sections for this lens.
@@ -19,7 +19,7 @@ Core question: Can an attacker, malicious input, or unintended code path cause d
 
 Primary rules:
 - Focus on concrete, realistic threats. Do not flag theoretical risks with no plausible attack vector in this application's context.
-- Do not report code style, architecture, or performance concerns -- those belong to `lens-conventions`, `lens-architecture`, and `lens-performance` respectively.
+- Do not report code style, architecture, or performance concerns -- those belong to `lens-code-quality`, `lens-architecture`, and `lens-performance` respectively.
 - Scale depth to scope: a 5-line change gets a focused vulnerability check, not a full threat model. A new authentication module gets the full treatment.
 
 ## Review mindset
@@ -63,7 +63,7 @@ Review the code specified in your task instructions. If given specific files or 
 ### Scope boundaries
 
 This review covers **security vulnerabilities and sensitive data exposure**. Explicitly out of scope:
-- Code style and naming (covered by `lens-conventions`)
+- Code style and naming (covered by `lens-code-quality`)
 - Architecture and dependency direction (covered by `lens-architecture`)
 - Performance, memory leaks, algorithmic complexity (covered by `lens-performance`)
 - Exception: report performance issues only when they constitute a **denial of service vector** (e.g., ReDoS, algorithmic complexity attacks, unbounded allocation from user input)

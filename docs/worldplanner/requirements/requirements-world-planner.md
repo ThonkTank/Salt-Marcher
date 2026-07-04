@@ -107,7 +107,7 @@ Provide one World Planner left-bar workspace that lets the user:
 
 ## References
 
-- [World Planner Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/domain/domain-world-planner.md:1)
-- [World Planner Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/architecture/architecture-world-planner.md:1)
-- [World Planner Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/contract/contract-world-planner-persistence.md:1)
-- [World Planner Verification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/verification/verification-world-planner.md:1)
+- [World Planner Domain Model](docs/worldplanner/domain/domain-world-planner.md:1)
+- [World Planner Architecture](docs/worldplanner/architecture/architecture-world-planner.md:1)
+- [World Planner Persistence Contract](docs/worldplanner/contract/contract-world-planner-persistence.md:1)
+- [World Planner Verification](docs/worldplanner/verification/verification-world-planner.md:1)

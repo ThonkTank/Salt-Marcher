@@ -41,5 +41,5 @@ gameplay semantics.
 
 ## References
 
-- [Dungeon Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/README.md:1)
-- [Hex Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/README.md:1)
+- [Dungeon Feature Overview](docs/dungeon/README.md:1)
+- [Hex Feature Overview](docs/hex/README.md:1)

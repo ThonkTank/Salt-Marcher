@@ -13,11 +13,11 @@ without making the encounter generator own catalog persistence.
 
 ## Documentation Set
 
-- [Encounter Table Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/requirements/requirements-encountertable.md:1)
-- [Encounter Table Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/domain/domain-encountertable.md:1)
-- [Encounter Table Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/contract/contract-encountertable-persistence.md:1)
-- [Encounter Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter.md:1)
-- [Catalog Tab UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/requirements/requirements-creatures-catalog.md:1)
+- [Encounter Table Spec](docs/encountertable/requirements/requirements-encountertable.md:1)
+- [Encounter Table Domain Model](docs/encountertable/domain/domain-encountertable.md:1)
+- [Encounter Table Persistence](docs/encountertable/contract/contract-encountertable-persistence.md:1)
+- [Encounter Feature Spec](docs/encounter/requirements/requirements-encounter.md:1)
+- [Catalog Tab UI](docs/creatures/requirements/requirements-creatures-catalog.md:1)
 
 ## Scope
 

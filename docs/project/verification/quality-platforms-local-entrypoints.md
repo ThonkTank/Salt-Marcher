@@ -10,9 +10,9 @@ invocation policy for SaltMarcher quality platforms.
 
 This subordinate standard owns local aggregate entrypoints and local invocation
 policy beneath the umbrella
-[Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1).
+[Quality Platforms Standard](docs/project/verification/quality-platforms.md:1).
 Individual local gate behavior lives in
-[Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1).
+[Quality Platforms Local Gates](docs/project/verification/quality-platforms-local-gates.md:1).
 
 ## Central Aggregate
 
@@ -265,6 +265,6 @@ instead of assuming reuse from the wrapper.
 
 ## References
 
-- [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
-- [Quality Platforms Local Gates](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms-local-gates.md:1)
-- [Verification Core Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/verification-core.md:1)
+- [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
+- [Quality Platforms Local Gates](docs/project/verification/quality-platforms-local-gates.md:1)
+- [Verification Core Architecture](docs/project/architecture/verification-core.md:1)

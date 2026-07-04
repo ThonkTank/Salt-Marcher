@@ -108,6 +108,6 @@ or pending confirmation workflows.
 
 ## References
 
-- [World Planner Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/domain/domain-world-planner.md:1)
-- [World Planner Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/architecture/architecture-world-planner.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
+- [World Planner Domain Model](docs/worldplanner/domain/domain-world-planner.md:1)
+- [World Planner Architecture](docs/worldplanner/architecture/architecture-world-planner.md:1)
+- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)

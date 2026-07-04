@@ -8,7 +8,7 @@ Source of Truth: Compatibility mirror for canonical documentation at `docs/party
 This legacy path remains build-visible during the documentation-taxonomy
 migration. Canonical feature-owned documentation lives at:
 
-- [Party Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/domain/domain-party.md:1)
+- [Party Domain Model](docs/party/domain/domain-party.md:1)
 
 ## Context Role
 
@@ -83,4 +83,4 @@ sharing roster internals.
 
 ## References
 
-- [Party Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/domain/domain-party.md:1)
+- [Party Domain Model](docs/party/domain/domain-party.md:1)
