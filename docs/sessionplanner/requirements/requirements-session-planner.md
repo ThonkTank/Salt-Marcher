@@ -124,7 +124,7 @@ Target state:
 
 ## References
 
-- [Session Planner Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/architecture/architecture-session-planner.md:1)
-- [Session Planner Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/contract/contract-session-planner-persistence.md:1)
-- [Session Planner Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/domain/domain-session-planner.md:1)
-- [Encounter Plan Budget Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-plan-budget.md:1)
+- [Session Planner Architecture](docs/sessionplanner/architecture/architecture-session-planner.md:1)
+- [Session Planner Persistence Contract](docs/sessionplanner/contract/contract-session-planner-persistence.md:1)
+- [Session Planner Domain Model](docs/sessionplanner/domain/domain-session-planner.md:1)
+- [Encounter Plan Budget Contract](docs/encounter/contract/contract-encounter-plan-budget.md:1)

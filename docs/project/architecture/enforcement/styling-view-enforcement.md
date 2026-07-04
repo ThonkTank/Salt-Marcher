@@ -22,7 +22,7 @@ direct-rendered JavaFX surfaces:
 This document does not own stylesheet-file placement, selector vocabulary,
 generic Java-to-CSS communication rules, or the broader active-code ban on
 programmatic style-value construction. Those stay in the dedicated
-[Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
+[Styling Layer Enforcement](docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
 document.
 
 ## Invariant Catalog
@@ -56,7 +56,7 @@ document.
 
 ## References
 
-- [Styling Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/styling.md:1)
-- [View Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-view-enforcement.md:1)
-- [View Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-layer-enforcement.md:1)
-- [Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
+- [Styling Standard](docs/project/architecture/patterns/styling.md:1)
+- [View Enforcement](docs/project/architecture/enforcement/view-view-enforcement.md:1)
+- [View Layer Enforcement](docs/project/architecture/enforcement/view-layer-enforcement.md:1)
+- [Styling Layer Enforcement](docs/project/architecture/enforcement/styling-layer-enforcement.md:1)

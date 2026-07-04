@@ -1,6 +1,6 @@
 ---
 name: source-references
-description: Use before researching, planning, implementing, reviewing, or documenting with any external source or local source evidence. Requires agents to use the global evidence mirror at `/home/aaron/Schreibtisch/projects/references/`, read from extracted local text, and cite concrete local paths for source-backed decisions.
+description: Use before researching, planning, implementing, reviewing, or documenting with any external source or local source evidence. Requires agents to use the global evidence mirror at `references/`, read from extracted local text, and cite concrete local paths for source-backed decisions.
 ---
 
 # Source References
@@ -10,13 +10,13 @@ description: Use before researching, planning, implementing, reviewing, or docum
 Use this skill whenever source material affects a claim or decision. The global
 source of truth for preserved external evidence is:
 
-- `/home/aaron/Schreibtisch/projects/references/`
-- `/home/aaron/Schreibtisch/projects/references/index.md`
+- `references/`
+- `references/index.md`
 
 This skill applies to external web pages, PDFs, documentation, articles,
 standards, package docs, and local repository files used as evidence.
 
-`/home/aaron/Schreibtisch/projects/references/` is an evidence mirror, not a
+`references/` is an evidence mirror, not a
 staging area for product import corpora, production database source material,
 generated catalog inputs, or runtime data sources. Keep runtime data in the
 owning project location and cite its concrete local path when it informs a
@@ -27,14 +27,14 @@ decision.
 Before relying on an external source:
 
 1. Check whether a readable extracted source already exists under
-   `/home/aaron/Schreibtisch/projects/references/<topic>/`.
+   `references/<topic>/`.
 2. If not, preserve the original under
-   `/home/aaron/Schreibtisch/projects/references/.tools/html/` by default.
-3. Use `/home/aaron/Schreibtisch/projects/references/.tools/markdown/` only for
+   `references/.tools/html/` by default.
+3. Use `references/.tools/markdown/` only for
    original Markdown, and keep binary originals in the specific topic folder
    when HTML is not useful.
 4. Create or update the readable extracted text at
-   `/home/aaron/Schreibtisch/projects/references/<topic>/<slug>.md`.
+   `references/<topic>/<slug>.md`.
 5. Include `Original URL`, `Local Source`, `Source Kind`, and `Accessed` in the
    extracted text.
 6. Preserve the source content and meaning. Edit only to fix parser distortion,
@@ -58,7 +58,7 @@ Before relying on a local source:
 
 1. Read the repo file directly.
 2. Cite the repo path and line number when practical.
-3. Do not mirror repo files into `/home/aaron/Schreibtisch/projects/references/`.
+3. Do not mirror repo files into `references/`.
 4. Do not move product import corpora, production database source material, or
    generated catalog inputs into the reference mirror; cite their local path
    directly.
@@ -68,7 +68,7 @@ Before relying on a local source:
 When documenting or handing off a source-based decision:
 
 - cite the readable extracted source under
-  `/home/aaron/Schreibtisch/projects/references/<topic>/`
+  `references/<topic>/`
 - cite the preserved original path from that extracted source's `Local Source`
   metadata
 - include the original URL when a reader may need to audit the source outside
@@ -105,5 +105,5 @@ When reviewing source-backed work, check for:
 
 ## References
 
-- `/home/aaron/Schreibtisch/projects/references/index.md`
-- `/home/aaron/Schreibtisch/projects/references/local-project-evidence.md`
+- `references/index.md`
+- `references/local-project-evidence.md`

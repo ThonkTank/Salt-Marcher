@@ -1,7 +1,0 @@
-interface:
-  display_name: "Delivery"
-  short_description: "Temporary rollout and migration docs"
-  default_prompt: "Use $delivery before creating, changing, reviewing, or planning project-wide or feature-owned delivery docs."
-
-policy:
-  allow_implicit_invocation: true

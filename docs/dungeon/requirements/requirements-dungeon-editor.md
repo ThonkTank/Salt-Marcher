@@ -345,4 +345,4 @@ Delete and corridor binding behavior:
 - [Dungeon Feature Requirements](./requirements-dungeon.md)
 - [Dungeon Editor-Wide Invariants](../verification/verification-dungeon-editor-wide-invariants.md)
 - [Dungeon Editor tool matrices](../verification/)
-- [Maps Canvas Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/requirements/requirements-maps-canvas.md:1), [Dungeon Map Surface Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-dungeon-surface.md:1), and [Dungeon Map Adoption Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
+- [Maps Canvas Requirements](docs/maps/requirements/requirements-maps-canvas.md:1), [Dungeon Map Surface Contract](docs/maps/contract/contract-maps-dungeon-surface.md:1), and [Dungeon Map Adoption Architecture](docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)

@@ -11,11 +11,11 @@ canonical long-form Hex documentation.
 
 Canonical documents:
 
-- [Hex Feature Docs](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/README.md:1)
-- [Hex Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/domain/domain-hex-map.md:1)
-- [Hex Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/contract/contract-hex-persistence.md:1)
-- [Hex Editor Verification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/verification/verification-hex-editor.md:1)
-- [Hex Travel Verification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/verification/verification-hex-travel.md:1)
+- [Hex Feature Docs](docs/hex/README.md:1)
+- [Hex Domain Model](docs/hex/domain/domain-hex-map.md:1)
+- [Hex Persistence Contract](docs/hex/contract/contract-hex-persistence.md:1)
+- [Hex Editor Verification](docs/hex/verification/verification-hex-editor.md:1)
+- [Hex Travel Verification](docs/hex/verification/verification-hex-travel.md:1)
 
 ## Context Role
 
@@ -114,8 +114,8 @@ party-owned travel readback rather than persisted as Hex map truth.
 
 ## References
 
-- [Hex Feature Docs](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/README.md:1)
-- [Hex Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/domain/domain-hex-map.md:1)
-- [Hex Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/contract/contract-hex-persistence.md:1)
-- [Hex Editor Verification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/verification/verification-hex-editor.md:1)
-- [Hex Travel Verification](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/verification/verification-hex-travel.md:1)
+- [Hex Feature Docs](docs/hex/README.md:1)
+- [Hex Domain Model](docs/hex/domain/domain-hex-map.md:1)
+- [Hex Persistence Contract](docs/hex/contract/contract-hex-persistence.md:1)
+- [Hex Editor Verification](docs/hex/verification/verification-hex-editor.md:1)
+- [Hex Travel Verification](docs/hex/verification/verification-hex-travel.md:1)

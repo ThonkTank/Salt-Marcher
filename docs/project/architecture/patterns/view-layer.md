@@ -14,7 +14,7 @@ SaltMarcher uses a cockpit-specific contribution architecture for legacy
 
 This standard does not govern migrated `src/features/**` packages. Those
 packages follow the
-[Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1).
+[Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1).
 
 The domain layer remains the `Model` for legacy `src/view/**` roots. Each
 active view root under
@@ -331,9 +331,9 @@ Domain read-side contract:
 
 ## References
 
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
-- [Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/bootstrap.md:1)
-- [View Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-layer-enforcement.md:1)
-- [View Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-view-enforcement.md:1)
-- [ViewInputEvent Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-view-input-event-enforcement.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [Shell Layer Standard](docs/project/architecture/patterns/shell-layer.md:1)
+- [Bootstrap Standard](docs/project/architecture/patterns/bootstrap.md:1)
+- [View Layer Enforcement](docs/project/architecture/enforcement/view-layer-enforcement.md:1)
+- [View Enforcement](docs/project/architecture/enforcement/view-view-enforcement.md:1)
+- [ViewInputEvent Enforcement](docs/project/architecture/enforcement/view-view-input-event-enforcement.md:1)

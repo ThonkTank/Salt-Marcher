@@ -41,9 +41,9 @@ its own inline presentation rules.
 ## Verification Notes
 
 The matching owner documents are
-[Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
+[Styling Layer Enforcement](docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
 and
-[View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1).
+[View Styling Enforcement](docs/project/architecture/enforcement/styling-view-enforcement.md:1).
 
 The layer document owns the centralized stylesheet owner, selector vocabulary,
 bootstrap stylesheet-loading seam, and generic active-code communication rules
@@ -69,7 +69,7 @@ equivalent non-CSS mechanical surface.
 
 ## References
 
-- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
-- [Styling Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
-- [View Styling Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/styling-view-enforcement.md:1)
-- [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
+- [Architecture Overview](docs/project/architecture/overview.md:1)
+- [Styling Layer Enforcement](docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
+- [View Styling Enforcement](docs/project/architecture/enforcement/styling-view-enforcement.md:1)
+- [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)

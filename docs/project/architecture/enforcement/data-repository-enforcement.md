@@ -58,7 +58,7 @@ Technical diagnostic route:
 
 ## References
 
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
-- [Domain Port Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-port-enforcement.md:1)
-- [Data Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-layer-enforcement.md:1)
-- [Data Gateway Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-gateway-enforcement.md:1)
+- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
+- [Domain Port Enforcement](docs/project/architecture/enforcement/domain-port-enforcement.md:1)
+- [Data Layer Enforcement](docs/project/architecture/enforcement/data-layer-enforcement.md:1)
+- [Data Gateway Enforcement](docs/project/architecture/enforcement/data-gateway-enforcement.md:1)

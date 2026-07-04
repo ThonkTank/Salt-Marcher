@@ -15,7 +15,7 @@ it does not own a second business model, public backend layer, or policy
 language beside `src/domain/**`.
 
 Migrated `src/features/**` persistence seams belong to the
-[Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
+[Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
 after the feature-runtime layering-enforcement transition for that source root
 lands.
 
@@ -207,18 +207,18 @@ Additional rules:
 
 ## References
 
-- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/bootstrap.md:1)
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Data Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-layer-enforcement.md:1)
-- [Data ServiceContribution Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-service-contribution-enforcement.md:1)
-- [Data Repository Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-repository-enforcement.md:1)
-- [Data Query Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-query-enforcement.md:1)
-- [Data Gateway Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-gateway-enforcement.md:1)
-- [Data Model Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-model-enforcement.md:1)
-- [Data Mapper Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-mapper-enforcement.md:1)
-- [Data Persistencecore Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-persistencecore-enforcement.md:1)
-- [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
-- [Modular Monolith ProcessingModule Example](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/modular-monolith-processing-module.md:1)
-- [Spring Modulith Verification](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/spring-modulith-verification.md:1)
+- [Architecture Overview](docs/project/architecture/overview.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [Bootstrap Standard](docs/project/architecture/patterns/bootstrap.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Data Layer Enforcement](docs/project/architecture/enforcement/data-layer-enforcement.md:1)
+- [Data ServiceContribution Enforcement](docs/project/architecture/enforcement/data-service-contribution-enforcement.md:1)
+- [Data Repository Enforcement](docs/project/architecture/enforcement/data-repository-enforcement.md:1)
+- [Data Query Enforcement](docs/project/architecture/enforcement/data-query-enforcement.md:1)
+- [Data Gateway Enforcement](docs/project/architecture/enforcement/data-gateway-enforcement.md:1)
+- [Data Model Enforcement](docs/project/architecture/enforcement/data-model-enforcement.md:1)
+- [Data Mapper Enforcement](docs/project/architecture/enforcement/data-mapper-enforcement.md:1)
+- [Data Persistencecore Enforcement](docs/project/architecture/enforcement/data-persistencecore-enforcement.md:1)
+- [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
+- [Modular Monolith ProcessingModule Example](references/architecture-patterns/sessionplanner-gate-model/modular-monolith-processing-module.md:1)
+- [Spring Modulith Verification](references/architecture-patterns/sessionplanner-gate-model/spring-modulith-verification.md:1)

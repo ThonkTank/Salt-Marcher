@@ -94,7 +94,7 @@ Provide a runtime encounter builder that:
 
 ## References
 
-- [Encounter Runtime State UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter-state-tab.md:1)
-- [Encounter Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/domain/domain-encounter.md:1)
-- [Encounter Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-persistence.md:1)
-- [Encounter Table Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/requirements/requirements-encountertable.md:1)
+- [Encounter Runtime State UI](docs/encounter/requirements/requirements-encounter-state-tab.md:1)
+- [Encounter Domain Model](docs/encounter/domain/domain-encounter.md:1)
+- [Encounter Persistence Contract](docs/encounter/contract/contract-encounter-persistence.md:1)
+- [Encounter Table Feature Spec](docs/encountertable/requirements/requirements-encountertable.md:1)

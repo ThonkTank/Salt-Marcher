@@ -55,13 +55,13 @@ neighboring enforcement documents.
 
 ## References
 
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Data ServiceContribution Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-service-contribution-enforcement.md:1)
-- [Data Repository Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-repository-enforcement.md:1)
-- [Data Query Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-query-enforcement.md:1)
-- [Data Gateway Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-gateway-enforcement.md:1)
-- [Data Model Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-model-enforcement.md:1)
-- [Data Mapper Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-mapper-enforcement.md:1)
-- [Data Persistencecore Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-persistencecore-enforcement.md:1)
+- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Data ServiceContribution Enforcement](docs/project/architecture/enforcement/data-service-contribution-enforcement.md:1)
+- [Data Repository Enforcement](docs/project/architecture/enforcement/data-repository-enforcement.md:1)
+- [Data Query Enforcement](docs/project/architecture/enforcement/data-query-enforcement.md:1)
+- [Data Gateway Enforcement](docs/project/architecture/enforcement/data-gateway-enforcement.md:1)
+- [Data Model Enforcement](docs/project/architecture/enforcement/data-model-enforcement.md:1)
+- [Data Mapper Enforcement](docs/project/architecture/enforcement/data-mapper-enforcement.md:1)
+- [Data Persistencecore Enforcement](docs/project/architecture/enforcement/data-persistencecore-enforcement.md:1)

@@ -12,7 +12,7 @@ This document owns the complete architecture-enforcement catalog for the
 active-root `*ContributionModel` role itself.
 
 Architectural truth for active-root `*ContributionModel` lives only in the
-[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 This document owns only ContributionModel-local enforcement inventory and
 current mechanical drift.
 
@@ -73,6 +73,6 @@ Technical diagnostic route:
 
 ## References
 
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [View Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-layer-enforcement.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [View Layer Enforcement](docs/project/architecture/enforcement/view-layer-enforcement.md:1)

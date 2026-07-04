@@ -81,6 +81,20 @@ improve its score. Changes to these surfaces are not normal experiments; they
 are tracked instruction or governance changes and follow the standard
 SaltMarcher review path.
 
+## External Warden Boundary
+
+The autonomous architecture Warden is external local infrastructure, not a
+SaltMarcher repo implementation surface. Its discoverable operating entrypoint
+is `/opt/saltmarcher-warden/README.md`; removal and maintenance procedures live
+in `/opt/saltmarcher-warden/OPERATIONS.md`.
+
+Agents may read the Warden code and docs to diagnose behavior and report
+proposed changes. They must not edit Warden code, state, secrets, cron,
+sudoers, credentials, approval tokens, or merge policy unless the user
+explicitly authorizes that Warden work. Repo-tracked follow-up changes still use
+the applicable SaltMarcher workflow unless the user explicitly overrides it for
+that slice.
+
 ## Mutable Process Program
 
 The mutable experiment object is the developer process variant. A variant MAY
@@ -299,8 +313,8 @@ Private experiment files remain untracked.
 
 ## References
 
-- [Autodev Process Feedback](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/autodev-process-feedback.md:1)
-- [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
-- [Source References Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/source-references.md:1)
-- [Karpathy Autoresearch Extract](/home/aaron/Schreibtisch/projects/references/autodev/karpathy-autoresearch.md:1)
-- [Darwin Godel Machine Extract](/home/aaron/Schreibtisch/projects/references/autodev/darwin-godel-machine-2505.22954.md:1)
+- [Autodev Process Feedback](docs/project/verification/autodev-process-feedback.md:1)
+- [Agent Instruction Standard](docs/project/architecture/agent-instructions.md:1)
+- [Source References Standard](docs/project/verification/source-references.md:1)
+- [Karpathy Autoresearch Extract](references/autodev/karpathy-autoresearch.md:1)
+- [Darwin Godel Machine Extract](references/autodev/darwin-godel-machine-2505.22954.md:1)

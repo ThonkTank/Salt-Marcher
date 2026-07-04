@@ -1,6 +1,0 @@
-interface:
-  display_name: "Wave Implementation Worker"
-  short_description: "Implements one clean-start local-contract wave-plan artifact."
-  default_prompt: "Use $wave-implementation-worker to implement exactly one local-contract wave-plan artifact from Wave Coordination. Start clean, edit only the assigned write set, and report changed paths and checks."
-  policy:
-    allow_implicit_invocation: true

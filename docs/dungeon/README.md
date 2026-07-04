@@ -90,7 +90,7 @@ Travel matrices:
 
 ### Related Maps Docs
 
-- [Maps Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/README.md:1)
-- [Dungeon Map Adoption Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
-- [Dungeon Map Surface Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-dungeon-surface.md:1)
-- [Maps Canvas Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/requirements/requirements-maps-canvas.md:1)
+- [Maps Feature Overview](docs/maps/README.md:1)
+- [Dungeon Map Adoption Architecture](docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
+- [Dungeon Map Surface Contract](docs/maps/contract/contract-maps-dungeon-surface.md:1)
+- [Maps Canvas Requirements](docs/maps/requirements/requirements-maps-canvas.md:1)

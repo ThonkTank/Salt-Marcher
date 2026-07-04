@@ -9,7 +9,7 @@ surface for domain-owned `Repository` collaboration in `src/domain/**`.
 ## Goal
 
 Architectural truth for `Repository` lives only in the
-[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+[Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1).
 This document owns only the role-local enforcement inventory, focused
 verification surface, and current mechanical coverage for the target outbound
 repository role and its specialized same-context `*PublishedStateRepository`
@@ -50,7 +50,7 @@ is the compile-time Error Prone proof route for checker diagnostics, and
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
-- [Domain Port Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-port-enforcement.md:1)
-- [Spring Modulith Fundamentals](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/spring-modulith-fundamentals.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
+- [Domain Port Enforcement](docs/project/architecture/enforcement/domain-port-enforcement.md:1)
+- [Spring Modulith Fundamentals](references/architecture-patterns/sessionplanner-gate-model/spring-modulith-fundamentals.md:1)

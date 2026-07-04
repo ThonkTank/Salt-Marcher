@@ -213,5 +213,5 @@ run, report private-run fields as `not_applicable`.
 - [Autodev Process Loop](../../../../docs/project/architecture/autodev-process-loop.md)
 - [Autodev Process Feedback](../../../../docs/project/verification/autodev-process-feedback.md)
 - [Agent Instruction Standard](../../../../docs/project/architecture/agent-instructions.md)
-- [Karpathy Autoresearch Extract](/home/aaron/Schreibtisch/projects/references/autodev/karpathy-autoresearch.md)
-- [Darwin Godel Machine Extract](/home/aaron/Schreibtisch/projects/references/autodev/darwin-godel-machine-2505.22954.md)
+- [Karpathy Autoresearch Extract](references/autodev/karpathy-autoresearch.md)
+- [Darwin Godel Machine Extract](references/autodev/darwin-godel-machine-2505.22954.md)

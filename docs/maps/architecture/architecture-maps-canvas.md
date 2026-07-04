@@ -28,7 +28,7 @@ It does not own adopter-native payload fields or adopter gameplay behavior.
 
 This document is not the canonical target model for reusable `slotcontent/**`.
 The canonical reusable-slotcontent architecture lives only in the
-[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 The canvas-specific `CanvasPointerEvent` and `MapRenderScene` seams described
 here are current implementation debt relative to that owner.
 
@@ -130,7 +130,7 @@ its own.
 
 ## References
 
-- [Maps Canvas Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/requirements/requirements-maps-canvas.md:1)
-- [Maps Canvas Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-canvas.md:1)
-- [Dungeon Map Adoption Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
-- [Hex Map Adoption Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-hex-adoption.md:1)
+- [Maps Canvas Requirements](docs/maps/requirements/requirements-maps-canvas.md:1)
+- [Maps Canvas Contract](docs/maps/contract/contract-maps-canvas.md:1)
+- [Dungeon Map Adoption Architecture](docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
+- [Hex Map Adoption Architecture](docs/maps/architecture/architecture-maps-hex-adoption.md:1)

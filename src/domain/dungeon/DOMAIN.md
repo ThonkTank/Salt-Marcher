@@ -11,11 +11,11 @@ canonical long-form Dungeon documentation.
 
 Canonical documents:
 
-- [Dungeon Feature Docs](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/README.md:1)
-- [Dungeon Domain Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/architecture/architecture-dungeon-domain.md:1)
-- [Dungeon Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/domain/domain-dungeon.md:1)
-- [Dungeon Core Model Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-core-model-invariants.md:1)
-- [Dungeon Editor-Wide Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md:1)
+- [Dungeon Feature Docs](docs/dungeon/README.md:1)
+- [Dungeon Domain Architecture](docs/dungeon/architecture/architecture-dungeon-domain.md:1)
+- [Dungeon Domain Model](docs/dungeon/domain/domain-dungeon.md:1)
+- [Dungeon Core Model Invariants](docs/dungeon/verification/verification-dungeon-core-model-invariants.md:1)
+- [Dungeon Editor-Wide Invariants](docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md:1)
 
 ## Context Role
 
@@ -100,8 +100,8 @@ state must be recomputed or routed through the canonical owner documents.
 
 ## References
 
-- [Dungeon Feature Docs](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/README.md:1)
-- [Dungeon Domain Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/architecture/architecture-dungeon-domain.md:1)
-- [Dungeon Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/domain/domain-dungeon.md:1)
-- [Dungeon Core Model Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-core-model-invariants.md:1)
-- [Dungeon Editor-Wide Invariants](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md:1)
+- [Dungeon Feature Docs](docs/dungeon/README.md:1)
+- [Dungeon Domain Architecture](docs/dungeon/architecture/architecture-dungeon-domain.md:1)
+- [Dungeon Domain Model](docs/dungeon/domain/domain-dungeon.md:1)
+- [Dungeon Core Model Invariants](docs/dungeon/verification/verification-dungeon-core-model-invariants.md:1)
+- [Dungeon Editor-Wide Invariants](docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md:1)

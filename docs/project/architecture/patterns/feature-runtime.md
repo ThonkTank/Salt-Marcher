@@ -186,8 +186,8 @@ Until a named gate exists, review owns:
 
 ## References
 
-- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
+- [Architecture Overview](docs/project/architecture/overview.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Agent Instruction Standard](docs/project/architecture/agent-instructions.md:1)

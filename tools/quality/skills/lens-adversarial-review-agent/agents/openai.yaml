@@ -1,7 +1,0 @@
-interface:
-  display_name: "Lens: Adversarial Review Agent"
-  short_description: "Evidence-first frame for every review subagent"
-  default_prompt: "Use $lens-adversarial-review-agent as the first skill in every review subagent before applying any assigned coordinator or specialist lens."
-
-policy:
-  allow_implicit_invocation: true

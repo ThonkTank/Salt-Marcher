@@ -8,7 +8,7 @@ Source of Truth: Compatibility mirror for canonical documentation at `docs/world
 This legacy path remains build-visible during the documentation-taxonomy
 migration. Canonical feature-owned documentation lives at:
 
-- [World Planner Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/domain/domain-world-planner.md:1)
+- [World Planner Domain Model](docs/worldplanner/domain/domain-world-planner.md:1)
 
 ## Context Role
 
@@ -92,4 +92,4 @@ dungeon, and hex truth remains outside this context.
 
 ## References
 
-- [World Planner Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/worldplanner/domain/domain-world-planner.md:1)
+- [World Planner Domain Model](docs/worldplanner/domain/domain-world-planner.md:1)

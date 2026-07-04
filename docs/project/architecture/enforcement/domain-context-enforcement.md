@@ -81,8 +81,8 @@ type legality. Those live in the neighboring role-specific owner docs.
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
-- [Domain ApplicationService Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)
-- [Domain UseCase Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
-- [Domain Published Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-published-enforcement.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Domain Layer Enforcement](docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
+- [Domain ApplicationService Enforcement](docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)
+- [Domain UseCase Enforcement](docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
+- [Domain Published Enforcement](docs/project/architecture/enforcement/domain-published-enforcement.md:1)

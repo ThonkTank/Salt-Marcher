@@ -82,7 +82,7 @@ backend movement path.
 These canvas-specific seams are current implementation seams, not new
 canonical reusable role families. The canonical reusable-slotcontent target
 lives only in the
-[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 
 ### Map Catalog
 
@@ -115,7 +115,7 @@ sharing the editor backend boundary.
 
 ## References
 
-- [Maps Canvas Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/architecture/architecture-maps-canvas.md:1)
-- [Maps Canvas Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-canvas.md:1)
-- [Dungeon Map Surface Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/maps/contract/contract-maps-dungeon-surface.md:1)
-- [Dungeon Feature Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/README.md:1)
+- [Maps Canvas Architecture](docs/maps/architecture/architecture-maps-canvas.md:1)
+- [Maps Canvas Contract](docs/maps/contract/contract-maps-canvas.md:1)
+- [Dungeon Map Surface Contract](docs/maps/contract/contract-maps-dungeon-surface.md:1)
+- [Dungeon Feature Overview](docs/dungeon/README.md:1)

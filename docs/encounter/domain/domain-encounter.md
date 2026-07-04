@@ -222,10 +222,10 @@ runtime state.
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter.md:1)
-- [Encounter Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-persistence.md:1)
-- [Encounter Builder Inputs Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-builder-inputs.md:1)
-- [Encounter Saved Plans Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-saved-plans.md:1)
-- [Encounter State Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-state.md:1)
-- [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter-state-tab.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Feature Spec](docs/encounter/requirements/requirements-encounter.md:1)
+- [Encounter Persistence](docs/encounter/contract/contract-encounter-persistence.md:1)
+- [Encounter Builder Inputs Contract](docs/encounter/contract/contract-encounter-builder-inputs.md:1)
+- [Encounter Saved Plans Contract](docs/encounter/contract/contract-encounter-saved-plans.md:1)
+- [Encounter State Contract](docs/encounter/contract/contract-encounter-state.md:1)
+- [Encounter UI](docs/encounter/requirements/requirements-encounter-state-tab.md:1)

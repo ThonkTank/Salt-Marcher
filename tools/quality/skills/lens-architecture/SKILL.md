@@ -6,7 +6,7 @@ description: "Reviews codebase architecture or uncommitted changes for architect
 
 Use this specialist lens only after applying:
 
-- `/home/aaron/Schreibtisch/projects/SaltMarcher/tools/quality/skills/lens-adversarial-review-agent/SKILL.md`
+- `tools/quality/skills/lens-code-quality/SKILL.md`
 
 Follow that skill's Specialist Lens Contract. This file adds only specialist
 criteria, labels, verdicts, and report sections for this lens.

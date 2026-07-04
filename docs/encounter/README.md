@@ -14,13 +14,13 @@ only the user-accepted roster when the user saves a plan.
 
 ## Documentation Set
 
-- [Feature Spec](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter.md:1)
-- [Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/domain/domain-encounter.md:1)
-- [Persistence](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-persistence.md:1)
-- [Saved Plans Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-saved-plans.md:1)
-- [Plan Budget Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/contract/contract-encounter-plan-budget.md:1)
-- [Encounter Table Feature README](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encountertable/README.md:1)
-- [Encounter UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/requirements/requirements-encounter-state-tab.md:1)
+- [Feature Spec](docs/encounter/requirements/requirements-encounter.md:1)
+- [Domain Model](docs/encounter/domain/domain-encounter.md:1)
+- [Persistence](docs/encounter/contract/contract-encounter-persistence.md:1)
+- [Saved Plans Contract](docs/encounter/contract/contract-encounter-saved-plans.md:1)
+- [Plan Budget Contract](docs/encounter/contract/contract-encounter-plan-budget.md:1)
+- [Encounter Table Feature README](docs/encountertable/README.md:1)
+- [Encounter UI](docs/encounter/requirements/requirements-encounter-state-tab.md:1)
 
 ## Scope
 

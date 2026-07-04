@@ -53,6 +53,6 @@ Binders do not duplicate detail-entry assembly.
 
 ## References
 
-- [Catalog Tab UI](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/requirements/requirements-creatures-catalog.md:1)
-- [Creatures Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/creatures/domain/domain-creatures.md:1)
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
+- [Catalog Tab UI](docs/creatures/requirements/requirements-creatures-catalog.md:1)
+- [Creatures Domain Model](docs/creatures/domain/domain-creatures.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)

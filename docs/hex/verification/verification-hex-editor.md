@@ -69,7 +69,7 @@ Dungeon-owned marker semantics, or direct SQLite rows without domain readback.
 
 - Interactive Hex travel and compact runtime `Reise` travel-state behavior are
   covered by
-  `/home/aaron/Schreibtisch/projects/SaltMarcher/docs/hex/verification/verification-hex-travel.md:1`.
+  `docs/hex/verification/verification-hex-travel.md:1`.
 
 ## References
 

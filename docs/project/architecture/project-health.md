@@ -116,7 +116,7 @@ must be tracked centrally across areas, skills, or review governance.
 ## Register
 
 The central register is
-[Project Health Debt Register](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/project-health-debt.md:1).
+[Project Health Debt Register](docs/project/architecture/project-health-debt.md:1).
 
 Every marker ID must have exactly one register entry. Every register entry must
 have a marker unless it documents a pure process or tooling problem with no
@@ -282,8 +282,8 @@ rules.
 
 ## References
 
-- [Project Health Debt Register](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/project-health-debt.md:1)
-- [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
-- [Agent Context Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-context.md:1)
-- [Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/documentation.md:1)
-- [Quality Platforms](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
+- [Project Health Debt Register](docs/project/architecture/project-health-debt.md:1)
+- [Agent Instruction Standard](docs/project/architecture/agent-instructions.md:1)
+- [Agent Context Standard](docs/project/architecture/agent-context.md:1)
+- [Documentation Standard](docs/project/architecture/documentation.md:1)
+- [Quality Platforms](docs/project/verification/quality-platforms.md:1)

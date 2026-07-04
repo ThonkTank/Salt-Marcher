@@ -98,7 +98,7 @@ owner before producing more instances.
   Project-wide rollout, migration, or parity sequencing.
 - `docs/project/verification/*.md`
   Project-wide qualification, traceability, and proof ownership.
-- `/home/aaron/Schreibtisch/projects/references/**`
+- `references/**`
   Local-only source mirrors and readable extracts governed by the
   Source References Standard, not canonical SaltMarcher policy by themselves.
 
@@ -131,7 +131,7 @@ owner before producing more instances.
 - ADRs, when used, must record one decision only.
 - Delivery documents are temporary and must not become canonical architecture
   sources.
-- `/home/aaron/Schreibtisch/projects/references/...` content supports decisions with source evidence; it
+- `references/...` content supports decisions with source evidence; it
   must not define SaltMarcher policy unless a standard, ADR, or feature
   document adopts that interpretation.
 
@@ -290,7 +290,7 @@ Use:
 
 ## References
 
-- [Project Documentation Entry Point](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/README.md:1)
-- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
-- [Implementation Documentation Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-documentation.md:1)
-- [Implementation Artifact Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/implementation-artifacts.md:1)
+- [Project Documentation Entry Point](docs/project/README.md:1)
+- [Architecture Overview](docs/project/architecture/overview.md:1)
+- [Implementation Documentation Standard](docs/project/architecture/implementation-documentation.md:1)
+- [Work Logs](docs/project/architecture/work-logs.md:1)

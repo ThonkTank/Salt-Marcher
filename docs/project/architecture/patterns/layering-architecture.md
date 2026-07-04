@@ -19,10 +19,10 @@ live only in the dedicated owner documents for bootstrap, shell, view, domain,
 and data.
 
 For migrated `src/features/**`, this document routes only to the
-[Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1).
+[Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1).
 For any internal legacy `src/view/**` roles, reusable `slotcontent/**` rules,
 presentation-state cycles, or view/domain seam details, this document routes only to the
-[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 
 ## Layer Responsibility Matrix
 
@@ -135,7 +135,7 @@ The only intentional public boundaries across layers are:
   `ShellControls`, `ShellRuntimeContext`, `ServiceContribution`, and
   `ServiceRegistry`
 - feature-runtime shell bindings and persistence/authored-fact seams as defined by
-  the [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
+  the [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
 - view `*Contribution` roots as shell-facing registration adapters
 - view `*Binder` roots as runtime composition adapters
 - domain family `*ApplicationService` roots as the public backend boundary
@@ -164,7 +164,7 @@ The only intentional public boundaries across layers are:
 ### Presentation Mutation
 
 Presentation-state mutation rules are owned only by the
-[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 
 Forbidden shortcuts:
 
@@ -205,11 +205,11 @@ before it turns into hard structural failure.
 
 ## References
 
-- [Architecture Overview](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/overview.md:1)
-- [Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/bootstrap.md:1)
-- [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
-- [Feature Runtime Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/feature-runtime.md:1)
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Data Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/data-layer.md:1)
-- [Layering Architecture Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
+- [Architecture Overview](docs/project/architecture/overview.md:1)
+- [Bootstrap Standard](docs/project/architecture/patterns/bootstrap.md:1)
+- [Shell Layer Standard](docs/project/architecture/patterns/shell-layer.md:1)
+- [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
+- [Layering Architecture Enforcement](docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)

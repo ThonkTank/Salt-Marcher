@@ -9,7 +9,7 @@ surface for `UseCase` orchestration surfaces in `src/domain/**`.
 ## Goal
 
 Architectural truth for `UseCase` lives only in the
-[Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1).
+[Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1).
 This document owns only the role-local enforcement inventory, focused
 verification surface, and current mechanical drift.
 
@@ -48,7 +48,7 @@ Technical diagnostic route:
 No dedicated mechanically enforced communication invariant is owned by this
 document alone today. Use-case orchestration is still constrained by the
 generic domain-layer communication and outer-dependency boundaries owned by
-[Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
+[Domain Layer Enforcement](docs/project/architecture/enforcement/domain-layer-enforcement.md:1).
 
 ### Review-Owned
 
@@ -61,8 +61,8 @@ generic domain-layer communication and outer-dependency boundaries owned by
 
 ## References
 
-- [Domain Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/domain-layer.md:1)
-- [Domain ApplicationService Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)
-- [Domain Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
-- [Domain Helper Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/domain-helper-enforcement.md:1)
-- [Spring Modulith Verification](/home/aaron/Schreibtisch/projects/references/architecture-patterns/sessionplanner-gate-model/spring-modulith-verification.md:1)
+- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Domain ApplicationService Enforcement](docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)
+- [Domain Layer Enforcement](docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
+- [Domain Helper Enforcement](docs/project/architecture/enforcement/domain-helper-enforcement.md:1)
+- [Spring Modulith Verification](references/architecture-patterns/sessionplanner-gate-model/spring-modulith-verification.md:1)

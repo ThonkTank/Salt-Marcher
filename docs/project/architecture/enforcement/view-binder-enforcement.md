@@ -12,7 +12,7 @@ This document owns the complete architecture-enforcement catalog for the
 `*Binder` role itself.
 
 Architectural truth for the Binder role lives only in the
-[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 This document owns only Binder-local enforcement inventory and current
 mechanical drift.
 
@@ -101,9 +101,9 @@ through review-owned role semantics below.
 
 ## References
 
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
-- [View Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-layer-enforcement.md:1)
-- [View IntentHandler Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-intent-handler-enforcement.md:1)
-- [ViewInputEvent Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-view-input-event-enforcement.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [Shell Layer Standard](docs/project/architecture/patterns/shell-layer.md:1)
+- [View Layer Enforcement](docs/project/architecture/enforcement/view-layer-enforcement.md:1)
+- [View IntentHandler Enforcement](docs/project/architecture/enforcement/view-intent-handler-enforcement.md:1)
+- [ViewInputEvent Enforcement](docs/project/architecture/enforcement/view-view-input-event-enforcement.md:1)

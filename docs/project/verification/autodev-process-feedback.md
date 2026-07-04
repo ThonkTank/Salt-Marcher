@@ -334,8 +334,8 @@ Tracked instruction changes that promote a process variant must cite:
 
 ## References
 
-- [Autodev Process Loop](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/autodev-process-loop.md:1)
-- [Quality Platforms Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/verification/quality-platforms.md:1)
-- [Agent Instruction Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/agent-instructions.md:1)
-- [Karpathy Autoresearch Extract](/home/aaron/Schreibtisch/projects/references/autodev/karpathy-autoresearch.md:1)
-- [Darwin Godel Machine Extract](/home/aaron/Schreibtisch/projects/references/autodev/darwin-godel-machine-2505.22954.md:1)
+- [Autodev Process Loop](docs/project/architecture/autodev-process-loop.md:1)
+- [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
+- [Agent Instruction Standard](docs/project/architecture/agent-instructions.md:1)
+- [Karpathy Autoresearch Extract](references/autodev/karpathy-autoresearch.md:1)
+- [Darwin Godel Machine Extract](references/autodev/darwin-godel-machine-2505.22954.md:1)

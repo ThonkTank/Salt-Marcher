@@ -144,8 +144,8 @@ Target state:
 
 ## References
 
-- [Session Planner Requirements](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/requirements/requirements-session-planner.md:1)
-- [Session Planner Architecture](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/architecture/architecture-session-planner.md:1)
-- [Session Planner Persistence Contract](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/sessionplanner/contract/contract-session-planner-persistence.md:1)
-- [Party Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/party/domain/domain-party.md:1)
-- [Encounter Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/encounter/domain/domain-encounter.md:1)
+- [Session Planner Requirements](docs/sessionplanner/requirements/requirements-session-planner.md:1)
+- [Session Planner Architecture](docs/sessionplanner/architecture/architecture-session-planner.md:1)
+- [Session Planner Persistence Contract](docs/sessionplanner/contract/contract-session-planner-persistence.md:1)
+- [Party Domain Model](docs/party/domain/domain-party.md:1)
+- [Encounter Domain Model](docs/encounter/domain/domain-encounter.md:1)

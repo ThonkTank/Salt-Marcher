@@ -12,7 +12,7 @@ application boundaries, commands, invariants, or persistence policy.
 
 Canonical runtime ownership:
 
-- [Dungeon Domain Model](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/dungeon/domain/domain-dungeon.md:1)
+- [Dungeon Domain Model](docs/dungeon/domain/domain-dungeon.md:1)
 
 Historical terms below may help when reading older code or pass logs, but they
 must not be extended as active model truth.

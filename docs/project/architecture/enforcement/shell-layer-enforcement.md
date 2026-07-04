@@ -78,12 +78,12 @@ Technical diagnostic route:
 
 ## References
 
-- [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/bootstrap.md:1)
-- [Shell AppShell Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/shell-app-shell-enforcement.md:1)
-- [Shell RuntimeContext Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/shell-runtime-context-enforcement.md:1)
-- [View Contribution Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-contribution-enforcement.md:1)
-- [View Binder Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-binder-enforcement.md:1)
-- [Data Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-layer-enforcement.md:1)
-- [Data ServiceContribution Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/data-service-contribution-enforcement.md:1)
+- [Shell Layer Standard](docs/project/architecture/patterns/shell-layer.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [Bootstrap Standard](docs/project/architecture/patterns/bootstrap.md:1)
+- [Shell AppShell Enforcement](docs/project/architecture/enforcement/shell-app-shell-enforcement.md:1)
+- [Shell RuntimeContext Enforcement](docs/project/architecture/enforcement/shell-runtime-context-enforcement.md:1)
+- [View Contribution Enforcement](docs/project/architecture/enforcement/view-contribution-enforcement.md:1)
+- [View Binder Enforcement](docs/project/architecture/enforcement/view-binder-enforcement.md:1)
+- [Data Layer Enforcement](docs/project/architecture/enforcement/data-layer-enforcement.md:1)
+- [Data ServiceContribution Enforcement](docs/project/architecture/enforcement/data-service-contribution-enforcement.md:1)

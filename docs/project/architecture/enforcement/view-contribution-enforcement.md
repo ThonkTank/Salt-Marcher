@@ -12,7 +12,7 @@ This document owns the complete architecture-enforcement catalog for the
 active-root `*Contribution` role itself.
 
 Architectural truth for the active-root `*Contribution` role lives only in the
-[View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1).
+[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 This document owns only Contribution-local enforcement inventory.
 
 It answers four questions for every `*Contribution` surface:
@@ -76,11 +76,11 @@ Technical diagnostic route:
 
 ## References
 
-- [View Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/view-layer.md:1)
-- [Layering Architecture Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/layering-architecture.md:1)
-- [Shell Layer Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/shell-layer.md:1)
-- [Bootstrap Standard](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/patterns/bootstrap.md:1)
-- [View Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/view-layer-enforcement.md:1)
-- [Shell Layer Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/shell-layer-enforcement.md:1)
-- [Shell RuntimeContext Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/shell-runtime-context-enforcement.md:1)
-- [Bootstrap Enforcement](/home/aaron/Schreibtisch/projects/SaltMarcher/docs/project/architecture/enforcement/bootstrap-enforcement.md:1)
+- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
+- [Shell Layer Standard](docs/project/architecture/patterns/shell-layer.md:1)
+- [Bootstrap Standard](docs/project/architecture/patterns/bootstrap.md:1)
+- [View Layer Enforcement](docs/project/architecture/enforcement/view-layer-enforcement.md:1)
+- [Shell Layer Enforcement](docs/project/architecture/enforcement/shell-layer-enforcement.md:1)
+- [Shell RuntimeContext Enforcement](docs/project/architecture/enforcement/shell-runtime-context-enforcement.md:1)
+- [Bootstrap Enforcement](docs/project/architecture/enforcement/bootstrap-enforcement.md:1)
