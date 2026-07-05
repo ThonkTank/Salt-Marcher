@@ -26,7 +26,7 @@ and defines seven jobs.
 | `quality-platforms / behavior-gate` | `Required CI Gate` | Selects behavior harnesses from `tools/quality/config/harness-map.json` and runs them under `xvfb-run`; succeeds with a notice when no mapped surface changed. |
 | `quality-platforms / judge-review` | `Required CI Gate` | Runs immediately for R0, fails closed for R1+ without the judge secret, and accepts only a PASS verdict or owner-only `judge-override`. |
 | `quality-platforms / ckjm-report` | `Informational CI Report` | Runs `tools/gradle/run-observable-gradle.sh ckjmMain` and uploads the CKJM report from `build/reports/ckjm/`. |
-| `quality-platforms / sonarcloud` | `Informational CI Report` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`; skipped for Dependabot because repository secrets are unavailable. |
+| `quality-platforms / sonarcloud` | `Informational CI Report` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`; skipped for Dependabot or when SonarCloud configuration is incomplete. |
 | `quality-platforms / codescene` | `Informational CI Report` | Runs `python3 tools/quality/scripts/codescene_delta.py`; skipped for Dependabot because repository secrets are unavailable. |
 
 The focused local gate
@@ -51,6 +51,11 @@ Repository variables:
 
 - `SONAR_ORGANIZATION`
 - `SONAR_PROJECT_KEY`
+
+The job performs a configuration preflight before checkout and Gradle setup. If
+`SONAR_TOKEN`, `SONAR_ORGANIZATION`, or `SONAR_PROJECT_KEY` is absent, the
+informational report is skipped with a green GitHub job and an explicit log
+message instead of running Gradle with empty Sonar properties.
 
 Recommended service-side setup: bind the project to this repository; use
 `main` as the New Code baseline; create a SaltMarcher new-code quality gate;
