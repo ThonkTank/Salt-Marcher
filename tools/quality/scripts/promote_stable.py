@@ -6,10 +6,12 @@ from __future__ import annotations
 import re
 import json
 import subprocess
+import tempfile
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+ARCHIVED_PLAN_HEADING = "# SaltMarcher Target Operating Model"
 
 
 def run(args: list[str], check: bool = False) -> subprocess.CompletedProcess[str]:
@@ -105,6 +107,61 @@ def release_notes(prs: list[dict]) -> str:
     return "\n".join(notes)
 
 
+def pr_360_comments() -> list[dict]:
+    result = run(["gh", "pr", "view", "360", "--json", "comments"])
+    if result.returncode != 0:
+        raise RuntimeError("Could not query PR #360 archive comments: " + result.stdout.strip())
+    return json.loads(result.stdout or "{}").get("comments", [])
+
+
+def archived_predecessor_plan() -> str:
+    for comment in pr_360_comments():
+        body = comment.get("body") or ""
+        if ARCHIVED_PLAN_HEADING in body:
+            return body
+    raise RuntimeError("PR #360 does not contain the archived predecessor plan comment")
+
+
+def write_release_assets(directory: Path) -> list[str]:
+    plan = directory / "saltmarcher-target-operating-model-plan-pr360.md"
+    plan.write_text(archived_predecessor_plan(), encoding="utf-8")
+
+    missing_review = directory / "saltmarcher-independent-review-report-missing.md"
+    missing_review.write_text(
+        "\n".join([
+            "# SaltMarcher Independent Review Report",
+            "",
+            "The complete independent review report was not available when this",
+            "stable release was created. PR #360 records the missing report as an",
+            "owner action. Once the owner provides the complete copy, attach it to",
+            "the stable release archive route named by ADR 0001.",
+            "",
+        ]),
+        encoding="utf-8",
+    )
+    return [str(plan), str(missing_review)]
+
+
+def create_release(tag: str, notes: str) -> None:
+    with tempfile.TemporaryDirectory(prefix="saltmarcher-release-assets-") as tmp:
+        assets = write_release_assets(Path(tmp))
+        run(
+            [
+                "gh",
+                "release",
+                "create",
+                tag,
+                *assets,
+                "--title",
+                f"SaltMarcher {tag}",
+                "--notes",
+                notes,
+                "--verify-tag",
+            ],
+            check=True,
+        )
+
+
 def main() -> int:
     previous = latest_tag()
     prs = merged_prs_since(previous)
@@ -118,6 +175,7 @@ def main() -> int:
     notes = release_notes(prs)
     run(["git", "tag", "-a", tag, "-m", f"SaltMarcher {tag}\n\n{notes}"], check=True)
     run(["git", "push", "origin", tag], check=True)
+    create_release(tag, notes)
     print(f"promoted {tag}")
     return 0
 

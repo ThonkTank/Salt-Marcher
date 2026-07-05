@@ -96,6 +96,7 @@ def issue_template_status() -> list[str]:
 def owner_action_status() -> list[str]:
     return [
         *issue_template_status(),
+        "- Vollstaendigen unabhaengigen Review-Report fuer das Stable-Release-Archiv bereitstellen; bis dahin enthaelt das Release einen Missing-Report-Hinweis.",
     ]
 
 
