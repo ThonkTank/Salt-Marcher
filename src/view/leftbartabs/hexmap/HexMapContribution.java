@@ -13,6 +13,7 @@ import shell.api.ShellRuntimeContext;
 
 public final class HexMapContribution implements ShellContribution {
 
+    // Review-test marker for P5a risk-label enforcement.
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellLeftBarTabSpec(
