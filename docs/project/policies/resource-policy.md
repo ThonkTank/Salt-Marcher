@@ -13,7 +13,7 @@ daily call cap; the configured provider/account subscription limits are the
 usage boundary.
 
 Judge activation requires this policy to be signed off once by the owner and
-either `ANTHROPIC_API_KEY` or `ANTHROPIC_AUTH_TOKEN` to be set in GitHub
+either `ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN` to be set in GitHub
 Actions. Until then, R1+ judge review fails closed with an owner action.
 
 Initial owner approval is confirmed by direct owner instruction on 2026-07-05.

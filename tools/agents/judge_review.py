@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import urllib.error
@@ -15,7 +16,6 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 R1_PLUS = {"risk:R1", "risk:R2", "risk:R3a", "risk:R3b", "risk:R3c"}
 DEFAULT_MODEL = "claude-sonnet-4-6"
-CLAUDE_CODE_SYSTEM_PROMPT = "You are a Claude agent, built on Anthropic's Claude Agent SDK."
 JUDGE_INSTRUCTIONS = (
     "You are the independent judge for an autonomous coding pipeline. "
     "The implementer is a different model. Verdict PASS only if: no gate "
@@ -116,32 +116,24 @@ def lens_checklists() -> str:
 
 
 def call_anthropic(prompt: str) -> str:
+    if os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"):
+        return call_claude_code(prompt)
     api_key = os.environ.get("ANTHROPIC_API_KEY")
-    auth_token = os.environ.get("ANTHROPIC_AUTH_TOKEN") or os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
-    if not (api_key or auth_token):
-        print("judge-review: missing ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN", file=sys.stderr)
+    if not api_key:
+        print("judge-review: missing ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN", file=sys.stderr)
         raise SystemExit(2)
     headers = {
         "content-type": "application/json",
         "anthropic-version": "2023-06-01",
+        "x-api-key": api_key,
     }
-    if auth_token:
-        headers["authorization"] = f"Bearer {auth_token}"
-        headers["anthropic-beta"] = "oauth-2025-04-20"
-        system_prompt = CLAUDE_CODE_SYSTEM_PROMPT
-        user_prompt = f"{JUDGE_INSTRUCTIONS}\n\n{prompt}"
-    else:
-        headers["x-api-key"] = api_key or ""
-        system_prompt = JUDGE_INSTRUCTIONS
-        user_prompt = prompt
     payload = {
         "model": os.environ.get("JUDGE_MODEL") or DEFAULT_MODEL,
         "max_tokens": 2000,
-        "system": system_prompt,
-        "messages": [{"role": "user", "content": user_prompt}],
+        "system": JUDGE_INSTRUCTIONS,
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0,
     }
-    if not auth_token:
-        payload["temperature"] = 0
     request = urllib.request.Request(
         "https://api.anthropic.com/v1/messages",
         data=json.dumps(payload).encode("utf-8"),
@@ -159,6 +151,43 @@ def call_anthropic(prompt: str) -> str:
         print(f"judge-review: API error: {exc}", file=sys.stderr)
         raise SystemExit(2) from exc
     return "\n".join(block.get("text", "") for block in data.get("content", []) if block.get("type") == "text")
+
+
+def call_claude_code(prompt: str) -> str:
+    if shutil.which("claude") is None:
+        print("judge-review: CLAUDE_CODE_OAUTH_TOKEN is set but `claude` is not installed", file=sys.stderr)
+        raise SystemExit(2)
+    full_prompt = f"{JUDGE_INSTRUCTIONS}\n\n{prompt}"
+    token = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN", "")
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in {"ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"}
+    }
+    env["CLAUDE_CODE_OAUTH_TOKEN"] = token
+    env["CLAUDE_CODE_ENTRYPOINT"] = "claude-code-github-action"
+    result = subprocess.run(
+        [
+            "claude",
+            "-p",
+            full_prompt,
+            "--output-format",
+            "text",
+            "--model",
+            os.environ.get("JUDGE_MODEL") or DEFAULT_MODEL,
+        ],
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        timeout=180,
+    )
+    if result.returncode != 0:
+        stderr = result.stderr.replace(token, "<redacted>") if token else result.stderr
+        print(f"judge-review: Claude Code CLI failed with exit {result.returncode}: {stderr}", file=sys.stderr)
+        raise SystemExit(2)
+    return result.stdout
 
 
 def has_pass_verdict(verdict: str) -> bool:
