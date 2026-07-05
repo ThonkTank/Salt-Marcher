@@ -13,6 +13,7 @@ import shell.api.ShellRuntimeContext;
 
 public final class HexMapContribution implements ShellContribution {
 
+    // Review-test marker for N1 P3 behavior-gate path selection.
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellLeftBarTabSpec(
