@@ -34,8 +34,9 @@ in one line each.
 
 ## Budget
 
-Respect `JUDGE_MAX_CALLS_PER_DAY`. If the budget is exceeded, defer R1+ work
-to the next night instead of skipping `judge-review`.
+Do not skip or bypass `judge-review` for R1+ work. If the configured
+provider/account limit or API availability blocks judge execution, fail closed
+and report the blocker.
 
 ## Migration Slice Rule
 
