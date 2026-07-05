@@ -162,6 +162,13 @@ def create_release(tag: str, notes: str) -> None:
         )
 
 
+def ensure_git_identity() -> None:
+    if run(["git", "config", "user.name"]).returncode != 0:
+        run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+    if run(["git", "config", "user.email"]).returncode != 0:
+        run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"], check=True)
+
+
 def main() -> int:
     previous = latest_tag()
     prs = merged_prs_since(previous)
@@ -173,6 +180,7 @@ def main() -> int:
         return 0
     tag = next_tag(previous, minor=any("risk:R2" in label_names(pr) for pr in prs))
     notes = release_notes(prs)
+    ensure_git_identity()
     run(["git", "tag", "-a", tag, "-m", f"SaltMarcher {tag}\n\n{notes}"], check=True)
     run(["git", "push", "origin", tag], check=True)
     create_release(tag, notes)
