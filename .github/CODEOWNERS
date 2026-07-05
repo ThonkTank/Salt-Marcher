@@ -1,0 +1,13 @@
+.github/workflows/** @ThonkTank
+.github/CODEOWNERS @ThonkTank
+tools/gradle/build-logic/** @ThonkTank
+tools/gradle/build-logic-settings/** @ThonkTank
+tools/gradle/build-harness/** @ThonkTank
+tools/gradle/run-staged-verification.sh @ThonkTank
+tools/gradle/run-observable-gradle.sh @ThonkTank
+tools/quality/config/frozen-surfaces.txt @ThonkTank
+tools/quality/scripts/** @ThonkTank
+tools/agents/** @ThonkTank
+tools/local/** @ThonkTank
+docs/project/policies/resource-policy.md @ThonkTank
+AGENTS.md @ThonkTank

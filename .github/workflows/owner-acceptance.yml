@@ -1,0 +1,36 @@
+name: owner-acceptance
+
+on:
+  pull_request:
+    types: [closed]
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  mark-r2-acceptance:
+    if: github.event_name == 'pull_request' && github.event.pull_request.merged == true && contains(join(github.event.pull_request.labels.*.name, ','), 'risk:R2')
+    runs-on: ubuntu-latest
+    steps:
+      - run: gh pr edit "$PR_NUMBER" --add-label abnahme-offen
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+
+  rejected-acceptance-issue:
+    if: github.event_name == 'issues' && github.event.label.name == 'abnahme-abgelehnt'
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          gh issue create \
+            --title "Abnahme abgelehnt: #${ISSUE_NUMBER}" \
+            --label bug \
+            --label owner-feedback \
+            --body "Die Abnahme wurde abgelehnt. Standard ist Revert, wenn innerhalb von zwei Naechten kein Fix landet. Ursprung: #${ISSUE_NUMBER}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}

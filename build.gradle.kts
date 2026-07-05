@@ -444,6 +444,7 @@ val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session
 val worldPlannerBackendHarnessDataDir = layout.buildDirectory.dir("world-planner-backend-data")
 val worldPlannerControlsRawInputHarnessDataDir = layout.buildDirectory.dir("world-planner-controls-raw-input-data")
 val worldPlannerUiHarnessDataDir = layout.buildDirectory.dir("world-planner-ui-data")
+val smokeStartupHarnessDataDir = layout.buildDirectory.dir("smoke-startup-data")
 
 behaviorHarnesses.javaExec("catalogInitialLoadHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
@@ -671,6 +672,26 @@ behaviorHarnesses.javaExec("worldPlannerUiHarness") {
     }
 }
 
+behaviorHarnesses.javaExec("smokeStartupHarness") {
+    classification.set(BehaviorHarnessClassification.UTILITY)
+    suiteIds.set(listOf("startup-smoke"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the app bootstrap and SQLite startup smoke harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("bootstrap.SmokeStartupHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = smokeStartupHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+    }
+}
+
 val mainJavaClassesDir = layout.buildDirectory.dir("classes/java/main")
 
 val architectureTest by tasks.registering(Test::class) {
@@ -684,15 +705,6 @@ val architectureTest by tasks.registering(Test::class) {
     classpath = sourceSets["test"].runtimeClasspath
     useJUnitPlatform()
     include("architecture/**")
-    exclude("architecture/data/persistencecore/**")
-    exclude("architecture/domain/layer/**")
-    exclude("architecture/view/binder/**")
-    exclude("architecture/view/contribution/**")
-    exclude("architecture/view/contributionmodel/**")
-    exclude("architecture/view/intenthandler/**")
-    exclude("architecture/shell/layer/**")
-    exclude("architecture/view/viewinputevent/**")
-    exclude("architecture/view/viewlayer/**")
     jvmArgumentProviders += objects.newInstance(MainClassesSystemPropertyProvider::class.java).apply {
         mainClassesDirectory.set(mainJavaClassesDir)
     }

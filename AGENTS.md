@@ -20,6 +20,24 @@ Always run verification from the repository root.
 6. Before editing a surface, read its owner doc and skill from the table below. If a surface has no clear owner, stop and report instead of creating a second source of truth.
 7. Behavior changes and new behavior-bearing concepts need an owning behavior harness: extend it, create it, or report a `Harness Gap` blocker. Harnesses prove production routes; avoid fixture selftests and meta-test layers. New central build/check gates require explicit user request.
 8. Record notable decisions, incidents, and repeated fixes in `docs/project/journal/YYYY-MM.md`; see `docs/project/architecture/work-logs.md`.
+9. Risk class is mandatory on PRs: R0 docs/comments/small reversible refactor;
+   R1 behavior-neutral structure, architecture, dependency, or tooling; R2
+   visible behavior; R3a real local data migration; R3b external service,
+   cost, account, or data egress; R3c frozen gate surface.
+10. The owner decides visible behavior, priorities, acceptance, data, cost, and
+    consent. The system decides architecture, refactoring, dependencies, tests,
+    CI, and security details; decide, document, validate, and keep rollback.
+11. Forbidden autonomous actions: real local data modification without a
+    restore-tested backup; enabling paid services or moving secrets; external
+    data transmission outside `docs/project/policies/resource-policy.md`;
+    silent R2 behavior; frozen gate changes without `gate-change-approved`;
+    merge with red or skipped required checks.
+12. When product options exist, implement the recommended option as provisional
+    R2 on `main`/next, flag it in the German release note and status report,
+    and do not auto-promote.
+13. For owner-reported bugs or features, first restate expected behavior,
+    reproduction, acceptance criteria, affected surfaces, and proof route in
+    the issue; then implement.
 
 ## Surface Owners
 
@@ -35,6 +53,10 @@ Always run verification from the repository root.
 | Agent instruction surfaces (`AGENTS.md`, `SKILL.md`, `agents/openai.yaml`) | `docs/project/architecture/agent-instructions.md` | `agent-instruction-engineering` |
 | Autonomous documentation-upkeep slices | `docs/project/architecture/documentation.md` | `documentation-upkeep-steward` |
 | External-source-backed decisions | `docs/project/verification/source-references.md` | `source-references` |
+| Resource policy and operating model | `docs/project/policies/resource-policy.md`, `docs/project/decisions/**` | - |
+
+Harness Gap blockers reference `docs/project/verification/harness-gaps.md`.
+Autonomous night work follows `docs/project/architecture/night-shift.md`.
 
 ## Workflow
 

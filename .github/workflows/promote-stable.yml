@@ -1,0 +1,23 @@
+name: promote-stable
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: read
+  actions: read
+
+jobs:
+  promote-stable:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          fetch-depth: 0
+      - run: python3 tools/quality/scripts/promote_stable.py
+      - if: always()
+        run: python3 tools/quality/scripts/update_status_issue.py

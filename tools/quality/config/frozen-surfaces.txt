@@ -1,0 +1,13 @@
+.github/workflows/**
+.github/CODEOWNERS
+tools/gradle/build-logic/**
+tools/gradle/build-logic-settings/**
+tools/gradle/build-harness/**
+tools/gradle/run-staged-verification.sh
+tools/gradle/run-observable-gradle.sh
+tools/quality/config/frozen-surfaces.txt
+tools/quality/scripts/**
+tools/agents/**
+tools/local/**
+docs/project/policies/resource-policy.md
+AGENTS.md

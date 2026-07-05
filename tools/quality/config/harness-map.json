@@ -1,0 +1,70 @@
+{
+  "bootstrap/**": ["smokeStartupHarness"],
+  "shell/**": ["smokeStartupHarness"],
+  "build.gradle.kts": ["smokeStartupHarness"],
+  "gradle/**": ["smokeStartupHarness"],
+  "src/features/dungeon/**": [
+    "dungeonEditorBehaviorHarness",
+    "dungeonEditorCoreBehaviorHarness",
+    "dungeonEditorRouteBehaviorHarness",
+    "dungeonEditorDoorBehaviorHarness",
+    "dungeonEditorWallBehaviorHarness",
+    "dungeonEditorRoomBehaviorHarness",
+    "dungeonEditorClusterBehaviorHarness",
+    "dungeonEditorCorridorBehaviorHarness",
+    "dungeonEditorStairBehaviorHarness",
+    "dungeonEditorTransitionBehaviorHarness",
+    "dungeonEditorFeatureBehaviorHarness",
+    "dungeonTravelProjectionLevelHarness"
+  ],
+  "src/view/leftbartabs/dungeoneditor/**": [
+    "dungeonEditorBehaviorHarness",
+    "dungeonEditorCoreBehaviorHarness",
+    "dungeonEditorRouteBehaviorHarness",
+    "dungeonEditorDoorBehaviorHarness",
+    "dungeonEditorWallBehaviorHarness",
+    "dungeonEditorRoomBehaviorHarness",
+    "dungeonEditorClusterBehaviorHarness",
+    "dungeonEditorCorridorBehaviorHarness",
+    "dungeonEditorStairBehaviorHarness",
+    "dungeonEditorTransitionBehaviorHarness",
+    "dungeonEditorFeatureBehaviorHarness"
+  ],
+  "src/domain/dungeon/**": [
+    "dungeonEditorBehaviorHarness",
+    "dungeonEditorCoreBehaviorHarness",
+    "dungeonEditorRouteBehaviorHarness",
+    "dungeonEditorDoorBehaviorHarness",
+    "dungeonEditorWallBehaviorHarness",
+    "dungeonEditorRoomBehaviorHarness",
+    "dungeonEditorClusterBehaviorHarness",
+    "dungeonEditorCorridorBehaviorHarness",
+    "dungeonEditorStairBehaviorHarness",
+    "dungeonEditorTransitionBehaviorHarness",
+    "dungeonEditorFeatureBehaviorHarness"
+  ],
+  "src/view/leftbartabs/dungeontravel/**": ["dungeonTravelProjectionLevelHarness"],
+  "src/view/leftbartabs/hexmap/**": ["hexMapEditorBehaviorHarness", "hexTravelStateBehaviorHarness"],
+  "src/view/statetabs/travel/**": ["hexTravelStateBehaviorHarness"],
+  "src/view/leftbartabs/catalog/**": [
+    "catalogInitialLoadHarness",
+    "catalogCrudControlsHarness",
+    "catalogControlsRawInputHarness",
+    "searchFilterControlsHarness"
+  ],
+  "src/view/slotcontent/controls/catalogcrud/**": ["catalogCrudControlsHarness"],
+  "src/view/slotcontent/controls/searchfilter/**": ["searchFilterControlsHarness"],
+  "src/view/leftbartabs/sessionplanner/**": [
+    "sessionPlannerCatalogHarness",
+    "sessionPlannerShellLayoutHarness"
+  ],
+  "src/domain/sessionplanner/**": ["sessionPlannerCatalogHarness", "sessionPlannerShellLayoutHarness"],
+  "src/view/leftbartabs/worldplanner/**": [
+    "worldPlannerBackendHarness",
+    "worldPlannerEncounterHarness",
+    "worldPlannerControlsRawInputHarness",
+    "worldPlannerUiHarness"
+  ],
+  "src/domain/worldplanner/**": ["worldPlannerBackendHarness", "worldPlannerEncounterHarness"],
+  "src/domain/encounter/**": ["worldPlannerEncounterHarness"]
+}
