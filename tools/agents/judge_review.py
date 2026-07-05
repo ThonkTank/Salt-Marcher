@@ -162,6 +162,17 @@ def call_anthropic(prompt: str) -> str:
     return "\n".join(block.get("text", "") for block in data.get("content", []) if block.get("type") == "text")
 
 
+def has_pass_verdict(verdict: str) -> bool:
+    verdict_lines = [
+        line.strip()
+        for line in verdict.splitlines()
+        if line.strip().startswith("VERDICT:")
+    ]
+    if any(line.startswith("VERDICT: FAIL") for line in verdict_lines):
+        return False
+    return any(line == "VERDICT: PASS" or line.startswith("VERDICT: PASS ") for line in verdict_lines)
+
+
 def main() -> int:
     payload = event_payload()
     labels = pr_labels(payload)
@@ -187,7 +198,7 @@ def main() -> int:
     )
     verdict = call_anthropic(prompt)
     print(verdict)
-    return 0 if verdict.startswith("VERDICT: PASS") else 1
+    return 0 if has_pass_verdict(verdict) else 1
 
 
 if __name__ == "__main__":
