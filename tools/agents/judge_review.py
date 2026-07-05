@@ -185,7 +185,9 @@ def call_claude_code(prompt: str) -> str:
     )
     if result.returncode != 0:
         stderr = result.stderr.replace(token, "<redacted>") if token else result.stderr
-        print(f"judge-review: Claude Code CLI failed with exit {result.returncode}: {stderr}", file=sys.stderr)
+        stdout = result.stdout.replace(token, "<redacted>") if token else result.stdout
+        detail = "\n".join(part for part in [stderr.strip(), stdout.strip()] if part)
+        print(f"judge-review: Claude Code CLI failed with exit {result.returncode}: {detail}", file=sys.stderr)
         raise SystemExit(2)
     return result.stdout
 
