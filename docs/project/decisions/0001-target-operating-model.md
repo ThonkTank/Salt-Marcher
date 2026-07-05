@@ -45,10 +45,11 @@ qualification remains not qualified.
 
 ## Validation
 
-Required checks are `quality-platforms / production-handoff`,
-`quality-platforms / warden-freeze`, `quality-platforms / behavior-gate`, and
-`quality-platforms / judge-review`. Branch-protection readback must report
-`Qualified`.
+Required GitHub check contexts are `production-handoff`, `warden-freeze`,
+`behavior-gate`, and `judge-review`. GitHub's UI displays them under the
+`quality-platforms / ...` workflow labels, but branch protection must require
+the job context names that the Checks API reports. Branch-protection readback
+must report `Qualified`.
 
 ## Archived Artifacts
 

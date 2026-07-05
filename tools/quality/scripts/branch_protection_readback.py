@@ -15,10 +15,10 @@ BRANCH = os.environ.get("BRANCH_PROTECTION_BRANCH", "main")
 REPO_ROOT = Path(__file__).resolve().parents[3]
 JOURNAL = REPO_ROOT / "docs/project/journal" / f"{datetime.now(timezone.utc):%Y-%m}.md"
 INTENDED = {
-    "quality-platforms / production-handoff",
-    "quality-platforms / warden-freeze",
-    "quality-platforms / behavior-gate",
-    "quality-platforms / judge-review",
+    "production-handoff",
+    "warden-freeze",
+    "behavior-gate",
+    "judge-review",
 }
 
 

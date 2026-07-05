@@ -29,10 +29,8 @@ Source of Truth: Owner-action checklist for the target operating model rollout.
 5. Configure branch protection: GitHub -> Settings -> Rules -> Rulesets or
    Branches -> Branch protection rules -> target `main`; require pull
    requests; disable force pushes and deletion; require these exact checks:
-   `quality-platforms / production-handoff`,
-   `quality-platforms / warden-freeze`,
-   `quality-platforms / behavior-gate`,
-   `quality-platforms / judge-review`.
+   `production-handoff`, `warden-freeze`, `behavior-gate`, and
+   `judge-review`.
 
 6. Verify branch protection after saving:
 
@@ -56,10 +54,10 @@ Source of Truth: Owner-action checklist for the target operating model rollout.
 
 ## Live Readback 2026-07-05
 
-- Branch protection: `Qualified`; `main` requires exactly
-  `quality-platforms / production-handoff`,
-  `quality-platforms / warden-freeze`, `quality-platforms / behavior-gate`,
-  and `quality-platforms / judge-review`.
+- Branch protection: initially configured with GitHub UI labels
+  `quality-platforms / <job>`, which left the checks in an `expected` state
+  for merge. The durable target is the Checks API job contexts
+  `production-handoff`, `warden-freeze`, `behavior-gate`, and `judge-review`.
 - Labels: all target operating model labels exist, including `ux` for the
   `UX-Problem` issue template.
 - Label permissions: GitHub API readback shows one direct collaborator,

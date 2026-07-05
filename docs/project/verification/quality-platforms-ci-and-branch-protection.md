@@ -21,13 +21,17 @@ and defines seven jobs.
 
 | Job | Status | Current policy |
 | --- | --- | --- |
-| `quality-platforms / production-handoff` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh production-handoff`; this is the single public CI handoff surface for assemble, blocking quality hygiene, and internal architecture/build-harness structure checks. |
-| `quality-platforms / warden-freeze` | `Required CI Gate` | Blocks frozen-surface changes without `gate-change-approved` and enforces the narrow risk-label plausibility checks. |
-| `quality-platforms / behavior-gate` | `Required CI Gate` | Selects behavior harnesses from `tools/quality/config/harness-map.json` and runs them under `xvfb-run`; succeeds with a notice when no mapped surface changed. |
-| `quality-platforms / judge-review` | `Required CI Gate` | Runs immediately for R0, fails closed for R1+ without the judge secret, and accepts only a PASS verdict or owner-only `judge-override`. |
-| `quality-platforms / ckjm-report` | `Informational CI Report` | Runs `tools/gradle/run-observable-gradle.sh ckjmMain` and uploads the CKJM report from `build/reports/ckjm/`. |
-| `quality-platforms / sonarcloud` | `Informational CI Report` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`; skipped for Dependabot or when SonarCloud configuration is incomplete. |
-| `quality-platforms / codescene` | `Informational CI Report` | Runs `python3 tools/quality/scripts/codescene_delta.py`; skipped for Dependabot or when CodeScene configuration is incomplete. |
+| `production-handoff` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh production-handoff`; this is the single public CI handoff surface for assemble, blocking quality hygiene, and internal architecture/build-harness structure checks. |
+| `warden-freeze` | `Required CI Gate` | Blocks frozen-surface changes without `gate-change-approved` and enforces the narrow risk-label plausibility checks. |
+| `behavior-gate` | `Required CI Gate` | Selects behavior harnesses from `tools/quality/config/harness-map.json` and runs them under `xvfb-run`; succeeds with a notice when no mapped surface changed. |
+| `judge-review` | `Required CI Gate` | Runs immediately for R0, fails closed for R1+ without the judge secret, and accepts only a PASS verdict or owner-only `judge-override`. |
+| `ckjm-report` | `Informational CI Report` | Runs `tools/gradle/run-observable-gradle.sh ckjmMain` and uploads the CKJM report from `build/reports/ckjm/`. |
+| `sonarcloud` | `Informational CI Report` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`; skipped for Dependabot or when SonarCloud configuration is incomplete. |
+| `codescene` | `Informational CI Report` | Runs `python3 tools/quality/scripts/codescene_delta.py`; skipped for Dependabot or when CodeScene configuration is incomplete. |
+
+GitHub's UI displays these jobs as `quality-platforms / <job>`. Branch
+protection must require the job context names in the table, because those are
+the contexts reported by the Checks API and accepted by the merge gate.
 
 The focused local gate
 `./gradlew checkDocumentationEnforcement --console=plain` remains intentionally
@@ -117,13 +121,12 @@ place:
   required on `pull_request`.
 - Keep human GitHub approval reviews optional unless the team later decides
   otherwise.
-- Require `quality-platforms / production-handoff`.
-- Require `quality-platforms / warden-freeze`.
-- Require `quality-platforms / behavior-gate`.
-- Require `quality-platforms / judge-review`.
-- Keep `quality-platforms / ckjm-report`, `quality-platforms / sonarcloud`,
-  and `quality-platforms / codescene` visible; do not treat them as merge
-  blockers unless a later ADR promotes them.
+- Require `production-handoff`.
+- Require `warden-freeze`.
+- Require `behavior-gate`.
+- Require `judge-review`.
+- Keep `ckjm-report`, `sonarcloud`, and `codescene` visible; do not treat them
+  as merge blockers unless a later ADR promotes them.
 
 ### Branch Protection Readback
 
@@ -158,10 +161,7 @@ The readback must record:
   conditions, bypass actors visible to the authenticated actor, and
   required-status-check rules
 - comparison result against the intended required blockers:
-  `quality-platforms / production-handoff`,
-  `quality-platforms / warden-freeze`,
-  `quality-platforms / behavior-gate`, and
-  `quality-platforms / judge-review`
+  `production-handoff`, `warden-freeze`, `behavior-gate`, and `judge-review`
 
 Readback status uses this vocabulary:
 
@@ -181,9 +181,11 @@ Readback status uses this vocabulary:
 
 In GitHub, open Settings -> Rules -> Rulesets or Branches -> Branch protection
 rules for `main`. Require pull requests, disable force pushes and deletion,
-and require exactly the four required `quality-platforms / ...` contexts above.
-Then run `tools/quality/scripts/branch_protection_readback.py`; only a
-`Qualified` result proves the live setting.
+and require exactly the four required job contexts above. If the UI shows
+`quality-platforms / <job>`, verify through the API readback that the stored
+contexts are the job names. Then run
+`tools/quality/scripts/branch_protection_readback.py`; only a `Qualified`
+result proves the live setting.
 
 Do not claim "CI blocks merge" or "branch protection is configured" from this
 document alone. Without a fresh API readback, state only that SaltMarcher
