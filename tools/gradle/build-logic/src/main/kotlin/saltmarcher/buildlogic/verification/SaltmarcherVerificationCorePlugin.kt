@@ -101,7 +101,13 @@ internal fun Project.configureVerificationCore() {
     ) {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Verify harness-map.json names registered behavior harness proof tasks."
+        repoRoot.set(layout.projectDirectory)
         harnessMapFile.set(layout.projectDirectory.file("tools/quality/config/harness-map.json"))
+        baseRef.set(
+            providers.environmentVariable("SALT_MARCHER_HARNESS_MAP_BASE_REF")
+                .orElse(providers.environmentVariable("GITHUB_BASE_REF"))
+                .orElse("")
+        )
     }
     gradle.projectsEvaluated {
         checkBehaviorHarnessTopology.configure {

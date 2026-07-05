@@ -8,7 +8,6 @@ labels=(
   "risk:R3a|B60205|Risk R3a local data migration"
   "risk:R3b|D93F0B|Risk R3b external service or cost"
   "risk:R3c|5319E7|Risk R3c frozen gate surface"
-  "gate-change-approved|000000|Owner key turn for frozen gate surfaces"
   "judge-override|FBCA04|Owner-only judge override"
   "abnahme-offen|FBCA04|Owner acceptance pending"
   "abnahme-ok|0E8A16|Owner accepted"

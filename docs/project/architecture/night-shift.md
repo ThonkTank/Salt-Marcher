@@ -19,8 +19,12 @@ this file. It must never push directly to `main`.
 4. Harness gaps from `docs/project/verification/harness-gaps.md`.
 5. `PROJECT_HEALTH_DEBT` entries with evidence.
 6. The next governed migration slice.
+7. Self-directed reversible improvements with a concrete Problem, Evidence,
+   and Expected benefit.
 
-No qualifying work found is a valid result: update the status issue and stop.
+No qualifying work found is a valid result only after checking the full order
+above. Self-directed work may include refactors, debt paydown, test additions,
+or documentation improvements under the normal gates.
 
 ## Quotas
 
@@ -31,6 +35,10 @@ No qualifying work found is a valid result: update the status issue and stop.
 
 Every autonomous improvement PR states Problem, Evidence, and Expected benefit
 in one line each.
+
+The quota bounds volume. Prefer reversible, evidence-backed improvements over
+asking the owner for technical direction when no higher-priority work is
+pending.
 
 ## Budget
 
