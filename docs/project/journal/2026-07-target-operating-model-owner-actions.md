@@ -61,8 +61,8 @@ Source of Truth: Owner-action checklist for the target operating model rollout.
   and `quality-platforms / judge-review`.
 - Labels: all target operating model labels exist, including `ux` for the
   `UX-Problem` issue template.
-- Judge secret: `ANTHROPIC_API_KEY` is not configured; `judge-review` fails
-  closed for `risk:R3c` until the secret exists.
+- Judge secret: `ANTHROPIC_API_KEY` is configured; `judge-review` passed for
+  PR `#360` after rerun.
 - Laptop updater: installed; `saltmarcher-update.timer` is enabled and active.
 - Status issue: created as GitHub issue `#361`.
 - Issue templates: YAML syntax and required fields are present in-repo for
