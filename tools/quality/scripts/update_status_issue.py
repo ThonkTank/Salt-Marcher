@@ -11,6 +11,12 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 TITLE = "SaltMarcher Statusbericht"
+REQUIRED_CHECKS = [
+    "production-handoff",
+    "warden-freeze",
+    "behavior-gate",
+    "judge-review",
+]
 
 
 def gh(args: list[str], check: bool = False) -> subprocess.CompletedProcess[str]:
@@ -27,11 +33,56 @@ def issue_number() -> str | None:
     return None
 
 
-def open_items(label: str) -> list[str]:
+def open_items(label: str, *, exclude_status_issue: bool = False) -> list[str]:
     result = gh(["issue", "list", "--state", "open", "--label", label, "--json", "number,title"])
     if result.returncode != 0:
         return [f"`gh issue list --label {label}` nicht verfuegbar"]
-    return [f"- #{item['number']} {item['title']}" for item in json.loads(result.stdout or "[]")]
+    rows = []
+    for item in json.loads(result.stdout or "[]"):
+        if exclude_status_issue and item.get("title") == TITLE:
+            continue
+        rows.append(f"- #{item['number']} {item['title']}")
+    return rows
+
+
+def secret_status() -> list[str]:
+    result = gh(["secret", "list", "--json", "name"])
+    if result.returncode != 0:
+        return ["- GitHub-Secrets konnten nicht gelesen werden."]
+    names = {item.get("name") for item in json.loads(result.stdout or "[]")}
+    if "ANTHROPIC_API_KEY" in names:
+        return ["- `ANTHROPIC_API_KEY` ist gesetzt."]
+    return ["- `ANTHROPIC_API_KEY` fehlt; `judge-review` blockiert R1+ PRs fail-closed."]
+
+
+def rollout_pr_number() -> str | None:
+    result = gh(["pr", "list", "--state", "open", "--label", "risk:R3c", "--json", "number,headRefName", "--limit", "20"])
+    if result.returncode != 0:
+        return None
+    for pr in json.loads(result.stdout or "[]"):
+        if pr.get("headRefName") == "codex/target-operating-model":
+            return str(pr.get("number"))
+    return None
+
+
+def required_check_status() -> list[str]:
+    number = rollout_pr_number()
+    if not number:
+        return ["- Kein offener Target-Operating-Model-PR mit `risk:R3c` gefunden."]
+    result = gh(["pr", "view", number, "--json", "statusCheckRollup,url"])
+    if result.returncode != 0:
+        return [f"- PR #{number}: Check-Status nicht verfuegbar."]
+    payload = json.loads(result.stdout or "{}")
+    checks = {}
+    for check in payload.get("statusCheckRollup", []):
+        name = check.get("name")
+        if name in REQUIRED_CHECKS:
+            conclusion = check.get("conclusion") or check.get("status") or "UNKNOWN"
+            checks[name] = conclusion.lower()
+    lines = [f"- PR #{number}: {payload.get('url', '')}".rstrip()]
+    for name in REQUIRED_CHECKS:
+        lines.append(f"- `{name}`: `{checks.get(name, 'missing')}`")
+    return lines
 
 
 def latest_tag() -> str:
@@ -72,7 +123,7 @@ def merged_last_day() -> list[str]:
 def body() -> str:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     acceptance = open_items("abnahme-offen")
-    feedback = open_items("owner-feedback")
+    feedback = open_items("owner-feedback", exclude_status_issue=True)
     merged = merged_last_day()
     return "\n".join([
         "# SaltMarcher Statusbericht",
@@ -93,6 +144,7 @@ def body() -> str:
         "",
         "## Wartet auf deinen Schluessel",
         "",
+        *secret_status(),
         "- R3c: `gate-change-approved` nur setzen, wenn der Statusbericht darum bittet.",
         "- R3b ausserhalb der Resource-Policy: Empfehlung und Default stehen in der Frage.",
         "- `Entscheid du` akzeptiert die Empfehlung mit maximalen Sicherungen.",
@@ -107,7 +159,7 @@ def body() -> str:
         "",
         "## CI-Zustand",
         "",
-        "Branch-Protection-Readback und Required-Checks muessen `Qualified` melden.",
+        *required_check_status(),
     ])
 
 
