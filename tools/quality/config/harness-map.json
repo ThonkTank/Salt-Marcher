@@ -55,8 +55,7 @@
   "src/view/slotcontent/controls/catalogcrud/**": ["catalogCrudControlsHarness"],
   "src/view/slotcontent/controls/searchfilter/**": ["searchFilterControlsHarness"],
   "src/view/leftbartabs/sessionplanner/**": [
-    "sessionPlannerCatalogHarness",
-    "sessionPlannerShellLayoutHarness"
+    "sessionPlannerCatalogHarness"
   ],
   "src/domain/sessionplanner/**": ["sessionPlannerCatalogHarness", "sessionPlannerShellLayoutHarness"],
   "src/view/leftbartabs/worldplanner/**": [
