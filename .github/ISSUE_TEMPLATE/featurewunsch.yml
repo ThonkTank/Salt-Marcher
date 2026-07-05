@@ -1,0 +1,55 @@
+name: Featurewunsch
+description: Beschreibe eine neue oder bessere Funktion.
+title: "[Feature] "
+labels: ["enhancement", "owner-feedback"]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: Was moechtest du tun koennen?
+    validations:
+      required: true
+  - type: textarea
+    id: reason
+    attributes:
+      label: Warum ist das wichtig?
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Wie dringend ist es?
+      options:
+        - P0 blockiert
+        - P1 wichtig
+        - P2 hilfreich
+        - P3 nice-to-have
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Welche Stelle der App?
+      options:
+        - Hex-Karte
+        - Dungeon-Editor
+        - Session Planner
+        - World Planner
+        - Katalog
+        - Reise/Travel
+        - Encounter
+        - Party
+        - Sonstiges
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot/Video, Beispiel oder Notiz
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Wann waerst du zufrieden?
+      description: "Fertig heisst fuer mich..."
+    validations:
+      required: true

@@ -1,0 +1,6 @@
+[Unit]
+Description=SaltMarcher stable updater
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/saltmarcher-update.sh

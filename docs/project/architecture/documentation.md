@@ -40,6 +40,7 @@ Canonical project documentation lives under `docs/`.
 - qualification and traceability truth go under `docs/<feature>/verification/`
 - project-wide overviews, decisions, and reusable rules live under the
   matching `docs/project/<type>/` family
+- architecture decision records live under `docs/project/decisions/`
 - a feature folder may omit document families it does not need, for example a
   generic reusable surface with no write model or persistence truth
 - legacy project-wide roots such as `docs/architecture/`, `docs/adr/`,
@@ -88,6 +89,10 @@ owner before producing more instances.
 - `docs/project/architecture/enforcement/*.md`
   Canonical mechanical architecture enforcement documents for the matching
   layer or role owner.
+- `docs/project/decisions/*.md`
+  Architecture decision records. ADRs are required for R1 architecture
+  changes, dependency major upgrades, gate or tooling changes, and channel or
+  release policy changes. Each ADR records one decision.
 - `docs/project/requirements/*.md`
   Project-wide behavioral obligations when the repository owns them centrally.
 - `docs/project/contract/*.md`

@@ -7,7 +7,11 @@ import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.InputFile
 import org.gradle.api.tasks.JavaExec
+import org.gradle.api.tasks.PathSensitive
+import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
@@ -199,10 +203,61 @@ abstract class CheckBehaviorHarnessTopologyTask : DefaultTask() {
     }
 }
 
+@DisableCachingByDefault(because = "Harness-map consistency is checked against configured task metadata.")
+abstract class CheckHarnessMapConsistencyTask : DefaultTask() {
+    @get:Input
+    abstract val registeredHarnessMetadata: ListProperty<String>
+
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    abstract val harnessMapFile: RegularFileProperty
+
+    @TaskAction
+    fun checkHarnessMapConsistency() {
+        val registrations = registeredHarnessMetadata.get()
+            .map(::parseRegistrationMetadata)
+        val registeredNames = registrations.map(RegisteredBehaviorHarness::taskName).toSet()
+        val proofHarnessNames = registrations
+            .filter { registration -> registration.classification != BehaviorHarnessClassification.UTILITY.name }
+            .map(RegisteredBehaviorHarness::taskName)
+            .toSet()
+        val mappedNames = parseHarnessMapTaskNames(harnessMapFile.get().asFile.readText())
+
+        val unknown = mappedNames.filter { taskName -> taskName !in registeredNames }.sorted()
+        val missing = proofHarnessNames.filter { taskName -> taskName !in mappedNames }.sorted()
+        val listingUtilityMapped = registrations
+            .filter { registration -> registration.classification == BehaviorHarnessClassification.UTILITY.name }
+            .filter { registration -> registration.suiteIds.isEmpty() }
+            .map(RegisteredBehaviorHarness::taskName)
+            .filter { taskName -> taskName in mappedNames }
+            .sorted()
+        val violations = mutableListOf<String>()
+        if (unknown.isNotEmpty()) {
+            violations += "Unknown harness-map tasks: " + unknown.joinToString(", ")
+        }
+        if (missing.isNotEmpty()) {
+            violations += "Registered FOCUSED/AGGREGATE harnesses missing from harness-map.json: " +
+                missing.joinToString(", ")
+        }
+        if (listingUtilityMapped.isNotEmpty()) {
+            violations += "Listing UTILITY harnesses must not appear in harness-map.json: " +
+                listingUtilityMapped.joinToString(", ")
+        }
+        if (violations.isNotEmpty()) {
+            throw GradleException(
+                "Behavior harness map consistency violations found." +
+                    System.lineSeparator() +
+                    violations.joinToString(System.lineSeparator())
+            )
+        }
+    }
+}
+
 private data class RegisteredBehaviorHarness(
     val taskName: String,
     val classification: String,
     val conceptIds: List<String>,
+    val suiteIds: List<String>,
     val setupDependencies: List<String>,
     val behaviorDependencies: List<String>,
     val aggregateOf: List<String>
@@ -214,10 +269,24 @@ private fun parseRegistrationMetadata(metadata: String): RegisteredBehaviorHarne
         taskName = parts.getOrElse(0) { "" },
         classification = parts.getOrElse(1) { "" },
         conceptIds = parts.getOrElse(2) { "" }.toMetadataList(),
-        setupDependencies = parts.getOrElse(3) { "" }.toMetadataList(),
-        behaviorDependencies = parts.getOrElse(4) { "" }.toMetadataList(),
-        aggregateOf = parts.getOrElse(5) { "" }.toMetadataList()
+        suiteIds = parts.getOrElse(3) { "" }.toMetadataList(),
+        setupDependencies = parts.getOrElse(4) { "" }.toMetadataList(),
+        behaviorDependencies = parts.getOrElse(5) { "" }.toMetadataList(),
+        aggregateOf = parts.getOrElse(6) { "" }.toMetadataList()
     )
+}
+
+private fun parseHarnessMapTaskNames(json: String): Set<String> {
+    val names = mutableSetOf<String>()
+    val arrayPattern = Regex(":\\s*\\[(.*?)\\]", setOf(RegexOption.DOT_MATCHES_ALL))
+    val stringPattern = Regex("\"([^\"]+)\"")
+    for (arrayMatch in arrayPattern.findAll(json)) {
+        val body = arrayMatch.groupValues[1]
+        for (taskMatch in stringPattern.findAll(body)) {
+            names += taskMatch.groupValues[1]
+        }
+    }
+    return names
 }
 
 private fun String.toMetadataList(): List<String> =
@@ -254,6 +323,7 @@ internal fun behaviorHarnessRegistrationMetadata(registration: BehaviorHarnessRe
         registration.taskName,
         registration.classification.name,
         registration.conceptIds.joinToString(","),
+        registration.suiteIds.joinToString(","),
         registration.setupDependencies.joinToString(","),
         registration.behaviorDependencies.joinToString(","),
         registration.aggregateOf.joinToString(",")

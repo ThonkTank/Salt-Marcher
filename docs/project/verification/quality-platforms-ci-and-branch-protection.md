@@ -17,14 +17,17 @@ operating model beneath the umbrella
 
 The workflow lives in
 [.github/workflows/quality-platforms.yml](.github/workflows/quality-platforms.yml:1)
-and defines four jobs.
+and defines seven jobs.
 
 | Job | Status | Current policy |
 | --- | --- | --- |
 | `quality-platforms / production-handoff` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh production-handoff`; this is the single public CI handoff surface for assemble, blocking quality hygiene, and internal architecture/build-harness structure checks. |
-| `quality-platforms / ckjm-report` | `Required CI Report` | Runs `tools/gradle/run-observable-gradle.sh ckjmMain` and uploads the CKJM report from `build/reports/ckjm/`. CKJM hotspot regressions stay report-only and surface in the uploaded summary. |
-| `quality-platforms / sonarcloud` | `Required CI Gate` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`. |
-| `quality-platforms / codescene` | `Required CI Gate` | Runs `python3 tools/quality/scripts/codescene_delta.py`; fails on returned CodeScene `quality-gates`. |
+| `quality-platforms / warden-freeze` | `Required CI Gate` | Blocks frozen-surface changes without `gate-change-approved` and enforces the narrow risk-label plausibility checks. |
+| `quality-platforms / behavior-gate` | `Required CI Gate` | Selects behavior harnesses from `tools/quality/config/harness-map.json` and runs them under `xvfb-run`; succeeds with a notice when no mapped surface changed. |
+| `quality-platforms / judge-review` | `Required CI Gate` | Runs immediately for R0, fails closed for R1+ without the judge secret, and accepts only a PASS verdict or owner-only `judge-override`. |
+| `quality-platforms / ckjm-report` | `Informational CI Report` | Runs `tools/gradle/run-observable-gradle.sh ckjmMain` and uploads the CKJM report from `build/reports/ckjm/`. |
+| `quality-platforms / sonarcloud` | `Informational CI Report` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`; skipped for Dependabot or when SonarCloud configuration is incomplete. |
+| `quality-platforms / codescene` | `Informational CI Report` | Runs `python3 tools/quality/scripts/codescene_delta.py`; skipped for Dependabot or when CodeScene configuration is incomplete. |
 
 The focused local gate
 `./gradlew checkDocumentationEnforcement --console=plain` remains intentionally
@@ -48,6 +51,11 @@ Repository variables:
 
 - `SONAR_ORGANIZATION`
 - `SONAR_PROJECT_KEY`
+
+The job performs a configuration preflight before checkout and Gradle setup. If
+`SONAR_TOKEN`, `SONAR_ORGANIZATION`, or `SONAR_PROJECT_KEY` is absent, the
+informational report is skipped with a green GitHub job and an explicit log
+message instead of running Gradle with empty Sonar properties.
 
 Recommended service-side setup: bind the project to this repository; use
 `main` as the New Code baseline; create a SaltMarcher new-code quality gate;
@@ -80,6 +88,12 @@ Optional variables:
 - `CODESCENE_TIMEOUT_SECONDS`
 - `CODESCENE_POLL_SECONDS`
 
+The job performs a configuration preflight before checkout. If
+`CODESCENE_API_TOKEN` is absent, or neither `CODESCENE_DELTA_ENDPOINT` nor the
+`CODESCENE_BASE_URL` plus `CODESCENE_PROJECT_ID` pair is present, the
+informational report is skipped with a green GitHub job and an explicit log
+message instead of invoking the service helper with empty configuration.
+
 Recommended service-side setup: bind the project to this repository with
 `main` as reference branch; enable Delta Analysis for pull requests,
 `merge_group`, and pushes to `main`; hard-gate hotspot goal violations, code
@@ -104,11 +118,12 @@ place:
 - Keep human GitHub approval reviews optional unless the team later decides
   otherwise.
 - Require `quality-platforms / production-handoff`.
-- Require `quality-platforms / sonarcloud`.
-- Require `quality-platforms / codescene`.
-- Keep `quality-platforms / ckjm-report` visible for uploaded metrics; do not
-  treat CKJM hotspot regressions as merge blockers unless a later ADR promotes
-  them back to blocking status.
+- Require `quality-platforms / warden-freeze`.
+- Require `quality-platforms / behavior-gate`.
+- Require `quality-platforms / judge-review`.
+- Keep `quality-platforms / ckjm-report`, `quality-platforms / sonarcloud`,
+  and `quality-platforms / codescene` visible; do not treat them as merge
+  blockers unless a later ADR promotes them.
 
 ### Branch Protection Readback
 
@@ -144,7 +159,9 @@ The readback must record:
   required-status-check rules
 - comparison result against the intended required blockers:
   `quality-platforms / production-handoff`,
-  `quality-platforms / sonarcloud`, and `quality-platforms / codescene`
+  `quality-platforms / warden-freeze`,
+  `quality-platforms / behavior-gate`, and
+  `quality-platforms / judge-review`
 
 Readback status uses this vocabulary:
 
@@ -156,10 +173,17 @@ Readback status uses this vocabulary:
 - `Not Qualified`: readback was not run, authentication failed, required rules
   pagination was not exhausted, all applicable required-check endpoints were
   unavailable, or the required-check set differs.
-- `Stricter Drift`: live GitHub also requires
-  `quality-platforms / ckjm-report` or another report-only check. Do not claim
-  conformity unless this document is intentionally changed to make that check a
-  merge blocker.
+- `Stricter Drift`: live GitHub also requires a report-only check. Do not
+  claim conformity unless this document intentionally makes that check a merge
+  blocker.
+
+### Owner Setup Path
+
+In GitHub, open Settings -> Rules -> Rulesets or Branches -> Branch protection
+rules for `main`. Require pull requests, disable force pushes and deletion,
+and require exactly the four required `quality-platforms / ...` contexts above.
+Then run `tools/quality/scripts/branch_protection_readback.py`; only a
+`Qualified` result proves the live setting.
 
 Do not claim "CI blocks merge" or "branch protection is configured" from this
 document alone. Without a fresh API readback, state only that SaltMarcher
@@ -193,6 +217,7 @@ The quality platforms do not replace review judgment.
 
 - [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
 - [.github/workflows/quality-platforms.yml](.github/workflows/quality-platforms.yml:1)
+- [Required Checks ADR](docs/project/decisions/0002-required-checks.md:1)
 - [GitHub Protected Branches REST Reference](references/quality-platforms/github-rest-branch-protection.md:1)
 - [GitHub Repository Rules REST Reference](references/quality-platforms/github-rest-repository-rules.md:1)
 - [Code Quality Lens](tools/quality/skills/lens-code-quality/SKILL.md:1)

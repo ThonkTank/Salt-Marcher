@@ -47,9 +47,10 @@ abstract class RenderDesktopIconTask : DefaultTask() {
             throw GradleException("Desktop icon source is missing: ${sourcePath.toAbsolutePath()}")
         }
 
-        val magickExecutable = resolveExecutableOnPath(commandName.get())
+        val imageMagickExecutable = resolveExecutableOnPath(commandName.get())
+            ?: resolveExecutableOnPath("convert")
             ?: throw GradleException(
-                "ImageMagick '${commandName.get()}' executable not found on PATH. " +
+                "ImageMagick executable not found on PATH. Tried '${commandName.get()}' and 'convert'. " +
                     "Install ImageMagick to generate ${outputRelativePath.get()}."
             )
         val targetPath = outputDirectory.get().asFile.toPath().resolve(outputRelativePath.get())
@@ -58,7 +59,7 @@ abstract class RenderDesktopIconTask : DefaultTask() {
         Files.createDirectories(targetPath.parent)
         val execResult = execOperations.exec {
             workingDir = projectRoot.get().asFile
-            executable = magickExecutable
+            executable = imageMagickExecutable
             args(
                 "-background",
                 "none",

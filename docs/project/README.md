@@ -26,12 +26,16 @@ This directory owns cross-feature canonical SaltMarcher documentation. Project-w
 - [Project Health Standard](docs/project/architecture/project-health.md:1)
 - [Project Health Debt Register](docs/project/architecture/project-health-debt.md:1)
 - [Autodev Process Loop](docs/project/architecture/autodev-process-loop.md:1)
+- [Night Shift Contract](docs/project/architecture/night-shift.md:1)
+- [Target Operating Model ADR](docs/project/decisions/0001-target-operating-model.md:1)
+- [Required Checks ADR](docs/project/decisions/0002-required-checks.md:1)
 - [Layer Patterns](docs/project/architecture/patterns/layering-architecture.md:1)
 - [Layer Enforcement](docs/project/architecture/enforcement/layering-architecture-enforcement.md:1)
 - [Styling Standard](docs/project/architecture/patterns/styling.md:1)
 - [Styling Enforcement Package](docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
 - [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
 - [Autodev Process Feedback](docs/project/verification/autodev-process-feedback.md:1)
+- [Harness Gaps](docs/project/verification/harness-gaps.md:1)
 - [Source References Standard](docs/project/verification/source-references.md:1)
 
 ## Migration Status

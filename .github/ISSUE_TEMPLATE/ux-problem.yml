@@ -1,0 +1,61 @@
+name: UX-Problem
+description: Melde eine unklare, langsame oder stoerende Bedienung.
+title: "[UX] "
+labels: ["ux", "owner-feedback"]
+body:
+  - type: textarea
+    id: situation
+    attributes:
+      label: Was hast du getan?
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Was haettest du erwartet?
+    validations:
+      required: true
+  - type: textarea
+    id: friction
+    attributes:
+      label: Was war unklar, haesslich, langsam oder umstaendlich?
+    validations:
+      required: true
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Wie schlimm ist es?
+      options:
+        - P0 blockiert
+        - P1 wichtig
+        - P2 stoerend
+        - P3 nice-to-have
+    validations:
+      required: true
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Welche Stelle der App?
+      options:
+        - Hex-Karte
+        - Dungeon-Editor
+        - Session Planner
+        - World Planner
+        - Katalog
+        - Reise/Travel
+        - Encounter
+        - Party
+        - Sonstiges
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Screenshot/Video oder weitere Hinweise
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Wann waerst du zufrieden?
+      description: "Fertig heisst fuer mich..."
+    validations:
+      required: true

@@ -96,6 +96,13 @@ internal fun Project.configureVerificationCore() {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Verify all behavior-harness-like JavaExec tasks are registered in behaviorHarnesses."
     }
+    val checkHarnessMapConsistency = tasks.register<CheckHarnessMapConsistencyTask>(
+        "checkHarnessMapConsistency"
+    ) {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Verify harness-map.json names registered behavior harness proof tasks."
+        harnessMapFile.set(layout.projectDirectory.file("tools/quality/config/harness-map.json"))
+    }
     gradle.projectsEvaluated {
         checkBehaviorHarnessTopology.configure {
             registeredTaskNames.set(behaviorHarnesses.registrations.map(BehaviorHarnessRegistration::taskName))
@@ -104,10 +111,14 @@ internal fun Project.configureVerificationCore() {
                 .mapNotNull(::behaviorHarnessDiagnostic)
                 .sorted())
         }
+        checkHarnessMapConsistency.configure {
+            registeredHarnessMetadata.set(behaviorHarnesses.registrations.map(::behaviorHarnessRegistrationMetadata))
+        }
     }
     pluginManager.withPlugin("base") {
         tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME) {
             dependsOn(checkBehaviorHarnessTopology)
+            dependsOn(checkHarnessMapConsistency)
         }
     }
 
@@ -267,6 +278,7 @@ internal fun Project.configureVerificationCore() {
         description = "Run the fail-fast architecture and build-harness structure phase for production handoff."
         dependsOn(markProductionHandoffCompileIntegrity)
         dependsOn(checkBehaviorHarnessTopology)
+        dependsOn(checkHarnessMapConsistency)
         verificationLifecycleCatalog.ownerTaskNames(VerificationLifecyclePhase.STRUCTURE).forEach(::dependsOn)
         if (includeBuildHarness) {
             dependsOn(gradle.includedBuild("build-harness").task(":allBuildHarnessTopologyCheck"))
