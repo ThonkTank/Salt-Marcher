@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -23,6 +23,8 @@ ISSUE_TEMPLATE_FILES = [
     "ux-problem.yml",
 ]
 TARGET_BRANCH = "codex/target-operating-model"
+QUALITY_WORKFLOW = "quality-platforms.yml"
+JUDGE_BUDGET_LIMIT = 30
 
 
 def gh(args: list[str], check: bool = False) -> subprocess.CompletedProcess[str]:
@@ -85,11 +87,6 @@ def issue_template_status() -> list[str]:
     required = set(ISSUE_TEMPLATE_FILES)
     main_names = github_directory_names(".github/ISSUE_TEMPLATE", "main")
     if main_names is None:
-        branch_names = github_directory_names(".github/ISSUE_TEMPLATE", TARGET_BRANCH) or set()
-        if required.issubset(branch_names):
-            return [
-                "- Issue-Templates: auf dem PR-Branch vorhanden, aber noch nicht auf `main`; UI-Rendercheck erst nach Merge moeglich.",
-            ]
         return ["- Issue-Templates: auf `main` nicht lesbar; PR-Branch-Abgleich ebenfalls unvollstaendig."]
     missing = sorted(required - main_names)
     if missing:
@@ -106,7 +103,7 @@ def owner_action_status() -> list[str]:
 def required_check_status() -> list[str]:
     number = rollout_pr_number()
     if not number:
-        return ["- Kein offener Target-Operating-Model-PR mit `risk:R3c` gefunden."]
+        return main_check_status()
     result = gh(["pr", "view", number, "--json", "statusCheckRollup,url"])
     if result.returncode != 0:
         return [f"- PR #{number}: Check-Status nicht verfuegbar."]
@@ -123,6 +120,80 @@ def required_check_status() -> list[str]:
     return lines
 
 
+def main_check_status() -> list[str]:
+    result = gh([
+        "run",
+        "list",
+        "--workflow",
+        QUALITY_WORKFLOW,
+        "--branch",
+        "main",
+        "--json",
+        "databaseId,status,conclusion,url,event,createdAt",
+        "--limit",
+        "20",
+    ])
+    if result.returncode != 0:
+        return ["- `main` Quality-Workflow-Status nicht verfuegbar."]
+    runs = json.loads(result.stdout or "[]")
+    completed = [run for run in runs if run.get("status") == "completed"]
+    if not completed:
+        return ["- Kein abgeschlossener `main` Quality-Workflow-Run gefunden."]
+    run = completed[0]
+    checks = quality_run_job_status(str(run.get("databaseId")))
+    lines = [f"- `main` Quality-Workflow: {run.get('url', '')}".rstrip()]
+    for name in REQUIRED_CHECKS:
+        lines.append(f"- `{name}`: `{checks.get(name, 'missing')}`")
+    return lines
+
+
+def quality_run_job_status(run_id: str) -> dict[str, str]:
+    if not run_id:
+        return {}
+    result = gh(["api", f"repos/:owner/:repo/actions/runs/{run_id}/jobs?per_page=100"])
+    if result.returncode != 0:
+        return {}
+    payload = json.loads(result.stdout or "{}")
+    checks: dict[str, str] = {}
+    for job in payload.get("jobs", []):
+        name = job.get("name", "")
+        if name in REQUIRED_CHECKS:
+            checks[name] = (job.get("conclusion") or job.get("status") or "unknown").lower()
+    return checks
+
+
+def judge_review_jobs_last_24h() -> int | None:
+    since = (datetime.now(timezone.utc) - timedelta(hours=24)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    result = gh(["api", f"repos/:owner/:repo/actions/workflows/{QUALITY_WORKFLOW}/runs?created=>={since}&per_page=100"])
+    if result.returncode != 0:
+        return None
+    count = 0
+    for run in json.loads(result.stdout or "{}").get("workflow_runs", []):
+        jobs = quality_run_job_status(str(run.get("id")))
+        if "judge-review" in jobs and jobs["judge-review"] not in {"skipped", "neutral"}:
+            count += 1
+    return count
+
+
+def activation_blockers() -> list[str]:
+    lines = [
+        "- P6: Der geplante absent-secret-Nachweis ist nicht mehr ausfuehrbar, weil `ANTHROPIC_API_KEY` bereits aktiv ist; braucht Owner-Disposition, ob das als erledigt/ersetzt gilt.",
+    ]
+    judge_count = judge_review_jobs_last_24h()
+    if judge_count is None:
+        lines.append("- P7: Prompt-Injection-Nachweis erneut ausfuehren; Judge-Budget konnte gerade nicht gelesen werden.")
+    elif judge_count >= JUDGE_BUDGET_LIMIT:
+        lines.append(
+            f"- P7: Prompt-Injection-Nachweis nach Budget-Reset erneut ausfuehren; aktuelle Zaehldaten: {judge_count} `judge-review` Jobs in den letzten 24h, Limit {JUDGE_BUDGET_LIMIT}."
+        )
+    else:
+        lines.append(
+            f"- P7: Prompt-Injection-Nachweis jetzt erneut ausfuehrbar; aktuelle Zaehldaten: {judge_count} `judge-review` Jobs in den letzten 24h, Limit {JUDGE_BUDGET_LIMIT}."
+        )
+    lines.append("- N3 braucht Owner-/Laptop-Aktion: `tools/local/install-updater.sh`, Daemon-Zyklus und `tools/local/saltmarcher-next.sh` bestaetigen.")
+    return lines
+
+
 def latest_tag() -> str:
     result = subprocess.run(
         ["git", "tag", "--list", "v*", "--sort=-v:refname"],
@@ -135,6 +206,7 @@ def latest_tag() -> str:
 
 
 def merged_last_day() -> list[str]:
+    since = (datetime.now(timezone.utc) - timedelta(days=1)).date().isoformat()
     result = gh([
         "pr",
         "list",
@@ -143,7 +215,7 @@ def merged_last_day() -> list[str]:
         "--base",
         "main",
         "--search",
-        "merged:>=@today-1d",
+        f"merged:>={since}",
         "--json",
         "number,title,labels",
         "--limit",
@@ -153,8 +225,12 @@ def merged_last_day() -> list[str]:
         return ["- Merge-Liste nicht verfuegbar."]
     rows = []
     for pr in json.loads(result.stdout or "[]"):
-        risks = [label.get("name") for label in pr.get("labels", []) if label.get("name", "").startswith("risk:")]
-        rows.append(f"- #{pr['number']} {pr['title']} ({', '.join(risks) or 'ohne Risikolabel'})")
+        relevant_labels = [
+            label.get("name")
+            for label in pr.get("labels", [])
+            if label.get("name", "").startswith("risk:") or label.get("name") == "gate-change-approved"
+        ]
+        rows.append(f"- #{pr['number']} {pr['title']} ({', '.join(relevant_labels) or 'ohne Risikolabel'})")
     return rows
 
 
@@ -162,6 +238,7 @@ def body() -> str:
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     acceptance = open_items("abnahme-offen")
     feedback = open_items("owner-feedback", exclude_status_issue=True)
+    blockers = [*activation_blockers(), *feedback]
     merged = merged_last_day()
     return "\n".join([
         "# SaltMarcher Statusbericht",
@@ -200,7 +277,7 @@ def body() -> str:
         "",
         "## Blocker und Owner-Feedback",
         "",
-        *(feedback or ["- Keine offenen Owner-Feedback-Issues."]),
+        *(blockers or ["- Keine offenen Owner-Feedback-Issues."]),
         "",
         "## CI-Zustand",
         "",
