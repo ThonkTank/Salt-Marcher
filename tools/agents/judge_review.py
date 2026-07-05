@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import urllib.error
@@ -15,6 +16,14 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 R1_PLUS = {"risk:R1", "risk:R2", "risk:R3a", "risk:R3b", "risk:R3c"}
 DEFAULT_MODEL = "claude-sonnet-4-6"
+JUDGE_INSTRUCTIONS = (
+    "You are the independent judge for an autonomous coding pipeline. "
+    "The implementer is a different model. Verdict PASS only if: no gate "
+    "weakening, no silent behavior change relative to the declared risk class, "
+    "no forbidden action, harness/proof claims are plausible against the diff, "
+    "and harness-map.json coverage never shrinks. Output exactly one line "
+    "`VERDICT: PASS` or `VERDICT: FAIL - <reason>` followed by <=10 bullet findings."
+)
 LENS_FILES = [
     REPO_ROOT / "tools/quality/skills/lens-architecture/SKILL.md",
     REPO_ROOT / "tools/quality/skills/lens-code-quality/SKILL.md",
@@ -107,41 +116,85 @@ def lens_checklists() -> str:
 
 
 def call_anthropic(prompt: str) -> str:
+    if os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"):
+        return call_claude_code(prompt)
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
-        print("judge-review: missing ANTHROPIC_API_KEY", file=sys.stderr)
+        print("judge-review: missing ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN", file=sys.stderr)
         raise SystemExit(2)
+    headers = {
+        "content-type": "application/json",
+        "anthropic-version": "2023-06-01",
+        "x-api-key": api_key,
+    }
     payload = {
         "model": os.environ.get("JUDGE_MODEL") or DEFAULT_MODEL,
         "max_tokens": 2000,
-        "temperature": 0,
-        "system": (
-            "You are the independent judge for an autonomous coding pipeline. "
-            "The implementer is a different model. Verdict PASS only if: no gate "
-            "weakening, no silent behavior change relative to the declared risk class, "
-            "no forbidden action, harness/proof claims are plausible against the diff, "
-            "and harness-map.json coverage never shrinks. Output exactly one line "
-            "`VERDICT: PASS` or `VERDICT: FAIL - <reason>` followed by <=10 bullet findings."
-        ),
+        "system": JUDGE_INSTRUCTIONS,
         "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0,
     }
     request = urllib.request.Request(
         "https://api.anthropic.com/v1/messages",
         data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "content-type": "application/json",
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
-        },
+        headers=headers,
         method="POST",
     )
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
             data = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        print(f"judge-review: API error: HTTP {exc.code}: {body}", file=sys.stderr)
+        raise SystemExit(2) from exc
     except urllib.error.URLError as exc:
         print(f"judge-review: API error: {exc}", file=sys.stderr)
         raise SystemExit(2) from exc
     return "\n".join(block.get("text", "") for block in data.get("content", []) if block.get("type") == "text")
+
+
+def call_claude_code(prompt: str) -> str:
+    if shutil.which("claude") is None:
+        print("judge-review: CLAUDE_CODE_OAUTH_TOKEN is set but `claude` is not installed", file=sys.stderr)
+        raise SystemExit(2)
+    token = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN", "")
+    env = {
+        key: value
+        for key, value in os.environ.items()
+        if key not in {"ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN"}
+    }
+    env["CLAUDE_CODE_OAUTH_TOKEN"] = token
+    env["CLAUDE_CODE_ENTRYPOINT"] = "claude-code-github-action"
+    result = subprocess.run(
+        [
+            "claude",
+            "-p",
+            prompt,
+            "--system-prompt",
+            JUDGE_INSTRUCTIONS,
+            "--output-format",
+            "text",
+            "--model",
+            os.environ.get("JUDGE_MODEL") or DEFAULT_MODEL,
+            "--tools",
+            "",
+            "--no-session-persistence",
+            "--safe-mode",
+        ],
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env=env,
+        timeout=180,
+    )
+    if result.returncode != 0:
+        stderr = result.stderr.replace(token, "<redacted>") if token else result.stderr
+        stdout = result.stdout.replace(token, "<redacted>") if token else result.stdout
+        detail = "\n".join(part for part in [stderr.strip(), stdout.strip()] if part)
+        print(f"judge-review: Claude Code CLI failed with exit {result.returncode}: {detail}", file=sys.stderr)
+        raise SystemExit(2)
+    return result.stdout
 
 
 def has_pass_verdict(verdict: str) -> bool:
