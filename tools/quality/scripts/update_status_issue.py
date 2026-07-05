@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
@@ -170,7 +171,52 @@ def activation_blockers() -> list[str]:
     return []
 
 
-def latest_tag() -> str:
+def tag_version_key(tag: str) -> tuple[int, int, int, int, str]:
+    match = re.match(r"^v(\d+)\.(\d+)\.(\d+)(?:$|[-+])", tag)
+    if not match:
+        return (0, 0, 0, 0, tag)
+    major, minor, patch = (int(part) for part in match.groups())
+    return (1, major, minor, patch, tag)
+
+
+def newest_tag(tags: list[str]) -> str | None:
+    if not tags:
+        return None
+    return max(tags, key=tag_version_key)
+
+
+def latest_release_tag() -> str | None:
+    result = gh(["release", "list", "--limit", "50", "--json", "tagName,isDraft,isPrerelease"])
+    if result.returncode != 0:
+        return None
+    releases = json.loads(result.stdout or "[]")
+    tags = [
+        item.get("tagName", "")
+        for item in releases
+        if item.get("tagName", "").startswith("v") and not item.get("isDraft") and not item.get("isPrerelease")
+    ]
+    return newest_tag(tags)
+
+
+def latest_remote_tag() -> str | None:
+    result = subprocess.run(
+        ["git", "ls-remote", "--tags", "--refs", "origin", "v*"],
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
+    if result.returncode != 0:
+        return None
+    tags = []
+    for line in result.stdout.splitlines():
+        _, _, ref = line.partition("refs/tags/")
+        if ref:
+            tags.append(ref.strip())
+    return newest_tag(tags)
+
+
+def latest_local_tag() -> str | None:
     result = subprocess.run(
         ["git", "tag", "--list", "v*", "--sort=-v:refname"],
         cwd=REPO_ROOT,
@@ -178,7 +224,11 @@ def latest_tag() -> str:
         stdout=subprocess.PIPE,
         stderr=subprocess.DEVNULL,
     )
-    return next((line.strip() for line in result.stdout.splitlines() if line.strip()), "noch kein stable-Tag")
+    return next((line.strip() for line in result.stdout.splitlines() if line.strip()), None)
+
+
+def latest_tag() -> str:
+    return latest_release_tag() or latest_remote_tag() or latest_local_tag() or "noch kein stable-Tag"
 
 
 def merged_last_day() -> list[str]:
