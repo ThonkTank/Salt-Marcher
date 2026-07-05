@@ -31,6 +31,10 @@ LENS_FILES = [
 ]
 
 
+class JudgeProviderError(RuntimeError):
+    """Raised when one judge provider is configured but cannot return a verdict."""
+
+
 def event_payload() -> dict:
     path = os.environ.get("GITHUB_EVENT_PATH")
     if not path or not Path(path).is_file():
@@ -118,7 +122,14 @@ def lens_checklists() -> str:
 def call_anthropic(prompt: str) -> str:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if api_key:
-        return call_messages_api(prompt, api_key)
+        try:
+            return call_messages_api(prompt, api_key)
+        except JudgeProviderError as exc:
+            if os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"):
+                print(f"judge-review: API path unavailable, falling back to Claude Code CLI: {exc}", file=sys.stderr)
+                return call_claude_code(prompt)
+            print(f"judge-review: API error: {exc}", file=sys.stderr)
+            raise SystemExit(2) from exc
     if os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"):
         return call_claude_code(prompt)
     if not api_key:
@@ -150,11 +161,9 @@ def call_messages_api(prompt: str, api_key: str) -> str:
             data = json.loads(response.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="replace")
-        print(f"judge-review: API error: HTTP {exc.code}: {body}", file=sys.stderr)
-        raise SystemExit(2) from exc
+        raise JudgeProviderError(f"HTTP {exc.code}: {body}") from exc
     except urllib.error.URLError as exc:
-        print(f"judge-review: API error: {exc}", file=sys.stderr)
-        raise SystemExit(2) from exc
+        raise JudgeProviderError(str(exc)) from exc
     return "\n".join(block.get("text", "") for block in data.get("content", []) if block.get("type") == "text")
 
 
