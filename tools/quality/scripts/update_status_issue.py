@@ -17,6 +17,13 @@ REQUIRED_CHECKS = [
     "behavior-gate",
     "judge-review",
 ]
+ISSUE_TEMPLATE_FILES = [
+    "bugreport.yml",
+    "featurewunsch.yml",
+    "ux-problem.yml",
+]
+TARGET_BRANCH = "codex/target-operating-model"
+SIGNOFF_PHRASE = "passt"
 
 
 def gh(args: list[str], check: bool = False) -> subprocess.CompletedProcess[str]:
@@ -60,9 +67,64 @@ def rollout_pr_number() -> str | None:
     if result.returncode != 0:
         return None
     for pr in json.loads(result.stdout or "[]"):
-        if pr.get("headRefName") == "codex/target-operating-model":
+        if pr.get("headRefName") == TARGET_BRANCH:
             return str(pr.get("number"))
     return None
+
+
+def has_signoff_comment(text: str) -> bool:
+    return any(line.strip().lower() == SIGNOFF_PHRASE for line in text.splitlines())
+
+
+def resource_policy_signoff_status() -> list[str]:
+    number = rollout_pr_number()
+    if not number:
+        return ["- Resource-Policy-Signoff: Target-Operating-Model-PR nicht gefunden."]
+    result = gh(["pr", "view", number, "--json", "comments,url"])
+    if result.returncode != 0:
+        return [f"- Resource-Policy-Signoff: Kommentare fuer PR #{number} nicht lesbar."]
+    payload = json.loads(result.stdout or "{}")
+    comments = payload.get("comments", [])
+    if any(has_signoff_comment(comment.get("body", "")) for comment in comments):
+        return [f"- Resource-Policy-Signoff: `passt` liegt auf PR #{number} vor."]
+    url = payload.get("url", f"PR #{number}")
+    return [
+        f"- Resource-Policy-Signoff fehlt: kommentiere auf PR #{number} exakt `passt`.",
+        f"- PR: {url}",
+    ]
+
+
+def github_directory_names(path: str, ref: str) -> set[str] | None:
+    result = gh(["api", f"repos/:owner/:repo/contents/{path}?ref={ref}"])
+    if result.returncode != 0:
+        return None
+    payload = json.loads(result.stdout or "[]")
+    if not isinstance(payload, list):
+        return None
+    return {item.get("name", "") for item in payload}
+
+
+def issue_template_status() -> list[str]:
+    required = set(ISSUE_TEMPLATE_FILES)
+    main_names = github_directory_names(".github/ISSUE_TEMPLATE", "main")
+    if main_names is None:
+        branch_names = github_directory_names(".github/ISSUE_TEMPLATE", TARGET_BRANCH) or set()
+        if required.issubset(branch_names):
+            return [
+                "- Issue-Templates: auf dem PR-Branch vorhanden, aber noch nicht auf `main`; UI-Rendercheck erst nach Merge moeglich.",
+            ]
+        return ["- Issue-Templates: auf `main` nicht lesbar; PR-Branch-Abgleich ebenfalls unvollstaendig."]
+    missing = sorted(required - main_names)
+    if missing:
+        return [f"- Issue-Templates: auf `main` fehlen {', '.join(f'`{name}`' for name in missing)}."]
+    return ["- Issue-Templates: Dateien liegen auf `main`; GitHub-New-Issue-UI noch einmal manuell oeffnen."]
+
+
+def owner_action_status() -> list[str]:
+    return [
+        *resource_policy_signoff_status(),
+        *issue_template_status(),
+    ]
 
 
 def required_check_status() -> list[str]:
@@ -145,6 +207,13 @@ def body() -> str:
         "## Wartet auf deinen Schluessel",
         "",
         *secret_status(),
+        "",
+        "## Wartet auf Owner-Aktion",
+        "",
+        *owner_action_status(),
+        "",
+        "## Owner-Regeln",
+        "",
         "- R3c: `gate-change-approved` nur setzen, wenn der Statusbericht darum bittet.",
         "- R3b ausserhalb der Resource-Policy: Empfehlung und Default stehen in der Frage.",
         "- `Entscheid du` akzeptiert die Empfehlung mit maximalen Sicherungen.",

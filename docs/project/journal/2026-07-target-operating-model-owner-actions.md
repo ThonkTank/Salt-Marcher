@@ -70,7 +70,9 @@ Source of Truth: Owner-action checklist for the target operating model rollout.
 - Judge secret: `ANTHROPIC_API_KEY` is configured; `judge-review` passed for
   PR `#360` after rerun.
 - Laptop updater: installed; `saltmarcher-update.timer` is enabled and active.
-- Status issue: created as GitHub issue `#361`.
+- Status issue: created as GitHub issue `#361`; the updater reports
+  resource-policy signoff state, issue-template default-branch availability,
+  secret state, and required CI status.
 - Issue templates: GitHub API readback returns `404` for
   `.github/ISSUE_TEMPLATE` on `main`, and returns `bugreport.yml`,
   `featurewunsch.yml`, `ux-problem.yml`, and `config.yml` on
