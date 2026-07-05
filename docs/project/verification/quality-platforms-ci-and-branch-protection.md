@@ -27,7 +27,7 @@ and defines seven jobs.
 | `quality-platforms / judge-review` | `Required CI Gate` | Runs immediately for R0, fails closed for R1+ without the judge secret, and accepts only a PASS verdict or owner-only `judge-override`. |
 | `quality-platforms / ckjm-report` | `Informational CI Report` | Runs `tools/gradle/run-observable-gradle.sh ckjmMain` and uploads the CKJM report from `build/reports/ckjm/`. |
 | `quality-platforms / sonarcloud` | `Informational CI Report` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`; skipped for Dependabot or when SonarCloud configuration is incomplete. |
-| `quality-platforms / codescene` | `Informational CI Report` | Runs `python3 tools/quality/scripts/codescene_delta.py`; skipped for Dependabot because repository secrets are unavailable. |
+| `quality-platforms / codescene` | `Informational CI Report` | Runs `python3 tools/quality/scripts/codescene_delta.py`; skipped for Dependabot or when CodeScene configuration is incomplete. |
 
 The focused local gate
 `./gradlew checkDocumentationEnforcement --console=plain` remains intentionally
@@ -87,6 +87,12 @@ Optional variables:
 - `CODESCENE_OFFLINE_MODE=true`
 - `CODESCENE_TIMEOUT_SECONDS`
 - `CODESCENE_POLL_SECONDS`
+
+The job performs a configuration preflight before checkout. If
+`CODESCENE_API_TOKEN` is absent, or neither `CODESCENE_DELTA_ENDPOINT` nor the
+`CODESCENE_BASE_URL` plus `CODESCENE_PROJECT_ID` pair is present, the
+informational report is skipped with a green GitHub job and an explicit log
+message instead of invoking the service helper with empty configuration.
 
 Recommended service-side setup: bind the project to this repository with
 `main` as reference branch; enable Delta Analysis for pull requests,
