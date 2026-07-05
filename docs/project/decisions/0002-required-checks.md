@@ -21,12 +21,18 @@ protection. That is brittle for autonomous delivery.
 
 ## Decision
 
-The required GitHub check contexts for `main` are:
+The required GitHub check contexts for `main` are the job context names reported
+by the Checks API:
 
-- `quality-platforms / production-handoff`
-- `quality-platforms / warden-freeze`
-- `quality-platforms / behavior-gate`
-- `quality-platforms / judge-review`
+- `production-handoff`
+- `warden-freeze`
+- `behavior-gate`
+- `judge-review`
+
+GitHub's UI displays these as `quality-platforms / <job>`. Branch protection
+must use the job context names above; requiring the UI labels leaves all four
+required checks in an `expected` state and blocks merge even when the Actions
+jobs passed.
 
 `sonarcloud`, `codescene`, and `ckjm-report` remain informational jobs.
 
