@@ -19,7 +19,15 @@ fi
 
 if command -v gh >/dev/null 2>&1; then
     open_acceptance="$(gh issue list --state open --label abnahme-offen --json number 2>/dev/null | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))' || echo "?")"
-    open_feedback="$(gh issue list --state open --label owner-feedback --json number 2>/dev/null | python3 -c 'import json,sys; print(len(json.load(sys.stdin)))' || echo "?")"
+    open_feedback="$(
+        gh issue list --state open --label owner-feedback --json number,title 2>/dev/null \
+            | python3 -c '
+import json
+import sys
+
+print(sum(1 for item in json.load(sys.stdin) if item.get("title") != "SaltMarcher Statusbericht"))
+' || echo "?"
+    )"
     echo "Offene Abnahmen: $open_acceptance  |  Owner-Feedback: $open_feedback"
 else
     echo "GitHub-Status: gh nicht verfuegbar"
