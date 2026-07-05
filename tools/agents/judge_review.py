@@ -138,6 +138,10 @@ def call_anthropic(prompt: str) -> str:
     try:
         with urllib.request.urlopen(request, timeout=60) as response:
             data = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")
+        print(f"judge-review: API error: HTTP {exc.code}: {body}", file=sys.stderr)
+        raise SystemExit(2) from exc
     except urllib.error.URLError as exc:
         print(f"judge-review: API error: {exc}", file=sys.stderr)
         raise SystemExit(2) from exc
