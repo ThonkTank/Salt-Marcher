@@ -15,6 +15,15 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[2]
 R1_PLUS = {"risk:R1", "risk:R2", "risk:R3a", "risk:R3b", "risk:R3c"}
 DEFAULT_MODEL = "claude-sonnet-4-6"
+CLAUDE_CODE_SYSTEM_PROMPT = "You are a Claude agent, built on Anthropic's Claude Agent SDK."
+JUDGE_INSTRUCTIONS = (
+    "You are the independent judge for an autonomous coding pipeline. "
+    "The implementer is a different model. Verdict PASS only if: no gate "
+    "weakening, no silent behavior change relative to the declared risk class, "
+    "no forbidden action, harness/proof claims are plausible against the diff, "
+    "and harness-map.json coverage never shrinks. Output exactly one line "
+    "`VERDICT: PASS` or `VERDICT: FAIL - <reason>` followed by <=10 bullet findings."
+)
 LENS_FILES = [
     REPO_ROOT / "tools/quality/skills/lens-architecture/SKILL.md",
     REPO_ROOT / "tools/quality/skills/lens-code-quality/SKILL.md",
@@ -108,31 +117,35 @@ def lens_checklists() -> str:
 
 def call_anthropic(prompt: str) -> str:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        print("judge-review: missing ANTHROPIC_API_KEY", file=sys.stderr)
+    auth_token = os.environ.get("ANTHROPIC_AUTH_TOKEN") or os.environ.get("CLAUDE_CODE_OAUTH_TOKEN")
+    if not (api_key or auth_token):
+        print("judge-review: missing ANTHROPIC_API_KEY or ANTHROPIC_AUTH_TOKEN", file=sys.stderr)
         raise SystemExit(2)
+    headers = {
+        "content-type": "application/json",
+        "anthropic-version": "2023-06-01",
+    }
+    if auth_token:
+        headers["authorization"] = f"Bearer {auth_token}"
+        headers["anthropic-beta"] = "oauth-2025-04-20"
+        system_prompt = CLAUDE_CODE_SYSTEM_PROMPT
+        user_prompt = f"{JUDGE_INSTRUCTIONS}\n\n{prompt}"
+    else:
+        headers["x-api-key"] = api_key or ""
+        system_prompt = JUDGE_INSTRUCTIONS
+        user_prompt = prompt
     payload = {
         "model": os.environ.get("JUDGE_MODEL") or DEFAULT_MODEL,
         "max_tokens": 2000,
-        "temperature": 0,
-        "system": (
-            "You are the independent judge for an autonomous coding pipeline. "
-            "The implementer is a different model. Verdict PASS only if: no gate "
-            "weakening, no silent behavior change relative to the declared risk class, "
-            "no forbidden action, harness/proof claims are plausible against the diff, "
-            "and harness-map.json coverage never shrinks. Output exactly one line "
-            "`VERDICT: PASS` or `VERDICT: FAIL - <reason>` followed by <=10 bullet findings."
-        ),
-        "messages": [{"role": "user", "content": prompt}],
+        "system": system_prompt,
+        "messages": [{"role": "user", "content": user_prompt}],
     }
+    if not auth_token:
+        payload["temperature"] = 0
     request = urllib.request.Request(
         "https://api.anthropic.com/v1/messages",
         data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "content-type": "application/json",
-            "x-api-key": api_key,
-            "anthropic-version": "2023-06-01",
-        },
+        headers=headers,
         method="POST",
     )
     try:

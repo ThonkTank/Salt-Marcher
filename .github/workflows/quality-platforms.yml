@@ -88,6 +88,7 @@ jobs:
       - run: python3 tools/agents/judge_review.py
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_AUTH_TOKEN: ${{ secrets.ANTHROPIC_AUTH_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           JUDGE_MODEL: ${{ vars.JUDGE_MODEL }}
 

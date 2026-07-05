@@ -57,9 +57,11 @@ def secret_status() -> list[str]:
     if result.returncode != 0:
         return ["- GitHub-Secrets konnten nicht gelesen werden."]
     names = {item.get("name") for item in json.loads(result.stdout or "[]")}
+    if "ANTHROPIC_AUTH_TOKEN" in names:
+        return ["- `ANTHROPIC_AUTH_TOKEN` ist gesetzt."]
     if "ANTHROPIC_API_KEY" in names:
         return ["- `ANTHROPIC_API_KEY` ist gesetzt."]
-    return ["- `ANTHROPIC_API_KEY` fehlt; `judge-review` blockiert R1+ PRs fail-closed."]
+    return ["- `ANTHROPIC_API_KEY` oder `ANTHROPIC_AUTH_TOKEN` fehlt; `judge-review` blockiert R1+ PRs fail-closed."]
 
 
 def rollout_pr_number() -> str | None:
@@ -165,6 +167,7 @@ def quality_run_job_status(run_id: str) -> dict[str, str]:
 def activation_blockers() -> list[str]:
     return [
         "- P6: Der geplante absent-secret-Nachweis ist nicht mehr ausfuehrbar, weil `ANTHROPIC_API_KEY` bereits aktiv ist; braucht Owner-Disposition, ob das als erledigt/ersetzt gilt.",
+        "- Judge-Auth: Wenn `ANTHROPIC_API_KEY` wegen API-Credits scheitert, nutzt `judge-review` den Claude-Code-OAuth-Token `ANTHROPIC_AUTH_TOKEN`.",
         "- N3 braucht Owner-/Laptop-Aktion: `tools/local/install-updater.sh`, Daemon-Zyklus und `tools/local/saltmarcher-next.sh` bestaetigen.",
     ]
 
