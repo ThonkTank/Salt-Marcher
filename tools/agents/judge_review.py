@@ -157,7 +157,6 @@ def call_claude_code(prompt: str) -> str:
     if shutil.which("claude") is None:
         print("judge-review: CLAUDE_CODE_OAUTH_TOKEN is set but `claude` is not installed", file=sys.stderr)
         raise SystemExit(2)
-    full_prompt = f"{JUDGE_INSTRUCTIONS}\n\n{prompt}"
     token = os.environ.get("CLAUDE_CODE_OAUTH_TOKEN", "")
     env = {
         key: value
@@ -170,11 +169,17 @@ def call_claude_code(prompt: str) -> str:
         [
             "claude",
             "-p",
-            full_prompt,
+            prompt,
+            "--system-prompt",
+            JUDGE_INSTRUCTIONS,
             "--output-format",
             "text",
             "--model",
             os.environ.get("JUDGE_MODEL") or DEFAULT_MODEL,
+            "--tools",
+            "",
+            "--no-session-persistence",
+            "--safe-mode",
         ],
         cwd=REPO_ROOT,
         text=True,
