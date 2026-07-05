@@ -1,15 +1,16 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-05
-Source of Truth: Invocation contract for external autonomous SaltMarcher work selection.
+Last Reviewed: 2026-07-06
+Source of Truth: Invocation contract for external continuous autonomous SaltMarcher operation.
 
-# Night Shift
+# Continuous Autonomous Operation
 
 ## Scope
 
 The repository does not contain an autonomous runner. An external runner may
-operate only through branches and pull requests after reading `AGENTS.md` and
-this file. It must never push directly to `main`.
+operate continuously only through branches and pull requests after reading
+`AGENTS.md` and this file. It must never push directly to `main` or merge its
+own pull requests.
 
 ## Selection Order
 
@@ -26,19 +27,30 @@ No qualifying work found is a valid result only after checking the full order
 above. Self-directed work may include refactors, debt paydown, test additions,
 or documentation improvements under the normal gates.
 
-## Quotas
+## Rolling Quotas
 
-- Maximum 3 merges per night.
-- Maximum 1 R1 architecture slice per night.
-- Maximum 1 migration slice per week.
+Quotas use rolling windows, not calendar nights.
+
+- P0/P1 regression work is quota-exempt and interrupts lower-priority work.
+- Maximum 3 autonomous merges per rolling 24-hour window.
+- Maximum 1 R1 architecture slice per rolling 24-hour window.
+- Maximum 1 migration slice per rolling 7-day window.
 - Stop migration work while any P0/P1 owner issue is open.
 
 Every autonomous improvement PR states Problem, Evidence, and Expected benefit
-in one line each.
+in one line each. Every autonomous run emits the configured telemetry and final
+status report for the external runner.
 
 The quota bounds volume. Prefer reversible, evidence-backed improvements over
 asking the owner for technical direction when no higher-priority work is
 pending.
+
+## Updater Exclusivity
+
+Treat `saltmarcher-update.service`, `tools/local/saltmarcher-update.sh`, and
+stable-promotion updater verification as exclusive local checkout windows. Do
+not start or continue autonomous git-mutating work, Gradle proof, PR creation,
+or merge-watch activity in the same checkout while one of those paths is active.
 
 ## Budget
 

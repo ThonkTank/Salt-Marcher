@@ -64,7 +64,7 @@ Always run verification from the repository root.
 | Resource policy and operating model | `docs/project/policies/resource-policy.md`, `docs/project/decisions/**` | - |
 
 Harness Gap blockers reference `docs/project/verification/harness-gaps.md`.
-Autonomous night work follows `docs/project/architecture/night-shift.md`.
+Continuous autonomous work follows `docs/project/architecture/night-shift.md`.
 Autonomous decision boundaries are defined in
 `docs/project/architecture/autonomy-boundaries.md`.
 
