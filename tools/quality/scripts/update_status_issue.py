@@ -23,7 +23,6 @@ ISSUE_TEMPLATE_FILES = [
     "ux-problem.yml",
 ]
 TARGET_BRANCH = "codex/target-operating-model"
-SIGNOFF_PHRASE = "passt"
 
 
 def gh(args: list[str], check: bool = False) -> subprocess.CompletedProcess[str]:
@@ -72,28 +71,6 @@ def rollout_pr_number() -> str | None:
     return None
 
 
-def has_signoff_comment(text: str) -> bool:
-    return any(line.strip().lower() == SIGNOFF_PHRASE for line in text.splitlines())
-
-
-def resource_policy_signoff_status() -> list[str]:
-    number = rollout_pr_number()
-    if not number:
-        return ["- Resource-Policy-Signoff: Target-Operating-Model-PR nicht gefunden."]
-    result = gh(["pr", "view", number, "--json", "comments,url"])
-    if result.returncode != 0:
-        return [f"- Resource-Policy-Signoff: Kommentare fuer PR #{number} nicht lesbar."]
-    payload = json.loads(result.stdout or "{}")
-    comments = payload.get("comments", [])
-    if any(has_signoff_comment(comment.get("body", "")) for comment in comments):
-        return [f"- Resource-Policy-Signoff: `passt` liegt auf PR #{number} vor."]
-    url = payload.get("url", f"PR #{number}")
-    return [
-        f"- Resource-Policy-Signoff fehlt: kommentiere auf PR #{number} exakt `passt`.",
-        f"- PR: {url}",
-    ]
-
-
 def github_directory_names(path: str, ref: str) -> set[str] | None:
     result = gh(["api", f"repos/:owner/:repo/contents/{path}?ref={ref}"])
     if result.returncode != 0:
@@ -122,7 +99,6 @@ def issue_template_status() -> list[str]:
 
 def owner_action_status() -> list[str]:
     return [
-        *resource_policy_signoff_status(),
         *issue_template_status(),
     ]
 

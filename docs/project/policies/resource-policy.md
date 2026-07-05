@@ -15,6 +15,9 @@ Judge activation requires this policy to be signed off once by the owner and
 `ANTHROPIC_API_KEY` to be set in GitHub Actions. Until then, R1+ judge review
 fails closed with an owner action.
 
+Initial owner approval is confirmed by direct owner instruction on 2026-07-05.
+No separate fixed-phrase PR comment is required.
+
 ## External Services
 
 Approved services are GitHub, the Anthropic API for judge review, SonarCloud,

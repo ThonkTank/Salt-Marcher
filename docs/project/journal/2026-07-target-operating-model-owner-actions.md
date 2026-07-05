@@ -19,8 +19,9 @@ Source of Truth: Owner-action checklist for the target operating model rollout.
    Keep write/triage label rights limited to maintainers and trusted agents;
    only the owner applies `gate-change-approved` and `judge-override`.
 
-3. Sign off `docs/project/policies/resource-policy.md` once with a GitHub
-   comment containing `passt`.
+3. Resource policy approval is recorded in
+   `docs/project/policies/resource-policy.md`; no fixed-phrase PR comment is
+   required.
 
 4. Create the judge secret: GitHub -> Settings -> Secrets and variables ->
    Actions -> New repository secret -> name `ANTHROPIC_API_KEY`.
@@ -64,15 +65,14 @@ Source of Truth: Owner-action checklist for the target operating model rollout.
 - Label permissions: GitHub API readback shows one direct collaborator,
   `ThonkTank`, with `admin` rights and no repository teams. No broader
   write/triage team grant is visible to the authenticated actor.
-- Resource policy signoff: no PR comment containing `passt` exists on PR
-  `#360`; this remains an owner action because it signs off paid-service and
-  data-egress policy.
+- Resource policy signoff: direct owner instruction on 2026-07-05 removed the
+  fixed-phrase PR comment requirement; approval is recorded in the policy file.
 - Judge secret: `ANTHROPIC_API_KEY` is configured; `judge-review` passed for
   PR `#360` after rerun.
 - Laptop updater: installed; `saltmarcher-update.timer` is enabled and active.
 - Status issue: created as GitHub issue `#361`; the updater reports
-  resource-policy signoff state, issue-template default-branch availability,
-  secret state, and required CI status.
+  issue-template default-branch availability, secret state, and required CI
+  status.
 - Issue templates: GitHub API readback returns `404` for
   `.github/ISSUE_TEMPLATE` on `main`, and returns `bugreport.yml`,
   `featurewunsch.yml`, `ux-problem.yml`, and `config.yml` on
