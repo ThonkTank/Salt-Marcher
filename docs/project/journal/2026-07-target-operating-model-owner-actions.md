@@ -13,7 +13,7 @@ Source of Truth: Owner-action checklist for the target operating model rollout.
 
    Required labels: `risk:R0`, `risk:R1`, `risk:R2`, `risk:R3a`, `risk:R3b`,
    `risk:R3c`, `gate-change-approved`, `judge-override`, `abnahme-offen`,
-   `abnahme-ok`, `abnahme-abgelehnt`, `owner-feedback`, `security`.
+   `abnahme-ok`, `abnahme-abgelehnt`, `owner-feedback`, `security`, `ux`.
 
 2. Confirm label permission: GitHub -> Settings -> Collaborators and teams.
    Keep write/triage label rights limited to maintainers and trusted agents;
@@ -55,7 +55,16 @@ Source of Truth: Owner-action checklist for the target operating model rollout.
 
 ## Live Readback 2026-07-05
 
-- Branch protection: `Not Qualified`; GitHub reported `main` is not protected.
-- Labels: all target operating model labels are currently missing.
-- Agent write attempt for labels was rejected by the approval reviewer; label
-  creation remains an owner action.
+- Branch protection: `Qualified`; `main` requires exactly
+  `quality-platforms / production-handoff`,
+  `quality-platforms / warden-freeze`, `quality-platforms / behavior-gate`,
+  and `quality-platforms / judge-review`.
+- Labels: all target operating model labels exist, including `ux` for the
+  `UX-Problem` issue template.
+- Judge secret: `ANTHROPIC_API_KEY` is not configured; `judge-review` fails
+  closed for `risk:R3c` until the secret exists.
+- Laptop updater: installed; `saltmarcher-update.timer` is enabled and active.
+- Status issue: created as GitHub issue `#361`.
+- Issue templates: YAML syntax and required fields are present in-repo for
+  `Bugreport`, `Featurewunsch`, and `UX-Problem`; GitHub UI rendering still
+  requires a browser-side check.

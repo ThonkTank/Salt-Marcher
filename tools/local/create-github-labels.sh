@@ -15,6 +15,7 @@ labels=(
   "abnahme-abgelehnt|B60205|Owner rejected acceptance"
   "owner-feedback|1D76DB|Owner feedback item"
   "security|B60205|Security issue"
+  "ux|5319E7|User experience issue"
 )
 
 for entry in "${labels[@]}"; do
