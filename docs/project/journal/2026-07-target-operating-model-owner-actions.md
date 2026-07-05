@@ -61,10 +61,19 @@ Source of Truth: Owner-action checklist for the target operating model rollout.
   and `quality-platforms / judge-review`.
 - Labels: all target operating model labels exist, including `ux` for the
   `UX-Problem` issue template.
+- Label permissions: GitHub API readback shows one direct collaborator,
+  `ThonkTank`, with `admin` rights and no repository teams. No broader
+  write/triage team grant is visible to the authenticated actor.
+- Resource policy signoff: no PR comment containing `passt` exists on PR
+  `#360`; this remains an owner action because it signs off paid-service and
+  data-egress policy.
 - Judge secret: `ANTHROPIC_API_KEY` is configured; `judge-review` passed for
   PR `#360` after rerun.
 - Laptop updater: installed; `saltmarcher-update.timer` is enabled and active.
 - Status issue: created as GitHub issue `#361`.
-- Issue templates: YAML syntax and required fields are present in-repo for
-  `Bugreport`, `Featurewunsch`, and `UX-Problem`; GitHub UI rendering still
-  requires a browser-side check.
+- Issue templates: GitHub API readback returns `404` for
+  `.github/ISSUE_TEMPLATE` on `main`, and returns `bugreport.yml`,
+  `featurewunsch.yml`, `ux-problem.yml`, and `config.yml` on
+  `codex/target-operating-model`. GitHub UI rendering still requires the
+  templates to reach the default branch before the New Issue chooser can prove
+  the productive render path.
