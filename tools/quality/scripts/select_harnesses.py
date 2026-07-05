@@ -24,14 +24,33 @@ def changed_files(base_ref: str | None) -> list[str]:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
+    return changed_paths_for_range(f"origin/{base_ref}...HEAD")
+
+
+def changed_paths_for_range(diff_range: str) -> list[str]:
     result = subprocess.run(
-        ["git", "diff", "--name-only", f"origin/{base_ref}...HEAD"],
+        ["git", "diff", "--name-status", "-M", diff_range],
         cwd=REPO_ROOT,
         text=True,
         check=True,
         stdout=subprocess.PIPE,
     )
-    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    paths: list[str] = []
+    for line in result.stdout.splitlines():
+        fields = line.split("\t")
+        if len(fields) < 2:
+            continue
+        status = fields[0]
+        changed = fields[1:]
+        if status.startswith(("R", "C")) and len(changed) >= 2:
+            candidates = changed[:2]
+        else:
+            candidates = changed[:1]
+        for path in candidates:
+            path = path.strip()
+            if path and path not in paths:
+                paths.append(path)
+    return paths
 
 
 def select_harnesses(paths: list[str], harness_map: dict[str, list[str]]) -> list[str]:

@@ -6,6 +6,8 @@
 - JDK 21
 - Bash, Python 3, Git, and Gradle through the checked-in wrapper
 - `xvfb-run` for CI-style JavaFX behavior harnesses
+- ImageMagick, required by the packaging conventions check; CI installs it,
+  install it locally through the system package manager.
 
 ## Canonical Proof Commands
 

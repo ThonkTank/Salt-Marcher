@@ -8,6 +8,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -75,14 +76,33 @@ def changed_files(payload: dict) -> list[str]:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
+    return changed_paths_for_range(REPO_ROOT, f"origin/{base_ref}...HEAD")
+
+
+def changed_paths_for_range(repo_root: Path, diff_range: str) -> list[str]:
     result = subprocess.run(
-        ["git", "diff", "--name-only", f"origin/{base_ref}...HEAD"],
-        cwd=REPO_ROOT,
+        ["git", "diff", "--name-status", "-M", diff_range],
+        cwd=repo_root,
         text=True,
         check=True,
         stdout=subprocess.PIPE,
     )
-    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    paths: list[str] = []
+    for line in result.stdout.splitlines():
+        fields = line.split("\t")
+        if len(fields) < 2:
+            continue
+        status = fields[0]
+        changed = fields[1:]
+        if status.startswith(("R", "C")) and len(changed) >= 2:
+            candidates = changed[:2]
+        else:
+            candidates = changed[:1]
+        for path in candidates:
+            path = path.strip()
+            if path and path not in paths:
+                paths.append(path)
+    return paths
 
 
 def changed_line_count(payload: dict) -> int:
@@ -134,7 +154,52 @@ def contains_sql_marker(path: str) -> bool:
     return "CREATE TABLE" in text or "ALTER TABLE" in text or "DROP TABLE" in text
 
 
-def main() -> int:
+def run_self_test() -> int:
+    patterns = ["tools/agents/**"]
+    with tempfile.TemporaryDirectory(prefix="warden-freeze-self-test-") as tmp:
+        repo = Path(tmp)
+        run_git(repo, "init", "-q")
+        run_git(repo, "config", "user.email", "self-test@example.invalid")
+        run_git(repo, "config", "user.name", "Warden Self Test")
+        gate = repo / "tools/agents/gate.py"
+        gate.parent.mkdir(parents=True)
+        gate.write_text("print('gate')\n", encoding="utf-8")
+        (repo / "README.md").write_text("base\n", encoding="utf-8")
+        run_git(repo, "add", ".")
+        run_git(repo, "commit", "-qm", "base")
+        run_git(repo, "tag", "base")
+
+        assert_detects(repo, "edit-frozen", patterns, True, lambda root: (root / "tools/agents/gate.py").write_text("print('edit')\n", encoding="utf-8"))
+        assert_detects(repo, "new-frozen", patterns, True, lambda root: (root / "tools/agents/new_gate.py").write_text("print('new')\n", encoding="utf-8"))
+        assert_detects(repo, "rename-out", patterns, True, lambda root: run_git(root, "mv", "tools/agents/gate.py", "moved_gate.py"))
+        assert_detects(repo, "unrelated", patterns, False, lambda root: (root / "README.md").write_text("changed\n", encoding="utf-8"))
+    print("warden-freeze: self-test passed")
+    return 0
+
+
+def assert_detects(repo: Path, branch: str, patterns: list[str], expected: bool, mutate) -> None:
+    run_git(repo, "checkout", "-qB", branch, "base")
+    mutate(repo)
+    run_git(repo, "add", "-A")
+    run_git(repo, "commit", "-qm", branch)
+    changed = changed_paths_for_range(repo, "base...HEAD")
+    detected = any(matches_any(path, patterns) for path in changed)
+    if detected != expected:
+        raise AssertionError(f"{branch}: expected detected={expected}, got {detected}; changed={changed}")
+
+
+def run_git(repo: Path, *args: str) -> None:
+    subprocess.run(["git", *args], cwd=repo, text=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = argv or sys.argv[1:]
+    if argv == ["--self-test"]:
+        return run_self_test()
+    if argv:
+        print("usage: warden_freeze.py [--self-test]", file=sys.stderr)
+        return 2
+
     payload = event_payload()
     if os.environ.get("GITHUB_EVENT_NAME") == "push":
         print("warden-freeze: push event is audit-only.")

@@ -39,6 +39,15 @@ Always run verification from the repository root.
     reproduction, acceptance criteria, affected surfaces, and proof route in
     the issue; then implement.
 
+## Risk Classes
+
+- `R0`: docs/comments/small reversible refactor; doc gate or production-handoff; auto-promote.
+- `R1`: behavior-neutral structure, architecture, dependency, or tooling; R0 plus touched behavior harnesses and judge review; auto-promote.
+- `R2`: visible behavior; R1 plus German release note and acceptance checklist; promote only after owner acceptance.
+- `R3a`: real local data migration; verified restore-tested backup and copy dry run; auto-promote after backup proof.
+- `R3b`: external service, cost, account, or data egress; must fit `docs/project/policies/resource-policy.md` or ask owner with recommendation/default.
+- `R3c`: frozen gate surface; requires `gate-change-approved`, R3c label, and the full required gate set; auto-promote after merge.
+
 ## Surface Owners
 
 | Surface | Owner doc | Mandatory skill |

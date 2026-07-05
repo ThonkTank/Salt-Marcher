@@ -30,6 +30,22 @@ The required GitHub check contexts for `main` are:
 
 `sonarcloud`, `codescene`, and `ckjm-report` remain informational jobs.
 
+## Workflow Permission Budget
+
+Workflow permissions stay least-privilege for their behavior:
+
+- `quality-platforms.yml`: `contents: read`, `pull-requests: read`.
+- `promote-stable.yml`: `contents: write`, `issues: write`,
+  `pull-requests: read`, `actions: read`; required to create stable tags or
+  releases, update the status issue, inspect PR metadata, and read workflow
+  state.
+- `owner-acceptance.yml`: `contents: read`, `issues: write`,
+  `pull-requests: write`; required to apply acceptance labels and create
+  follow-up issues for rejected acceptance.
+
+Any future permission widening is a frozen gate-surface change and must be
+handled as `risk:R3c`.
+
 ## Rationale
 
 The required set must be deterministic enough for day-to-day autonomy and

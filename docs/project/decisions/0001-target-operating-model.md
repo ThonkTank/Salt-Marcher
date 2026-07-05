@@ -50,6 +50,12 @@ Required checks are `quality-platforms / production-handoff`,
 `quality-platforms / judge-review`. Branch-protection readback must report
 `Qualified`.
 
+## Archived Artifacts
+
+The decision-complete predecessor plan is archived in PR #360 and will be
+attached to the first stable release. The full independent review report uses
+the same archive route once the owner provides the complete copy.
+
 ## Rollback
 
 Revert the operating-model PRs, remove the new required checks from branch
