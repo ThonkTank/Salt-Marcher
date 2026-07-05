@@ -167,11 +167,7 @@ def quality_run_job_status(run_id: str) -> dict[str, str]:
 
 
 def activation_blockers() -> list[str]:
-    return [
-        "- P6: Der geplante absent-secret-Nachweis ist nicht mehr ausfuehrbar, weil `ANTHROPIC_API_KEY` bereits aktiv ist; braucht Owner-Disposition, ob das als erledigt/ersetzt gilt.",
-        "- Judge-Auth: Wenn `ANTHROPIC_API_KEY` wegen API-Credits scheitert, nutzt `judge-review` `CLAUDE_CODE_OAUTH_TOKEN` ueber Claude Code CLI.",
-        "- N3 braucht Owner-/Laptop-Aktion: `tools/local/install-updater.sh`, Daemon-Zyklus und `tools/local/saltmarcher-next.sh` bestaetigen.",
-    ]
+    return []
 
 
 def latest_tag() -> str:
