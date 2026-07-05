@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-19
+Last Reviewed: 2026-07-05
 Source of Truth: Detailed CI job policy, external service setup, branch
 protection expectations, and review governance for SaltMarcher quality
 platforms.
@@ -22,9 +22,9 @@ and defines seven jobs.
 | Job | Status | Current policy |
 | --- | --- | --- |
 | `production-handoff` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh production-handoff`; this is the single public CI handoff surface for assemble, blocking quality hygiene, and internal architecture/build-harness structure checks. |
-| `warden-freeze` | `Required CI Gate` | Blocks frozen-surface changes without `gate-change-approved` and enforces the narrow risk-label plausibility checks. |
-| `behavior-gate` | `Required CI Gate` | Selects behavior harnesses from `tools/quality/config/harness-map.json` and runs them under `xvfb-run`; succeeds with a notice when no mapped surface changed. |
-| `judge-review` | `Required CI Gate` | Runs immediately for R0, fails closed for R1+ without the judge secret, and accepts only a PASS verdict or owner-only `judge-override`. |
+| `warden-freeze` | `Required CI Gate` | Restores the base-ref warden script, then enforces R3c classification for frozen-surface changes and the narrow risk-label plausibility checks. |
+| `behavior-gate` | `Required CI Gate` | Restores the base-ref harness selector, selects behavior harnesses from `tools/quality/config/harness-map.json`, and runs them under `xvfb-run`; succeeds with a notice when no mapped surface changed. |
+| `judge-review` | `Required CI Gate` | Restores the base-ref judge script, runs immediately for R0, fails closed for R1+ without the judge secret, and accepts only a PASS verdict or owner-only `judge-override`. |
 | `ckjm-report` | `Informational CI Report` | Runs `tools/gradle/run-observable-gradle.sh ckjmMain` and uploads the CKJM report from `build/reports/ckjm/`. |
 | `sonarcloud` | `Informational CI Report` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`; skipped for Dependabot or when SonarCloud configuration is incomplete. |
 | `codescene` | `Informational CI Report` | Runs `python3 tools/quality/scripts/codescene_delta.py`; skipped for Dependabot or when CodeScene configuration is incomplete. |
@@ -44,6 +44,11 @@ same-worktree isolation cleanup. The concurrency concern in CI is stale runs on
 the same ref, not mutable Gradle state inside one filesystem tree. The
 workflow therefore uses workflow concurrency and `merge_group` coverage instead
 of cleanup steps for synthetic isolated run roots.
+
+The required measurement scripts run from the PR base ref as defined by
+[ADR 0003](docs/project/decisions/0003-honest-instruments-base-gates.md:1).
+`behavior-gate` restores only the selector script before harness selection; the
+selected harnesses still execute the PR checkout.
 
 ### SonarCloud
 

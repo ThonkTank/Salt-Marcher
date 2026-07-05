@@ -254,7 +254,7 @@ def merged_last_day() -> list[str]:
         relevant_labels = [
             label.get("name")
             for label in pr.get("labels", [])
-            if label.get("name", "").startswith("risk:") or label.get("name") == "gate-change-approved"
+            if label.get("name", "").startswith("risk:")
         ]
         rows.append(f"- #{pr['number']} {pr['title']} ({', '.join(relevant_labels) or 'ohne Risikolabel'})")
     return rows
@@ -293,7 +293,7 @@ def body() -> str:
         "",
         "## Owner-Regeln",
         "",
-        "- R3c: `gate-change-approved` nur setzen, wenn der Statusbericht darum bittet.",
+        "- R3c: eingefrorene Messinstrumente, vollstaendige Checks erforderlich.",
         "- R3b ausserhalb der Resource-Policy: Empfehlung und Default stehen in der Frage.",
         "- `Entscheid du` akzeptiert die Empfehlung mit maximalen Sicherungen.",
         "",

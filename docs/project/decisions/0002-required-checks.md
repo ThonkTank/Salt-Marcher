@@ -36,6 +36,10 @@ jobs passed.
 
 `sonarcloud`, `codescene`, and `ckjm-report` remain informational jobs.
 
+Trusted-ref execution for `warden-freeze`, `behavior-gate`, and
+`judge-review` is owned by
+[ADR 0003](docs/project/decisions/0003-honest-instruments-base-gates.md:1).
+
 ## Workflow Permission Budget
 
 Workflow permissions stay least-privilege for their behavior:
@@ -67,7 +71,7 @@ required checks.
 ## Validation
 
 Run the readback script and require `Qualified`. PRs touching frozen surfaces
-must be blocked by `warden-freeze` without `gate-change-approved`.
+must carry `risk:R3c`, and `warden-freeze` enforces that classification.
 
 ## Rollback
 

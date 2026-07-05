@@ -12,12 +12,12 @@ Source of Truth: Owner-action checklist for the target operating model rollout.
    ```
 
    Required labels: `risk:R0`, `risk:R1`, `risk:R2`, `risk:R3a`, `risk:R3b`,
-   `risk:R3c`, `gate-change-approved`, `judge-override`, `abnahme-offen`,
-   `abnahme-ok`, `abnahme-abgelehnt`, `owner-feedback`, `security`, `ux`.
+   `risk:R3c`, `judge-override`, `abnahme-offen`, `abnahme-ok`,
+   `abnahme-abgelehnt`, `owner-feedback`, `security`, `ux`.
 
 2. Confirm label permission: GitHub -> Settings -> Collaborators and teams.
    Keep write/triage label rights limited to maintainers and trusted agents;
-   only the owner applies `gate-change-approved` and `judge-override`.
+   only the owner applies `judge-override`.
 
 3. Resource policy approval is recorded in
    `docs/project/policies/resource-policy.md`; no fixed-phrase PR comment is

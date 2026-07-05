@@ -116,12 +116,17 @@ def lens_checklists() -> str:
 
 
 def call_anthropic(prompt: str) -> str:
+    api_key = os.environ.get("ANTHROPIC_API_KEY")
+    if api_key:
+        return call_messages_api(prompt, api_key)
     if os.environ.get("CLAUDE_CODE_OAUTH_TOKEN"):
         return call_claude_code(prompt)
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         print("judge-review: missing ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN", file=sys.stderr)
         raise SystemExit(2)
+
+
+def call_messages_api(prompt: str, api_key: str) -> str:
     headers = {
         "content-type": "application/json",
         "anthropic-version": "2023-06-01",

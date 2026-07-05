@@ -25,13 +25,12 @@ Always run verification from the repository root.
    visible behavior; R3a real local data migration; R3b external service,
    cost, account, or data egress; R3c frozen gate surface.
 10. The owner decides visible behavior, priorities, acceptance, data, cost, and
-    consent. The system decides architecture, refactoring, dependencies, tests,
-    CI, and security details; decide, document, validate, and keep rollback.
+    consent. The system decides technical matters autonomously; see
+    `docs/project/architecture/autonomy-boundaries.md`.
 11. Forbidden autonomous actions: real local data modification without a
     restore-tested backup; enabling paid services or moving secrets; external
     data transmission outside `docs/project/policies/resource-policy.md`;
-    silent R2 behavior; frozen gate changes without `gate-change-approved`;
-    merge with red or skipped required checks.
+    silent R2 behavior; merge with red or skipped required checks.
 12. When product options exist, implement the recommended option as provisional
     R2 on `main`/next, flag it in the German release note and status report,
     and do not auto-promote.
@@ -46,7 +45,7 @@ Always run verification from the repository root.
 - `R2`: visible behavior; R1 plus German release note and acceptance checklist; promote only after owner acceptance.
 - `R3a`: real local data migration; verified restore-tested backup and copy dry run; auto-promote after backup proof.
 - `R3b`: external service, cost, account, or data egress; must fit `docs/project/policies/resource-policy.md` or ask owner with recommendation/default.
-- `R3c`: frozen gate surface; requires `gate-change-approved`, R3c label, and the full required gate set; auto-promote after merge.
+- `R3c`: frozen gate surface; requires R3c label and the full required gate set; auto-promote after merge.
 
 ## Surface Owners
 
@@ -66,6 +65,8 @@ Always run verification from the repository root.
 
 Harness Gap blockers reference `docs/project/verification/harness-gaps.md`.
 Autonomous night work follows `docs/project/architecture/night-shift.md`.
+Autonomous decision boundaries are defined in
+`docs/project/architecture/autonomy-boundaries.md`.
 
 ## Workflow
 

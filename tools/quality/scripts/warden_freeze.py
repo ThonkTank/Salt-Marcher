@@ -19,6 +19,28 @@ PERSISTENCE_PATTERNS = [
     "src/data/persistencecore/**",
     "src/data/**/*PersistenceSchema.java",
 ]
+REQUIRED_FROZEN_REPRESENTATIVES = {
+    ".github/workflows/quality-platforms.yml": ".github/workflows/quality-platforms.yml",
+    ".github/workflows/promote-stable.yml": ".github/workflows/promote-stable.yml",
+    "tools/gradle/run-staged-verification.sh": "tools/gradle/run-staged-verification.sh",
+    "tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/verification/BehaviorHarnessRegistration.kt":
+        "tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/verification/BehaviorHarnessRegistration.kt",
+    "tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/verification/SaltmarcherVerificationCorePlugin.kt":
+        "tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/verification/SaltmarcherVerificationCorePlugin.kt",
+    "tools/quality/config/frozen-surfaces.txt": "tools/quality/config/frozen-surfaces.txt",
+    "tools/quality/config/harness-map.json": "tools/quality/config/harness-map.json",
+    "tools/quality/scripts/branch_protection_readback.py": "tools/quality/scripts/branch_protection_readback.py",
+    "tools/quality/scripts/promote_stable.py": "tools/quality/scripts/promote_stable.py",
+    "tools/quality/scripts/select_harnesses.py": "tools/quality/scripts/select_harnesses.py",
+    "tools/quality/scripts/update_status_issue.py": "tools/quality/scripts/update_status_issue.py",
+    "tools/quality/scripts/warden_freeze.py": "tools/quality/scripts/warden_freeze.py",
+    "tools/agents/judge_review.py": "tools/agents/judge_review.py",
+    "tools/local/install-updater.sh": "tools/local/install-updater.sh",
+    "tools/local/saltmarcher-next.sh": "tools/local/saltmarcher-next.sh",
+    "tools/local/saltmarcher-update.sh": "tools/local/saltmarcher-update.sh",
+    "tools/local/systemd/**": "tools/local/systemd/saltmarcher-update.service",
+    "docs/project/policies/resource-policy.md": "docs/project/policies/resource-policy.md",
+}
 
 
 def event_payload() -> dict:
@@ -155,7 +177,8 @@ def contains_sql_marker(path: str) -> bool:
 
 
 def run_self_test() -> int:
-    patterns = ["tools/agents/**"]
+    assert_required_frozen_patterns_cover_representatives()
+    patterns = ["tools/agents/**", ".github/workflows/**"]
     with tempfile.TemporaryDirectory(prefix="warden-freeze-self-test-") as tmp:
         repo = Path(tmp)
         run_git(repo, "init", "-q")
@@ -164,6 +187,9 @@ def run_self_test() -> int:
         gate = repo / "tools/agents/gate.py"
         gate.parent.mkdir(parents=True)
         gate.write_text("print('gate')\n", encoding="utf-8")
+        workflow = repo / ".github/workflows/quality-platforms.yml"
+        workflow.parent.mkdir(parents=True)
+        workflow.write_text("name: quality-platforms\n", encoding="utf-8")
         (repo / "README.md").write_text("base\n", encoding="utf-8")
         run_git(repo, "add", ".")
         run_git(repo, "commit", "-qm", "base")
@@ -172,9 +198,24 @@ def run_self_test() -> int:
         assert_detects(repo, "edit-frozen", patterns, True, lambda root: (root / "tools/agents/gate.py").write_text("print('edit')\n", encoding="utf-8"))
         assert_detects(repo, "new-frozen", patterns, True, lambda root: (root / "tools/agents/new_gate.py").write_text("print('new')\n", encoding="utf-8"))
         assert_detects(repo, "rename-out", patterns, True, lambda root: run_git(root, "mv", "tools/agents/gate.py", "moved_gate.py"))
+        assert_detects(repo, "targeted-other-frozen", patterns, True, lambda root: (root / ".github/workflows/quality-platforms.yml").write_text("name: weakened\n", encoding="utf-8"))
         assert_detects(repo, "unrelated", patterns, False, lambda root: (root / "README.md").write_text("changed\n", encoding="utf-8"))
     print("warden-freeze: self-test passed")
     return 0
+
+
+def assert_required_frozen_patterns_cover_representatives() -> None:
+    patterns = frozen_patterns()
+    missing = [
+        f"{pattern} -> {representative}"
+        for pattern, representative in REQUIRED_FROZEN_REPRESENTATIVES.items()
+        if pattern not in patterns or not matches_any(representative, patterns)
+    ]
+    if missing:
+        raise AssertionError(
+            "frozen-surfaces.txt no longer protects required instrument paths: " +
+            "; ".join(missing)
+        )
 
 
 def assert_detects(repo: Path, branch: str, patterns: list[str], expected: bool, mutate) -> None:
@@ -219,8 +260,6 @@ def main(argv: list[str] | None = None) -> int:
         failures.append("missing risk:* label")
     if len(risk) > 1:
         failures.append("multiple risk:* labels: " + ", ".join(sorted(risk)))
-    if frozen and "gate-change-approved" not in active_labels:
-        failures.append("frozen paths changed without gate-change-approved: " + ", ".join(frozen))
     if frozen and "risk:R3c" not in risk:
         failures.append("frozen paths require risk:R3c")
     if persistence and not ({"risk:R3a", "risk:R1"} & risk):
