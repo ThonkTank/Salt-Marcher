@@ -7,9 +7,10 @@ Source of Truth: One-time resource policy for autonomous SaltMarcher delivery.
 
 ## Paid Services
 
-No paid service may be enabled autonomously. The only approved paid budget is
-Anthropic API usage for `judge-review`, capped by `JUDGE_MAX_CALLS_PER_DAY=30`
-and a monthly ceiling of 20 EUR.
+No paid service may be enabled autonomously. The approved paid service is
+Anthropic API usage for `judge-review`. The repository does not add a separate
+daily call cap; the configured provider/account subscription limits are the
+usage boundary.
 
 Judge activation requires this policy to be signed off once by the owner and
 `ANTHROPIC_API_KEY` to be set in GitHub Actions. Until then, R1+ judge review

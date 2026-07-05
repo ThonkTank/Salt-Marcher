@@ -24,7 +24,6 @@ ISSUE_TEMPLATE_FILES = [
 ]
 TARGET_BRANCH = "codex/target-operating-model"
 QUALITY_WORKFLOW = "quality-platforms.yml"
-JUDGE_BUDGET_LIMIT = 30
 
 
 def gh(args: list[str], check: bool = False) -> subprocess.CompletedProcess[str]:
@@ -162,36 +161,12 @@ def quality_run_job_status(run_id: str) -> dict[str, str]:
     return checks
 
 
-def judge_review_jobs_last_24h() -> int | None:
-    since = (datetime.now(timezone.utc) - timedelta(hours=24)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    result = gh(["api", f"repos/:owner/:repo/actions/workflows/{QUALITY_WORKFLOW}/runs?created=>={since}&per_page=100"])
-    if result.returncode != 0:
-        return None
-    count = 0
-    for run in json.loads(result.stdout or "{}").get("workflow_runs", []):
-        jobs = quality_run_job_status(str(run.get("id")))
-        if "judge-review" in jobs and jobs["judge-review"] not in {"skipped", "neutral"}:
-            count += 1
-    return count
-
-
 def activation_blockers() -> list[str]:
-    lines = [
+    return [
         "- P6: Der geplante absent-secret-Nachweis ist nicht mehr ausfuehrbar, weil `ANTHROPIC_API_KEY` bereits aktiv ist; braucht Owner-Disposition, ob das als erledigt/ersetzt gilt.",
+        "- P7: Prompt-Injection-Nachweis erneut ausfuehren; `judge-review` muss dabei bis zu einem Modellurteil laufen.",
+        "- N3 braucht Owner-/Laptop-Aktion: `tools/local/install-updater.sh`, Daemon-Zyklus und `tools/local/saltmarcher-next.sh` bestaetigen.",
     ]
-    judge_count = judge_review_jobs_last_24h()
-    if judge_count is None:
-        lines.append("- P7: Prompt-Injection-Nachweis erneut ausfuehren; Judge-Budget konnte gerade nicht gelesen werden.")
-    elif judge_count >= JUDGE_BUDGET_LIMIT:
-        lines.append(
-            f"- P7: Prompt-Injection-Nachweis nach Budget-Reset erneut ausfuehren; aktuelle Zaehldaten: {judge_count} `judge-review` Jobs in den letzten 24h, Limit {JUDGE_BUDGET_LIMIT}."
-        )
-    else:
-        lines.append(
-            f"- P7: Prompt-Injection-Nachweis jetzt erneut ausfuehrbar; aktuelle Zaehldaten: {judge_count} `judge-review` Jobs in den letzten 24h, Limit {JUDGE_BUDGET_LIMIT}."
-        )
-    lines.append("- N3 braucht Owner-/Laptop-Aktion: `tools/local/install-updater.sh`, Daemon-Zyklus und `tools/local/saltmarcher-next.sh` bestaetigen.")
-    return lines
 
 
 def latest_tag() -> str:

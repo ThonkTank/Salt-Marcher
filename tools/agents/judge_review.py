@@ -8,9 +8,7 @@ import os
 import subprocess
 import sys
 import urllib.error
-import urllib.parse
 import urllib.request
-from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 
@@ -108,67 +106,11 @@ def lens_checklists() -> str:
     return "\n\n".join(sections)
 
 
-def github_json(path: str, params: dict[str, str] | None = None) -> dict:
-    token = os.environ.get("GITHUB_TOKEN")
-    repository = os.environ.get("GITHUB_REPOSITORY")
-    if not token or not repository:
-        print("judge-review: missing GITHUB_TOKEN or GITHUB_REPOSITORY for daily budget", file=sys.stderr)
-        raise SystemExit(2)
-    query = ""
-    if params:
-        query = "?" + urllib.parse.urlencode(params)
-    request = urllib.request.Request(
-        f"https://api.github.com/repos/{repository}{path}{query}",
-        headers={
-            "accept": "application/vnd.github+json",
-            "authorization": f"Bearer {token}",
-            "x-github-api-version": "2022-11-28",
-        },
-    )
-    try:
-        with urllib.request.urlopen(request, timeout=30) as response:
-            return json.loads(response.read().decode("utf-8"))
-    except (urllib.error.URLError, json.JSONDecodeError) as exc:
-        print(f"judge-review: GitHub Actions budget API error: {exc}", file=sys.stderr)
-        raise SystemExit(2) from exc
-
-
-def recent_judge_call_count() -> int:
-    since = (datetime.now(UTC) - timedelta(hours=24)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
-    current_run = os.environ.get("GITHUB_RUN_ID")
-    runs_payload = github_json(
-        "/actions/workflows/quality-platforms.yml/runs",
-        {"created": f">={since}", "per_page": "100"},
-    )
-    count = 0
-    for run in runs_payload.get("workflow_runs", []):
-        run_id = str(run.get("id", ""))
-        if current_run and run_id == current_run:
-            continue
-        jobs_payload = github_json(f"/actions/runs/{run_id}/jobs", {"per_page": "100"})
-        for job in jobs_payload.get("jobs", []):
-            if job.get("name") != "judge-review":
-                continue
-            if job.get("conclusion") in {"skipped", "neutral"}:
-                continue
-            count += 1
-    print(f"judge-review: observed {count} judge-review jobs in the last 24h")
-    return count
-
-
-def enforce_daily_budget(limit: int) -> None:
-    count = recent_judge_call_count()
-    if count >= limit:
-        print("Judge-Tagesbudget erreicht - R1+ Arbeit auf morgen verschieben", file=sys.stderr)
-        raise SystemExit(2)
-
-
 def call_anthropic(prompt: str) -> str:
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         print("judge-review: missing ANTHROPIC_API_KEY", file=sys.stderr)
         raise SystemExit(2)
-    enforce_daily_budget(int(os.environ.get("JUDGE_MAX_CALLS_PER_DAY", "30")))
     payload = {
         "model": os.environ.get("JUDGE_MODEL") or DEFAULT_MODEL,
         "max_tokens": 2000,
