@@ -164,7 +164,6 @@ def quality_run_job_status(run_id: str) -> dict[str, str]:
 def activation_blockers() -> list[str]:
     return [
         "- P6: Der geplante absent-secret-Nachweis ist nicht mehr ausfuehrbar, weil `ANTHROPIC_API_KEY` bereits aktiv ist; braucht Owner-Disposition, ob das als erledigt/ersetzt gilt.",
-        "- P7: Prompt-Injection-Nachweis erneut ausfuehren; `judge-review` muss dabei bis zu einem Modellurteil laufen.",
         "- N3 braucht Owner-/Laptop-Aktion: `tools/local/install-updater.sh`, Daemon-Zyklus und `tools/local/saltmarcher-next.sh` bestaetigen.",
     ]
 
