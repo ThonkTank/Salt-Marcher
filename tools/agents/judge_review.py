@@ -52,14 +52,22 @@ def pr_labels(payload: dict) -> set[str]:
 
 
 def merge_group_labels(payload: dict) -> set[str]:
+    pr = merge_group_pr(payload)
+    return {
+        label.get("name", "")
+        for label in pr.get("labels", [])
+    }
+
+
+def merge_group_pr(payload: dict) -> dict:
     token = os.environ.get("GITHUB_TOKEN")
     repository = os.environ.get("GITHUB_REPOSITORY")
     head_ref = (payload.get("merge_group") or {}).get("head_ref", "")
     if not token or not repository or not head_ref:
-        return set()
+        return {}
     branch = head_ref.rsplit("/", 1)[-1]
     result = subprocess.run(
-        ["gh", "pr", "list", "--repo", repository, "--state", "open", "--head", branch, "--json", "labels"],
+        ["gh", "pr", "list", "--repo", repository, "--state", "open", "--head", branch, "--json", "number,labels"],
         cwd=REPO_ROOT,
         text=True,
         stdout=subprocess.PIPE,
@@ -67,11 +75,77 @@ def merge_group_labels(payload: dict) -> set[str]:
         env={**os.environ, "GH_TOKEN": token},
     )
     if result.returncode != 0:
-        return set()
+        return {}
     prs = json.loads(result.stdout or "[]")
     if not prs:
-        return set()
-    return {label.get("name", "") for label in prs[0].get("labels", [])}
+        return {}
+    return prs[0]
+
+
+def pr_number(payload: dict) -> int | None:
+    number = (payload.get("pull_request") or {}).get("number")
+    if number:
+        return int(number)
+    if os.environ.get("GITHUB_EVENT_NAME") == "merge_group":
+        number = merge_group_pr(payload).get("number")
+        if number:
+            return int(number)
+    return None
+
+
+def fetch_issue_events(repository: str, number: int) -> list[dict] | None:
+    token = os.environ.get("GITHUB_TOKEN")
+    if not token:
+        return None
+    result = subprocess.run(
+        ["gh", "api", "--paginate", "--slurp", f"repos/{repository}/issues/{number}/events"],
+        cwd=REPO_ROOT,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        env={**os.environ, "GH_TOKEN": token},
+    )
+    if result.returncode != 0:
+        detail = result.stderr.strip() or result.stdout.strip()
+        print(f"judge-review: could not read label events: {detail}", file=sys.stderr)
+        return None
+    pages = json.loads(result.stdout or "[]")
+    return [event for page in pages for event in page]
+
+
+def latest_label_setter(events: list[dict], label_name: str) -> str | None:
+    label_events = [
+        (index, event)
+        for index, event in enumerate(events)
+        if event.get("event") == "labeled" and (event.get("label") or {}).get("name") == label_name
+    ]
+    if not label_events:
+        return None
+    _, latest = max(label_events, key=lambda item: ((item[1].get("created_at") or ""), item[0]))
+    return (latest.get("actor") or {}).get("login")
+
+
+def owner_set_judge_override(events: list[dict], repository: str) -> bool:
+    owner = repository.split("/", 1)[0]
+    return latest_label_setter(events, "judge-override") == owner
+
+
+def has_owner_judge_override(labels: set[str], payload: dict) -> bool:
+    if "judge-override" not in labels:
+        return False
+    repository = os.environ.get("GITHUB_REPOSITORY")
+    number = pr_number(payload)
+    if not repository or number is None:
+        print("judge-review: judge-override present but PR identity is unavailable; running judge.")
+        return False
+    events = fetch_issue_events(repository, number)
+    if events is None:
+        print("judge-review: judge-override present but label events are unavailable; running judge.")
+        return False
+    if owner_set_judge_override(events, repository):
+        return True
+    print("judge-review: judge-override ignored; latest label setter is not repository owner.")
+    return False
 
 
 def git_output(args: list[str]) -> str:
@@ -225,7 +299,7 @@ def has_pass_verdict(verdict: str) -> bool:
 def main() -> int:
     payload = event_payload()
     labels = pr_labels(payload)
-    if "judge-override" in labels:
+    if has_owner_judge_override(labels, payload):
         print("judge-review: judge-override present; owner-only skip.")
         return 0
     if not (labels & R1_PLUS):
