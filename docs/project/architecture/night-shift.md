@@ -27,40 +27,52 @@ No qualifying work found is a valid result only after checking the full order
 above. Self-directed work may include refactors, debt paydown, test additions,
 or documentation improvements under the normal gates.
 
-## Rolling Quotas
+## Cost-Only Stop
 
-Quotas use rolling windows, not calendar nights.
+The runner keeps working unless the configured provider, account, or local
+machine makes work technically unavailable. Merge, R1, migration, red-check,
+P0/P1, owner-feedback, dirty-checkout, and updater-window states are work
+inputs, not stop conditions.
 
-- P0/P1 regression work is quota-exempt and interrupts lower-priority work.
-- Stop admitting new autonomous work after 4 auto-promote PR merges in the
-  rolling 24-hour window.
-- Maximum 1 R1 architecture slice per rolling 24-hour window.
-- Maximum 1 migration slice per rolling 7-day window.
-- Stop migration work while any P0/P1 owner issue is open.
+- P0/P1 regression work interrupts lower-priority work and becomes the next
+  repair target.
+- Rolling merge, R1, migration, and judge counts are telemetry and
+  backpressure signals only. They may reduce slice size or increase the pause
+  between sessions, but they must not prohibit new R0/R1/R2/R3a/R3b/R3c work.
+- Red or unclear required checks must never be merged. They become the next
+  repair target on the same PR or a narrow repair PR.
+- R2 work may land as a provisional recommendation with a German release note
+  and acceptance checklist. Owner acceptance gates stable promotion, not the
+  autonomous PR.
+- R3a work may proceed after a restore-tested backup and copy dry run are
+  proven in the PR.
+- R3b work may proceed when it fits `docs/project/policies/resource-policy.md`.
+  Outside-policy work creates a policy/no-action PR instead of waiting in chat.
 
 Every autonomous improvement PR states Problem, Evidence, and Expected benefit
 in one line each. Every autonomous run emits the configured telemetry and final
 status report for the external runner.
 
-The merge-count quota bounds admission of new autonomous work. It does not cap
-completion of already-open auto-promote PRs that existed before the current
-runner session, have green required checks, are mergeable, are not drafts, and
-carry only auto-promote risk classes. Prefer reversible, evidence-backed
-improvements over asking the owner for technical direction when no
+`no_work` is valid only after the runner checked queue tasks, owner issues,
+open green PRs, red PRs, harness gaps, project-health debt, legacy markers,
+TODO/FIXME markers, CI/telemetry signals, and at least one scoped scout for a
+small reversible improvement. Prefer reversible, evidence-backed repair or
+improvement work over asking the owner for technical direction when no
 higher-priority work is pending.
 
 ## Updater Exclusivity
 
 Treat `saltmarcher-update.service`, `tools/local/saltmarcher-update.sh`, and
 stable-promotion updater verification as exclusive local checkout windows. Do
-not start or continue autonomous git-mutating work, Gradle proof, PR creation,
-or merge-watch activity in the same checkout while one of those paths is active.
+not start git-mutating work, Gradle proof, PR creation, or merge-watch activity
+in the same checkout while one of those paths is active. Wait for the window to
+close and continue automatically; do not treat it as an owner blocker.
 
 ## Budget
 
 Do not skip or bypass `judge-review` for R1+ work. If the configured
-provider/account limit or API availability blocks judge execution, fail closed
-and report the blocker.
+provider/account limit or API availability blocks judge execution, back off and
+retry later without bypassing the gate.
 
 ## Migration Slice Rule
 
