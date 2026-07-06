@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-06
+Last Reviewed: 2026-07-07
 Source of Truth: July 2026 harness-gap closure journal entries.
 Entry Document: [July 2026 Journal](2026-07.md)
 
@@ -31,3 +31,14 @@ projection readback.
 Scope boundary: this pass changes only the harness, harness registration,
 harness map, gap register, and journal; it does not alter visible Party
 behavior or persistence.
+
+## 2026-07-07 encountertable-gap-contract - Correct EncounterTable gap scope
+
+Problem: the EncounterTable harness-gap row asked for table creation and row
+persistence, but the active EncounterTable domain model says authored rows are
+external SQLite input and the application does not own runtime mutation flows.
+Target state: the open gap now asks for a dedicated readback harness over the
+actual public boundary: authored summary lookup, weighted candidate lookup,
+empty selection, XP ceiling, and storage-error publication.
+Scope boundary: this pass changes only the gap contract and journal evidence;
+it does not close the gap or add new behavior.
