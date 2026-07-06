@@ -7,10 +7,11 @@ Source of Truth: Invocation contract for external continuous autonomous SaltMarc
 
 ## Scope
 
-The repository does not contain an autonomous runner. An external runner may
-operate continuously only through branches and pull requests after reading
-`AGENTS.md` and this file. It must never push directly to `main` or merge its
-own pull requests.
+The repository owns the reproducible local runner script, task prompt, and
+user-systemd unit under `tools/local/`. A runner instance may operate
+continuously only through branches and pull requests after reading `AGENTS.md`
+and this file. It must never push directly to `main` or merge its own pull
+requests.
 
 ## Selection Order
 
@@ -23,9 +24,11 @@ own pull requests.
 7. Self-directed reversible improvements with a concrete Problem, Evidence,
    and Expected benefit.
 
-No qualifying work found is a valid result only after checking the full order
-above. Self-directed work may include refactors, debt paydown, test additions,
-or documentation improvements under the normal gates.
+If no listed work is immediately available, the runner performs a bounded
+scout for architecture, pipeline, performance, cleanup, debt/register,
+TODO/FIXME, legacy-marker, CI, and telemetry signals. The scout must produce a
+small reversible improvement PR or an inventory/diagnosis PR with concrete
+evidence and a next repair or polish target.
 
 ## Cost-Only Stop
 
@@ -53,12 +56,13 @@ Every autonomous improvement PR states Problem, Evidence, and Expected benefit
 in one line each. Every autonomous run emits the configured telemetry and final
 status report for the external runner.
 
-`no_work` is valid only after the runner checked queue tasks, owner issues,
-open green PRs, red PRs, harness gaps, project-health debt, legacy markers,
-TODO/FIXME markers, CI/telemetry signals, and at least one scoped scout for a
-small reversible improvement. Prefer reversible, evidence-backed repair or
-improvement work over asking the owner for technical direction when no
-higher-priority work is pending.
+The continuous-operation contract has no normal "nothing to do" result. A run
+either advances an existing green PR, repairs a red or unclear PR, opens a
+small scout/repair/polish PR, records a completed queue item as `queue_done`,
+or backs off for a real provider, account, cost, or local technical
+unavailability. Prefer reversible, evidence-backed repair or improvement work
+over asking the owner for technical direction when no higher-priority work is
+pending.
 
 ## Updater Exclusivity
 

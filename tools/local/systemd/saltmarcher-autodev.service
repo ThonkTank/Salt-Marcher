@@ -1,0 +1,14 @@
+[Unit]
+Description=SaltMarcher continuous autonomous development runner
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=%h/.local/bin/saltmarcher-autodev.sh
+Restart=always
+RestartSec=60
+Nice=19
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=default.target

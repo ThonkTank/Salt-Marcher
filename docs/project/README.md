@@ -35,6 +35,7 @@ This directory owns cross-feature canonical SaltMarcher documentation. Project-w
 - [Styling Enforcement Package](docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
 - [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
 - [Autodev Process Feedback](docs/project/verification/autodev-process-feedback.md:1)
+- [Autodev Runner Evidence](docs/project/verification/autodev-runner-evidence.md:1)
 - [Harness Gaps](docs/project/verification/harness-gaps.md:1)
 - [Source References Standard](docs/project/verification/source-references.md:1)
 
