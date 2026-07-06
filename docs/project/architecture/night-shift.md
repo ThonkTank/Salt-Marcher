@@ -32,7 +32,8 @@ or documentation improvements under the normal gates.
 Quotas use rolling windows, not calendar nights.
 
 - P0/P1 regression work is quota-exempt and interrupts lower-priority work.
-- Maximum 3 autonomous merges per rolling 24-hour window.
+- Stop admitting new autonomous work after 4 auto-promote PR merges in the
+  rolling 24-hour window.
 - Maximum 1 R1 architecture slice per rolling 24-hour window.
 - Maximum 1 migration slice per rolling 7-day window.
 - Stop migration work while any P0/P1 owner issue is open.
@@ -41,9 +42,12 @@ Every autonomous improvement PR states Problem, Evidence, and Expected benefit
 in one line each. Every autonomous run emits the configured telemetry and final
 status report for the external runner.
 
-The quota bounds volume. Prefer reversible, evidence-backed improvements over
-asking the owner for technical direction when no higher-priority work is
-pending.
+The merge-count quota bounds admission of new autonomous work. It does not cap
+completion of already-open auto-promote PRs that existed before the current
+runner session, have green required checks, are mergeable, are not drafts, and
+carry only auto-promote risk classes. Prefer reversible, evidence-backed
+improvements over asking the owner for technical direction when no
+higher-priority work is pending.
 
 ## Updater Exclusivity
 
