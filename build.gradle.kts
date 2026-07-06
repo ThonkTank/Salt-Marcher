@@ -559,6 +559,19 @@ behaviorHarnesses.javaExec("hexTravelStateBehaviorHarness") {
     }
 }
 
+behaviorHarnesses.javaExec("encounterStateTabHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("encounter-state-tab"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused Encounter state-tab behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.view.statetabs.encounter.EncounterStateTabHarness")
+        outputs.upToDateWhen { false }
+    }
+}
+
 behaviorHarnesses.javaExec("sessionPlannerCatalogHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("session-planner-catalog"))

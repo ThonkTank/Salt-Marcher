@@ -46,6 +46,7 @@
   "src/view/leftbartabs/dungeontravel/**": ["dungeonTravelProjectionLevelHarness"],
   "src/view/leftbartabs/hexmap/**": ["hexMapEditorBehaviorHarness", "hexTravelStateBehaviorHarness"],
   "src/view/statetabs/travel/**": ["hexTravelStateBehaviorHarness"],
+  "src/view/statetabs/encounter/**": ["encounterStateTabHarness"],
   "src/view/leftbartabs/catalog/**": [
     "catalogInitialLoadHarness",
     "catalogCrudControlsHarness",
