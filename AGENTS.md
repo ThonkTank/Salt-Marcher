@@ -14,17 +14,17 @@ Always run verification from the repository root.
 
 1. Work on a feature branch. Do not commit to `main`; merge through a PR with green CI.
 2. A pass whose required verify command has not literally passed is WIP. Report the literal result at handoff.
-3. Architecture is enforced by `tools/gradle/build-harness` and Error Prone rules. Do not weaken, disable, suppress, or bypass a check to make a build pass; report a blocker instead.
-4. Transitional or superseded support you knowingly leave behind gets a `LEGACY_REMOVE_ON_TOUCH` marker plus a concrete removal condition. When your write set contains such a marker, remove the marked support in the same pass or report it as a blocker.
+3. Architecture is enforced by `tools/gradle/build-harness` and Error Prone rules. Do not weaken, disable, suppress, or bypass a check to make a build pass; fix the cause or record a concrete repair target.
+4. Transitional or superseded support you knowingly leave behind gets a `LEGACY_REMOVE_ON_TOUCH` marker plus a concrete removal condition. When your write set contains such a marker, remove the marked support in the same pass or record a concrete repair target.
 5. Structural findings you cannot fix in the same pass get a `PROJECT_HEALTH_DEBT` marker at the primary cause and an entry in `docs/project/architecture/project-health-debt.md`.
-6. Before editing a surface, read its owner doc and skill from the table below. If a surface has no clear owner, stop and report instead of creating a second source of truth.
-7. Behavior changes and new behavior-bearing concepts need an owning behavior harness: extend it, create it, or report a `Harness Gap` blocker. Harnesses prove production routes; avoid fixture selftests and meta-test layers. New central build/check gates require explicit user request.
+6. Before editing a surface, read its owner doc and skill from the table below. If a surface has no clear owner, create a narrow documentation repair target instead of creating a second source of truth.
+7. Behavior changes and new behavior-bearing concepts need an owning behavior harness: extend it, create it, or record a `Harness Gap` repair target. Harnesses prove production routes; avoid fixture selftests and meta-test layers. New central build/check gates require explicit user request.
 8. Record notable decisions, incidents, and repeated fixes in `docs/project/journal/YYYY-MM.md`; see `docs/project/architecture/work-logs.md`.
 9. Risk class is mandatory on PRs: R0 docs/comments/small reversible refactor;
    R1 behavior-neutral structure, architecture, dependency, or tooling; R2
    visible behavior; R3a real local data migration; R3b external service,
    cost, account, or data egress; R3c frozen gate surface.
-10. The owner decides visible behavior, priorities, acceptance, data, cost, and
+10. The owner decides stable acceptance, data, cost, and outside-policy
     consent. The system decides technical matters autonomously; see
     `docs/project/architecture/autonomy-boundaries.md`.
 11. Forbidden autonomous actions: real local data modification without a
@@ -33,7 +33,7 @@ Always run verification from the repository root.
     silent R2 behavior; merge with red or skipped required checks.
 12. When product options exist, implement the recommended option as provisional
     R2 on `main`/next, flag it in the German release note and status report,
-    and do not auto-promote.
+    and do not promote to stable before owner acceptance.
 13. For owner-reported bugs or features, first restate expected behavior,
     reproduction, acceptance criteria, affected surfaces, and proof route in
     the issue; then implement.
@@ -42,9 +42,9 @@ Always run verification from the repository root.
 
 - `R0`: docs/comments/small reversible refactor; doc gate or production-handoff; auto-promote.
 - `R1`: behavior-neutral structure, architecture, dependency, or tooling; R0 plus touched behavior harnesses and judge review; auto-promote.
-- `R2`: visible behavior; R1 plus German release note and acceptance checklist; promote only after owner acceptance.
+- `R2`: visible behavior; R1 plus German release note and acceptance checklist; auto-promote as provisional next/main work, promote to stable only after owner acceptance.
 - `R3a`: real local data migration; verified restore-tested backup and copy dry run; auto-promote after backup proof.
-- `R3b`: external service, cost, account, or data egress; must fit `docs/project/policies/resource-policy.md` or ask owner with recommendation/default.
+- `R3b`: external service, cost, account, or data egress; must fit `docs/project/policies/resource-policy.md`; outside-policy work creates a policy/no-action PR instead of blocking in chat.
 - `R3c`: frozen gate surface; requires R3c label and the full required gate set; auto-promote after merge.
 
 ## Surface Owners
@@ -63,8 +63,8 @@ Always run verification from the repository root.
 | External-source-backed decisions | `docs/project/verification/source-references.md` | `source-references` |
 | Resource policy and operating model | `docs/project/policies/resource-policy.md`, `docs/project/decisions/**` | - |
 
-Harness Gap blockers reference `docs/project/verification/harness-gaps.md`.
-Autonomous night work follows `docs/project/architecture/night-shift.md`.
+Harness Gap repair targets reference `docs/project/verification/harness-gaps.md`.
+Continuous autonomous work follows `docs/project/architecture/night-shift.md`.
 Autonomous decision boundaries are defined in
 `docs/project/architecture/autonomy-boundaries.md`.
 

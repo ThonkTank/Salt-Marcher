@@ -46,6 +46,7 @@
   "src/view/leftbartabs/dungeontravel/**": ["dungeonTravelProjectionLevelHarness"],
   "src/view/leftbartabs/hexmap/**": ["hexMapEditorBehaviorHarness", "hexTravelStateBehaviorHarness"],
   "src/view/statetabs/travel/**": ["hexTravelStateBehaviorHarness"],
+  "src/view/statetabs/encounter/**": ["encounterStateTabHarness"],
   "src/view/leftbartabs/catalog/**": [
     "catalogInitialLoadHarness",
     "catalogCrudControlsHarness",
@@ -54,6 +55,9 @@
   ],
   "src/view/slotcontent/controls/catalogcrud/**": ["catalogCrudControlsHarness"],
   "src/view/slotcontent/controls/searchfilter/**": ["searchFilterControlsHarness"],
+  "src/data/party/**": ["partyDropdownHarness"],
+  "src/domain/party/**": ["partyDropdownHarness"],
+  "src/view/dropdowns/party/**": ["partyDropdownHarness"],
   "src/view/leftbartabs/sessionplanner/**": [
     "sessionPlannerCatalogHarness",
     "sessionPlannerShellLayoutHarness"

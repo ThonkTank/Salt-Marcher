@@ -22,7 +22,7 @@ plugins {
     id("saltmarcher.quality-conventions")
     id("saltmarcher.verification-core")
     id("org.openjfx.javafxplugin") version "0.1.0"
-    id("org.sonarqube") version "7.2.3.7755"
+    id("org.sonarqube") version "7.3.1.8318"
 }
 
 val launcherName = providers.gradleProperty("saltMarcherLauncherName").orElse("saltmarcher")
@@ -140,15 +140,15 @@ val worldPlannerUiHarness by sourceSets.creating {
 
 dependencies {
     implementation("org.jspecify:jspecify:1.0.0")
-    implementation("org.xerial:sqlite-jdbc:3.46.1.3")
+    implementation("org.xerial:sqlite-jdbc:3.53.2.0")
     pmd("net.sourceforge.pmd:pmd-ant:7.23.0")
     pmd("net.sourceforge.pmd:pmd-java:7.23.0")
     pmd("saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
     spotbugsPlugins("com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0")
-    testImplementation("org.junit.jupiter:junit-jupiter:5.11.0")
-    testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.1.1")
+    testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.11.0")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
 }
 
 pmd {
@@ -438,6 +438,7 @@ val catalogInitialLoadHarnessDataDir = layout.buildDirectory.dir("catalog-initia
 val catalogCrudControlsHarnessDataDir = layout.buildDirectory.dir("catalog-crud-controls-data")
 val catalogControlsRawInputHarnessDataDir = layout.buildDirectory.dir("catalog-controls-raw-input-data")
 val searchFilterControlsHarnessDataDir = layout.buildDirectory.dir("search-filter-controls-data")
+val partyDropdownHarnessDataDir = layout.buildDirectory.dir("party-dropdown-data")
 val hexMapEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-map-editor-behavior-data")
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
@@ -526,6 +527,26 @@ behaviorHarnesses.javaExec("searchFilterControlsHarness") {
     }
 }
 
+behaviorHarnesses.javaExec("partyDropdownHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("party-dropdown"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the Party dropdown active-party behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.view.dropdowns.party.PartyDropdownHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = partyDropdownHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+    }
+}
+
 behaviorHarnesses.javaExec("hexMapEditorBehaviorHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("hex-map-editor"))
@@ -555,6 +576,19 @@ behaviorHarnesses.javaExec("hexTravelStateBehaviorHarness") {
         dependsOn(tasks.named(hexMapEditorBehaviorHarness.classesTaskName))
         classpath = hexMapEditorBehaviorHarness.runtimeClasspath
         mainClass.set("src.view.statetabs.travel.TravelStateHexHarness")
+        outputs.upToDateWhen { false }
+    }
+}
+
+behaviorHarnesses.javaExec("encounterStateTabHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("encounter-state-tab"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused Encounter state-tab behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.view.statetabs.encounter.EncounterStateTabHarness")
         outputs.upToDateWhen { false }
     }
 }
