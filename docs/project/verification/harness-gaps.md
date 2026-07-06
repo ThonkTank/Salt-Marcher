@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-05
+Last Reviewed: 2026-07-07
 Source of Truth: Behavior-harness coverage gaps that must be closed before touched areas change.
 
 # Harness Gaps
@@ -20,7 +20,7 @@ the minimal harness proposal needed before a touched area may change.
 | Area | Current coverage | Priority | Minimal harness proposal |
 | --- | --- | --- | --- |
 | `src/domain/creatures` | Catalog-adjacent only | P2 | Add a creature catalog domain harness covering create, edit, filter, and readback. |
-| `src/domain/encountertable` | No dedicated encounter-table behavior harness | P2 | Add an encounter-table harness covering table creation, row persistence, and lookup. |
+| `src/domain/encountertable` | No dedicated encounter-table behavior harness | P2 | Add an encounter-table readback harness covering authored summary lookup, weighted candidate lookup, empty selection, XP ceiling, and storage-error publication. |
 
 ## Rule
 
