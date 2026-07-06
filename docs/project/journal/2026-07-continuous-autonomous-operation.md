@@ -2,6 +2,7 @@ Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-06
 Source of Truth: L-tier design note for the continuous autonomous operation contract.
+Entry Document: [July 2026 Journal](2026-07.md)
 
 # Continuous Autonomous Operation Design Note
 
@@ -39,3 +40,24 @@ required checks or make red/skipped PRs mergeable.
 Done when: docs enforcement passes, runner syntax/dry-run pass, independent
 review finds no cost-only-stop blocker, and live service resumes with quotas as
 telemetry rather than start bans.
+
+## 2026-07-07 retire-no-work-dauerbetrieb - Make idle states become work
+
+Problem: the continuous runner still allowed `no_work` as a normal result,
+which could turn an empty immediate queue into sleep instead of polish,
+refactor, repair, or inventory work.
+Target state: normal sessions must choose existing green PRs, red/unclear PR
+repair, bounded scout work, or a small inventory/diagnosis PR; already-finished
+queue items use `queue_done`, dry runs use `dry_run_ok`, and cost/provider
+limits remain the only real backoff.
+Alternatives: keep `no_work` as a rare valid result, or only strengthen wording.
+Both leave the same sleep-shaped escape hatch in telemetry and wrapper logic.
+Scope boundary: change only the Dauerbetrieb contract, repo-owned runner
+artifacts, installed runner prompt/wrapper, and this journal note; do not
+change session pause defaults or cost-only-stop rules.
+Instruction volume payment: `night-shift.md` replaces the old `no_work` escape
+paragraph and selection fallback, while the prompt replaces the matching rules
+instead of adding another layer of exceptions.
+Done when: documentation enforcement passes, the runner syntax and dry-run
+contract pass, old `no_work` results normalize to a repair target, and
+independent review finds no remaining normal `no_work` path.
