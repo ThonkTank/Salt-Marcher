@@ -89,6 +89,38 @@ class JudgeOverrideOwnershipTest(unittest.TestCase):
                 self.assertEqual(0, judge_review.main())
                 call_anthropic.assert_called_once()
 
+    def test_plain_r1_pr_runs_judge_without_event_lookup(self) -> None:
+        payload = {
+            "pull_request": {
+                "number": 21,
+                "title": "Plain R1 follow-up",
+                "body": "Normal judge path",
+                "base": {"ref": "main"},
+                "labels": [{"name": "risk:R1"}],
+            }
+        }
+
+        with tempfile.NamedTemporaryFile("w", encoding="utf-8") as event_file:
+            event_file.write(judge_review.json.dumps(payload))
+            event_file.flush()
+            env = {
+                "GITHUB_EVENT_PATH": event_file.name,
+                "GITHUB_REPOSITORY": "ThonkTank/Salt-Marcher",
+                "GITHUB_BASE_REF": "main",
+            }
+            with patched_environ(env), mock.patch.object(
+                judge_review, "fetch_issue_events"
+            ) as fetch_issue_events, mock.patch.object(
+                judge_review, "diff_text", return_value="diff"
+            ), mock.patch.object(
+                judge_review, "lens_checklists", return_value="lenses"
+            ), mock.patch.object(
+                judge_review, "call_anthropic", return_value="VERDICT: PASS"
+            ) as call_anthropic:
+                self.assertEqual(0, judge_review.main())
+                fetch_issue_events.assert_not_called()
+                call_anthropic.assert_called_once()
+
     def test_owner_override_skips_judge(self) -> None:
         payload = {
             "pull_request": {
