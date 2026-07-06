@@ -438,6 +438,7 @@ val catalogInitialLoadHarnessDataDir = layout.buildDirectory.dir("catalog-initia
 val catalogCrudControlsHarnessDataDir = layout.buildDirectory.dir("catalog-crud-controls-data")
 val catalogControlsRawInputHarnessDataDir = layout.buildDirectory.dir("catalog-controls-raw-input-data")
 val searchFilterControlsHarnessDataDir = layout.buildDirectory.dir("search-filter-controls-data")
+val partyDropdownHarnessDataDir = layout.buildDirectory.dir("party-dropdown-data")
 val hexMapEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-map-editor-behavior-data")
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
@@ -518,6 +519,26 @@ behaviorHarnesses.javaExec("searchFilterControlsHarness") {
         outputs.upToDateWhen { false }
         doFirst {
             val runDataDir = searchFilterControlsHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+    }
+}
+
+behaviorHarnesses.javaExec("partyDropdownHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("party-dropdown"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the Party dropdown active-party behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.view.dropdowns.party.PartyDropdownHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = partyDropdownHarnessDataDir.get()
                 .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
             mkdir(runDataDir)
             mkdir(runDataDir.dir("salt-marcher"))

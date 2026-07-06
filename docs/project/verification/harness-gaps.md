@@ -19,7 +19,6 @@ the minimal harness proposal needed before a touched area may change.
 
 | Area | Current coverage | Priority | Minimal harness proposal |
 | --- | --- | --- | --- |
-| `src/domain/party`, `src/view/dropdowns/party` | No dedicated party behavior harness | P1 | Add a party dropdown harness that creates, selects, and publishes active-party state through production services. |
 | `src/domain/creatures` | Catalog-adjacent only | P2 | Add a creature catalog domain harness covering create, edit, filter, and readback. |
 | `src/domain/encountertable` | No dedicated encounter-table behavior harness | P2 | Add an encounter-table harness covering table creation, row persistence, and lookup. |
 
