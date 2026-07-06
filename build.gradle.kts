@@ -22,7 +22,7 @@ plugins {
     id("saltmarcher.quality-conventions")
     id("saltmarcher.verification-core")
     id("org.openjfx.javafxplugin") version "0.1.0"
-    id("org.sonarqube") version "7.2.3.7755"
+    id("org.sonarqube") version "7.3.1.8318"
 }
 
 val launcherName = providers.gradleProperty("saltMarcherLauncherName").orElse("saltmarcher")
@@ -140,13 +140,13 @@ val worldPlannerUiHarness by sourceSets.creating {
 
 dependencies {
     implementation("org.jspecify:jspecify:1.0.0")
-    implementation("org.xerial:sqlite-jdbc:3.46.1.3")
+    implementation("org.xerial:sqlite-jdbc:3.53.2.0")
     pmd("net.sourceforge.pmd:pmd-ant:7.23.0")
     pmd("net.sourceforge.pmd:pmd-java:7.23.0")
     pmd("saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
     spotbugsPlugins("com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0")
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.1")
-    testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
+    testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
 }
