@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-05
+Last Reviewed: 2026-07-07
 Source of Truth: Detailed CI job policy, external service setup, branch
 protection expectations, and review governance for SaltMarcher quality
 platforms.
@@ -195,6 +195,21 @@ result proves the live setting.
 Do not claim "CI blocks merge" or "branch protection is configured" from this
 document alone. Without a fresh API readback, state only that SaltMarcher
 intends the listed GitHub checks to be required.
+
+### Dependabot Judge Secrets
+
+Dependabot pull requests run with GitHub's Dependabot secret source, not the
+normal Actions secret source. Because `judge-review` is a required gate for
+R1+ and R3c work, GitHub Actions dependency PRs need a Dependabot-scoped
+`ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN` with the same resource-policy
+approval as the normal repository secret. Without that account setup,
+`judge-review` must fail closed with `missing ANTHROPIC_API_KEY or
+CLAUDE_CODE_OAUTH_TOKEN`.
+
+Do not weaken `judge-review`, move the workflow to `pull_request_target`, or
+mark Dependabot R3c PRs as mergeable to work around absent Dependabot secrets.
+Record the affected PR as blocked on owner/account setup or use an owner-set
+`judge-override` only under the owner-only override rule.
 
 ## Review Governance
 
