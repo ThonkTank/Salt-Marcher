@@ -44,6 +44,10 @@ Current enforcement status:
 - Active non-empty `src/features/**` source roots are allowed by the layering
   `src/` direct-child allowlist. Their internal feature-runtime topology
   remains Review-Owned until a later document names a specific mechanical gate.
+- The retained fitness-function gap is tracked as
+  [PH-20260708-001](../project-health-debt.md#ph-20260708-001---feature-runtime-fitness-function-gap);
+  that register entry is the active repair target, not a second source of
+  feature-runtime criteria.
 
 ## Current State And Target State
 
@@ -194,6 +198,8 @@ Until a named gate exists, review owns:
 - whether storage remains persistence-only
 - whether preview and commit run the same operation owner
 - whether render frames come from runtime publication
+- whether typed target and boundary carriers drift back into legacy
+  view/domain shapes or stringly protocols
 - whether a migration still depends on a compatibility seam and, if so, which
   wave removes it
 
