@@ -168,7 +168,7 @@ final class WorldPlannerIntentHandler {
         long npcId = contributionModel.selectedNpcId();
         EncounterApplicationService service = encounter;
         if (service != null && statblockId > 0L && npcId > 0L) {
-            service.applyState(ApplyEncounterStateCommand.worldNpc("ADD_CREATURE", statblockId, npcId));
+            service.applyState(ApplyEncounterStateCommand.addWorldNpcCreature(statblockId, npcId));
         }
     }
 
