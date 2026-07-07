@@ -46,7 +46,7 @@ final class DungeonEditorLabelPointerTargets {
                             DungeonEditorRuntimePointerTarget.LabelKind.CLUSTER_LABEL,
                             ref.ownerId(),
                             ref.clusterId(),
-                            DungeonEditorRuntimePointerTarget.TopologyKind.fromLegacy(
+                            DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
                                     DungeonEditorMapHitRef.topologyKind(ref.topologyRef())),
                             DungeonEditorMapHitRef.topologyId(ref.topologyRef())));
         }

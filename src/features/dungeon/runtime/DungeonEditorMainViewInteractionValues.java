@@ -26,7 +26,7 @@ final class DungeonEditorMainViewInteractionValues {
     }
 
     static DungeonTopologyElementKind toTopologyKind(@Nullable String kind) {
-        return DungeonEditorRuntimePointerTarget.TopologyKind.fromLegacy(kind).domainKind();
+        return DungeonEditorRuntimePointerTargetCompatibility.legacyDomainTopologyKind(kind);
     }
 
     static DungeonEditorRuntimePointerTarget.TopologyKind topologyKind(

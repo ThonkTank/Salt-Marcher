@@ -24,10 +24,10 @@ final class DungeonEditorBoundaryPointerTargets {
             String kind = boundaryKind(boundary.kind());
             DungeonEditorRuntimePointerTarget.BoundaryTarget target =
                     new DungeonEditorRuntimePointerTarget.BoundaryTarget(
-                            DungeonEditorRuntimePointerTarget.BoundaryKind.fromLegacy(kind),
+                            DungeonEditorRuntimePointerTargetCompatibility.legacyBoundaryKind(kind),
                             boundaryKey(kind, boundary.id(), boundary.topologyRef(), edge),
                             boundary.id(),
-                            DungeonEditorRuntimePointerTarget.TopologyKind.fromLegacy(
+                            DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
                                     DungeonEditorMapHitRef.topologyKind(boundary.topologyRef())),
                             DungeonEditorMapHitRef.topologyId(boundary.topologyRef()),
                             edge.from().q(),

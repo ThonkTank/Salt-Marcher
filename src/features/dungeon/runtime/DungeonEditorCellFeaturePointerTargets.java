@@ -124,7 +124,7 @@ final class DungeonEditorCellFeaturePointerTargets {
     private static DungeonEditorRuntimePointerTarget.ElementKind areaRuntimeElementKind(
             DungeonEditorMapSnapshot.Area area
     ) {
-        return DungeonEditorRuntimePointerTarget.ElementKind.fromLegacy(areaElementKind(area));
+        return DungeonEditorRuntimePointerTargetCompatibility.legacyElementKind(areaElementKind(area));
     }
 
     private static String featureCellKind(String kind) {
@@ -134,7 +134,7 @@ final class DungeonEditorCellFeaturePointerTargets {
     private static DungeonEditorRuntimePointerTarget.TopologyKind topologyKind(
             src.domain.dungeon.published.DungeonEditorTopologyElementRef topologyRef
     ) {
-        return DungeonEditorRuntimePointerTarget.TopologyKind.fromLegacy(
+        return DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
                 DungeonEditorMapHitRef.topologyKind(topologyRef));
     }
 }

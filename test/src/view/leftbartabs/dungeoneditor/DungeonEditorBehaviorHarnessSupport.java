@@ -1243,7 +1243,8 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         }
 
         String topologyRefText() {
-            return rawTarget.topologyKind().legacyName();
+            DungeonEditorRuntimePointerTarget.TopologyKind kind = rawTarget.topologyKind();
+            return kind == DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY ? "" : kind.name();
         }
 
         long topologyId() {

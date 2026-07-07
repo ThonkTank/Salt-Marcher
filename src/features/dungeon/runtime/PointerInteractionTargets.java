@@ -215,11 +215,11 @@ public record PointerInteractionTargets(
             return "";
         }
         DungeonEditorRuntimePointerTarget.BoundaryTarget boundary = target.boundary();
-        return boundary.boundaryKind().legacyName()
+        return DungeonEditorRuntimePointerTargetCompatibility.compatibilityBoundaryKindName(boundary.boundaryKind())
                 + ":"
                 + boundary.ownerId()
                 + ":"
-                + boundary.topologyKind().legacyName()
+                + DungeonEditorRuntimePointerTargetCompatibility.compatibilityTopologyKindName(boundary.topologyKind())
                 + ":"
                 + boundary.topologyId()
                 + ":"

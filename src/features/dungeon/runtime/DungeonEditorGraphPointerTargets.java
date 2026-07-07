@@ -28,7 +28,7 @@ final class DungeonEditorGraphPointerTargets {
     private static DungeonEditorRuntimePointerTarget.TopologyKind topologyKind(
             DungeonEditorTopologyElementRef topologyRef
     ) {
-        return DungeonEditorRuntimePointerTarget.TopologyKind.fromLegacy(
+        return DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
                 DungeonEditorMapHitRef.topologyKind(topologyRef));
     }
 }
