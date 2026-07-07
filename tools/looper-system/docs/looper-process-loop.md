@@ -5,11 +5,11 @@ Source of Truth: Architecture for the SaltMarcher process-autoresearch loop,
 including fixed harness boundaries, mutable process-program boundaries, and
 promotion rules for developer-process variants.
 
-# Autodev Process Loop
+# Looper Process Loop
 
 ## Purpose
 
-SaltMarcher uses the Autodev Process Loop to improve the developer process
+SaltMarcher uses the Looper Process Loop to improve the developer process
 that drives implementation work. The loop experiments on how implementers are
 briefed, scoped, model-routed, reviewed, and given feedback. It does not
 experiment directly on product code as its primary object.
@@ -49,7 +49,7 @@ SaltMarcher maps the autoresearch roles as follows:
 | fixed preparation and evaluation files | `AGENTS.md`, mandatory skills, verification routes, review protocol, publication rules |
 | mutable training file | private developer process program and process variants |
 | scalar validation metric | normalized process score from structured feedback |
-| experiment ledger | private `.codex/autodev/experiments.tsv` |
+| experiment ledger | private `tools/looper-system/state/process-lab/experiments.tsv` |
 | keep or reset branch | keep, discard, or quarantine a process variant |
 | open-ended agent archive | private process variant archive with parent and child lineage |
 
@@ -108,7 +108,8 @@ change:
 - feedback-question wording
 - stop rules that are stricter than the fixed harness
 
-Variants live privately under `.codex/autodev/variants/` until promoted.
+Variants live privately under `tools/looper-system/state/process-lab/variants/`
+until promoted.
 Implementation agents receive only a reduced slice brief derived from the
 active variant. They MUST NOT receive the full protected intake, the private
 experiment ledger, the variant archive, or unrelated feedback history.
@@ -137,7 +138,8 @@ The private variant archive records process variant genealogy. It lets the
 optimizer branch from useful prior variants instead of only hill-climbing from
 the latest active process program.
 
-Archive entries live in `.codex/autodev/variant-archive.jsonl`. Each line is a
+Archive entries live in
+`tools/looper-system/state/process-lab/variant-archive.jsonl`. Each line is a
 JSON object with at least:
 
 - `schema_version`
@@ -183,7 +185,8 @@ only through the promotion model below.
 
 ## Private Lab Boundary
 
-The private process lab lives under the ignored `.codex/autodev/` directory:
+The private process lab lives under the ignored
+`tools/looper-system/state/process-lab/` directory:
 
 - `intake.md` holds protected user-provided features and bugs
 - `process-program.md` holds the active private process program
@@ -205,16 +208,16 @@ protected intake items or raw private feedback.
 A fresh private lab is valid when these ignored paths exist:
 
 ```text
-.codex/autodev/intake.md
-.codex/autodev/process-program.md
-.codex/autodev/experiments.tsv
-.codex/autodev/variant-archive.jsonl
-.codex/autodev/evaluation-sets/
-.codex/autodev/feedback/
-.codex/autodev/variants/active/
-.codex/autodev/variants/children/
-.codex/autodev/variants/discarded/
-.codex/autodev/variants/promoted/
+tools/looper-system/state/process-lab/intake.md
+tools/looper-system/state/process-lab/process-program.md
+tools/looper-system/state/process-lab/experiments.tsv
+tools/looper-system/state/process-lab/variant-archive.jsonl
+tools/looper-system/state/process-lab/evaluation-sets/
+tools/looper-system/state/process-lab/feedback/
+tools/looper-system/state/process-lab/variants/active/
+tools/looper-system/state/process-lab/variants/children/
+tools/looper-system/state/process-lab/variants/discarded/
+tools/looper-system/state/process-lab/variants/promoted/
 ```
 
 `experiments.tsv` MUST start with this header:
@@ -242,7 +245,7 @@ known, the first archive entry SHOULD record the active baseline variant with
 `intake.md` MUST be created with this minimal private template:
 
 ```text
-# SaltMarcher Autodev Private Intake
+# SaltMarcher Looper Private Intake
 
 ## Record Template
 
@@ -266,7 +269,7 @@ the optimizer may use a bounded maintenance fallback without writing it here.
 `process-program.md` MUST be created with this minimal private template:
 
 ```text
-# SaltMarcher Autodev Process Program
+# SaltMarcher Looper Process Program
 
 id: baseline-YYYY-MM-DD
 status: active
@@ -314,8 +317,6 @@ Private experiment files remain untracked.
 
 ## References
 
-- [Autodev Process Feedback](docs/project/verification/autodev-process-feedback.md:1)
-- [Agent Instruction Standard](docs/project/architecture/agent-instructions.md:1)
-- [Source References Standard](docs/project/verification/source-references.md:1)
-- [Karpathy Autoresearch Extract](references/autodev/karpathy-autoresearch.md:1)
-- [Darwin Godel Machine Extract](references/autodev/darwin-godel-machine-2505.22954.md:1)
+- [Looper Process Feedback](looper-process-feedback.md)
+- [Agent Instruction Standard](../../../docs/project/architecture/agent-instructions.md)
+- [Source References Standard](../../../docs/project/verification/source-references.md)

@@ -1,0 +1,15 @@
+[Unit]
+Description=SaltMarcher Looper System
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=@REPO_ROOT@
+ExecStart=@LOOPER_EXEC@
+Restart=always
+RestartSec=60
+Nice=19
+IOSchedulingClass=idle
+
+[Install]
+WantedBy=default.target

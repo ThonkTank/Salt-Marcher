@@ -7,16 +7,18 @@ Source of Truth: Invocation contract for external continuous autonomous SaltMarc
 
 ## Scope
 
-The repository owns the reproducible local runner script, task prompt, and
-user-systemd unit under `tools/local/`. A runner instance may operate
+The repository owns the reproducible local Looper script, task prompt,
+helpers, operator docs, user-systemd template, and ignored runtime state under
+`tools/looper-system/`. A Looper instance may operate
 continuously only through branches and pull requests after reading `AGENTS.md`
 and this file. It must never push directly to `main` or merge its own pull
 requests.
 
-The runner runtime also lives under the SaltMarcher checkout:
-`.codex/autodev/runner/` owns the working clone, queue, queue archive,
+The Looper runtime also lives under the SaltMarcher checkout:
+`tools/looper-system/state/` owns the working clone, queue, queue archive,
 telemetry, logs, reports, lock files, pause sentinels, and daily/monthly run
-sentinels. Do not operate the continuous runner from `~/.local/bin`,
+sentinels. Do not operate the Looper from Home-local legacy paths such as
+`~/.local/bin/saltmarcher-autodev.sh`,
 `~/.local/share/saltmarcher-autodev`, or
 `~/.local/state/saltmarcher/autodev`; those paths must stay absent after
 installation.
@@ -33,7 +35,7 @@ installation.
 8. Self-directed reversible improvements with a concrete Problem, Evidence,
    and Expected benefit.
 
-If no listed work is immediately available, the runner performs a bounded
+If no listed work is immediately available, the Looper performs a bounded
 scout for architecture, pipeline, performance, cleanup, debt/register,
 TODO/FIXME, legacy-marker, CI, and telemetry signals. The scout must produce a
 small reversible improvement PR or an inventory/diagnosis PR with concrete
@@ -41,7 +43,7 @@ evidence and a next repair or polish target.
 
 ## Cost-Only Stop
 
-The runner keeps working unless the configured provider, account, or local
+The Looper keeps working unless the configured provider, account, or local
 machine makes work technically unavailable. Merge, R1, migration, red-check,
 P0/P1, owner-feedback, dirty-checkout, and updater-window states are work
 inputs, not stop conditions.
@@ -54,11 +56,11 @@ inputs, not stop conditions.
 - Red or unclear required checks must never be merged. They become the next
   repair target on the same PR or a narrow repair PR.
 - A red PR with three identical required-check signatures is quarantined, not
-  treated as a stop condition. The runner labels it `quarantined:stuck`, turns
+  treated as a stop condition. The Looper labels it `quarantined:stuck`, turns
   it back into draft, reports
   `Quarantaene: PR #N nach 3 gleichen Fehlversuchen geparkt`, writes one
   journal line, and continues with the next candidate. The PR becomes selectable
-  again after seven days or when the failure signature changes; the runner then
+  again after seven days or when the failure signature changes; the Looper then
   removes the label and marks it ready before retrying.
 - R2 work may land as a provisional recommendation with a German release note
   and acceptance checklist. Owner acceptance gates stable promotion, not the
@@ -70,10 +72,14 @@ inputs, not stop conditions.
 
 Every autonomous improvement PR states Problem, Evidence, and Expected benefit
 in one line each. Every autonomous run emits the configured telemetry and final
-status report for the external runner.
+status report for the external Looper.
+
+Every PR created, selected, repaired, or otherwise materially advanced by the
+Looper carries the `source:looper` provenance label in addition to the required
+`risk:*` label and single `task:<class>` label.
 
 Blocked quality-trend gates are ordinary repair targets on the same PR. They
-do not stop the loop; the runner repairs the regression or reclassifies the PR
+do not stop the loop; the Looper repairs the regression or reclassifies the PR
 only when the task label was wrong.
 
 ## Work Mix
@@ -88,23 +94,24 @@ Explorer-finding repairs count as product work.
 When there are at least 10 non-bot merges and `meta_merge_ratio_14d` is above
 35%, meta-only work is inadmissible for selection except P0/P1 regressions,
 red-required-check repairs on open PRs, explicitly owner-filed issues, and
-RUNNER-DRIFT repairs. Migration slices count as product. Self-directed meta
-improvements are inadmissible while over cap; `no_work` becomes a valid result
-if only meta candidates remain after the full ladder check.
+LOOPER-DRIFT repairs. Migration slices count as product. Self-directed meta
+improvements are inadmissible while over cap; `work_mix_skipped` becomes a
+valid result if only meta candidates remain after the full ladder check.
 
-## Runner Manifest
+## Looper Manifest
 
-The runner checks `tools/local/runner-manifest.json` at every session start
-against the repo-local runner files, active repo-local systemd unit, and legacy
+The Looper checks `tools/looper-system/config/manifest.json` at every session start
+against the bundle-local Looper files, active bundle-local systemd unit, and legacy
 Home path absence. Drift emits
-`RUNNER-DRIFT: N Datei(en) weichen vom Manifest ab`, opens or refreshes one
-`runner-drift` issue with path and hashes only, and remains a P1-equivalent
+`LOOPER-DRIFT: N Datei(en) weichen vom Manifest ab`, opens or refreshes one
+`looper-drift` issue with path and hashes only, and remains a P1-equivalent
 repair target while the loop continues.
 
 Outside enforced Work Mix backpressure, the continuous-operation contract has
 no normal "nothing to do" result. A run either advances an existing green PR,
 repairs a red or unclear PR, opens a small scout/repair/polish PR, records a
-completed queue item as `queue_done`, or backs off for a real provider,
+completed queue item as `queue_done`, records `work_mix_skipped` for enforced
+meta-work backpressure, or backs off for a real provider,
 account, cost, or local technical unavailability. Prefer reversible,
 evidence-backed repair or improvement work over asking the owner for technical
 direction when no higher-priority work is pending.

@@ -14,7 +14,7 @@ EXEMPT_SOURCES = {
     "p0p1",
     "red-pr",
     "owner-feedback",
-    "runner-drift",
+    "looper-drift",
 }
 
 
@@ -58,7 +58,7 @@ def main(argv: list[str]) -> int:
     parser.add_argument(
         "--task-source",
         default="self-directed",
-        help="Selection source such as p0p1, red-pr, owner-feedback, runner-drift, migration, or self-directed.",
+        help="Selection source such as p0p1, red-pr, owner-feedback, looper-drift, migration, or self-directed.",
     )
     parser.add_argument("--json", action="store_true")
     parser.add_argument("--self-test", action="store_true")

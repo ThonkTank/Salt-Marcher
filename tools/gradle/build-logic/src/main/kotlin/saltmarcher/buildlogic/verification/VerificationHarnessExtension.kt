@@ -281,6 +281,7 @@ internal open class VerificationHarnessExtension(
                     exclude("**/.codex/**")
                     exclude("**/.gradle/**")
                     exclude("**/.git/**")
+                    exclude("tools/looper-system/state/**")
                 }
             )
             successMarker.set(project.layout.buildDirectory.file("verification-markers/$taskName/success.marker"))
@@ -291,7 +292,7 @@ internal open class VerificationHarnessExtension(
             stylesheetFiles.from(
                 project.layout.projectDirectory.asFileTree.matching {
                     include("**/*.css", "**/*.scss", "**/*.sass", "**/*.less", "**/*.styl")
-                    exclude("**/.codex/**", "**/.git/**", "**/.gradle/**", "**/build/**")
+                    exclude("**/.codex/**", "**/.git/**", "**/.gradle/**", "**/build/**", "tools/looper-system/state/**")
                 }.matching {
                     FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf(""))
                 }
@@ -314,7 +315,7 @@ internal open class VerificationHarnessExtension(
             stylesheetFiles.from(
                 project.layout.projectDirectory.asFileTree.matching {
                     include("**/*.css", "**/*.scss", "**/*.sass", "**/*.less", "**/*.styl")
-                    exclude("**/.git/**", "**/.gradle/**", "**/build/**")
+                    exclude("**/.git/**", "**/.gradle/**", "**/build/**", "tools/looper-system/state/**")
                 }.matching {
                     FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf(""))
                 }

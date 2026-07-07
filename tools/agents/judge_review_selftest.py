@@ -29,7 +29,7 @@ NON_OWNER_EVENT = {
     "event": "labeled",
     "created_at": "2026-07-06T09:00:00Z",
     "label": {"name": "judge-override"},
-    "actor": {"login": "autodev-bot"},
+    "actor": {"login": "looper-bot"},
 }
 
 

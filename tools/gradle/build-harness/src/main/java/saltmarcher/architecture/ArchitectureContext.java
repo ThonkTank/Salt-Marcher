@@ -131,6 +131,9 @@ public final class ArchitectureContext {
     }
 
     public boolean isIgnoredRepositoryScanPath(Path path) {
+        if (relativize(path).startsWith("tools/looper-system/state/")) {
+            return true;
+        }
         return relativeSegments(path).stream().anyMatch(IGNORED_REPOSITORY_SCAN_SEGMENTS::contains);
     }
 

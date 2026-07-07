@@ -26,6 +26,8 @@ GOVERNANCE_WORD_COUNT_ROOTS = (
     Path("docs/project/architecture"),
     Path("docs/project/policies"),
     Path("tools/quality/skills"),
+    Path("tools/looper-system/docs"),
+    Path("tools/looper-system/skills"),
 )
 REQUIRED_CHECKS = {
     "production-handoff",
@@ -50,6 +52,7 @@ class WorkMix:
     product_merges: int
     meta_merges: int
     bot_merges: int
+    looper_merges: int
 
     @property
     def counted_merges(self) -> int:
@@ -195,7 +198,11 @@ def collect_work_mix(merged_prs: list[dict[str, Any]]) -> WorkMix:
     product = 0
     meta = 0
     bot = 0
+    looper = 0
     for pr in merged_prs:
+        labels = {str(label.get("name") or "") for label in pr.get("labels") or []}
+        if "source:looper" in labels:
+            looper += 1
         login = str(((pr.get("user") or {}).get("login")) or "")
         if login.endswith("[bot]"):
             bot += 1
@@ -205,7 +212,7 @@ def collect_work_mix(merged_prs: list[dict[str, Any]]) -> WorkMix:
             product += 1
         else:
             meta += 1
-    return WorkMix(product, meta, bot)
+    return WorkMix(product, meta, bot, looper)
 
 
 def changed_files_for_pr(number: int) -> list[str]:
@@ -393,7 +400,7 @@ def build_metrics(
         judge_failures=judge_failures,
         reverts=sorted(reverts),
         open_acceptances=open_acceptances,
-        work_mix=work_mix or WorkMix(0, 0, 0),
+        work_mix=work_mix or WorkMix(0, 0, 0, 0),
         governance_word_count=governance_word_count,
         previous_governance_word_count=previous_governance_word_count,
         governance_history=governance_history or [],
@@ -416,7 +423,7 @@ def format_item(item: dict[str, Any]) -> str:
 def render_markdown(metrics: Metrics, *, title: bool = True) -> str:
     lines: list[str] = []
     if title:
-        lines.extend(["## Autodev-Metriken (14 Tage)", ""])
+        lines.extend(["## Looper-Metriken (14 Tage)", ""])
     start = metrics.since.date().isoformat()
     end = metrics.until.date().isoformat()
     average = sum(metrics.merges_by_day.values()) / metrics.days if metrics.days else 0.0
@@ -432,6 +439,7 @@ def render_markdown(metrics: Metrics, *, title: bool = True) -> str:
             f"- Merges/Tag: {average:.2f} im Schnitt ({sum(metrics.merges_by_day.values())} Merges gesamt).",
             f"- Meta-Anteil (14 Tage): {metrics.work_mix.meta_ratio:.1f}% (Deckel 35%) "
             f"[{metrics.work_mix.meta_merges}/{metrics.work_mix.counted_merges}, Bots ausgeschlossen: {metrics.work_mix.bot_merges}].",
+            f"- Looper-PRs (14 Tage): {metrics.work_mix.looper_merges}.",
             f"- Governance-Textmasse: {metrics.governance_word_count} Woerter ({governance_trend(metrics)}).",
             f"- {quality_trend_line(metrics.quality_trend)}",
             f"- Rote Required-Check-Laeufe: {red_text}.",
@@ -494,7 +502,7 @@ def format_acceptance_tail(items: list[tuple[int, str, int]]) -> str:
 def render_incomplete(message: str, *, title: bool = True) -> str:
     lines = []
     if title:
-        lines.extend(["## Autodev-Metriken (14 Tage)", ""])
+        lines.extend(["## Looper-Metriken (14 Tage)", ""])
     lines.append(f"- {INCOMPLETE_LINE}: {message}.")
     return "\n".join(lines)
 
@@ -502,8 +510,8 @@ def render_incomplete(message: str, *, title: bool = True) -> str:
 def run_selftest() -> int:
     now = datetime(2026, 7, 6, 12, 0, tzinfo=timezone.utc)
     assert classify_pr_files(["src/foo/App.java"]) == "product"
-    assert classify_pr_files(["docs/project/architecture/night-shift.md"]) == "meta"
-    assert classify_pr_files(["docs/project/architecture/night-shift.md", "test/src/FooHarness.java"]) == "product"
+    assert classify_pr_files(["tools/looper-system/docs/looper-system.md"]) == "meta"
+    assert classify_pr_files(["tools/looper-system/docs/looper-system.md", "test/src/FooHarness.java"]) == "product"
     original_gh = globals()["gh"]
 
     paginated_calls: list[list[str]] = []
@@ -533,18 +541,19 @@ def run_selftest() -> int:
     original_changed_files_for_pr = globals()["changed_files_for_pr"]
     globals()["changed_files_for_pr"] = lambda number: {
         1: ["src/Foo.java"],
-        2: ["docs/project/architecture/night-shift.md"],
+        2: ["tools/looper-system/docs/looper-system.md"],
         3: ["src/Bar.java"],
     }.get(number, [])
     try:
         mix = collect_work_mix([
             {"number": 1, "user": {"login": "human"}},
-            {"number": 2, "user": {"login": "human"}},
+            {"number": 2, "user": {"login": "human"}, "labels": [{"name": "source:looper"}]},
             {"number": 3, "user": {"login": "dependabot[bot]"}},
         ])
         assert mix.product_merges == 1
         assert mix.meta_merges == 1
         assert mix.bot_merges == 1
+        assert mix.looper_merges == 1
     finally:
         globals()["changed_files_for_pr"] = original_changed_files_for_pr
     history = [{"date": "2026-06-28", "words": 88}, {"date": "2026-07-05", "words": 99}]
@@ -565,7 +574,7 @@ def run_selftest() -> int:
             {"name": "judge-review", "conclusion": "failure"},
             {"name": "codescene", "conclusion": "failure"},
         ],
-        work_mix=WorkMix(product_merges=1, meta_merges=1, bot_merges=1),
+        work_mix=WorkMix(product_merges=1, meta_merges=1, bot_merges=1, looper_merges=1),
         governance_word_count=120,
         previous_governance_word_count=100,
         governance_history=history,
@@ -574,6 +583,7 @@ def run_selftest() -> int:
     text = render_markdown(metrics)
     assert "Merges/Tag: 0.14" in text
     assert "Meta-Anteil (14 Tage): 50.0% (Deckel 35%)" in text
+    assert "Looper-PRs (14 Tage): 1" in text
     assert "Governance-Textmasse: 120 Woerter (Trend vs. Vorwoche: +20)" in text
     assert "rq1 governance-word-count-history" in text
     assert "Duplikat-Zeilen (Produktion): 10 (Delta 7 Tage: +0) | Smells: 4 (-1)" in text
@@ -582,20 +592,21 @@ def run_selftest() -> int:
     assert "Reverts: 1 (#102 Revert broken gate)" in text
     assert "Offene Abnahmen: 1 (#77 5d)" in text
     assert INCOMPLETE_LINE in render_incomplete("rate limit")
+    sys.path.insert(0, str(REPO_ROOT / "tools/quality/scripts"))
     import update_status_issue
 
-    original_collect = update_status_issue.nightshift_metrics.collect_metrics
-    original_render = update_status_issue.nightshift_metrics.render_markdown
-    update_status_issue.nightshift_metrics.collect_metrics = lambda _days: metrics
-    update_status_issue.nightshift_metrics.render_markdown = lambda _metrics, title=False: render_markdown(metrics, title=title)
+    original_collect = update_status_issue.looper_metrics.collect_metrics
+    original_render = update_status_issue.looper_metrics.render_markdown
+    update_status_issue.looper_metrics.collect_metrics = lambda _days: metrics
+    update_status_issue.looper_metrics.render_markdown = lambda _metrics, title=False: render_markdown(metrics, title=title)
     try:
-        integrated = "\n".join(update_status_issue.autodev_metrics_status())
+        integrated = "\n".join(update_status_issue.looper_metrics_status())
         assert "Meta-Anteil (14 Tage): 50.0% (Deckel 35%)" in integrated
         assert "rq1 governance-word-count-history" in integrated
     finally:
-        update_status_issue.nightshift_metrics.collect_metrics = original_collect
-        update_status_issue.nightshift_metrics.render_markdown = original_render
-    print("nightshift_metrics selftest PASS")
+        update_status_issue.looper_metrics.collect_metrics = original_collect
+        update_status_issue.looper_metrics.render_markdown = original_render
+    print("looper_metrics selftest PASS")
     return 0
 
 

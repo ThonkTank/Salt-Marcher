@@ -24,7 +24,7 @@ Always run verification from the repository root.
    R1 behavior-neutral structure, architecture, dependency, or tooling; R2
    visible behavior; R3a real local data migration; R3b external service,
    cost, account, or data egress; R3c frozen gate surface.
-   Autonomous PRs also carry exactly one `task:<class>` label from the runner
+   Autonomous PRs also carry exactly one `task:<class>` label from the Looper
    taxonomy; missing labels default to `task:feature` for trend gating.
 10. The owner decides stable acceptance, data, cost, and outside-policy
     consent. The system decides technical matters autonomously; see
@@ -66,7 +66,7 @@ Always run verification from the repository root.
 | Resource policy and operating model | `docs/project/policies/resource-policy.md`, `docs/project/decisions/**` | - |
 
 Harness Gap repair targets reference `docs/project/verification/harness-gaps.md`.
-Continuous autonomous work follows `docs/project/architecture/night-shift.md`.
+Continuous autonomous work follows `tools/looper-system/docs/looper-system.md`.
 Autonomous decision boundaries are defined in
 `docs/project/architecture/autonomy-boundaries.md`.
 

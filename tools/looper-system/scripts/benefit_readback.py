@@ -20,7 +20,12 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-FEEDBACK_DIR = Path(os.environ.get("BENEFIT_READBACK_FEEDBACK_DIR", REPO_ROOT / ".codex/autodev/feedback"))
+FEEDBACK_DIR = Path(
+    os.environ.get(
+        "BENEFIT_READBACK_FEEDBACK_DIR",
+        REPO_ROOT / "tools/looper-system/state/process-lab/feedback",
+    )
+)
 SUPPORTED_METRIC_RE = r"(?:dup_lines|smell_count|class_loc:[^;]+|file_count:[^;]+|word_count:[^;]+)"
 BENEFIT_RE = re.compile(
     rf"^Benefit:\s+(?:metric=(?P<metric>{SUPPORTED_METRIC_RE});\s+direction=(?P<direction>down|up);\s+scope=(?P<scope>[^\n;]+)|qualitative=(?P<qualitative>[^\n]+))$",
@@ -352,7 +357,7 @@ def run_selftest() -> int:
     assert parse_benefit("Benefit: metric=wmc:sm.Foo; direction=down; scope=repo") is None
     assert parse_benefit("Benefit: metric=build_seconds:build; direction=down; scope=repo") is None
     assert parse_benefit("Benefit: metric=startup_ms; direction=down; scope=repo") is None
-    qualitative = parse_benefit("Benefit: qualitative=Cleaner selection logic for runner maintenance")
+    qualitative = parse_benefit("Benefit: qualitative=Cleaner selection logic for looper maintenance")
     assert qualitative and qualitative.qualitative
     assert verdict_for(qualitative, None, None) == "unverifiable"
     assert verdict_for(qualitative, None, None, "Seven days of readback evidence exists.") == "realized"

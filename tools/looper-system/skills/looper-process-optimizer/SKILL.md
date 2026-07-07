@@ -1,9 +1,9 @@
 ---
-name: autodev-process-optimizer
+name: looper-process-optimizer
 description: Use when running, planning, changing, or reviewing the SaltMarcher process-autoresearch loop that optimizes implementer prompts, slice briefs, context budgets, model routing, review routing, feedback capture, variant archive selection, and promotion of developer-process variants.
 ---
 
-# Autodev Process Optimizer
+# Looper Process Optimizer
 
 ## Purpose
 
@@ -19,20 +19,20 @@ surfaces are the fixed evaluation harness for ordinary process experiments.
 
 Before running, planning, changing, or reviewing a process experiment:
 
-1. Read `docs/project/architecture/autodev-process-loop.md`.
-2. Read `docs/project/verification/autodev-process-feedback.md`.
+1. Read `../../docs/looper-process-loop.md`.
+2. Read `../../docs/looper-process-feedback.md`.
 3. Run the normal SaltMarcher preflight before any repo-tracked change.
 4. Classify the run as `baseline`, `variant`, `promotion`, or `review`.
-5. Read only the private `.codex/autodev/` files needed for the run.
-6. If `.codex/autodev/` is missing, bootstrap only the required ignored layout
-   and templates named in `docs/project/architecture/autodev-process-loop.md`.
+5. Read only the private `tools/looper-system/state/process-lab/` files needed for the run.
+6. If `tools/looper-system/state/process-lab/` is missing, bootstrap only the required ignored layout
+   and templates named in `../../docs/looper-process-loop.md`.
 7. Keep protected intake and raw feedback out of implementer prompts, pass
    logs, commits, PR text, and tracked documentation.
 8. Select the evaluation task from actionable protected intake first. Use a
    maintenance fallback only when no `open` or `selected` intake item can be
    bounded safely.
 9. For a `variant` run, perform an `archive-selection` phase: select one
-   parent from `.codex/autodev/variant-archive.jsonl` or record why the run
+   parent from `tools/looper-system/state/process-lab/variant-archive.jsonl` or record why the run
    falls back to the baseline.
 10. Select exactly one process hypothesis and one primary mutation for a child
    variant run.
@@ -42,7 +42,7 @@ Before running, planning, changing, or reviewing a process experiment:
 12. Preserve all fixed SaltMarcher proof, review, and publication obligations.
 13. Require one feedback packet per inner implementation attempt and compute the
     fixed metrics before scoring the process variant.
-14. Record the experiment in `.codex/autodev/experiments.tsv`.
+14. Record the experiment in `tools/looper-system/state/process-lab/experiments.tsv`.
 15. Update the private variant archive when the run creates, keeps, discards,
     quarantines, or promotes a variant.
 16. Keep, discard, crash, blocked, or quarantine the private variant according
@@ -115,7 +115,7 @@ archive and aggregate feedback needed for the decision. Prefer parents with:
 - task-class relevance for the selected slice
 
 Use the fixed `parent_weight` formula from
-`docs/project/verification/autodev-process-feedback.md` when comparable metrics
+`../../docs/looper-process-feedback.md` when comparable metrics
 are available. If the formula cannot be applied, record the missing metric and
 fall back to baseline only when the fixed harness remains intact.
 
@@ -127,7 +127,7 @@ intact.
 ## Feedback Rules
 
 Each inner attempt must produce a feedback packet with the schema required by
-`docs/project/verification/autodev-process-feedback.md`. The packet must include
+`../../docs/looper-process-feedback.md`. The packet must include
 `task_source` plus the raw counters needed to compute `harness_pass`,
 `done_when_pass_rate`, `diagnostic_value_rate`, `proof_success_rate`,
 `review_blocker_rate`, `rework_rate`, `context_cost`, `elapsed_cost`,
@@ -164,7 +164,8 @@ better.
 
 ## Promotion Rules
 
-Private variants stay under `.codex/autodev/variants/` until promotion.
+Private variants stay under `tools/looper-system/state/process-lab/variants/`
+until promotion.
 
 Promote a process variant into tracked instructions only when:
 
@@ -210,8 +211,7 @@ run, report private-run fields as `not_applicable`.
 
 ## References
 
-- [Autodev Process Loop](../../../../docs/project/architecture/autodev-process-loop.md)
-- [Autodev Process Feedback](../../../../docs/project/verification/autodev-process-feedback.md)
+- [Looper Process Loop](../../docs/looper-process-loop.md)
+- [Looper Process Feedback](../../docs/looper-process-feedback.md)
 - [Agent Instruction Standard](../../../../docs/project/architecture/agent-instructions.md)
-- [Karpathy Autoresearch Extract](references/autodev/karpathy-autoresearch.md)
-- [Darwin Godel Machine Extract](references/autodev/darwin-godel-machine-2505.22954.md)
+- [Source References Standard](../../../../docs/project/verification/source-references.md)

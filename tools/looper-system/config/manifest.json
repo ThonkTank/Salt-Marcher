@@ -1,0 +1,67 @@
+{
+  "schema_version": 1,
+  "updated": "2026-07-07",
+  "entries": [
+    {
+      "path": "tools/looper-system/bin/looper.sh",
+      "sha256": "72294f400a8a638f2be57b82e023a39253256f04833a1e86b13827ac7a64b214"
+    },
+    {
+      "path": "tools/looper-system/prompts/task-prompt.md",
+      "sha256": "2d26d8a9bd74d0e1862c9b41d1c2603830624fe618b11c03405af86e411fd70f"
+    },
+    {
+      "path": "tools/looper-system/bin/install.sh",
+      "sha256": "6e486b073cf92fa0f9ee6eaf3ea0a9d1b012a750a2f7d438fe9ced0047c98647"
+    },
+    {
+      "path": "tools/looper-system/config/github-labels.tsv",
+      "sha256": "be2f071fd180b5bf6a88b996e272131340df2e424502fe3d9a3da12f44e86847"
+    },
+    {
+      "path": "tools/looper-system/systemd/saltmarcher-looper.service.template",
+      "sha256": "0cba6bd95f1934bc4df7f930caed6ec9702ab12cf4a3b918d5bfea243b7ef75e"
+    },
+    {
+      "path": "tools/looper-system/scripts/benefit_readback.py",
+      "sha256": "77847c871390f437f3db6e3a3b6f394fe89882d8632bb0c2c51b51e03cdb42bb"
+    },
+    {
+      "path": "tools/looper-system/scripts/exploration_triage.py",
+      "sha256": "4c51a970c95ce1e70efba7cb464d0de22fbfb2bd5fd0e3ab9ad3956123b10445"
+    },
+    {
+      "path": "tools/looper-system/scripts/looper_metrics.py",
+      "sha256": "ff97230ddda2aff7077e0c87e5056a6673eb4aea0947401e093be104522f493a"
+    },
+    {
+      "path": "tools/looper-system/scripts/looper_readback.py",
+      "sha256": "e517f7c137ed5dc82e368db0a1dcd9686541b76b6a361f772ba782a25153ca04"
+    },
+    {
+      "path": "tools/looper-system/scripts/mutation_gap_sync.py",
+      "sha256": "7ae9a4cfd51173ff43ec8129479d5bdd92797bb87c4aecadd245ca440da4bafe"
+    },
+    {
+      "path": "tools/looper-system/scripts/stuck_detector.py",
+      "sha256": "a9ce4c1d360cd791fb8bd3282b0631aad437e6e237438245a4ba600c7c83b60f"
+    },
+    {
+      "path": "tools/looper-system/scripts/work_mix_backpressure.py",
+      "sha256": "e6598d18dfd764aa1ce1f800480c812568802c909f321c8c022b3ef613caec9d"
+    }
+  ],
+  "absent_paths": [
+    "~/.local/bin/saltmarcher-autodev.sh",
+    "~/.local/share/saltmarcher-autodev",
+    "~/.local/state/saltmarcher/autodev",
+    ".codex/looper",
+    ".codex/autodev",
+    ".codex/autodev/runner"
+  ],
+  "systemd": {
+    "service": "saltmarcher-looper.service",
+    "unit_path": "tools/looper-system/state/systemd/saltmarcher-looper.service",
+    "exec_start_path": "tools/looper-system/bin/looper.sh"
+  }
+}

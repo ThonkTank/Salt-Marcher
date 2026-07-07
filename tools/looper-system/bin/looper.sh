@@ -5,42 +5,44 @@ REPO_URL="${SALTMARCHER_REPO_URL:-https://github.com/ThonkTank/Salt-Marcher.git}
 REPO_FULL_NAME="${SALTMARCHER_REPO_FULL_NAME:-ThonkTank/Salt-Marcher}"
 SCRIPT_PATH="$(readlink -f "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-AUTODEV_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-if [[ ! -f "$AUTODEV_ROOT/AGENTS.md" || ! -d "$AUTODEV_ROOT/.git" ]]; then
-    printf 'saltmarcher-autodev must run from tools/local inside the SaltMarcher repo\n' >&2
+BUNDLE_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+SALTMARCHER_ROOT="$(cd "$BUNDLE_ROOT/../.." && pwd)"
+if [[ ! -f "$SALTMARCHER_ROOT/AGENTS.md" || ! -d "$SALTMARCHER_ROOT/.git" ]]; then
+    printf 'looper.sh must run from tools/looper-system/bin inside a SaltMarcher repo\n' >&2
     exit 2
 fi
-RUNNER_ROOT="$AUTODEV_ROOT/.codex/autodev/runner"
-DATA_ROOT="$RUNNER_ROOT"
-STATE_ROOT="$RUNNER_ROOT"
-REPO_DIR="$DATA_ROOT/repo"
-TASK_PROMPT="$AUTODEV_ROOT/tools/local/saltmarcher-autodev-task-prompt.md"
-QUEUE_DIR="$STATE_ROOT/queue"
-QUEUE_DONE_DIR="$STATE_ROOT/queue-done"
-QUEUE_ARCHIVE_DIR="$STATE_ROOT/queue-archive"
-TELEMETRY_DIR="$STATE_ROOT/telemetry"
-LOG_DIR="$STATE_ROOT/logs"
-REPORT_DIR="$STATE_ROOT/reports"
-HEARTBEAT_FILE="$STATE_ROOT/heartbeat.jsonl"
-RUN_LOCK="$STATE_ROOT/run.lock"
-STOP_FILE="$STATE_ROOT/STOP"
-FAILURE_FILE="$STATE_ROOT/failure-series"
-BACKOFF_FILE="$STATE_ROOT/backoff-minutes"
-BENEFIT_READBACK_FILE="$STATE_ROOT/last-benefit-readback"
-MUTATION_RUN_FILE="$STATE_ROOT/last-mutation-run"
-EXPLORATION_RUN_FILE="$STATE_ROOT/last-exploration-run"
-MAX_SESSION_SECONDS="${AUTODEV_MAX_SESSION_SECONDS:-5400}"
-CHECK_WATCH_SECONDS="${AUTODEV_CHECK_WATCH_SECONDS:-2400}"
-SESSION_PAUSE_SECONDS="${AUTODEV_SESSION_PAUSE_SECONDS:-600}"
-NO_WORK_PAUSE_SECONDS="${AUTODEV_NO_WORK_PAUSE_SECONDS:-3600}"
-STOP_PAUSE_SECONDS="${AUTODEV_STOP_PAUSE_SECONDS:-300}"
-FAILURE_PAUSE_SECONDS="${AUTODEV_FAILURE_PAUSE_SECONDS:-14400}"
+LOOPER_SCRIPTS_DIR="$BUNDLE_ROOT/scripts"
+LOOPER_STATE_ROOT="$BUNDLE_ROOT/state"
+REPO_DIR="$LOOPER_STATE_ROOT/repo"
+TASK_PROMPT="$BUNDLE_ROOT/prompts/task-prompt.md"
+QUEUE_DIR="$LOOPER_STATE_ROOT/queue"
+QUEUE_DONE_DIR="$LOOPER_STATE_ROOT/queue-done"
+QUEUE_ARCHIVE_DIR="$LOOPER_STATE_ROOT/queue-archive"
+TELEMETRY_DIR="$LOOPER_STATE_ROOT/telemetry"
+LOG_DIR="$LOOPER_STATE_ROOT/logs"
+REPORT_DIR="$LOOPER_STATE_ROOT/reports"
+PROCESS_LAB_DIR="$LOOPER_STATE_ROOT/process-lab"
+PROCESS_FEEDBACK_DIR="$PROCESS_LAB_DIR/feedback"
+HEARTBEAT_FILE="$LOOPER_STATE_ROOT/heartbeat.jsonl"
+RUN_LOCK="$LOOPER_STATE_ROOT/run.lock"
+STOP_FILE="$LOOPER_STATE_ROOT/STOP"
+FAILURE_FILE="$LOOPER_STATE_ROOT/failure-series"
+BACKOFF_FILE="$LOOPER_STATE_ROOT/backoff-minutes"
+BENEFIT_READBACK_FILE="$LOOPER_STATE_ROOT/last-benefit-readback"
+MUTATION_RUN_FILE="$LOOPER_STATE_ROOT/last-mutation-run"
+EXPLORATION_RUN_FILE="$LOOPER_STATE_ROOT/last-exploration-run"
+LOOPER_SOURCE_LABEL="source:looper"
+MAX_SESSION_SECONDS="${LOOPER_MAX_SESSION_SECONDS:-5400}"
+CHECK_WATCH_SECONDS="${LOOPER_CHECK_WATCH_SECONDS:-2400}"
+SESSION_PAUSE_SECONDS="${LOOPER_SESSION_PAUSE_SECONDS:-600}"
+STOP_PAUSE_SECONDS="${LOOPER_STOP_PAUSE_SECONDS:-300}"
+FAILURE_PAUSE_SECONDS="${LOOPER_FAILURE_PAUSE_SECONDS:-14400}"
 
-mkdir -p "$DATA_ROOT" "$STATE_ROOT" "$QUEUE_DIR" "$QUEUE_DONE_DIR" "$QUEUE_ARCHIVE_DIR" "$TELEMETRY_DIR" "$LOG_DIR" "$REPORT_DIR"
+mkdir -p "$LOOPER_STATE_ROOT" "$QUEUE_DIR" "$QUEUE_DONE_DIR" "$QUEUE_ARCHIVE_DIR" "$TELEMETRY_DIR" "$LOG_DIR" "$REPORT_DIR" "$PROCESS_FEEDBACK_DIR"
 exec 9>"$RUN_LOCK"
 flock -n 9 || exit 0
 
-log_file="$LOG_DIR/autodev-$(date -u +%Y%m%dT%H%M%SZ).log"
+log_file="$LOG_DIR/looper-$(date -u +%Y%m%dT%H%M%SZ).log"
 exec > >(tee -a "$log_file") 2>&1
 
 log() {
@@ -49,7 +51,7 @@ log() {
 
 sleep_interruptible() {
     local seconds="$1"
-    if [[ "${AUTODEV_DRY_RUN:-0}" == "1" ]]; then
+    if [[ "${LOOPER_DRY_RUN:-0}" == "1" ]]; then
         log "dry-run sleep skipped seconds=$seconds"
         return 0
     fi
@@ -151,7 +153,7 @@ PY
 }
 
 ensure_repo() {
-    if [[ "${AUTODEV_DRY_RUN:-0}" == "1" ]]; then
+    if [[ "${LOOPER_DRY_RUN:-0}" == "1" ]]; then
         mkdir -p "$REPO_DIR"
         return 0
     fi
@@ -276,25 +278,25 @@ run_session() {
     local quota_mode="$2"
     local queue_task="$3"
     local work_mix_status="$4"
-    if [[ "${AUTODEV_DRY_RUN:-0}" == "1" ]]; then
+    if [[ "${LOOPER_DRY_RUN:-0}" == "1" ]]; then
         if [[ "$work_mix_status" == *"-> enforced"* ]]; then
             cat > "$output_file" <<'EOF'
 dry-run session: work-mix enforcement skipped a meta-only candidate after full ladder scan
-NIGHTLOOP_RESULT: {"schema_version":1,"task_source":"none","task_title":"Work-mix enforced meta skip","risk_label":"risk:R0","branch":null,"pr_number":null,"result":"no_work","red_checks":[],"judge_verdict":"skipped","files_changed":0,"lines_changed":0,"retries_within_session":0,"blocker":null,"refactor_signals":[],"process_signals":["work-mix enforced meta-only skip"]}
+LOOPER_RESULT: {"schema_version":1,"task_source":"none","task_title":"Work-mix enforced meta skip","risk_label":"risk:R0","branch":null,"pr_number":null,"result":"work_mix_skipped","red_checks":[],"judge_verdict":"skipped","files_changed":0,"lines_changed":0,"retries_within_session":0,"blocker":null,"refactor_signals":[],"process_signals":["work-mix enforced meta-only skip"]}
 EOF
         else
             cat > "$output_file" <<'EOF'
 dry-run session: setup, prompt dispatch, and result parsing exercised
-NIGHTLOOP_RESULT: {"schema_version":1,"task_source":"none","task_title":"Dry-run setup check","risk_label":"risk:R0","branch":null,"pr_number":null,"result":"dry_run_ok","red_checks":[],"judge_verdict":"skipped","files_changed":0,"lines_changed":0,"retries_within_session":0,"blocker":null,"refactor_signals":["dry-run telemetry validation"],"process_signals":["dry-run report update validation"]}
+LOOPER_RESULT: {"schema_version":1,"task_source":"none","task_title":"Dry-run setup check","risk_label":"risk:R0","branch":null,"pr_number":null,"result":"dry_run_ok","red_checks":[],"judge_verdict":"skipped","files_changed":0,"lines_changed":0,"retries_within_session":0,"blocker":null,"refactor_signals":["dry-run telemetry validation"],"process_signals":["dry-run report update validation"]}
 EOF
         fi
         return 0
     fi
     (
         cd "$REPO_DIR" || exit 2
-        AUTODEV_STATE_ROOT="$STATE_ROOT" AUTODEV_QUEUE_DIR="$QUEUE_DIR" AUTODEV_QUEUE_DONE_DIR="$QUEUE_DONE_DIR" \
-            AUTODEV_QUEUE_TASK="$queue_task" AUTODEV_QUOTA_MODE="$quota_mode" \
-            AUTODEV_WORK_MIX_STATUS="$work_mix_status" \
+        LOOPER_STATE_ROOT="$LOOPER_STATE_ROOT" LOOPER_QUEUE_DIR="$QUEUE_DIR" LOOPER_QUEUE_DONE_DIR="$QUEUE_DONE_DIR" \
+            LOOPER_QUEUE_TASK="$queue_task" LOOPER_QUOTA_MODE="$quota_mode" \
+            LOOPER_WORK_MIX_STATUS="$work_mix_status" \
             nice -n 19 ionice -c 3 timeout "$MAX_SESSION_SECONDS" codex exec --cd "$REPO_DIR" "$(cat "$TASK_PROMPT")"
     ) > "$output_file" 2>&1
 }
@@ -303,7 +305,7 @@ extract_result_json() {
     local output_file="$1"
     python3 - "$output_file" <<'PY'
 import sys
-prefix = "NIGHTLOOP_RESULT:"
+prefix = "LOOPER_RESULT:"
 last = None
 with open(sys.argv[1], encoding="utf-8", errors="replace") as handle:
     for line in handle:
@@ -407,7 +409,7 @@ stuck_signature_for_pr() {
     [[ -z "$red_checks" ]] && red_checks="$(red_checks_json "$pr")"
     log_file="$(mktemp)"
     first_failing_log_tail "$pr" > "$log_file"
-    signature="$(python3 tools/quality/scripts/stuck_detector.py signature --checks-json "$red_checks" --log-file "$log_file" 2>/dev/null || true)"
+    signature="$(python3 "$LOOPER_SCRIPTS_DIR/stuck_detector.py" signature --checks-json "$red_checks" --log-file "$log_file" 2>/dev/null || true)"
     rm -f "$log_file"
     printf '%s\n' "$signature"
 }
@@ -415,7 +417,7 @@ stuck_signature_for_pr() {
 append_stuck_journal_line() {
     local pr="$1"
     local signature="$2"
-    local feedback_dir="$REPO_DIR/.codex/autodev/feedback"
+    local feedback_dir="$PROCESS_FEEDBACK_DIR"
     mkdir -p "$feedback_dir"
     python3 - "$feedback_dir" "$pr" "$signature" <<'PY'
 import json, pathlib, sys, time
@@ -447,7 +449,7 @@ PY
 }
 
 release_quarantined_stuck_prs() {
-    [[ "${AUTODEV_DRY_RUN:-0}" == "1" ]] && { log "stuck quarantine release scan skipped in dry-run before PR selection"; return 0; }
+    [[ "${LOOPER_DRY_RUN:-0}" == "1" ]] && { log "stuck quarantine release scan skipped in dry-run before PR selection"; return 0; }
     log "stuck quarantine release scan before PR selection"
     local prs pr red_checks signature release_json
     prs="$(gh pr list --repo "$REPO_FULL_NAME" --state open --label quarantined:stuck --limit 50 --json number --jq '.[].number' 2>/dev/null || true)"
@@ -456,7 +458,7 @@ release_quarantined_stuck_prs() {
         red_checks="$(red_checks_json "$pr")"
         signature="$(stuck_signature_for_pr "$pr" "$red_checks")"
         [[ -z "$signature" ]] && continue
-        release_json="$(python3 tools/quality/scripts/stuck_detector.py release --repo "$REPO_FULL_NAME" --pr "$pr" --signature "$signature" 2>/dev/null || true)"
+        release_json="$(python3 "$LOOPER_SCRIPTS_DIR/stuck_detector.py" release --repo "$REPO_FULL_NAME" --pr "$pr" --signature "$signature" 2>/dev/null || true)"
         python3 - "$pr" "$release_json" <<'PY'
 import json, sys
 pr, raw = sys.argv[1:3]
@@ -484,7 +486,7 @@ PY
     [[ "$red_checks" == "[]" ]] && { printf '%s\n' "$telemetry"; return 0; }
     signature="$(stuck_signature_for_pr "$pr" "$red_checks")"
     [[ -z "$signature" ]] && { printf '%s\n' "$telemetry"; return 0; }
-    record_json="$(python3 tools/quality/scripts/stuck_detector.py record --repo "$REPO_FULL_NAME" --pr "$pr" --signature "$signature" 2>/dev/null || true)"
+    record_json="$(python3 "$LOOPER_SCRIPTS_DIR/stuck_detector.py" record --repo "$REPO_FULL_NAME" --pr "$pr" --signature "$signature" 2>/dev/null || true)"
     if python3 - "$record_json" <<'PY'
 import json, sys
 try:
@@ -528,7 +530,37 @@ print(item.get("pr_number") or "")
 PY
 )"
     [[ -z "$pr" || "$pr" == "null" ]] && return 0
-    comment_pr "$pr" "Autodev telemetry:\n\n\`\`\`json\n$telemetry\n\`\`\`"
+    comment_pr "$pr" "Looper telemetry:\n\n\`\`\`json\n$telemetry\n\`\`\`"
+}
+
+ensure_looper_pr_label() {
+    local telemetry="$1"
+    local pr
+    pr="$(python3 - "$telemetry" <<'PY'
+import json, sys
+try:
+    item = json.loads(sys.argv[1])
+except Exception:
+    print("")
+    raise SystemExit(0)
+print(item.get("pr_number") or "")
+PY
+)"
+    [[ -z "$pr" || "$pr" == "null" ]] && { printf '%s\n' "$telemetry"; return 0; }
+    [[ "${LOOPER_DRY_RUN:-0}" == "1" ]] && { printf '%s\n' "$telemetry"; return 0; }
+    if gh pr edit "$pr" --repo "$REPO_FULL_NAME" --add-label "$LOOPER_SOURCE_LABEL" >/dev/null 2>&1; then
+        log "ensured $LOOPER_SOURCE_LABEL on PR #$pr"
+        printf '%s\n' "$telemetry"
+        return 0
+    fi
+    log "could not ensure $LOOPER_SOURCE_LABEL on PR #$pr"
+    python3 - "$telemetry" "$LOOPER_SOURCE_LABEL" <<'PY'
+import json, sys
+item = json.loads(sys.argv[1])
+label = sys.argv[2]
+item.setdefault("process_signals", []).append(f"{label} label ensure failed")
+print(json.dumps(item, ensure_ascii=False, separators=(",", ":")))
+PY
 }
 
 process_pr_result() {
@@ -681,7 +713,7 @@ attack_pr_final_json() {
     red="$(red_checks_json "$pr")"
     merged="$(gh pr view "$pr" --repo "$REPO_FULL_NAME" --json mergedAt --jq '.mergedAt // ""' 2>/dev/null || true)"
     if [[ -n "$merged" || "$red" == "[]" ]]; then
-        comment_pr "$pr" "P0: Angriffs-PR wurde nicht rot. Dieser PR bleibt ungemerged; Autodev behandelt die betroffene Gate-Instrumentierung als naechstes Reparaturziel."
+        comment_pr "$pr" "P0: Angriffs-PR wurde nicht rot. Dieser PR bleibt ungemerged; Looper behandelt die betroffene Gate-Instrumentierung als naechstes Reparaturziel."
         python3 - "$result_json" "$red" <<'PY'
 import json, sys
 item = json.loads(sys.argv[1])
@@ -747,7 +779,7 @@ PY
             return 0
             ;;
         unknown)
-            comment_pr "$pr" "Autodev laesst Auto-Merge offen und behandelt den unlesbaren headRefName als Diagnoseziel."
+            comment_pr "$pr" "Looper laesst Auto-Merge offen und behandelt den unlesbaren headRefName als Diagnoseziel."
             block_pr_json "$result_json" "PR headRefName could not be confirmed; refusing auto-merge"
             return 0
             ;;
@@ -779,7 +811,7 @@ PY
     if ! gh pr merge "$pr" --repo "$REPO_FULL_NAME" --squash --auto >&2; then
         local red
         red="$(red_checks_json "$pr")"
-        comment_pr "$pr" "Autodev konnte Auto-Merge nicht aktivieren. Rote/unklare Checks: \`$red\`."
+        comment_pr "$pr" "Looper konnte Auto-Merge nicht aktivieren. Rote/unklare Checks: \`$red\`."
         local red_json
         red_json="$(python3 - "$result_json" "$red" <<'PY'
 import json, sys
@@ -807,7 +839,7 @@ PY
     else
         local red
         red="$(red_checks_json "$pr")"
-        comment_pr "$pr" "Autodev laesst diesen PR offen und behandelt rote/unklare Checks als Reparaturziel: \`$red\`."
+        comment_pr "$pr" "Looper laesst diesen PR offen und behandelt rote/unklare Checks als Reparaturziel: \`$red\`."
         local red_json
         red_json="$(python3 - "$result_json" "$red" <<'PY'
 import json, sys
@@ -905,37 +937,27 @@ print(json.dumps(item, ensure_ascii=False, separators=(",", ":")))
 PY
 }
 
-retire_legacy_idle_result() {
+normalize_idle_result() {
     local result_json="$1"
     local work_mix_status="${2:-}"
     python3 - "$result_json" "$work_mix_status" <<'PY'
 import json, sys
 item = json.loads(sys.argv[1])
 status = sys.argv[2]
-if item.get("result") == "no_work" and "-> enforced" not in status:
+if item.get("result") == "no_work" and "-> enforced" in status:
+    item["result"] = "work_mix_skipped"
+    item["blocker"] = None
+    item.setdefault("process_signals", []).append("legacy no_work normalized to work_mix_skipped")
+elif item.get("result") == "no_work":
     item["result"] = "blocked"
-    item["blocker"] = "Runner emitted retired no_work result; scout contract repair required"
+    item["blocker"] = "Looper emitted retired no_work result; scout contract repair required"
     item.setdefault("process_signals", []).append("retired no_work result converted to repair target")
 print(json.dumps(item, ensure_ascii=False, separators=(",", ":")))
 PY
 }
 
-accept_work_mix_no_work() {
-    local result_json="$1"
-    local work_mix_status="$2"
-    python3 - "$result_json" "$work_mix_status" <<'PY'
-import json, sys
-item = json.loads(sys.argv[1])
-status = sys.argv[2]
-if item.get("result") == "no_work" and "-> enforced" in status:
-    item["blocker"] = None
-    item.setdefault("process_signals", []).append("no_work accepted by RQ-2 enforced work-mix backpressure")
-print(json.dumps(item, ensure_ascii=False, separators=(",", ":")))
-PY
-}
-
 work_mix_status() {
-    if [[ "${AUTODEV_DRY_RUN:-0}" == "1" ]]; then
+    if [[ "${LOOPER_DRY_RUN:-0}" == "1" ]]; then
         printf '%s\n%s\n' \
             "work-mix: 45.0% -> enforced" \
             "meta candidate skipped by RQ-2 work-mix backpressure"
@@ -944,7 +966,7 @@ work_mix_status() {
     (
         cd "$REPO_DIR" || exit 2
         local metrics ratio counts total
-        metrics="$(python3 tools/quality/scripts/nightshift_metrics.py --no-title 2>/dev/null || true)"
+        metrics="$(python3 "$LOOPER_SCRIPTS_DIR/looper_metrics.py" --no-title 2>/dev/null || true)"
         ratio="$(python3 - "$metrics" <<'PY'
 import re, sys
 match = re.search(r"Meta-Anteil \(14 Tage\): ([0-9.]+)%", sys.argv[1])
@@ -961,13 +983,13 @@ PY
             echo "work-mix: incomplete -> telemetry-only"
             return 0
         fi
-        python3 tools/quality/scripts/work_mix_backpressure.py \
+        python3 "$LOOPER_SCRIPTS_DIR/work_mix_backpressure.py" \
             --meta-ratio "$ratio" --non-bot-merges "$total" --candidate-class meta --task-source self-directed || true
     )
 }
 
 maybe_run_benefit_readback() {
-    [[ "${AUTODEV_DRY_RUN:-0}" == "1" ]] && return 0
+    [[ "${LOOPER_DRY_RUN:-0}" == "1" ]] && return 0
     local today
     today="$(current_day)"
     if [[ -f "$BENEFIT_READBACK_FILE" && "$(cat "$BENEFIT_READBACK_FILE")" == "$today" ]]; then
@@ -975,13 +997,13 @@ maybe_run_benefit_readback() {
     fi
     (
         cd "$REPO_DIR" || exit 0
-        python3 tools/quality/scripts/benefit_readback.py --journal-mode pending || true
+        python3 "$LOOPER_SCRIPTS_DIR/benefit_readback.py" --journal-mode pending || true
     )
     echo "$today" > "$BENEFIT_READBACK_FILE"
 }
 
 maybe_run_mutation_harness_report() {
-    [[ "${AUTODEV_DRY_RUN:-0}" == "1" ]] && return 0
+    [[ "${LOOPER_DRY_RUN:-0}" == "1" ]] && return 0
     local month
     month="$(date -u +%Y-%m)"
     if [[ -f "$MUTATION_RUN_FILE" && "$(cat "$MUTATION_RUN_FILE")" == "$month" ]]; then
@@ -990,7 +1012,7 @@ maybe_run_mutation_harness_report() {
     if (
         cd "$REPO_DIR" || exit 1
         ./gradlew mutationHarnessReport --console=plain &&
-            python3 tools/quality/scripts/mutation_gap_sync.py
+            python3 "$LOOPER_SCRIPTS_DIR/mutation_gap_sync.py"
     ); then
         mkdir -p "$(dirname "$MUTATION_RUN_FILE")"
         echo "$month" > "$MUTATION_RUN_FILE"
@@ -1000,7 +1022,7 @@ maybe_run_mutation_harness_report() {
 }
 
 maybe_run_exploratory_smoke() {
-    [[ "${AUTODEV_DRY_RUN:-0}" == "1" ]] && { log "Exploration: dry-run skipped before task selection"; return 0; }
+    [[ "${LOOPER_DRY_RUN:-0}" == "1" ]] && { log "Exploration: dry-run skipped before task selection"; return 0; }
     local today
     today="$(current_day)"
     if [[ -f "$EXPLORATION_RUN_FILE" && "$(cat "$EXPLORATION_RUN_FILE")" == "$today" ]]; then
@@ -1009,7 +1031,7 @@ maybe_run_exploratory_smoke() {
     if (
         cd "$REPO_DIR" || exit 1
         ./gradlew exploratorySmoke --console=plain &&
-            python3 tools/quality/scripts/exploration_triage.py --repo "$REPO_FULL_NAME"
+            python3 "$LOOPER_SCRIPTS_DIR/exploration_triage.py" --repo "$REPO_FULL_NAME"
     ); then
         echo "$today" > "$EXPLORATION_RUN_FILE"
     else
@@ -1017,20 +1039,20 @@ maybe_run_exploratory_smoke() {
     fi
 }
 
-runner_manifest_readback() {
-    if [[ "${AUTODEV_DRY_RUN:-0}" == "1" ]]; then
-        log "Runner-Manifest: dry-run readback skipped before task selection"
+looper_manifest_readback() {
+    if [[ "${LOOPER_DRY_RUN:-0}" == "1" ]]; then
+        log "Looper-Manifest: dry-run readback skipped before task selection"
         return 0
     fi
     (
-        cd "$AUTODEV_ROOT" || exit 0
-        python3 tools/quality/scripts/runner_readback.py --issue --repo "$REPO_FULL_NAME" || true
+        cd "$SALTMARCHER_ROOT" || exit 0
+        python3 "$LOOPER_SCRIPTS_DIR/looper_readback.py" --issue --repo "$REPO_FULL_NAME" || true
     )
 }
 
 build_report_body() {
     local day="$1"
-    python3 - "$TELEMETRY_DIR" "$day" "$REPO_FULL_NAME" "$STATE_ROOT" <<'PY'
+    python3 - "$TELEMETRY_DIR" "$day" "$REPO_FULL_NAME" "$LOOPER_STATE_ROOT" <<'PY'
 import json, os, sys, time
 root, day, repo, state_root = sys.argv[1:5]
 items = []
@@ -1068,7 +1090,7 @@ summary = (
     f"Naechstes Reparaturziel: {blocked[-1].get('blocker') if blocked else 'keines erfasst'}."
 )
 lines = [
-    f"# Autodev-Tagesbericht {day}",
+    f"# Looper-Tagesbericht {day}",
     "",
     "## Kurzfazit",
     summary if finalized or items else "Live-Stand: noch keine abgeschlossene Session.",
@@ -1089,7 +1111,7 @@ if red:
         checks = ", ".join(item.get("red_checks") or ["unbekannt"])
         lines.append(f"- PR #{pr}: rote/unklare Checks: {checks}")
 else:
-    lines.append("- Keine offenen roten PRs aus dem Autodev-Loop.")
+    lines.append("- Keine offenen roten PRs aus dem Looper-Loop.")
 lines += ["", "## Reparaturziele/Anomalien:"]
 if blocked:
     for item in blocked:
@@ -1118,7 +1140,7 @@ lines += [
     "## Steuerung:",
     f"- Pausieren: `touch {state_root}/STOP`",
     f"- Weiterlaufen lassen: `rm {state_root}/STOP`",
-    "- Dauerhaft stoppen: `systemctl --user disable --now saltmarcher-autodev.service`",
+    "- Dauerhaft stoppen: `systemctl --user disable --now saltmarcher-looper.service`",
     "- Verhaltens-Veto: Issue/Label `abnahme-abgelehnt` verwenden.",
 ]
 print("\n".join(lines))
@@ -1128,10 +1150,10 @@ PY
 ensure_report_issue() {
     local day="$1"
     local body_file="$2"
-    local title="Autodev-Tagesbericht $day"
-    local label="autodev-bericht"
+    local title="Looper-Tagesbericht $day"
+    local label="looper-report"
     local issue
-    gh label create "$label" --repo "$REPO_FULL_NAME" --description "Live-Bericht des SaltMarcher Autodev-Dauerbetriebs" --color "1D76DB" >/dev/null 2>&1 || true
+    gh label create "$label" --repo "$REPO_FULL_NAME" --description "Live-Bericht des SaltMarcher Looper-Dauerbetriebs" --color "1D76DB" >/dev/null 2>&1 || true
     issue="$(gh issue list --repo "$REPO_FULL_NAME" --state all --label "$label" --search "$title in:title" --json number,title --jq ".[] | select(.title == \"$title\") | .number" | head -n 1)"
     if [[ -z "$issue" ]]; then
         gh issue create --repo "$REPO_FULL_NAME" --title "$title" --label "$label" --body-file "$body_file"
@@ -1152,7 +1174,7 @@ update_report() {
     local day="$1"
     local body_file="$REPORT_DIR/report-$day.md"
     build_report_body "$day" > "$body_file"
-    if [[ "${AUTODEV_DRY_RUN:-0}" == "1" ]]; then
+    if [[ "${LOOPER_DRY_RUN:-0}" == "1" ]]; then
         dry_run_report_issue "$day" "$body_file"
     else
         ensure_report_issue "$day" "$body_file"
@@ -1207,7 +1229,7 @@ run_loop_once() {
     quotas="$(quota_json)"
     merge_limit="$(merge_quota_limit)"
     quota_mode="$(quota_mode_for "$quotas" "$merge_limit")"
-    runner_manifest_readback
+    looper_manifest_readback
     queue_task="$(latest_queue_task || true)"
     work_mix="$(work_mix_status)"
     log "$work_mix"
@@ -1223,14 +1245,14 @@ run_loop_once() {
     log "starting session index=$session_index quota_mode=$quota_mode queue_task=$queue_task"
 
     ready_pr=""
-    if [[ "${AUTODEV_DRY_RUN:-0}" != "1" ]]; then
+    if [[ "${LOOPER_DRY_RUN:-0}" != "1" ]]; then
         ready_pr="$(ready_open_pr_for_idle_scan "$started_at")"
     fi
     if [[ -n "$ready_pr" ]]; then
         log "existing green PR selected before Codex session"
         result_json="$(existing_pr_result_json "$ready_pr")"
         exit_code=0
-        printf 'idle scan selected existing green PR\nNIGHTLOOP_RESULT: %s\n' "$result_json" > "$output_file"
+        printf 'idle scan selected existing green PR\nLOOPER_RESULT: %s\n' "$result_json" > "$output_file"
     else
         run_session "$output_file" "$quota_mode" "$queue_task" "$work_mix"
         exit_code=$?
@@ -1242,7 +1264,7 @@ run_loop_once() {
 
     if [[ -z "$result_json" ]]; then
         if [[ "$exit_code" == "124" ]]; then
-            result_json='{"result":"timeout","task_source":"none","task_title":"Codex session timeout","risk_label":"risk:R0","blocker":"Session timed out before NIGHTLOOP_RESULT","judge_verdict":"unknown","red_checks":[],"refactor_signals":[],"process_signals":["session timeout before telemetry line"]}'
+            result_json='{"result":"timeout","task_source":"none","task_title":"Codex session timeout","risk_label":"risk:R0","blocker":"Session timed out before LOOPER_RESULT","judge_verdict":"unknown","red_checks":[],"refactor_signals":[],"process_signals":["session timeout before telemetry line"]}'
         elif looks_like_provider_limit "$output_file"; then
             local backoff
             backoff="$(current_backoff_minutes)"
@@ -1250,15 +1272,15 @@ run_loop_once() {
             advance_backoff_minutes "$backoff"
             sleep_interruptible "$(( backoff * 60 ))"
         else
-            result_json='{"result":"crash","task_source":"none","task_title":"Codex session crash","risk_label":"risk:R0","blocker":"Session ended without parseable NIGHTLOOP_RESULT","judge_verdict":"unknown","red_checks":[],"refactor_signals":[],"process_signals":["unparseable session result"]}'
+            result_json='{"result":"crash","task_source":"none","task_title":"Codex session crash","risk_label":"risk:R0","blocker":"Session ended without parseable LOOPER_RESULT","judge_verdict":"unknown","red_checks":[],"refactor_signals":[],"process_signals":["unparseable session result"]}'
         fi
     fi
-    result_json="$(retire_legacy_idle_result "$result_json" "$work_mix")"
-    result_json="$(accept_work_mix_no_work "$result_json" "$work_mix")"
+    result_json="$(normalize_idle_result "$result_json" "$work_mix")"
 
     quotas="$(quota_json)"
     merge_limit="$(merge_quota_limit)"
     final_json="$(merge_if_pr_opened "$result_json" "$output_file" "$queue_task" "$quotas" "$merge_limit" "$started_at")"
+    final_json="$(ensure_looper_pr_label "$final_json")"
     telemetry="$(normalize_telemetry "$final_json" "$session_index" "$started_at" "$ended_at" "$wall_minutes" "$(current_day)")"
     telemetry_file="$(current_month_file)"
     write_jsonl "$telemetry_file" "$telemetry"
@@ -1273,7 +1295,7 @@ print(json.loads(sys.argv[1]).get("result", "unknown"))
 PY
 )"
     case "$result" in
-        merged|queue_done|dry_run_ok|pr_opened|pr_open_red|blocked|no_work)
+        merged|queue_done|dry_run_ok|pr_opened|pr_open_red|blocked|work_mix_skipped)
             set_failure_series 0
             reset_backoff
             ;;
@@ -1293,10 +1315,10 @@ PY
 }
 
 main() {
-    log "saltmarcher autodev starting dry_run=${AUTODEV_DRY_RUN:-0} once=${AUTODEV_ONCE:-0}"
+    log "saltmarcher looper starting dry_run=${LOOPER_DRY_RUN:-0} once=${LOOPER_ONCE:-0}"
     while true; do
         run_loop_once
-        if [[ "${AUTODEV_ONCE:-0}" == "1" || "${AUTODEV_DRY_RUN:-0}" == "1" ]]; then
+        if [[ "${LOOPER_ONCE:-0}" == "1" || "${LOOPER_DRY_RUN:-0}" == "1" ]]; then
             log "single-loop mode complete"
             break
         fi

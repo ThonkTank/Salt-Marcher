@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare the installed runner prompt/policy files with the repo manifest."""
+"""Compare the installed Looper prompt/policy files with the repo manifest."""
 
 from __future__ import annotations
 
@@ -14,9 +14,9 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-DEFAULT_MANIFEST = REPO_ROOT / "tools/local/runner-manifest.json"
-DRIFT_LABEL = "runner-drift"
-DRIFT_TITLE = "RUNNER-DRIFT: Installierter Runner weicht vom Manifest ab"
+DEFAULT_MANIFEST = REPO_ROOT / "tools/looper-system/config/manifest.json"
+DRIFT_LABEL = "looper-drift"
+DRIFT_TITLE = "LOOPER-DRIFT: Installierter Looper weicht vom Manifest ab"
 
 
 @dataclass(frozen=True)
@@ -49,10 +49,10 @@ def sha256_file(path: Path) -> str:
 def load_manifest(path: Path) -> dict[str, Any]:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if payload.get("schema_version") != 1:
-        raise ValueError("runner manifest schema_version must be 1")
+        raise ValueError("looper manifest schema_version must be 1")
     entries = payload.get("entries")
     if not isinstance(entries, list) or not entries:
-        raise ValueError("runner manifest must contain at least one entry")
+        raise ValueError("looper manifest must contain at least one entry")
     return payload
 
 
@@ -74,7 +74,7 @@ def systemd_unit_result(systemd: dict[str, Any]) -> EntryResult | None:
     if not systemd:
         return None
     unit_path = resolve_manifest_path(str(systemd.get("unit_path") or ""))
-    service = str(systemd.get("service") or "saltmarcher-autodev.service")
+    service = str(systemd.get("service") or "saltmarcher-looper.service")
     exec_start = resolve_manifest_path(str(systemd.get("exec_start_path") or ""))
     expected = f"repo unit with ExecStart={exec_start}"
     if not unit_path.exists():
@@ -95,7 +95,9 @@ def systemd_unit_result(systemd: dict[str, Any]) -> EntryResult | None:
         stderr=subprocess.STDOUT,
         check=False,
     )
-    if unit_readback.returncode == 0 and f"ExecStart={exec_start}" not in unit_readback.stdout:
+    if unit_readback.returncode != 0:
+        return EntryResult(str(unit_path), expected, "active unit unreadable", "drift")
+    if f"ExecStart={exec_start}" not in unit_readback.stdout:
         return EntryResult(str(unit_path), expected, "active unit ExecStart drift", "drift")
     return EntryResult(str(unit_path), expected, "active", "ok")
 
@@ -107,7 +109,7 @@ def compare(manifest_path: Path = DEFAULT_MANIFEST) -> list[EntryResult]:
         installed = resolve_manifest_path(str(raw.get("path") or ""))
         expected = str(raw.get("sha256") or "")
         if not expected:
-            raise ValueError(f"runner manifest entry has no sha256: {installed}")
+            raise ValueError(f"looper manifest entry has no sha256: {installed}")
         if not installed.exists():
             results.append(EntryResult(str(installed), expected, None, "missing"))
             continue
@@ -117,7 +119,7 @@ def compare(manifest_path: Path = DEFAULT_MANIFEST) -> list[EntryResult]:
     for raw_path in manifest.get("absent_paths", []):
         legacy = resolve_legacy_path(str(raw_path))
         if not legacy.is_absolute():
-            raise ValueError(f"runner manifest absent path is not absolute: {legacy}")
+            raise ValueError(f"looper manifest absent path is not absolute: {legacy}")
         if legacy.exists():
             actual = "present"
             if legacy.is_file():
@@ -138,15 +140,15 @@ def drift_results(results: list[EntryResult]) -> list[EntryResult]:
 def render_status(results: list[EntryResult]) -> str:
     drift = drift_results(results)
     if drift:
-        return f"RUNNER-DRIFT: {len(drift)} Datei(en) weichen vom Manifest ab"
-    return f"Runner-Manifest: gruen ({len(results)} Datei(en) geprueft)"
+        return f"LOOPER-DRIFT: {len(drift)} Datei(en) weichen vom Manifest ab"
+    return f"Looper-Manifest: gruen ({len(results)} Datei(en) geprueft)"
 
 
 def render_issue_body(results: list[EntryResult]) -> str:
     lines = [
-        "# RUNNER-DRIFT",
+        "# LOOPER-DRIFT",
         "",
-        "Die installierten Runner-Dateien weichen vom repo-deklarierten Manifest ab.",
+        "Die installierten Looper-Dateien weichen vom repo-deklarierten Manifest ab.",
         "Es werden nur Pfad und Hashwerte gemeldet; Dateiinhalte werden nicht uebertragen.",
         "",
         "| Pfad | Status | Erwartet | Ist |",
@@ -172,7 +174,7 @@ def ensure_drift_issue(results: list[EntryResult], repo: str, *, dry_run: bool) 
         "--repo",
         repo,
         "--description",
-        "Installed runner manifest drift",
+        "Installed looper manifest drift",
         "--color",
         "B60205",
     ])
@@ -221,12 +223,12 @@ def ensure_drift_issue(results: list[EntryResult], repo: str, *, dry_run: bool) 
 
 
 def run_selftest() -> int:
-    with tempfile.TemporaryDirectory(prefix="runner-readback-") as temp_dir:
+    with tempfile.TemporaryDirectory(prefix="looper-readback-") as temp_dir:
         root = Path(temp_dir)
-        installed = root / "installed-runner.sh"
-        installed.write_text("runner-v1\n", encoding="utf-8")
-        manifest = root / "runner-manifest.json"
-        legacy = root / "legacy-runner.sh"
+        installed = root / "installed-looper.sh"
+        installed.write_text("looper-v1\n", encoding="utf-8")
+        manifest = root / "looper-manifest.json"
+        legacy = root / "legacy-looper.sh"
         manifest.write_text(
             json.dumps(
                 {
@@ -239,16 +241,16 @@ def run_selftest() -> int:
             encoding="utf-8",
         )
         clean = compare(manifest)
-        assert render_status(clean) == "Runner-Manifest: gruen (2 Datei(en) geprueft)"
+        assert render_status(clean) == "Looper-Manifest: gruen (2 Datei(en) geprueft)"
         legacy.write_text("legacy\n", encoding="utf-8")
         legacy_drift = compare(manifest)
-        assert render_status(legacy_drift) == "RUNNER-DRIFT: 1 Datei(en) weichen vom Manifest ab"
+        assert render_status(legacy_drift) == "LOOPER-DRIFT: 1 Datei(en) weichen vom Manifest ab"
         legacy.unlink()
-        installed.write_text("runner-v2\n", encoding="utf-8")
+        installed.write_text("looper-v2\n", encoding="utf-8")
         drift = compare(manifest)
-        assert render_status(drift) == "RUNNER-DRIFT: 1 Datei(en) weichen vom Manifest ab"
+        assert render_status(drift) == "LOOPER-DRIFT: 1 Datei(en) weichen vom Manifest ab"
         assert "`" + str(installed) + "`" in ensure_drift_issue(drift, "owner/repo", dry_run=True)
-    print("runner_readback selftest PASS")
+    print("looper_readback selftest PASS")
     return 0
 
 

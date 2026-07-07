@@ -15,8 +15,6 @@ labels=(
   "owner-feedback|1D76DB|Owner feedback item"
   "security|B60205|Security issue"
   "ux|5319E7|User experience issue"
-  "runner-drift|B60205|Installed runner manifest drift"
-  "quarantined:stuck|B60205|Runner parked this PR after repeated identical failures"
   "explorer-finding|1D76DB|System-generated exploratory smoke finding"
   "prio:P1|B60205|Priority P1"
   "prio:P2|D93F0B|Priority P2"
@@ -40,3 +38,16 @@ for entry in "${labels[@]}"; do
     echo "updated $name"
   fi
 done
+
+looper_label_file="tools/looper-system/config/github-labels.tsv"
+if [[ -f "$looper_label_file" ]]; then
+  while IFS=$'\t' read -r name color description; do
+    [[ -n "$name" && "$name" != \#* ]] || continue
+    if gh label create "$name" --color "$color" --description "$description"; then
+      echo "created $name"
+    else
+      gh label edit "$name" --color "$color" --description "$description"
+      echo "updated $name"
+    fi
+  done < "$looper_label_file"
+fi

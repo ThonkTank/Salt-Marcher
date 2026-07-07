@@ -236,7 +236,7 @@ packaging policies that are not language-level architecture rules.
 | Entrypoint | Status | Current policy |
 | --- | --- | --- |
 | `./gradlew checkStylingCentralStylesheetOwner` | `Blocking Local Gate` | SaltMarcher styling must stay owned by `resources/salt-marcher.css`, and the active `saltMarcherStylesheet` path must still point at that canonical owner. |
-| `./gradlew checkCentralizedStylesheets` | `Blocking Local Gate` | Stylesheet files with supported stylesheet extensions must be centralized in `resources/salt-marcher.css`. |
+| `./gradlew checkCentralizedStylesheets` | `Blocking Local Gate` | Active-project stylesheet files with supported stylesheet extensions must be centralized in `resources/salt-marcher.css`; ignored Looper runtime state is outside this source perimeter. |
 | `./gradlew checkDefinedStyleClassSelectors` | `Blocking Local Gate` | Style classes authored from Java through `getStyleClass()` calls must resolve to selectors in `resources/salt-marcher.css`. |
 | `./gradlew checkManualNodeStyling` | `Blocking Local Gate` | Active code must not use `setStyle(...)`, and passive `View` code must not define ordinary node styling through local `Insets`, padding, spacing, gap, or fixed visual size setters. |
 | `./gradlew checkNoCompiledArtifactsInSource` | `Blocking Local Gate` | `.class` files must not exist under active source roots. |

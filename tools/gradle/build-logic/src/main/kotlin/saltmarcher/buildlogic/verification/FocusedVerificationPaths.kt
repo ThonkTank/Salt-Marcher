@@ -11,6 +11,7 @@ import saltmarcher.buildlogic.enforcement.standardEnforcementDiagnosticSurfaceCa
 private const val FocusedVerificationPathsProperty = "saltmarcher.focusedVerificationPaths"
 private const val FocusedDiagnosticSurfaceIdsProperty = "saltmarcher.focusedDiagnosticSurfaceIds"
 private val IgnoredRepositoryScanSegments = setOf(".codex", ".git", ".gradle", "build")
+private const val LooperSystemStatePattern = "tools/looper-system/state/**"
 private val BuildLogicSourceRoots = listOf("tools/gradle/build-logic/src/main/kotlin")
 private val BuildHarnessSourceRoots = listOf("tools/gradle/build-harness/src/main/java")
 
@@ -90,6 +91,7 @@ object FocusedVerificationPaths {
     fun configureDefaultSourceFilter(filter: PatternFilterable, defaultIncludes: List<String>) {
         defaultIncludes.forEach(filter::include)
         filter.exclude("**/build/**")
+        filter.exclude(LooperSystemStatePattern)
     }
 
     fun configureFocusedSourceFilter(filter: PatternFilterable, sourceRoots: List<String>) {

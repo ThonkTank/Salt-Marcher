@@ -2,9 +2,9 @@ Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-07
 Source of Truth: Archive evaluation, pass/fail, delayed-feedback, and evidence
-ownership details for Autodev Process Feedback.
+ownership details for Looper Process Feedback.
 
-# Autodev Process Feedback Archive Rules
+# Looper Process Feedback Archive Rules
 
 ## Archive Evaluation
 
@@ -116,7 +116,7 @@ kept variant to quarantine or discard.
 
 ## Evidence Ownership
 
-Private feedback packets and experiment ledgers live under `.codex/autodev/`
+Private feedback packets and experiment ledgers live under `tools/looper-system/state/`
 and are not committed. The private variant archive and held-out evaluation sets
 live there as well. Tracked handoff reports may cite aggregate process status,
 but they MUST NOT copy protected intake, raw private feedback, evaluation sets,

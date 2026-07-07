@@ -13,7 +13,7 @@ tests for the mapped behavior-harness main classes so PIT can execute JavaExec
 harnesses without changing the harness implementations. Reports are advisory
 and written under `build/reports/pitest-areas/`.
 
-`tools/quality/scripts/mutation_gap_sync.py` reads those summaries and updates
+`tools/looper-system/scripts/mutation_gap_sync.py` reads those summaries and updates
 `docs/project/verification/harness-gaps.md` only for areas with at least one
 mutation and a mutation score below 50%, or for areas whose PIT run exceeds the
 per-area timeout. The generated low-score row format is:

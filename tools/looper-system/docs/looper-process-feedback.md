@@ -5,11 +5,11 @@ Source of Truth: Verification and feedback strategy for SaltMarcher
 process-autoresearch experiments, including feedback packet schema, scoring,
 pass/fail criteria, and known limits of process feedback.
 
-# Autodev Process Feedback
+# Looper Process Feedback
 
 ## Purpose
 
-The Autodev Process Loop can improve SaltMarcher implementers only when it gets
+The Looper Process Loop can improve SaltMarcher implementers only when it gets
 comparable feedback. This document defines the feedback harness for process
 experiments. It verifies process variants, not product behavior.
 
@@ -41,7 +41,8 @@ install, CI, or Overview review.
 ## Feedback Packet
 
 Each inner implementation attempt MUST emit one JSON Lines packet under
-`.codex/autodev/feedback/` before the process optimizer scores the variant.
+`tools/looper-system/state/process-lab/feedback/` before the process optimizer
+scores the variant.
 The packet MUST include these fields:
 
 | Field | Required meaning |
@@ -238,7 +239,7 @@ otherwise they are `unverifiable`. `not_realized` increments
 `unrealized_benefit_count` and uses the same penalty weight as
 `delayed_regression_count`. A second consecutive `unverifiable` readback for the
 same PR is converted to `not_realized`, because uncheckable self-directed
-benefit claims must not improve process score indefinitely. Runner-triggered
+benefit claims must not improve process score indefinitely. Looper-triggered
 readback stores journal lines as private pending feedback so a maintenance
 session does not start with a dirty tracked checkout; publication into the
 tracked monthly journal happens in the next normal PR-capable documentation
@@ -256,12 +257,11 @@ reducing required review, hiding blockers, or withholding evidence.
 
 Archive evaluation, pass/fail criteria, delayed-feedback revisit rules, and
 evidence-ownership details are split to
-[Autodev Process Feedback Archive Rules](autodev-process-feedback-archive.md).
+[Looper Process Feedback Archive Rules](looper-process-feedback-archive.md).
 
 ## References
 
-- [Autodev Process Loop](docs/project/architecture/autodev-process-loop.md:1)
-- [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
-- [Agent Instruction Standard](docs/project/architecture/agent-instructions.md:1)
-- [Karpathy Autoresearch Extract](references/autodev/karpathy-autoresearch.md:1)
-- [Darwin Godel Machine Extract](references/autodev/darwin-godel-machine-2505.22954.md:1)
+- [Looper Process Loop](looper-process-loop.md)
+- [Quality Platforms Standard](../../../docs/project/verification/quality-platforms.md)
+- [Agent Instruction Standard](../../../docs/project/architecture/agent-instructions.md)
+- [Source References Standard](../../../docs/project/verification/source-references.md)

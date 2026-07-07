@@ -1,0 +1,4 @@
+looper-drift	B60205	Installed looper manifest drift
+looper-report	1D76DB	Live report of the SaltMarcher Looper System
+source:looper	0052CC	PR created or materially advanced by the SaltMarcher Looper System
+quarantined:stuck	B60205	Looper parked this PR after repeated identical failures

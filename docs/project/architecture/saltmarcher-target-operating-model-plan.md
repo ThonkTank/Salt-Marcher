@@ -26,7 +26,7 @@ retaining a long, gate-incompatible planning document.
 - Harness gaps:
   `docs/project/verification/harness-gaps.md`
 - Autonomous work-selection contract:
-  `docs/project/architecture/night-shift.md`
+  `tools/looper-system/docs/looper-system.md`
 - Owner-action checklist:
   `docs/project/journal/2026-07-target-operating-model-owner-actions.md`
 
@@ -46,9 +46,9 @@ retaining a long, gate-incompatible planning document.
 - M6: Linux systemd-user updater, next-channel launcher, status command, and
   installer.
 - M7: German status issue updater and acceptance-label workflow.
-- M8: no in-repo runner decision, night-shift contract, and monthly pruning
+- M8: no in-repo looper decision, looper-system contract, and monthly pruning
   review policy.
-- M9: governed migration roadmap rule and order in the night-shift contract.
+- M9: governed migration roadmap rule and order in the looper-system contract.
 
 ## Remaining Owner Actions
 

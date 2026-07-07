@@ -12,11 +12,11 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-sys.path.insert(0, str(REPO_ROOT / "tools/quality/scripts"))
-import nightshift_metrics  # noqa: E402
+sys.path.insert(0, str(REPO_ROOT / "tools/looper-system/scripts"))
+import looper_metrics  # noqa: E402
 import benefit_readback  # noqa: E402
 import mutation_gap_sync  # noqa: E402
-import runner_readback  # noqa: E402
+import looper_readback  # noqa: E402
 import exploration_triage  # noqa: E402
 TITLE = "SaltMarcher Statusbericht"
 REQUIRED_CHECKS = [
@@ -178,11 +178,11 @@ def activation_blockers() -> list[str]:
     return []
 
 
-def autodev_metrics_status() -> list[str]:
+def looper_metrics_status() -> list[str]:
     try:
-        text = nightshift_metrics.render_markdown(nightshift_metrics.collect_metrics(14), title=False)
-    except nightshift_metrics.IncompleteMetrics as exc:
-        text = nightshift_metrics.render_incomplete(str(exc), title=False)
+        text = looper_metrics.render_markdown(looper_metrics.collect_metrics(14), title=False)
+    except looper_metrics.IncompleteMetrics as exc:
+        text = looper_metrics.render_incomplete(str(exc), title=False)
     return text.splitlines()
 
 
@@ -199,11 +199,11 @@ def mutation_report_status() -> list[str]:
     return [mutation_gap_sync.render_status(summaries)]
 
 
-def runner_manifest_status() -> list[str]:
+def looper_manifest_status() -> list[str]:
     try:
-        return [runner_readback.render_status(runner_readback.compare())]
+        return [looper_readback.render_status(looper_readback.compare())]
     except Exception as exc:
-        return [f"Runner-Manifest: unvollstaendig ({str(exc)[:120]})"]
+        return [f"Looper-Manifest: unvollstaendig ({str(exc)[:120]})"]
 
 
 def exploration_status() -> list[str]:
@@ -297,6 +297,7 @@ def merged_last_day() -> list[str]:
             label.get("name")
             for label in pr.get("labels", [])
             if label.get("name", "").startswith("risk:")
+            or label.get("name", "") == "source:looper"
         ]
         rows.append(f"- #{pr['number']} {pr['title']} ({', '.join(relevant_labels) or 'ohne Risikolabel'})")
     return rows
@@ -351,12 +352,12 @@ def body() -> str:
         "",
         *required_check_status(),
         "",
-        "## Autodev-Metriken",
+        "## Looper-Metriken",
         "",
-        *autodev_metrics_status(),
+        *looper_metrics_status(),
         *benefit_readback_status(),
         *mutation_report_status(),
-        *runner_manifest_status(),
+        *looper_manifest_status(),
         *exploration_status(),
     ])
 

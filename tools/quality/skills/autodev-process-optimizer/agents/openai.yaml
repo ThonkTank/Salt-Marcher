@@ -1,7 +1,0 @@
-interface:
-  display_name: "Autodev Process Optimizer"
-  short_description: "Optimize SaltMarcher implementer process variants"
-  default_prompt: "Use $autodev-process-optimizer when running, planning, changing, or reviewing the SaltMarcher process-autoresearch loop for implementer prompts, slice briefs, context budgets, model routing, review routing, feedback capture, variant archive selection, and process-variant promotion."
-
-policy:
-  allow_implicit_invocation: true
