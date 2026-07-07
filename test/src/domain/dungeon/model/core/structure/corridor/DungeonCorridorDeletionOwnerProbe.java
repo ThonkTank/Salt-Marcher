@@ -38,11 +38,7 @@ public final class DungeonCorridorDeletionOwnerProbe {
                 base.revision());
 
         DungeonMap rejected = withCorridor.deleteCorridor(
-                CORRIDOR_ID,
-                "CORRIDOR_WAYPOINT",
-                0L,
-                0L,
-                0);
+                CorridorDeletionTarget.corridorWaypoint(CORRIDOR_ID, 0));
 
         assertEquals(withCorridor, rejected,
                 "corridor deletion owner rejects invalid replacement route before mutation");

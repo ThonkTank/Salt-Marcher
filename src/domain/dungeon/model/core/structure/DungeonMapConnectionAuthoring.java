@@ -4,6 +4,7 @@ import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingMovement;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingMovement.DoorBindingMoveResult;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDeletionTarget;
 import src.domain.dungeon.model.core.structure.corridor.CorridorMapAuthoring;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.door.DoorBoundaryRelocation;
@@ -114,19 +115,9 @@ final class DungeonMapConnectionAuthoring {
 
     DungeonMap deleteCorridor(
             DungeonMap dungeonMap,
-            long corridorId,
-            String targetKind,
-            long topologyRefId,
-            long roomId,
-            int waypointIndex
+            CorridorDeletionTarget target
     ) {
-        return corridorAuthoring.deleteCorridor(
-                dungeonMap,
-                corridorId,
-                targetKind,
-                topologyRefId,
-                roomId,
-                waypointIndex);
+        return corridorAuthoring.deleteCorridor(dungeonMap, target);
     }
 
     private DungeonMap withRelocatedDoorBoundary(

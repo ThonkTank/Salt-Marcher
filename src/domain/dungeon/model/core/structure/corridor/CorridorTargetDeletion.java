@@ -12,26 +12,25 @@ public final class CorridorTargetDeletion {
 
     public Corridor deleteTarget(
             Corridor current,
-            String targetKind,
-            long topologyRefId,
-            long roomId,
-            int waypointIndex,
+            CorridorDeletionTarget target,
             List<DoorBindingTarget> doorTargets,
             List<AnchorTarget> anchorTargets,
             List<WaypointTarget> waypointTargets
     ) {
-        Corridor updatedCore = switch (targetKind) {
-            case "DOOR" -> deleteDoor(
+        Corridor updatedCore = current;
+        if (target.doorBinding()) {
+            updatedCore = deleteDoor(
                     current,
-                    topologyRefId,
-                    roomId,
+                    target.topologyRefId(),
+                    target.roomId(),
                     doorTargets,
                     anchorTargets,
                     waypointTargets);
-            case "CORRIDOR_ANCHOR" -> current.withoutAnchorTarget(topologyRefId);
-            case "CORRIDOR_WAYPOINT" -> current.withoutWaypointTarget(waypointIndex);
-            default -> current;
-        };
+        } else if (target.corridorAnchor()) {
+            updatedCore = current.withoutAnchorTarget(target.topologyRefId());
+        } else if (target.corridorWaypoint()) {
+            updatedCore = current.withoutWaypointTarget(target.waypointIndex());
+        }
         if (updatedCore.equals(current) || updatedCore.endpointCount() < 2) {
             return current;
         }

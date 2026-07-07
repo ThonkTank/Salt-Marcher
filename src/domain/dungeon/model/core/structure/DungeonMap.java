@@ -7,6 +7,7 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDeletionTarget;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.feature.FeatureMarkerCatalog;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
@@ -380,20 +381,8 @@ public record DungeonMap(
         return CONNECTION_AUTHORING.createCorridor(this, stairId, start, end);
     }
 
-    public DungeonMap deleteCorridor(
-            long corridorId,
-            String targetKind,
-            long topologyRefId,
-            long roomId,
-            int waypointIndex
-    ) {
-        return CONNECTION_AUTHORING.deleteCorridor(
-                this,
-                corridorId,
-                targetKind,
-                topologyRefId,
-                roomId,
-                waypointIndex);
+    public DungeonMap deleteCorridor(CorridorDeletionTarget target) {
+        return CONNECTION_AUTHORING.deleteCorridor(this, target);
     }
 
     DungeonMap withStairs(StairCollection nextStairs) {

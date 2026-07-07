@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDeletionTarget;
 
 public final class DungeonEditorSessionValues {
 
@@ -368,48 +369,18 @@ public final class DungeonEditorSessionValues {
     }
 
     public static final class DeleteCorridorPreview implements Preview {
-        private final long corridorId;
-        private final String targetKind;
-        private final long topologyRefId;
-        private final long roomId;
-        private final int waypointIndex;
+        private final CorridorDeletionTarget target;
 
-        public DeleteCorridorPreview(long corridorId) {
-            this(corridorId, "CORRIDOR", 0L, 0L, 0);
+        public DeleteCorridorPreview(CorridorDeletionTarget target) {
+            this.target = target == null ? CorridorDeletionTarget.wholeCorridor(0L) : target;
         }
 
-        public DeleteCorridorPreview(
-                long corridorId,
-                String targetKind,
-                long topologyRefId,
-                long roomId,
-                int waypointIndex
-        ) {
-            this.corridorId = Math.max(0L, corridorId);
-            this.targetKind = targetKind == null || targetKind.isBlank() ? "CORRIDOR" : targetKind;
-            this.topologyRefId = Math.max(0L, topologyRefId);
-            this.roomId = Math.max(0L, roomId);
-            this.waypointIndex = Math.max(0, waypointIndex);
+        public CorridorDeletionTarget target() {
+            return target;
         }
 
         public long corridorId() {
-            return corridorId;
-        }
-
-        public String targetKind() {
-            return targetKind;
-        }
-
-        public long topologyRefId() {
-            return topologyRefId;
-        }
-
-        public long roomId() {
-            return roomId;
-        }
-
-        public int waypointIndex() {
-            return waypointIndex;
+            return target.corridorId();
         }
     }
 

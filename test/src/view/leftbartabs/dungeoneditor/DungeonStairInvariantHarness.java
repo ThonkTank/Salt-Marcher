@@ -9,6 +9,7 @@ import src.domain.dungeon.model.core.structure.DungeonMapAuthoring.AuthoredConte
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDeletionTarget;
 import src.domain.dungeon.model.core.structure.corridor.CorridorRoomSet;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
@@ -54,7 +55,7 @@ final class DungeonStairInvariantHarness {
         assertEquals(map, map.deleteStair(STAIR_ID),
                 "DungeonMap direct delete leaves corridor-bound stair map unchanged");
 
-        DungeonMap corridorDeleted = map.deleteCorridor(CORRIDOR_ID, "CORRIDOR", 0L, 0L, 0);
+        DungeonMap corridorDeleted = map.deleteCorridor(CorridorDeletionTarget.wholeCorridor(CORRIDOR_ID));
         assertTrue(corridorDeleted.corridors().isEmpty(),
                 "corridor owner removes the owning corridor");
         assertTrue(corridorDeleted.stairs().stairs().isEmpty(),
