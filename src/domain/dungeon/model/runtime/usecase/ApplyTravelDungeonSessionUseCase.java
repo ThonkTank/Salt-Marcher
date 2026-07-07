@@ -31,7 +31,7 @@ public final class ApplyTravelDungeonSessionUseCase {
     }
 
     public SnapshotData applyCommand(
-            String actionToken,
+            TravelDungeonSessionCommand.Action action,
             String actionId,
             int projectionLevel,
             String overlayModeKey,
@@ -40,7 +40,7 @@ public final class ApplyTravelDungeonSessionUseCase {
             List<Integer> overlaySelectedLevels
     ) {
         return apply(new TravelDungeonSessionCommand(
-                actionToken,
+                action,
                 actionId,
                 projectionLevel,
                 overlayModeKey,
@@ -52,18 +52,16 @@ public final class ApplyTravelDungeonSessionUseCase {
     private SnapshotData apply(TravelDungeonSessionCommand command) {
         TravelDungeonSessionCommand safeCommand = Objects.requireNonNull(command, "command");
         return switch (safeCommand.action()) {
-            case "REFRESH" -> refresh();
-            case "ACTION" -> move(safeCommand.actionId());
-            case "SELECT_MAP" -> selectMap(safeCommand.actionId());
-            case "SET_PROJECTION_LEVEL" -> setProjectionLevel(safeCommand.projectionLevel());
-            case "SHIFT_PROJECTION_LEVEL" -> setProjectionLevel(session.projectionLevel() + safeCommand.projectionLevel());
-            case "SET_OVERLAY" -> setOverlay(
+            case REFRESH -> refresh();
+            case ACTION -> move(safeCommand.actionId());
+            case SELECT_MAP -> selectMap(safeCommand.actionId());
+            case SET_PROJECTION_LEVEL -> setProjectionLevel(safeCommand.projectionLevel());
+            case SHIFT_PROJECTION_LEVEL -> setProjectionLevel(session.projectionLevel() + safeCommand.projectionLevel());
+            case SET_OVERLAY -> setOverlay(
                     safeCommand.overlayModeKey(),
                     safeCommand.overlayLevelRange(),
                     safeCommand.overlayOpacity(),
                     safeCommand.overlaySelectedLevels());
-            default -> throw new IllegalArgumentException(
-                    "Unknown travel dungeon session action: " + safeCommand.action());
         };
     }
 

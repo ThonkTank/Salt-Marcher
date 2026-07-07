@@ -32,6 +32,7 @@ import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceProjection;
 import src.domain.dungeon.model.runtime.travel.projection.TravelTransitionTarget;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionMovement.MoveResultData;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionCommand;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState.ActiveTravelStateData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSnapshot.SnapshotData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.PositionData;
@@ -491,7 +492,14 @@ final class DungeonRuntimeProjectionInvariantHarness {
                                 deriveStateUseCase)),
                 new StabilizeTravelDungeonProjectionUseCase());
 
-        SnapshotData snapshot = useCase.applyCommand("SELECT_MAP", Long.toString(selectedMapId), 0, "OFF", 0, 1.0, List.of());
+        SnapshotData snapshot = useCase.applyCommand(
+                TravelDungeonSessionCommand.Action.SELECT_MAP,
+                Long.toString(selectedMapId),
+                0,
+                "OFF",
+                0,
+                1.0,
+                List.of());
         PositionData position = snapshot.surface() == null ? null : snapshot.surface().position();
 
         assertEquals(new PositionData(

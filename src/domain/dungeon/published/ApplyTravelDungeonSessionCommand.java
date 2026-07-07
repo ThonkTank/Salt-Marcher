@@ -45,8 +45,28 @@ public record ApplyTravelDungeonSessionCommand(
         overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
     }
 
-    public String actionToken() {
-        return action.name();
+    public boolean isRefreshAction() {
+        return action == Action.REFRESH;
+    }
+
+    public boolean isTravelAction() {
+        return action == Action.ACTION;
+    }
+
+    public boolean isSelectMapAction() {
+        return action == Action.SELECT_MAP;
+    }
+
+    public boolean isSetProjectionLevelAction() {
+        return action == Action.SET_PROJECTION_LEVEL;
+    }
+
+    public boolean isShiftProjectionLevelAction() {
+        return action == Action.SHIFT_PROJECTION_LEVEL;
+    }
+
+    public boolean isSetOverlayAction() {
+        return action == Action.SET_OVERLAY;
     }
 
     public enum Action {
