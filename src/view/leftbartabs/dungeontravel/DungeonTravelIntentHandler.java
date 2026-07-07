@@ -82,7 +82,9 @@ final class DungeonTravelIntentHandler {
         if (event == null) {
             return;
         }
-        travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.action(event.actionId()));
+        presentationModel.actionIdForRow(event.selectedActionRowIndex())
+                .ifPresent(actionId -> travel.applyDungeonTravelSession(
+                        ApplyTravelDungeonSessionCommand.action(actionId)));
     }
 
     private static List<Integer> parseLevels(String rawLevelsText) {

@@ -71,7 +71,7 @@ public final class DungeonTravelStateView extends VBox {
             nodes.add(new StyledLabel("Aktionen", "section-header", "text-muted"));
             for (DungeonTravelStateContentModel.ActionItem item : safeItems) {
                 nodes.add(new ActionRow(
-                        item.actionId(),
+                        item.rowIndex(),
                         item.buttonLabel(),
                         item.hasDescription(),
                         item.descriptionText(),
@@ -84,27 +84,27 @@ public final class DungeonTravelStateView extends VBox {
     private static final class ActionRow extends VBox {
 
         private ActionRow(
-                String actionId,
+                int rowIndex,
                 String buttonLabel,
                 boolean hasDescription,
                 String descriptionText,
                 Consumer<DungeonTravelStateViewInputEvent> publisher
         ) {
             super(4);
-            getChildren().add(actionButton(actionId, buttonLabel, publisher));
+            getChildren().add(actionButton(rowIndex, buttonLabel, publisher));
             if (hasDescription) {
                 getChildren().add(new HintLabel(descriptionText));
             }
         }
 
         private static Button actionButton(
-                String actionId,
+                int rowIndex,
                 String buttonLabel,
                 Consumer<DungeonTravelStateViewInputEvent> publisher
         ) {
             Button button = new StyledButton(buttonLabel, "toolbar-action-button", "neutral-action");
             button.setMaxWidth(Double.MAX_VALUE);
-            button.setOnAction(event -> publisher.accept(new DungeonTravelStateViewInputEvent(actionId)));
+            button.setOnAction(event -> publisher.accept(new DungeonTravelStateViewInputEvent(rowIndex)));
             return button;
         }
     }

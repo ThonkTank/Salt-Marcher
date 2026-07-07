@@ -35,22 +35,22 @@ final class DungeonTravelStateContentModel {
 
     static final class ActionItem {
 
-        private final String actionId;
+        private final int rowIndex;
         private final String buttonLabel;
         private final String descriptionText;
 
-        private ActionItem(String actionId, String buttonLabel, String descriptionText) {
-            this.actionId = actionId == null ? "" : actionId.trim();
+        private ActionItem(int rowIndex, String buttonLabel, String descriptionText) {
+            this.rowIndex = rowIndex;
             this.buttonLabel = buttonLabel == null ? "" : buttonLabel;
             this.descriptionText = descriptionText == null ? "" : descriptionText;
         }
 
-        static ActionItem of(String actionId, String buttonLabel, String descriptionText) {
-            return new ActionItem(actionId, buttonLabel, descriptionText);
+        static ActionItem of(int rowIndex, String buttonLabel, String descriptionText) {
+            return new ActionItem(rowIndex, buttonLabel, descriptionText);
         }
 
-        String actionId() {
-            return actionId;
+        int rowIndex() {
+            return rowIndex;
         }
 
         String buttonLabel() {
