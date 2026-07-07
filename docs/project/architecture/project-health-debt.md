@@ -58,22 +58,22 @@ Resolver field transitions are defined by the
 
 ## Active Debt
 
-## PH-20260707-001 - Feature Runtime Review-Owned Fitness Coverage
+## PH-20260707-001 - Feature Runtime Fitness Function Gap
 
 - Status: Open
-- Resolution Mode: Scheduled Repair
-- Resolver Status: Queued
+- Resolution Mode: Next Matching Touch
+- Resolver Status: Open
 - Marker: docs/project/architecture/patterns/feature-runtime.md:37
-- Problem: Feature-runtime topology and compatibility-seam conformance remain review-owned while no narrow gate proves runtime state ownership, shell-binding narrowness, preview/commit owner identity, render-frame publication ownership, UI/storage responsibility boundaries, or passive-carrier mirror absence inside `src/features/**`.
+- Problem: Feature-runtime conformance for `src/features/**` remains review-owned while the active `feature-runtime` diagnostic surface proves placement only; no named gate currently proves internal feature-runtime topology, passive-carrier mirror absence, shell narrowness, runtime state ownership, preview/commit owner identity, render-frame publication, typed target and boundary-carrier drift, or UI/storage boundaries for the non-trivial Dungeon feature runtime.
 - Owner Areas: feature-runtime, architecture-enforcement, project-health
 - Affected Paths: docs/project/architecture/patterns/feature-runtime.md, tools/quality/skills/feature-runtime/SKILL.md, src/features/dungeon/runtime/**, src/features/dungeon/shell/**, src/view/leftbartabs/dungeoneditor/**
-- Related Symbols: checkFeatureRuntimeEnforcement, DungeonEditorFeatureRuntimeRoot, DungeonEditorFeatureShellBinding, DungeonEditorIntentHandler, passive-carrier mirror absence
+- Related Symbols: AR-09, checkFeatureRuntimeEnforcement, DungeonEditorFeatureRuntimeRoot, DungeonEditorAuthoredRuntimeAssembly, DungeonEditorFeatureShellBinding, DungeonEditorIntentHandler, passive-carrier mirror absence
 - Intake Trigger: docs/project/architecture/patterns/feature-runtime.md, tools/quality/skills/feature-runtime/SKILL.md, src/features/dungeon/runtime/**, src/features/dungeon/shell/**, src/view/leftbartabs/dungeoneditor/**, feature-runtime, architecture-enforcement
-- Required Next Action: Add a proportional named feature-runtime topology or fitness gate for the highest-drift invariants, or replace this queued repair with an owner-approved equivalent proof route that keeps the retained compatibility inventory reviewable.
-- Source Evidence: build/agent-pass-logs/2026-07-07-architecture-hypothesis-review/hypothesis-11-review-owned-fitness-functions.md; build/agent-pass-logs/2026-07-07-architecture-hypothesis-review/hypothesis-16-unmaterialized-structural-debt.md; build/agent-pass-logs/2026-07-07-architecture-repair-plan.md.
-- Decision: Wave 1 intentionally does not introduce a new gate. The retained coverage gap is acceptable only as queued project-health debt and current owner inventory, not as target conformance or mechanical proof.
-- Remove When: a later repair introduces a named feature-runtime topology or fitness gate, or an owner-approved equivalent proof route, that covers the high-drift invariants for active `src/features/**` code and the Dungeon Editor compatibility seam has either been removed or explicitly accepted by that proof route.
-- Last Checked: 2026-07-07
+- Required Next Action: On the next matching feature-runtime owner-doc or Dungeon feature-runtime touch, either add a proportional named feature-runtime topology or fitness gate for the highest-drift invariants, prove the migration removed the compatibility seam and review-owned drift risk, replace the queued repair with an owner-approved equivalent proof route, or keep the gap explicitly review-owned with updated evidence.
+- Source Evidence: build/agent-pass-logs/2026-07-07-architecture-hypothesis-review/hypothesis-03-feature-runtime-legacy-chain.md; build/agent-pass-logs/2026-07-07-architecture-hypothesis-review/hypothesis-11-review-owned-fitness-functions.md; build/agent-pass-logs/2026-07-07-architecture-hypothesis-review/hypothesis-16-unmaterialized-structural-debt.md; build/agent-pass-logs/2026-07-07-architecture-repair-plan.md; build/agent-pass-logs/2026-07-07-architecture-repair-roadmaps/wave-10-feature-runtime-fitness-disposition-unter-roadmap.md.
+- Decision: Materialization is the default because a broad topology gate would overclaim coverage or push migrated runtime code toward artificial passive carriers, micro-wiring, or legacy role ceremony. Leaving the gap review-owned is not target architecture; it is retained debt until a proportional named invariant gate lands, an owner-approved equivalent proof route covers the high-drift invariants, or the feature-runtime migration removes the seam that makes the drift risk material.
+- Remove When: A later repair introduces a named feature-runtime topology or fitness gate, or an owner-approved equivalent proof route, that covers the high-drift invariants for active `src/features/**` code and the Dungeon Editor compatibility seam has either been removed or explicitly accepted by that proof route.
+- Last Checked: 2026-07-08
 
 ## PH-20260708-001 - World Planner ContributionModel Residual Mapping Hotspot
 
