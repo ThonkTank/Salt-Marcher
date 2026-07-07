@@ -61,6 +61,7 @@ The packet MUST include these fields:
 | `publication_result` | WIP, stable, blocked, skipped, or not applicable, with reason. |
 | `user_feedback` | Accepted, rejected, edited, priority changed, correction, or not yet seen. |
 | `delayed_signal` | Later revert, CI failure, repeated bug, repeated review finding, or none known. |
+| `delayed_benefit` | Optional delayed benefit verdict: `realized`, `not_realized`, `unverifiable`, or `not_applicable`. |
 | `score_inputs` | Numeric inputs used for scoring and penalties. |
 
 Packets may include additional fields, but score computation MUST use only
@@ -159,6 +160,7 @@ The raw `score_inputs` keys that feed those metrics are:
 | `repeated_edit_count` | Additional repeated edits beyond ordinary fix cycles and rework count. |
 | `user_correction_count` | User corrections, rejections, or direction reversals. |
 | `delayed_regression_count` | Later revert, CI failure, repeated bug, or repeated review issue. |
+| `unrealized_benefit_count` | Delayed Benefit readback verdicts of `not_realized`; weighted like delayed regressions. |
 | `dirty_tree_ambiguity_count` | Attribution failures caused by dirty-worktree overlap. |
 | `private_boundary_violation_count` | Protected intake or raw private feedback exposed outside the optimizer. |
 | `planned_done_when_count` | Number of Done-When bullets assigned before implementation. |
@@ -204,133 +206,57 @@ Penalties apply for:
 - oversized or unfocused context
 - user correction or rejection
 - delayed regression, revert, CI failure, or repeated review issue
+- unrealized delayed benefits from readback
+
+## Benefit Readback
+
+Self-directed PRs labeled `task:quality`, `task:consolidation`,
+`task:architecture`, or `task:performance` carry one Benefit line in the PR
+body. Quantitative form:
+
+```text
+Benefit: metric=<name>; direction=<down|up>; scope=<path-or-glob|repo>
+```
+
+Qualitative form:
+
+```text
+Benefit: qualitative=<one sentence>
+Benefit evidence: <one sentence after readback>
+```
+
+The first metric registry is: `dup_lines`, `smell_count`,
+`class_loc:<file>`, `file_count:<glob>`, and `word_count:<glob>`. `wmc`,
+`build_seconds`, and `startup_ms` stay out of the accepted grammar until their
+own local resolvers exist; `startup_ms` is owned by the exploratory-smoke
+milestone.
+Readback evaluates merged PRs after the 7-14 day maturity window and emits
+`delayed_benefit`. Quantitative metrics are recomputed against the merge commit
+and current `HEAD` where the local toolchain can resolve them. Qualitative
+benefits are `realized` only when a `Benefit evidence:` sentence is present;
+otherwise they are `unverifiable`. `not_realized` increments
+`unrealized_benefit_count` and uses the same penalty weight as
+`delayed_regression_count`. A second consecutive `unverifiable` readback for the
+same PR is converted to `not_realized`, because uncheckable self-directed
+benefit claims must not improve process score indefinitely. Runner-triggered
+readback stores journal lines as private pending feedback so a maintenance
+session does not start with a dirty tracked checkout; publication into the
+tracked monthly journal happens in the next normal PR-capable documentation
+slice.
+
+Readback packets with `source=rq4_benefit_readback` are delayed-benefit packets,
+not inner implementation-attempt packets. They may omit inner-run fields such as
+`process_variant_id`, `task_source`, and full fixed-metric inputs. Consumers use
+only `pr_number`, `task_class`, `delayed_benefit`, and documented
+`score_inputs.unrealized_benefit_count`, then join the verdict back to the
+corresponding inner-run packet when updating process scores.
 
 The process optimizer MUST NOT improve score by reducing required proof,
 reducing required review, hiding blockers, or withholding evidence.
 
-## Archive Evaluation
-
-When a feedback packet references an archive variant, the optimizer evaluates
-the variant by combining:
-
-- direct `process_score` on comparable task classes
-- `harness_pass`, `proof_success_rate`, and review-blocker rate
-- user-correction rate, delayed-regression rate, and `delayed_stability`
-- `context_cost`, `elapsed_cost`, and total `cost_units` trend
-- descendant value from later child variants that reuse this variant as a
-  useful stepping stone
-- `held_out_pass_rate` when a private evaluation set is available
-
-Archive comparisons MUST group `protected_intake` and `maintenance_fallback`
-runs separately unless the promotion evidence explicitly covers both sources.
-
-Parent selection uses this DGM-like archive weight:
-
-```text
-parent_weight =
-  sigmoid(process_score, midpoint=baseline_score)
-  * (1 / (1 + functioning_child_count))
-  * maturity_factor
-  * novelty_factor
-```
-
-`functioning_child_count` counts child variants that produced a valid feedback
-packet and did not crash the fixed harness. `maturity_factor` is `1` for mature
-delayed signals, `0.5` for immature delayed signals, and `0` for known unresolved
-regression. `novelty_factor` is review-owned in the range `0` to `1` and
-penalizes repeated mutations that do not explore a meaningfully different
-process line.
-
-Archive scoring is still derived from documented `score_inputs`; descendant
-value is a private aggregate used for parent selection and MUST NOT override a
-failed fixed harness. A variant MUST NOT be promoted from archive status on
-immediate score alone.
-
-## Pass Or Fail Criteria
-
-A process experiment is `keep` when:
-
-- its `process_score` is better than the baseline or current active variant for
-  comparable task classes and task source
-- `harness_pass = 1`
-- blocker and user-correction rates do not increase
-- required proof and review remained intact
-- the variant did not expose protected intake to implementers
-
-A process experiment is `discard` when:
-
-- `process_score` is equal or worse after accounting for penalties
-- `harness_pass` is lower than the comparable baseline
-- token reduction is achieved by weakening proof, review, or context evidence
-- the variant causes more rework, review churn, cost without useful progress, or
-  user correction
-- the run crosses the private-intake boundary
-
-A process experiment is `crash` when:
-
-- the optimizer cannot produce a valid slice, feedback packet, or score
-- the fixed harness cannot run because of process-variant behavior
-- dirty-tree ambiguity prevents attribution of changed paths
-
-A process experiment is `blocked` when:
-
-- required external state is unavailable, such as branch-protection readback,
-  user input, or an allowed private lab write
-- a safe parent selection cannot be made from the archive and baseline fallback
-  would hide the blocker
-- the run exhausts its configured token, time, or slice budget before a valid
-  feedback packet can be produced
-
-`blocked` records the stopped attempt but does not keep, promote, or score a
-child variant as useful progress. `blocked` and `crash` runs are logged with
-their metrics, but `harness_pass = 0` prevents them from counting as progress.
-
-A process experiment is `quarantine` when:
-
-- the immediate score looks positive but delayed feedback is not mature
-- the variant is promising but needs more samples before promotion
-- the variant lacks a held-out evaluation slice but may be useful as an archive
-  stepping stone
-- the variant affects tracked instruction surfaces and needs a normal
-  instruction-change pass
-
-A process variant is eligible for promotion only after repeated positive
-samples against a comparable baseline and at least one held-out evaluation slice
-support the improvement without increasing blocker, correction, or regression
-rates.
-
-## Delayed Feedback
-
-SaltMarcher does not have a single immediate scalar metric like the original
-autoresearch benchmark. The optimizer MUST revisit prior feedback when later
-events occur:
-
-- a commit is reverted
-- CI fails after local proof passed
-- the user corrects or rejects the outcome
-- a review finding repeats across later runs
-- the same bug resurfaces
-- a process variant causes recurring context bloat or missed skill routing
-- a child variant shows the parent was a useful or harmful stepping stone
-
-Delayed signals update the private feedback ledger and may demote a previously
-kept variant to quarantine or discard.
-
-## Evidence Ownership
-
-Private feedback packets and experiment ledgers live under `.codex/autodev/`
-and are not committed. The private variant archive and held-out evaluation sets
-live there as well. Tracked handoff reports may cite aggregate process status,
-but they MUST NOT copy protected intake, raw private feedback, evaluation sets,
-or archive contents.
-
-Tracked instruction changes that promote a process variant must cite:
-
-- the stable process rule being changed
-- aggregate feedback evidence, without protected details
-- the proof and review route used for the instruction change
-- the preserved external source when the change relies on autoresearch or
-  Darwin Godel Machine mapping
+Archive evaluation, pass/fail criteria, delayed-feedback revisit rules, and
+evidence-ownership details are split to
+[Autodev Process Feedback Archive Rules](autodev-process-feedback-archive.md).
 
 ## References
 

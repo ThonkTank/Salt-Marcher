@@ -24,6 +24,8 @@ Always run verification from the repository root.
    R1 behavior-neutral structure, architecture, dependency, or tooling; R2
    visible behavior; R3a real local data migration; R3b external service,
    cost, account, or data egress; R3c frozen gate surface.
+   Autonomous PRs also carry exactly one `task:<class>` label from the runner
+   taxonomy; missing labels default to `task:feature` for trend gating.
 10. The owner decides stable acceptance, data, cost, and outside-policy
     consent. The system decides technical matters autonomously; see
     `docs/project/architecture/autonomy-boundaries.md`.

@@ -15,6 +15,20 @@ labels=(
   "owner-feedback|1D76DB|Owner feedback item"
   "security|B60205|Security issue"
   "ux|5319E7|User experience issue"
+  "runner-drift|B60205|Installed runner manifest drift"
+  "quarantined:stuck|B60205|Runner parked this PR after repeated identical failures"
+  "explorer-finding|1D76DB|System-generated exploratory smoke finding"
+  "prio:P1|B60205|Priority P1"
+  "prio:P2|D93F0B|Priority P2"
+  "task:feature|1D76DB|Autonomous task class: feature"
+  "task:bug|B60205|Autonomous task class: bug"
+  "task:architecture|5319E7|Autonomous task class: architecture"
+  "task:quality|0E8A16|Autonomous task class: quality"
+  "task:performance|D93F0B|Autonomous task class: performance"
+  "task:consolidation|0E8A16|Autonomous task class: consolidation"
+  "task:docs|6A737D|Autonomous task class: docs"
+  "task:verification|1D76DB|Autonomous task class: verification"
+  "task:governance|5319E7|Autonomous task class: governance"
 )
 
 for entry in "${labels[@]}"; do

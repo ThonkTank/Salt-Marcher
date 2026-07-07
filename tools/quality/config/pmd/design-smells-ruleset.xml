@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="SaltMarcher Design Smell Trend Rules"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+    <description>
+        Advisory production-source design-smell trend rules for RQ-3a.
+    </description>
+
+    <rule ref="category/java/design.xml/GodClass" />
+    <!-- PMD 7.23 no longer ships a literal ExcessiveClassLength rule; NCSS is
+         the maintained PMD class-length metric behind this RQ-3a slot. -->
+    <rule name="ExcessiveClassLength"
+          language="java"
+          message="The {0} ''{1}'' has an excessive NCSS length of {2}."
+          class="net.sourceforge.pmd.lang.java.rule.design.NcssCountRule"
+          externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#ncsscount">
+        <priority>3</priority>
+    </rule>
+    <rule ref="category/java/design.xml/TooManyMethods" />
+    <rule ref="category/java/design.xml/TooManyFields" />
+    <rule ref="category/java/design.xml/CouplingBetweenObjects" />
+    <rule ref="category/java/design.xml/CyclomaticComplexity" />
+    <rule ref="category/java/design.xml/DataClass" />
+</ruleset>

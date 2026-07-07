@@ -190,7 +190,8 @@ The private process lab lives under the ignored `.codex/autodev/` directory:
 - `experiments.tsv` records comparable process experiments with fixed metric
   index columns
 - `variant-archive.jsonl` records process variant parent and child lineage
-- `feedback/*.jsonl` holds raw feedback packets from inner runs
+- `feedback/*.jsonl` holds raw feedback packets from inner runs plus
+  source-tagged delayed feedback packets such as RQ-4 benefit readbacks
 - `evaluation-sets/` holds private held-out process evaluation slice sets
 - `variants/active/`, `variants/children/`, `variants/discarded/`, and
   `variants/promoted/` hold process variant drafts

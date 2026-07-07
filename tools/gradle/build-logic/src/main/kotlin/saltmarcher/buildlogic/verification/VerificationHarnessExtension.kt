@@ -278,6 +278,7 @@ internal open class VerificationHarnessExtension(
                     FocusedVerificationPaths.configureDefaultSourceFilter(this, listOf("resources/**", "shell/**", "src/**"))
                 }.matching {
                     FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf(""))
+                    exclude("**/.codex/**")
                     exclude("**/.gradle/**")
                     exclude("**/.git/**")
                 }
@@ -290,7 +291,7 @@ internal open class VerificationHarnessExtension(
             stylesheetFiles.from(
                 project.layout.projectDirectory.asFileTree.matching {
                     include("**/*.css", "**/*.scss", "**/*.sass", "**/*.less", "**/*.styl")
-                    exclude("**/.git/**", "**/.gradle/**", "**/build/**")
+                    exclude("**/.codex/**", "**/.git/**", "**/.gradle/**", "**/build/**")
                 }.matching {
                     FocusedVerificationPaths.configureFocusedSourceFilter(this, listOf(""))
                 }

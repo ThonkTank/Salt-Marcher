@@ -293,17 +293,17 @@ instead of attached as a hidden finalizer.
 `checkDocumentationEnforcement` remains intentionally separate so
 documentation-only work has a smaller public proof route.
 
-Default local proof routing by change type lives in
+Default local proof routing lives in
 `docs/project/verification/quality-platforms-local-entrypoints.md` and
-`AGENTS.md`: production-code changes use
-`tools/gradle/run-staged-verification.sh production-handoff`,
-documentation-only changes use
-`./gradlew checkDocumentationEnforcement --console=plain`, and
-non-documentation check/enforcement changes use the same production-handoff
-route when they affect shared production-code routing or lifecycle behavior.
-Focused routes are allowed for targeted package/resource work after non-empty
-input validation, but handoff claims must report the selected scope and the
-engine-specific surfaces that actually ran.
+`AGENTS.md`: production-code uses `production-handoff`, documentation-only
+uses `checkDocumentationEnforcement`, and shared check/enforcement routing uses
+the same broad route when it affects production-code lifecycle behavior. Focused
+routes are allowed for targeted package/resource work after non-empty input
+validation, but handoff claims must report the selected scope and engine
+surfaces that actually ran.
+
+Monthly harness mutation telemetry is advisory; see
+`docs/project/verification/mutation-telemetry.md`.
 
 Public verification-surface ownership is architecture-owned by
 [Verification Core Architecture](docs/project/architecture/verification-core.md:1):
@@ -331,6 +331,7 @@ enforced, the enforcement document is the canonical classification.
 - [Quality Platforms Local Entrypoints](docs/project/verification/quality-platforms-local-entrypoints.md:1)
 - [Verification Core Architecture](docs/project/architecture/verification-core.md:1)
 - [Quality Platforms CI And Branch Protection](docs/project/verification/quality-platforms-ci-and-branch-protection.md:1)
+- [Mutation Telemetry](docs/project/verification/mutation-telemetry.md:1)
 - [PMD Java Design Rules Reference](references/quality-platforms/pmd-java-design-rules.md:1)
 - [PMD CPD Reference](references/quality-platforms/pmd-cpd.md:1)
 - [Lizard README Reference](references/quality-platforms/lizard-readme.md:1)

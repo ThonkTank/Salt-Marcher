@@ -14,6 +14,7 @@ concurrency:
 permissions:
   contents: read
   pull-requests: read
+  issues: read
 
 jobs:
   production-handoff:
@@ -34,6 +35,41 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y imagemagick
       - run: tools/gradle/run-staged-verification.sh production-handoff
+      - name: Prepare quality trend gate metadata
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            jq -c '.pull_request.labels' "$GITHUB_EVENT_PATH" > /tmp/pr-labels.json
+            jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH" > /tmp/pr-body.txt
+          else
+            pr_json="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/pulls" --jq '.[0] // {}')"
+            printf '%s' "$pr_json" | jq -c '.labels // []' > /tmp/pr-labels.json
+            printf '%s' "$pr_json" | jq -r '.body // ""' > /tmp/pr-body.txt
+          fi
+          {
+            printf 'PR_LABELS_JSON<<EOF\n'
+            cat /tmp/pr-labels.json
+            printf '\nEOF\n'
+            printf 'PR_BODY<<EOF\n'
+            cat /tmp/pr-body.txt
+            printf '\nEOF\n'
+          } >> "$GITHUB_ENV"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Use base quality delta script
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        run: |
+          git fetch --no-tags origin "$BASE_REF"
+          if git cat-file -e "origin/$BASE_REF:tools/quality/scripts/quality_delta.py"; then
+            git checkout "origin/$BASE_REF" -- tools/quality/scripts/quality_delta.py
+          fi
+        env:
+          BASE_REF: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_ref || github.base_ref }}
+      - name: Enforce refactor-intent quality trend
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        run: python3 tools/quality/scripts/quality_delta.py --enforce quality,consolidation,architecture --require-benefit
 
   warden-freeze:
     runs-on: ubuntu-latest
@@ -138,6 +174,49 @@ jobs:
         with:
           name: ckjm-report
           path: build/reports/ckjm
+
+  quality-trend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@c1e323688fd81a25caa38c78aa6df2d33d3e20d9 # v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@0b6dd653ba04f4f93bf581ec31e66cbd7dcb644d # v4
+      - name: Prepare quality trend advisory metadata
+        if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
+        run: |
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            jq -c '.pull_request.labels' "$GITHUB_EVENT_PATH" > /tmp/pr-labels.json
+            jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH" > /tmp/pr-body.txt
+          else
+            pr_json="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/pulls" --jq '.[0] // {}')"
+            printf '%s' "$pr_json" | jq -c '.labels // []' > /tmp/pr-labels.json
+            printf '%s' "$pr_json" | jq -r '.body // ""' > /tmp/pr-body.txt
+          fi
+          {
+            printf 'PR_LABELS_JSON<<EOF\n'
+            cat /tmp/pr-labels.json
+            printf '\nEOF\n'
+            printf 'PR_BODY<<EOF\n'
+            cat /tmp/pr-body.txt
+            printf '\nEOF\n'
+          } >> "$GITHUB_ENV"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          HEAD_SHA: ${{ github.event_name == 'merge_group' && github.event.merge_group.head_sha || github.event.pull_request.head.sha }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compute quality trend
+        run: python3 tools/quality/scripts/quality_delta.py --require-benefit
+        continue-on-error: true
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: quality-trend
+          path: build/reports/quality-trend
 
   sonarcloud:
     if: github.actor != 'dependabot[bot]'

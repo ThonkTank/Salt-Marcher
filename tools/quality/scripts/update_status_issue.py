@@ -6,11 +6,18 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO_ROOT / "tools/quality/scripts"))
+import nightshift_metrics  # noqa: E402
+import benefit_readback  # noqa: E402
+import mutation_gap_sync  # noqa: E402
+import runner_readback  # noqa: E402
+import exploration_triage  # noqa: E402
 TITLE = "SaltMarcher Statusbericht"
 REQUIRED_CHECKS = [
     "production-handoff",
@@ -171,6 +178,41 @@ def activation_blockers() -> list[str]:
     return []
 
 
+def autodev_metrics_status() -> list[str]:
+    try:
+        text = nightshift_metrics.render_markdown(nightshift_metrics.collect_metrics(14), title=False)
+    except nightshift_metrics.IncompleteMetrics as exc:
+        text = nightshift_metrics.render_incomplete(str(exc), title=False)
+    return text.splitlines()
+
+
+def benefit_readback_status() -> list[str]:
+    try:
+        counts = benefit_readback.process(datetime.now(timezone.utc), dry_run=True, journal_mode="none")
+        return [benefit_readback.render_summary(counts)]
+    except Exception as exc:
+        return [f"Benefit-Readback: Metriken heute unvollstaendig ({str(exc)[:120]})"]
+
+
+def mutation_report_status() -> list[str]:
+    summaries = mutation_gap_sync.read_summaries(REPO_ROOT / "build/reports/pitest-areas")
+    return [mutation_gap_sync.render_status(summaries)]
+
+
+def runner_manifest_status() -> list[str]:
+    try:
+        return [runner_readback.render_status(runner_readback.compare())]
+    except Exception as exc:
+        return [f"Runner-Manifest: unvollstaendig ({str(exc)[:120]})"]
+
+
+def exploration_status() -> list[str]:
+    try:
+        return [exploration_triage.status_from_latest()]
+    except Exception as exc:
+        return [f"Exploration: unvollstaendig ({str(exc)[:120]})"]
+
+
 def tag_version_key(tag: str) -> tuple[int, int, int, int, str]:
     match = re.match(r"^v(\d+)\.(\d+)\.(\d+)(?:$|[-+])", tag)
     if not match:
@@ -308,6 +350,14 @@ def body() -> str:
         "## CI-Zustand",
         "",
         *required_check_status(),
+        "",
+        "## Autodev-Metriken",
+        "",
+        *autodev_metrics_status(),
+        *benefit_readback_status(),
+        *mutation_report_status(),
+        *runner_manifest_status(),
+        *exploration_status(),
     ])
 
 
