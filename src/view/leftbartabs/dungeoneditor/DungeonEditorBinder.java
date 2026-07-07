@@ -7,13 +7,11 @@ import shell.api.ShellBinding;
 import shell.api.ShellControls;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.features.dungeon.runtime.DungeonEditorInlineLabelEditSession;
 import src.features.dungeon.runtime.DungeonEditorRenderFrame;
 import src.features.dungeon.shell.DungeonEditorFeatureShellBinding;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
-import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditProjection;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
 
 final class DungeonEditorBinder {
@@ -69,32 +67,7 @@ final class DungeonEditorBinder {
             DungeonMapContentModel mapContentModel
     ) {
         contributionModel.applyFrame(frame);
-        mapContentModel.applyInlineLabelEditProjection(inlineLabelProjection(frame.inlineLabelEditSession()));
         mapContentModel.applyEditorRenderFrame(frame);
-    }
-
-    private static InlineLabelEditProjection inlineLabelProjection(
-            DungeonEditorInlineLabelEditSession session
-    ) {
-        DungeonEditorInlineLabelEditSession safeSession = session == null
-                ? DungeonEditorInlineLabelEditSession.inactive()
-                : session;
-        if (!safeSession.active()) {
-            return InlineLabelEditProjection.inactive();
-        }
-        return new InlineLabelEditProjection(
-                true,
-                safeSession.labelKind(),
-                safeSession.ownerId(),
-                safeSession.clusterId(),
-                safeSession.topologyKind(),
-                safeSession.topologyId(),
-                safeSession.draftText(),
-                safeSession.centerX(),
-                safeSession.centerY(),
-                safeSession.width(),
-                safeSession.height(),
-                safeSession.rotationDegrees());
     }
 
     private record Binding(

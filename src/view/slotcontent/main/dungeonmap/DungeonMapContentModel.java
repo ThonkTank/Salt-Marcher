@@ -17,6 +17,7 @@ import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeon.published.DungeonTravelHeading;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
+import src.features.dungeon.runtime.DungeonEditorInlineLabelEditSession;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.MapSurfaceFrame;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedBoundaryKind;
@@ -169,12 +170,10 @@ public final class DungeonMapContentModel {
         return inlineLabelUiStateContentPartModel.inlineLabelEditCandidate(target, renderState.labels());
     }
 
-    public void applyInlineLabelEditProjection(InlineLabelEditProjection projection) {
-        inlineLabelUiStateContentPartModel.applyInlineLabelEditProjection(projection);
-    }
-
     public void applyEditorRenderFrame(DungeonEditorRenderFrame frame) {
         DungeonEditorRenderFrame safeFrame = frame == null ? DungeonEditorRenderFrame.empty() : frame;
+        inlineLabelUiStateContentPartModel.applyInlineLabelEditProjection(
+                inlineLabelProjection(safeFrame.inlineLabelEditSession()));
         DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
         DungeonEditorPreparedFrameFacts.MapInteractionFrame interactionFrame = facts.mapInteractionFrame();
         currentPointerTargetFrames = preparedPointerTargets(interactionFrame.pointerTargets());
@@ -199,6 +198,30 @@ public final class DungeonMapContentModel {
                 frame.interactionFrame(),
                 roomLabelPlacementContentPartModel,
                 previewDiffContentPartModel), frame.interactionFrame());
+    }
+
+    private static InlineLabelEditProjection inlineLabelProjection(
+            DungeonEditorInlineLabelEditSession session
+    ) {
+        DungeonEditorInlineLabelEditSession safeSession = session == null
+                ? DungeonEditorInlineLabelEditSession.inactive()
+                : session;
+        if (!safeSession.active()) {
+            return InlineLabelEditProjection.inactive();
+        }
+        return new InlineLabelEditProjection(
+                true,
+                safeSession.labelKind(),
+                safeSession.ownerId(),
+                safeSession.clusterId(),
+                safeSession.topologyKind(),
+                safeSession.topologyId(),
+                safeSession.draftText(),
+                safeSession.centerX(),
+                safeSession.centerY(),
+                safeSession.width(),
+                safeSession.height(),
+                safeSession.rotationDegrees());
     }
 
     public void applyTravelSnapshot(TravelDungeonSnapshot travelSnapshot) {
