@@ -1,7 +1,6 @@
 package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Edge;
@@ -11,8 +10,6 @@ import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMu
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleMovement;
 
 public final class ApplyDungeonAuthoredMutationUseCase {
-    private static final String CLUSTER_KIND = "CLUSTER";
-    private static final String ROOM_KIND = "ROOM";
     private static final DungeonEditorHandleMutation HANDLE_MUTATION =
             new DungeonEditorHandleMutation();
 
@@ -79,17 +76,19 @@ public final class ApplyDungeonAuthoredMutationUseCase {
 
     public ApplyDungeonEditorOperationUseCase.OperationResultData applySaveLabelName(
             @Nullable DungeonMapIdentity mapId,
-            String targetKind,
+            SaveDungeonEditorLabelNameUseCase.TargetKind targetType,
             long targetId,
             String name
     ) {
-        String normalizedTargetKind = targetKind == null ? "" : targetKind.trim().toUpperCase(Locale.ROOT);
+        SaveDungeonEditorLabelNameUseCase.TargetKind safeTargetType = targetType == null
+                ? SaveDungeonEditorLabelNameUseCase.TargetKind.EMPTY
+                : targetType;
         String trimmedName = name == null ? "" : name.trim();
         return applyDungeonEditorOperationUseCase.execute(mapId, current -> {
-            if (CLUSTER_KIND.equals(normalizedTargetKind)) {
+            if (safeTargetType == SaveDungeonEditorLabelNameUseCase.TargetKind.CLUSTER) {
                 return current.saveClusterName(targetId, trimmedName);
             }
-            if (ROOM_KIND.equals(normalizedTargetKind)) {
+            if (safeTargetType == SaveDungeonEditorLabelNameUseCase.TargetKind.ROOM) {
                 return current.saveRoomName(targetId, trimmedName);
             }
             return current;

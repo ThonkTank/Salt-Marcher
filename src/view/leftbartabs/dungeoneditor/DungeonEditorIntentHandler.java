@@ -284,9 +284,7 @@ final class DungeonEditorIntentHandler {
     }
 
     private void consumeLabelNameInput(DungeonEditorStateViewInputEvent event) {
-        DungeonEditorRuntimeLabelTarget target = DungeonEditorRuntimeLabelTarget.from(
-                event.nameTargetKind(),
-                event.nameTargetId());
+        DungeonEditorRuntimeLabelTarget target = runtimeLabelTarget(stateContentModel.currentLabelNameTarget());
         statePanelDraftOperations.updateStatePanelLabelNameDraft(
                 target,
                 event.labelName());
@@ -296,6 +294,19 @@ final class DungeonEditorIntentHandler {
         transitionStairOperations.saveLabelName(
                 target,
                 event.labelName());
+    }
+
+    private static DungeonEditorRuntimeLabelTarget runtimeLabelTarget(
+            DungeonEditorStateContentModel.LabelNameTarget target
+    ) {
+        DungeonEditorStateContentModel.LabelNameTarget safeTarget = target == null
+                ? DungeonEditorStateContentModel.LabelNameTarget.empty()
+                : target;
+        return switch (safeTarget.kind()) {
+            case ROOM -> DungeonEditorRuntimeLabelTarget.room(safeTarget.id());
+            case CLUSTER -> DungeonEditorRuntimeLabelTarget.cluster(safeTarget.id());
+            case EMPTY -> DungeonEditorRuntimeLabelTarget.empty();
+        };
     }
 
     private void consumeCorridorPointInput(DungeonEditorStateViewInputEvent event) {

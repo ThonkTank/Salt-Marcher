@@ -1,7 +1,6 @@
 package src.domain.dungeon.published;
 
 import java.util.List;
-import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 
 public record DungeonEditorMapSnapshot(
@@ -43,9 +42,7 @@ public record DungeonEditorMapSnapshot(
             clusterId = Math.max(0L, clusterId);
             label = label == null || label.isBlank() ? kind : label.trim();
             cells = cells == null ? List.of() : List.copyOf(cells);
-            topologyRef = topologyRef == null
-                    ? new DungeonEditorTopologyElementRef(kind.toUpperCase(Locale.ROOT), id)
-                    : topologyRef;
+            topologyRef = topologyRef == null ? DungeonEditorTopologyElementRef.empty() : topologyRef;
         }
     }
 
@@ -64,9 +61,7 @@ public record DungeonEditorMapSnapshot(
             edge = edge == null
                     ? new DungeonEdgeRef(new DungeonCellRef(0, 0, 0), new DungeonCellRef(0, 0, 0))
                     : edge;
-            topologyRef = topologyRef == null
-                    ? new DungeonEditorTopologyElementRef(kind.toUpperCase(Locale.ROOT), id)
-                    : topologyRef;
+            topologyRef = topologyRef == null ? DungeonEditorTopologyElementRef.empty() : topologyRef;
         }
     }
 
@@ -87,9 +82,7 @@ public record DungeonEditorMapSnapshot(
             cells = cells == null ? List.of() : List.copyOf(cells);
             description = description == null ? "" : description.trim();
             destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
-            topologyRef = topologyRef == null
-                    ? new DungeonEditorTopologyElementRef(kind.toUpperCase(Locale.ROOT), id)
-                    : topologyRef;
+            topologyRef = topologyRef == null ? DungeonEditorTopologyElementRef.empty() : topologyRef;
         }
     }
 

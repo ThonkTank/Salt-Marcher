@@ -62,14 +62,6 @@ public final class DungeonEditorStatePanelLabelNameDrafts {
             return target.present();
         }
 
-        public String targetKind() {
-            return target.targetKind();
-        }
-
-        public long targetId() {
-            return target.targetId();
-        }
-
         public String fallbackName() {
             return target.fallbackName();
         }

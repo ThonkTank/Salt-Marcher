@@ -16,13 +16,18 @@ public final class SaveDungeonEditorAuthoredLabelNameUseCase {
         this.publishMutationUseCase = Objects.requireNonNull(publishMutationUseCase, "publishMutationUseCase");
     }
 
-    public void execute(MapId mapId, String targetKind, long targetId, String name) {
+    public void execute(
+            MapId mapId,
+            SaveDungeonEditorLabelNameUseCase.TargetKind targetType,
+            long targetId,
+            String name
+    ) {
         if (targetId <= 0L || name == null || name.isBlank()) {
             return;
         }
         ApplyDungeonEditorOperationUseCase.OperationResultData result = mutationUseCase.applySaveLabelName(
                 domainMapId(mapId),
-                targetKind,
+                targetType,
                 targetId,
                 name);
         publishMutationUseCase.execute(result);

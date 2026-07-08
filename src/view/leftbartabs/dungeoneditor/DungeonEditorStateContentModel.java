@@ -89,6 +89,14 @@ final class DungeonEditorStateContentModel {
         return null;
     }
 
+    LabelNameTarget currentLabelNameTarget() {
+        StateProjection currentProjection = stateProjection.get();
+        StateProjection safeProjection = currentProjection == null
+                ? StateProjection.initial()
+                : currentProjection;
+        return safeProjection.name() == null ? LabelNameTarget.empty() : safeProjection.name().target();
+    }
+
     static String transitionDestinationTypeKey(int optionIndex) {
         return optionIndex >= 0 && optionIndex < DESTINATION_TYPE_OPTIONS.size()
                 ? DESTINATION_TYPE_OPTIONS.get(optionIndex).key()
@@ -188,10 +196,22 @@ final class DungeonEditorStateContentModel {
                 ? target.name()
                 : currentName;
         return new NameProjection(
-                target.targetKind(),
-                target.targetId(),
+                labelNameTarget(target),
                 target.label(),
                 draft);
+    }
+
+    private static LabelNameTarget labelNameTarget(
+            DungeonEditorStatePanelLabelNameDrafts.Draft target
+    ) {
+        if (target == null || !target.targetPresent()) {
+            return LabelNameTarget.empty();
+        }
+        return switch (target.target().kind()) {
+            case ROOM -> LabelNameTarget.room(target.target().id());
+            case CLUSTER -> LabelNameTarget.cluster(target.target().id());
+            case EMPTY -> LabelNameTarget.empty();
+        };
     }
 
     private @Nullable CorridorPointProjection corridorPointProjection() {
@@ -339,12 +359,42 @@ final class DungeonEditorStateContentModel {
         }
     }
 
-    record NameProjection(String targetKind, long targetId, String label, String name) {
+    record NameProjection(LabelNameTarget target, String label, String name) {
         NameProjection {
-            targetKind = targetKind == null ? "" : targetKind;
-            targetId = Math.max(0L, targetId);
+            target = target == null ? LabelNameTarget.empty() : target;
             label = label == null || label.isBlank() ? "Name" : label;
             name = name == null ? "" : name;
+        }
+    }
+
+    record LabelNameTarget(Kind kind, long id) {
+        private static final LabelNameTarget EMPTY = new LabelNameTarget(Kind.EMPTY, 0L);
+
+        LabelNameTarget {
+            kind = kind == null ? Kind.EMPTY : kind;
+            id = Math.max(0L, id);
+            if (kind == Kind.EMPTY || id == 0L) {
+                kind = Kind.EMPTY;
+                id = 0L;
+            }
+        }
+
+        static LabelNameTarget empty() {
+            return EMPTY;
+        }
+
+        static LabelNameTarget room(long roomId) {
+            return new LabelNameTarget(Kind.ROOM, roomId);
+        }
+
+        static LabelNameTarget cluster(long clusterId) {
+            return new LabelNameTarget(Kind.CLUSTER, clusterId);
+        }
+
+        enum Kind {
+            EMPTY,
+            ROOM,
+            CLUSTER
         }
     }
 
