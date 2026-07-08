@@ -44,7 +44,7 @@ final class TravelAuthoredSurfaceTransitionProjectionMapper {
         if (destination.isDungeonMap()) {
             return TransitionDestination.dungeonMap(
                     destination.mapId(),
-                    destination.transitionId());
+                    destination.transitionTarget());
         }
         return TransitionDestination.unlinkedEntrance();
     }

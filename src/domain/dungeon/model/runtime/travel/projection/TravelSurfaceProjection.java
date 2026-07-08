@@ -193,22 +193,22 @@ public final class TravelSurfaceProjection {
             return List.copyOf(result);
         }
 
-        private static @Nullable TravelTransitionTarget transitionTarget(
+        private static TravelTransitionTarget transitionTarget(
                 @Nullable TransitionDestination destination
         ) {
             if (destination == null) {
-                return null;
+                return TravelTransitionTarget.absent();
             }
             if (destination.isOverworldTileDestination()) {
                 return TravelTransitionTarget.overworldTile(destination.mapId(), destination.tileId());
             }
             if (destination.isDungeonMapDestination()) {
-                return TravelTransitionTarget.dungeonMap(destination.mapId(), destination.transitionId());
+                return TravelTransitionTarget.dungeonMap(destination.mapId(), destination.transitionTarget());
             }
             if (destination.isUnlinkedEntranceDestination()) {
-                return null;
+                return TravelTransitionTarget.absent();
             }
-            return null;
+            return TravelTransitionTarget.absent();
         }
 
         private static String destinationLabel(TransitionDestination destination) {

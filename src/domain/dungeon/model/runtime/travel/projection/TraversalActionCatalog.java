@@ -71,7 +71,7 @@ final class TraversalActionCatalog {
                                 candidate.target().areaId(),
                                 candidate.target().tile(),
                                 candidate.link().headingFrom(candidate.source().tile(), position.heading())),
-                        null));
+                        TravelTransitionTarget.absent()));
             }
             return List.copyOf(actions);
         }

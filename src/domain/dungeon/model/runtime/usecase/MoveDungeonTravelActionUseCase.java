@@ -120,7 +120,7 @@ public final class MoveDungeonTravelActionUseCase {
 
         private MoveResultData moveTransition(TravelActionFacts action) {
             TravelTransitionTarget target = action.transitionTarget();
-            if (target == null) {
+            if (target.isAbsent()) {
                 return unavailableFromCurrent("Übergangsziel ist nicht verfügbar.");
             }
             if (target.isOverworldTileTarget()) {

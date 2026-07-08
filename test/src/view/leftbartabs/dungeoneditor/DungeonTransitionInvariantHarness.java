@@ -10,6 +10,7 @@ import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.Auth
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionEndpoint;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestinationTarget;
 
 final class DungeonTransitionInvariantHarness {
 
@@ -75,6 +76,10 @@ final class DungeonTransitionInvariantHarness {
         assertTrue(dungeonDestination.isValid(), "transition destination validates dungeon map id");
         assertEquals("Dungeon 12 / Übergang 20", dungeonDestination.label(),
                 "transition destination label includes linked target transition");
+        assertEquals(TransitionDestinationTarget.absent(), TransitionDestinationTarget.fromStorageId(0L),
+                "transition target owner translates legacy zero storage ids to named absence");
+        assertEquals(TransitionDestinationTarget.present(20L), dungeonDestination.transitionTarget(),
+                "transition destination preserves present target transition as a named value");
         assertTrue(overworldDestination.isValid(), "transition destination validates overworld tile");
         assertEquals("Overworld-Feld 9", overworldDestination.label(),
                 "transition destination label uses tile id");

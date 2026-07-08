@@ -989,24 +989,13 @@ public record DungeonEditorPreparedFrameFacts(
                 return TransitionDestination.empty();
             }
             if (runtimeDraft.present()) {
-                return new TransitionDestination(
+                return TransitionDestination.fromDraft(
                         runtimeDraft.destinationType(),
-                        positiveLong(runtimeDraft.mapId()),
-                        positiveLong(runtimeDraft.tileId()),
-                        positiveLong(runtimeDraft.transitionId()));
+                        runtimeDraft.mapId(),
+                        runtimeDraft.tileId(),
+                        runtimeDraft.transitionId());
             }
             return TransitionDestination.empty();
-        }
-
-        private static long positiveLong(String value) {
-            if (value == null || value.isBlank()) {
-                return 0L;
-            }
-            try {
-                return Math.max(0L, Long.parseLong(value.strip()));
-            } catch (NumberFormatException ignored) {
-                return 0L;
-            }
         }
 
     }

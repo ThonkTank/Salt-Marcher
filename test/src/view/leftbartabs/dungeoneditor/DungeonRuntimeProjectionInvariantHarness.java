@@ -20,6 +20,7 @@ import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestinationTarget;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionKind;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface;
@@ -118,7 +119,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
         assertTrue(traversal != null, "runtime path projection publishes traversal action");
         assertEquals(new Cell(1, 0, 0), traversal.targetPosition().tile(),
                 "runtime path projection recomputes traversal target from authored boundary facts");
-        assertEquals(null, traversal.transitionTarget(),
+        assertEquals(TravelTransitionTarget.absent(), traversal.transitionTarget(),
                 "runtime path projection keeps traversal state outside transition targets");
 
         TravelSurfaceFacts noLinkSurface = project(map, derivedState(derived.map().areas(), derived.map().boundaries()),
@@ -205,7 +206,8 @@ final class DungeonRuntimeProjectionInvariantHarness {
                         TravelHeading.SOUTH),
                 transition.targetPosition(),
                 "runtime transition projection recomputes local transition position from authored facts");
-        assertEquals(TravelTransitionTarget.dungeonMap(9L, 12L), transition.transitionTarget(),
+        assertEquals(TravelTransitionTarget.dungeonMap(9L, TransitionDestinationTarget.present(12L)),
+                transition.transitionTarget(),
                 "runtime transition projection recomputes transition target from authored destination facts");
 
         DungeonMap unlinkedMap = emptyMap.withTransitionCatalog(emptyMap.transitionCatalog().withCreated(
@@ -218,7 +220,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
         assertTrue(unlinkedTransition != null, "runtime transition projection publishes unlinked entrance action");
         assertEquals("Kein Ziel verknuepft", unlinkedTransition.destinationLabel(),
                 "runtime transition projection explains missing unlinked entrance destination");
-        assertEquals(null, unlinkedTransition.transitionTarget(),
+        assertEquals(TravelTransitionTarget.absent(), unlinkedTransition.transitionTarget(),
                 "runtime transition projection blocks travel target for unlinked entrance");
         assertUnlinkedTransitionMovementBlocked(unlinkedMap, unlinkedTransition);
     }
