@@ -32,22 +32,20 @@ Does not apply to:
 
 Current enforcement status:
 
-- `src/features/**` feature-runtime conformance is currently `Review-Owned`
-  unless a later document names a specific mechanical gate.
-- PROJECT_HEALTH_DEBT[PH-20260707-001]: review-owned feature-runtime topology fitness coverage remains retained without a narrow gate; owner=feature-runtime; remove_when=a named feature-runtime topology fitness gate or owner-approved equivalent proof covers the high-drift invariants.
+- `checkFeatureRuntimeEnforcement` is the named mechanical gate for focused
+  `src/features/**` placement plus the feature-runtime fitness invariants
+  listed below.
 - Existing `checkViewEnforcement` and `checkDomainEnforcement` routes do not
   prove feature-runtime conformance for `src/features/**`.
-- `checkFeatureRuntimeEnforcement` is a layering-backed scoped diagnostic for
-  `src/features/**` source-root placement only. It does not prove internal
-  feature-runtime topology or passive-carrier mirror absence inside
-  `src/features/**`.
+- The feature-runtime gate runs the layering-backed `src/features/**`
+  source-root placement diagnostics plus the `featureRuntimeFitness` bundle.
 - Active non-empty `src/features/**` source roots are allowed by the layering
-  `src/` direct-child allowlist. Their internal feature-runtime topology
-  remains Review-Owned until a later document names a specific mechanical gate.
-- The retained fitness-function gap is tracked as
-  [PH-20260708-001](../project-health-debt.md#ph-20260708-001---feature-runtime-fitness-function-gap);
-  that register entry is the active repair target, not a second source of
-  feature-runtime criteria.
+  `src/` direct-child allowlist. The feature-runtime fitness bundle adds a
+  narrow topology gate without forcing legacy `src/view/**` or `src/domain/**`
+  role chains into `src/features/**`.
+- The former retained fitness-function gap is closed as
+  [PH-20260707-001](../project-health-debt.md#ph-20260707-001---feature-runtime-fitness-function-gap);
+  remaining non-listed expectations stay Review-Owned.
 
 ## Current State And Target State
 
@@ -55,7 +53,8 @@ Current state:
 
 - SaltMarcher's canonical view and domain standards are still rooted in
   `src/view/**` and `src/domain/**`.
-- No current mechanical gate owns `src/features/**` feature-runtime topology.
+- `checkFeatureRuntimeEnforcement` owns the narrow feature-runtime fitness
+  invariants listed below.
 
 Target state:
 
@@ -98,6 +97,36 @@ Feature Runtime Architecture uses these target terms:
 These are architecture terms first, not mandatory filename suffixes for Wave 1.
 Future implementation waves may choose exact class names and local package
 splits, but they must preserve these ownership boundaries.
+
+## Mechanical Fitness Gate
+
+`./gradlew checkFeatureRuntimeEnforcement --console=plain` is mechanically
+enforced for these `src/features/**` invariants:
+
+- `feature-runtime-package-family-shape`: feature source files live only under
+  `runtime/`, `ui/`, `storage/`, or `shell/`.
+- `feature-runtime-runtime-root-presence`: every feature with runtime sources
+  declares exactly one public final `runtime/*FeatureRuntimeRoot.java` owner
+  that directly exposes the `RuntimeOperations` boundary and has a static
+  `create(...)` factory consuming `RuntimeDependencies`.
+- `feature-runtime-shell-binding-narrowness`: shell sources stay at the
+  `*FeatureShellBinding` or narrow `*Operations` seam and import only
+  JDK/JavaFX delivery APIs, shell public contracts, same-feature runtime APIs,
+  and same-feature domain readback/persistence seams.
+- `feature-runtime-compatibility-seam-locality`: retained
+  `*Compatibility.java` seams stay package-private inside `runtime/`, keep a
+  `LEGACY_REMOVE_ON_TOUCH` marker, and are referenced only by same-feature
+  runtime sources.
+- `layering-no-passive-carrier-shape-mirror-inside-feature-root`: the
+  feature-runtime route includes the layering passive-carrier mirror scanner
+  for `src/features/<feature>` roots so focused feature-runtime proof rejects
+  duplicated passive record/enum carrier shapes inside the migrated feature.
+
+The gate intentionally does not prove the full semantic adequacy of runtime
+state ownership, preview/commit owner identity, render-frame publication,
+storage behavior, UI raw-input behavior, or every compatibility inventory row.
+Those expectations remain Review-Owned unless a later owner names a sharper
+mechanical invariant.
 
 ## Target Package Shape
 

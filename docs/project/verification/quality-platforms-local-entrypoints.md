@@ -73,10 +73,11 @@ focused handoff lifecycle task.
 
 `tools/gradle/run-staged-verification.sh focused-handoff --path
 src/features/dungeon/runtime --area feature-runtime` is a valid focused route
-for feature-runtime source-root placement diagnostics. It selects the
-layering-backed `feature-runtime` surface and does not prove internal
-feature-runtime topology conformance or passive-carrier mirror absence inside
-`src/features/**`.
+for feature-runtime source-root placement and the named feature-runtime
+fitness invariants. It selects the layering-backed placement surface plus the
+feature-runtime-owned fitness bundle. It does not prove feature-runtime
+expectations outside the named mechanical rows in the Feature Runtime
+Architecture Standard.
 
 `focused-handoff` is not a replacement for `production-handoff`, not the proof
 route for shared verification-core lifecycle or routing changes, and not enough

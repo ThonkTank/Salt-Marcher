@@ -327,10 +327,7 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
     },
     bundle("layeringArchitecture", 11) {
         selectorTask("Internal selector for the dedicated Layering Architecture enforcement bundle.")
-        buildHarnessArchitectureRules(listOf(
-            "saltmarcher.architecture.layering.LayeringArchitectureTopologyRules",
-            "saltmarcher.architecture.layering.LayeringPassiveCarrierMirrorRules"
-        ))
+        buildHarnessArchitectureRules(listOf("saltmarcher.architecture.layering.LayeringArchitectureTopologyRules"))
         buildHarnessDocumentationCoverageSpecs(listOf("layeringArchitecture"))
         buildHarnessTopologyTask()
         buildHarnessDocumentationTask()
@@ -342,6 +339,11 @@ fun standardEnforcementBundleDescriptors(): List<EnforcementBundleDescriptor> = 
             sourceRoots = listOf("bootstrap", "shell", "src"),
             sourceIncludes = listOf("**/*.java")
         )
+    },
+    bundle("featureRuntimeFitness", 11) {
+        selectorTask("Internal selector for the dedicated Feature Runtime fitness enforcement bundle.")
+        buildHarnessArchitectureRules(listOf("saltmarcher.architecture.feature.FeatureRuntimeFitnessRules"))
+        buildHarnessTopologyTask()
     },
     bundle("shellAppShell", 11) {
         selectorTask("Internal selector for the dedicated AppShell lifecycle-hook ownership bundle.")
