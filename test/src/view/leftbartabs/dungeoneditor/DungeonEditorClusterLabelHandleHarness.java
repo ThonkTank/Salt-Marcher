@@ -17,7 +17,7 @@ import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
-import src.features.dungeon.runtime.DungeonEditorFeatureRuntimeRoot;
+import src.features.dungeon.shell.DungeonEditorFeatureShellBinding;
 import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreviewRenderDiffFrame;
 import src.features.dungeon.runtime.DungeonEditorRuntimeLabelTarget;
@@ -233,7 +233,7 @@ final class DungeonEditorClusterLabelHandleHarness {
                 "DE-LABEL-010 passive room label hover");
         assertRoomLabelHitAndEditorPresentation(binding, runtime, roomIds, roomLabelCenter, roomLabelText);
         DungeonEditorRuntimeOperations operations =
-                DungeonEditorFeatureRuntimeRoot.create(runtime.context().services()).operations();
+                new DungeonEditorFeatureShellBinding(runtime.context()).operations();
         operations.catalog().selectMap(roomMapId);
         operations.transitionStairs().saveLabelName(
                 DungeonEditorRuntimeLabelTarget.room(roomIds.roomId()),

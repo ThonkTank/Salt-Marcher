@@ -3,9 +3,17 @@ package src.features.dungeon.shell;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Platform;
+import shell.api.ServiceRegistry;
 import shell.api.ShellRuntimeContext;
+import src.domain.dungeon.model.core.repository.DungeonMapRepository;
+import src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository;
+import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository;
+import src.domain.dungeon.published.DungeonEditorControlsModel;
+import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
+import src.domain.dungeon.published.DungeonEditorStateModel;
 import src.features.dungeon.runtime.DungeonEditorFeatureRuntimeRoot;
 import src.features.dungeon.runtime.DungeonEditorRenderFrame;
+import src.features.dungeon.runtime.DungeonEditorRuntimeDependencies;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations;
 
 public final class DungeonEditorFeatureShellBinding {
@@ -13,7 +21,7 @@ public final class DungeonEditorFeatureShellBinding {
 
     public DungeonEditorFeatureShellBinding(ShellRuntimeContext runtimeContext) {
         ShellRuntimeContext safeRuntimeContext = Objects.requireNonNull(runtimeContext, "runtimeContext");
-        runtimeRoot = DungeonEditorFeatureRuntimeRoot.create(safeRuntimeContext.services());
+        runtimeRoot = DungeonEditorFeatureRuntimeRoot.create(dependencies(safeRuntimeContext.services()));
     }
 
     public DungeonEditorRuntimeOperations operations() {
@@ -34,6 +42,20 @@ public final class DungeonEditorFeatureShellBinding {
         JavaFxPublicationDelivery delivery =
                 new JavaFxPublicationDelivery(Objects.requireNonNull(sink, "sink"));
         delivery.deliver(runtimeRoot.currentPublication().frame());
+    }
+
+    private static DungeonEditorRuntimeDependencies dependencies(ServiceRegistry registry) {
+        ServiceRegistry services = Objects.requireNonNull(registry, "registry");
+        return new DungeonEditorRuntimeDependencies(
+                new DungeonEditorRuntimeDependencies.CompatibilityReadbackModels(
+                        services.require(DungeonEditorControlsModel.class),
+                        services.require(DungeonEditorMapSurfaceModel.class),
+                        services.require(DungeonEditorStateModel.class)),
+                new DungeonEditorRuntimeDependencies.PublishedStateRepositories(
+                        services.require(DungeonAuthoredPublishedStateRepository.class),
+                        services.require(DungeonEditorSnapshotPublishedStateRepository.class)),
+                new DungeonEditorRuntimeDependencies.AuthoredMapPersistence(
+                        services.require(DungeonMapRepository.class)));
     }
 
     private static final class JavaFxPublicationDelivery {
