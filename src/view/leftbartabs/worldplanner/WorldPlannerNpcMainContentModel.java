@@ -109,18 +109,6 @@ final class WorldPlannerNpcMainContentModel {
                         current.selectedGeneralNotes()));
     }
 
-    SearchProjection searchProjection(
-            String searchQuery,
-            Map<String, List<String>> filters
-    ) {
-        List<FilterGroup> groups = filterGroups(filters);
-        return new SearchProjection(
-                "NPCs suchen",
-                searchQuery,
-                groups,
-                filterChips(groups));
-    }
-
     private void retainSelection() {
         List<WorldNpcSummary> npcs = snapshot == null ? List.of() : snapshot.npcs();
         if (npcs.stream().noneMatch(npc -> npc.npcId() == selectedNpcId)) {
@@ -146,61 +134,6 @@ final class WorldPlannerNpcMainContentModel {
         return rows.get(index);
     }
 
-    private List<FilterGroup> filterGroups(Map<String, List<String>> filters) {
-        List<FilterOption> statblocks = projection.get()
-                .statblockLabels()
-                .stream()
-                .map(label -> option(idKey(label), label, selected(filters, "statblock", idKey(label))))
-                .toList();
-        return List.of(
-                group("status", "Status", List.of(
-                        option("ACTIVE", "Aktiv", selected(filters, "status", "ACTIVE")),
-                        option("DEFEATED", "Besiegt", selected(filters, "status", "DEFEATED")))),
-                group("statblock", "Statblock", statblocks));
-    }
-
-    private static List<FilterChip> filterChips(
-            List<FilterGroup> groups
-    ) {
-        return groups.stream()
-                .flatMap(group -> group.options().stream()
-                        .filter(FilterOption::selected)
-                        .map(option -> new FilterChip(
-                                group.key(),
-                                option.key(),
-                                group.label() + ": " + option.label())))
-                .toList();
-    }
-
-    private static FilterGroup group(
-            String key,
-            String label,
-            List<FilterOption> options
-    ) {
-        return new FilterGroup(key, label, options);
-    }
-
-    private static FilterOption option(
-            String key,
-            String label,
-            boolean selected
-    ) {
-        return new FilterOption(key, label, selected);
-    }
-
-    private static boolean selected(Map<String, List<String>> filters, String group, String key) {
-        List<String> selected = filters == null ? List.of() : filters.get(group);
-        return selected != null && selected.contains(key);
-    }
-
-    private static String idKey(String label) {
-        if (label == null || !label.startsWith("#")) {
-            return "";
-        }
-        int end = label.indexOf(' ');
-        return end > 1 ? label.substring(1, end) : label.substring(1);
-    }
-
     record StateProjection(String statusText, String nextActionText, NpcEditor npc) {
     }
 
@@ -213,23 +146,6 @@ final class WorldPlannerNpcMainContentModel {
             String historyNotes,
             String generalNotes
     ) {
-    }
-
-    record SearchProjection(
-            String searchPrompt,
-            String searchQuery,
-            List<FilterGroup> groups,
-            List<FilterChip> chips
-    ) {
-    }
-
-    record FilterGroup(String key, String label, List<FilterOption> options) {
-    }
-
-    record FilterOption(String key, String label, boolean selected) {
-    }
-
-    record FilterChip(String groupKey, String optionKey, String label) {
     }
 
     record Projection(

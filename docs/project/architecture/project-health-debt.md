@@ -75,24 +75,24 @@ Resolver field transitions are defined by the
 - Remove When: A later repair introduces a named feature-runtime topology or fitness gate, or an owner-approved equivalent proof route, that covers the high-drift invariants for active `src/features/**` code and the Dungeon Editor compatibility seam has either been removed or explicitly accepted by that proof route.
 - Last Checked: 2026-07-08
 
+## Removed Or Closed Debt
+
 ## PH-20260708-001 - World Planner ContributionModel Residual Mapping Hotspot
 
-- Status: Open
+- Status: False Positive
 - Resolution Mode: Next Matching Touch
-- Resolver Status: Open
-- Marker: src/view/leftbartabs/worldplanner/WorldPlannerContributionModel.java:15
-- Problem: `WorldPlannerContributionModel` no longer builds the module-owned filter and state decisions directly, but it still owns residual cross-content mapping into shared search/state/detail surfaces because the same-root ContentModel dependency boundary forbids module ContentModels from referencing those sibling or reusable ContentModels directly.
+- Resolver Status: False Positive
+- Marker: none - marker removed from src/view/leftbartabs/worldplanner/WorldPlannerContributionModel.java after the invalid `WorldPlannerFilterContentPartModel` dependency and mirrored module search carriers were removed, leaving only target ContributionModel orchestration into the reusable search control.
+- Problem: `WorldPlannerContributionModel` was recorded as residual debt for cross-content mapping into shared search/state/detail surfaces after the bounded module split. W10 follow-up proved two invalid alternatives: centralizing the search carrier in `WorldPlannerFilterContentPartModel` violates `ViewContributionModelDependencyBoundary`, while per-module `SearchProjection`/`Filter*` records violate `layering-no-passive-carrier-shape-mirror-inside-feature-root`.
 - Owner Areas: view-layer
 - Affected Paths: src/view/leftbartabs/worldplanner/WorldPlannerContributionModel.java
 - Related Symbols: WorldPlannerContributionModel.applySearchProjection, WorldPlannerContributionModel.detailProjection, WorldPlannerContributionModel.applyNpcState, WorldPlannerContributionModel.applyFactionState, WorldPlannerContributionModel.applyLocationState, WorldPlannerContributionModel.applySourceState
 - Intake Trigger: src/view/leftbartabs/worldplanner/**
-- Required Next Action: In the roadmap follow-up, replace the remaining aggregate search/state/detail mapping with an owner-approved module-owned projection path that preserves the ViewContentModelDependencyBoundary, or remove the marker if the target architecture confirms this aggregate mapping is the accepted boundary adapter.
-- Source Evidence: W8-S10 implementation pass on 2026-07-08; `tools/gradle/run-staged-verification.sh focused-handoff --path src/view/leftbartabs/worldplanner --area view` passed before residual materialization, and the first attempted direct ContentModel-to-ContentModel split failed `ViewContentModelDependencyBoundary`.
-- Decision: Retained as open view-layer debt because a broader redesign of the shared search/state/detail projection path would exceed the bounded W8-S10 worker slice and risks widening module APIs.
-- Remove When: roadmap follow-up replaces the remaining aggregate search/state/detail mapping with an owner-approved module-owned projection path, or owner review accepts the aggregate mapping as the target boundary adapter.
+- Required Next Action: none - target view-layer ownership accepts the aggregate ContributionModel as the boundary adapter that orchestrates child ContentModels and applies the one canonical reusable search-control projection, while module ContentModels keep component-specific filtering, selection, and render facts.
+- Source Evidence: W8-S10 implementation pass on 2026-07-08; `tools/gradle/run-staged-verification.sh focused-handoff --path src/view/leftbartabs/worldplanner --area view` passed before residual materialization; W10 production-handoff intake matched this entry; W10 production-handoff later rejected `WorldPlannerContributionModel -> WorldPlannerFilterContentPartModel` through `ViewContributionModelDependencyBoundary`; the W10-PH001 resolution pass removed mirrored module search carriers after `layering-no-passive-carrier-shape-mirror-inside-feature-root` rejected them; `docs/project/architecture/patterns/view-layer.md` defines `ContributionModel` as root-wide projection state owner that orchestrates child `ContentModel`s and defines `ContentModel`s as component-specific owners.
+- Decision: Closed as false positive for automatic debt intake after the boundary-invalid ContentPartModel dependency and mirrored module search carriers were removed. Direct module ContentModel-to-shared ContentModel mapping remains correctly rejected by `ViewContentModelDependencyBoundary`; direct ContributionModel-to-ContentPartModel sharing is rejected by `ViewContributionModelDependencyBoundary`; mirrored module search carrier records are rejected by the layering passive-carrier mirror rule. The remaining aggregate projection into shared search/state/detail surfaces is therefore the accepted root ContributionModel orchestration path, not hidden residual debt.
+- Remove When: false positive closed on 2026-07-08.
 - Last Checked: 2026-07-08
-
-## Removed Or Closed Debt
 
 ## PH-20260624-001 - Dungeon Editor Runtime View Target Bridge
 

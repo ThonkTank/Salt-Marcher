@@ -12,7 +12,6 @@ import src.domain.worldplanner.published.WorldNpcSummary;
 import src.domain.worldplanner.published.WorldPlannerSnapshot;
 import src.view.slotcontent.controls.searchfilter.SearchFilterControlsContentModel;
 
-// PROJECT_HEALTH_DEBT[PH-20260708-001]: World Planner aggregate still owns residual cross-content search/state/detail mapping after the bounded module split; owner=view-layer; remove_when=roadmap follow-up replaces the remaining aggregate mapping with an owner-approved module-owned projection path.
 final class WorldPlannerContributionModel {
 
     private static final int NPCS = 0;
@@ -292,106 +291,122 @@ final class WorldPlannerContributionModel {
     private void refreshSearchProjection() {
         ModuleFilterState state = activeFilterState();
         if (activeModuleIndex == FACTIONS) {
-            applySearchProjection(factionMainContentModel.searchProjection(state.query(), state.filters()));
+            applySearchProjection("Fraktionen suchen", state.query(), factionFilterGroups(state.filters()));
         } else if (activeModuleIndex == LOCATIONS) {
-            applySearchProjection(locationMainContentModel.searchProjection(state.query(), state.filters()));
+            applySearchProjection("Locations suchen", state.query(), locationFilterGroups(state.filters()));
         } else if (activeModuleIndex == SOURCES) {
-            applySearchProjection(sourceMainContentModel.searchProjection(state.query(), state.filters()));
+            applySearchProjection("Quellen suchen", state.query(), sourceFilterGroups(state.filters()));
         } else {
-            applySearchProjection(npcMainContentModel.searchProjection(state.query(), state.filters()));
+            applySearchProjection("NPCs suchen", state.query(), npcFilterGroups(state.filters()));
         }
     }
 
-    private void applySearchProjection(WorldPlannerNpcMainContentModel.SearchProjection projection) {
+    private void applySearchProjection(
+            String searchPrompt,
+            String searchQuery,
+            List<SearchFilterControlsContentModel.FilterGroup> groups
+    ) {
         searchFilterContentModel.applyProjection(new SearchFilterControlsContentModel.Projection(
-                projection.searchPrompt(),
-                projection.searchQuery(),
-                projection.groups().stream()
-                        .map(group -> new SearchFilterControlsContentModel.FilterGroup(
-                                group.key(),
-                                group.label(),
-                                group.options().stream()
-                                        .map(option -> new SearchFilterControlsContentModel.FilterOption(
-                                                option.key(),
-                                                option.label(),
-                                                option.selected()))
-                                        .toList()))
-                        .toList(),
-                projection.chips().stream()
-                        .map(chip -> new SearchFilterControlsContentModel.FilterChip(
-                                chip.groupKey(),
-                                chip.optionKey(),
-                                chip.label()))
+                searchPrompt,
+                searchQuery,
+                groups,
+                filterChips(groups)));
+    }
+
+    private List<SearchFilterControlsContentModel.FilterGroup> npcFilterGroups(
+            Map<String, List<String>> filters
+    ) {
+        List<SearchFilterControlsContentModel.FilterOption> statblocks = npcMainContentModel.projectionProperty()
+                .get()
+                .statblockLabels()
+                .stream()
+                .map(label -> option(idKey(label), label, selected(filters, "statblock", idKey(label))))
+                .toList();
+        return List.of(
+                group("status", "Status", List.of(
+                        option("ACTIVE", "Aktiv", selected(filters, "status", "ACTIVE")),
+                        option("DEFEATED", "Besiegt", selected(filters, "status", "DEFEATED")))),
+                group("statblock", "Statblock", statblocks));
+    }
+
+    private List<SearchFilterControlsContentModel.FilterGroup> factionFilterGroups(
+            Map<String, List<String>> filters
+    ) {
+        WorldPlannerFactionMainContentModel.Projection current = factionMainContentModel.projectionProperty().get();
+        return List.of(
+                group("table", "Tabelle", current.encounterTableLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, "table", idKey(label))))
+                        .toList()),
+                group("npc", "NPC", current.npcReferenceLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, "npc", idKey(label))))
+                        .toList()),
+                group("stock", "Bestand", List.of(
+                        option("finite", "Limitiert", selected(filters, "stock", "finite")),
+                        option("unlimited", "Unlimitiert", selected(filters, "stock", "unlimited")))));
+    }
+
+    private List<SearchFilterControlsContentModel.FilterGroup> locationFilterGroups(
+            Map<String, List<String>> filters
+    ) {
+        WorldPlannerLocationMainContentModel.Projection current = locationMainContentModel.projectionProperty().get();
+        return List.of(
+                group("faction", "Fraktion", current.factionReferenceLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, "faction", idKey(label))))
+                        .toList()),
+                group("table", "Tabelle", current.encounterTableLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, "table", idKey(label))))
                         .toList()));
     }
 
-    private void applySearchProjection(WorldPlannerFactionMainContentModel.SearchProjection projection) {
-        searchFilterContentModel.applyProjection(new SearchFilterControlsContentModel.Projection(
-                projection.searchPrompt(),
-                projection.searchQuery(),
-                projection.groups().stream()
-                        .map(group -> new SearchFilterControlsContentModel.FilterGroup(
-                                group.key(),
-                                group.label(),
-                                group.options().stream()
-                                        .map(option -> new SearchFilterControlsContentModel.FilterOption(
-                                                option.key(),
-                                                option.label(),
-                                                option.selected()))
-                                        .toList()))
-                        .toList(),
-                projection.chips().stream()
-                        .map(chip -> new SearchFilterControlsContentModel.FilterChip(
-                                chip.groupKey(),
-                                chip.optionKey(),
-                                chip.label()))
-                        .toList()));
+    private static List<SearchFilterControlsContentModel.FilterGroup> sourceFilterGroups(
+            Map<String, List<String>> filters
+    ) {
+        return List.of(
+                group("type", "Typ", List.of(
+                        option("faction", "Faction", selected(filters, "type", "faction")),
+                        option("location", "Location", selected(filters, "type", "location")))));
     }
 
-    private void applySearchProjection(WorldPlannerLocationMainContentModel.SearchProjection projection) {
-        searchFilterContentModel.applyProjection(new SearchFilterControlsContentModel.Projection(
-                projection.searchPrompt(),
-                projection.searchQuery(),
-                projection.groups().stream()
-                        .map(group -> new SearchFilterControlsContentModel.FilterGroup(
+    private static List<SearchFilterControlsContentModel.FilterChip> filterChips(
+            List<SearchFilterControlsContentModel.FilterGroup> groups
+    ) {
+        return groups.stream()
+                .flatMap(group -> group.options().stream()
+                        .filter(SearchFilterControlsContentModel.FilterOption::selected)
+                        .map(option -> new SearchFilterControlsContentModel.FilterChip(
                                 group.key(),
-                                group.label(),
-                                group.options().stream()
-                                        .map(option -> new SearchFilterControlsContentModel.FilterOption(
-                                                option.key(),
-                                                option.label(),
-                                                option.selected()))
-                                        .toList()))
-                        .toList(),
-                projection.chips().stream()
-                        .map(chip -> new SearchFilterControlsContentModel.FilterChip(
-                                chip.groupKey(),
-                                chip.optionKey(),
-                                chip.label()))
-                        .toList()));
+                                option.key(),
+                                group.label() + ": " + option.label())))
+                .toList();
     }
 
-    private void applySearchProjection(WorldPlannerSourceMainContentModel.SearchProjection projection) {
-        searchFilterContentModel.applyProjection(new SearchFilterControlsContentModel.Projection(
-                projection.searchPrompt(),
-                projection.searchQuery(),
-                projection.groups().stream()
-                        .map(group -> new SearchFilterControlsContentModel.FilterGroup(
-                                group.key(),
-                                group.label(),
-                                group.options().stream()
-                                        .map(option -> new SearchFilterControlsContentModel.FilterOption(
-                                                option.key(),
-                                                option.label(),
-                                                option.selected()))
-                                        .toList()))
-                        .toList(),
-                projection.chips().stream()
-                        .map(chip -> new SearchFilterControlsContentModel.FilterChip(
-                                chip.groupKey(),
-                                chip.optionKey(),
-                                chip.label()))
-                        .toList()));
+    private static SearchFilterControlsContentModel.FilterGroup group(
+            String key,
+            String label,
+            List<SearchFilterControlsContentModel.FilterOption> options
+    ) {
+        return new SearchFilterControlsContentModel.FilterGroup(key, label, options);
+    }
+
+    private static SearchFilterControlsContentModel.FilterOption option(
+            String key,
+            String label,
+            boolean selected
+    ) {
+        return new SearchFilterControlsContentModel.FilterOption(key, label, selected);
+    }
+
+    private static boolean selected(Map<String, List<String>> filters, String group, String key) {
+        List<String> selected = filters == null ? List.of() : filters.get(group);
+        return selected != null && selected.contains(key);
+    }
+
+    private static String idKey(String label) {
+        if (label == null || !label.startsWith("#")) {
+            return "";
+        }
+        int end = label.indexOf(' ');
+        return end > 1 ? label.substring(1, end) : label.substring(1);
     }
 
     private ModuleFilterState activeFilterState() {
