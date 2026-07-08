@@ -2,6 +2,7 @@ package src.domain.dungeon;
 
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.published.DungeonTopologyKind;
 
 final class DungeonTravelRuntimeMapProjectionServiceAssembly {
@@ -29,8 +30,10 @@ final class DungeonTravelRuntimeMapProjectionServiceAssembly {
         return new src.domain.dungeon.published.DungeonAreaSnapshot(
                 src.domain.dungeon.published.DungeonAreaKind.valueOf(area.kind().name()),
                 area.id(),
+                0L,
                 area.label(),
-                area.cells().stream().map(DungeonTravelRuntimeMapProjectionServiceAssembly::cell).toList());
+                area.cells().stream().map(DungeonTravelRuntimeMapProjectionServiceAssembly::cell).toList(),
+                topologyRef(area.topologyRef()));
     }
 
     private static src.domain.dungeon.published.DungeonBoundarySnapshot boundary(
@@ -40,7 +43,8 @@ final class DungeonTravelRuntimeMapProjectionServiceAssembly {
                 boundary.doorBoundary() ? "door" : "wall",
                 boundary.id(),
                 boundary.label(),
-                edge(boundary.edge()));
+                edge(boundary.edge()),
+                topologyRef(boundary.topologyRef()));
     }
 
     private static src.domain.dungeon.published.DungeonFeatureSnapshot feature(
@@ -52,7 +56,9 @@ final class DungeonTravelRuntimeMapProjectionServiceAssembly {
                 feature.label(),
                 feature.cells().stream().map(DungeonTravelRuntimeMapProjectionServiceAssembly::cell).toList(),
                 feature.description(),
-                feature.destinationLabel());
+                feature.destinationLabel(),
+                topologyRef(feature.topologyRef()),
+                null);
     }
 
     private static src.domain.dungeon.published.DungeonCellRef cell(Cell cell) {
@@ -68,5 +74,24 @@ final class DungeonTravelRuntimeMapProjectionServiceAssembly {
                 ? new Edge(new Cell(0, 0, 0), new Cell(0, 0, 0))
                 : edge;
         return new src.domain.dungeon.published.DungeonEdgeRef(cell(safeEdge.from()), cell(safeEdge.to()));
+    }
+
+    private static src.domain.dungeon.published.DungeonTopologyElementRef topologyRef(DungeonTopologyRef ref) {
+        if (ref == null) {
+            return src.domain.dungeon.published.DungeonTopologyElementRef.empty();
+        }
+        return new src.domain.dungeon.published.DungeonTopologyElementRef(
+                publishedTopologyKind(ref),
+                ref.id());
+    }
+
+    private static src.domain.dungeon.published.DungeonTopologyElementKind publishedTopologyKind(
+            DungeonTopologyRef ref
+    ) {
+        try {
+            return src.domain.dungeon.published.DungeonTopologyElementKind.valueOf(ref.kind().name());
+        } catch (IllegalArgumentException exception) {
+            return src.domain.dungeon.published.DungeonTopologyElementKind.EMPTY;
+        }
     }
 }

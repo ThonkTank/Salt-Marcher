@@ -5,6 +5,8 @@ import java.util.List;
 import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.CellOrdering;
 import src.domain.dungeon.model.core.graph.DungeonRelationGraph;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
 
@@ -39,7 +41,8 @@ final class DungeonStairFeatureProjection {
                 CellOrdering.sortedCells(stair.occupiedCells()),
                 stairDescription(stair, exits),
                 stairDestinationLabel(exits),
-                stairFacts(stair)));
+                stairFacts(stair),
+                new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId())));
         if (stair.corridorId() != null) {
             relations.add(new DungeonRelationGraph.FeatureRelation(
                     stair.stairId(),

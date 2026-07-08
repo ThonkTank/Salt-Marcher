@@ -47,7 +47,8 @@ final class TravelSurfaceMapProjectionMapper {
                 TravelDungeonSessionValues.AreaKind.fromName(area.kind().name()),
                 area.id(),
                 area.label(),
-                area.cells().stream().map(TravelGeometryProjectionMapper::cellOrOrigin).toList());
+                area.cells().stream().map(TravelGeometryProjectionMapper::cellOrOrigin).toList(),
+                area.topologyRef());
     }
 
     private static List<TravelDungeonSessionSurface.BoundaryData> toRuntimeBoundaries(
@@ -70,7 +71,8 @@ final class TravelSurfaceMapProjectionMapper {
                 "door".equalsIgnoreCase(boundary.kind()),
                 boundary.id(),
                 boundary.label(),
-                TravelGeometryProjectionMapper.edgeOrOrigin(boundary.edge()));
+                TravelGeometryProjectionMapper.edgeOrOrigin(boundary.edge()),
+                boundary.topologyRef());
     }
 
     private static List<TravelDungeonSessionSurface.FeatureData> toRuntimeFeatures(List<DungeonFeatureFacts> features) {
@@ -98,6 +100,7 @@ final class TravelSurfaceMapProjectionMapper {
                 feature.label(),
                 feature.cells().stream().map(TravelGeometryProjectionMapper::cellOrOrigin).toList(),
                 feature.description(),
-                feature.destinationLabel());
+                feature.destinationLabel(),
+                feature.topologyRef());
     }
 }

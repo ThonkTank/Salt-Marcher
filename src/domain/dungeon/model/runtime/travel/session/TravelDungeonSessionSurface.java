@@ -5,6 +5,7 @@ import java.util.Locale;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.ActionKind;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.AreaKind;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.ContextKind;
@@ -143,13 +144,15 @@ public final class TravelDungeonSessionSurface {
             AreaKind kind,
             long id,
             String label,
-            List<Cell> cells
+            List<Cell> cells,
+            DungeonTopologyRef topologyRef
     ) {
         public AreaData {
             kind = kind == null ? AreaKind.defaultKind() : kind;
             id = Math.max(1L, id);
             label = label == null || label.isBlank() ? kind.defaultLabel() : label.trim();
             cells = cells == null ? List.of() : List.copyOf(cells);
+            topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
         }
 
         @Override
@@ -162,12 +165,14 @@ public final class TravelDungeonSessionSurface {
             boolean doorBoundary,
             long id,
             String label,
-            Edge edge
+            Edge edge,
+            DungeonTopologyRef topologyRef
     ) {
         public BoundaryData {
             id = Math.max(1L, id);
             label = label == null || label.isBlank() ? (doorBoundary ? "door" : "wall") : label.trim();
             edge = edge == null ? new Edge(new Cell(0, 0, 0), new Cell(0, 0, 0)) : edge;
+            topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
         }
     }
 
@@ -177,7 +182,8 @@ public final class TravelDungeonSessionSurface {
             String label,
             List<Cell> cells,
             String description,
-            String destinationLabel
+            String destinationLabel,
+            DungeonTopologyRef topologyRef
     ) {
         public FeatureData {
             kind = kind == null ? FeatureKind.defaultKind() : kind;
@@ -186,6 +192,7 @@ public final class TravelDungeonSessionSurface {
             cells = cells == null ? List.of() : List.copyOf(cells);
             description = description == null ? "" : description.trim();
             destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
+            topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
         }
 
         @Override

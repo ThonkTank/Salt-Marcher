@@ -22,7 +22,7 @@ public record DungeonFeatureSnapshot(
             String description,
             String destinationLabel
     ) {
-        this(kind, id, label, cells, description, destinationLabel, defaultTopologyRef(kind, id), null);
+        this(kind, id, label, cells, description, destinationLabel, DungeonTopologyElementRef.empty(), null);
     }
 
     public DungeonFeatureSnapshot {
@@ -32,9 +32,7 @@ public record DungeonFeatureSnapshot(
         cells = immutableCells(cells);
         description = cleanText(description);
         destinationLabel = cleanText(destinationLabel);
-        topologyRef = topologyRef == null
-                ? new DungeonTopologyElementRef(featureTopologyKind(kind), id)
-                : topologyRef;
+        topologyRef = topologyRef == null ? DungeonTopologyElementRef.empty() : topologyRef;
     }
 
     @Override
@@ -62,25 +60,4 @@ public record DungeonFeatureSnapshot(
         return text == null ? "" : text.trim();
     }
 
-    private static DungeonTopologyElementKind featureTopologyKind(DungeonFeatureKind kind) {
-        return kind == DungeonFeatureKind.TRANSITION
-                ? DungeonTopologyElementKind.TRANSITION
-                : defaultNonTransitionTopologyKind(kind);
-    }
-
-    private static DungeonTopologyElementKind defaultNonTransitionTopologyKind(DungeonFeatureKind kind) {
-        if (kind == DungeonFeatureKind.STAIR) {
-            return DungeonTopologyElementKind.STAIR;
-        }
-        return isMarker(kind) ? DungeonTopologyElementKind.FEATURE_MARKER : DungeonTopologyElementKind.EMPTY;
-    }
-
-    private static boolean isMarker(DungeonFeatureKind kind) {
-        return kind == DungeonFeatureKind.OBJECT || kind == DungeonFeatureKind.ENCOUNTER || kind == DungeonFeatureKind.POI;
-    }
-
-    private static DungeonTopologyElementRef defaultTopologyRef(DungeonFeatureKind kind, long id) {
-        DungeonFeatureKind safeKind = defaultKind(kind);
-        return new DungeonTopologyElementRef(featureTopologyKind(safeKind), positiveId(id));
-    }
 }

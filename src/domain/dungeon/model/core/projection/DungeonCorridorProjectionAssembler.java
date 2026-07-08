@@ -49,7 +49,13 @@ final class DungeonCorridorProjectionAssembler {
                 "Corridor " + corridor.corridorId(),
                 cells);
         aggregates.add(aggregate);
-        areas.add(new DungeonAreaFacts(aggregate.kind(), aggregate.id(), aggregate.label(), aggregate.cells()));
+        areas.add(new DungeonAreaFacts(
+                aggregate.kind(),
+                aggregate.id(),
+                0L,
+                aggregate.label(),
+                aggregate.cells(),
+                new DungeonTopologyRef(DungeonTopologyElementKind.CORRIDOR, corridor.corridorId())));
         for (DungeonCorridorEndpointResolver.CorridorEndpoint endpoint : endpoints) {
             if (endpoint.isDoor()) {
                 addDoorEndpoint(corridor, endpoint);

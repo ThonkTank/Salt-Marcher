@@ -3,6 +3,8 @@ package src.domain.dungeon.model.core.projection;
 import java.util.List;
 import java.util.Map;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 
 public final class DungeonRoomAggregateProjection {
@@ -26,7 +28,8 @@ public final class DungeonRoomAggregateProjection {
                     aggregate.id(),
                     clusterId,
                     aggregate.label(),
-                    aggregate.cells()));
+                    aggregate.cells(),
+                    new DungeonTopologyRef(DungeonTopologyElementKind.ROOM, room.roomId())));
         }
     }
 }

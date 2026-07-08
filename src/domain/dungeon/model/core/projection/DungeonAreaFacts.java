@@ -3,7 +3,6 @@ package src.domain.dungeon.model.core.projection;
 import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public final class DungeonAreaFacts {
@@ -30,7 +29,7 @@ public final class DungeonAreaFacts {
             String label,
             List<Cell> cells
     ) {
-        this(kind, id, clusterId, label, cells, defaultTopologyRef(kind, id));
+        this(kind, id, clusterId, label, cells, DungeonTopologyRef.empty());
     }
 
     public DungeonAreaFacts(
@@ -46,13 +45,7 @@ public final class DungeonAreaFacts {
         this.clusterId = Math.max(0L, clusterId);
         this.label = label == null || label.isBlank() ? "Area" : label;
         this.cells = cells == null ? List.of() : List.copyOf(cells);
-        this.topologyRef = topologyRef == null
-                ? new DungeonTopologyRef(
-                        this.kind == DungeonAreaType.CORRIDOR
-                                ? DungeonTopologyElementKind.CORRIDOR
-                                : DungeonTopologyElementKind.ROOM,
-                        id)
-                : topologyRef;
+        this.topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
     public DungeonAreaType kind() {
@@ -77,15 +70,6 @@ public final class DungeonAreaFacts {
 
     public DungeonTopologyRef topologyRef() {
         return topologyRef;
-    }
-
-    private static DungeonTopologyRef defaultTopologyRef(DungeonAreaType kind, long id) {
-        DungeonAreaType safeKind = kind == null ? DungeonAreaType.ROOM : kind;
-        return new DungeonTopologyRef(
-                safeKind == DungeonAreaType.CORRIDOR
-                        ? DungeonTopologyElementKind.CORRIDOR
-                        : DungeonTopologyElementKind.ROOM,
-                id);
     }
 
     @Override
