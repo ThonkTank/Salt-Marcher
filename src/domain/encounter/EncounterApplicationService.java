@@ -54,10 +54,8 @@ public final class EncounterApplicationService {
                     initiativeIds.get(index),
                     initiativeScores.get(index).intValue()));
         }
-        ApplyEncounterStateUseCase.Action action =
-                ApplyEncounterStateUseCase.Action.fromCode(command.actionCode());
         return new ApplyEncounterStateUseCase.Request(
-                action,
+                command.actionCode(),
                 command.creatureId(),
                 command.planId(),
                 command.worldNpcId(),
