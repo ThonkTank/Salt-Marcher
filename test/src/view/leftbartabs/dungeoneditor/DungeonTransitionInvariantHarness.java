@@ -76,7 +76,7 @@ final class DungeonTransitionInvariantHarness {
         assertTrue(dungeonDestination.isValid(), "transition destination validates dungeon map id");
         assertEquals("Dungeon 12 / Übergang 20", dungeonDestination.label(),
                 "transition destination label includes linked target transition");
-        assertEquals(TransitionDestinationTarget.absent(), TransitionDestinationTarget.fromStorageId(0L),
+        assertEquals(TransitionDestinationTarget.absent(), TransitionDestinationTarget.fromPositiveId(0L),
                 "transition target owner translates legacy zero storage ids to named absence");
         assertEquals(TransitionDestinationTarget.present(20L), dungeonDestination.transitionTarget(),
                 "transition destination preserves present target transition as a named value");

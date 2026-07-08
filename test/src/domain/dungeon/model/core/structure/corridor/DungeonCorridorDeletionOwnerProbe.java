@@ -13,6 +13,7 @@ import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
 
 public final class DungeonCorridorDeletionOwnerProbe {
     private static final long CORRIDOR_ID = 20L;
+    private static final CorridorMapAuthoring CORRIDOR_AUTHORING = new CorridorMapAuthoring();
 
     private DungeonCorridorDeletionOwnerProbe() {
     }
@@ -37,7 +38,8 @@ public final class DungeonCorridorDeletionOwnerProbe {
                         base.featureMarkers()),
                 base.revision());
 
-        DungeonMap rejected = withCorridor.deleteCorridor(
+        DungeonMap rejected = CORRIDOR_AUTHORING.deleteCorridor(
+                withCorridor,
                 CorridorDeletionTarget.corridorWaypoint(CORRIDOR_ID, 0));
 
         assertEquals(withCorridor, rejected,

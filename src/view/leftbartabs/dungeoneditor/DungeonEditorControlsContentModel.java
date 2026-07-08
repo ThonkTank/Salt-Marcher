@@ -376,43 +376,15 @@ final class DungeonEditorControlsContentModel {
         return DungeonEditorToolPaletteContentPartModel.graphViewLabel();
     }
 
-    static String wallPathModeOptionKey() {
-        return DungeonEditorToolPaletteContentPartModel.wallPathModeOptionKey();
-    }
-
-    static String wallSingleClickModeOptionKey() {
-        return DungeonEditorToolPaletteContentPartModel.wallSingleClickModeOptionKey();
-    }
-
     boolean wallSingleClickModeSelected() {
         return toolPalette.wallSingleClickModeSelected();
-    }
-
-    static String labelOf(@Nullable String tool) {
-        return DungeonEditorToolPaletteContentPartModel.labelOf(tool);
     }
 
     static String normalizeViewModeKey(@Nullable String viewModeKey) {
         return DungeonEditorToolPaletteContentPartModel.normalizeViewModeKey(viewModeKey);
     }
 
-    static String normalizedToolKey(@Nullable String selectedToolKey) {
-        return DungeonEditorToolPaletteContentPartModel.normalizedToolKey(selectedToolKey);
-    }
-
     private static String normalizeModeKey(@Nullable String modeKey) {
         return DungeonEditorProjectionOverlayContentPartModel.normalizeModeKey(modeKey);
-    }
-
-    private static String overlayOffMode() {
-        return DungeonEditorProjectionOverlayContentPartModel.overlayOffMode();
-    }
-
-    private static String overlayNearbyMode() {
-        return DungeonEditorProjectionOverlayContentPartModel.overlayNearbyMode();
-    }
-
-    private static String overlaySelectedMode() {
-        return DungeonEditorProjectionOverlayContentPartModel.overlaySelectedMode();
     }
 }

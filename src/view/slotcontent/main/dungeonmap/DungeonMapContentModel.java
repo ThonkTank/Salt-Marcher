@@ -1652,10 +1652,6 @@ public final class DungeonMapContentModel {
             return targetKind == PreparedTargetKind.MARKER;
         }
 
-        public boolean isClusterLabelTarget() {
-            return isLabelTarget() && labelKind == PreparedLabelKind.CLUSTER_LABEL;
-        }
-
         public boolean isRoomLabelTarget() {
             return isLabelTarget() && labelKind == PreparedLabelKind.ROOM_LABEL;
         }

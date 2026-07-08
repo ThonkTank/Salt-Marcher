@@ -11,25 +11,6 @@ public record DungeonAreaSnapshot(
         DungeonTopologyElementRef topologyRef
 ) {
 
-    public DungeonAreaSnapshot(
-            DungeonAreaKind kind,
-            long id,
-            String label,
-            List<DungeonCellRef> cells
-    ) {
-        this(kind, id, 0L, label, cells);
-    }
-
-    public DungeonAreaSnapshot(
-            DungeonAreaKind kind,
-            long id,
-            long clusterId,
-            String label,
-            List<DungeonCellRef> cells
-    ) {
-        this(kind, id, clusterId, label, cells, DungeonTopologyElementRef.empty());
-    }
-
     public DungeonAreaSnapshot {
         kind = kind == null ? DungeonAreaKind.ROOM : kind;
         id = Math.max(1L, id);

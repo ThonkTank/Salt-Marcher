@@ -109,10 +109,6 @@ final class DungeonEditorToolPaletteContentPartModel {
         return ToolPresentation.normalizeViewModeKey(viewModeKey);
     }
 
-    static String normalizedToolKey(@Nullable String selectedToolKey) {
-        return ToolPresentation.toPublishedToolKey(selectedToolKey);
-    }
-
     private static DungeonEditorControlsContentModel.ToolControls currentToolControls(
             Map<ToolFamily, String> selectedFamilyOptionKeys
     ) {

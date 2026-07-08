@@ -20,43 +20,51 @@ public final class PublishTravelDungeonSessionUseCase {
         this.publishedStateRepository = Objects.requireNonNull(publishedStateRepository, "publishedStateRepository");
     }
 
-    public void execute(
-            Action action,
-            String actionId,
-            int projectionLevel,
-            String overlayModeKey,
-            int overlayLevelRange,
-            double overlayOpacity,
-            List<Integer> overlaySelectedLevels
-    ) {
+    public void execute(Command command) {
         SnapshotData snapshot = applyTravelDungeonSessionUseCase.applyCommand(
-                toRuntimeAction(action),
-                actionId,
-                projectionLevel,
-                overlayModeKey,
-                overlayLevelRange,
-                overlayOpacity,
-                overlaySelectedLevels);
+                Objects.requireNonNull(command, "command").travelCommand);
         publishedStateRepository.publishCurrentSession(snapshot);
     }
 
-    private static TravelDungeonSessionCommand.Action toRuntimeAction(Action action) {
-        return switch (Objects.requireNonNull(action, "action")) {
-            case REFRESH -> TravelDungeonSessionCommand.Action.REFRESH;
-            case ACTION -> TravelDungeonSessionCommand.Action.ACTION;
-            case SELECT_MAP -> TravelDungeonSessionCommand.Action.SELECT_MAP;
-            case SET_PROJECTION_LEVEL -> TravelDungeonSessionCommand.Action.SET_PROJECTION_LEVEL;
-            case SHIFT_PROJECTION_LEVEL -> TravelDungeonSessionCommand.Action.SHIFT_PROJECTION_LEVEL;
-            case SET_OVERLAY -> TravelDungeonSessionCommand.Action.SET_OVERLAY;
-        };
-    }
+    public static final class Command {
 
-    public enum Action {
-        REFRESH,
-        ACTION,
-        SELECT_MAP,
-        SET_PROJECTION_LEVEL,
-        SHIFT_PROJECTION_LEVEL,
-        SET_OVERLAY
+        private final TravelDungeonSessionCommand travelCommand;
+
+        private Command(TravelDungeonSessionCommand travelCommand) {
+            this.travelCommand = Objects.requireNonNull(travelCommand, "travelCommand");
+        }
+
+        public static Command refresh() {
+            return new Command(TravelDungeonSessionCommand.refresh());
+        }
+
+        public static Command travelAction(String actionId) {
+            return new Command(TravelDungeonSessionCommand.travelAction(actionId));
+        }
+
+        public static Command selectMap(String mapIdValue) {
+            return new Command(TravelDungeonSessionCommand.selectMap(mapIdValue));
+        }
+
+        public static Command setProjectionLevel(int projectionLevel) {
+            return new Command(TravelDungeonSessionCommand.setProjectionLevel(projectionLevel));
+        }
+
+        public static Command shiftProjectionLevel(int projectionLevelShift) {
+            return new Command(TravelDungeonSessionCommand.shiftProjectionLevel(projectionLevelShift));
+        }
+
+        public static Command setOverlay(
+                String overlayModeKey,
+                int overlayLevelRange,
+                double overlayOpacity,
+                List<Integer> overlaySelectedLevels
+        ) {
+            return new Command(TravelDungeonSessionCommand.setOverlay(
+                    overlayModeKey,
+                    overlayLevelRange,
+                    overlayOpacity,
+                    overlaySelectedLevels));
+        }
     }
 }

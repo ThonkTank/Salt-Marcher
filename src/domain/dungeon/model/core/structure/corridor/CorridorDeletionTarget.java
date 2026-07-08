@@ -83,11 +83,4 @@ public final class CorridorDeletionTarget {
         return targetType == TargetType.CORRIDOR_WAYPOINT;
     }
 
-    public boolean hasBindingTarget() {
-        return topologyRefId > 0L || roomId > 0L;
-    }
-
-    public boolean hasAnchorTarget() {
-        return topologyRefId > 0L;
-    }
 }

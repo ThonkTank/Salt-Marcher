@@ -16,25 +16,6 @@ public final class DungeonAreaFacts {
     public DungeonAreaFacts(
             DungeonAreaType kind,
             long id,
-            String label,
-            List<Cell> cells
-    ) {
-        this(kind, id, 0L, label, cells);
-    }
-
-    public DungeonAreaFacts(
-            DungeonAreaType kind,
-            long id,
-            long clusterId,
-            String label,
-            List<Cell> cells
-    ) {
-        this(kind, id, clusterId, label, cells, DungeonTopologyRef.empty());
-    }
-
-    public DungeonAreaFacts(
-            DungeonAreaType kind,
-            long id,
             long clusterId,
             String label,
             List<Cell> cells,

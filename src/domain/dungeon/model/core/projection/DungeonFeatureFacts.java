@@ -25,27 +25,6 @@ public record DungeonFeatureFacts(
             List<Cell> cells,
             String description,
             String destinationLabel,
-            List<String> facts
-    ) {
-        this(
-                kind,
-                id,
-                label,
-                cells,
-                description,
-                destinationLabel,
-                facts,
-                DungeonTopologyRef.empty(),
-                null);
-    }
-
-    public DungeonFeatureFacts(
-            DungeonFeatureType kind,
-            long id,
-            String label,
-            List<Cell> cells,
-            String description,
-            String destinationLabel,
             List<String> facts,
             DungeonTopologyRef topologyRef
     ) {

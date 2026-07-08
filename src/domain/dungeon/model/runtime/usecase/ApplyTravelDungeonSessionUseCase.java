@@ -30,39 +30,36 @@ public final class ApplyTravelDungeonSessionUseCase {
                 Objects.requireNonNull(stabilizeTravelDungeonProjectionUseCase, "stabilizeTravelDungeonProjectionUseCase");
     }
 
-    public SnapshotData applyCommand(
-            TravelDungeonSessionCommand.Action action,
-            String actionId,
-            int projectionLevel,
-            String overlayModeKey,
-            int overlayLevelRange,
-            double overlayOpacity,
-            List<Integer> overlaySelectedLevels
-    ) {
-        return apply(new TravelDungeonSessionCommand(
-                action,
-                actionId,
-                projectionLevel,
-                overlayModeKey,
-                overlayLevelRange,
-                overlayOpacity,
-                overlaySelectedLevels));
+    public SnapshotData applyCommand(TravelDungeonSessionCommand command) {
+        return apply(command);
     }
 
     private SnapshotData apply(TravelDungeonSessionCommand command) {
         TravelDungeonSessionCommand safeCommand = Objects.requireNonNull(command, "command");
-        return switch (safeCommand.action()) {
-            case REFRESH -> refresh();
-            case ACTION -> move(safeCommand.actionId());
-            case SELECT_MAP -> selectMap(safeCommand.actionId());
-            case SET_PROJECTION_LEVEL -> setProjectionLevel(safeCommand.projectionLevel());
-            case SHIFT_PROJECTION_LEVEL -> setProjectionLevel(session.projectionLevel() + safeCommand.projectionLevel());
-            case SET_OVERLAY -> setOverlay(
-                    safeCommand.overlayModeKey(),
-                    safeCommand.overlayLevelRange(),
-                    safeCommand.overlayOpacity(),
-                    safeCommand.overlaySelectedLevels());
-        };
+        TravelDungeonSessionCommand.Variant variant = safeCommand.variant();
+        if (variant instanceof TravelDungeonSessionCommand.Refresh) {
+            return refresh();
+        }
+        if (variant instanceof TravelDungeonSessionCommand.TravelAction travelAction) {
+            return move(travelAction.actionId());
+        }
+        if (variant instanceof TravelDungeonSessionCommand.SelectMap selectMap) {
+            return selectMap(selectMap.mapIdValue());
+        }
+        if (variant instanceof TravelDungeonSessionCommand.SetProjectionLevel setProjectionLevel) {
+            return setProjectionLevel(setProjectionLevel.projectionLevel());
+        }
+        if (variant instanceof TravelDungeonSessionCommand.ShiftProjectionLevel shiftProjectionLevel) {
+            return setProjectionLevel(session.projectionLevel() + shiftProjectionLevel.projectionLevelShift());
+        }
+        if (variant instanceof TravelDungeonSessionCommand.SetOverlay setOverlay) {
+            return setOverlay(
+                    setOverlay.overlayModeKey(),
+                    setOverlay.overlayLevelRange(),
+                    setOverlay.overlayOpacity(),
+                    setOverlay.overlaySelectedLevels());
+        }
+        throw new IllegalStateException("Unhandled travel dungeon session command: " + variant);
     }
 
     private SnapshotData refresh() {

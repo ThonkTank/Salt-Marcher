@@ -21,10 +21,6 @@ public final class DungeonEditorSessionValues {
             this.name = name;
         }
 
-        public static ViewMode fromName(@Nullable String name) {
-            return "GRAPH".equals(name) ? GRAPH : GRID;
-        }
-
         public static ViewMode defaultMode() {
             return GRID;
         }
@@ -92,16 +88,6 @@ public final class DungeonEditorSessionValues {
             this.name = name;
         }
 
-        public static Tool fromName(@Nullable String name) {
-            String safeName = name == null ? SELECT.name : name;
-            for (Tool tool : VALUES) {
-                if (tool.name.equals(safeName)) {
-                    return tool;
-                }
-            }
-            return SELECT;
-        }
-
         public static Tool defaultTool() {
             return SELECT;
         }
@@ -149,10 +135,6 @@ public final class DungeonEditorSessionValues {
         private final double opacity;
         private final List<Integer> selectedLevels;
 
-        public OverlaySettings(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
-            this(Mode.fromKey(modeKey), levelRange, opacity, selectedLevels);
-        }
-
         public OverlaySettings(Mode mode, int levelRange, double opacity, List<Integer> selectedLevels) {
             this.mode = mode == null ? Mode.OFF : mode;
             this.levelRange = Math.max(0, levelRange);
@@ -162,10 +144,6 @@ public final class DungeonEditorSessionValues {
 
         public static OverlaySettings defaults() {
             return new OverlaySettings(Mode.OFF, 2, 0.35, List.of());
-        }
-
-        public Mode mode() {
-            return mode;
         }
 
         public String modeKey() {
@@ -213,17 +191,6 @@ public final class DungeonEditorSessionValues {
             OFF,
             NEARBY,
             SELECTED;
-
-            private static Mode fromKey(@Nullable String modeKey) {
-                if (modeKey == null || modeKey.isBlank()) {
-                    return OFF;
-                }
-                try {
-                    return Mode.valueOf(modeKey.strip());
-                } catch (IllegalArgumentException ignored) {
-                    return OFF;
-                }
-            }
         }
     }
 

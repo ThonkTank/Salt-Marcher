@@ -18,6 +18,8 @@ final class WorldPlannerContributionModel {
     private static final int FACTIONS = 1;
     private static final int LOCATIONS = 2;
     private static final int SOURCES = 3;
+    private static final String TABLE_KEY = "table";
+    private static final String FACTION_KEY = "faction";
     private final WorldPlannerControlsContentModel controlsContentModel;
     private final SearchFilterControlsContentModel searchFilterContentModel;
     private final WorldPlannerNpcMainContentModel npcMainContentModel;
@@ -334,8 +336,8 @@ final class WorldPlannerContributionModel {
     ) {
         WorldPlannerFactionMainContentModel.Projection current = factionMainContentModel.projectionProperty().get();
         return List.of(
-                group("table", "Tabelle", current.encounterTableLabels().stream()
-                        .map(label -> option(idKey(label), label, selected(filters, "table", idKey(label))))
+                group(TABLE_KEY, "Tabelle", current.encounterTableLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, TABLE_KEY, idKey(label))))
                         .toList()),
                 group("npc", "NPC", current.npcReferenceLabels().stream()
                         .map(label -> option(idKey(label), label, selected(filters, "npc", idKey(label))))
@@ -350,11 +352,11 @@ final class WorldPlannerContributionModel {
     ) {
         WorldPlannerLocationMainContentModel.Projection current = locationMainContentModel.projectionProperty().get();
         return List.of(
-                group("faction", "Fraktion", current.factionReferenceLabels().stream()
-                        .map(label -> option(idKey(label), label, selected(filters, "faction", idKey(label))))
+                group(FACTION_KEY, "Fraktion", current.factionReferenceLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, FACTION_KEY, idKey(label))))
                         .toList()),
-                group("table", "Tabelle", current.encounterTableLabels().stream()
-                        .map(label -> option(idKey(label), label, selected(filters, "table", idKey(label))))
+                group(TABLE_KEY, "Tabelle", current.encounterTableLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, TABLE_KEY, idKey(label))))
                         .toList()));
     }
 
@@ -363,7 +365,7 @@ final class WorldPlannerContributionModel {
     ) {
         return List.of(
                 group("type", "Typ", List.of(
-                        option("faction", "Faction", selected(filters, "type", "faction")),
+                        option(FACTION_KEY, "Faction", selected(filters, "type", FACTION_KEY)),
                         option("location", "Location", selected(filters, "type", "location")))));
     }
 

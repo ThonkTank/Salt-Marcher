@@ -8,15 +8,6 @@ public record DungeonBoundarySnapshot(
         DungeonTopologyElementRef topologyRef
 ) {
 
-    public DungeonBoundarySnapshot(
-            String kind,
-            long id,
-            String label,
-            DungeonEdgeRef edge
-    ) {
-        this(kind, id, label, edge, DungeonTopologyElementRef.empty());
-    }
-
     public DungeonBoundarySnapshot {
         kind = kind == null || kind.isBlank() ? "boundary" : kind;
         id = Math.max(1L, id);

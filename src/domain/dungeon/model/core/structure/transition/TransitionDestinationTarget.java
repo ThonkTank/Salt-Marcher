@@ -28,10 +28,6 @@ public record TransitionDestinationTarget(Kind kind, long transitionId) {
                 : present(transitionId);
     }
 
-    public static TransitionDestinationTarget fromStorageId(@Nullable Long transitionId) {
-        return fromPositiveId(transitionId);
-    }
-
     public boolean present() {
         return kind.isPresent();
     }

@@ -14,17 +14,6 @@ public record DungeonFeatureSnapshot(
         @Nullable DungeonEdgeRef anchorEdge
 ) {
 
-    public DungeonFeatureSnapshot(
-            DungeonFeatureKind kind,
-            long id,
-            String label,
-            List<DungeonCellRef> cells,
-            String description,
-            String destinationLabel
-    ) {
-        this(kind, id, label, cells, description, destinationLabel, DungeonTopologyElementRef.empty(), null);
-    }
-
     public DungeonFeatureSnapshot {
         kind = defaultKind(kind);
         id = positiveId(id);
