@@ -3,6 +3,7 @@ package src.features.dungeon.runtime;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 
 final class DungeonEditorRuntimeResultTranslator {
@@ -22,6 +23,14 @@ final class DungeonEditorRuntimeResultTranslator {
             ApplyDungeonEditorSessionEffectUseCase.PublicationResult publication
     ) {
         return fromPublication(null, publication);
+    }
+
+    static DungeonEditorRuntimeOperationResult fromOperationResult(
+            ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData result
+    ) {
+        return result == null
+                ? DungeonEditorRuntimeOperationResult.none()
+                : DungeonEditorRuntimeOperationResult.publishAfterStateModelSideEffect();
     }
 
     static DungeonEditorRuntimeOperationResult fromPublication(

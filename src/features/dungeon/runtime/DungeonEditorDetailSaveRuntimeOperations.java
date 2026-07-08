@@ -62,7 +62,7 @@ final class DungeonEditorDetailSaveRuntimeOperations {
             long targetTransitionId,
             boolean bidirectional
     ) {
-        return DungeonEditorRuntimeResultTranslator.fromSnapshot(
+        return DungeonEditorRuntimeResultTranslator.fromOperationResult(
                 saveTransitionLinkUseCase.execute(new SaveDungeonEditorTransitionLinkUseCase.TransitionLinkInput(
                         sourceTransitionId,
                         targetMapId,

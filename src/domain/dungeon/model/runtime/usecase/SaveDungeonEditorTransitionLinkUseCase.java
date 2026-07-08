@@ -2,7 +2,6 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 
 public final class SaveDungeonEditorTransitionLinkUseCase {
@@ -22,22 +21,23 @@ public final class SaveDungeonEditorTransitionLinkUseCase {
         this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
     }
 
-    public DungeonEditorSessionSnapshot.@Nullable SnapshotData execute(TransitionLinkInput input) {
+    public ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData execute(TransitionLinkInput input) {
         TransitionLinkInput safeInput = input == null ? TransitionLinkInput.empty() : input;
         if (!workflow.session().hasSelectedMap()) {
             return null;
         }
-        boolean saved = saveTransitionLinkUseCase.execute(
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = saveTransitionLinkUseCase.execute(
                 workflow.session().selectedMapId(),
                 safeInput.sourceTransitionId(),
                 safeInput.targetMapId(),
                 safeInput.targetTransitionId(),
                 safeInput.bidirectional());
-        if (saved) {
-            workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-            return effectUseCase.publishCurrent();
+        if (result == null) {
+            return null;
         }
-        return null;
+        workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
+        effectUseCase.publishCurrent();
+        return result;
     }
 
     public record TransitionLinkInput(

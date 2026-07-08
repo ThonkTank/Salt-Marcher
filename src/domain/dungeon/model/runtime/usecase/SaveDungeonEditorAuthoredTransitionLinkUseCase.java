@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 
@@ -19,7 +20,7 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
         this.publishMutationUseCase = Objects.requireNonNull(publishMutationUseCase, "publishMutationUseCase");
     }
 
-    public boolean execute(
+    public ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData execute(
             MapId sourceMapId,
             long sourceTransitionId,
             long targetMapId,
@@ -28,7 +29,7 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
     ) {
         if (sourceMapId == null || sourceTransitionId <= NO_TRANSITION_ID || targetMapId <= NO_MAP_ID
                 || targetTransitionId <= NO_TRANSITION_ID) {
-            return false;
+            return null;
         }
         ApplyDungeonEditorOperationUseCase.OperationResultData result = operationUseCase.execute(
                 new DungeonMapIdentity(sourceMapId.value()),
@@ -37,9 +38,9 @@ public final class SaveDungeonEditorAuthoredTransitionLinkUseCase {
                 targetTransitionId,
                 bidirectional);
         if (result == null) {
-            return false;
+            return null;
         }
         publishMutationUseCase.execute(result);
-        return true;
+        return result;
     }
 }
