@@ -71,6 +71,17 @@ public record DungeonEditorInlineLabelEditSession(
                 safePlacement.rotationDegrees());
     }
 
+    public static DungeonEditorInlineLabelEditSession active(
+            DungeonEditorRuntimePointerTarget target,
+            String draftText,
+            Placement placement
+    ) {
+        DungeonEditorRuntimePointerTarget safeTarget = target == null
+                ? DungeonEditorRuntimePointerTarget.empty()
+                : target;
+        return active(inlineLabelTarget(safeTarget), draftText, placement);
+    }
+
     public DungeonEditorInlineLabelEditSession withDraftText(String nextDraftText) {
         if (!active) {
             return inactive();
@@ -101,6 +112,39 @@ public record DungeonEditorInlineLabelEditSession(
         private static Target empty() {
             return new Target(DungeonEditorRuntimeLabelTarget.empty(), "", 0L, 0L, "", 0L);
         }
+    }
+
+    private static Target inlineLabelTarget(DungeonEditorRuntimePointerTarget target) {
+        return new Target(
+                labelNameTarget(target),
+                labelKind(target.labelKind()),
+                target.ownerId(),
+                target.clusterId(),
+                topologyKind(target.topologyKind()),
+                target.topologyId());
+    }
+
+    private static DungeonEditorRuntimeLabelTarget labelNameTarget(DungeonEditorRuntimePointerTarget target) {
+        if (target.isLabelTarget() && target.isClusterLabelTarget() && target.clusterId() > 0L) {
+            return DungeonEditorRuntimeLabelTarget.cluster(target.clusterId());
+        }
+        if (target.isLabelTarget() && target.isRoomLabelTarget() && target.topologyId() > 0L) {
+            return DungeonEditorRuntimeLabelTarget.room(target.topologyId());
+        }
+        return DungeonEditorRuntimeLabelTarget.empty();
+    }
+
+    private static String labelKind(DungeonEditorRuntimePointerTarget.LabelKind labelKind) {
+        return labelKind == null || labelKind == DungeonEditorRuntimePointerTarget.LabelKind.EMPTY
+                ? ""
+                : labelKind.name();
+    }
+
+    private static String topologyKind(DungeonEditorRuntimePointerTarget.TopologyKind topologyKind) {
+        DungeonEditorRuntimePointerTarget.TopologyKind safeKind = topologyKind == null
+                ? DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY
+                : topologyKind;
+        return safeKind.stableName();
     }
 
     public record Placement(

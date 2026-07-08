@@ -10,8 +10,6 @@ import src.features.dungeon.runtime.DungeonEditorInlineLabelOperations;
 import src.features.dungeon.runtime.DungeonEditorMapCatalogOperations;
 import src.features.dungeon.runtime.DungeonEditorOverlaySettings;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
-import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
-import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedTopologyKind;
 import src.features.dungeon.runtime.DungeonEditorPointerInteractionOperations;
 import src.features.dungeon.runtime.DungeonEditorRuntimeLabelTarget;
 import src.features.dungeon.runtime.DungeonEditorRuntimeOperations;
@@ -538,9 +536,9 @@ final class DungeonEditorIntentHandler {
                 || !event.buttons().primaryButtonDown()) {
             return false;
         }
-        DungeonMapContentModel.PointerTarget editTarget = event.modifiers().shiftDown()
-                ? DungeonMapContentModel.PointerTarget.empty()
-                : mapContentModel.resolveClusterLabelPointerTarget(sceneX, sceneY);
+        DungeonEditorRuntimePointerTarget editTarget = event.modifiers().shiftDown()
+                ? DungeonEditorRuntimePointerTarget.empty()
+                : pointerInteractionTargets(event, sceneX, sceneY).primaryTarget(false);
         if (!editTarget.isLabelTarget()) {
             return false;
         }
@@ -549,7 +547,9 @@ final class DungeonEditorIntentHandler {
         if (editCandidate.isEmpty()) {
             return false;
         }
-        inlineLabelOperations.beginInlineLabelEdit(inlineLabelEditSession(editCandidate.orElseThrow()));
+        inlineLabelOperations.beginInlineLabelEdit(inlineLabelEditSession(
+                editTarget,
+                editCandidate.orElseThrow()));
         mapContentModel.clearHoverTarget();
         pointerOperations.clearPointerSession();
         return true;
@@ -561,18 +561,11 @@ final class DungeonEditorIntentHandler {
     }
 
     private static DungeonEditorInlineLabelEditSession inlineLabelEditSession(
+            DungeonEditorRuntimePointerTarget target,
             InlineLabelEditCandidate candidate
     ) {
-        DungeonMapContentModel.PointerTarget target = candidate.target();
-        DungeonEditorRuntimeLabelTarget input = inlineLabelNameInput(target);
         return DungeonEditorInlineLabelEditSession.active(
-                new DungeonEditorInlineLabelEditSession.Target(
-                        input,
-                        inlineLabelSessionLabelKind(target.labelKind()),
-                        target.ownerId(),
-                        target.clusterId(),
-                        inlineLabelSessionTopologyKind(target.topologyKind()),
-                        target.topologyId()),
+                target,
                 candidate.text(),
                 new DungeonEditorInlineLabelEditSession.Placement(
                         candidate.centerX(),
@@ -580,24 +573,6 @@ final class DungeonEditorIntentHandler {
                         candidate.width(),
                         candidate.height(),
                         candidate.rotationDegrees()));
-    }
-
-    private static String inlineLabelSessionLabelKind(PreparedLabelKind labelKind) {
-        return labelKind == null || labelKind == PreparedLabelKind.EMPTY ? "" : labelKind.name();
-    }
-
-    private static String inlineLabelSessionTopologyKind(PreparedTopologyKind topologyKind) {
-        return topologyKind == null || topologyKind == PreparedTopologyKind.EMPTY ? "" : topologyKind.name();
-    }
-
-    private static DungeonEditorRuntimeLabelTarget inlineLabelNameInput(DungeonMapContentModel.PointerTarget target) {
-        if (target.isClusterLabelTarget() && target.clusterId() > 0L) {
-            return DungeonEditorRuntimeLabelTarget.cluster(target.clusterId());
-        }
-        if (target.isRoomLabelTarget() && target.topologyId() > 0L) {
-            return DungeonEditorRuntimeLabelTarget.room(target.topologyId());
-        }
-        return DungeonEditorRuntimeLabelTarget.empty();
     }
 
     private boolean consumeLocalCameraInput(DungeonMapViewInputEvent event) {

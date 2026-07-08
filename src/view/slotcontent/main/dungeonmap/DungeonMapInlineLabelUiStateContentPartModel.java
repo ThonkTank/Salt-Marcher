@@ -5,6 +5,7 @@ import java.util.Optional;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditCandidate;
+import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditPresentationKey;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditProjection;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditState;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditorPresentation;
@@ -28,15 +29,16 @@ final class DungeonMapInlineLabelUiStateContentPartModel {
     }
 
     Optional<InlineLabelEditCandidate> inlineLabelEditCandidate(
-            PointerTarget target,
+            InlineLabelEditPresentationKey target,
             List<DungeonMapContentModel.DungeonMapRenderState.Label> labels
     ) {
-        PointerTarget safeTarget = target == null ? PointerTarget.empty() : target;
-        if (!safeTarget.isLabelTarget()) {
+        InlineLabelEditPresentationKey safeTarget = target == null
+                ? InlineLabelEditPresentationKey.empty()
+                : target;
+        if (!safeTarget.labelTarget()) {
             return Optional.empty();
         }
         return labelForTarget(safeTarget, labels).map(label -> new InlineLabelEditCandidate(
-                safeTarget,
                 label.label(),
                 label.q(),
                 label.r(),
@@ -50,7 +52,7 @@ final class DungeonMapInlineLabelUiStateContentPartModel {
     }
 
     private static Optional<DungeonMapContentModel.DungeonMapRenderState.Label> labelForTarget(
-            PointerTarget target,
+            InlineLabelEditPresentationKey target,
             List<DungeonMapContentModel.DungeonMapRenderState.Label> labels
     ) {
         List<DungeonMapContentModel.DungeonMapRenderState.Label> safeLabels =
@@ -65,14 +67,16 @@ final class DungeonMapInlineLabelUiStateContentPartModel {
 
     private static boolean sameLabelTarget(
             DungeonMapContentModel.DungeonMapRenderState.Label label,
-            PointerTarget target
+            InlineLabelEditPresentationKey target
     ) {
         return label != null
                 && target != null
                 && label.ownerId() == target.ownerId()
                 && label.clusterId() == target.clusterId()
                 && DungeonMapContentModel.preparedRenderLabelKind(label.labelKind()) == target.labelKind()
-                && label.topologyRef().equals(target.topologyRef());
+                && DungeonMapContentModel.preparedRenderTopologyKind(label.topologyRef().kind())
+                        == target.topologyKind()
+                && label.topologyRef().id() == target.topologyId();
     }
 
     private static PointerTarget pointerTargetFromProjection(InlineLabelEditProjection projection) {
