@@ -80,15 +80,14 @@ public final class ApplyDungeonAuthoredMutationUseCase {
             long targetId,
             String name
     ) {
-        SaveDungeonEditorLabelNameUseCase.TargetKind safeTargetType = targetType == null
-                ? SaveDungeonEditorLabelNameUseCase.TargetKind.EMPTY
-                : targetType;
+        SaveDungeonEditorLabelNameUseCase.TargetKind safeTargetType =
+                SaveDungeonEditorLabelNameUseCase.TargetKind.normalize(targetType);
         String trimmedName = name == null ? "" : name.trim();
         return applyDungeonEditorOperationUseCase.execute(mapId, current -> {
-            if (safeTargetType == SaveDungeonEditorLabelNameUseCase.TargetKind.CLUSTER) {
+            if (safeTargetType.isCluster()) {
                 return current.saveClusterName(targetId, trimmedName);
             }
-            if (safeTargetType == SaveDungeonEditorLabelNameUseCase.TargetKind.ROOM) {
+            if (safeTargetType.isRoom()) {
                 return current.saveRoomName(targetId, trimmedName);
             }
             return current;

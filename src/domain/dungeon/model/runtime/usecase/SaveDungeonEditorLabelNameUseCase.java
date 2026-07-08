@@ -52,6 +52,18 @@ public final class SaveDungeonEditorLabelNameUseCase {
     public enum TargetKind {
         EMPTY,
         ROOM,
-        CLUSTER
+        CLUSTER;
+
+        static TargetKind normalize(@Nullable TargetKind targetKind) {
+            return targetKind == null ? EMPTY : targetKind;
+        }
+
+        boolean isRoom() {
+            return this == ROOM;
+        }
+
+        boolean isCluster() {
+            return this == CLUSTER;
+        }
     }
 }

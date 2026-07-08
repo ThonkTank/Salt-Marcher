@@ -3,7 +3,13 @@ package src.domain.dungeon.model.core.structure.corridor;
 /**
  * Typed corridor deletion target owned by the core corridor structure.
  */
-public final class CorridorDeletionTarget {
+public record CorridorDeletionTarget(
+        TargetType targetType,
+        long corridorId,
+        long topologyRefId,
+        long roomId,
+        int waypointIndex
+) {
     private enum TargetType {
         WHOLE_CORRIDOR,
         DOOR_BINDING,
@@ -11,40 +17,12 @@ public final class CorridorDeletionTarget {
         CORRIDOR_WAYPOINT
     }
 
-    private final TargetType targetType;
-    private final long corridorId;
-    private final long topologyRefId;
-    private final long roomId;
-    private final int waypointIndex;
-
-    private CorridorDeletionTarget(
-            TargetType targetType,
-            long corridorId,
-            long topologyRefId,
-            long roomId,
-            int waypointIndex
-    ) {
-        this.targetType = targetType == null ? TargetType.WHOLE_CORRIDOR : targetType;
-        this.corridorId = Math.max(0L, corridorId);
-        this.topologyRefId = Math.max(0L, topologyRefId);
-        this.roomId = Math.max(0L, roomId);
-        this.waypointIndex = Math.max(0, waypointIndex);
-    }
-
-    public long corridorId() {
-        return corridorId;
-    }
-
-    public long topologyRefId() {
-        return topologyRefId;
-    }
-
-    public long roomId() {
-        return roomId;
-    }
-
-    public int waypointIndex() {
-        return waypointIndex;
+    public CorridorDeletionTarget {
+        targetType = targetType == null ? TargetType.WHOLE_CORRIDOR : targetType;
+        corridorId = Math.max(0L, corridorId);
+        topologyRefId = Math.max(0L, topologyRefId);
+        roomId = Math.max(0L, roomId);
+        waypointIndex = Math.max(0, waypointIndex);
     }
 
     public boolean hasCorridor() {
@@ -82,5 +60,4 @@ public final class CorridorDeletionTarget {
     public boolean corridorWaypoint() {
         return targetType == TargetType.CORRIDOR_WAYPOINT;
     }
-
 }

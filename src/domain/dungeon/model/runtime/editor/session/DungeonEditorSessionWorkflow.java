@@ -86,20 +86,10 @@ public final class DungeonEditorSessionWorkflow {
         if (effect.isClearPreview()) {
             session.replace(session.current().clearPreview());
         } else if (effect.getPreview() != null) {
-            String previewStatus = previewStatus(effect.getPreview(), effect.getStatusText());
+            String previewStatus = PreviewStatus.from(effect.getPreview(), effect.getStatusText());
             session.replace(session.current().withPreview(effect.getPreview()).withStatusText(previewStatus));
         }
         return effect.getApplyPreview();
-    }
-
-    private static String previewStatus(
-            DungeonEditorSessionValues.Preview preview,
-            @Nullable String effectStatus
-    ) {
-        if (effectStatus != null) {
-            return effectStatus;
-        }
-        return preview instanceof DungeonEditorSessionValues.StairCreatePreview stair ? stair.statusText() : "";
     }
 
     public void clearPreviewWithStatus(String statusText) {
@@ -112,5 +102,17 @@ public final class DungeonEditorSessionWorkflow {
         session.replace(session.current().withSelectedMap(snapshot.selectedMapId())
                 .withProjectionLevel(snapshot.projectionLevel()));
         return snapshot;
+    }
+
+    private static final class PreviewStatus {
+        private static String from(
+                DungeonEditorSessionValues.Preview preview,
+                @Nullable String effectStatus
+        ) {
+            if (effectStatus != null) {
+                return effectStatus;
+            }
+            return preview instanceof DungeonEditorSessionValues.StairCreatePreview stair ? stair.statusText() : "";
+        }
     }
 }

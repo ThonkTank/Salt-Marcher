@@ -9,7 +9,6 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
 import src.domain.dungeon.model.core.structure.feature.FeatureMarkerCatalog;
-import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
@@ -192,14 +191,13 @@ public record DungeonMap(
         if (roomId <= 0L || narration == null) {
             return this;
         }
-        List<DungeonRoom> nextRooms = new ArrayList<>();
+        var nextRooms = new ArrayList<>(rooms.rooms());
         boolean changed = false;
-        for (DungeonRoom room : rooms.rooms()) {
+        for (int index = 0; index < nextRooms.size(); index++) {
+            var room = nextRooms.get(index);
             if (room.roomId() == roomId) {
-                nextRooms.add(room.withNarration(narration));
+                nextRooms.set(index, room.withNarration(narration));
                 changed = true;
-            } else {
-                nextRooms.add(room);
             }
         }
         return changed
@@ -220,15 +218,14 @@ public record DungeonMap(
         if (roomId <= NO_ROOM_ID) {
             return this;
         }
-        List<DungeonRoom> nextRooms = new ArrayList<>();
+        var nextRooms = new ArrayList<>(rooms.rooms());
         boolean changed = false;
-        for (DungeonRoom room : rooms.rooms()) {
+        for (int index = 0; index < nextRooms.size(); index++) {
+            var room = nextRooms.get(index);
             if (room.roomId() == roomId) {
-                DungeonRoom renamed = room.withName(name);
-                nextRooms.add(renamed);
+                var renamed = room.withName(name);
+                nextRooms.set(index, renamed);
                 changed = changed || !renamed.equals(room);
-            } else {
-                nextRooms.add(room);
             }
         }
         return changed
