@@ -237,7 +237,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
             DungeonAuthoredPublishedStateRepository publishedState,
             DungeonEditorDungeonState dungeonState
     ) {
-        DungeonMapRepository repository = dependencies.authoredMapPersistence().dungeonMapRepository();
+        DungeonMapRepository repository = dependencies.authoredMapPersistence().repositoryForRuntimeAssembly();
         ApplyDungeonMapCatalogUseCase catalogUseCase = mapCatalogUseCase(repository);
         LoadDungeonSnapshotUseCase loadSnapshotUseCase = loadDungeonSnapshotUseCase(repository);
         SnapshotParts snapshotParts = snapshotParts(repository);

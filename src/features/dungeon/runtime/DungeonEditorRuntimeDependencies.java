@@ -47,9 +47,15 @@ public record DungeonEditorRuntimeDependencies(
         }
     }
 
-    public record AuthoredMapPersistence(DungeonMapRepository dungeonMapRepository) {
-        public AuthoredMapPersistence {
-            dungeonMapRepository = Objects.requireNonNull(dungeonMapRepository, "dungeonMapRepository");
+    public static final class AuthoredMapPersistence {
+        private final DungeonMapRepository dungeonMapRepository;
+
+        public AuthoredMapPersistence(DungeonMapRepository dungeonMapRepository) {
+            this.dungeonMapRepository = Objects.requireNonNull(dungeonMapRepository, "dungeonMapRepository");
+        }
+
+        DungeonMapRepository repositoryForRuntimeAssembly() {
+            return dungeonMapRepository;
         }
     }
 }
