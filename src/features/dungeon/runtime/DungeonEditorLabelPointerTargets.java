@@ -36,7 +36,7 @@ final class DungeonEditorLabelPointerTargets {
                     || !renderedClusterIds.add(ref.clusterId())) {
                 continue;
             }
-            targets.put(DungeonEditorMapHitRefs.label(
+            targets.put(DungeonEditorLabelHitRefs.label(
                             ref.ownerId(),
                             ref.clusterId(),
                             ref.topologyRef(),
@@ -46,8 +46,8 @@ final class DungeonEditorLabelPointerTargets {
                             ref.ownerId(),
                             ref.clusterId(),
                             DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
-                                    DungeonEditorMapHitRefs.topologyKind(ref.topologyRef())),
-                            DungeonEditorMapHitRefs.topologyId(ref.topologyRef())));
+                                    DungeonEditorTopologyHitRefs.topologyKind(ref.topologyRef())),
+                            DungeonEditorTopologyHitRefs.topologyId(ref.topologyRef())));
         }
     }
 }

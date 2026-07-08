@@ -27,15 +27,15 @@ final class DungeonEditorBoundaryPointerTargets {
                             boundaryKey(kind, boundary.id(), boundary.topologyRef(), edge),
                             boundary.id(),
                             DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
-                                    DungeonEditorMapHitRefs.topologyKind(boundary.topologyRef())),
-                            DungeonEditorMapHitRefs.topologyId(boundary.topologyRef()),
+                                    DungeonEditorTopologyHitRefs.topologyKind(boundary.topologyRef())),
+                            DungeonEditorTopologyHitRefs.topologyId(boundary.topologyRef()),
                             edge.from().q(),
                             edge.from().r(),
                             edge.from().level(),
                             edge.to().q(),
                             edge.to().r(),
                             edge.to().level());
-            targets.put(DungeonEditorMapHitRefs.edge(kind, boundary.id(), boundary.topologyRef(), edge).value(),
+            targets.put(DungeonEditorEdgeHitRefs.edge(kind, boundary.id(), boundary.topologyRef(), edge).value(),
                     DungeonEditorRuntimePointerTarget.boundary(target));
         }
     }
@@ -48,8 +48,8 @@ final class DungeonEditorBoundaryPointerTargets {
     ) {
         return kind + ":"
                 + ownerId + ":"
-                + DungeonEditorMapHitRefs.topologyKind(topologyRef) + ":"
-                + DungeonEditorMapHitRefs.topologyId(topologyRef) + ":"
+                + DungeonEditorTopologyHitRefs.topologyKind(topologyRef) + ":"
+                + DungeonEditorTopologyHitRefs.topologyId(topologyRef) + ":"
                 + (double) edge.from().q() + ":"
                 + (double) edge.from().r() + ":"
                 + edge.from().level() + ":"

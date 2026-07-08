@@ -14,12 +14,12 @@ final class DungeonEditorGraphPointerTargets {
     ) {
         for (DungeonEditorMapSnapshot.Area area : map.areas()) {
             if (!area.cells().isEmpty()) {
-                targets.put(DungeonEditorMapHitRefs.graphNode(area.id(), area.clusterId()).value(),
+                targets.put(DungeonEditorGraphHitRefs.graphNode(area.id(), area.clusterId()).value(),
                         DungeonEditorRuntimePointerTarget.graphNode(
                                 area.id(),
                                 area.clusterId(),
                                 topologyKind(area.topologyRef()),
-                                DungeonEditorMapHitRefs.topologyId(area.topologyRef())));
+                                DungeonEditorTopologyHitRefs.topologyId(area.topologyRef())));
             }
         }
     }
@@ -28,6 +28,6 @@ final class DungeonEditorGraphPointerTargets {
             DungeonEditorTopologyElementRef topologyRef
     ) {
         return DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
-                DungeonEditorMapHitRefs.topologyKind(topologyRef));
+                DungeonEditorTopologyHitRefs.topologyKind(topologyRef));
     }
 }

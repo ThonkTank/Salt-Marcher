@@ -9,7 +9,6 @@ import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
-import src.features.dungeon.runtime.DungeonEditorMapHitRefs;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
@@ -20,6 +19,7 @@ import src.domain.dungeon.published.DungeonMapSnapshot;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonTravelSurfaceSnapshot;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
+import src.features.dungeon.runtime.DungeonEditorMarkerHitRefs;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.MapSurfaceFrame;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedBoundaryKind;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreviewBoundaryEdgeFrame;
@@ -670,7 +670,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                 DungeonEditorHandleSnapshot handle,
                 DungeonMapContentModel.MapInteractionFrame interactionFrame
         ) {
-            String hitRef = DungeonEditorMapHitRefs.marker(handle.ref(), handle.cell()).value();
+            String hitRef = DungeonEditorMarkerHitRefs.marker(handle.ref(), handle.cell()).value();
             if (hitRef.isBlank()) {
                 return false;
             }

@@ -29,7 +29,7 @@ final class DungeonEditorCellFeaturePointerTargets {
             DungeonEditorRuntimePointerTarget.ElementKind runtimeElementKind = areaRuntimeElementKind(area);
             for (DungeonCellRef cell : area.cells()) {
                 if (DungeonEditorProjectionLevelInclusion.includes(snapshot, cell.level())) {
-                    targets.put(DungeonEditorMapHitRefs.exactCell(
+                    targets.put(DungeonEditorCellHitRefs.exactCell(
                                     elementKind,
                                     area.id(),
                                     area.clusterId(),
@@ -41,7 +41,7 @@ final class DungeonEditorCellFeaturePointerTargets {
                                     area.id(),
                                     area.clusterId(),
                                     topologyKind(area.topologyRef()),
-                                    DungeonEditorMapHitRefs.topologyId(area.topologyRef()),
+                                    DungeonEditorTopologyHitRefs.topologyId(area.topologyRef()),
                                     cell.q(),
                                     cell.r(),
                                     cell.level()));
@@ -61,7 +61,7 @@ final class DungeonEditorCellFeaturePointerTargets {
                     DungeonEditorFeaturePointerTargetFacts.pointerElementKind(hitElementKind);
             for (DungeonCellRef cell : feature.cells()) {
                 if (DungeonEditorProjectionLevelInclusion.includes(snapshot, cell.level())) {
-                    targets.put(DungeonEditorMapHitRefs.exactCell(
+                    targets.put(DungeonEditorCellHitRefs.exactCell(
                                     hitElementKind,
                                     feature.id(),
                                     0L,
@@ -73,7 +73,7 @@ final class DungeonEditorCellFeaturePointerTargets {
                                     feature.id(),
                                     0L,
                                     topologyKind(feature.topologyRef()),
-                                    DungeonEditorMapHitRefs.topologyId(feature.topologyRef()),
+                                    DungeonEditorTopologyHitRefs.topologyId(feature.topologyRef()),
                                     cell.q(),
                                     cell.r(),
                                     cell.level()));
@@ -101,14 +101,14 @@ final class DungeonEditorCellFeaturePointerTargets {
             DungeonEditorRuntimePointerTarget.ElementKind targetElementKind =
                     DungeonEditorFeaturePointerTargetFacts.pointerElementKind(hitElementKind);
             targets.put(
-                    DungeonEditorMapHitRefs.featureMarker(feature.topologyRef(), feature.id(), q, r, level)
+                    DungeonEditorMarkerHitRefs.featureMarker(feature.topologyRef(), feature.id(), q, r, level)
                             .value(),
                     DungeonEditorRuntimePointerTarget.marker(
                             targetElementKind,
                             feature.id(),
                             0L,
                             topologyKind(feature.topologyRef()),
-                            DungeonEditorMapHitRefs.topologyId(feature.topologyRef())));
+                            DungeonEditorTopologyHitRefs.topologyId(feature.topologyRef())));
         }
     }
 
@@ -134,6 +134,6 @@ final class DungeonEditorCellFeaturePointerTargets {
             src.domain.dungeon.published.DungeonEditorTopologyElementRef topologyRef
     ) {
         return DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
-                DungeonEditorMapHitRefs.topologyKind(topologyRef));
+                DungeonEditorTopologyHitRefs.topologyKind(topologyRef));
     }
 }

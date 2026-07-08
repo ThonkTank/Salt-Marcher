@@ -509,6 +509,17 @@ public record DungeonEditorRuntimePointerTarget(
         static ElementKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedElementKind kind) {
             return kind == null ? EMPTY : ElementKind.valueOf(kind.name());
         }
+
+        static ElementKind fromCompatibilityName(String value) {
+            if (value == null) {
+                return EMPTY;
+            }
+            try {
+                return ElementKind.valueOf(value);
+            } catch (IllegalArgumentException ignored) {
+                return EMPTY;
+            }
+        }
     }
 
     public enum TopologyKind {
@@ -523,11 +534,11 @@ public record DungeonEditorRuntimePointerTarget(
         FEATURE_MARKER;
 
         public static TopologyKind fromDomain(DungeonTopologyElementKind kind) {
-            return kind == null ? EMPTY : fromDomainKind(kind);
+            return kind == null ? EMPTY : fromCompatibilityName(kind.name());
         }
 
         public static TopologyKind fromPublished(src.domain.dungeon.published.DungeonTopologyElementKind kind) {
-            return kind == null ? EMPTY : fromPublishedKind(kind);
+            return kind == null ? EMPTY : fromCompatibilityName(kind.name());
         }
 
         static TopologyKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedTopologyKind kind) {
@@ -538,64 +549,15 @@ public record DungeonEditorRuntimePointerTarget(
             return EMPTY;
         }
 
-        @SuppressWarnings("PMD.CyclomaticComplexity")
-        private static TopologyKind fromDomainKind(DungeonTopologyElementKind kind) {
-            if (kind == DungeonTopologyElementKind.ROOM) {
-                return ROOM;
+        static TopologyKind fromCompatibilityName(String value) {
+            if (value == null) {
+                return EMPTY;
             }
-            if (kind == DungeonTopologyElementKind.CORRIDOR) {
-                return CORRIDOR;
+            try {
+                return TopologyKind.valueOf(value);
+            } catch (IllegalArgumentException ignored) {
+                return EMPTY;
             }
-            if (kind == DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
-                return CORRIDOR_ANCHOR;
-            }
-            if (kind == DungeonTopologyElementKind.DOOR) {
-                return DOOR;
-            }
-            if (kind == DungeonTopologyElementKind.WALL) {
-                return WALL;
-            }
-            if (kind == DungeonTopologyElementKind.STAIR) {
-                return STAIR;
-            }
-            if (kind == DungeonTopologyElementKind.TRANSITION) {
-                return TRANSITION;
-            }
-            if (kind == DungeonTopologyElementKind.FEATURE_MARKER) {
-                return FEATURE_MARKER;
-            }
-            return EMPTY;
-        }
-
-        @SuppressWarnings("PMD.CyclomaticComplexity")
-        private static TopologyKind fromPublishedKind(
-                src.domain.dungeon.published.DungeonTopologyElementKind kind
-        ) {
-            if (kind == src.domain.dungeon.published.DungeonTopologyElementKind.ROOM) {
-                return ROOM;
-            }
-            if (kind == src.domain.dungeon.published.DungeonTopologyElementKind.CORRIDOR) {
-                return CORRIDOR;
-            }
-            if (kind == src.domain.dungeon.published.DungeonTopologyElementKind.CORRIDOR_ANCHOR) {
-                return CORRIDOR_ANCHOR;
-            }
-            if (kind == src.domain.dungeon.published.DungeonTopologyElementKind.DOOR) {
-                return DOOR;
-            }
-            if (kind == src.domain.dungeon.published.DungeonTopologyElementKind.WALL) {
-                return WALL;
-            }
-            if (kind == src.domain.dungeon.published.DungeonTopologyElementKind.STAIR) {
-                return STAIR;
-            }
-            if (kind == src.domain.dungeon.published.DungeonTopologyElementKind.TRANSITION) {
-                return TRANSITION;
-            }
-            if (kind == src.domain.dungeon.published.DungeonTopologyElementKind.FEATURE_MARKER) {
-                return FEATURE_MARKER;
-            }
-            return EMPTY;
         }
 
         DungeonTopologyElementKind domainKind() {
@@ -651,6 +613,17 @@ public record DungeonEditorRuntimePointerTarget(
 
         static BoundaryKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedBoundaryKind kind) {
             return kind == null ? WALL : BoundaryKind.valueOf(kind.name());
+        }
+
+        static BoundaryKind fromCompatibilityName(String value) {
+            if (value == null) {
+                return WALL;
+            }
+            try {
+                return BoundaryKind.valueOf(value);
+            } catch (IllegalArgumentException ignored) {
+                return WALL;
+            }
         }
 
         boolean isDoor() {
@@ -741,4 +714,5 @@ public record DungeonEditorRuntimePointerTarget(
             throw new IllegalArgumentException(fieldName + " must be finite");
         }
     }
+
 }

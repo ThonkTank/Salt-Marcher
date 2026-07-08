@@ -1,7 +1,6 @@
 package src.features.dungeon.runtime;
 
 import src.domain.dungeon.model.core.structure.corridor.CorridorDeletionTarget;
-import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
@@ -105,36 +104,8 @@ final class DungeonEditorCorridorInteractionUseCase {
     }
 
     private static DungeonEditorSessionValues.DeleteCorridorPreview deletePreview(PendingCorridorTarget target) {
-        CorridorDeletionTarget deletionTarget = deletionTarget(target);
+        CorridorDeletionTarget deletionTarget = DungeonEditorCorridorDeletionTargets.deletionTarget(target);
         return deletionTarget == null ? null : new DungeonEditorSessionValues.DeleteCorridorPreview(deletionTarget);
-    }
-
-    private static CorridorDeletionTarget deletionTarget(PendingCorridorTarget target) {
-        if (target == null || !DungeonEditorWorkspaceValues.hasId(target.deleteCorridorId())) {
-            return null;
-        }
-        var handle = target.selection().handleRef();
-        if (handle.kind() == DungeonEditorHandleType.DOOR
-                && (handle.topologyRef().present() || DungeonEditorWorkspaceValues.hasId(handle.roomId()))) {
-            return CorridorDeletionTarget.doorBinding(
-                    target.deleteCorridorId(),
-                    handle.topologyRef().id(),
-                    handle.roomId());
-        }
-        if (handle.kind() == DungeonEditorHandleType.CORRIDOR_ANCHOR && handle.topologyRef().present()) {
-            return CorridorDeletionTarget.corridorAnchor(
-                    target.deleteCorridorId(),
-                    handle.topologyRef().id());
-        }
-        if (handle.kind() == DungeonEditorHandleType.CORRIDOR_WAYPOINT) {
-            return CorridorDeletionTarget.corridorWaypoint(
-                    target.deleteCorridorId(),
-                    handle.index());
-        }
-        if (!handle.topologyRef().present() && !DungeonEditorWorkspaceValues.hasId(handle.corridorId())) {
-            return CorridorDeletionTarget.wholeCorridor(target.deleteCorridorId());
-        }
-        return null;
     }
 
     private DungeonEditorSessionEffect createPreview(

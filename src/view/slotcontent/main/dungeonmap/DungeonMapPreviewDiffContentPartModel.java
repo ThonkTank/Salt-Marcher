@@ -6,7 +6,7 @@ import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonFeatureKind;
-import src.features.dungeon.runtime.DungeonEditorMapHitRefs;
+import src.features.dungeon.runtime.DungeonEditorMarkerHitRefs;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreviewAreaDiffFrame;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreviewBoundaryDiffFrame;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreviewFeatureDiffFrame;
@@ -112,7 +112,7 @@ final class DungeonMapPreviewDiffContentPartModel {
             DungeonMapContentModel.MapInteractionFrame interactionFrame
     ) {
         return interactionFrame.previewHandleHitRefs()
-                .contains(DungeonEditorMapHitRefs.marker(handle.ref(), handle.cell()).value());
+                .contains(DungeonEditorMarkerHitRefs.marker(handle.ref(), handle.cell()).value());
     }
 
     private Marker previewHandleMarker(

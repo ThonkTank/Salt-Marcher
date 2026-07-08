@@ -15,6 +15,8 @@ public record DungeonEditorInlineLabelEditSession(
         double height,
         double rotationDegrees
 ) {
+    private static final String EMPTY_KIND_NAME = "EMPTY";
+
     private static final DungeonEditorInlineLabelEditSession INACTIVE =
             new DungeonEditorInlineLabelEditSession(
                     false,
@@ -135,16 +137,14 @@ public record DungeonEditorInlineLabelEditSession(
     }
 
     private static String labelKind(DungeonEditorRuntimePointerTarget.LabelKind labelKind) {
-        return labelKind == null || labelKind == DungeonEditorRuntimePointerTarget.LabelKind.EMPTY
+        String kindName = labelKind == null ? EMPTY_KIND_NAME : labelKind.name();
+        return EMPTY_KIND_NAME.equals(kindName)
                 ? ""
-                : labelKind.name();
+                : kindName;
     }
 
     private static String topologyKind(DungeonEditorRuntimePointerTarget.TopologyKind topologyKind) {
-        DungeonEditorRuntimePointerTarget.TopologyKind safeKind = topologyKind == null
-                ? DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY
-                : topologyKind;
-        return safeKind.stableName();
+        return topologyKind == null ? "" : topologyKind.stableName();
     }
 
     public record Placement(
