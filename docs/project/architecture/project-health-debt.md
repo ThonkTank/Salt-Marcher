@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-24
+Last Reviewed: 2026-07-07
 Source of Truth: Central register for known project-health debt IDs,
 marker synchronization, removal conditions, and current disposition.
 
@@ -58,7 +58,22 @@ Resolver field transitions are defined by the
 
 ## Active Debt
 
-No active project-health debt has been registered under this governance.
+## PH-20260707-001 - Feature Runtime Review-Owned Fitness Coverage
+
+- Status: Open
+- Resolution Mode: Scheduled Repair
+- Resolver Status: Queued
+- Marker: docs/project/architecture/patterns/feature-runtime.md:37
+- Problem: Feature-runtime topology and compatibility-seam conformance remain review-owned while no narrow gate proves runtime state ownership, shell-binding narrowness, preview/commit owner identity, render-frame publication ownership, UI/storage responsibility boundaries, or passive-carrier mirror absence inside `src/features/**`.
+- Owner Areas: feature-runtime, architecture-enforcement, project-health
+- Affected Paths: docs/project/architecture/patterns/feature-runtime.md, tools/quality/skills/feature-runtime/SKILL.md, src/features/dungeon/runtime/**, src/features/dungeon/shell/**, src/view/leftbartabs/dungeoneditor/**
+- Related Symbols: checkFeatureRuntimeEnforcement, DungeonEditorFeatureRuntimeRoot, DungeonEditorFeatureShellBinding, DungeonEditorIntentHandler, passive-carrier mirror absence
+- Intake Trigger: docs/project/architecture/patterns/feature-runtime.md, tools/quality/skills/feature-runtime/SKILL.md, src/features/dungeon/runtime/**, src/features/dungeon/shell/**, src/view/leftbartabs/dungeoneditor/**, feature-runtime, architecture-enforcement
+- Required Next Action: Add a proportional named feature-runtime topology or fitness gate for the highest-drift invariants, or replace this queued repair with an owner-approved equivalent proof route that keeps the retained compatibility inventory reviewable.
+- Source Evidence: build/agent-pass-logs/2026-07-07-architecture-hypothesis-review/hypothesis-11-review-owned-fitness-functions.md; build/agent-pass-logs/2026-07-07-architecture-hypothesis-review/hypothesis-16-unmaterialized-structural-debt.md; build/agent-pass-logs/2026-07-07-architecture-repair-plan.md.
+- Decision: Wave 1 intentionally does not introduce a new gate. The retained coverage gap is acceptable only as queued project-health debt and current owner inventory, not as target conformance or mechanical proof.
+- Remove When: a later repair introduces a named feature-runtime topology or fitness gate, or an owner-approved equivalent proof route, that covers the high-drift invariants for active `src/features/**` code and the Dungeon Editor compatibility seam has either been removed or explicitly accepted by that proof route.
+- Last Checked: 2026-07-07
 
 ## Removed Or Closed Debt
 
