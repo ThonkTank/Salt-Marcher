@@ -54,6 +54,7 @@ flags as properties; the verification core decides the diagnostic surfaces and
 engine inputs.
 `tools/gradle/run-observable-gradle.sh` remains a generic runtime wrapper for
 one Gradle invocation.
+Observable and staged wrappers MAY retain proof readback from the invocation: wrapper elapsed time, Gradle actionable-task count when printed, Gradle configuration-cache store/reuse lines when printed, focused paths, selected areas, compile-integrity request state, and Gradle-selected diagnostic surface ids. This readback is evidence only. It MUST NOT become shell-side diagnostic task selection, bundle mapping, or proof-strength reclassification.
 
 Runtime wrappers own their invocation defaults for console mode and
 wrapper-based failure aggregation. When callers pass those same Gradle built-in
@@ -236,6 +237,7 @@ modifiers.
 diagnostic surface fact. Root build logic and included builds consume it for
 path-to-area validation and focused task registration; they MUST NOT recompute
 surface selection from shell wrapper task-name mappings.
+Runtime wrappers MAY retain this already-selected fact for focused handoff readback, but only after settings has selected it; wrappers MUST NOT derive it by mapping areas or paths to private diagnostic task names.
 Focused path requests MUST be non-empty, repo-relative directories that exist
 inside the active checkout, match the selected or inferred area, and contain at
 least one input consumed by the selected focused surface. A path that is
@@ -334,12 +336,7 @@ must still be present when that surface is requested.
 The verification architecture forbids new `allprojects`, `subprojects`,
 `create`, `getByName`, `whenTaskAdded`, `TaskExecutionListener`, or
 `buildFinished` usage in harness wiring.
-The wrapper must not globally force `--no-configuration-cache`. Configuration
-cache compatibility should be earned inside the actual task graph and surfaced
-through normal Gradle behavior, not through a second same-worktree isolation
-layer. Focused, documentation, and broad dry-run surfaces may use Gradle
-configuration-cache reuse when their task graph is compatible, and handoff
-claims must report the literal store or reuse result. Parallel local safety is caller-owned write-set coordination; the wrapper does not manufacture per-agent cache or build-directory isolation.
+The wrapper must not globally force `--no-configuration-cache`. Configuration cache compatibility should be earned inside the actual task graph and surfaced through normal Gradle behavior, not through a second same-worktree isolation layer. Focused, documentation, and broad dry-run surfaces may use Gradle configuration-cache reuse when their task graph is compatible, and handoff claims must report the literal store or reuse result. Wrapper-retained proof summaries make elapsed time, actionable task count, and cache store/reuse readback easier to cite; they do not add budgets or convert performance evidence into a blocker. Parallel local safety is caller-owned write-set coordination; the wrapper does not manufacture per-agent cache or build-directory isolation.
 
 ## References
 

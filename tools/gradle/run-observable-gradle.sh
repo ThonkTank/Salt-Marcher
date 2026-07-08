@@ -132,6 +132,40 @@ print_known_issue_hint() {
     fi
 }
 
+latest_log_line() {
+    local pattern="$1"
+    local line
+    if line="$(grep -E "$pattern" "$log_file" | tail -n 1)"; then
+        printf '%s\n' "$line"
+        return 0
+    fi
+    return 1
+}
+
+print_retained_proof_summary() {
+    local result="$1"
+    local elapsed_seconds="$2"
+    local actionable_line
+    local cache_line
+
+    {
+        echo
+        echo "[observable-gradle] Retained proof summary:"
+        echo "[observable-gradle] Result: $result"
+        echo "[observable-gradle] Elapsed: $(format_duration "$elapsed_seconds")"
+        if actionable_line="$(latest_log_line '^[0-9]+ actionable tasks?: ')"; then
+            echo "[observable-gradle] Actionable tasks: $actionable_line"
+        else
+            echo "[observable-gradle] Actionable tasks: not reported"
+        fi
+        if cache_line="$(latest_log_line '^(Reusing configuration cache\.|Configuration cache entry (reused|stored)\.)')"; then
+            echo "[observable-gradle] Configuration cache: $cache_line"
+        else
+            echo "[observable-gradle] Configuration cache: not reported"
+        fi
+    } | tee -a "$log_file"
+}
+
 if [[ $# -lt 1 ]]; then
     usage >&2
     exit 64
@@ -283,17 +317,19 @@ end_epoch="$(date +%s)"
 elapsed_seconds=$((end_epoch - start_epoch))
 
 if [[ $gradle_status -eq 0 ]]; then
-    echo
-    echo "[observable-gradle] Gradle finished successfully after $(format_duration "$elapsed_seconds")."
-    echo "[observable-gradle] Log file: $log_file"
+    print_retained_proof_summary "success" "$elapsed_seconds"
+    echo | tee -a "$log_file"
+    echo "[observable-gradle] Gradle finished successfully after $(format_duration "$elapsed_seconds")." | tee -a "$log_file"
+    echo "[observable-gradle] Log file: $log_file" | tee -a "$log_file"
     exit 0
 fi
 
-echo
-echo "[observable-gradle] Gradle failed with exit code $gradle_status after $(format_duration "$elapsed_seconds")." >&2
+print_retained_proof_summary "failure(exit $gradle_status)" "$elapsed_seconds"
+echo | tee -a "$log_file" >&2
+echo "[observable-gradle] Gradle failed with exit code $gradle_status after $(format_duration "$elapsed_seconds")." | tee -a "$log_file" >&2
 if [[ -n "$signal_forwarded" ]]; then
-    echo "[observable-gradle] The run was interrupted by signal $signal_forwarded." >&2
+    echo "[observable-gradle] The run was interrupted by signal $signal_forwarded." | tee -a "$log_file" >&2
 fi
-echo "[observable-gradle] Log file: $log_file" >&2
+echo "[observable-gradle] Log file: $log_file" | tee -a "$log_file" >&2
 print_known_issue_hint "$log_file"
 exit "$gradle_status"

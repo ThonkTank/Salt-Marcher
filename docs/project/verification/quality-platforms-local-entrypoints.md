@@ -90,6 +90,10 @@ directories without selected-surface inputs must fail instead of producing a
 green no-op run. Handoff text for `focused-handoff` MUST report the literal
 paths, selected area, engine surfaces that ran, and any broad supplemental
 steps such as `--with compile-integrity`.
+The staged wrapper retains the focused paths, selected areas, compile-integrity
+request state, Gradle-selected diagnostic surface ids, observable log path, and
+observable proof summary in its staged log so handoff reviewers do not need to
+reconstruct focused scope from terminal scrollback.
 
 `./gradlew checkDocumentationEnforcement --console=plain` is the focused
 `Blocking Local Gate` for Markdown-backed architecture and enforcement
@@ -189,6 +193,11 @@ Handoff reports must cite the literal Gradle store or reuse line from the run
 log when configuration cache participates.
 Direct raw `./gradlew` invocations remain explicit and only aggregate failures
 when the caller passes `--continue`.
+Observable wrapper logs retain a proof summary at the end of each run:
+wrapper elapsed time, the last Gradle actionable-task count line when Gradle
+printed one, and the last configuration-cache store or reuse line when Gradle
+printed one. Staged wrapper logs copy that observable summary and the observable
+log path for public staged surfaces.
 
 Additional Gradle investigation flags may be passed after `--`, but runtime
 wrappers own invocation defaults such as `--console=plain`. If callers pass
@@ -262,6 +271,19 @@ Focused, documentation, and broad dry-run investigation may also use Gradle's
 configuration cache when the selected graph is compatible. Broad
 `production-handoff` must report configuration-cache store and reuse literally
 instead of assuming reuse from the wrapper.
+
+## Performance Proof Routing
+
+Pull requests labeled `task:performance` must name the performance proof route
+used for the changed surface and cite the retained evidence or measurement
+artifact. Acceptable review-owned routes include observable/staged Gradle
+elapsed-time readback, actionable task-count readback, configuration-cache
+store/reuse readback, startup or runtime timing, focused hot-path measurement,
+or another concrete owner-approved measurement for the affected path.
+
+The default route is review-owned evidence, not a numeric budget and not a new
+CI blocker. Numeric thresholds, budgets, or branch-protection promotion require
+an explicit owner decision.
 
 ## References
 
