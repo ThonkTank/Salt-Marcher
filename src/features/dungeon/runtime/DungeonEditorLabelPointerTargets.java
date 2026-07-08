@@ -5,7 +5,6 @@ import java.util.Map;
 import java.util.Set;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
-import src.domain.dungeon.published.DungeonEditorMapHitRef;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 
@@ -37,7 +36,7 @@ final class DungeonEditorLabelPointerTargets {
                     || !renderedClusterIds.add(ref.clusterId())) {
                 continue;
             }
-            targets.put(DungeonEditorMapHitRef.label(
+            targets.put(DungeonEditorMapHitRefs.label(
                             ref.ownerId(),
                             ref.clusterId(),
                             ref.topologyRef(),
@@ -47,8 +46,8 @@ final class DungeonEditorLabelPointerTargets {
                             ref.ownerId(),
                             ref.clusterId(),
                             DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
-                                    DungeonEditorMapHitRef.topologyKind(ref.topologyRef())),
-                            DungeonEditorMapHitRef.topologyId(ref.topologyRef())));
+                                    DungeonEditorMapHitRefs.topologyKind(ref.topologyRef())),
+                            DungeonEditorMapHitRefs.topologyId(ref.topologyRef())));
         }
     }
 }

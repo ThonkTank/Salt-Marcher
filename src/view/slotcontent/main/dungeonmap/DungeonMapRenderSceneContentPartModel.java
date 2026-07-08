@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonEditorMapHitRef;
+import src.features.dungeon.runtime.DungeonEditorMapHitRefs;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedTopologyKind;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.BoundaryPrimitive;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.BoundaryTarget;
@@ -676,7 +676,7 @@ final class DungeonMapRenderSceneContentPartModel {
             if (cell.preview()) {
                 return "";
             }
-            return DungeonEditorMapHitRef.exactCell(
+            return DungeonEditorMapHitRefs.exactCell(
                             cell.kind().name(),
                             cell.ownerId(),
                             cell.clusterId(),
@@ -692,7 +692,7 @@ final class DungeonMapRenderSceneContentPartModel {
             if (edge.preview()) {
                 return "";
             }
-            return DungeonEditorMapHitRef.edge(
+            return DungeonEditorMapHitRefs.edge(
                             edge.kind().name(),
                             edge.ownerId(),
                             edge.topologyRef().kind(),
@@ -709,7 +709,7 @@ final class DungeonMapRenderSceneContentPartModel {
             if (label.preview() || DungeonMapContentModel.ROOM_LABEL_KIND.equals(label.labelKind())) {
                 return "";
             }
-            return DungeonEditorMapHitRef.label(
+            return DungeonEditorMapHitRefs.label(
                             label.ownerId(),
                             label.clusterId(),
                             label.topologyRef().kind(),
@@ -728,7 +728,7 @@ final class DungeonMapRenderSceneContentPartModel {
                 return topologyRef.equals(DungeonMapRenderState.TopologyRef.empty())
                         || !featureMarkerTopology(topologyRef)
                         ? ""
-                        : DungeonEditorMapHitRef.featureMarker(
+                        : DungeonEditorMapHitRefs.featureMarker(
                                 topologyRef.kind(),
                                 topologyRef.id(),
                                 topologyRef.id(),
@@ -737,7 +737,7 @@ final class DungeonMapRenderSceneContentPartModel {
                                 marker.z())
                         .value();
             }
-            return DungeonEditorMapHitRef.marker(
+            return DungeonEditorMapHitRefs.marker(
                             handle.ref(),
                             handle.q(),
                             handle.r(),
@@ -746,7 +746,7 @@ final class DungeonMapRenderSceneContentPartModel {
         }
 
         private static String graphNodeHitRef(DungeonMapRenderState.GraphNode node) {
-            return DungeonEditorMapHitRef.graphNode(node.id(), node.clusterId()).value();
+            return DungeonEditorMapHitRefs.graphNode(node.id(), node.clusterId()).value();
         }
 
         private static boolean featureMarkerTopology(DungeonMapRenderState.TopologyRef topologyRef) {

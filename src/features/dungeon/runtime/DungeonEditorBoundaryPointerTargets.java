@@ -2,7 +2,6 @@ package src.features.dungeon.runtime;
 
 import java.util.Map;
 import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonEditorMapHitRef;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
@@ -28,15 +27,15 @@ final class DungeonEditorBoundaryPointerTargets {
                             boundaryKey(kind, boundary.id(), boundary.topologyRef(), edge),
                             boundary.id(),
                             DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
-                                    DungeonEditorMapHitRef.topologyKind(boundary.topologyRef())),
-                            DungeonEditorMapHitRef.topologyId(boundary.topologyRef()),
+                                    DungeonEditorMapHitRefs.topologyKind(boundary.topologyRef())),
+                            DungeonEditorMapHitRefs.topologyId(boundary.topologyRef()),
                             edge.from().q(),
                             edge.from().r(),
                             edge.from().level(),
                             edge.to().q(),
                             edge.to().r(),
                             edge.to().level());
-            targets.put(DungeonEditorMapHitRef.edge(kind, boundary.id(), boundary.topologyRef(), edge).value(),
+            targets.put(DungeonEditorMapHitRefs.edge(kind, boundary.id(), boundary.topologyRef(), edge).value(),
                     DungeonEditorRuntimePointerTarget.boundary(target));
         }
     }
@@ -49,8 +48,8 @@ final class DungeonEditorBoundaryPointerTargets {
     ) {
         return kind + ":"
                 + ownerId + ":"
-                + DungeonEditorMapHitRef.topologyKind(topologyRef) + ":"
-                + DungeonEditorMapHitRef.topologyId(topologyRef) + ":"
+                + DungeonEditorMapHitRefs.topologyKind(topologyRef) + ":"
+                + DungeonEditorMapHitRefs.topologyId(topologyRef) + ":"
                 + (double) edge.from().q() + ":"
                 + (double) edge.from().r() + ":"
                 + edge.from().level() + ":"

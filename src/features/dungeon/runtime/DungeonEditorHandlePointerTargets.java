@@ -7,7 +7,6 @@ import java.util.Objects;
 import java.util.Set;
 import src.domain.dungeon.published.DungeonEditorHandleRef;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
-import src.domain.dungeon.published.DungeonEditorMapHitRef;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorPreview;
@@ -32,7 +31,7 @@ final class DungeonEditorHandlePointerTargets {
                     || !DungeonEditorProjectionLevelInclusion.includes(snapshot, handle.cell().level())) {
                 continue;
             }
-            String hitRef = DungeonEditorMapHitRef.marker(ref, handle.cell()).value();
+            String hitRef = DungeonEditorMapHitRefs.marker(ref, handle.cell()).value();
             if (!hitRef.isBlank()) {
                 targets.put(hitRef, DungeonEditorRuntimePointerTarget.handle(ref));
             }
@@ -64,7 +63,7 @@ final class DungeonEditorHandlePointerTargets {
                     || !DungeonEditorProjectionLevelInclusion.includes(snapshot, handle.cell().level())) {
                 continue;
             }
-            String hitRef = DungeonEditorMapHitRef.marker(handle.ref(), handle.cell()).value();
+            String hitRef = DungeonEditorMapHitRefs.marker(handle.ref(), handle.cell()).value();
             if (!hitRef.isBlank()) {
                 hitRefs.add(hitRef);
             }

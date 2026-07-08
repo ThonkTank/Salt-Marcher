@@ -3,7 +3,7 @@ package src.view.slotcontent.main.dungeonmap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-import src.domain.dungeon.published.DungeonEditorMapHitRef;
+import src.features.dungeon.runtime.DungeonEditorMapHitRefs;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.MapSurfaceFrame;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.CellTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.MapInteractionFrame;
@@ -201,7 +201,7 @@ final class DungeonMapFrameConsumptionContentPartModel {
         if (target == null || !target.isCellTarget() || hitRef == null) {
             return CellTarget.empty();
         }
-        DungeonEditorMapHitRef.ExactCellHitRef exactCell = DungeonEditorMapHitRef.parseExactCell(hitRef);
+        DungeonEditorMapHitRefs.ExactCellHitRef exactCell = DungeonEditorMapHitRefs.parseExactCell(hitRef);
         if (!exactCell.exact()) {
             return CellTarget.empty();
         }

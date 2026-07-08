@@ -9,7 +9,7 @@ import src.domain.dungeon.published.DungeonBoundarySnapshot;
 import src.domain.dungeon.published.DungeonCellRef;
 import src.domain.dungeon.published.DungeonEdgeRef;
 import src.domain.dungeon.published.DungeonEditorHandleSnapshot;
-import src.domain.dungeon.published.DungeonEditorMapHitRef;
+import src.features.dungeon.runtime.DungeonEditorMapHitRefs;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
@@ -670,7 +670,7 @@ final class DungeonMapSnapshotProjectionContentPartModel {
                 DungeonEditorHandleSnapshot handle,
                 DungeonMapContentModel.MapInteractionFrame interactionFrame
         ) {
-            String hitRef = DungeonEditorMapHitRef.marker(handle.ref(), handle.cell()).value();
+            String hitRef = DungeonEditorMapHitRefs.marker(handle.ref(), handle.cell()).value();
             if (hitRef.isBlank()) {
                 return false;
             }

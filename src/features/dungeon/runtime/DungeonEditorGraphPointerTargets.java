@@ -1,7 +1,6 @@
 package src.features.dungeon.runtime;
 
 import java.util.Map;
-import src.domain.dungeon.published.DungeonEditorMapHitRef;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 
@@ -15,12 +14,12 @@ final class DungeonEditorGraphPointerTargets {
     ) {
         for (DungeonEditorMapSnapshot.Area area : map.areas()) {
             if (!area.cells().isEmpty()) {
-                targets.put(DungeonEditorMapHitRef.graphNode(area.id(), area.clusterId()).value(),
+                targets.put(DungeonEditorMapHitRefs.graphNode(area.id(), area.clusterId()).value(),
                         DungeonEditorRuntimePointerTarget.graphNode(
                                 area.id(),
                                 area.clusterId(),
                                 topologyKind(area.topologyRef()),
-                                DungeonEditorMapHitRef.topologyId(area.topologyRef())));
+                                DungeonEditorMapHitRefs.topologyId(area.topologyRef())));
             }
         }
     }
@@ -29,6 +28,6 @@ final class DungeonEditorGraphPointerTargets {
             DungeonEditorTopologyElementRef topologyRef
     ) {
         return DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
-                DungeonEditorMapHitRef.topologyKind(topologyRef));
+                DungeonEditorMapHitRefs.topologyKind(topologyRef));
     }
 }
