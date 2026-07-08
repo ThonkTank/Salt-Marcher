@@ -1,6 +1,9 @@
 package src.view.leftbartabs.dungeoneditor;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
@@ -62,6 +65,19 @@ final class DungeonEditorStateContentModel {
 
     static String transitionDestinationTypeKey(int optionIndex) {
         return DungeonEditorStateTransitionContentPartModel.transitionDestinationTypeKey(optionIndex);
+    }
+
+    static Map<String, String> factMap(List<String> facts) {
+        Map<String, String> values = new HashMap<>();
+        for (String fact : facts == null ? List.<String>of() : facts) {
+            int separator = fact.indexOf(':');
+            if (separator > 0) {
+                values.put(
+                        fact.substring(0, separator).strip().toLowerCase(Locale.ROOT),
+                        fact.substring(separator + 1).strip());
+            }
+        }
+        return values;
     }
 
     private static @Nullable NameProjection nameProjection(DungeonEditorPreparedFrameFacts.StatePanelFrame frame) {

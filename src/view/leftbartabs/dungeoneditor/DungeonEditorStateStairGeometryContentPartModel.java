@@ -1,8 +1,6 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
@@ -74,19 +72,6 @@ final class DungeonEditorStateStairGeometryContentPartModel {
         return runtimeDraft.present() && runtimeDraft.targetPresent() && runtimeDraft.stairId() == stairId;
     }
 
-    private static Map<String, String> factMap(List<String> facts) {
-        Map<String, String> values = new HashMap<>();
-        for (String fact : facts == null ? List.<String>of() : facts) {
-            int separator = fact.indexOf(':');
-            if (separator > 0) {
-                values.put(
-                        fact.substring(0, separator).strip().toLowerCase(Locale.ROOT),
-                        fact.substring(separator + 1).strip());
-            }
-        }
-        return values;
-    }
-
     private record StairGeometryFacts(
             String shapeName,
             String directionName,
@@ -101,7 +86,7 @@ final class DungeonEditorStateStairGeometryContentPartModel {
         }
 
         private static @Nullable StairGeometryFacts from(List<String> facts) {
-            Map<String, String> values = factMap(facts);
+            Map<String, String> values = DungeonEditorStateContentModel.factMap(facts);
             String shape = values.get("shape");
             String direction = values.get("direction");
             String dimension1 = values.get("dimension1");

@@ -1,6 +1,5 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -185,19 +184,6 @@ final class DungeonEditorStateTransitionContentPartModel {
         return -1;
     }
 
-    private static Map<String, String> factMap(List<String> facts) {
-        Map<String, String> values = new HashMap<>();
-        for (String fact : facts == null ? List.<String>of() : facts) {
-            int separator = fact.indexOf(':');
-            if (separator > 0) {
-                values.put(
-                        fact.substring(0, separator).strip().toLowerCase(Locale.ROOT),
-                        fact.substring(separator + 1).strip());
-            }
-        }
-        return values;
-    }
-
     private static boolean completeIntegerText(String text) {
         return text != null && !text.isBlank() && !"-".equals(text);
     }
@@ -281,7 +267,7 @@ final class DungeonEditorStateTransitionContentPartModel {
             if (inspector == null || inspector.facts().isEmpty()) {
                 return defaultDraft();
             }
-            Map<String, String> facts = factMap(inspector.facts());
+            Map<String, String> facts = DungeonEditorStateContentModel.factMap(inspector.facts());
             return new TransitionDestinationDraft(
                     normalizeDestinationTypeKey(facts.get("destinationtype")),
                     facts.getOrDefault("destinationmapid", ""),
