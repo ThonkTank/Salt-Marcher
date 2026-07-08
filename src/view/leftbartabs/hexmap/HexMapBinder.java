@@ -10,7 +10,6 @@ import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.hex.HexEditorApplicationService;
 import src.domain.hex.HexTravelApplicationService;
-import src.domain.hex.published.LoadHexEditorCommand;
 import src.domain.hex.published.HexEditorModel;
 import src.domain.hex.published.HexTravelModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
@@ -63,7 +62,7 @@ final class HexMapBinder {
         travelModel.subscribe(contributionModel::applyTravelSnapshot);
         contributionModel.applySnapshot(editorModel.current());
         contributionModel.applyTravelSnapshot(travelModel.current());
-        editor.loadEditor(new LoadHexEditorCommand());
+        intentHandler.activateEditor();
         return new Binding(ShellControls.stack(mapCatalog, controls), main, state);
     }
 

@@ -75,6 +75,23 @@ Resolver field transitions are defined by the
 - Remove When: a later repair introduces a named feature-runtime topology or fitness gate, or an owner-approved equivalent proof route, that covers the high-drift invariants for active `src/features/**` code and the Dungeon Editor compatibility seam has either been removed or explicitly accepted by that proof route.
 - Last Checked: 2026-07-07
 
+## PH-20260708-001 - World Planner ContributionModel Residual Mapping Hotspot
+
+- Status: Open
+- Resolution Mode: Next Matching Touch
+- Resolver Status: Open
+- Marker: src/view/leftbartabs/worldplanner/WorldPlannerContributionModel.java:15
+- Problem: `WorldPlannerContributionModel` no longer builds the module-owned filter and state decisions directly, but it still owns residual cross-content mapping into shared search/state/detail surfaces because the same-root ContentModel dependency boundary forbids module ContentModels from referencing those sibling or reusable ContentModels directly.
+- Owner Areas: view-layer
+- Affected Paths: src/view/leftbartabs/worldplanner/WorldPlannerContributionModel.java
+- Related Symbols: WorldPlannerContributionModel.applySearchProjection, WorldPlannerContributionModel.detailProjection, WorldPlannerContributionModel.applyNpcState, WorldPlannerContributionModel.applyFactionState, WorldPlannerContributionModel.applyLocationState, WorldPlannerContributionModel.applySourceState
+- Intake Trigger: src/view/leftbartabs/worldplanner/**
+- Required Next Action: In the roadmap follow-up, replace the remaining aggregate search/state/detail mapping with an owner-approved module-owned projection path that preserves the ViewContentModelDependencyBoundary, or remove the marker if the target architecture confirms this aggregate mapping is the accepted boundary adapter.
+- Source Evidence: W8-S10 implementation pass on 2026-07-08; `tools/gradle/run-staged-verification.sh focused-handoff --path src/view/leftbartabs/worldplanner --area view` passed before residual materialization, and the first attempted direct ContentModel-to-ContentModel split failed `ViewContentModelDependencyBoundary`.
+- Decision: Retained as open view-layer debt because a broader redesign of the shared search/state/detail projection path would exceed the bounded W8-S10 worker slice and risks widening module APIs.
+- Remove When: roadmap follow-up replaces the remaining aggregate search/state/detail mapping with an owner-approved module-owned projection path, or owner review accepts the aggregate mapping as the target boundary adapter.
+- Last Checked: 2026-07-08
+
 ## Removed Or Closed Debt
 
 ## PH-20260624-001 - Dungeon Editor Runtime View Target Bridge

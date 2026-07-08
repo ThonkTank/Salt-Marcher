@@ -105,6 +105,36 @@ final class WorldPlannerFactionMainContentModel {
                 .orElse(null);
     }
 
+    StateProjection stateProjection() {
+        Projection current = projection.get();
+        boolean selected = current.selectedFactionIndex() >= 0;
+        return new StateProjection(
+                selected
+                        ? current.selectedFactionName() + " | " + current.selectedPrimaryTableLabel()
+                        : "Keine Fraktion ausgewählt.",
+                selected
+                        ? "NPCs und Bestand werden hier bearbeitet."
+                        : "Fraktion anlegen oder eine Fraktion wählen.",
+                new FactionEditor(
+                        current.selectedFactionName(),
+                        current.encounterTableLabels(),
+                        current.selectedPrimaryTableLabel(),
+                        current.npcReferenceLabels(),
+                        current.statblockLabels()));
+    }
+
+    SearchProjection searchProjection(
+            String searchQuery,
+            Map<String, List<String>> filters
+    ) {
+        List<FilterGroup> groups = filterGroups(filters);
+        return new SearchProjection(
+                "Fraktionen suchen",
+                searchQuery,
+                groups,
+                filterChips(groups));
+    }
+
     private void retainSelection() {
         List<WorldFactionSummary> factions = snapshot == null ? List.of() : snapshot.factions();
         if (factions.stream().noneMatch(faction -> faction.factionId() == selectedFactionId)) {
@@ -141,6 +171,91 @@ final class WorldPlannerFactionMainContentModel {
 
     private static List<CreatureCatalogRow> creatureRows(CreatureCatalogPageResult result) {
         return result == null || result.page() == null ? List.of() : result.page().rows();
+    }
+
+    private List<FilterGroup> filterGroups(Map<String, List<String>> filters) {
+        Projection current = projection.get();
+        return List.of(
+                group("table", "Tabelle", current.encounterTableLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, "table", idKey(label))))
+                        .toList()),
+                group("npc", "NPC", current.npcReferenceLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, "npc", idKey(label))))
+                        .toList()),
+                group("stock", "Bestand", List.of(
+                        option("finite", "Limitiert", selected(filters, "stock", "finite")),
+                        option("unlimited", "Unlimitiert", selected(filters, "stock", "unlimited")))));
+    }
+
+    private static List<FilterChip> filterChips(
+            List<FilterGroup> groups
+    ) {
+        return groups.stream()
+                .flatMap(group -> group.options().stream()
+                        .filter(FilterOption::selected)
+                        .map(option -> new FilterChip(
+                                group.key(),
+                                option.key(),
+                                group.label() + ": " + option.label())))
+                .toList();
+    }
+
+    private static FilterGroup group(
+            String key,
+            String label,
+            List<FilterOption> options
+    ) {
+        return new FilterGroup(key, label, options);
+    }
+
+    private static FilterOption option(
+            String key,
+            String label,
+            boolean selected
+    ) {
+        return new FilterOption(key, label, selected);
+    }
+
+    private static boolean selected(Map<String, List<String>> filters, String group, String key) {
+        List<String> selected = filters == null ? List.of() : filters.get(group);
+        return selected != null && selected.contains(key);
+    }
+
+    private static String idKey(String label) {
+        if (label == null || !label.startsWith("#")) {
+            return "";
+        }
+        int end = label.indexOf(' ');
+        return end > 1 ? label.substring(1, end) : label.substring(1);
+    }
+
+    record StateProjection(String statusText, String nextActionText, FactionEditor faction) {
+    }
+
+    record FactionEditor(
+            String displayName,
+            List<String> encounterTableLabels,
+            String selectedPrimaryTableLabel,
+            List<String> npcReferenceLabels,
+            List<String> statblockLabels
+    ) {
+    }
+
+    record SearchProjection(
+            String searchPrompt,
+            String searchQuery,
+            List<FilterGroup> groups,
+            List<FilterChip> chips
+    ) {
+    }
+
+    record FilterGroup(String key, String label, List<FilterOption> options) {
+    }
+
+    record FilterOption(String key, String label, boolean selected) {
+    }
+
+    record FilterChip(String groupKey, String optionKey, String label) {
     }
 
     record Projection(

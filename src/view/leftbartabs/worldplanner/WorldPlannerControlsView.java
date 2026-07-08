@@ -3,6 +3,7 @@ package src.view.leftbartabs.worldplanner;
 import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.geometry.Pos;
+import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
@@ -20,6 +21,7 @@ public final class WorldPlannerControlsView extends HBox {
     private final ToggleButton factions = moduleButton("Fraktionen", FACTIONS);
     private final ToggleButton locations = moduleButton("Locations", LOCATIONS);
     private final ToggleButton sources = moduleButton("Encounter Sources", SOURCES);
+    private final Button refresh = refreshButton();
     private Consumer<WorldPlannerControlsViewInputEvent> eventSink = event -> { };
 
     WorldPlannerControlsView() {
@@ -27,7 +29,7 @@ public final class WorldPlannerControlsView extends HBox {
         getStyleClass().add("world-planner-controls");
         Label title = new Label("World Planner");
         title.getStyleClass().add("world-planner-title");
-        HBox tabs = new HBox(6, npcs, factions, locations, sources);
+        HBox tabs = new HBox(6, npcs, factions, locations, sources, refresh);
         tabs.getStyleClass().add("world-planner-module-tabs");
         getChildren().addAll(title, tabs);
         setAlignment(Pos.CENTER_LEFT);
@@ -51,6 +53,13 @@ public final class WorldPlannerControlsView extends HBox {
         return button;
     }
 
+    private Button refreshButton() {
+        Button button = new Button("Aktualisieren");
+        button.getStyleClass().add("world-planner-refresh");
+        button.setOnAction(event -> emit(selectedModuleIndex(), true));
+        return button;
+    }
+
     private void render(WorldPlannerControlsContentModel.Projection projection) {
         selectButton(projection.activeModuleIndex());
     }
@@ -69,5 +78,18 @@ public final class WorldPlannerControlsView extends HBox {
 
     private void emit(int moduleIndex, boolean refreshRequested) {
         eventSink.accept(new WorldPlannerControlsViewInputEvent(moduleIndex, refreshRequested));
+    }
+
+    private int selectedModuleIndex() {
+        if (factions.isSelected()) {
+            return FACTIONS;
+        }
+        if (locations.isSelected()) {
+            return LOCATIONS;
+        }
+        if (sources.isSelected()) {
+            return SOURCES;
+        }
+        return NPCS;
     }
 }

@@ -39,8 +39,70 @@ final class WorldPlannerSourceMainContentModel {
         refreshProjection();
     }
 
+    String stateSummary() {
+        return projection.get().summary();
+    }
+
+    SearchProjection searchProjection(
+            String searchQuery,
+            Map<String, List<String>> filters
+    ) {
+        List<FilterGroup> groups = List.of(
+                new FilterGroup("type", "Typ", List.of(
+                        option("faction", "Faction", selected(filters, "type", "faction")),
+                        option("location", "Location", selected(filters, "type", "location")))));
+        return new SearchProjection(
+                "Quellen suchen",
+                searchQuery,
+                groups,
+                filterChips(groups));
+    }
+
     private void refreshProjection() {
         projection.set(Projection.from(snapshot, active, query, typeFilters));
+    }
+
+    private static List<FilterChip> filterChips(
+            List<FilterGroup> groups
+    ) {
+        return groups.stream()
+                .flatMap(group -> group.options().stream()
+                        .filter(FilterOption::selected)
+                        .map(option -> new FilterChip(
+                                group.key(),
+                                option.key(),
+                                group.label() + ": " + option.label())))
+                .toList();
+    }
+
+    private static FilterOption option(
+            String key,
+            String label,
+            boolean selected
+    ) {
+        return new FilterOption(key, label, selected);
+    }
+
+    private static boolean selected(Map<String, List<String>> filters, String group, String key) {
+        List<String> selected = filters == null ? List.of() : filters.get(group);
+        return selected != null && selected.contains(key);
+    }
+
+    record SearchProjection(
+            String searchPrompt,
+            String searchQuery,
+            List<FilterGroup> groups,
+            List<FilterChip> chips
+    ) {
+    }
+
+    record FilterGroup(String key, String label, List<FilterOption> options) {
+    }
+
+    record FilterOption(String key, String label, boolean selected) {
+    }
+
+    record FilterChip(String groupKey, String optionKey, String label) {
     }
 
     record Projection(

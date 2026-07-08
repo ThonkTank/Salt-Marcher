@@ -4,6 +4,7 @@ import java.util.Objects;
 import src.domain.hex.HexEditorApplicationService;
 import src.domain.hex.HexTravelApplicationService;
 import src.domain.hex.published.CreateHexMapCommand;
+import src.domain.hex.published.LoadHexEditorCommand;
 import src.domain.hex.published.MoveHexPartyTokenCommand;
 import src.domain.hex.published.PaintHexTerrainCommand;
 import src.domain.hex.published.RenameHexMapCommand;
@@ -43,6 +44,10 @@ final class HexMapIntentHandler {
         this.mapCatalogContentModel = Objects.requireNonNull(mapCatalogContentModel, "mapCatalogContentModel");
     }
 
+    void activateEditor() {
+        editor.loadEditor(new LoadHexEditorCommand());
+    }
+
     void consume(HexMapControlsViewInputEvent event) {
         if (event == null) {
             return;
@@ -72,7 +77,7 @@ final class HexMapIntentHandler {
             return true;
         }
         if (!event.reloadItemId().isBlank()) {
-            editor.loadEditor(new src.domain.hex.published.LoadHexEditorCommand());
+            activateEditor();
             selectMap(parseId(event.reloadItemId()));
             return true;
         }

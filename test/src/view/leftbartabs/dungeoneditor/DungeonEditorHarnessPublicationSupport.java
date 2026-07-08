@@ -125,9 +125,7 @@ class DungeonEditorHarnessPublicationSupport extends DungeonEditorHarnessPersist
 
     static void shutdownFx() throws Exception {
         runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                window.hide();
-            }
+            hideWindowsWithoutImplicitExit();
             Platform.exit();
         });
     }
@@ -137,6 +135,7 @@ class DungeonEditorHarnessPublicationSupport extends DungeonEditorHarnessPersist
         Throwable[] failure = new Throwable[1];
         Runnable wrappedAction = () -> {
             try {
+                Platform.setImplicitExit(false);
                 action.run();
             } catch (Throwable throwable) {
                 failure[0] = throwable;
@@ -157,13 +156,28 @@ class DungeonEditorHarnessPublicationSupport extends DungeonEditorHarnessPersist
         }
     }
 
+    static void cleanupRouteProofWindows() throws Exception {
+        runOnFxThread(DungeonEditorHarnessPublicationSupport::hideWindowsWithoutImplicitExit);
+    }
+
+    private static void hideWindowsWithoutImplicitExit() {
+        Platform.setImplicitExit(false);
+        for (Window window : List.copyOf(Window.getWindows())) {
+            window.hide();
+        }
+    }
+
     static void runRouteProof(
             List<String> results,
             String ownerSuite,
             ThrowingRunnable action
     ) throws Exception {
         int firstNewResult = results.size();
-        runOnFxThread(action);
+        try {
+            runOnFxThread(action);
+        } finally {
+            cleanupRouteProofWindows();
+        }
         for (int index = firstNewResult; index < results.size(); index++) {
             String rawResult = results.get(index);
             if (rawResult.contains("OwnerSuite=") || rawResult.contains("ProofType=")) {
