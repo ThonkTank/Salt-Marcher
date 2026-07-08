@@ -20,6 +20,7 @@ import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorHandleMutation
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorHandleOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorTransitionLinkOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonRoomWallMutationUseCase;
 import src.domain.dungeon.model.runtime.usecase.AssembleDungeonSnapshotUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorSnapshotUseCase;
@@ -278,10 +279,11 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 new SaveDungeonEditorAuthoredLabelNameUseCase(mutationUseCase, publishMutationUseCase),
                 new SaveDungeonEditorAuthoredTransitionDescriptionUseCase(operationUseCase, publishMutationUseCase),
                 new SaveDungeonEditorAuthoredTransitionLinkUseCase(
-                        repository,
-                        snapshotParts.derive(),
-                        snapshotParts.assembleDungeonSnapshotUseCase(),
-                        snapshotParts.publishDungeonEditorHandlesUseCase(),
+                        new ApplyDungeonEditorTransitionLinkOperationUseCase(
+                                repository,
+                                snapshotParts.derive(),
+                                snapshotParts.assembleDungeonSnapshotUseCase(),
+                                snapshotParts.publishDungeonEditorHandlesUseCase()),
                         publishMutationUseCase),
                 new SaveDungeonEditorAuthoredStairGeometryUseCase(
                         operationUseCase,
