@@ -1,16 +1,15 @@
 package src.features.dungeon.runtime;
 
-import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.published.DungeonEditorTool;
+import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorOverlayUseCase;
 import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorToolUseCase;
 import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorViewModeUseCase;
 import src.domain.dungeon.model.runtime.usecase.ShiftDungeonEditorProjectionLevelUseCase;
 
 final class DungeonEditorProjectionRuntimeOperations {
-    private static final String SELECTION_TOOL = "SELECT";
-
     private final SetDungeonEditorViewModeUseCase setViewModeUseCase;
     private final SetDungeonEditorToolUseCase setToolUseCase;
     private final ShiftDungeonEditorProjectionLevelUseCase shiftProjectionLevelUseCase;
@@ -30,27 +29,28 @@ final class DungeonEditorProjectionRuntimeOperations {
         setOverlayUseCase = Objects.requireNonNull(safeUseCases.setOverlay(), "setOverlayUseCase");
     }
 
-    DungeonEditorRuntimeOperationResult setViewMode(String viewModeKey) {
+    DungeonEditorRuntimeOperationResult setViewMode(DungeonEditorViewMode viewMode) {
         stairDraftOperation.clear();
         return DungeonEditorRuntimeResultTranslator.fromSessionFrame(
-                setViewModeUseCase.execute(DungeonEditorRuntimeInputTranslator.viewModeName(viewModeKey)));
+                setViewModeUseCase.execute(DungeonEditorRuntimeInputTranslator.viewMode(viewMode)));
     }
 
-    DungeonEditorRuntimeOperationResult setTool(String toolKey) {
+    DungeonEditorRuntimeOperationResult setTool(DungeonEditorTool tool) {
         stairDraftOperation.clear();
         return DungeonEditorRuntimeResultTranslator.fromControls(
-                setToolUseCase.executeControlsOnly(DungeonEditorRuntimeInputTranslator.toolName(toolKey)));
+                setToolUseCase.executeControlsOnly(DungeonEditorRuntimeInputTranslator.tool(tool)));
     }
 
-    DungeonEditorRuntimeOperationResult setToolAndPublishSnapshot(String toolKey) {
+    DungeonEditorRuntimeOperationResult setToolAndPublishSnapshot(DungeonEditorTool tool) {
         stairDraftOperation.clear();
         return DungeonEditorRuntimeResultTranslator.fromSnapshot(
-                setToolUseCase.execute(DungeonEditorRuntimeInputTranslator.toolName(toolKey)));
+                setToolUseCase.execute(DungeonEditorRuntimeInputTranslator.tool(tool)));
     }
 
     DungeonEditorRuntimeOperationResult cancelActivePreviewSession() {
         stairDraftOperation.clear();
-        return DungeonEditorRuntimeResultTranslator.fromSnapshot(setToolUseCase.execute(SELECTION_TOOL));
+        return DungeonEditorRuntimeResultTranslator.fromSnapshot(
+                setToolUseCase.execute(DungeonEditorRuntimeInputTranslator.tool(DungeonEditorTool.SELECT)));
     }
 
     DungeonEditorRuntimeOperationResult shiftProjectionLevel(int levelShift) {
@@ -59,13 +59,8 @@ final class DungeonEditorProjectionRuntimeOperations {
                 .merge(stairDraftOperation.refreshAfterProjectionLevelChanged());
     }
 
-    DungeonEditorRuntimeOperationResult setOverlay(
-            String modeKey,
-            int levelRange,
-            double opacity,
-            List<Integer> selectedLevels
-    ) {
+    DungeonEditorRuntimeOperationResult setOverlay(DungeonEditorOverlaySettings overlaySettings) {
         return DungeonEditorRuntimeResultTranslator.fromSessionFrame(
-                setOverlayUseCase.execute(modeKey, levelRange, opacity, selectedLevels));
+                setOverlayUseCase.execute(DungeonEditorRuntimeInputTranslator.overlaySettings(overlaySettings)));
     }
 }

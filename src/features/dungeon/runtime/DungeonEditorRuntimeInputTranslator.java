@@ -1,7 +1,10 @@
 package src.features.dungeon.runtime;
 
 import java.util.List;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorRoomNarrationUseCase.ExitInput;
+import src.domain.dungeon.published.DungeonEditorTool;
+import src.domain.dungeon.published.DungeonEditorViewMode;
 
 final class DungeonEditorRuntimeInputTranslator {
 
@@ -59,12 +62,28 @@ final class DungeonEditorRuntimeInputTranslator {
                 safeDestination);
     }
 
-    static String toolName(String value) {
-        return DungeonEditorRuntimeEnumTranslator.toolName(value);
+    static DungeonEditorSessionValues.Tool tool(DungeonEditorTool tool) {
+        return DungeonEditorSessionValues.Tool.valueOf(
+                (tool == null ? DungeonEditorTool.SELECT : tool).name());
     }
 
-    static String viewModeName(String value) {
-        return DungeonEditorRuntimeEnumTranslator.viewModeName(value);
+    static DungeonEditorSessionValues.ViewMode viewMode(DungeonEditorViewMode viewMode) {
+        return viewMode == DungeonEditorViewMode.GRAPH
+                ? DungeonEditorSessionValues.ViewMode.GRAPH
+                : DungeonEditorSessionValues.ViewMode.GRID;
+    }
+
+    static DungeonEditorSessionValues.OverlaySettings overlaySettings(
+            DungeonEditorOverlaySettings overlaySettings
+    ) {
+        DungeonEditorOverlaySettings safeSettings = overlaySettings == null
+                ? DungeonEditorOverlaySettings.defaults()
+                : overlaySettings;
+        return new DungeonEditorSessionValues.OverlaySettings(
+                DungeonEditorSessionValues.OverlaySettings.Mode.valueOf(safeSettings.mode().name()),
+                safeSettings.levelRange(),
+                safeSettings.opacity(),
+                safeSettings.selectedLevels());
     }
 
     static List<ExitInput> exitInputs(RoomNarration narration) {

@@ -1,10 +1,8 @@
 package src.features.dungeon.runtime;
 
-import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorViewMode;
-import src.domain.dungeon.published.DungeonOverlaySettings;
 
 final class DungeonEditorRuntimeControlPort implements DungeonEditorControlOperations {
     private final DungeonEditorRuntimeControlController controller;
@@ -14,13 +12,13 @@ final class DungeonEditorRuntimeControlPort implements DungeonEditorControlOpera
     }
 
     @Override
-    public void setViewMode(String viewModeKey) {
-        controller.selectViewMode(toViewMode(viewModeKey));
+    public void setViewMode(DungeonEditorViewMode viewMode) {
+        controller.selectViewMode(viewMode);
     }
 
     @Override
-    public void setTool(String toolKey) {
-        controller.selectTool(toTool(toolKey));
+    public void setTool(DungeonEditorTool tool) {
+        controller.selectTool(tool);
     }
 
     @Override
@@ -34,9 +32,7 @@ final class DungeonEditorRuntimeControlPort implements DungeonEditorControlOpera
     }
 
     @Override
-    public void setOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
-        DungeonOverlaySettings overlaySettings =
-                new DungeonOverlaySettings(modeKey, levelRange, opacity, selectedLevels);
+    public void setOverlay(DungeonEditorOverlaySettings overlaySettings) {
         controller.setOverlay(overlaySettings);
     }
 
@@ -45,12 +41,4 @@ final class DungeonEditorRuntimeControlPort implements DungeonEditorControlOpera
         controller.scrollSelection(levelDelta);
     }
 
-    private static DungeonEditorTool toTool(String value) {
-        DungeonEditorTool tool = DungeonEditorRuntimeEnumTranslator.editorTool(value);
-        return tool == null ? DungeonEditorTool.SELECT : tool;
-    }
-
-    private static DungeonEditorViewMode toViewMode(String value) {
-        return DungeonEditorViewMode.valueOf(DungeonEditorRuntimeEnumTranslator.viewModeName(value));
-    }
 }

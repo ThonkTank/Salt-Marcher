@@ -2,6 +2,7 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 
 public final class SetDungeonEditorToolUseCase {
@@ -19,22 +20,22 @@ public final class SetDungeonEditorToolUseCase {
                 Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
     }
 
-    public DungeonEditorSessionSnapshot.SnapshotData execute(String toolName) {
-        DungeonEditorSessionSnapshot.SnapshotData snapshot = snapshot(toolName);
+    public DungeonEditorSessionSnapshot.SnapshotData execute(DungeonEditorSessionValues.Tool tool) {
+        DungeonEditorSessionSnapshot.SnapshotData snapshot = snapshot(tool);
         snapshotPublicationUseCase.execute(snapshot);
         return snapshot;
     }
 
-    public DungeonEditorSessionSnapshot.ControlsData executeControlsOnly(String toolName) {
-        workflow.setTool(toolName);
+    public DungeonEditorSessionSnapshot.ControlsData executeControlsOnly(DungeonEditorSessionValues.Tool tool) {
+        workflow.setTool(tool);
         DungeonEditorSessionSnapshot.ControlsData controls =
                 DungeonEditorSessionSnapshot.controlsData(workflow.session());
         snapshotPublicationUseCase.executeControls(controls);
         return controls;
     }
 
-    private DungeonEditorSessionSnapshot.SnapshotData snapshot(String toolName) {
-        workflow.setTool(toolName);
+    private DungeonEditorSessionSnapshot.SnapshotData snapshot(DungeonEditorSessionValues.Tool tool) {
+        workflow.setTool(tool);
         return workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
     }
 }

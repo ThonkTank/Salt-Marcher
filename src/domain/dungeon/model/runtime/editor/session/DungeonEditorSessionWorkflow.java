@@ -1,6 +1,5 @@
 package src.domain.dungeon.model.runtime.editor.session;
 
-import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 public final class DungeonEditorSessionWorkflow {
@@ -37,13 +36,18 @@ public final class DungeonEditorSessionWorkflow {
         });
     }
 
-    public void setViewMode(String viewModeName) {
-        session.replace(session.current().withViewMode(DungeonEditorSessionValues.ViewMode.fromName(viewModeName))
+    public void setViewMode(DungeonEditorSessionValues.ViewMode viewMode) {
+        DungeonEditorSessionValues.ViewMode safeViewMode = viewMode == null
+                ? DungeonEditorSessionValues.ViewMode.defaultMode()
+                : viewMode;
+        session.replace(session.current().withViewMode(safeViewMode)
                 .clearTransientState(""));
     }
 
-    public void setTool(String toolName) {
-        DungeonEditorSessionValues.Tool nextTool = DungeonEditorSessionValues.Tool.fromName(toolName);
+    public void setTool(DungeonEditorSessionValues.Tool tool) {
+        DungeonEditorSessionValues.Tool nextTool = tool == null
+                ? DungeonEditorSessionValues.Tool.defaultTool()
+                : tool;
         DungeonEditorSession nextSession = session.current()
                 .withSelectedTool(nextTool)
                 .clearTransientState("");
@@ -57,17 +61,11 @@ public final class DungeonEditorSessionWorkflow {
         session.replace(session.current().shiftProjectionLevel(projectionLevelDelta).clearPreview().withStatusText(""));
     }
 
-    public void setOverlay(
-            String modeKey,
-            int levelRange,
-            double opacity,
-            List<Integer> selectedLevels
-    ) {
-        session.replace(session.current().withOverlaySettings(new DungeonEditorSessionValues.OverlaySettings(
-                modeKey,
-                levelRange,
-                opacity,
-                selectedLevels)).withStatusText(""));
+    public void setOverlay(DungeonEditorSessionValues.OverlaySettings overlaySettings) {
+        DungeonEditorSessionValues.OverlaySettings safeOverlaySettings = overlaySettings == null
+                ? DungeonEditorSessionValues.OverlaySettings.defaults()
+                : overlaySettings;
+        session.replace(session.current().withOverlaySettings(safeOverlaySettings).withStatusText(""));
     }
 
     public DungeonEditorSessionValues.@Nullable Preview applyEffect(DungeonEditorSessionEffect effect) {

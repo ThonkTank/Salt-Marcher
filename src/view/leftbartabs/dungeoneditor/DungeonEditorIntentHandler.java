@@ -8,6 +8,7 @@ import src.features.dungeon.runtime.DungeonEditorControlOperations;
 import src.features.dungeon.runtime.DungeonEditorInlineLabelEditSession;
 import src.features.dungeon.runtime.DungeonEditorInlineLabelOperations;
 import src.features.dungeon.runtime.DungeonEditorMapCatalogOperations;
+import src.features.dungeon.runtime.DungeonEditorOverlaySettings;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedLabelKind;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedTopologyKind;
@@ -828,18 +829,23 @@ final class DungeonEditorIntentHandler {
         if (viewModeKey == null || viewModeKey.isBlank()) {
             return;
         }
-        String normalizedViewModeKey = DungeonEditorControlsContentModel.normalizeViewModeKey(viewModeKey);
+        var parsedViewMode = DungeonEditorControlOperations.parseViewModeKey(viewModeKey);
+        if (parsedViewMode.isEmpty()) {
+            return;
+        }
+        var viewMode = parsedViewMode.orElseThrow();
+        String normalizedViewModeKey = viewMode.displayKey();
         String selectedViewMode = presentationModel.currentInteractionState().currentViewModeKey();
         if (DungeonEditorControlsContentModel.graphViewLabel().equals(normalizedViewModeKey)) {
-            if (!DungeonEditorControlsContentModel.graphViewLabel().equals(selectedViewMode)) {
+            if (!normalizedViewModeKey.equals(selectedViewMode)) {
                 mapContentModel.clearHoverTarget();
-                controlOperations.setViewMode(normalizedViewModeKey);
+                viewMode.applyTo(controlOperations);
             }
             return;
         }
-        if (!DungeonEditorControlsContentModel.gridViewLabel().equals(selectedViewMode)) {
+        if (!normalizedViewModeKey.equals(selectedViewMode)) {
             mapContentModel.clearHoverTarget();
-            controlOperations.setViewMode(DungeonEditorControlsContentModel.gridViewLabel());
+            viewMode.applyTo(controlOperations);
         }
     }
 
@@ -853,14 +859,19 @@ final class DungeonEditorIntentHandler {
         }
         DungeonEditorContributionModel.InteractionState interactionState = presentationModel.currentInteractionState();
         String selectedToolKey = tool.selectedToolKey();
-        String selectedTool = DungeonEditorControlsContentModel.normalizedToolKey(selectedToolKey);
+        var selectedTool = DungeonEditorControlOperations.parseToolKey(selectedToolKey);
+        if (selectedTool.isEmpty()) {
+            return;
+        }
+        var selectedToolValue = selectedTool.orElseThrow();
+        String selectedToolControlKey = selectedToolValue.key();
         controlsContentModel.rememberToolSelection(
                 tool.requestedFamilyKey(),
-                selectedTool,
+                selectedToolControlKey,
                 tool.selectedOptionKey());
-        if (!selectedTool.equals(interactionState.currentSelectedToolKey())) {
+        if (!selectedToolControlKey.equals(interactionState.currentSelectedToolKey())) {
             mapContentModel.clearHoverTarget();
-            controlOperations.setTool(selectedTool);
+            selectedToolValue.applyTo(controlOperations);
         }
     }
 
@@ -871,19 +882,24 @@ final class DungeonEditorIntentHandler {
         if (parsedSelectedLevels.isEmpty()) {
             return;
         }
+        Optional<DungeonEditorOverlaySettings.Mode> parsedOverlayMode = parseOverlayMode(overlay.modeKey());
+        if (parsedOverlayMode.isEmpty()) {
+            return;
+        }
+        DungeonEditorOverlaySettings.Mode overlayMode = parsedOverlayMode.orElseThrow();
         List<Integer> selectedLevels = parsedSelectedLevels.orElseThrow();
         List<Integer> currentSelectedLevels = parseLevels(currentOverlay.selectedLevelsText()).orElse(List.of());
-        if (currentOverlay.modeKey().equals(overlay.modeKey())
+        if (currentOverlay.modeKey().equals(overlayMode.name())
                 && currentOverlay.levelRange() == overlay.levelRange()
                 && Double.compare(currentOverlay.opacity(), overlay.opacity()) == 0
                 && currentSelectedLevels.equals(selectedLevels)) {
             return;
         }
-        controlOperations.setOverlay(
-                        overlay.modeKey(),
-                        overlay.levelRange(),
-                        overlay.opacity(),
-                        selectedLevels);
+        controlOperations.setOverlay(new DungeonEditorOverlaySettings(
+                overlayMode,
+                overlay.levelRange(),
+                overlay.opacity(),
+                selectedLevels));
     }
 
     private static boolean hasMapEditorInput(DungeonEditorControlsViewInputEvent.MapSnapshot map) {
@@ -926,6 +942,17 @@ final class DungeonEditorIntentHandler {
             return;
         }
         statePanelDraftOperations.moveStatePanelCorridorPoint(q.orElseThrow(), r.orElseThrow());
+    }
+
+    private static Optional<DungeonEditorOverlaySettings.Mode> parseOverlayMode(@Nullable String modeKey) {
+        if (modeKey == null || modeKey.isBlank()) {
+            return Optional.empty();
+        }
+        try {
+            return Optional.of(DungeonEditorOverlaySettings.Mode.valueOf(modeKey.strip()));
+        } catch (IllegalArgumentException exception) {
+            return Optional.empty();
+        }
     }
 
     private static Optional<Integer> parseInteger(@Nullable String raw) {

@@ -23,11 +23,6 @@ final class DungeonEditorToolRegistry {
         return INSTANCE;
     }
 
-    String toolName(String value) {
-        DungeonEditorTool tool = toolFromKey(value);
-        return tool == null ? DungeonEditorTool.SELECT.name() : tool.name();
-    }
-
     static String normalizedToolKey(String value) {
         return value == null ? "" : value.trim().toUpperCase(Locale.ROOT).replace('-', '_');
     }

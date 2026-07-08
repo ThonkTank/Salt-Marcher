@@ -143,24 +143,32 @@ public final class DungeonEditorSessionValues {
     }
 
     public static final class OverlaySettings {
-        private final String modeKey;
+        private final Mode mode;
         private final int levelRange;
         private final double opacity;
         private final List<Integer> selectedLevels;
 
         public OverlaySettings(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
-            this.modeKey = modeKey == null || modeKey.isBlank() ? "OFF" : modeKey;
+            this(Mode.fromKey(modeKey), levelRange, opacity, selectedLevels);
+        }
+
+        public OverlaySettings(Mode mode, int levelRange, double opacity, List<Integer> selectedLevels) {
+            this.mode = mode == null ? Mode.OFF : mode;
             this.levelRange = Math.max(0, levelRange);
             this.opacity = Math.max(0.0, Math.min(1.0, opacity));
             this.selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
         }
 
         public static OverlaySettings defaults() {
-            return new OverlaySettings("OFF", 2, 0.35, List.of());
+            return new OverlaySettings(Mode.OFF, 2, 0.35, List.of());
+        }
+
+        public Mode mode() {
+            return mode;
         }
 
         public String modeKey() {
-            return modeKey;
+            return mode.name();
         }
 
         public int levelRange() {
@@ -185,19 +193,36 @@ public final class DungeonEditorSessionValues {
             }
             return levelRange == that.levelRange
                     && Double.compare(opacity, that.opacity) == 0
-                    && Objects.equals(modeKey, that.modeKey)
+                    && mode == that.mode
                     && Objects.equals(selectedLevels, that.selectedLevels);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(modeKey, levelRange, opacity, selectedLevels);
+            return Objects.hash(mode, levelRange, opacity, selectedLevels);
         }
 
         @Override
         public String toString() {
             return "OverlaySettings[modeKey=%s, levelRange=%d, opacity=%s, selectedLevels=%s]"
-                    .formatted(modeKey, levelRange, opacity, selectedLevels);
+                    .formatted(modeKey(), levelRange, opacity, selectedLevels);
+        }
+
+        public enum Mode {
+            OFF,
+            NEARBY,
+            SELECTED;
+
+            private static Mode fromKey(@Nullable String modeKey) {
+                if (modeKey == null || modeKey.isBlank()) {
+                    return OFF;
+                }
+                try {
+                    return Mode.valueOf(modeKey.strip());
+                } catch (IllegalArgumentException ignored) {
+                    return OFF;
+                }
+            }
         }
     }
 
