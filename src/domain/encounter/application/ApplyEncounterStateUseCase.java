@@ -24,8 +24,8 @@ public final class ApplyEncounterStateUseCase {
             PublishEncounterSavedPlansUseCase publishSavedPlansUseCase
     ) {
         this.applySessionUseCase = applySessionUseCase;
-        this.publishSessionUseCase = java.util.Objects.requireNonNull(publishSessionUseCase, "publishSessionUseCase");
-        this.publishSavedPlansUseCase = java.util.Objects.requireNonNull(publishSavedPlansUseCase, "publishSavedPlansUseCase");
+        this.publishSessionUseCase = Objects.requireNonNull(publishSessionUseCase, "publishSessionUseCase");
+        this.publishSavedPlansUseCase = Objects.requireNonNull(publishSavedPlansUseCase, "publishSavedPlansUseCase");
     }
 
     public void execute(@Nullable Request request) {
@@ -62,31 +62,7 @@ public final class ApplyEncounterStateUseCase {
     }
 
     private static EncounterSessionCommand.Action toSessionAction(Action action) {
-        return switch (action.code) {
-            case Action.REFRESH_CODE -> EncounterSessionCommand.Action.REFRESH;
-            case Action.GENERATE_CODE -> EncounterSessionCommand.Action.GENERATE;
-            case Action.SAVE_CURRENT_PLAN_CODE -> EncounterSessionCommand.Action.SAVE_CURRENT_PLAN;
-            case Action.OPEN_SAVED_PLAN_CODE -> EncounterSessionCommand.Action.OPEN_SAVED_PLAN;
-            case Action.CLEAR_GENERATION_HISTORY_CODE -> EncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY;
-            case Action.SHIFT_ALTERNATIVE_CODE -> EncounterSessionCommand.Action.SHIFT_ALTERNATIVE;
-            case Action.ADD_CREATURE_CODE -> EncounterSessionCommand.Action.ADD_CREATURE;
-            case Action.INCREMENT_CREATURE_CODE -> EncounterSessionCommand.Action.INCREMENT_CREATURE;
-            case Action.DECREMENT_CREATURE_CODE -> EncounterSessionCommand.Action.DECREMENT_CREATURE;
-            case Action.REMOVE_CREATURE_CODE -> EncounterSessionCommand.Action.REMOVE_CREATURE;
-            case Action.UNDO_REMOVE_CODE -> EncounterSessionCommand.Action.UNDO_REMOVE;
-            case Action.OPEN_INITIATIVE_CODE -> EncounterSessionCommand.Action.OPEN_INITIATIVE;
-            case Action.BACK_TO_BUILDER_CODE -> EncounterSessionCommand.Action.BACK_TO_BUILDER;
-            case Action.CONFIRM_INITIATIVE_CODE -> EncounterSessionCommand.Action.CONFIRM_INITIATIVE;
-            case Action.ADVANCE_TURN_CODE -> EncounterSessionCommand.Action.ADVANCE_TURN;
-            case Action.ADJUST_INITIATIVE_CODE -> EncounterSessionCommand.Action.ADJUST_INITIATIVE;
-            case Action.ADD_PARTY_MEMBER_TO_COMBAT_CODE -> EncounterSessionCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT;
-            case Action.END_COMBAT_CODE -> EncounterSessionCommand.Action.END_COMBAT;
-            case Action.AWARD_XP_CODE -> EncounterSessionCommand.Action.AWARD_XP;
-            case Action.RETURN_TO_BUILDER_AFTER_RESULTS_CODE ->
-                    EncounterSessionCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS;
-            case Action.MUTATE_HP_CODE -> EncounterSessionCommand.Action.MUTATE_HP;
-            default -> throw new IllegalArgumentException("Unknown encounter state action.");
-        };
+        return Objects.requireNonNull(action, "action").sessionAction();
     }
 
     private static List<EncounterInitiativeInput> initiativeInputs(List<InitiativeInput> values) {
@@ -102,57 +78,105 @@ public final class ApplyEncounterStateUseCase {
 
     public record InitiativeInput(String id, int initiative) { }
 
-    public static final class Action {
+    public enum Action {
 
-        private static final int REFRESH_CODE = 1;
-        private static final int GENERATE_CODE = 2;
-        private static final int SAVE_CURRENT_PLAN_CODE = 3;
-        private static final int OPEN_SAVED_PLAN_CODE = 4;
-        private static final int CLEAR_GENERATION_HISTORY_CODE = 5;
-        private static final int SHIFT_ALTERNATIVE_CODE = 6;
-        private static final int ADD_CREATURE_CODE = 7;
-        private static final int INCREMENT_CREATURE_CODE = 8;
-        private static final int DECREMENT_CREATURE_CODE = 9;
-        private static final int REMOVE_CREATURE_CODE = 10;
-        private static final int UNDO_REMOVE_CODE = 11;
-        private static final int OPEN_INITIATIVE_CODE = 12;
-        private static final int BACK_TO_BUILDER_CODE = 13;
-        private static final int CONFIRM_INITIATIVE_CODE = 14;
-        private static final int ADVANCE_TURN_CODE = 15;
-        private static final int ADJUST_INITIATIVE_CODE = 16;
-        private static final int ADD_PARTY_MEMBER_TO_COMBAT_CODE = 17;
-        private static final int END_COMBAT_CODE = 18;
-        private static final int AWARD_XP_CODE = 19;
-        private static final int RETURN_TO_BUILDER_AFTER_RESULTS_CODE = 20;
-        private static final int MUTATE_HP_CODE = 21;
+        REFRESH(1),
+        GENERATE(2),
+        SAVE_CURRENT_PLAN(3),
+        OPEN_SAVED_PLAN(4),
+        CLEAR_GENERATION_HISTORY(5),
+        SHIFT_ALTERNATIVE(6),
+        ADD_CREATURE(7),
+        INCREMENT_CREATURE(8),
+        DECREMENT_CREATURE(9),
+        REMOVE_CREATURE(10),
+        UNDO_REMOVE(11),
+        OPEN_INITIATIVE(12),
+        BACK_TO_BUILDER(13),
+        CONFIRM_INITIATIVE(14),
+        ADVANCE_TURN(15),
+        ADJUST_INITIATIVE(16),
+        ADD_PARTY_MEMBER_TO_COMBAT(17),
+        END_COMBAT(18),
+        AWARD_XP(19),
+        RETURN_TO_BUILDER_AFTER_RESULTS(20),
+        MUTATE_HP(21);
 
-        public static final Action REFRESH = new Action(REFRESH_CODE);
-        public static final Action GENERATE = new Action(GENERATE_CODE);
-        public static final Action SAVE_CURRENT_PLAN = new Action(SAVE_CURRENT_PLAN_CODE);
-        public static final Action OPEN_SAVED_PLAN = new Action(OPEN_SAVED_PLAN_CODE);
-        public static final Action CLEAR_GENERATION_HISTORY = new Action(CLEAR_GENERATION_HISTORY_CODE);
-        public static final Action SHIFT_ALTERNATIVE = new Action(SHIFT_ALTERNATIVE_CODE);
-        public static final Action ADD_CREATURE = new Action(ADD_CREATURE_CODE);
-        public static final Action INCREMENT_CREATURE = new Action(INCREMENT_CREATURE_CODE);
-        public static final Action DECREMENT_CREATURE = new Action(DECREMENT_CREATURE_CODE);
-        public static final Action REMOVE_CREATURE = new Action(REMOVE_CREATURE_CODE);
-        public static final Action UNDO_REMOVE = new Action(UNDO_REMOVE_CODE);
-        public static final Action OPEN_INITIATIVE = new Action(OPEN_INITIATIVE_CODE);
-        public static final Action BACK_TO_BUILDER = new Action(BACK_TO_BUILDER_CODE);
-        public static final Action CONFIRM_INITIATIVE = new Action(CONFIRM_INITIATIVE_CODE);
-        public static final Action ADVANCE_TURN = new Action(ADVANCE_TURN_CODE);
-        public static final Action ADJUST_INITIATIVE = new Action(ADJUST_INITIATIVE_CODE);
-        public static final Action ADD_PARTY_MEMBER_TO_COMBAT = new Action(ADD_PARTY_MEMBER_TO_COMBAT_CODE);
-        public static final Action END_COMBAT = new Action(END_COMBAT_CODE);
-        public static final Action AWARD_XP = new Action(AWARD_XP_CODE);
-        public static final Action RETURN_TO_BUILDER_AFTER_RESULTS =
-                new Action(RETURN_TO_BUILDER_AFTER_RESULTS_CODE);
-        public static final Action MUTATE_HP = new Action(MUTATE_HP_CODE);
+        private static final Action[] BY_CODE = createActionsByCode();
 
         private final int code;
 
-        private Action(int code) {
+        Action(int code) {
             this.code = code;
+        }
+
+        public static Action fromCode(int code) {
+            if (code < 0 || code >= BY_CODE.length) {
+                throw new IllegalArgumentException("Unknown encounter state action code.");
+            }
+            Action action = BY_CODE[code];
+            if (action == null) {
+                throw new IllegalArgumentException("Unknown encounter state action code.");
+            }
+            return action;
+        }
+
+        private static Action[] createActionsByCode() {
+            Action[] actions = new Action[MUTATE_HP.code + 1];
+            for (Action action : values()) {
+                actions[action.code] = action;
+            }
+            return actions;
+        }
+
+        private EncounterSessionCommand.Action sessionAction() {
+            if (code <= ADD_CREATURE.code) {
+                return workflowSessionAction();
+            }
+            if (code <= CONFIRM_INITIATIVE.code) {
+                return rosterSessionAction();
+            }
+            return combatSessionAction();
+        }
+
+        private EncounterSessionCommand.Action workflowSessionAction() {
+            return switch (this) {
+                case REFRESH -> EncounterSessionCommand.Action.REFRESH;
+                case GENERATE -> EncounterSessionCommand.Action.GENERATE;
+                case SAVE_CURRENT_PLAN -> EncounterSessionCommand.Action.SAVE_CURRENT_PLAN;
+                case OPEN_SAVED_PLAN -> EncounterSessionCommand.Action.OPEN_SAVED_PLAN;
+                case CLEAR_GENERATION_HISTORY -> EncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY;
+                case SHIFT_ALTERNATIVE -> EncounterSessionCommand.Action.SHIFT_ALTERNATIVE;
+                case ADD_CREATURE -> EncounterSessionCommand.Action.ADD_CREATURE;
+                default -> throw new IllegalArgumentException("Unknown encounter state action.");
+            };
+        }
+
+        private EncounterSessionCommand.Action rosterSessionAction() {
+            return switch (this) {
+                case INCREMENT_CREATURE -> EncounterSessionCommand.Action.INCREMENT_CREATURE;
+                case DECREMENT_CREATURE -> EncounterSessionCommand.Action.DECREMENT_CREATURE;
+                case REMOVE_CREATURE -> EncounterSessionCommand.Action.REMOVE_CREATURE;
+                case UNDO_REMOVE -> EncounterSessionCommand.Action.UNDO_REMOVE;
+                case OPEN_INITIATIVE -> EncounterSessionCommand.Action.OPEN_INITIATIVE;
+                case BACK_TO_BUILDER -> EncounterSessionCommand.Action.BACK_TO_BUILDER;
+                case CONFIRM_INITIATIVE -> EncounterSessionCommand.Action.CONFIRM_INITIATIVE;
+                default -> throw new IllegalArgumentException("Unknown encounter state action.");
+            };
+        }
+
+        private EncounterSessionCommand.Action combatSessionAction() {
+            return switch (this) {
+                case ADVANCE_TURN -> EncounterSessionCommand.Action.ADVANCE_TURN;
+                case ADJUST_INITIATIVE -> EncounterSessionCommand.Action.ADJUST_INITIATIVE;
+                case ADD_PARTY_MEMBER_TO_COMBAT -> EncounterSessionCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT;
+                case END_COMBAT -> EncounterSessionCommand.Action.END_COMBAT;
+                case AWARD_XP -> EncounterSessionCommand.Action.AWARD_XP;
+                case RETURN_TO_BUILDER_AFTER_RESULTS ->
+                        EncounterSessionCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS;
+                case MUTATE_HP -> EncounterSessionCommand.Action.MUTATE_HP;
+                default -> throw new IllegalArgumentException("Unknown encounter state action.");
+            };
         }
     }
 

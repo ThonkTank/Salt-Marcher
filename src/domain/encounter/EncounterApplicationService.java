@@ -15,28 +15,6 @@ import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
  */
 public final class EncounterApplicationService {
 
-    private static final int REFRESH_ACTION_CODE = 1;
-    private static final int GENERATE_ACTION_CODE = 2;
-    private static final int SAVE_CURRENT_PLAN_ACTION_CODE = 3;
-    private static final int OPEN_SAVED_PLAN_ACTION_CODE = 4;
-    private static final int CLEAR_GENERATION_HISTORY_ACTION_CODE = 5;
-    private static final int SHIFT_ALTERNATIVE_ACTION_CODE = 6;
-    private static final int ADD_CREATURE_ACTION_CODE = 7;
-    private static final int INCREMENT_CREATURE_ACTION_CODE = 8;
-    private static final int DECREMENT_CREATURE_ACTION_CODE = 9;
-    private static final int REMOVE_CREATURE_ACTION_CODE = 10;
-    private static final int UNDO_REMOVE_ACTION_CODE = 11;
-    private static final int OPEN_INITIATIVE_ACTION_CODE = 12;
-    private static final int BACK_TO_BUILDER_ACTION_CODE = 13;
-    private static final int CONFIRM_INITIATIVE_ACTION_CODE = 14;
-    private static final int ADVANCE_TURN_ACTION_CODE = 15;
-    private static final int ADJUST_INITIATIVE_ACTION_CODE = 16;
-    private static final int ADD_PARTY_MEMBER_TO_COMBAT_ACTION_CODE = 17;
-    private static final int END_COMBAT_ACTION_CODE = 18;
-    private static final int AWARD_XP_ACTION_CODE = 19;
-    private static final int RETURN_TO_BUILDER_AFTER_RESULTS_ACTION_CODE = 20;
-    private static final int MUTATE_HP_ACTION_CODE = 21;
-
     private final ApplyEncounterStateUseCase applyStateUseCase;
     private final UpdateEncounterBuilderInputsUseCase updateBuilderInputsUseCase;
     private final PublishEncounterPlanBudgetUseCase publishPlanBudgetUseCase;
@@ -76,33 +54,8 @@ public final class EncounterApplicationService {
                     initiativeIds.get(index),
                     initiativeScores.get(index).intValue()));
         }
-        ApplyEncounterStateUseCase.Action action = switch (command.actionCode()) {
-            case REFRESH_ACTION_CODE -> ApplyEncounterStateUseCase.Action.REFRESH;
-            case GENERATE_ACTION_CODE -> ApplyEncounterStateUseCase.Action.GENERATE;
-            case SAVE_CURRENT_PLAN_ACTION_CODE -> ApplyEncounterStateUseCase.Action.SAVE_CURRENT_PLAN;
-            case OPEN_SAVED_PLAN_ACTION_CODE -> ApplyEncounterStateUseCase.Action.OPEN_SAVED_PLAN;
-            case CLEAR_GENERATION_HISTORY_ACTION_CODE ->
-                    ApplyEncounterStateUseCase.Action.CLEAR_GENERATION_HISTORY;
-            case SHIFT_ALTERNATIVE_ACTION_CODE -> ApplyEncounterStateUseCase.Action.SHIFT_ALTERNATIVE;
-            case ADD_CREATURE_ACTION_CODE -> ApplyEncounterStateUseCase.Action.ADD_CREATURE;
-            case INCREMENT_CREATURE_ACTION_CODE -> ApplyEncounterStateUseCase.Action.INCREMENT_CREATURE;
-            case DECREMENT_CREATURE_ACTION_CODE -> ApplyEncounterStateUseCase.Action.DECREMENT_CREATURE;
-            case REMOVE_CREATURE_ACTION_CODE -> ApplyEncounterStateUseCase.Action.REMOVE_CREATURE;
-            case UNDO_REMOVE_ACTION_CODE -> ApplyEncounterStateUseCase.Action.UNDO_REMOVE;
-            case OPEN_INITIATIVE_ACTION_CODE -> ApplyEncounterStateUseCase.Action.OPEN_INITIATIVE;
-            case BACK_TO_BUILDER_ACTION_CODE -> ApplyEncounterStateUseCase.Action.BACK_TO_BUILDER;
-            case CONFIRM_INITIATIVE_ACTION_CODE -> ApplyEncounterStateUseCase.Action.CONFIRM_INITIATIVE;
-            case ADVANCE_TURN_ACTION_CODE -> ApplyEncounterStateUseCase.Action.ADVANCE_TURN;
-            case ADJUST_INITIATIVE_ACTION_CODE -> ApplyEncounterStateUseCase.Action.ADJUST_INITIATIVE;
-            case ADD_PARTY_MEMBER_TO_COMBAT_ACTION_CODE ->
-                    ApplyEncounterStateUseCase.Action.ADD_PARTY_MEMBER_TO_COMBAT;
-            case END_COMBAT_ACTION_CODE -> ApplyEncounterStateUseCase.Action.END_COMBAT;
-            case AWARD_XP_ACTION_CODE -> ApplyEncounterStateUseCase.Action.AWARD_XP;
-            case RETURN_TO_BUILDER_AFTER_RESULTS_ACTION_CODE ->
-                    ApplyEncounterStateUseCase.Action.RETURN_TO_BUILDER_AFTER_RESULTS;
-            case MUTATE_HP_ACTION_CODE -> ApplyEncounterStateUseCase.Action.MUTATE_HP;
-            default -> throw new IllegalArgumentException("Unknown encounter state action code.");
-        };
+        ApplyEncounterStateUseCase.Action action =
+                ApplyEncounterStateUseCase.Action.fromCode(command.actionCode());
         return new ApplyEncounterStateUseCase.Request(
                 action,
                 command.creatureId(),
