@@ -11,7 +11,7 @@ public final class WorldPlannerNpcMainView extends VBox {
 
     private final ListView<String> npcs = new ListView<>();
     private final Label emptyText = new Label();
-    private Consumer<WorldPlannerNpcMainViewInputEvent> eventSink = event -> { };
+    private Consumer<NpcMainInput> eventSink = event -> { };
 
     WorldPlannerNpcMainView() {
         getStyleClass().addAll("world-planner-main", "world-planner-module-main");
@@ -24,17 +24,17 @@ public final class WorldPlannerNpcMainView extends VBox {
         npcs.setOnKeyReleased(event -> emit());
     }
 
-    public void bind(WorldPlannerNpcMainContentModel model) {
-        WorldPlannerNpcMainContentModel safeModel = Objects.requireNonNull(model, "model");
-        safeModel.projectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
-        render(safeModel.projectionProperty().get());
+    public void bind(WorldPlannerViewModel viewModel) {
+        WorldPlannerViewModel safeModel = Objects.requireNonNull(viewModel, "viewModel");
+        safeModel.npcProjectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
+        render(safeModel.npcProjectionProperty().get());
     }
 
-    public void onViewInputEvent(Consumer<WorldPlannerNpcMainViewInputEvent> sink) {
+    public void onViewInputEvent(Consumer<NpcMainInput> sink) {
         eventSink = sink == null ? event -> { } : sink;
     }
 
-    private void render(WorldPlannerNpcMainContentModel.Projection projection) {
+    private void render(NpcProjection projection) {
         setVisible(projection.active());
         setManaged(projection.active());
         npcs.getItems().setAll(projection.npcLabels());
@@ -49,18 +49,7 @@ public final class WorldPlannerNpcMainView extends VBox {
     }
 
     private void emit() {
-        eventSink.accept(new WorldPlannerNpcMainViewInputEvent(
-                false,
-                false,
-                false,
-                false,
-                false,
-                npcs.getSelectionModel().getSelectedIndex(),
-                "",
-                -1,
-                "",
-                "",
-                "",
-                ""));
+        eventSink.accept(new NpcMainInput(
+                npcs.getSelectionModel().getSelectedIndex()));
     }
 }

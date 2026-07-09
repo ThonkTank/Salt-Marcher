@@ -19,8 +19,8 @@ public final class WorldPlannerMainView extends VBox {
         setVgrow(moduleStack, Priority.ALWAYS);
     }
 
-    public void bind(WorldPlannerMainContentModel contentModel) {
-        if (contentModel != null) {
+    public void bind(WorldPlannerViewModel viewModel) {
+        if (viewModel != null) {
             setFillWidth(true);
         }
     }

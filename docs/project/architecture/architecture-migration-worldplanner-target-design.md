@@ -244,6 +244,17 @@ The exceptions are individually justified by existing consumer seams, not by
 preference. The conformance review must reject any additional unexplained
 metric miss.
 
+### M3.5 LOC Exception Amendment
+
+The implemented M3.5 product subset lands at 43 Java files and 3,709 physical
+LOC, not the original 2,800 LOC target. Phase 1 and Phase 2 accepted this as a
+bounded exception after verifying that the deletion list is executed, the old
+usecase/content/input/intent-handler references are absent, forwarding-only
+product proxies are gone, and the remaining size is concentrated in the
+byte-compatible published/domain seams plus the typed JavaFX projection model.
+The exception does not relax the 43-file target, forwarding-only target,
+chain-length target, String round-trip target, or frozen-harness parity rules.
+
 ## Untouched Surfaces
 
 - `src/data/worldplanner/**` persistence, schema, mapper, gateway, and
