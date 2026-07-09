@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M1 - Parity Oracle |
-| Work item | M1.1 - Harness inventory |
+| Work item | M1.2 - Parity protocol |
 | Cycle step | Milestone step; per-area cycle not active yet |
 | In-flight area | None |
-| Required next proof | `./gradlew checkDocumentationEnforcement --console=plain` for initial harness inventory ledger/doc updates; behavior harness proof as each M1 item names it |
-| Last status note | `2026-07-09 M0.5 doctrine-removal` |
+| Required next proof | `./gradlew checkDocumentationEnforcement --console=plain` for parity protocol docs; behavior harness proof as each M1 item names it |
+| Last status note | `2026-07-09 M1.1 harness-inventory` |
 
 ## M0 Step Ledger
 
@@ -45,6 +45,16 @@ but they do not advance the migration unless this ledger advances too.
 | M0.3 Migration ledger | Done on branch | `efd59b7cf` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09 | This ledger becomes the state source; next work item is M0.4. |
 | M0.4 Global removal of form enforcement | Done on branch | `e00a92990` | Pending PR merge | `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09; `./gradlew architectureTest --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; judge review Clean | Removed form-enforcing ErrorProne/build-harness doctrine gates and retained outcome gates, including package cycles, layer dependency direction, documentation basics, and behavior-harness gates. |
 | M0.5 Doctrine doc and skill removal | Done on branch | `e38758af3` | Pending PR merge | `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; stale-doctrine grep clean; fresh-agent check passed; judge review Approve | Deleted retired domain/view/feature-runtime pattern docs, architecture enforcement inventories, doctrine-teaching skills, and the dead domain-context documentation rule; live routers now point to the roadmap, ledger, retained outcome gates, and public proof routes. |
+
+## M1 Step Ledger
+
+| Step | Status | Local branch commit | Merge commit | Proof | Notes |
+| --- | --- | --- | --- | --- | --- |
+| M1.1 Harness inventory | Done on branch | Pending current commit | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; judge review Approve | Existing harnesses, imported boundary surfaces, scenario coverage, and current gaps are listed below for every migration area. |
+| M1.2 Parity protocol | Pending | Pending | Pending PR merge | Pending | Not started. |
+| M1.3 Pilot harness hardening | Pending | Pending | Pending PR merge | Pending | Not started. |
+| M1.4 Owner smoke scripts | Pending | Pending | Pending PR merge | Pending | Not started. |
+| M1.5 Render parity net | Pending | Pending | Pending PR merge | Pending | Not started. |
 
 ## Milestone Ledger
 
@@ -62,19 +72,37 @@ but they do not advance the migration unless this ledger advances too.
 
 | Area | Standard | Status | Merge commit | Harness status |
 | --- | --- | --- | --- | --- |
-| `hex` | Legacy surrounding code until M2 design; then pilot reference commit | Pending | Pending | M1.1 Pending; current `src/view/leftbartabs/hexmap/**` route gap is P1 in `harness-gaps.md`. |
-| `worldplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 Pending; cross-context worldplanner to encounter route gap is P1. |
-| `creatures` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 Pending; dedicated creature harness gap is P2. |
-| `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 Pending; party dropdown production-route gap is P1. |
-| `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 Pending. |
-| `encountertable` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 Pending; dedicated encounter-table harness gap is P2. |
-| `encounter` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 Pending; encounter state-tab production-route gap is P1. |
-| `dungeon-authored-core` | Legacy surrounding code until M4.1 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 Pending; dungeon harness suite required. |
-| `dungeon-editor-session-runtime` | Legacy surrounding code until M4.2 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 Pending; dungeon harness suite required. |
-| `dungeon-travel` | Legacy surrounding code until M4.3 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 Pending; travel state-tab route gap is P1. |
-| `dungeon-rendering-pipeline` | Legacy surrounding code until M4.4 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 Pending; M1.5 image snapshot parity required before migration. |
-| `dungeon-editor-view` | Legacy surrounding code until M4.5 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 Pending; dungeon harness suite required. |
-| `remaining-view-and-shell` | Legacy surrounding code until M5 design; then pilot reference | Pending | Pending | M1.1 Pending; view render/dropdown/statetab route gaps apply where touched. |
+| `hex` | Legacy surrounding code until M2 design; then pilot reference commit | Pending | Pending | M1.1 inventory: `hexMapEditorBehaviorHarness`, `hexTravelStateBehaviorHarness`; P1 Hex Map and travel state-tab production-route gaps remain before pilot closure. |
+| `worldplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: backend, UI, raw-input, and encounter harnesses; P1 cross-context worldplanner-to-encounter route gap remains. |
+| `creatures` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner and encounter harness imports only; P2 dedicated creature catalog harness gap remains. |
+| `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains. |
+| `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
+| `encountertable` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner UI imports only; P2 dedicated encounter-table readback harness gap remains. |
+| `encounter` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `worldPlannerEncounterHarness`, `encounterStateTabHarness`; P1 production publication route gaps remain. |
+| `dungeon-authored-core` | Legacy surrounding code until M4.1 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 inventory: `dungeonEditorCoreBehaviorHarness` plus mapped domain tasks `dungeonEditorBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness`; no registered M1.1 gap. |
+| `dungeon-editor-session-runtime` | Legacy surrounding code until M4.2 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 inventory: mapped feature tasks `dungeonEditorBehaviorHarness`, `dungeonEditorCoreBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness`, and `dungeonTravelProjectionLevelHarness`; no registered M1.1 gap. |
+| `dungeon-travel` | Legacy surrounding code until M4.3 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 inventory: `dungeonTravelProjectionLevelHarness`; travel state-tab P1 gap remains where state-tab route is touched. |
+| `dungeon-rendering-pipeline` | Legacy surrounding code until M4.4 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 inventory: exact indirect render consumers are `dungeonEditorBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness`, and `dungeonTravelProjectionLevelHarness`; M1.5 image snapshot parity is mandatory before migration. |
+| `dungeon-editor-view` | Legacy surrounding code until M4.5 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 inventory: mapped view tasks `dungeonEditorBehaviorHarness`, `dungeonEditorCoreBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness`; no registered M1.1 gap. |
+| `remaining-view-and-shell` | Legacy surrounding code until M5 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog, search-filter, dropdown, state-tab, shell-layout, and startup harnesses; P1 dropdown/statetab gaps and image parity where rendering is involved. |
+
+## M1 Harness Inventory
+
+| Area | Existing harnesses | Imported boundary surfaces | Scenario coverage | Known gaps |
+| --- | --- | --- | --- | --- |
+| `hex` | `hexMapEditorBehaviorHarness`, `hexTravelStateBehaviorHarness` | `HexEditorApplicationService`, `HexTravelApplicationService`, `HexEditorModel`, `HexEditorSnapshot`, hex command records, `HexTravelModel`, `HexTravelSnapshot`, party travel models, Hex Map content/control models | Create, update, select, paint, marker save, radius errors, persistence readback, travel token readback, and direct UI-control assertions | P1 shell-bound Hex Map route and P1 Reise state-tab production publication route |
+| `worldplanner` | `worldPlannerBackendHarness`, `worldPlannerUiHarness`, `worldPlannerControlsRawInputHarness`, `worldPlannerEncounterHarness` | `WorldPlannerApplicationService`, `WorldPlannerSnapshotModel`, world planner commands/reference ports, `WorldPlannerSnapshot`, creature and encounter-table published catalogs, encounter application/usecase surfaces | NPC/faction/location mutations, reference validation, persistence errors/readback, raw input controls, UI projection, encounter generation/session bridge | P1 cross-context route uses fixture world snapshots and fixture encounter repository |
+| `creatures` | None dedicated; adjacent worldplanner UI and encounter state-tab harnesses import creature surfaces | `CreaturesApplicationService`, `CreatureCatalogPort`, catalog usecases, `CreatureCatalogModel/Page/Row`, `CreatureDetailModel`, `CreatureLookupStatus` | Adjacent lookup, display, and encounter candidate use only | P2 dedicated create/edit/filter/readback catalog harness |
+| `party` | `partyDropdownHarness`; also imported by hex and dungeon travel harnesses | `PartyApplicationService`, active-party composition/model, party snapshot/mutation models, character commands, travel position snapshots, dropdown content model | Create character, move between active/reserve, active-party publication, trigger label, travel-token publication consumers | P1 shell-bound dropdown route |
+| `sessionplanner` | `sessionPlannerCatalogHarness`, `sessionPlannerShellLayoutHarness` | `SessionPlannerContribution`, `SessionPlannerCatalogModel`, current-session, scene timeline, participants projections, `ShellBinding`, `ShellSlot`, session data mappers | Catalog create/rename/select/delete, scene timeline, loot placeholders, session-scoped drafts, compact shell layout | No registered M1.1 gap |
+| `encountertable` | None dedicated; adjacent worldplanner UI harness imports table catalog surfaces | `EncounterTableCatalogModel`, `EncounterTableCatalogResult`, `EncounterTableSummary`, `EncounterTableReadStatus` | Adjacent catalog display/reference lookup only | P2 readback harness for authored summary, weighted candidates, empty selection, XP ceiling, and storage-error publication |
+| `encounter` | `worldPlannerEncounterHarness`, `encounterStateTabHarness` | `EncounterApplicationService`, encounter generation/session/plan usecases, `ApplyEncounterStateCommand`, `EncounterStateModel`, `EncounterStateSnapshot`, saved-plan summaries, creature candidate surfaces | Encounter draft generation, saved-plan/session publication, encounter state-tab empty and populated render assertions | P1 encounter state-tab and worldplanner cross-context production publication route gaps |
+| `dungeon-authored-core` | `dungeonEditorCoreBehaviorHarness` aggregate; harness-map also routes domain changes through `dungeonEditorBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness` | Dungeon core geometry, component, structure, room, door, corridor, stair, transition, topology, and published ref/value surfaces | Core suite IDs `geometry`, `component`, `floor`, `wall-core`, `door-core`, `path-core`, `corridor-core`, `stair-core`, `transition-core`, `runtime-projection`, `topology`, `cluster-core`, `room-core`, `structure`; focused route tasks exercise authored-core consumers | No registered M1.1 gap |
+| `dungeon-editor-session-runtime` | `dungeonEditorBehaviorHarness`, `dungeonEditorCoreBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness`, `dungeonTravelProjectionLevelHarness` | `DungeonServiceContribution`, dungeon editor published snapshots/commands, runtime pointer targets, prepared frame/render frame surfaces, `DungeonMapView`, `DungeonMapContentModel` | Route suite IDs `map-catalog`, `map-controls`, `projection-overlay`, `selection`, `stairs`, `transitions`, `features`, `corridors`, `labels`, `shared-handles`, `door-handles`, `cluster-handles`, `cluster-routes`, `doors`, `rooms`, `walls`; projection-level travel runtime checks | No registered M1.1 gap |
+| `dungeon-travel` | `dungeonTravelProjectionLevelHarness` | `DungeonTravelRuntimeApplicationService`, `ApplyTravelDungeonSessionCommand`, `TravelDungeonModel`, `TravelDungeonSnapshot`, party travel positions, `DungeonTravelContribution`, `DungeonMapView` | Projection-level controls, rendered level changes, transition marker refs, party-token actor layer, no authored truth mutation | P1 travel state-tab production route if the state-tab surface is migrated |
+| `dungeon-rendering-pipeline` | Indirect consumers: `dungeonEditorBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness`, `dungeonTravelProjectionLevelHarness` | `DungeonMapContentModel`, `DungeonMapView`, prepared frame facts, render frame/scene state, dungeon editor map snapshots | Render model state, visible topology refs, actors, projection overlays, level-specific map content | M1.5 image snapshot parity required before render migration |
+| `dungeon-editor-view` | `dungeonEditorBehaviorHarness`, `dungeonEditorCoreBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness` | `DungeonEditorContribution`, controls/main/state slot surfaces, editor published controls/map/inspector snapshots, dungeon map content/control views | Shell-bound editor contribution route plus focused control, selection, marker, room, wall, door, corridor, stair, and transition assertions | No registered M1.1 gap |
+| `remaining-view-and-shell` | `catalogInitialLoadHarness`, `catalogCrudControlsHarness`, `catalogControlsRawInputHarness`, `searchFilterControlsHarness`, `partyDropdownHarness`, `hexTravelStateBehaviorHarness`, `encounterStateTabHarness`, `sessionPlannerShellLayoutHarness`, `smokeStartupHarness` | Catalog/search controls, dropdown content model, state-tab published models, shell contributions/bindings/slots, startup SQLite factory | Catalog load/CRUD/raw input, search filtering, dropdown component behavior, travel/encounter state-tab render, shell layout, startup smoke | P1 dropdown/statetab production-route gaps; image parity required where rendering is touched |
 
 ## Owner Status Notes
 
@@ -112,3 +140,11 @@ dem Repo entfernt. Lebende Router zeigen jetzt auf Roadmap, Ledger, echte
 Outcome-Gates und die oeffentlichen Proof-Routen; der Fresh-Agent-Check hat
 keine alte Rule-3/Formdoktrin mehr reproduziert, und der unabhaengige Judge hat
 M0.5 nach Rework freigegeben.
+
+### 2026-07-09 M1.1 harness-inventory
+
+Der Ledger listet jetzt fuer jede Migrations-Area die vorhandenen Harnesses,
+importierten Boundary-Surfaces, Szenarioabdeckung und bekannten Gaps. Die
+Dokumentationspruefung ist gruen; der unabhaengige Judge hat die Inventur nach
+Rework freigegeben. Naechster Schritt ist M1.2, das Einfrieren des
+Parity-Protokolls.
