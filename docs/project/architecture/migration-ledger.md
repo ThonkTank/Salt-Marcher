@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M2 - Pilot hex |
-| Work item | M2.6 - Hex conformance review |
-| Cycle step | 6 - Conformance review |
+| Work item | M2.7 - Hex close-out |
+| Cycle step | 7 - Close-out |
 | In-flight area | `hex` |
-| Required next proof | Confirm design conformance, parity, accepted metric exception, Phase 1, Phase 2, and production-handoff evidence before close-out |
-| Last status note | `2026-07-09 M2.5 hex-implementation` |
+| Required next proof | Ledger close-out, German status note, owner smoke checklist availability, Hex reference commit declaration, and M2 retro |
+| Last status note | `2026-07-09 M2.6 hex-conformance-review` |
 
 ## M0 Step Ledger
 
@@ -65,8 +65,8 @@ but they do not advance the migration unless this ledger advances too.
 | 3. Target design | Done on branch | `153aebd3b` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean after rework; Phase 2 Approve | Approved design artifact: `docs/project/architecture/architecture-migration-hex-target-design.md`; names target classes, representative call chains, deletion list, byte-compatible seams, frozen parity inventory, wiring-port boundary, and metric exceptions. |
 | 4. Harness wiring port | Done on branch | `492ceb3eb` | Pending PR merge | `./gradlew compileJava compileTestJava --console=plain` passed, 2026-07-09; `./gradlew checkNoDeadCode pmdStrictMain --console=plain` passed, 2026-07-09; `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed, 2026-07-09; `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | `HexMapViewModel` is a compatibility facade over the existing content/contribution models; Hex view and harness wiring now route through it. Harness scenario/assertion labels are frozen, and the old content models, input event records, and `HexMapIntentHandler` remain for M2.5 replacement. |
 | 5. Implementation | Done on branch | `3679a19e2` | Pending PR merge | `./gradlew compileJava compileTestJava --console=plain` passed, 2026-07-09; `./gradlew checkNoDeadCode pmdStrictMain --console=plain` passed, 2026-07-09; `env -u CODEX_THREAD_ID ./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed with 21 + 2 proof items, 2026-07-09; `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09; `git diff --cached --check` passed; Phase 1 and Phase 2 Approve with explicit metric exception | Implemented the approved Hex target shape, deleted the per-verb usecase/port/published-state/view content/input/handler stack, kept byte-compatible published seams, and accepted the bounded 41-file / 3,701-LOC M2.5 exception from amendment commit `9e852113b`. Retained harness-log attempts hit a Gradle wildcard-IP startup environment failure before task execution; direct non-redirected harness execution was green. |
-| 6. Conformance review | In Flight | Pending | Pending PR merge | Pending | Confirm the already completed Phase 1/Phase 2 evidence, metric exception, deletion-list execution, frozen parity, and final proof set before close-out. |
-| 7. Close-out | Pending | Pending | Pending PR merge | Pending | Ledger update, German status note, owner smoke checklist available, and Hex reference commit declaration. |
+| 6. Conformance review | Done on branch | `6432a1b2f` | Pending PR merge | Phase 1 Approve with explicit metric exception; Phase 2 Approve with explicit metric exception; product subset 41 Java files / 3,701 physical LOC; deletion list executed; forwarding-only Hex product classes absent; Hex-owned intent-to-mutation chains <=3; non-seam String round-trips absent; `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09 | Conformance review accepted the M2.5 LOC exception from design amendment `9e852113b`, verified byte-compatible seams, accepted direct Hex harness proof after retained-log attempts failed before task execution on Gradle wildcard-IP environment startup, and found no Must-Fix findings. |
+| 7. Close-out | In Flight | Pending | Pending PR merge | Pending | Ledger update, German status note, owner smoke checklist available, Hex reference commit declaration, and M2 retro. |
 
 ## Milestone Ledger
 
