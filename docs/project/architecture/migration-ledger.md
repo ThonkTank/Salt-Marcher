@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M2 - Pilot hex |
-| Work item | M2.1 - Hex harness check/closure |
-| Cycle step | 1 - Harness check/closure |
+| Work item | M2.2 - Hex baseline metrics |
+| Cycle step | 2 - Baseline metrics |
 | In-flight area | `hex` |
-| Required next proof | `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` plus `./gradlew checkDocumentationEnforcement --console=plain` if docs change |
-| Last status note | `2026-07-09 M1.5 render-parity-net` |
+| Required next proof | Hex baseline metrics recorded; `./gradlew checkDocumentationEnforcement --console=plain` if docs change |
+| Last status note | `2026-07-09 M2.1 hex-harness-closure` |
 
 ## M0 Step Ledger
 
@@ -60,8 +60,8 @@ but they do not advance the migration unless this ledger advances too.
 
 | Cycle step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1. Harness check/closure | In Flight | Pending | Pending PR merge | Pending | Re-check M1.3 Hex production-route coverage before M2 baseline metrics. |
-| 2. Baseline metrics | Pending | Pending | Pending PR merge | Pending | File count, LOC, longest intent-to-mutation chain, forwarding-only classes, and String boundary round-trips. |
+| 1. Harness check/closure | Done on branch | `4eb00535c` | Pending PR merge | `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | `HEX-EDITOR-013` closes the production-route map-save failure visibility gap against the old Hex structure. |
+| 2. Baseline metrics | In Flight | Pending | Pending PR merge | Pending | File count, LOC, longest intent-to-mutation chain, forwarding-only classes, and String boundary round-trips. |
 | 3. Target design | Pending | Pending | Pending PR merge | Pending | Judge-approved Hex pilot design required before implementation. |
 | 4. Harness wiring port | Pending | Pending | Pending PR merge | Pending | Separate commit only; scenarios and assertions frozen. |
 | 5. Implementation | Pending | Pending | Pending PR merge | Pending | Must follow the approved Hex pilot design. |
@@ -84,7 +84,7 @@ but they do not advance the migration unless this ledger advances too.
 
 | Area | Standard | Status | Merge commit | Harness status |
 | --- | --- | --- | --- | --- |
-| `hex` | Legacy surrounding code until M2 design; then pilot reference commit | In Flight | Pending | M2.1 in flight; M1.3 hardening: `hexMapEditorBehaviorHarness` covers the shell-bound Hex Map route through `HexMapContribution`; `hexTravelStateBehaviorHarness` covers the production Hex/Party publication route into the Reise state tab. |
+| `hex` | Legacy surrounding code until M2 design; then pilot reference commit | In Flight | Pending | M2.1 closed: `hexMapEditorBehaviorHarness` covers the shell-bound Hex Map route through `HexMapContribution`, production-route map save failure visibility, and Hex editor read/write behavior; `hexTravelStateBehaviorHarness` covers the production Hex/Party publication route into the Reise state tab. |
 | `worldplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: backend, UI, raw-input, and encounter harnesses; P1 cross-context worldplanner-to-encounter route gap remains. |
 | `creatures` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner and encounter harness imports only; P2 dedicated creature catalog harness gap remains. |
 | `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains. |
@@ -102,7 +102,7 @@ but they do not advance the migration unless this ledger advances too.
 
 | Area | Existing harnesses | Imported boundary surfaces | Scenario coverage | Known gaps |
 | --- | --- | --- | --- | --- |
-| `hex` | `hexMapEditorBehaviorHarness`, `hexTravelStateBehaviorHarness` | `HexEditorApplicationService`, `HexTravelApplicationService`, `HexEditorModel`, `HexEditorSnapshot`, hex command records, `HexTravelModel`, `HexTravelSnapshot`, party travel models, Hex Map content/control models, `HexMapContribution`, `ShellBinding`, `ShellSlot`, `TravelStateContribution` | Create, update, select, paint, marker save, radius errors, persistence readback, travel token readback, shell-bound Hex Map route, and production Hex/Party Reise state-tab readback | M1.3 route gaps closed; scenarios and assertions are frozen for M2 baseline unless a separate wiring-port commit is approved. |
+| `hex` | `hexMapEditorBehaviorHarness`, `hexTravelStateBehaviorHarness` | `HexEditorApplicationService`, `HexTravelApplicationService`, `HexEditorModel`, `HexEditorSnapshot`, hex command records, `HexTravelModel`, `HexTravelSnapshot`, party travel models, Hex Map content/control models, `HexMapContribution`, `ShellBinding`, `ShellSlot`, `TravelStateContribution` | Create, update, select, paint, marker save, radius errors, persistence readback, save failure visibility, travel token readback, shell-bound Hex Map route, and production Hex/Party Reise state-tab readback | M1.3 route gaps and the M2.1 save-failure visibility gap are closed; scenarios and assertions are frozen for M2 baseline unless a separate wiring-port commit is approved. |
 | `worldplanner` | `worldPlannerBackendHarness`, `worldPlannerUiHarness`, `worldPlannerControlsRawInputHarness`, `worldPlannerEncounterHarness` | `WorldPlannerApplicationService`, `WorldPlannerSnapshotModel`, world planner commands/reference ports, `WorldPlannerSnapshot`, creature and encounter-table published catalogs, encounter application/usecase surfaces | NPC/faction/location mutations, reference validation, persistence errors/readback, raw input controls, UI projection, encounter generation/session bridge | P1 cross-context route uses fixture world snapshots and fixture encounter repository |
 | `creatures` | None dedicated; adjacent worldplanner UI and encounter state-tab harnesses import creature surfaces | `CreaturesApplicationService`, `CreatureCatalogPort`, catalog usecases, `CreatureCatalogModel/Page/Row`, `CreatureDetailModel`, `CreatureLookupStatus` | Adjacent lookup, display, and encounter candidate use only | P2 dedicated create/edit/filter/readback catalog harness |
 | `party` | `partyDropdownHarness`; also imported by hex and dungeon travel harnesses | `PartyApplicationService`, active-party composition/model, party snapshot/mutation models, character commands, travel position snapshots, dropdown content model | Create character, move between active/reserve, active-party publication, trigger label, travel-token publication consumers | P1 shell-bound dropdown route |
@@ -201,3 +201,14 @@ Dungeon-Travel-Auffaelligkeit, dass `z=0` und `z=1` aktuell pixelgleich bleiben
 koennen, ist als separater R2-Eintrag journalisiert und in der Migration nicht
 repariert. M1 ist damit auf dem Branch abgeschlossen; naechster Schritt ist
 M2.1 Hex-Harness-Check.
+
+### 2026-07-09 M2.1 hex-harness-closure
+
+Die M2.1-Harness-Pruefung hat die verbleibende Hex-Save-Failure-Luecke gegen
+die alte Struktur geschlossen: `HEX-EDITOR-013` treibt das State-Panel
+`Speichern` durch `HexMapStateView`, `HexMapIntentHandler`, Domain-Use-Case und
+SQLite-Update und erzwingt dort einen Speicherfehler. Der Fehler erscheint
+sichtbar im State-Panel, und der persistierte Kartenname bleibt unveraendert.
+Der kombinierte Hex-Harness, das Dokumentationsgate, `git diff --check`, Phase
+1 und der unabhaengige Judge sind gruen. Naechster Schritt ist M2.2 mit
+Baseline-Metriken fuer die Hex-Pilotflaeche.
