@@ -53,7 +53,7 @@ but they do not advance the migration unless this ledger advances too.
 | M1.1 Harness inventory | Done on branch | `90e4ac7ac` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; judge review Approve | Existing harnesses, imported boundary surfaces, scenario coverage, and current gaps are listed below for every migration area. |
 | M1.2 Parity protocol | Done on branch | `a027ac712` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | Roadmap protocol freezes scenario/assertion inventories in per-area designs, keeps wiring ports separate, closes gaps against old structure, and handles nondeterministic old behavior through deterministic envelopes plus R2 issue filing. |
 | M1.3 Pilot harness hardening | Done on branch | `6d9747a5d` | Pending PR merge | `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | Hex Map and Reise state-tab production-route gaps are closed against the old structure. |
-| M1.4 Owner smoke scripts | In Flight | Pending | Pending PR merge | Pending | German owner smoke checklists are being drafted next to the ledger. |
+| M1.4 Owner smoke scripts | In Flight | Pending | Pending PR merge | Pending | German owner smoke checklists are being drafted in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`. |
 | M1.5 Render parity net | Pending | Pending | Pending PR merge | Pending | Not started. |
 
 ## Milestone Ledger
