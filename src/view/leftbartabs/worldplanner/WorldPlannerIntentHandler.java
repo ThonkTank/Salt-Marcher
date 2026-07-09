@@ -30,18 +30,18 @@ final class WorldPlannerIntentHandler {
 
     private final WorldPlannerApplicationService worldPlanner;
     private final @Nullable EncounterApplicationService encounter;
-    private final WorldPlannerContributionModel contributionModel;
+    private final WorldPlannerViewModel viewModel;
     private final Runnable detailOpener;
 
     WorldPlannerIntentHandler(
             WorldPlannerApplicationService worldPlanner,
             @Nullable EncounterApplicationService encounter,
-            WorldPlannerContributionModel contributionModel,
+            WorldPlannerViewModel viewModel,
             Runnable detailOpener
     ) {
         this.worldPlanner = Objects.requireNonNull(worldPlanner, "worldPlanner");
         this.encounter = encounter;
-        this.contributionModel = Objects.requireNonNull(contributionModel, "contributionModel");
+        this.viewModel = Objects.requireNonNull(viewModel, "viewModel");
         this.detailOpener = Objects.requireNonNull(detailOpener, "detailOpener");
     }
 
@@ -50,9 +50,9 @@ final class WorldPlannerIntentHandler {
         detailOpener.run();
     }
 
-    void consume(WorldPlannerControlsViewInputEvent event) {
-        WorldPlannerControlsViewInputEvent safeEvent = Objects.requireNonNull(event, EVENT);
-        contributionModel.activate(safeEvent.selectedModuleIndex());
+    void consume(WorldPlannerViewModel.ControlsInput event) {
+        WorldPlannerViewModel.ControlsInput safeEvent = Objects.requireNonNull(event, EVENT);
+        viewModel.activate(safeEvent.selectedModuleIndex());
         if (safeEvent.refreshRequested()) {
             refreshWorldPlanner();
         }
@@ -61,25 +61,25 @@ final class WorldPlannerIntentHandler {
 
     void consume(WorldPlannerNpcMainViewInputEvent event) {
         WorldPlannerNpcMainViewInputEvent safeEvent = Objects.requireNonNull(event, EVENT);
-        contributionModel.selectNpc(safeEvent.selectedNpcIndex());
+        viewModel.selectNpc(safeEvent.selectedNpcIndex());
         detailOpener.run();
     }
 
     void consume(WorldPlannerFactionMainViewInputEvent event) {
         WorldPlannerFactionMainViewInputEvent safeEvent = Objects.requireNonNull(event, EVENT);
-        contributionModel.selectFaction(safeEvent.selectedFactionIndex());
+        viewModel.selectFaction(safeEvent.selectedFactionIndex());
         detailOpener.run();
     }
 
     void consume(WorldPlannerLocationMainViewInputEvent event) {
         WorldPlannerLocationMainViewInputEvent safeEvent = Objects.requireNonNull(event, EVENT);
-        contributionModel.selectLocation(safeEvent.selectedLocationIndex());
+        viewModel.selectLocation(safeEvent.selectedLocationIndex());
         detailOpener.run();
     }
 
     void consume(SearchFilterControlsViewInputEvent event) {
         SearchFilterControlsViewInputEvent safeEvent = Objects.requireNonNull(event, EVENT);
-        contributionModel.applySearchFilters(safeEvent.searchQuery(), selectedFiltersByGroup(safeEvent));
+        viewModel.applySearchFilters(safeEvent.searchQuery(), selectedFiltersByGroup(safeEvent));
         detailOpener.run();
     }
 
@@ -142,7 +142,7 @@ final class WorldPlannerIntentHandler {
     private void createNpc(WorldPlannerStateViewInputEvent.NpcSnapshot event) {
         worldPlanner.createNpc(new CreateWorldNpcCommand(
                 event.displayName(),
-                contributionModel.npcStatblockChoiceId(event.statblockChoiceIndex()),
+                viewModel.npcStatblockChoiceId(event.statblockChoiceIndex()),
                 event.appearanceNotes(),
                 event.behaviorNotes(),
                 event.historyNotes(),
@@ -151,7 +151,7 @@ final class WorldPlannerIntentHandler {
 
     private void updateNpcNotes(WorldPlannerStateViewInputEvent.NpcSnapshot event) {
         worldPlanner.updateNpcNotes(new UpdateWorldNpcNotesCommand(
-                contributionModel.selectedNpcId(),
+                viewModel.selectedNpcId(),
                 event.appearanceNotes(),
                 event.behaviorNotes(),
                 event.historyNotes(),
@@ -160,17 +160,17 @@ final class WorldPlannerIntentHandler {
 
     private void defeatNpc() {
         worldPlanner.setNpcLifecycleStatus(
-                SetWorldNpcLifecycleStatusCommand.defeated(contributionModel.selectedNpcId()));
+                SetWorldNpcLifecycleStatusCommand.defeated(viewModel.selectedNpcId()));
     }
 
     private void reactivateNpc() {
         worldPlanner.setNpcLifecycleStatus(
-                SetWorldNpcLifecycleStatusCommand.active(contributionModel.selectedNpcId()));
+                SetWorldNpcLifecycleStatusCommand.active(viewModel.selectedNpcId()));
     }
 
     private void addNpcToEncounter() {
-        long statblockId = contributionModel.selectedNpcStatblockId();
-        long npcId = contributionModel.selectedNpcId();
+        long statblockId = viewModel.selectedNpcStatblockId();
+        long npcId = viewModel.selectedNpcId();
         EncounterApplicationService service = encounter;
         if (service != null && statblockId > 0L && npcId > 0L) {
             service.applyState(ApplyEncounterStateCommand.addWorldNpcCreature(statblockId, npcId));
@@ -181,19 +181,19 @@ final class WorldPlannerIntentHandler {
         worldPlanner.createFaction(new CreateWorldFactionCommand(
                 event.displayName(),
                 "",
-                contributionModel.factionPrimaryTableChoiceId(event.primaryEncounterTableChoiceIndex())));
+                viewModel.factionPrimaryTableChoiceId(event.primaryEncounterTableChoiceIndex())));
     }
 
     private void addFactionNpc(WorldPlannerStateViewInputEvent.FactionSnapshot event) {
         worldPlanner.addFactionNpc(new AddWorldFactionNpcCommand(
-                contributionModel.selectedFactionId(),
-                contributionModel.factionNpcChoiceId(event.npcChoiceIndex())));
+                viewModel.selectedFactionId(),
+                viewModel.factionNpcChoiceId(event.npcChoiceIndex())));
     }
 
     private void setInventoryLimit(WorldPlannerStateViewInputEvent.FactionSnapshot event) {
         worldPlanner.setFactionInventoryLimit(new SetWorldFactionInventoryLimitCommand(
-                contributionModel.selectedFactionId(),
-                contributionModel.factionStatblockChoiceId(event.inventoryStatblockChoiceIndex()),
+                viewModel.selectedFactionId(),
+                viewModel.factionStatblockChoiceId(event.inventoryStatblockChoiceIndex()),
                 event.finiteInventory(),
                 parseQuantity(event.inventoryQuantityText())));
     }
@@ -204,14 +204,14 @@ final class WorldPlannerIntentHandler {
 
     private void addLocationFaction(WorldPlannerStateViewInputEvent.LocationSnapshot event) {
         worldPlanner.addLocationFaction(new AddWorldLocationFactionCommand(
-                contributionModel.selectedLocationId(),
-                contributionModel.locationFactionChoiceId(event.factionChoiceIndex())));
+                viewModel.selectedLocationId(),
+                viewModel.locationFactionChoiceId(event.factionChoiceIndex())));
     }
 
     private void addLocationEncounterTable(WorldPlannerStateViewInputEvent.LocationSnapshot event) {
         worldPlanner.addLocationEncounterTable(new AddWorldLocationEncounterTableCommand(
-                contributionModel.selectedLocationId(),
-                contributionModel.locationTableChoiceId(event.encounterTableChoiceIndex())));
+                viewModel.selectedLocationId(),
+                viewModel.locationTableChoiceId(event.encounterTableChoiceIndex())));
     }
 
     private void refreshWorldPlanner() {

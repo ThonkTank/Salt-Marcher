@@ -14,7 +14,6 @@ import src.domain.encounter.EncounterApplicationService;
 import src.domain.encountertable.published.EncounterTableCatalogModel;
 import src.domain.worldplanner.WorldPlannerApplicationService;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
-import src.view.slotcontent.controls.searchfilter.SearchFilterControlsContentModel;
 import src.view.slotcontent.controls.searchfilter.SearchFilterControlsView;
 
 final class WorldPlannerBinder {
@@ -34,29 +33,12 @@ final class WorldPlannerBinder {
         EncounterTableCatalogModel encounterTableCatalog =
                 services.find(EncounterTableCatalogModel.class).orElse(null);
 
-        WorldPlannerControlsContentModel controlsContentModel = new WorldPlannerControlsContentModel();
-        SearchFilterControlsContentModel searchFilterContentModel = new SearchFilterControlsContentModel();
-        WorldPlannerNpcMainContentModel npcMainContentModel = new WorldPlannerNpcMainContentModel();
-        WorldPlannerFactionMainContentModel factionMainContentModel = new WorldPlannerFactionMainContentModel();
-        WorldPlannerLocationMainContentModel locationMainContentModel = new WorldPlannerLocationMainContentModel();
-        WorldPlannerSourceMainContentModel sourceMainContentModel = new WorldPlannerSourceMainContentModel();
-        WorldPlannerMainContentModel mainContentModel = new WorldPlannerMainContentModel();
-        WorldPlannerStateContentModel stateContentModel = new WorldPlannerStateContentModel();
-        WorldPlannerContributionModel contributionModel = new WorldPlannerContributionModel(
-                controlsContentModel,
-                searchFilterContentModel,
-                npcMainContentModel,
-                factionMainContentModel,
-                locationMainContentModel,
-                sourceMainContentModel,
-                stateContentModel);
-        contributionModel.setEncounterAvailable(encounter != null);
-
+        WorldPlannerViewModel viewModel = new WorldPlannerViewModel(encounter != null);
         WorldPlannerIntentHandler intentHandler = new WorldPlannerIntentHandler(
                 worldPlanner,
                 encounter,
-                contributionModel,
-                () -> openDetails(contributionModel));
+                viewModel,
+                () -> openDetails(viewModel));
         WorldPlannerControlsView controlsView = new WorldPlannerControlsView();
         SearchFilterControlsView searchFilterView = new SearchFilterControlsView();
         WorldPlannerNpcMainView npcMainView = new WorldPlannerNpcMainView();
@@ -70,43 +52,43 @@ final class WorldPlannerBinder {
                 sourceMainView);
         WorldPlannerStateView stateView = new WorldPlannerStateView();
 
-        controlsView.bind(controlsContentModel);
-        searchFilterView.bind(searchFilterContentModel);
-        npcMainView.bind(npcMainContentModel);
-        factionMainView.bind(factionMainContentModel);
-        locationMainView.bind(locationMainContentModel);
-        sourceMainView.bind(sourceMainContentModel);
-        mainView.bind(mainContentModel);
-        stateView.bind(stateContentModel);
-        controlsView.onViewInputEvent(intentHandler::consume);
+        viewModel.bindControls(controlsView);
+        viewModel.bindSearchFilters(searchFilterView);
+        viewModel.bindNpcMain(npcMainView);
+        viewModel.bindFactionMain(factionMainView);
+        viewModel.bindLocationMain(locationMainView);
+        viewModel.bindSourceMain(sourceMainView);
+        viewModel.bindMain(mainView);
+        viewModel.bindState(stateView);
+        viewModel.onControlsInput(controlsView, intentHandler::consume);
         searchFilterView.onViewInputEvent(intentHandler::consume);
         npcMainView.onViewInputEvent(intentHandler::consume);
         factionMainView.onViewInputEvent(intentHandler::consume);
         locationMainView.onViewInputEvent(intentHandler::consume);
         stateView.onViewInputEvent(intentHandler::consume);
 
-        snapshotModel.subscribe(contributionModel::applySnapshot);
+        snapshotModel.subscribe(viewModel::applySnapshot);
         if (creatureCatalog != null) {
-            creatureCatalog.subscribe(contributionModel::applyCreatureCatalog);
-            contributionModel.applyCreatureCatalog(creatureCatalog.current());
+            creatureCatalog.subscribe(viewModel::applyCreatureCatalog);
+            viewModel.applyCreatureCatalog(creatureCatalog.current());
         }
         if (encounterTableCatalog != null) {
-            encounterTableCatalog.subscribe(contributionModel::applyEncounterTables);
-            contributionModel.applyEncounterTables(encounterTableCatalog.current());
+            encounterTableCatalog.subscribe(viewModel::applyEncounterTables);
+            viewModel.applyEncounterTables(encounterTableCatalog.current());
         }
-        contributionModel.applySnapshot(snapshotModel.current());
+        viewModel.applySnapshot(snapshotModel.current());
         intentHandler.activateRoot();
         return new Binding(ShellControls.stack(controlsView, searchFilterView), mainView, stateView);
     }
 
-    private void openDetails(WorldPlannerContributionModel contributionModel) {
-        String key = contributionModel.detailKey();
+    private void openDetails(WorldPlannerViewModel viewModel) {
+        String key = viewModel.detailKey();
         if (key.isBlank()) {
             runtimeContext.inspector().clear();
             return;
         }
-        String title = contributionModel.detailTitle();
-        WorldPlannerDetailContentModel.Projection projection = contributionModel.detailProjection();
+        String title = viewModel.detailTitle();
+        WorldPlannerDetailContentModel.Projection projection = viewModel.detailProjection();
         runtimeContext.inspector().push(new InspectorEntrySpec(
                 title,
                 key,
