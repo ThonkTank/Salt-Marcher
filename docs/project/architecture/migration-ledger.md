@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M3 - Rollout wave 1 |
-| Work item | M3.3 - worldplanner target design |
-| Cycle step | 3 - Target design |
+| Work item | M3.4 - worldplanner harness wiring port |
+| Cycle step | 4 - Harness wiring port |
 | In-flight area | `worldplanner` |
-| Required next proof | Write concrete worldplanner target design with target classes, representative call chains, deletion list, seam statement, frozen parity inventory, and untouched-list; obtain Phase 1 and Phase 2 approval before wiring or implementation |
-| Last status note | `2026-07-09 M3.2 worldplanner-baseline-metrics` |
+| Required next proof | Port worldplanner harness/view wiring to the approved `WorldPlannerViewModel` compatibility facade without deleting old content models, input records, or `WorldPlannerIntentHandler`; keep frozen scenarios and assertions unchanged |
+| Last status note | `2026-07-09 M3.3 worldplanner-target-design` |
 
 ## M0 Step Ledger
 
@@ -74,7 +74,8 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- | --- | --- | --- | --- |
 | 1. Harness check/closure | Done on branch | `36ede990b` | Pending PR merge | `./gradlew worldPlannerBackendHarness worldPlannerEncounterHarness worldPlannerControlsRawInputHarness worldPlannerUiHarness --console=plain` passed, 2026-07-09; `tools/gradle/run-staged-verification.sh focused-handoff --path src/domain/worldplanner --area worldplanner` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09 | `worldPlannerEncounterHarness` now seeds World Planner through production service/persistence, resolves encounter source constraints through registered `WorldPlannerSnapshotModel`, drives Encounter through `EncounterApplicationService`, and asserts through published `EncounterStateModel`; the P1 worldplanner-to-encounter route gap is removed from `docs/project/verification/harness-gaps.md`. |
 | 2. Baseline metrics | Done on branch | `57aecf3c5` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed, 2026-07-09 | Baseline artifact: `docs/project/architecture/architecture-migration-worldplanner-baseline.md`; full roadmap set is 82 files / 5,440 physical LOC; product subset is 68 files / 4,667 physical LOC; dominant Worldplanner-owned chains are 5 hops to first domain mutation and up to 7 including immutable replacement/save tails; 3 product/published forwarding or proxy candidates plus 1 data candidate; 7 product String round-trip families. |
-| 3. Target design | In Flight | Pending | Pending | Pending | Write the concrete M3.3 target design before any wiring port or implementation. |
+| 3. Target design | Done on branch | Pending current commit | Pending | Retained harness log `build/gradle-run-logs/20260709T205735214729551-pid1194536-worldPlannerBackendHarness__worldPlannerEncounterHarness__worldPlannerControlsRawInputHarness__worldPlannerUiHarness.log` passed, 2026-07-09 after sandbox retry; retained doc log `build/gradle-run-logs/20260709T211302779001324-pid1202342-checkDocumentationEnforcement.log` passed, 2026-07-09 after sandbox retry; `tools/gradle/run-staged-verification.sh focused-handoff --path src/domain/worldplanner --area worldplanner` passed, 2026-07-09 after sandbox retry; `git diff --check` and `git diff --cached --check` passed, 2026-07-09; Phase 1 returned Must Fix, 2026-07-09; Phase 1 re-review Clean, 2026-07-09; Phase 2 Approve, 2026-07-09 | Approved design artifact: `docs/project/architecture/architecture-migration-worldplanner-target-design.md`; Phase 1 found missing selected-NPC UI handoff proof and ambiguous refresh inventory wording. Rework closes the UI handoff against the old structure in `worldPlannerUiHarness`, corrects the frozen inventory, and Phase 1/Phase 2 approved the target design. |
+| 4. Harness wiring port | In Flight | Pending | Pending | Pending | Port wiring to the approved `WorldPlannerViewModel` compatibility facade only; scenarios/assertions remain frozen and old content models, input records, and `WorldPlannerIntentHandler` remain for M3.5 implementation. |
 
 ## Milestone Ledger
 
@@ -93,7 +94,7 @@ but they do not advance the migration unless this ledger advances too.
 | Area | Standard | Status | Merge commit | Harness status |
 | --- | --- | --- | --- | --- |
 | `hex` | Pilot reference commit `3679a19e2` | Done on branch | Pending | M2 done: `hexMapEditorBehaviorHarness` and `hexTravelStateBehaviorHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 41-file / 3,701-LOC metric exception; owner smoke checklist is available. |
-| `worldplanner` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 done on branch: backend, UI, raw-input, and encounter harnesses are green; `worldPlannerEncounterHarness` now covers the cross-context route through production World Planner publication/persistence, Encounter source wiring, and published Encounter state. M3.2 baseline metrics are recorded in `docs/project/architecture/architecture-migration-worldplanner-baseline.md`; M3.3 target design is next. |
+| `worldplanner` | Approved M3.3 target design, then pilot reference | In Flight | Pending | M3.1 done on branch: backend, UI, raw-input, and encounter harnesses are green; `worldPlannerEncounterHarness` now covers the cross-context route through production World Planner publication/persistence, Encounter source wiring, and published Encounter state; M3.3 rework also closes the selected-NPC UI handoff proof through `worldPlannerUiHarness`. M3.2 baseline metrics are recorded in `docs/project/architecture/architecture-migration-worldplanner-baseline.md`; M3.3 target design is Phase 1/Phase 2 approved and M3.4 wiring port is next. |
 | `creatures` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner and encounter harness imports only; P2 dedicated creature catalog harness gap remains. |
 | `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains. |
 | `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
@@ -309,3 +310,17 @@ werden. Forwarding-Kandidaten, Seam-Proxies und String-Roundtrips sind konkret
 mit Repo-Pfaden und Zeilen belegt. Naechster Schritt ist M3.3 mit
 judge-geprueftem Worldplanner-Target-Design; es wurde noch keine Wiring- oder
 Implementierungsarbeit begonnen.
+
+### 2026-07-09 M3.3 worldplanner-target-design
+
+Das Worldplanner-Target-Design ist in
+`docs/project/architecture/architecture-migration-worldplanner-target-design.md`
+genehmigt. Phase 1 fand zunaechst eine fehlende UI-Proof-Grenze fuer
+`Zum Encounter` und eine missverstaendliche Refresh-Formulierung; der Rework
+schliesst den sichtbaren Button gegen die alte Struktur im
+`worldPlannerUiHarness` und haelt `Aktualisieren` weiter als eingefrorenes
+Verhalten fest. Retained Harness-, Focused-Handoff- und Dokumentationslogs sind
+gruen; Phase 1 Re-Review und der unabhaengige Judge haben M3.3 freigegeben.
+Naechster Schritt ist M3.4: ein reiner Wiring-Port auf die
+`WorldPlannerViewModel`-Kompatibilitaetsgrenze, ohne Loeschliste und ohne
+Szenario- oder Assertion-Aenderung.

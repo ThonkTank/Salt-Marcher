@@ -114,12 +114,13 @@ Mechanically enforced for the current left-bar UI slice:
 - `./gradlew worldPlannerUiHarness --console=plain`
 
 The UI harness proves the World Planner contribution bind route can create
-NPCs, update NPC notes, toggle NPC lifecycle, create factions, link NPC
-membership, set faction inventory limits, create locations, link factions, link
-encounter tables, and render selected NPC detail notes from domain readback.
-The World Planner view also exposes a selected-NPC action that adds the NPC to
-the Encounter roster through the Encounter public boundary while carrying its
-World Planner identity.
+NPCs, update NPC notes, toggle NPC lifecycle, send the selected NPC to the
+Encounter roster through the visible `Zum Encounter` button, create factions,
+link NPC membership, set faction inventory limits, create locations, link
+factions, link encounter tables, and render selected NPC detail notes from
+domain readback. The Encounter handoff assertion reads the published
+`EncounterStateModel` and checks both the selected statblock id and the World
+Planner NPC identity.
 
 ## Known Harness Gaps
 
