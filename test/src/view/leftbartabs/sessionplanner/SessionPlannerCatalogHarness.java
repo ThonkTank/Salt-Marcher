@@ -269,24 +269,25 @@ public final class SessionPlannerCatalogHarness {
         textField(view, "Szenentitel").setText("Bridge Alarm Final");
         textArea(view, "Szenennotizen").setText("ring twice");
         selectComboBoxItem(view, "#10 | Moonwell");
-        assertTrue(events.stream().anyMatch(event -> event.sceneDraft().sceneToken() == 1L),
-                "scene draft edits publish draft events");
+        assertTrue(events.stream().anyMatch(event -> event.widgetToken() > 0L && event.sceneToken() == 1L),
+                "scene draft edits publish a technical widget token");
         events.clear();
         button(view, "Szene speichern").fire();
         List<SessionPlannerTimelineMainViewInputEvent> saveEvents = events.stream()
-                .filter(event -> event.scene().sceneToken() == 1L)
+                .filter(event -> event.widgetToken() > 0L && event.sceneToken() == 1L)
                 .toList();
         assertEquals(Integer.valueOf(1), Integer.valueOf(saveEvents.size()), "scene save publishes one save event");
-        assertEquals(Long.valueOf(1L), Long.valueOf(saveEvents.getFirst().scene().sceneToken()),
+        assertEquals(Long.valueOf(1L), Long.valueOf(saveEvents.getFirst().sceneToken()),
                 "scene save targets the scene card");
-        assertEquals("Bridge Alarm Final", saveEvents.getFirst().scene().title(), "scene save carries title");
-        assertEquals("ring twice", saveEvents.getFirst().scene().notes(), "scene save carries notes");
-        assertEquals(Long.valueOf(10L), Long.valueOf(saveEvents.getFirst().scene().locationId()),
+        assertEquals("Bridge Alarm Final", saveEvents.getFirst().sceneTitleText(), "scene save carries title");
+        assertEquals("ring twice", saveEvents.getFirst().sceneNotesText(), "scene save carries notes");
+        assertEquals(Long.valueOf(10L), Long.valueOf(saveEvents.getFirst().locationId()),
                 "scene save carries location id");
         events.clear();
         button(view, "Loot-Platzhalter").fire();
         assertEquals(Integer.valueOf(1), Integer.valueOf(events.size()), "loot add button publishes one event");
-        assertEquals(Long.valueOf(1L), Long.valueOf(events.getFirst().loot().sceneTokenToAdd()),
+        assertTrue(events.getFirst().widgetToken() > 0L, "loot add event carries a technical widget token");
+        assertEquals(Long.valueOf(1L), Long.valueOf(events.getFirst().sceneToken()),
                 "loot add event targets the scene card");
         stage.hide();
     }

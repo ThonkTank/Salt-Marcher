@@ -1,7 +1,9 @@
 package src.view.leftbartabs.sessionplanner;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
 import src.domain.sessionplanner.SessionPlannerEncounterApplicationService;
@@ -26,6 +28,8 @@ import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEve
 
 final class SessionPlannerIntentHandler {
 
+    private static final BigDecimal ALLOCATION_STEP = BigDecimal.TEN;
+
     private final SessionPlannerApplicationService planner;
     private final SessionPlannerParticipantApplicationService participants;
     private final SessionPlannerEncounterApplicationService encounters;
@@ -34,6 +38,8 @@ final class SessionPlannerIntentHandler {
     private final SessionPlannerControlsContentModel controlsContentModel;
     private final CatalogCrudControlsContentModel catalogContentModel;
     private final SessionPlannerTimelineMainContentModel timelineMainContentModel;
+    private final Map<SessionPlannerTimelineMainContentModel.TimelineWidgetKind,
+            Consumer<SessionPlannerTimelineMainViewInputEvent>> timelineActions;
 
     SessionPlannerIntentHandler(
             SessionPlannerApplicationService planner,
@@ -53,6 +59,7 @@ final class SessionPlannerIntentHandler {
         this.controlsContentModel = Objects.requireNonNull(controlsContentModel, "controlsContentModel");
         this.catalogContentModel = Objects.requireNonNull(catalogContentModel, "catalogContentModel");
         this.timelineMainContentModel = Objects.requireNonNull(timelineMainContentModel, "timelineMainContentModel");
+        this.timelineActions = timelineActions();
     }
 
     void consume(SessionPlannerControlsViewInputEvent event) {
@@ -68,89 +75,146 @@ final class SessionPlannerIntentHandler {
         if (event == null || !controlsContentModel.hasCurrentSession()) {
             return;
         }
-        consumeTimelineSelection(event);
-        consumeTimelineSetup(event);
-        consumeTimelineMutation(event);
-        consumeTimelineRest(event);
-        consumeTimelineLoot(event);
-        consumeTimelineSceneDraft(event);
-        consumeTimelineScene(event);
-    }
-
-    private void consumeTimelineSelection(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.SelectionSnapshot selection = event.selection();
-        if (hasPositiveId(selection.selectedSceneToken())) {
-            selectEncounter(selection.selectedSceneToken());
-        }
-        if (hasPositiveId(selection.allocationSceneToken())) {
-            setEncounterAllocation(selection.allocationSceneToken(), selection.targetAllocationPercentage());
+        SessionPlannerTimelineMainContentModel.TimelineWidgetKind widgetKind =
+                timelineMainContentModel.widgetKind(event.widgetToken());
+        Consumer<SessionPlannerTimelineMainViewInputEvent> action = timelineActions.get(widgetKind);
+        if (action != null) {
+            action.accept(event);
         }
     }
 
-    private void consumeTimelineSetup(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.SetupSnapshot setup = event.setup();
-        long participantToAddId = timelineMainContentModel.participantChoiceId(setup.participantChoiceIndex());
+    private Map<SessionPlannerTimelineMainContentModel.TimelineWidgetKind,
+            Consumer<SessionPlannerTimelineMainViewInputEvent>> timelineActions() {
+        return Map.ofEntries(
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_SELECT,
+                        this::selectTimelineScene),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.ALLOCATION_DECREASE,
+                        event -> adjustTimelineAllocation(event, ALLOCATION_STEP.negate())),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.ALLOCATION_INCREASE,
+                        event -> adjustTimelineAllocation(event, ALLOCATION_STEP)),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_MOVE_UP,
+                        this::moveTimelineSceneUp),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_MOVE_DOWN,
+                        this::moveTimelineSceneDown),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_REMOVE,
+                        this::removeTimelineScene),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.REST_SHORT,
+                        event -> setTimelineRest(event, SessionPlannerRestKind.SHORT_REST)),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.REST_LONG,
+                        event -> setTimelineRest(event, SessionPlannerRestKind.LONG_REST)),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.REST_CLEAR,
+                        this::clearTimelineRest),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.LOOT_ADD,
+                        this::addTimelineLoot),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.LOOT_REMOVE,
+                        this::removeTimelineLoot),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_SAVE,
+                        this::saveTimelineScene),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_DRAFT,
+                        this::updateTimelineSceneDraft),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.PARTICIPANT_ADD,
+                        this::addTimelineParticipant),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.PARTICIPANT_REMOVE,
+                        this::removeTimelineParticipant),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.ENCOUNTER_DAYS,
+                        this::applyTimelineEncounterDays),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_ADD,
+                        ignored -> addScene()));
+    }
+
+    private void selectTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            selectEncounter(event.sceneToken());
+        }
+    }
+
+    private void adjustTimelineAllocation(SessionPlannerTimelineMainViewInputEvent event, BigDecimal delta) {
+        if (hasPositiveId(event.sceneToken())) {
+            setEncounterAllocation(
+                    event.sceneToken(),
+                    timelineMainContentModel.budgetPercentage(event.sceneToken()).add(delta));
+        }
+    }
+
+    private void moveTimelineSceneUp(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            moveEncounterUp(event.sceneToken());
+        }
+    }
+
+    private void moveTimelineSceneDown(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            moveEncounterDown(event.sceneToken());
+        }
+    }
+
+    private void removeTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            removeEncounter(event.sceneToken());
+        }
+    }
+
+    private void setTimelineRest(SessionPlannerTimelineMainViewInputEvent event, SessionPlannerRestKind restKind) {
+        if (isResolvedGap(event.leftSceneToken(), event.rightSceneToken())) {
+            setRestGap(event.leftSceneToken(), event.rightSceneToken(), restKind);
+        }
+    }
+
+    private void clearTimelineRest(SessionPlannerTimelineMainViewInputEvent event) {
+        if (isResolvedGap(event.leftSceneToken(), event.rightSceneToken())) {
+            clearRestGap(event.leftSceneToken(), event.rightSceneToken());
+        }
+    }
+
+    private void addTimelineLoot(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            addLootPlaceholder(event.sceneToken());
+        }
+    }
+
+    private void removeTimelineLoot(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.lootToken())) {
+            removeLootPlaceholder(event.lootToken());
+        }
+    }
+
+    private void saveTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            updateEncounterScene(
+                    event.sceneToken(),
+                    event.sceneTitleText().trim(),
+                    event.sceneNotesText().trim(),
+                    event.locationId());
+        }
+    }
+
+    private void updateTimelineSceneDraft(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            timelineMainContentModel.updateSceneDraft(
+                    event.sceneToken(),
+                    event.sceneTitleText(),
+                    event.sceneNotesText(),
+                    event.locationId());
+        }
+    }
+
+    private void addTimelineParticipant(SessionPlannerTimelineMainViewInputEvent event) {
+        long participantToAddId = timelineMainContentModel.participantChoiceId(event.participantChoiceIndex());
         if (hasPositiveId(participantToAddId)) {
             addParticipant(participantToAddId);
         }
-        if (hasPositiveId(setup.participantToRemoveId())) {
-            removeParticipant(setup.participantToRemoveId());
+    }
+
+    private void removeTimelineParticipant(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.participantId())) {
+            removeParticipant(event.participantId());
         }
-        BigDecimal encounterDays = parsePositiveDecimal(setup.encounterDaysText());
+    }
+
+    private void applyTimelineEncounterDays(SessionPlannerTimelineMainViewInputEvent event) {
+        BigDecimal encounterDays = parsePositiveDecimal(event.encounterDaysText());
         if (encounterDays != null) {
             setEncounterDays(encounterDays);
-        }
-        if (setup.addSceneRequested()) {
-            addScene();
-        }
-    }
-
-    private void consumeTimelineMutation(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.MutationSnapshot mutation = event.mutation();
-        if (hasPositiveId(mutation.moveSceneToken())) {
-            applyMove(mutation.moveSceneToken(), mutation.moveDirection());
-        }
-        if (hasPositiveId(mutation.sceneTokenToRemove())) {
-            removeEncounter(mutation.sceneTokenToRemove());
-        }
-    }
-
-    private void consumeTimelineRest(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.RestSnapshot rest = event.rest();
-        if (isResolvedGap(rest.leftSceneToken(), rest.rightSceneToken())) {
-            applyRestGap(rest.leftSceneToken(), rest.rightSceneToken(), rest.selection());
-        }
-    }
-
-    private void consumeTimelineLoot(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.LootSnapshot lootSnapshot = event.loot();
-        if (hasPositiveId(lootSnapshot.sceneTokenToAdd())) {
-            addLootPlaceholder(lootSnapshot.sceneTokenToAdd());
-        }
-        if (hasPositiveId(lootSnapshot.tokenToRemove())) {
-            removeLootPlaceholder(lootSnapshot.tokenToRemove());
-        }
-    }
-
-    private void consumeTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.SceneSnapshot scene = event.scene();
-        if (hasPositiveId(scene.sceneToken())) {
-            updateEncounterScene(
-                    scene.sceneToken(),
-                    scene.title(),
-                    scene.notes(),
-                    scene.locationId());
-        }
-    }
-
-    private void consumeTimelineSceneDraft(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.SceneDraftSnapshot sceneDraft = event.sceneDraft();
-        if (hasPositiveId(sceneDraft.sceneToken())) {
-            timelineMainContentModel.updateSceneDraft(
-                    sceneDraft.sceneToken(),
-                    sceneDraft.title(),
-                    sceneDraft.notes(),
-                    sceneDraft.locationId());
         }
     }
 
@@ -168,29 +232,6 @@ final class SessionPlannerIntentHandler {
 
     private static boolean isResolvedGap(long leftSceneToken, long rightSceneToken) {
         return hasPositiveId(leftSceneToken) && hasPositiveId(rightSceneToken);
-    }
-
-    private void applyMove(long sceneToken, int moveDirection) {
-        if (moveDirection > 0) {
-            moveEncounterDown(sceneToken);
-            return;
-        }
-        if (moveDirection < 0) {
-            moveEncounterUp(sceneToken);
-        }
-    }
-
-    private void applyRestGap(
-            long leftSceneToken,
-            long rightSceneToken,
-            SessionPlannerTimelineMainViewInputEvent.RestSelection restSelection
-    ) {
-        switch (restSelection) {
-            case NONE -> clearRestGap(leftSceneToken, rightSceneToken);
-            case SHORT_REST -> setRestGap(leftSceneToken, rightSceneToken, SessionPlannerRestKind.SHORT_REST);
-            case LONG_REST -> setRestGap(leftSceneToken, rightSceneToken, SessionPlannerRestKind.LONG_REST);
-            default -> throw new IllegalStateException("Unhandled rest selection: " + restSelection);
-        }
     }
 
     void consume(CatalogCrudControlsViewInputEvent event) {
