@@ -266,3 +266,19 @@ State-Tab-Orakel fuer den Wiring-Port ein, ohne den bestehenden Encounter-Gap
 zu schliessen. Dokumentationsgate, Phase 1 Re-Review und der unabhaengige
 Judge sind gruen. Naechster Schritt ist M3.4: ein reiner Harness-Wiring-Port
 fuer die genehmigte Deletion-List, ohne Szenario- oder Assertion-Aenderung.
+
+### 2026-07-09 M3.4 creatures-wiring-port
+
+Der Creature-Wiring-Port ist abgeschlossen. Der adjacent
+`encounterStateTabHarness` baut die Creature-Seite nicht mehr aus den vier
+alten Usecases und dem internen Published-State-Repository zusammen, sondern
+registriert einen Noop-`CreatureCatalogPort` und nutzt danach die normale
+`CreaturesServiceContribution`-Grenze. Der `creatureCatalogHarness` brauchte
+keine Aenderung. Proof-IDs, Fixture-Werte, sichtbare Texte und Assertions im
+Encounter-State-Tab sind unveraendert eingefroren; `creatureCatalogHarness`
+und `encounterStateTabHarness` sind gruen, der Focused-Handoff ist nach dem
+bekannten Gradle-Wildcard-IP-Startfehler mit `CODEX_THREAD_ID` unset gruen, und
+Phase 1 sowie der unabhaengige Judge haben den Wiring-Port freigegeben.
+Naechster Schritt ist M3.5: Umsetzung des genehmigten Creature-Target-Designs
+inklusive 9-Datei-Loeschliste, byte-kompatiblen Published-Seams und
+anschliessendem Parity-/Metric-Proof.
