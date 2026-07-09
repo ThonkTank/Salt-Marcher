@@ -251,3 +251,18 @@ Proxy-Kandidaten und vier String-Grenzfamilien sind konkret belegt. Das
 Dokumentationsgate, Phase 1 nach Rework und der unabhaengige Judge sind gruen.
 Naechster Schritt ist M3.3 mit judge-geprueftem Creature-Target-Design; es
 wurde noch keine Wiring- oder Implementierungsarbeit begonnen.
+
+### 2026-07-09 M3.3 creatures-target-design
+
+Das Creature-Target-Design ist in
+`docs/project/architecture/architecture-migration-creatures-target-design.md`
+genehmigt. Die Zielstruktur behaelt `CreaturesApplicationService`, die
+Service-Registry-Grenze, `CreatureCatalogPort`, `CreatureCatalogData` und alle
+publizierten Records/Enums byte-kompatibel, waehrend die spaetere Umsetzung die
+Usecase-, interne Repository- und Publication-Assembly-Schicht loeschen muss.
+Phase 1 fand zunaechst eine fehlende Inventur fuer den adjacent
+`encounterStateTabHarness`; der Rework friert dessen zwei sichtbare
+State-Tab-Orakel fuer den Wiring-Port ein, ohne den bestehenden Encounter-Gap
+zu schliessen. Dokumentationsgate, Phase 1 Re-Review und der unabhaengige
+Judge sind gruen. Naechster Schritt ist M3.4: ein reiner Harness-Wiring-Port
+fuer die genehmigte Deletion-List, ohne Szenario- oder Assertion-Aenderung.
