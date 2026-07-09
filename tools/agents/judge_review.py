@@ -257,7 +257,8 @@ def call_claude_code(prompt: str) -> str:
         [
             "claude",
             "-p",
-            prompt,
+            "--input-format",
+            "text",
             "--system-prompt",
             JUDGE_INSTRUCTIONS,
             "--output-format",
@@ -271,6 +272,7 @@ def call_claude_code(prompt: str) -> str:
         ],
         cwd=REPO_ROOT,
         text=True,
+        input=prompt,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         env=env,
