@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-05
+Last Reviewed: 2026-07-09
 Source of Truth: Autonomous decision boundary for reversible technical work.
 
 # Autonomy Boundaries
@@ -50,6 +50,9 @@ Reversibility is the safety model. `main` can be reset or reverted to a prior
 commit, and the owner's daily testing of next/stable remains the behavior
 acceptance gate no agent can replace.
 
-Cost and provider availability are the only normal hard stops for continuous
-autonomous operation. Red checks, P0/P1 findings, dirty checkouts, updater
-windows, missing harnesses, and failed reviews become autonomous repair work.
+Cost and provider availability are owner or policy boundaries when a task would
+spend money, use an external service, or move data outside policy. Red checks,
+P0/P1 findings, dirty checkouts, updater windows, missing harnesses, and failed
+reviews stay technical repair inputs inside the normal branch and pull-request
+workflow; they do not authorize bypassing required proof, review, or merge
+protections.

@@ -64,7 +64,6 @@ Always run verification from the repository root.
 | Resource policy and operating model | `docs/project/policies/resource-policy.md`, `docs/project/decisions/**` | - |
 
 Harness Gap repair targets reference `docs/project/verification/harness-gaps.md`.
-Continuous autonomous work follows `docs/project/architecture/night-shift.md`.
 Autonomous decision boundaries are defined in
 `docs/project/architecture/autonomy-boundaries.md`.
 
