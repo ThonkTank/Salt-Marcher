@@ -52,21 +52,17 @@ final class DungeonEditorRuntimeTransitionStairPort implements DungeonEditorTran
     }
 
     @Override
-    public void saveTransitionLink(
-            long sourceTransitionId,
-            long targetMapId,
-            long targetTransitionId,
-            boolean bidirectional
-    ) {
+    public void saveTransitionLink(long sourceTransitionId, TransitionDestinationDraftInput input) {
+        TransitionDestinationDraftInput safeInput = input == null
+                ? TransitionDestinationDraftInput.unlinkedEntrance()
+                : input;
         long selectedMapIdValue = currentSelectedMapIdValue();
         DungeonEditorRuntimeOperationPublisher.apply(
                 store,
                 framePublisher,
                 () -> operationOwner.saveTransitionLink(
                         sourceTransitionId,
-                        targetMapId,
-                        targetTransitionId,
-                        bidirectional),
+                        safeInput),
                 result -> clearTransitionDestinationDraftWhenCommitted(
                         selectedMapIdValue,
                         sourceTransitionId,
@@ -84,24 +80,17 @@ final class DungeonEditorRuntimeTransitionStairPort implements DungeonEditorTran
     }
 
     @Override
-    public void saveStairGeometry(
-            long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
-    ) {
-        draftSession.clearStairGeometryDraft(currentSelectedMapIdValue(), stairId);
+    public void saveStairGeometry(StairGeometryDraftInput input) {
+        StairGeometryDraftInput safeInput = input == null ? StairGeometryDraftInput.empty() : input;
+        if (!safeInput.completeForSave()) {
+            return;
+        }
+        draftSession.clearStairGeometryDraft(currentSelectedMapIdValue(), safeInput.stairId());
         framePublisher.markDraftSessionChanged();
         DungeonEditorRuntimeOperationPublisher.apply(
                 store,
                 framePublisher,
-                () -> operationOwner.saveStairGeometry(
-                        stairId,
-                        shapeName,
-                        directionName,
-                        dimension1,
-                        dimension2));
+                () -> operationOwner.saveStairGeometry(safeInput));
     }
 
     private boolean transitionLinkCommitted(

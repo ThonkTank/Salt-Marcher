@@ -2,6 +2,7 @@ package src.features.dungeon.runtime;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.OptionalInt;
 import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorLabelNameUseCase;
 import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorRoomNarrationUseCase;
 import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorStairGeometryUseCase;
@@ -69,16 +70,17 @@ final class DungeonEditorDetailSaveRuntimeOperations {
 
     DungeonEditorRuntimeOperationResult saveTransitionLink(
             long sourceTransitionId,
-            long targetMapId,
-            long targetTransitionId,
-            boolean bidirectional
+            TransitionDestinationDraftInput input
     ) {
+        TransitionDestinationDraftInput safeInput = input == null
+                ? TransitionDestinationDraftInput.unlinkedEntrance()
+                : input;
         return DungeonEditorRuntimeResultTranslator.fromOperationResult(
                 saveTransitionLinkUseCase.execute(new SaveDungeonEditorTransitionLinkUseCase.TransitionLinkInput(
                         sourceTransitionId,
-                        targetMapId,
-                        targetTransitionId,
-                        bidirectional)));
+                        safeInput.targetMapId(),
+                        safeInput.targetTransitionId(),
+                        safeInput.bidirectional())));
     }
 
     DungeonEditorRuntimeOperationResult saveTransitionDescription(
@@ -92,19 +94,16 @@ final class DungeonEditorDetailSaveRuntimeOperations {
                                 description)));
     }
 
-    DungeonEditorRuntimeOperationResult saveStairGeometry(
-            long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
-    ) {
+    DungeonEditorRuntimeOperationResult saveStairGeometry(StairGeometryDraftInput input) {
+        StairGeometryDraftInput safeInput = input == null ? StairGeometryDraftInput.empty() : input;
+        OptionalInt dimension1 = safeInput.dimension1Value();
+        OptionalInt dimension2 = safeInput.dimension2Value();
         return DungeonEditorRuntimeResultTranslator.fromSnapshot(
                 saveStairGeometryUseCase.execute(new SaveDungeonEditorStairGeometryUseCase.StairGeometryInput(
-                        stairId,
-                        shapeName,
-                        directionName,
-                        dimension1,
-                        dimension2)));
+                        safeInput.stairId(),
+                        safeInput.shapeName(),
+                        safeInput.directionName(),
+                        dimension1.orElse(0),
+                        dimension2.orElse(0))));
     }
 }

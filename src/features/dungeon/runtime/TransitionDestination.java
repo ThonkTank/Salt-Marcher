@@ -26,31 +26,19 @@ public record TransitionDestination(
         return new TransitionDestination(TransitionDestinationType.UNLINKED_ENTRANCE, 0L, 0L, 0L);
     }
 
-    static TransitionDestination fromDraft(
-            TransitionDestinationType destinationType,
-            String mapId,
-            String tileId,
-            String transitionId
-    ) {
+    static TransitionDestination fromDraftInput(TransitionDestinationDraftInput input) {
+        TransitionDestinationDraftInput safeInput = input == null
+                ? TransitionDestinationDraftInput.unlinkedEntrance()
+                : input;
         return new TransitionDestination(
-                destinationType,
-                positiveLong(mapId),
-                positiveLong(tileId),
-                TransitionDestinationTarget.fromPositiveId(positiveLong(transitionId)).transitionId());
+                safeInput.destinationType(),
+                safeInput.targetMapId(),
+                safeInput.targetTileId(),
+                TransitionDestinationTarget.fromPositiveId(safeInput.targetTransitionId()).transitionId());
     }
 
     TransitionDestinationTarget targetTransition() {
         return TransitionDestinationTarget.fromPositiveId(targetTransitionId);
     }
 
-    private static long positiveLong(String value) {
-        if (value == null || value.isBlank()) {
-            return 0L;
-        }
-        try {
-            return Math.max(0L, Long.parseLong(value.strip()));
-        } catch (NumberFormatException ignored) {
-            return 0L;
-        }
-    }
 }

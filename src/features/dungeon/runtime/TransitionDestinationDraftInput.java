@@ -18,6 +18,10 @@ public record TransitionDestinationDraftInput(
         transitionId = safeText(transitionId);
     }
 
+    public static TransitionDestinationDraftInput unlinkedEntrance() {
+        return new TransitionDestinationDraftInput(TransitionDestinationType.UNLINKED_ENTRANCE, "", "", "", true);
+    }
+
     public static TransitionDestinationDraftInput fromExternalName(ExternalFields fields) {
         ExternalFields safeFields = fields == null ? ExternalFields.empty() : fields;
         return new TransitionDestinationDraftInput(
@@ -26,6 +30,18 @@ public record TransitionDestinationDraftInput(
                 safeFields.tileId(),
                 safeFields.transitionId(),
                 safeFields.bidirectional());
+    }
+
+    long targetMapId() {
+        return positiveLong(mapId);
+    }
+
+    long targetTileId() {
+        return positiveLong(tileId);
+    }
+
+    long targetTransitionId() {
+        return positiveLong(transitionId);
     }
 
     public record ExternalFields(
@@ -49,5 +65,16 @@ public record TransitionDestinationDraftInput(
 
     private static String safeText(String value) {
         return value == null ? "" : value;
+    }
+
+    private static long positiveLong(String value) {
+        if (value == null || value.isBlank()) {
+            return 0L;
+        }
+        try {
+            return Math.max(0L, Long.parseLong(value.strip()));
+        } catch (NumberFormatException ignored) {
+            return 0L;
+        }
     }
 }

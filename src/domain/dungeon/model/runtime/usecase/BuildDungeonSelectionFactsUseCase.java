@@ -114,7 +114,9 @@ final class BuildDungeonSelectionFactsUseCase {
                     return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
                             feature.label(),
                             feature.description(),
-                            facts);
+                            facts,
+                            SelectionFacts.statePanelFacts(feature),
+                            List.of());
                 }
             }
             return null;
@@ -175,6 +177,44 @@ final class BuildDungeonSelectionFactsUseCase {
 
         private static String factLine(String key, Object value) {
             return key + ": " + value;
+        }
+
+        private static LoadDungeonSnapshotUseCase.StatePanelFacts statePanelFacts(DungeonFeatureFacts feature) {
+            DungeonFeatureFacts.StatePanelFacts facts = feature == null
+                    ? DungeonFeatureFacts.StatePanelFacts.empty()
+                    : feature.statePanelFacts();
+            return new LoadDungeonSnapshotUseCase.StatePanelFacts(
+                    stairGeometryFacts(facts.stairGeometry()),
+                    transitionDestinationFacts(facts.transitionDestination()));
+        }
+
+        private static LoadDungeonSnapshotUseCase.StairGeometryPanelFacts stairGeometryFacts(
+                DungeonFeatureFacts.StairGeometryFacts facts
+        ) {
+            DungeonFeatureFacts.StairGeometryFacts safeFacts = facts == null
+                    ? DungeonFeatureFacts.StairGeometryFacts.empty()
+                    : facts;
+            return new LoadDungeonSnapshotUseCase.StairGeometryPanelFacts(
+                    safeFacts.present(),
+                    safeFacts.stairId(),
+                    safeFacts.shapeName(),
+                    safeFacts.directionName(),
+                    safeFacts.dimension1(),
+                    safeFacts.dimension2());
+        }
+
+        private static LoadDungeonSnapshotUseCase.TransitionDestinationPanelFacts transitionDestinationFacts(
+                DungeonFeatureFacts.TransitionDestinationFacts facts
+        ) {
+            DungeonFeatureFacts.TransitionDestinationFacts safeFacts = facts == null
+                    ? DungeonFeatureFacts.TransitionDestinationFacts.empty()
+                    : facts;
+            return new LoadDungeonSnapshotUseCase.TransitionDestinationPanelFacts(
+                    safeFacts.present(),
+                    safeFacts.destinationTypeKey(),
+                    safeFacts.mapId(),
+                    safeFacts.tileId(),
+                    safeFacts.transitionId());
         }
     }
 }

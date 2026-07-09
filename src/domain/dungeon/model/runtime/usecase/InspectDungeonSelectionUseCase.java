@@ -54,6 +54,7 @@ public final class InspectDungeonSelectionUseCase {
                     clusterName(dungeonMap, clusterId),
                     narrationDescription(narrations),
                     factsSnapshot.facts(),
+                    factsSnapshot.statePanelFacts(),
                     narrations);
         }
         if (!narrations.isEmpty() && selectionFacts.isFallbackSelection(factsSnapshot)) {
@@ -61,12 +62,14 @@ public final class InspectDungeonSelectionUseCase {
                     narrationTitle(narrations),
                     narrationDescription(narrations),
                     factsSnapshot.facts(),
+                    factsSnapshot.statePanelFacts(),
                     narrations);
         }
         return new LoadDungeonSnapshotUseCase.InspectorSnapshotData(
                 factsSnapshot.title(),
                 factsSnapshot.description(),
                 factsSnapshot.facts(),
+                factsSnapshot.statePanelFacts(),
                 narrations);
     }
 

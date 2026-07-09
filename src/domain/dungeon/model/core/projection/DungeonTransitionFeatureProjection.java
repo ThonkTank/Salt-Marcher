@@ -37,6 +37,7 @@ final class DungeonTransitionFeatureProjection {
                     transitionDescription(transition),
                     destinationLabel(destination),
                     transitionFacts(destination),
+                    DungeonFeatureFacts.StatePanelFacts.transition(destination),
                     transitionTopologyRef(transition),
                     transitionAnchorEdge(transition)));
             if (relation != null) {

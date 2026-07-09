@@ -1,7 +1,5 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.List;
-import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
@@ -25,7 +23,7 @@ final class DungeonEditorStateStairGeometryContentPartModel {
         if (stairId <= 0L || inspector == null) {
             return null;
         }
-        StairGeometryFacts facts = StairGeometryFacts.from(inspector.facts());
+        StairGeometryFacts facts = StairGeometryFacts.from(inspector.statePanelFacts().stairGeometry());
         if (facts == null) {
             return null;
         }
@@ -85,16 +83,18 @@ final class DungeonEditorStateStairGeometryContentPartModel {
             dimension2 = dimension2 == null ? "" : dimension2.strip();
         }
 
-        private static @Nullable StairGeometryFacts from(List<String> facts) {
-            Map<String, String> values = DungeonEditorStateContentModel.factMap(facts);
-            String shape = values.get("shape");
-            String direction = values.get("direction");
-            String dimension1 = values.get("dimension1");
-            String dimension2 = values.get("dimension2");
-            if (shape == null || direction == null || dimension1 == null || dimension2 == null) {
+        private static @Nullable StairGeometryFacts from(DungeonInspectorSnapshot.StairGeometryFacts facts) {
+            DungeonInspectorSnapshot.StairGeometryFacts safeFacts = facts == null
+                    ? DungeonInspectorSnapshot.StairGeometryFacts.empty()
+                    : facts;
+            if (!safeFacts.present()) {
                 return null;
             }
-            return new StairGeometryFacts(shape, direction, dimension1, dimension2);
+            return new StairGeometryFacts(
+                    safeFacts.shapeName(),
+                    safeFacts.directionName(),
+                    String.valueOf(safeFacts.dimension1()),
+                    String.valueOf(safeFacts.dimension2()));
         }
     }
 }

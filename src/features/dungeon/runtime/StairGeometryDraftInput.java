@@ -1,5 +1,7 @@
 package src.features.dungeon.runtime;
 
+import java.util.OptionalInt;
+
 public record StairGeometryDraftInput(
         long stairId,
         String shapeName,
@@ -15,7 +17,34 @@ public record StairGeometryDraftInput(
         dimension2 = safeText(dimension2);
     }
 
+    public static StairGeometryDraftInput empty() {
+        return new StairGeometryDraftInput(0L, "", "", "", "");
+    }
+
+    OptionalInt dimension1Value() {
+        return integerValue(dimension1);
+    }
+
+    OptionalInt dimension2Value() {
+        return integerValue(dimension2);
+    }
+
+    public boolean completeForSave() {
+        return stairId > 0L && dimension1Value().isPresent() && dimension2Value().isPresent();
+    }
+
     private static String safeText(String value) {
         return value == null ? "" : value;
+    }
+
+    private static OptionalInt integerValue(String value) {
+        if (value == null || value.isBlank()) {
+            return OptionalInt.empty();
+        }
+        try {
+            return OptionalInt.of(Integer.parseInt(value.strip()));
+        } catch (NumberFormatException ignored) {
+            return OptionalInt.empty();
+        }
     }
 }

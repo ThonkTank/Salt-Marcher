@@ -234,31 +234,20 @@ final class DungeonEditorIntentHandler {
 
     private void consumeTransitionDestinationWhenPresent(DungeonEditorStateViewInputEvent event) {
         if (event.transitionDestinationInputObserved()) {
-            statePanelDraftOperations.updateStatePanelTransitionDestinationDraft(
-                    TransitionDestinationDraftInput.fromExternalName(
-                            new TransitionDestinationDraftInput.ExternalFields(
-                                    DungeonEditorStateContentModel.transitionDestinationTypeKey(
-                                            event.transitionDestinationTypeOptionIndex()),
-                                    event.transitionDestinationMapId(),
-                                    event.transitionDestinationTileId(),
-                                    event.transitionDestinationTransitionId(),
-                                    event.transitionDestinationBidirectional())));
+            TransitionDestinationDraftInput input = transitionDestinationDraftInput(event);
+            statePanelDraftOperations.updateStatePanelTransitionDestinationDraft(input);
             if (event.transitionDestinationSaveRequested()) {
-                consumeTransitionLinkSave(event);
+                consumeTransitionLinkSave(input);
             }
         }
     }
 
-    private void consumeTransitionLinkSave(DungeonEditorStateViewInputEvent event) {
+    private void consumeTransitionLinkSave(TransitionDestinationDraftInput input) {
         long sourceTransitionId = selectedTransitionId();
         if (sourceTransitionId <= NO_TRANSITION_ID) {
             return;
         }
-        transitionStairOperations.saveTransitionLink(
-                sourceTransitionId,
-                parseLongOrZero(event.transitionDestinationMapId()),
-                parseLongOrZero(event.transitionDestinationTransitionId()),
-                event.transitionDestinationBidirectional());
+        transitionStairOperations.saveTransitionLink(sourceTransitionId, input);
     }
 
     private void consumeStairGeometryWhenPresent(DungeonEditorStateViewInputEvent event) {
@@ -335,26 +324,37 @@ final class DungeonEditorIntentHandler {
     private void consumeStairGeometryInput(
             DungeonEditorStateViewInputEvent event
     ) {
-        statePanelDraftOperations.updateStatePanelStairGeometryDraft(new StairGeometryDraftInput(
+        StairGeometryDraftInput input = stairGeometryDraftInput(event);
+        statePanelDraftOperations.updateStatePanelStairGeometryDraft(input);
+        if (!event.stairGeometrySaveRequested()) {
+            return;
+        }
+        if (!input.completeForSave()) {
+            return;
+        }
+        transitionStairOperations.saveStairGeometry(input);
+    }
+
+    private static TransitionDestinationDraftInput transitionDestinationDraftInput(
+            DungeonEditorStateViewInputEvent event
+    ) {
+        return TransitionDestinationDraftInput.fromExternalName(
+                new TransitionDestinationDraftInput.ExternalFields(
+                        DungeonEditorStateContentModel.transitionDestinationTypeKey(
+                                event.transitionDestinationTypeOptionIndex()),
+                        event.transitionDestinationMapId(),
+                        event.transitionDestinationTileId(),
+                        event.transitionDestinationTransitionId(),
+                        event.transitionDestinationBidirectional()));
+    }
+
+    private static StairGeometryDraftInput stairGeometryDraftInput(DungeonEditorStateViewInputEvent event) {
+        return new StairGeometryDraftInput(
                 event.stairId(),
                 event.stairShapeName(),
                 event.stairDirectionName(),
                 event.stairDimension1(),
-                event.stairDimension2()));
-        if (!event.stairGeometrySaveRequested()) {
-            return;
-        }
-        Optional<Integer> dimension1 = parseInteger(event.stairDimension1());
-        Optional<Integer> dimension2 = parseInteger(event.stairDimension2());
-        if (dimension1.isEmpty() || dimension2.isEmpty()) {
-            return;
-        }
-        transitionStairOperations.saveStairGeometry(
-                event.stairId(),
-                event.stairShapeName(),
-                event.stairDirectionName(),
-                dimension1.orElseThrow(),
-                dimension2.orElseThrow());
+                event.stairDimension2());
     }
 
     private void consumeMapCanvas(DungeonMapViewInputEvent event) {

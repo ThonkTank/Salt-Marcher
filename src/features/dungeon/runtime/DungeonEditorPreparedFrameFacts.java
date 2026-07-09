@@ -989,11 +989,12 @@ public record DungeonEditorPreparedFrameFacts(
                 return TransitionDestination.empty();
             }
             if (runtimeDraft.present()) {
-                return TransitionDestination.fromDraft(
+                return TransitionDestination.fromDraftInput(new TransitionDestinationDraftInput(
                         runtimeDraft.destinationType(),
                         runtimeDraft.mapId(),
                         runtimeDraft.tileId(),
-                        runtimeDraft.transitionId());
+                        runtimeDraft.transitionId(),
+                        runtimeDraft.bidirectional()));
             }
             return TransitionDestination.empty();
         }
