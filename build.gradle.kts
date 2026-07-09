@@ -501,6 +501,7 @@ val hexTravelStateBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-travel
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
 val worldPlannerBackendHarnessDataDir = layout.buildDirectory.dir("world-planner-backend-data")
+val worldPlannerEncounterHarnessDataDir = layout.buildDirectory.dir("world-planner-encounter-data")
 val worldPlannerControlsRawInputHarnessDataDir = layout.buildDirectory.dir("world-planner-controls-raw-input-data")
 val worldPlannerUiHarnessDataDir = layout.buildDirectory.dir("world-planner-ui-data")
 val smokeStartupHarnessDataDir = layout.buildDirectory.dir("smoke-startup-data")
@@ -728,6 +729,13 @@ behaviorHarnesses.javaExec("worldPlannerEncounterHarness") {
         classpath = worldPlannerBackendHarness.runtimeClasspath
         mainClass.set("src.domain.encounter.WorldPlannerEncounterHarness")
         outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = worldPlannerEncounterHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
     }
 }
 

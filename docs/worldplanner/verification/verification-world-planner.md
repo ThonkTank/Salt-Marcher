@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-26
+Last Reviewed: 2026-07-09
 Source of Truth: Verification strategy and harness ownership for World
 Planner documentation and later production behavior.
 
@@ -77,11 +77,12 @@ Mechanically enforced for the current Encounter integration slice:
 - `./gradlew worldPlannerEncounterHarness --console=plain`
 
 The current implementation routes Encounter Planner faction and location IDs
-through `EncounterBuilderInputs`, resolves World Planner faction/location
-sources at generation time, intersects explicit table choices with
-World Planner source tables, enforces finite statblock stock caps in draft
-enumeration, and preserves selected World Planner NPC identity through
-Encounter result publication.
+through `EncounterBuilderInputs`, seeds World Planner state through the
+production application service and persistence route, resolves World Planner
+faction/location sources at generation time, intersects explicit table choices
+with World Planner source tables, enforces finite statblock stock caps in
+draft enumeration, and preserves selected World Planner NPC identity through
+published `EncounterStateModel` result state.
 
 Combat lifecycle harness proof is required for:
 

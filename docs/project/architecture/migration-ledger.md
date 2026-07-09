@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M3 - Rollout wave 1 |
-| Work item | M3.1 - worldplanner harness check/closure |
-| Cycle step | 1 - Harness check/closure |
+| Work item | M3.2 - worldplanner baseline metrics |
+| Cycle step | 2 - Baseline metrics |
 | In-flight area | `worldplanner` |
-| Required next proof | Verify worldplanner harness coverage through production routes and close old-structure gaps before baseline metrics |
-| Last status note | `2026-07-09 M2.7 hex-close-out` |
+| Required next proof | Measure worldplanner baseline file count, LOC, longest intent-to-mutation chains, forwarding-only classes, and String boundary round-trips before target design |
+| Last status note | `2026-07-09 M3.1 worldplanner-harness-closure` |
 
 ## M0 Step Ledger
 
@@ -68,6 +68,13 @@ but they do not advance the migration unless this ledger advances too.
 | 6. Conformance review | Done on branch | `6432a1b2f` | Pending PR merge | Phase 1 Approve with explicit metric exception; Phase 2 Approve with explicit metric exception; product subset 41 Java files / 3,701 physical LOC; deletion list executed; forwarding-only Hex product classes absent; Hex-owned intent-to-mutation chains <=3; non-seam String round-trips absent; `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09 | Conformance review accepted the M2.5 LOC exception from design amendment `9e852113b`, verified byte-compatible seams, accepted direct Hex harness proof after retained-log attempts failed before task execution on Gradle wildcard-IP environment startup, and found no Must-Fix findings. |
 | 7. Close-out | Done on branch | `3679a19e2` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; Hex owner smoke checklist available in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`; reference commit declared; M2 retro journaled | Hex pilot reference commit is `3679a19e2`; use it as the living reference for migrated-area code shape. Close-out records the German owner note, owner smoke checklist location, accepted metric exception, retained proof set, and M2 pilot retro. |
 
+## M3 Worldplanner Cycle Ledger
+
+| Cycle step | Status | Local branch commit | Merge commit | Proof | Notes |
+| --- | --- | --- | --- | --- | --- |
+| 1. Harness check/closure | Done on branch | `M3.1_COMMIT` | Pending PR merge | `./gradlew worldPlannerBackendHarness worldPlannerEncounterHarness worldPlannerControlsRawInputHarness worldPlannerUiHarness --console=plain` passed, 2026-07-09; `tools/gradle/run-staged-verification.sh focused-handoff --path src/domain/worldplanner --area worldplanner` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09 | `worldPlannerEncounterHarness` now seeds World Planner through production service/persistence, resolves encounter source constraints through registered `WorldPlannerSnapshotModel`, drives Encounter through `EncounterApplicationService`, and asserts through published `EncounterStateModel`; the P1 worldplanner-to-encounter route gap is removed from `docs/project/verification/harness-gaps.md`. |
+| 2. Baseline metrics | In Flight | Pending | Pending | Pending | Measure file count, physical LOC, longest representative chains, forwarding-only classes, and String boundary round-trips before writing the M3.3 target design. |
+
 ## Milestone Ledger
 
 | Milestone | Status | Merge commit | Done-when evidence |
@@ -85,7 +92,7 @@ but they do not advance the migration unless this ledger advances too.
 | Area | Standard | Status | Merge commit | Harness status |
 | --- | --- | --- | --- | --- |
 | `hex` | Pilot reference commit `3679a19e2` | Done on branch | Pending | M2 done: `hexMapEditorBehaviorHarness` and `hexTravelStateBehaviorHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 41-file / 3,701-LOC metric exception; owner smoke checklist is available. |
-| `worldplanner` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 pending: verify existing backend, UI, raw-input, and encounter harnesses through production routes and close the P1 cross-context worldplanner-to-encounter route gap against the old structure before baseline metrics. |
+| `worldplanner` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 done on branch: backend, UI, raw-input, and encounter harnesses are green; `worldPlannerEncounterHarness` now covers the cross-context route through production World Planner publication/persistence, Encounter source wiring, and published Encounter state. M3.2 baseline metrics are next. |
 | `creatures` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner and encounter harness imports only; P2 dedicated creature catalog harness gap remains. |
 | `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains. |
 | `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
@@ -103,12 +110,12 @@ but they do not advance the migration unless this ledger advances too.
 | Area | Existing harnesses | Imported boundary surfaces | Scenario coverage | Known gaps |
 | --- | --- | --- | --- | --- |
 | `hex` | `hexMapEditorBehaviorHarness`, `hexTravelStateBehaviorHarness` | `HexEditorApplicationService`, `HexTravelApplicationService`, `HexEditorModel`, `HexEditorSnapshot`, hex command records, `HexTravelModel`, `HexTravelSnapshot`, party travel models, Hex Map content/control models, `HexMapContribution`, `ShellBinding`, `ShellSlot`, `TravelStateContribution` | Create, update, select, paint, marker save, radius errors, persistence readback, save failure visibility, travel token readback, shell-bound Hex Map route, and production Hex/Party Reise state-tab readback | M1.3 route gaps and the M2.1 save-failure visibility gap are closed; scenarios and assertions are frozen for M2 baseline unless a separate wiring-port commit is approved. |
-| `worldplanner` | `worldPlannerBackendHarness`, `worldPlannerUiHarness`, `worldPlannerControlsRawInputHarness`, `worldPlannerEncounterHarness` | `WorldPlannerApplicationService`, `WorldPlannerSnapshotModel`, world planner commands/reference ports, `WorldPlannerSnapshot`, creature and encounter-table published catalogs, encounter application/usecase surfaces | NPC/faction/location mutations, reference validation, persistence errors/readback, raw input controls, UI projection, encounter generation/session bridge | P1 cross-context route uses fixture world snapshots and fixture encounter repository |
+| `worldplanner` | `worldPlannerBackendHarness`, `worldPlannerUiHarness`, `worldPlannerControlsRawInputHarness`, `worldPlannerEncounterHarness` | `WorldPlannerApplicationService`, `WorldPlannerSnapshotModel`, world planner commands/reference ports, `WorldPlannerSnapshot`, creature and encounter-table published catalogs, `EncounterApplicationService`, `EncounterStateModel`, encounter generation/session bridge | NPC/faction/location mutations, reference validation, persistence errors/readback, raw input controls, UI projection, production-route encounter source resolution, finite stock cap enforcement, and World Planner NPC identity through Encounter result state | M3.1 cross-context production-route gap closed on branch; no open worldplanner P1 gap remains. |
 | `creatures` | None dedicated; adjacent worldplanner UI and encounter state-tab harnesses import creature surfaces | `CreaturesApplicationService`, `CreatureCatalogPort`, catalog usecases, `CreatureCatalogModel/Page/Row`, `CreatureDetailModel`, `CreatureLookupStatus` | Adjacent lookup, display, and encounter candidate use only | P2 dedicated create/edit/filter/readback catalog harness |
 | `party` | `partyDropdownHarness`; also imported by hex and dungeon travel harnesses | `PartyApplicationService`, active-party composition/model, party snapshot/mutation models, character commands, travel position snapshots, dropdown content model | Create character, move between active/reserve, active-party publication, trigger label, travel-token publication consumers | P1 shell-bound dropdown route |
 | `sessionplanner` | `sessionPlannerCatalogHarness`, `sessionPlannerShellLayoutHarness` | `SessionPlannerContribution`, `SessionPlannerCatalogModel`, current-session, scene timeline, participants projections, `ShellBinding`, `ShellSlot`, session data mappers | Catalog create/rename/select/delete, scene timeline, loot placeholders, session-scoped drafts, compact shell layout | No registered M1.1 gap |
 | `encountertable` | None dedicated; adjacent worldplanner UI harness imports table catalog surfaces | `EncounterTableCatalogModel`, `EncounterTableCatalogResult`, `EncounterTableSummary`, `EncounterTableReadStatus` | Adjacent catalog display/reference lookup only | P2 readback harness for authored summary, weighted candidates, empty selection, XP ceiling, and storage-error publication |
-| `encounter` | `worldPlannerEncounterHarness`, `encounterStateTabHarness` | `EncounterApplicationService`, encounter generation/session/plan usecases, `ApplyEncounterStateCommand`, `EncounterStateModel`, `EncounterStateSnapshot`, saved-plan summaries, creature candidate surfaces | Encounter draft generation, saved-plan/session publication, encounter state-tab empty and populated render assertions | P1 encounter state-tab and worldplanner cross-context production publication route gaps |
+| `encounter` | `worldPlannerEncounterHarness`, `encounterStateTabHarness` | `EncounterApplicationService`, encounter generation/session/plan usecases, `ApplyEncounterStateCommand`, `EncounterStateModel`, `EncounterStateSnapshot`, saved-plan summaries, creature candidate surfaces | Encounter draft generation, saved-plan/session publication, encounter state-tab empty and populated render assertions | P1 encounter state-tab production publication route gap remains; the worldplanner cross-context route gap is closed on branch by M3.1. |
 | `dungeon-authored-core` | `dungeonEditorCoreBehaviorHarness` aggregate; harness-map also routes domain changes through `dungeonEditorBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness` | Dungeon core geometry, component, structure, room, door, corridor, stair, transition, topology, and published ref/value surfaces | Core suite IDs `geometry`, `component`, `floor`, `wall-core`, `door-core`, `path-core`, `corridor-core`, `stair-core`, `transition-core`, `runtime-projection`, `topology`, `cluster-core`, `room-core`, `structure`; focused route tasks exercise authored-core consumers | No registered M1.1 gap |
 | `dungeon-editor-session-runtime` | `dungeonEditorBehaviorHarness`, `dungeonEditorCoreBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness`, `dungeonTravelProjectionLevelHarness` | `DungeonServiceContribution`, dungeon editor published snapshots/commands, runtime pointer targets, prepared frame/render frame surfaces, `DungeonMapView`, `DungeonMapContentModel` | Route suite IDs `map-catalog`, `map-controls`, `projection-overlay`, `selection`, `stairs`, `transitions`, `features`, `corridors`, `labels`, `shared-handles`, `door-handles`, `cluster-handles`, `cluster-routes`, `doors`, `rooms`, `walls`; projection-level travel runtime checks | No registered M1.1 gap |
 | `dungeon-travel` | `dungeonTravelProjectionLevelHarness` | `DungeonTravelRuntimeApplicationService`, `ApplyTravelDungeonSessionCommand`, `TravelDungeonModel`, `TravelDungeonSnapshot`, party travel positions, `DungeonTravelContribution`, `DungeonMapView` | Projection-level controls, rendered level changes, transition marker refs, party-token actor layer, no authored truth mutation | No registered M1.1 gap |
@@ -276,3 +283,14 @@ erhalten bleiben. Die Owner-Smoke-Checkliste fuer `hex` steht in
 `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`.
 Die akzeptierte Metrik-Ausnahme gilt nur fuer diesen Pilotstand; M3 startet mit
 `worldplanner` im Schritt Harness-Check/Closure.
+
+### 2026-07-09 M3.1 worldplanner-harness-closure
+
+Die World-Planner-Harness-Pruefung ist fuer M3.1 geschlossen. Der
+`worldPlannerEncounterHarness` nutzt keine statische World-Snapshot-Fixture
+und kein manuell verdrahtetes Encounter-Repository mehr: World Planner wird
+ueber Service und Persistenz gesaet, Encounter laeuft ueber die registrierten
+Services, und das Ergebnis wird aus dem veroeffentlichten `EncounterStateModel`
+gelesen. Backend-, Encounter-, Raw-Input- und UI-Harnesses sind gruen; der
+alte P1-Gap fuer die World-Planner-zu-Encounter-Route ist aus dem Gap-Register
+entfernt. Naechster Schritt ist M3.2 mit Baseline-Metriken fuer `worldplanner`.
