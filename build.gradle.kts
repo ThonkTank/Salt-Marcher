@@ -659,6 +659,19 @@ behaviorHarnesses.javaExec("encounterStateTabHarness") {
     }
 }
 
+behaviorHarnesses.javaExec("creatureCatalogHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("creature-catalog"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused Creature catalog domain behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.domain.creatures.CreatureCatalogHarness")
+        outputs.upToDateWhen { false }
+    }
+}
+
 behaviorHarnesses.javaExec("sessionPlannerCatalogHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("session-planner-catalog"))
