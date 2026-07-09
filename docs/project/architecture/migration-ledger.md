@@ -29,12 +29,12 @@ but they do not advance the migration unless this ledger advances too.
 | Field | Value |
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
-| Milestone | M1 - Parity Oracle |
-| Work item | M1.5 - Render parity net |
-| Cycle step | Milestone step; render snapshot parity preparation, per-area cycle not active yet |
-| In-flight area | M1.5 render parity net only; no product area cycle active |
-| Required next proof | Dungeon render snapshot parity proof plus `./gradlew checkDocumentationEnforcement --console=plain` if docs change |
-| Last status note | `2026-07-09 M1.4 owner-smoke-checklists` |
+| Milestone | M2 - Pilot hex |
+| Work item | M2.1 - Hex harness check/closure |
+| Cycle step | 1 - Harness check/closure |
+| In-flight area | `hex` |
+| Required next proof | `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` plus `./gradlew checkDocumentationEnforcement --console=plain` if docs change |
+| Last status note | `2026-07-09 M1.5 render-parity-net` |
 
 ## M0 Step Ledger
 
@@ -54,15 +54,27 @@ but they do not advance the migration unless this ledger advances too.
 | M1.2 Parity protocol | Done on branch | `a027ac712` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | Roadmap protocol freezes scenario/assertion inventories in per-area designs, keeps wiring ports separate, closes gaps against old structure, and handles nondeterministic old behavior through deterministic envelopes plus R2 issue filing. |
 | M1.3 Pilot harness hardening | Done on branch | `6d9747a5d` | Pending PR merge | `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | Hex Map and Reise state-tab production-route gaps are closed against the old structure. |
 | M1.4 Owner smoke scripts | Done on branch | `b63bdb458` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --cached --check` passed; Phase 1 Clean; Phase 2 Approve | German owner smoke checklists for all 13 ledger areas are in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`. |
-| M1.5 Render parity net | In Flight | Pending | Pending PR merge | Pending | Dungeon render snapshot parity preparation is next. |
+| M1.5 Render parity net | Done on branch | `819f95cc4` | Pending PR merge | `./gradlew dungeonMapRenderParityHarness --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | `dungeonMapRenderParityHarness` adds same-frame image snapshot parity for editor projection, editor wall preview, and travel projection; generated images stay under `build/dungeon-map-render-parity-results/`. |
+
+## M2 Hex Cycle Ledger
+
+| Cycle step | Status | Local branch commit | Merge commit | Proof | Notes |
+| --- | --- | --- | --- | --- | --- |
+| 1. Harness check/closure | In Flight | Pending | Pending PR merge | Pending | Re-check M1.3 Hex production-route coverage before M2 baseline metrics. |
+| 2. Baseline metrics | Pending | Pending | Pending PR merge | Pending | File count, LOC, longest intent-to-mutation chain, forwarding-only classes, and String boundary round-trips. |
+| 3. Target design | Pending | Pending | Pending PR merge | Pending | Judge-approved Hex pilot design required before implementation. |
+| 4. Harness wiring port | Pending | Pending | Pending PR merge | Pending | Separate commit only; scenarios and assertions frozen. |
+| 5. Implementation | Pending | Pending | Pending PR merge | Pending | Must follow the approved Hex pilot design. |
+| 6. Conformance review | Pending | Pending | Pending PR merge | Pending | Design conformance, parity, metric targets, Phase 1, and Phase 2. |
+| 7. Close-out | Pending | Pending | Pending PR merge | Pending | Ledger update, German status note, owner smoke checklist available, and Hex reference commit declaration. |
 
 ## Milestone Ledger
 
 | Milestone | Status | Merge commit | Done-when evidence |
 | --- | --- | --- | --- |
 | M0 - Constitution and doctrine removal | Done on branch | Pending | Gates green; removed checker/doc/skill grep clean; fresh-agent behavior check passed. |
-| M1 - Parity oracle | In Flight | Pending | Ledger lists harness status for every area; parity protocol committed; hex harness verified end to end. |
-| M2 - Pilot hex | Pending | Pending | Binding targets met or justified; harness green with frozen scenarios; smoke checklist delivered; reference commit declared; retro journaled. |
+| M1 - Parity oracle | Done on branch | Pending | Ledger lists harness status for every area; parity protocol committed; hex harness verified end to end; render snapshot parity net added. |
+| M2 - Pilot hex | In Flight | Pending | Binding targets met or justified; harness green with frozen scenarios; smoke checklist delivered; reference commit declared; retro journaled. |
 | M3 - Rollout wave 1 | Pending | Pending | worldplanner, creatures, party, sessionplanner, encountertable, encounter all complete their cycles. |
 | M4 - Dungeon | Pending | Pending | Five dungeon sub-slices complete full cycles with dungeon harness suite and required image snapshots. |
 | M5 - Remaining view surfaces and shell seam | Pending | Pending | Remaining view surfaces and shell seams complete cycles; data layer exceptions only where gateway signatures require. |
@@ -72,7 +84,7 @@ but they do not advance the migration unless this ledger advances too.
 
 | Area | Standard | Status | Merge commit | Harness status |
 | --- | --- | --- | --- | --- |
-| `hex` | Legacy surrounding code until M2 design; then pilot reference commit | Pending | Pending | M1.3 hardening: `hexMapEditorBehaviorHarness` covers the shell-bound Hex Map route through `HexMapContribution`; `hexTravelStateBehaviorHarness` covers the production Hex/Party publication route into the Reise state tab. |
+| `hex` | Legacy surrounding code until M2 design; then pilot reference commit | In Flight | Pending | M2.1 in flight; M1.3 hardening: `hexMapEditorBehaviorHarness` covers the shell-bound Hex Map route through `HexMapContribution`; `hexTravelStateBehaviorHarness` covers the production Hex/Party publication route into the Reise state tab. |
 | `worldplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: backend, UI, raw-input, and encounter harnesses; P1 cross-context worldplanner-to-encounter route gap remains. |
 | `creatures` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner and encounter harness imports only; P2 dedicated creature catalog harness gap remains. |
 | `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains. |
@@ -176,3 +188,16 @@ Alle 13 aktuellen Ledger-Areas haben je zehn kurze, sichtbare Pruefschritte;
 die Checklisten definieren kein neues Produktverhalten und blockieren die
 Pipeline nicht. Dokumentationsgate, Phase 1 und der unabhaengige Judge sind
 gruen. Naechster Schritt ist M1.5 mit Render-Snapshot-Parity.
+
+### 2026-07-09 M1.5 render-parity-net
+
+Der neue `dungeonMapRenderParityHarness` erzeugt Bild-Snapshots fuer die
+Dungeon-Karte und vergleicht echte Canvas-Pixel paarweise: Editor-Projektion,
+Editor-Wandpreview und Dungeon-Travel-Projektion rendern denselben Frame
+zweimal mit `changedPixels=0`; die Editor-Kontrollvergleiche beweisen
+zusaetzlich, dass der Diff-Orakel sichtbare Aenderungen erkennt. PNG-Belege
+liegen nur unter `build/dungeon-map-render-parity-results/`. Die alte
+Dungeon-Travel-Auffaelligkeit, dass `z=0` und `z=1` aktuell pixelgleich bleiben
+koennen, ist als separater R2-Eintrag journalisiert und in der Migration nicht
+repariert. M1 ist damit auf dem Branch abgeschlossen; naechster Schritt ist
+M2.1 Hex-Harness-Check.
