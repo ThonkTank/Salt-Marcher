@@ -416,7 +416,9 @@ final class DungeonEditorSelectionHarness {
         assertTrue(selectedState.inspector() != null, "DE-SEL-004 inspector is published for selected corridor");
         assertTrue(renderHasSelectedSurfacePrimitive(binding.mapContentModel(), corridorRef),
                 "DE-SEL-004 render scene highlights the selected corridor route");
-        assertCanvasPaintedAtScene(mapView, 6.5, 3.5,
+        DungeonMapContentModel.MapCanvasPolygonPrimitive selectedCorridorSurface =
+                surfacePrimitiveAt(binding.mapContentModel(), selectionRef(corridorRef), 6.5, 3.5);
+        assertCanvasPaintedWithPrimitiveStrokeNearScene(mapView, selectedCorridorSurface, 6.5, 3.5, 18,
                 "DE-SEL-004 rendered canvas paints the selected anchor corridor route");
         assertEquals(geometryRowsBefore, runtime.database().countAuthoredGeometryRows(mapId),
                 "DE-SEL-004 leaves authored DB row count unchanged");
