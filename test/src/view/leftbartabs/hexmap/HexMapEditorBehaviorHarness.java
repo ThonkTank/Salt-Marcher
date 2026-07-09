@@ -242,6 +242,7 @@ public final class HexMapEditorBehaviorHarness {
                 "HEX-EDITOR-006 missing type validation");
         assertEquals(2L, runtime.database().markerCount(mapId.value()),
                 "HEX-EDITOR-006 missing type does not persist");
+        runOnFxThread(() -> assertMapSaveFailureVisible(runtime, missingType));
 
         RuntimeSurface reloadedRuntime = RuntimeSurface.create();
         activateEditorThroughIntentHandler(reloadedRuntime);
@@ -281,6 +282,7 @@ public final class HexMapEditorBehaviorHarness {
         results.add("HEX-EDITOR-008 Ready: map save controls event does not route marker draft into marker persistence");
         results.add("HEX-EDITOR-009 Ready: marker save controls event does not route map draft into map metadata update");
         results.add("HEX-EDITOR-011 Ready: shared catalog rename preserves non-current Hex map radius");
+        results.add("HEX-EDITOR-013 Ready: state-pane map save failure publishes visible error and keeps persisted map unchanged");
         results.add("HEX-TRAVEL-001 Ready: HexCoordinate stable tile id round-trips q,r for Party overworld travel");
         results.add("HEX-TRAVEL-002 Ready: Party overworld travel position projects as HexTravelModel and visible party token");
         results.add("HEX-TRAVEL-003 Ready: MOVE_PARTY Hex tool moves the existing party token through PartyApplicationService");
@@ -454,6 +456,47 @@ public final class HexMapEditorBehaviorHarness {
                 UPDATED_NAME,
                 UPDATED_RADIUS,
                 false));
+    }
+
+    private static void assertMapSaveFailureVisible(
+            RuntimeSurface runtime,
+            HexEditorSnapshot snapshot
+    ) {
+        long mapId = selectedMapId(snapshot).value();
+        String persistedName = selectedMap(snapshot).displayName();
+        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
+        HexMapMainContentModel mainModel = new HexMapMainContentModel();
+        HexMapStateContentModel stateModel = new HexMapStateContentModel();
+        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
+        contributionModel.applySnapshot(snapshot);
+        HexMapStateView view = new HexMapStateView();
+        AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
+        view.onViewInputEvent(emitted::set);
+        view.bind(stateModel);
+        mapNameField(view).setText("Save Failure Draft");
+        mapSaveButton(view).fire();
+
+        HexMapIntentHandler handler = new HexMapIntentHandler(
+                runtime.editor(),
+                runtime.hexTravel(),
+                contributionModel,
+                controlsModel,
+                stateModel,
+                new CatalogCrudControlsContentModel());
+        runtime.database().installFailingMapUpdateTrigger();
+        try {
+            handler.consume(requiredEvent(emitted, "HEX-EDITOR-013 expected map save state event."));
+            HexEditorSnapshot failed = runtime.current();
+            assertContains(failed.failureText(), "Failed to save Hex map to SQLite",
+                    "HEX-EDITOR-013 save failure published through snapshot");
+            assertEquals(persistedName, runtime.database().mapName(mapId),
+                    "HEX-EDITOR-013 failed save leaves persisted map name unchanged");
+            contributionModel.applySnapshot(failed);
+            assertVisibleLabelContains(view, "Failed to save Hex map to SQLite",
+                    "HEX-EDITOR-013 save failure visible in state pane");
+        } finally {
+            runtime.database().dropFailingMapUpdateTrigger();
+        }
     }
 
     private static void activateEditorThroughIntentHandler(RuntimeSurface runtime) {
@@ -927,6 +970,18 @@ public final class HexMapEditorBehaviorHarness {
 
     private static String labelText(Parent parent) {
         return String.join("\n", labels(parent).stream().map(Label::getText).toList());
+    }
+
+    private static void assertVisibleLabelContains(Parent parent, String expectedFragment, String message) {
+        boolean found = labels(parent).stream()
+                .anyMatch(label -> label.isVisible()
+                        && label.isManaged()
+                        && label.getText() != null
+                        && label.getText().contains(expectedFragment));
+        if (!found) {
+            throw new IllegalStateException(message + " expected visible label containing <"
+                    + expectedFragment + "> but labels were <" + labelText(parent) + ">.");
+        }
     }
 
     private static Canvas tileCanvas(Parent parent) {
@@ -1408,6 +1463,33 @@ public final class HexMapEditorBehaviorHarness {
             throw new IllegalStateException("Expected Hex map radius row.");
         }
 
+        String mapName(long mapId) {
+            try (Connection connection = open();
+                    PreparedStatement statement = connection.prepareStatement(
+                            "SELECT display_name FROM " + HexPersistenceSchema.MAPS_TABLE
+                                    + " WHERE map_id = ?")) {
+                statement.setLong(1, mapId);
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    if (resultSet.next()) {
+                        return resultSet.getString(1);
+                    }
+                }
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to inspect Hex map name.", exception);
+            }
+            throw new IllegalStateException("Expected Hex map name row.");
+        }
+
+        void installFailingMapUpdateTrigger() {
+            execute("CREATE TRIGGER hex_map_update_failure BEFORE UPDATE ON "
+                    + HexPersistenceSchema.MAPS_TABLE
+                    + " BEGIN SELECT RAISE(FAIL, 'forced Hex map save failure'); END");
+        }
+
+        void dropFailingMapUpdateTrigger() {
+            execute("DROP TRIGGER IF EXISTS hex_map_update_failure");
+        }
+
         void forceMapRadius(long mapId, int radius) {
             try (Connection connection = open();
                     PreparedStatement statement = connection.prepareStatement(
@@ -1447,6 +1529,15 @@ public final class HexMapEditorBehaviorHarness {
                 }
             } catch (SQLException exception) {
                 throw new IllegalStateException("Failed to inspect Hex editor behavior DB.", exception);
+            }
+        }
+
+        private void execute(String sql) {
+            try (Connection connection = open();
+                    PreparedStatement statement = connection.prepareStatement(sql)) {
+                statement.executeUpdate();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to update Hex editor behavior DB.", exception);
             }
         }
 

@@ -60,6 +60,7 @@ behavior IDs before broader production handoff proof.
 | `HEX-EDITOR-010` | Shared shell layout | `HexMapContribution` mounts shared catalog CRUD controls as the fixed stack child, compact Hex controls as the flexible stack child, and keeps the Hex main map visible in `COCKPIT_MAIN`. | Ready |
 | `HEX-EDITOR-011` | Catalog rename radius preservation | Renaming a non-current Hex map through the shared catalog CRUD route preserves that target map's existing radius instead of writing the create default. | Ready |
 | `HEX-EDITOR-012` | Shell-bound contribution route | Binding `HexMapContribution` through shell slots creates, edits, paints, selects, saves a marker, moves the party token, and reloads persisted Hex map state through the visible slot views. | Ready |
+| `HEX-EDITOR-013` | Save failure visibility | State-pane map `Speichern` routes through the production update path; a forced SQLite save failure surfaces visibly and leaves persisted map metadata unchanged. | Ready |
 
 ## Pass Or Fail Criteria
 
