@@ -29,12 +29,12 @@ but they do not advance the migration unless this ledger advances too.
 | Field | Value |
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
-| Milestone | M2 - Pilot hex |
-| Work item | M2.7 - Hex close-out |
-| Cycle step | 7 - Close-out |
-| In-flight area | `hex` |
-| Required next proof | Ledger close-out, German status note, owner smoke checklist availability, Hex reference commit declaration, and M2 retro |
-| Last status note | `2026-07-09 M2.6 hex-conformance-review` |
+| Milestone | M3 - Rollout wave 1 |
+| Work item | M3.1 - worldplanner harness check/closure |
+| Cycle step | 1 - Harness check/closure |
+| In-flight area | `worldplanner` |
+| Required next proof | Verify worldplanner harness coverage through production routes and close old-structure gaps before baseline metrics |
+| Last status note | `2026-07-09 M2.7 hex-close-out` |
 
 ## M0 Step Ledger
 
@@ -66,7 +66,7 @@ but they do not advance the migration unless this ledger advances too.
 | 4. Harness wiring port | Done on branch | `492ceb3eb` | Pending PR merge | `./gradlew compileJava compileTestJava --console=plain` passed, 2026-07-09; `./gradlew checkNoDeadCode pmdStrictMain --console=plain` passed, 2026-07-09; `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed, 2026-07-09; `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | `HexMapViewModel` is a compatibility facade over the existing content/contribution models; Hex view and harness wiring now route through it. Harness scenario/assertion labels are frozen, and the old content models, input event records, and `HexMapIntentHandler` remain for M2.5 replacement. |
 | 5. Implementation | Done on branch | `3679a19e2` | Pending PR merge | `./gradlew compileJava compileTestJava --console=plain` passed, 2026-07-09; `./gradlew checkNoDeadCode pmdStrictMain --console=plain` passed, 2026-07-09; `env -u CODEX_THREAD_ID ./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed with 21 + 2 proof items, 2026-07-09; `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09; `git diff --cached --check` passed; Phase 1 and Phase 2 Approve with explicit metric exception | Implemented the approved Hex target shape, deleted the per-verb usecase/port/published-state/view content/input/handler stack, kept byte-compatible published seams, and accepted the bounded 41-file / 3,701-LOC M2.5 exception from amendment commit `9e852113b`. Retained harness-log attempts hit a Gradle wildcard-IP startup environment failure before task execution; direct non-redirected harness execution was green. |
 | 6. Conformance review | Done on branch | `6432a1b2f` | Pending PR merge | Phase 1 Approve with explicit metric exception; Phase 2 Approve with explicit metric exception; product subset 41 Java files / 3,701 physical LOC; deletion list executed; forwarding-only Hex product classes absent; Hex-owned intent-to-mutation chains <=3; non-seam String round-trips absent; `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09 | Conformance review accepted the M2.5 LOC exception from design amendment `9e852113b`, verified byte-compatible seams, accepted direct Hex harness proof after retained-log attempts failed before task execution on Gradle wildcard-IP environment startup, and found no Must-Fix findings. |
-| 7. Close-out | In Flight | Pending | Pending PR merge | Pending | Ledger update, German status note, owner smoke checklist available, Hex reference commit declaration, and M2 retro. |
+| 7. Close-out | Done on branch | `3679a19e2` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; Hex owner smoke checklist available in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`; reference commit declared; M2 retro journaled | Hex pilot reference commit is `3679a19e2`; use it as the living reference for migrated-area code shape. Close-out records the German owner note, owner smoke checklist location, accepted metric exception, retained proof set, and M2 pilot retro. |
 
 ## Milestone Ledger
 
@@ -74,8 +74,8 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- | --- | --- |
 | M0 - Constitution and doctrine removal | Done on branch | Pending | Gates green; removed checker/doc/skill grep clean; fresh-agent behavior check passed. |
 | M1 - Parity oracle | Done on branch | Pending | Ledger lists harness status for every area; parity protocol committed; hex harness verified end to end; render snapshot parity net added. |
-| M2 - Pilot hex | In Flight | Pending | Binding targets met or justified; harness green with frozen scenarios; smoke checklist delivered; reference commit declared; retro journaled. |
-| M3 - Rollout wave 1 | Pending | Pending | worldplanner, creatures, party, sessionplanner, encountertable, encounter all complete their cycles. |
+| M2 - Pilot hex | Done on branch | Pending | Binding targets met or justified; harness green with frozen scenarios; smoke checklist delivered; reference commit `3679a19e2` declared; retro journaled. |
+| M3 - Rollout wave 1 | In Flight | Pending | worldplanner, creatures, party, sessionplanner, encountertable, encounter all complete their cycles. |
 | M4 - Dungeon | Pending | Pending | Five dungeon sub-slices complete full cycles with dungeon harness suite and required image snapshots. |
 | M5 - Remaining view surfaces and shell seam | Pending | Pending | Remaining view surfaces and shell seams complete cycles; data layer exceptions only where gateway signatures require. |
 | M6 - Completion | Pending | Pending | Old role family no longer taught or enforced; final measurement and German closing report complete. |
@@ -84,8 +84,8 @@ but they do not advance the migration unless this ledger advances too.
 
 | Area | Standard | Status | Merge commit | Harness status |
 | --- | --- | --- | --- | --- |
-| `hex` | Legacy surrounding code until M2 design; then pilot reference commit | In Flight | Pending | M2.1 closed: `hexMapEditorBehaviorHarness` covers the shell-bound Hex Map route through `HexMapContribution`, production-route map save failure visibility, and Hex editor read/write behavior; `hexTravelStateBehaviorHarness` covers the production Hex/Party publication route into the Reise state tab. |
-| `worldplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: backend, UI, raw-input, and encounter harnesses; P1 cross-context worldplanner-to-encounter route gap remains. |
+| `hex` | Pilot reference commit `3679a19e2` | Done on branch | Pending | M2 done: `hexMapEditorBehaviorHarness` and `hexTravelStateBehaviorHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 41-file / 3,701-LOC metric exception; owner smoke checklist is available. |
+| `worldplanner` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 pending: verify existing backend, UI, raw-input, and encounter harnesses through production routes and close the P1 cross-context worldplanner-to-encounter route gap against the old structure before baseline metrics. |
 | `creatures` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner and encounter harness imports only; P2 dedicated creature catalog harness gap remains. |
 | `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains. |
 | `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
@@ -264,3 +264,15 @@ dem unabhaengigen Judge akzeptiert. Produktions-Handoff und die direkten
 Hex-Harnesses sind gruen; retained Harness-Logs scheitern nur vor Task-Start
 an der dokumentierten Gradle-Wildcard-IP-Umgebung. Naechster Schritt ist M2.6:
 Conformance-Evidence final bestaetigen und dann den Hex-Close-out vorbereiten.
+
+### 2026-07-09 M2.7 hex-close-out
+
+Der Hex-Pilot ist auf dem Branch abgeschlossen. Referenz fuer weitere
+migrierte Areas ist Commit `3679a19e2`: dort sind die alten Hex-Usecases,
+Ports, Published-State-Adapter, View-Content-Models, Input-Events und
+`HexMapIntentHandler` geloescht, waehrend die sichtbaren Hex-Editor-,
+Reisegruppen- und Reise-State-Verhalten durch die eingefrorenen Harnesses
+erhalten bleiben. Die Owner-Smoke-Checkliste fuer `hex` steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`.
+Die akzeptierte Metrik-Ausnahme gilt nur fuer diesen Pilotstand; M3 startet mit
+`worldplanner` im Schritt Harness-Check/Closure.
