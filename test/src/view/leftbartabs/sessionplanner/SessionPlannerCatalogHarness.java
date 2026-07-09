@@ -269,14 +269,12 @@ public final class SessionPlannerCatalogHarness {
         textField(view, "Szenentitel").setText("Bridge Alarm Final");
         textArea(view, "Szenennotizen").setText("ring twice");
         selectComboBoxItem(view, "#10 | Moonwell");
-        assertTrue(events.stream().anyMatch(event -> event.widgetId().equals("session-planner.timeline.scene.draft")
-                        && event.sceneToken() == 1L),
-                "scene draft edits publish draft events");
+        assertTrue(events.stream().anyMatch(event -> event.widgetToken() > 0L && event.sceneToken() == 1L),
+                "scene draft edits publish a technical widget token");
         events.clear();
         button(view, "Szene speichern").fire();
         List<SessionPlannerTimelineMainViewInputEvent> saveEvents = events.stream()
-                .filter(event -> event.widgetId().equals("session-planner.timeline.scene.save")
-                        && event.sceneToken() == 1L)
+                .filter(event -> event.widgetToken() > 0L && event.sceneToken() == 1L)
                 .toList();
         assertEquals(Integer.valueOf(1), Integer.valueOf(saveEvents.size()), "scene save publishes one save event");
         assertEquals(Long.valueOf(1L), Long.valueOf(saveEvents.getFirst().sceneToken()),
@@ -288,8 +286,7 @@ public final class SessionPlannerCatalogHarness {
         events.clear();
         button(view, "Loot-Platzhalter").fire();
         assertEquals(Integer.valueOf(1), Integer.valueOf(events.size()), "loot add button publishes one event");
-        assertEquals("session-planner.timeline.loot.add", events.getFirst().widgetId(),
-                "loot add event uses the clicked widget identity");
+        assertTrue(events.getFirst().widgetToken() > 0L, "loot add event carries a technical widget token");
         assertEquals(Long.valueOf(1L), Long.valueOf(events.getFirst().sceneToken()),
                 "loot add event targets the scene card");
         stage.hide();

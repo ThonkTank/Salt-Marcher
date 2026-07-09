@@ -19,6 +19,49 @@ public final class SessionPlannerTimelineMainContentModel {
 
     private static final long NO_SCENE_TOKEN = 0L;
     private static final long NO_LOCATION_ID = 0L;
+    private static final long SETUP_WIDGET_BASE = 1_000L;
+    private static final long SCENE_WIDGET_BASE = 1_000_000L;
+    private static final long REST_WIDGET_BASE = 2_000_000L;
+    private static final long LOOT_WIDGET_BASE = 3_000_000L;
+    private static final long PARTICIPANT_WIDGET_BASE = 4_000_000L;
+    private static final long WIDGET_STRIDE = 100L;
+    private static final int WIDGET_SCENE_SELECT = 1;
+    private static final int WIDGET_ALLOCATION_DECREASE = 2;
+    private static final int WIDGET_ALLOCATION_INCREASE = 3;
+    private static final int WIDGET_SCENE_MOVE_UP = 4;
+    private static final int WIDGET_SCENE_MOVE_DOWN = 5;
+    private static final int WIDGET_SCENE_REMOVE = 6;
+    private static final int WIDGET_REST_SHORT = 7;
+    private static final int WIDGET_REST_LONG = 8;
+    private static final int WIDGET_REST_CLEAR = 9;
+    private static final int WIDGET_LOOT_ADD = 10;
+    private static final int WIDGET_LOOT_REMOVE = 11;
+    private static final int WIDGET_SCENE_SAVE = 12;
+    private static final int WIDGET_SCENE_DRAFT = 13;
+    private static final int WIDGET_PARTICIPANT_ADD = 14;
+    private static final int WIDGET_PARTICIPANT_REMOVE = 15;
+    private static final int WIDGET_ENCOUNTER_DAYS = 16;
+    private static final int WIDGET_SCENE_ADD = 17;
+    private static final TimelineWidgetKind[] WIDGET_KIND_BY_CODE = {
+            TimelineWidgetKind.NONE,
+            TimelineWidgetKind.SCENE_SELECT,
+            TimelineWidgetKind.ALLOCATION_DECREASE,
+            TimelineWidgetKind.ALLOCATION_INCREASE,
+            TimelineWidgetKind.SCENE_MOVE_UP,
+            TimelineWidgetKind.SCENE_MOVE_DOWN,
+            TimelineWidgetKind.SCENE_REMOVE,
+            TimelineWidgetKind.REST_SHORT,
+            TimelineWidgetKind.REST_LONG,
+            TimelineWidgetKind.REST_CLEAR,
+            TimelineWidgetKind.LOOT_ADD,
+            TimelineWidgetKind.LOOT_REMOVE,
+            TimelineWidgetKind.SCENE_SAVE,
+            TimelineWidgetKind.SCENE_DRAFT,
+            TimelineWidgetKind.PARTICIPANT_ADD,
+            TimelineWidgetKind.PARTICIPANT_REMOVE,
+            TimelineWidgetKind.ENCOUNTER_DAYS,
+            TimelineWidgetKind.SCENE_ADD
+    };
 
     private final ReadOnlyObjectWrapper<Projection> projection =
             new ReadOnlyObjectWrapper<>(Projection.empty());
@@ -88,6 +131,13 @@ public final class SessionPlannerTimelineMainContentModel {
                 .orElse(BigDecimal.ZERO);
     }
 
+    TimelineWidgetKind widgetKind(long widgetToken) {
+        int code = (int) Math.floorMod(widgetToken, WIDGET_STRIDE);
+        return code >= WIDGET_KIND_BY_CODE.length
+                ? TimelineWidgetKind.NONE
+                : WIDGET_KIND_BY_CODE[code];
+    }
+
     private void pruneSceneDrafts(SessionPlannerSceneTimelineProjection sceneTimelineProjection) {
         Set<Long> activeTokens = sceneTimelineProjection.sessionScenes().stream()
                 .map(SessionPlannerSceneTimelineProjection.SessionScene::sceneToken)
@@ -96,8 +146,49 @@ public final class SessionPlannerTimelineMainContentModel {
         sceneDrafts.keySet().removeIf(key -> key.sessionId() != sessionId || !activeTokens.contains(key.sceneToken()));
     }
 
+    private static long setupWidgetToken(int widgetCode) {
+        return SETUP_WIDGET_BASE + widgetCode;
+    }
+
+    private static long sceneWidgetToken(long sceneToken, int widgetCode) {
+        return SCENE_WIDGET_BASE + Math.max(0L, sceneToken) * WIDGET_STRIDE + widgetCode;
+    }
+
+    private static long restWidgetToken(int gapIndex, int widgetCode) {
+        return REST_WIDGET_BASE + Math.max(0, gapIndex) * WIDGET_STRIDE + widgetCode;
+    }
+
+    private static long lootWidgetToken(long lootToken, int widgetCode) {
+        return LOOT_WIDGET_BASE + Math.max(0L, lootToken) * WIDGET_STRIDE + widgetCode;
+    }
+
+    private static long participantWidgetToken(long participantId, int widgetCode) {
+        return PARTICIPANT_WIDGET_BASE + Math.max(0L, participantId) * WIDGET_STRIDE + widgetCode;
+    }
+
     private void publishProjection() {
         projection.set(Projection.from(latestSceneTimelineProjection, sceneDrafts, locationOptions, latestSetupState));
+    }
+
+    enum TimelineWidgetKind {
+        NONE,
+        SCENE_SELECT,
+        ALLOCATION_DECREASE,
+        ALLOCATION_INCREASE,
+        SCENE_MOVE_UP,
+        SCENE_MOVE_DOWN,
+        SCENE_REMOVE,
+        REST_SHORT,
+        REST_LONG,
+        REST_CLEAR,
+        LOOT_ADD,
+        LOOT_REMOVE,
+        SCENE_SAVE,
+        SCENE_DRAFT,
+        PARTICIPANT_ADD,
+        PARTICIPANT_REMOVE,
+        ENCOUNTER_DAYS,
+        SCENE_ADD
     }
 
     record SetupState(
@@ -234,7 +325,10 @@ public final class SessionPlannerTimelineMainContentModel {
                                     gap.leftSceneToken(),
                                     gap.rightSceneToken(),
                                     restLabel(gap.restKind()),
-                                    gap.restKind() != null && gap.restKind() != SessionPlannerRestKind.NONE))
+                                    gap.restKind() != null && gap.restKind() != SessionPlannerRestKind.NONE,
+                                    restWidgetToken(gap.gapIndex(), WIDGET_REST_SHORT),
+                                    restWidgetToken(gap.gapIndex(), WIDGET_REST_LONG),
+                                    restWidgetToken(gap.gapIndex(), WIDGET_REST_CLEAR)))
                             .toList(),
                     safeCopy(locationOptions));
         }
@@ -278,8 +372,20 @@ public final class SessionPlannerTimelineMainContentModel {
                                 locationId,
                                 locationLabel(locationId, safeLocations),
                                 locationChoices(locationId, safeLocations),
+                                sceneWidgetToken(scene.sceneToken(), WIDGET_SCENE_SELECT),
+                                sceneWidgetToken(scene.sceneToken(), WIDGET_ALLOCATION_DECREASE),
+                                sceneWidgetToken(scene.sceneToken(), WIDGET_ALLOCATION_INCREASE),
+                                sceneWidgetToken(scene.sceneToken(), WIDGET_SCENE_MOVE_UP),
+                                sceneWidgetToken(scene.sceneToken(), WIDGET_SCENE_MOVE_DOWN),
+                                sceneWidgetToken(scene.sceneToken(), WIDGET_SCENE_REMOVE),
+                                sceneWidgetToken(scene.sceneToken(), WIDGET_SCENE_SAVE),
+                                sceneWidgetToken(scene.sceneToken(), WIDGET_SCENE_DRAFT),
+                                sceneWidgetToken(scene.sceneToken(), WIDGET_LOOT_ADD),
                                 scene.lootPlaceholders().stream()
-                                        .map(loot -> new LootModel(loot.token(), loot.label()))
+                                        .map(loot -> new LootModel(
+                                                loot.token(),
+                                                lootWidgetToken(loot.token(), WIDGET_LOOT_REMOVE),
+                                                loot.label()))
                                         .toList());
                     })
                     .toList();
@@ -355,6 +461,15 @@ public final class SessionPlannerTimelineMainContentModel {
                 long locationId,
                 String locationLabel,
                 List<LocationChoice> locationChoices,
+                long selectWidgetToken,
+                long allocationDecreaseWidgetToken,
+                long allocationIncreaseWidgetToken,
+                long moveUpWidgetToken,
+                long moveDownWidgetToken,
+                long removeWidgetToken,
+                long sceneSaveWidgetToken,
+                long sceneDraftWidgetToken,
+                long addLootWidgetToken,
                 List<LootModel> lootPlaceholders
         ) {
 
@@ -372,6 +487,15 @@ public final class SessionPlannerTimelineMainContentModel {
                 locationId = Math.max(0L, locationId);
                 locationLabel = safeText(locationLabel);
                 locationChoices = safeCopy(locationChoices);
+                selectWidgetToken = Math.max(0L, selectWidgetToken);
+                allocationDecreaseWidgetToken = Math.max(0L, allocationDecreaseWidgetToken);
+                allocationIncreaseWidgetToken = Math.max(0L, allocationIncreaseWidgetToken);
+                moveUpWidgetToken = Math.max(0L, moveUpWidgetToken);
+                moveDownWidgetToken = Math.max(0L, moveDownWidgetToken);
+                removeWidgetToken = Math.max(0L, removeWidgetToken);
+                sceneSaveWidgetToken = Math.max(0L, sceneSaveWidgetToken);
+                sceneDraftWidgetToken = Math.max(0L, sceneDraftWidgetToken);
+                addLootWidgetToken = Math.max(0L, addLootWidgetToken);
                 lootPlaceholders = safeCopy(lootPlaceholders);
             }
         }
@@ -395,6 +519,9 @@ public final class SessionPlannerTimelineMainContentModel {
                 String sceneTargetText,
                 String budgetText,
                 String restText,
+                long participantAddWidgetToken,
+                long encounterDaysWidgetToken,
+                long sceneAddWidgetToken,
                 List<String> partyMemberChoiceLabels,
                 List<SessionParticipantModel> sessionParticipantRows
         ) {
@@ -404,12 +531,19 @@ public final class SessionPlannerTimelineMainContentModel {
                 sceneTargetText = safeText(sceneTargetText);
                 budgetText = safeText(budgetText);
                 restText = safeText(restText);
+                participantAddWidgetToken = Math.max(0L, participantAddWidgetToken);
+                encounterDaysWidgetToken = Math.max(0L, encounterDaysWidgetToken);
+                sceneAddWidgetToken = Math.max(0L, sceneAddWidgetToken);
                 partyMemberChoiceLabels = safeCopy(partyMemberChoiceLabels);
                 sessionParticipantRows = safeCopy(sessionParticipantRows);
             }
 
             static SetupModel empty() {
-                return new SetupModel(true, "", "ca. 0 Szenen", "", "", List.of(),
+                return new SetupModel(true, "", "ca. 0 Szenen", "", "",
+                        setupWidgetToken(WIDGET_PARTICIPANT_ADD),
+                        setupWidgetToken(WIDGET_ENCOUNTER_DAYS),
+                        setupWidgetToken(WIDGET_SCENE_ADD),
+                        List.of(),
                         List.of(SessionParticipantModel.placeholder()));
             }
 
@@ -424,6 +558,9 @@ public final class SessionPlannerTimelineMainContentModel {
                         sceneTargetText(safe.encounterDaysText(), sceneCount),
                         safe.budgetText(),
                         safe.restText(),
+                        setupWidgetToken(WIDGET_PARTICIPANT_ADD),
+                        setupWidgetToken(WIDGET_ENCOUNTER_DAYS),
+                        setupWidgetToken(WIDGET_SCENE_ADD),
                         safe.partyMemberChoices().stream()
                                 .map(ParticipantChoice::label)
                                 .toList(),
@@ -441,6 +578,7 @@ public final class SessionPlannerTimelineMainContentModel {
                                 participant.name(),
                                 participant.detail(),
                                 participant.detailStyleClass(),
+                                participantWidgetToken(participant.characterId(), WIDGET_PARTICIPANT_REMOVE),
                                 "X",
                                 participant.actionDisabled(),
                                 true))
@@ -471,6 +609,7 @@ public final class SessionPlannerTimelineMainContentModel {
                 String name,
                 String detail,
                 String detailStyleClass,
+                long removeWidgetToken,
                 String removeText,
                 boolean actionDisabled,
                 boolean removeVisible
@@ -481,11 +620,12 @@ public final class SessionPlannerTimelineMainContentModel {
                 name = safeText(name);
                 detail = safeText(detail);
                 detailStyleClass = safeText(detailStyleClass);
+                removeWidgetToken = Math.max(0L, removeWidgetToken);
                 removeText = safeText(removeText);
             }
 
             static SessionParticipantModel placeholder() {
-                return new SessionParticipantModel(0L, "keine Spieler", "", "text-secondary", "", true, false);
+                return new SessionParticipantModel(0L, "keine Spieler", "", "text-secondary", 0L, "", true, false);
             }
         }
 
@@ -494,20 +634,29 @@ public final class SessionPlannerTimelineMainContentModel {
                 long leftSceneToken,
                 long rightSceneToken,
                 String label,
-                boolean hasAssignedRest
+                boolean hasAssignedRest,
+                long shortRestWidgetToken,
+                long longRestWidgetToken,
+                long clearRestWidgetToken
         ) {
 
             RestGapModel {
                 label = safeText(label);
+                shortRestWidgetToken = Math.max(0L, shortRestWidgetToken);
+                longRestWidgetToken = Math.max(0L, longRestWidgetToken);
+                clearRestWidgetToken = Math.max(0L, clearRestWidgetToken);
             }
         }
 
         record LootModel(
                 long token,
+                long removeWidgetToken,
                 String label
         ) {
 
             LootModel {
+                token = Math.max(0L, token);
+                removeWidgetToken = Math.max(0L, removeWidgetToken);
                 label = safeText(label);
             }
         }

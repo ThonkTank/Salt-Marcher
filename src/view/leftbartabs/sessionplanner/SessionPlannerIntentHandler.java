@@ -38,7 +38,8 @@ final class SessionPlannerIntentHandler {
     private final SessionPlannerControlsContentModel controlsContentModel;
     private final CatalogCrudControlsContentModel catalogContentModel;
     private final SessionPlannerTimelineMainContentModel timelineMainContentModel;
-    private final Map<String, Consumer<SessionPlannerTimelineMainViewInputEvent>> timelineActions;
+    private final Map<SessionPlannerTimelineMainContentModel.TimelineWidgetKind,
+            Consumer<SessionPlannerTimelineMainViewInputEvent>> timelineActions;
 
     SessionPlannerIntentHandler(
             SessionPlannerApplicationService planner,
@@ -74,37 +75,51 @@ final class SessionPlannerIntentHandler {
         if (event == null || !controlsContentModel.hasCurrentSession()) {
             return;
         }
-        Consumer<SessionPlannerTimelineMainViewInputEvent> action = timelineActions.get(event.widgetId());
+        SessionPlannerTimelineMainContentModel.TimelineWidgetKind widgetKind =
+                timelineMainContentModel.widgetKind(event.widgetToken());
+        Consumer<SessionPlannerTimelineMainViewInputEvent> action = timelineActions.get(widgetKind);
         if (action != null) {
             action.accept(event);
         }
     }
 
-    private Map<String, Consumer<SessionPlannerTimelineMainViewInputEvent>> timelineActions() {
+    private Map<SessionPlannerTimelineMainContentModel.TimelineWidgetKind,
+            Consumer<SessionPlannerTimelineMainViewInputEvent>> timelineActions() {
         return Map.ofEntries(
-                Map.entry("session-planner.timeline.scene.select", this::selectTimelineScene),
-                Map.entry("session-planner.timeline.allocation.decrease",
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_SELECT,
+                        this::selectTimelineScene),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.ALLOCATION_DECREASE,
                         event -> adjustTimelineAllocation(event, ALLOCATION_STEP.negate())),
-                Map.entry("session-planner.timeline.allocation.increase",
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.ALLOCATION_INCREASE,
                         event -> adjustTimelineAllocation(event, ALLOCATION_STEP)),
-                Map.entry("session-planner.timeline.scene.move-up", this::moveTimelineSceneUp),
-                Map.entry("session-planner.timeline.scene.move-down", this::moveTimelineSceneDown),
-                Map.entry("session-planner.timeline.scene.remove", this::removeTimelineScene),
-                Map.entry("session-planner.timeline.rest.short",
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_MOVE_UP,
+                        this::moveTimelineSceneUp),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_MOVE_DOWN,
+                        this::moveTimelineSceneDown),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_REMOVE,
+                        this::removeTimelineScene),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.REST_SHORT,
                         event -> setTimelineRest(event, SessionPlannerRestKind.SHORT_REST)),
-                Map.entry("session-planner.timeline.rest.long",
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.REST_LONG,
                         event -> setTimelineRest(event, SessionPlannerRestKind.LONG_REST)),
-                Map.entry("session-planner.timeline.rest.clear", this::clearTimelineRest),
-                Map.entry("session-planner.timeline.loot.add", this::addTimelineLoot),
-                Map.entry("session-planner.timeline.loot.remove", this::removeTimelineLoot),
-                Map.entry("session-planner.timeline.scene.save", this::saveTimelineScene),
-                Map.entry("session-planner.timeline.scene.draft", this::updateTimelineSceneDraft),
-                Map.entry("session-planner.timeline.participant.add", this::addTimelineParticipant),
-                Map.entry("session-planner.timeline.participant.remove",
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.REST_CLEAR,
+                        this::clearTimelineRest),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.LOOT_ADD,
+                        this::addTimelineLoot),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.LOOT_REMOVE,
+                        this::removeTimelineLoot),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_SAVE,
+                        this::saveTimelineScene),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_DRAFT,
+                        this::updateTimelineSceneDraft),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.PARTICIPANT_ADD,
+                        this::addTimelineParticipant),
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.PARTICIPANT_REMOVE,
                         this::removeTimelineParticipant),
-                Map.entry("session-planner.timeline.encounter-days.apply",
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.ENCOUNTER_DAYS,
                         this::applyTimelineEncounterDays),
-                Map.entry("session-planner.timeline.scene.add", ignored -> addScene()));
+                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_ADD,
+                        ignored -> addScene()));
     }
 
     private void selectTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {

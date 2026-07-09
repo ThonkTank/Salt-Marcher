@@ -21,23 +21,6 @@ import javafx.util.StringConverter;
 
 public final class SessionPlannerTimelineMainView extends ScrollPane {
 
-    private static final String WIDGET_SCENE_SELECT = "session-planner.timeline.scene.select";
-    private static final String WIDGET_ALLOCATION_DECREASE = "session-planner.timeline.allocation.decrease";
-    private static final String WIDGET_ALLOCATION_INCREASE = "session-planner.timeline.allocation.increase";
-    private static final String WIDGET_SCENE_MOVE_UP = "session-planner.timeline.scene.move-up";
-    private static final String WIDGET_SCENE_MOVE_DOWN = "session-planner.timeline.scene.move-down";
-    private static final String WIDGET_SCENE_REMOVE = "session-planner.timeline.scene.remove";
-    private static final String WIDGET_REST_SHORT = "session-planner.timeline.rest.short";
-    private static final String WIDGET_REST_LONG = "session-planner.timeline.rest.long";
-    private static final String WIDGET_REST_CLEAR = "session-planner.timeline.rest.clear";
-    private static final String WIDGET_LOOT_ADD = "session-planner.timeline.loot.add";
-    private static final String WIDGET_LOOT_REMOVE = "session-planner.timeline.loot.remove";
-    private static final String WIDGET_SCENE_SAVE = "session-planner.timeline.scene.save";
-    private static final String WIDGET_SCENE_DRAFT = "session-planner.timeline.scene.draft";
-    private static final String WIDGET_PARTICIPANT_ADD = "session-planner.timeline.participant.add";
-    private static final String WIDGET_PARTICIPANT_REMOVE = "session-planner.timeline.participant.remove";
-    private static final String WIDGET_ENCOUNTER_DAYS = "session-planner.timeline.encounter-days.apply";
-    private static final String WIDGET_SCENE_ADD = "session-planner.timeline.scene.add";
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
     private static final String STYLE_COMPACT = "compact";
     private static final String STYLE_ACCENT = "accent";
@@ -86,8 +69,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         }
         Button addScene = actionButton(
                 "Szene hinzufuegen",
-                WIDGET_SCENE_ADD,
-                this::rawPublish,
+                event -> rawPublish(event, projection.setup().sceneAddWidgetToken()),
                 STYLE_ACCENT);
         addScene.setDisable(projection.setup().sessionActionsDisabled());
         addNode(rows, addScene);
@@ -103,8 +85,10 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         partyMemberSelector.setDisable(setup.sessionActionsDisabled() || partyMemberSelector.getItems().isEmpty());
         Button addPlayer = actionButton(
                 "Hinzufuegen",
-                WIDGET_PARTICIPANT_ADD,
-                event -> rawPublishParticipantAdd(event, partyMemberSelector),
+                event -> rawPublishParticipantAdd(
+                        event,
+                        setup.participantAddWidgetToken(),
+                        partyMemberSelector),
                 STYLE_ACCENT);
         addPlayer.setDisable(partyMemberSelector.isDisabled());
         TextField encounterDays = new TextField(setup.encounterDaysText());
@@ -113,8 +97,10 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         encounterDays.setDisable(setup.sessionActionsDisabled());
         Button applyDays = actionButton(
                 "Setzen",
-                WIDGET_ENCOUNTER_DAYS,
-                event -> rawPublishEncounterDays(event, encounterDays.getText()),
+                event -> rawPublishEncounterDays(
+                        event,
+                        setup.encounterDaysWidgetToken(),
+                        encounterDays.getText()),
                 STYLE_FLAT);
         applyDays.setDisable(setup.sessionActionsDisabled());
 
@@ -135,8 +121,10 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 : setup.sessionParticipantRows()) {
             Button remove = actionButton(
                     participant.removeText(),
-                    WIDGET_PARTICIPANT_REMOVE,
-                    event -> rawPublishParticipantRemove(event, participant.characterId()),
+                    event -> rawPublishParticipantRemove(
+                            event,
+                            participant.removeWidgetToken(),
+                            participant.characterId()),
                     STYLE_FLAT);
             remove.setDisable(participant.actionDisabled());
             remove.setVisible(participant.removeVisible());
@@ -168,40 +156,34 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
         Button select = actionButton(
                 scene.selected() ? "Ausgewaehlt" : "Auswaehlen",
-                WIDGET_SCENE_SELECT,
-                event -> rawPublishScene(event, scene.sceneToken()),
+                event -> rawPublishScene(event, scene.selectWidgetToken(), scene.sceneToken()),
                 scene.selected() ? STYLE_FLAT : STYLE_ACCENT);
         select.setDisable(scene.selected());
 
         Button decreaseAllocation = actionButton(
                 "-10%",
-                WIDGET_ALLOCATION_DECREASE,
-                event -> rawPublishScene(event, scene.sceneToken()),
+                event -> rawPublishScene(event, scene.allocationDecreaseWidgetToken(), scene.sceneToken()),
                 STYLE_FLAT);
         Button increaseAllocation = actionButton(
                 "+10%",
-                WIDGET_ALLOCATION_INCREASE,
-                event -> rawPublishScene(event, scene.sceneToken()),
+                event -> rawPublishScene(event, scene.allocationIncreaseWidgetToken(), scene.sceneToken()),
                 STYLE_FLAT);
 
         Button up = actionButton(
                 "Hoch",
-                WIDGET_SCENE_MOVE_UP,
-                event -> rawPublishScene(event, scene.sceneToken()),
+                event -> rawPublishScene(event, scene.moveUpWidgetToken(), scene.sceneToken()),
                 STYLE_FLAT);
         up.setDisable(!scene.canMoveUp());
 
         Button down = actionButton(
                 "Runter",
-                WIDGET_SCENE_MOVE_DOWN,
-                event -> rawPublishScene(event, scene.sceneToken()),
+                event -> rawPublishScene(event, scene.moveDownWidgetToken(), scene.sceneToken()),
                 STYLE_FLAT);
         down.setDisable(!scene.canMoveDown());
 
         Button remove = actionButton(
                 "X",
-                WIDGET_SCENE_REMOVE,
-                event -> rawPublishScene(event, scene.sceneToken()),
+                event -> rawPublishScene(event, scene.removeWidgetToken(), scene.sceneToken()),
                 STYLE_FLAT);
 
         VBox card = new VBox(6,
@@ -245,6 +227,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         notes.setPrefRowCount(2);
         notes.getStyleClass().add(STYLE_COMPACT);
         Runnable publishDraft = () -> rawPublishSceneDraft(
+                scene.sceneDraftWidgetToken(),
                 scene.sceneToken(),
                 title.getText(),
                 notes.getText(),
@@ -255,9 +238,9 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
         Button save = actionButton(
                 "Szene speichern",
-                WIDGET_SCENE_SAVE,
                 event -> rawPublishSceneText(
                         event,
+                        scene.sceneSaveWidgetToken(),
                         scene.sceneToken(),
                         title.getText(),
                         notes.getText(),
@@ -276,8 +259,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     private Node lootSection(SessionPlannerTimelineMainContentModel.Projection.SceneModel scene) {
         Button addButton = actionButton(
                 "Loot-Platzhalter",
-                WIDGET_LOOT_ADD,
-                event -> rawPublishScene(event, scene.sceneToken()),
+                event -> rawPublishScene(event, scene.addLootWidgetToken(), scene.sceneToken()),
                 STYLE_ACCENT);
         VBox rows = new VBox(6);
         if (scene.lootPlaceholders().isEmpty()) {
@@ -300,8 +282,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         Label label = label(loot.label());
         Button remove = actionButton(
                 "Entfernen",
-                WIDGET_LOOT_REMOVE,
-                event -> rawPublishLoot(event, loot.token()),
+                event -> rawPublishLoot(event, loot.removeWidgetToken(), loot.token()),
                 STYLE_FLAT);
         ActionRow row = new ActionRow(8, label, remove);
         row.addStyles("session-planner-loot-card");
@@ -319,16 +300,25 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         Label current = label(gap.label(), gap.hasAssignedRest() ? "session-planner-gap-active" : STYLE_TEXT_SECONDARY);
 
         Button shortRest = actionButton("Kurze Rast",
-                WIDGET_REST_SHORT,
-                event -> rawPublishRestGap(event, gap.leftSceneToken(), gap.rightSceneToken()),
+                event -> rawPublishRestGap(
+                        event,
+                        gap.shortRestWidgetToken(),
+                        gap.leftSceneToken(),
+                        gap.rightSceneToken()),
                 STYLE_FLAT);
         Button longRest = actionButton("Lange Rast",
-                WIDGET_REST_LONG,
-                event -> rawPublishRestGap(event, gap.leftSceneToken(), gap.rightSceneToken()),
+                event -> rawPublishRestGap(
+                        event,
+                        gap.longRestWidgetToken(),
+                        gap.leftSceneToken(),
+                        gap.rightSceneToken()),
                 STYLE_FLAT);
         Button clear = actionButton("Leeren",
-                WIDGET_REST_CLEAR,
-                event -> rawPublishRestGap(event, gap.leftSceneToken(), gap.rightSceneToken()),
+                event -> rawPublishRestGap(
+                        event,
+                        gap.clearRestWidgetToken(),
+                        gap.leftSceneToken(),
+                        gap.rightSceneToken()),
                 STYLE_FLAT);
         clear.setDisable(!gap.hasAssignedRest());
 
@@ -337,9 +327,9 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         return card;
     }
 
-    private void rawPublish(ActionEvent event) {
+    private void rawPublish(ActionEvent event, long widgetToken) {
         publish(new SessionPlannerTimelineMainViewInputEvent(
-                rawWidgetId(event),
+                rawWidgetToken(event, widgetToken),
                 0L,
                 0L,
                 0L,
@@ -352,9 +342,9 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L));
     }
 
-    private void rawPublishScene(ActionEvent event, long sceneToken) {
+    private void rawPublishScene(ActionEvent event, long widgetToken, long sceneToken) {
         publish(new SessionPlannerTimelineMainViewInputEvent(
-                rawWidgetId(event),
+                rawWidgetToken(event, widgetToken),
                 sceneToken,
                 0L,
                 0L,
@@ -367,9 +357,9 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L));
     }
 
-    private void rawPublishRestGap(ActionEvent event, long leftSceneToken, long rightSceneToken) {
+    private void rawPublishRestGap(ActionEvent event, long widgetToken, long leftSceneToken, long rightSceneToken) {
         publish(new SessionPlannerTimelineMainViewInputEvent(
-                rawWidgetId(event),
+                rawWidgetToken(event, widgetToken),
                 0L,
                 leftSceneToken,
                 rightSceneToken,
@@ -382,9 +372,9 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L));
     }
 
-    private void rawPublishLoot(ActionEvent event, long lootToken) {
+    private void rawPublishLoot(ActionEvent event, long widgetToken, long lootToken) {
         publish(new SessionPlannerTimelineMainViewInputEvent(
-                rawWidgetId(event),
+                rawWidgetToken(event, widgetToken),
                 0L,
                 0L,
                 0L,
@@ -399,13 +389,14 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
     private void rawPublishSceneText(
             ActionEvent event,
+            long widgetToken,
             long sceneToken,
             String sceneTitle,
             String sceneNotes,
             long locationId
     ) {
         publish(new SessionPlannerTimelineMainViewInputEvent(
-                rawWidgetId(event),
+                rawWidgetToken(event, widgetToken),
                 sceneToken,
                 0L,
                 0L,
@@ -418,9 +409,15 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 locationId));
     }
 
-    private void rawPublishSceneDraft(long sceneToken, String sceneTitle, String sceneNotes, long locationId) {
+    private void rawPublishSceneDraft(
+            long widgetToken,
+            long sceneToken,
+            String sceneTitle,
+            String sceneNotes,
+            long locationId
+    ) {
         publish(new SessionPlannerTimelineMainViewInputEvent(
-                WIDGET_SCENE_DRAFT,
+                widgetToken,
                 sceneToken,
                 0L,
                 0L,
@@ -433,9 +430,13 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 locationId));
     }
 
-    private void rawPublishParticipantAdd(ActionEvent event, ComboBox<String> participantSelector) {
+    private void rawPublishParticipantAdd(
+            ActionEvent event,
+            long widgetToken,
+            ComboBox<String> participantSelector
+    ) {
         publish(new SessionPlannerTimelineMainViewInputEvent(
-                rawWidgetId(event),
+                rawWidgetToken(event, widgetToken),
                 0L,
                 0L,
                 0L,
@@ -448,9 +449,9 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L));
     }
 
-    private void rawPublishParticipantRemove(ActionEvent event, long participantId) {
+    private void rawPublishParticipantRemove(ActionEvent event, long widgetToken, long participantId) {
         publish(new SessionPlannerTimelineMainViewInputEvent(
-                rawWidgetId(event),
+                rawWidgetToken(event, widgetToken),
                 0L,
                 0L,
                 0L,
@@ -463,9 +464,9 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L));
     }
 
-    private void rawPublishEncounterDays(ActionEvent event, String encounterDays) {
+    private void rawPublishEncounterDays(ActionEvent event, long widgetToken, String encounterDays) {
         publish(new SessionPlannerTimelineMainViewInputEvent(
-                rawWidgetId(event),
+                rawWidgetToken(event, widgetToken),
                 0L,
                 0L,
                 0L,
@@ -478,11 +479,8 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 0L));
     }
 
-    private String rawWidgetId(ActionEvent event) {
-        if (event.getSource() instanceof Node node) {
-            return node.getId();
-        }
-        return "";
+    private long rawWidgetToken(ActionEvent event, long widgetToken) {
+        return event.getSource() instanceof Node ? Math.max(0L, widgetToken) : 0L;
     }
 
     private void publish(SessionPlannerTimelineMainViewInputEvent event) {
@@ -501,12 +499,10 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
     private static Button actionButton(
             String text,
-            String widgetId,
             EventHandler<ActionEvent> action,
             String emphasisStyle
     ) {
         Button button = new StyledButton(text, STYLE_COMPACT, emphasisStyle);
-        button.setId(widgetId);
         button.setOnAction(action);
         return button;
     }

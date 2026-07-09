@@ -1,7 +1,7 @@
 package src.view.leftbartabs.sessionplanner;
 
 public record SessionPlannerTimelineMainViewInputEvent(
-        String widgetId,
+        long widgetToken,
         long sceneToken,
         long leftSceneToken,
         long rightSceneToken,
@@ -15,7 +15,7 @@ public record SessionPlannerTimelineMainViewInputEvent(
 ) {
 
     public SessionPlannerTimelineMainViewInputEvent {
-        widgetId = widgetId == null ? "" : widgetId;
+        widgetToken = Math.max(0L, widgetToken);
         sceneToken = Math.max(0L, sceneToken);
         leftSceneToken = Math.max(0L, leftSceneToken);
         rightSceneToken = Math.max(0L, rightSceneToken);
