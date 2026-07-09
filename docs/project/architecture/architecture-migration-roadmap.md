@@ -112,6 +112,62 @@ when reality contradicts it.
    area if the anomaly is severe and the revert is still clean. Absence of
    a report counts as acceptance; no active sign-off step exists.
 
+## M1.2 Parity Protocol
+
+This protocol applies to every M2-M5 area and dungeon sub-slice. Migration
+passes may change structure only; visible behavior drift is a defect.
+
+Before implementation starts, the area owns a parity baseline:
+
+- selected harness tasks from the ledger and `harness-map.json`;
+- known gaps from `docs/project/verification/harness-gaps.md`;
+- the current scenario and assertion inventory for those harnesses.
+
+That baseline is materialized in the per-area step-3 design artifact, with
+links to any generated pass log that enumerates harness IDs or assertion
+labels. The ledger row records the design artifact path before the first
+wiring-port commit. If the area needs a harness gap closure before design, the
+gap-closure pass records the same inventory in its pass log and the later
+design links to it. No wiring-port or implementation commit may depend on an
+unstated inventory.
+
+A **scenario** is the user route, input sequence, fixture data shape,
+persisted setup, selected suite id, and production route under test. An
+**assertion** is any observable oracle: persisted data, published model,
+rendered fact, owner API result, proof item, error text/class,
+enabled/disabled state, ordering rule, or image snapshot where M1.5 applies.
+
+Harness gaps are closed against the old structure before area implementation.
+Gap closure may add missing production-route coverage, but it must prove
+existing behavior, including known bugs. If a wiring pass reveals that a
+harness is fixture/component proof instead of production-route proof, either
+relabel it and add a production-route harness before area implementation, or
+record a Harness Gap blocker in `harness-gaps.md`.
+
+Harness wiring ports are allowed only as separate prior commits. They may
+update imports, package or class references, task/source-set wiring, adapter
+construction, temporary data directories, or production-route binding needed
+to run the same scenario against the old structure. They must not add,
+remove, rename, split, merge, or reinterpret scenarios; weaken or replace
+assertions; change fixture values to produce different behavior; or change
+the pass/fail oracle.
+
+During implementation, harness scenario/assertion diffs fail review unless
+they are mechanical references to an already committed wiring port. Reviews
+check the scenario/assertion inventory frozen by the design artifact before
+the first wiring-port commit, green selected harnesses after the wiring port
+and after implementation, and no migration-commit edits to harness or
+owner-smoke oracles except mechanical references to prior wiring.
+
+Nondeterministic old behavior is preserved, not fixed. Step 1 must characterize
+the deterministic envelope: stable invariants, allowed value set/range,
+order-insensitive comparison, eventual-state condition, or exact tolerated
+absence/presence boundary. The harness asserts only that envelope. The
+nondeterminism is recorded as a normal R2 issue with old-structure evidence
+and is not repaired inside the migration. If no deterministic envelope can be
+established, the area may not enter implementation; record the gap in
+`harness-gaps.md` and keep the ledger area `Pending`.
+
 ## Milestone M0 - Migration Constitution and Doctrine Removal
 
 Nothing in `src/**` production code changes in M0.
@@ -150,12 +206,10 @@ Nothing in `src/**` production code changes in M0.
 - **M1.1 Harness inventory** per area in the ledger: existing harnesses,
   which boundary classes they import, scenario coverage. Known gaps per
   `harness-gaps.md`: creatures, encountertable.
-- **M1.2 Parity protocol** committed in the charter: wiring may be ported
-  (separate commit), scenarios and assertions are frozen during migration
-  passes. Where step 1 of an area cycle discovers nondeterministic old
-  behavior, the harness asserts the deterministic envelope and the
-  nondeterminism is recorded as a normal R2 issue. It is not "fixed"
-  inside the migration.
+- **M1.2 Parity protocol** committed in the charter: the protocol above
+  freezes scenarios/assertions, limits wiring ports to separate prior commits,
+  and preserves nondeterministic old behavior through deterministic envelopes
+  plus normal R2 issue filing.
 - **M1.3 Pilot harness hardening** for hex: verify create/edit/paint/
   select/travel/readback coverage end to end; close gaps.
 - **M1.4 Owner smoke scripts.** Per area a ~10-line German checklist next

@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M1 - Parity Oracle |
-| Work item | M1.2 - Parity protocol |
+| Work item | M1.3 - Pilot harness hardening |
 | Cycle step | Milestone step; per-area cycle not active yet |
 | In-flight area | None |
-| Required next proof | `./gradlew checkDocumentationEnforcement --console=plain` for parity protocol docs; behavior harness proof as each M1 item names it |
-| Last status note | `2026-07-09 M1.1 harness-inventory` |
+| Required next proof | Hex behavior harness proof for M1.3 plus `./gradlew checkDocumentationEnforcement --console=plain` if ledger/docs change |
+| Last status note | `2026-07-09 M1.2 parity-protocol` |
 
 ## M0 Step Ledger
 
@@ -51,7 +51,7 @@ but they do not advance the migration unless this ledger advances too.
 | Step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
 | M1.1 Harness inventory | Done on branch | `90e4ac7ac` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; judge review Approve | Existing harnesses, imported boundary surfaces, scenario coverage, and current gaps are listed below for every migration area. |
-| M1.2 Parity protocol | Pending | Pending | Pending PR merge | Pending | Not started. |
+| M1.2 Parity protocol | Done on branch | Pending current commit | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | Roadmap protocol freezes scenario/assertion inventories in per-area designs, keeps wiring ports separate, closes gaps against old structure, and handles nondeterministic old behavior through deterministic envelopes plus R2 issue filing. |
 | M1.3 Pilot harness hardening | Pending | Pending | Pending PR merge | Pending | Not started. |
 | M1.4 Owner smoke scripts | Pending | Pending | Pending PR merge | Pending | Not started. |
 | M1.5 Render parity net | Pending | Pending | Pending PR merge | Pending | Not started. |
@@ -148,3 +148,12 @@ importierten Boundary-Surfaces, Szenarioabdeckung und bekannten Gaps. Die
 Dokumentationspruefung ist gruen; der unabhaengige Judge hat die Inventur nach
 Rework freigegeben. Naechster Schritt ist M1.2, das Einfrieren des
 Parity-Protokolls.
+
+### 2026-07-09 M1.2 parity-protocol
+
+Die Roadmap enthaelt jetzt das verbindliche Parity-Protokoll: Szenarien und
+Assertions werden im per-area Design-Artefakt materialisiert und vor dem ersten
+Wiring-Port eingefroren; Wiring-Ports bleiben eigene Vorab-Commits, und
+nichtdeterministisches Altverhalten wird nur als deterministische Envelope plus
+R2-Issue dokumentiert. Phase 1 und der unabhaengige Judge haben den Schritt
+freigegeben. Naechster Schritt ist M1.3 Hex-Harness-Haertung.
