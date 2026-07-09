@@ -240,6 +240,8 @@ val dungeonEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("dungeon-edi
 val dungeonEditorBehaviorHarnessResultsDir = layout.buildDirectory.dir("dungeon-editor-behavior-results")
 val dungeonTravelProjectionLevelHarnessDataDir = layout.buildDirectory.dir("dungeon-travel-projection-level-data")
 val dungeonTravelProjectionLevelHarnessResultsDir = layout.buildDirectory.dir("dungeon-travel-projection-level-results")
+val dungeonMapRenderParityHarnessDataDir = layout.buildDirectory.dir("dungeon-map-render-parity-data")
+val dungeonMapRenderParityHarnessResultsDir = layout.buildDirectory.dir("dungeon-map-render-parity-results")
 val behaviorHarnesses = extensions.getByType<BehaviorHarnessRegistry>()
 
 fun registerDungeonEditorBehaviorHarnessTask(
@@ -450,6 +452,41 @@ behaviorHarnesses.javaExec("dungeonTravelProjectionLevelHarness") {
         systemProperty(
             "saltmarcher.dungeonEditorBehavior.resultsDir",
             dungeonTravelProjectionLevelHarnessResultsDir.get().asFile.absolutePath
+        )
+    }
+}
+
+behaviorHarnesses.javaExec("dungeonMapRenderParityHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("dungeon-map-render-parity"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused Dungeon map render image snapshot parity harness."
+        dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
+        classpath = dungeonEditorBehaviorHarness.runtimeClasspath
+        mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonMapRenderParitySnapshotHarness")
+        inputs.files(fileTree("docs/dungeon/verification") {
+            include("verification-dungeon-editor-fixtures.md")
+            include("verification-dungeon-editor-map-controls.md")
+            include("verification-dungeon-editor-walls.md")
+            include("verification-dungeon-render-snapshot-parity.md")
+            include("verification-dungeon-travel-map-controls.md")
+        })
+            .withPropertyName("dungeonMapRenderParityCatalogs")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+        outputs.dir(dungeonMapRenderParityHarnessResultsDir)
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = dungeonMapRenderParityHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            mkdir(dungeonMapRenderParityHarnessResultsDir)
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+        systemProperty(
+            "saltmarcher.dungeonEditorBehavior.resultsDir",
+            dungeonMapRenderParityHarnessResultsDir.get().asFile.absolutePath
         )
     }
 }

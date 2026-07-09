@@ -79,6 +79,7 @@ Editor tool matrices:
 - [Dungeon Editor Transition Matrix](./verification/verification-dungeon-editor-transitions.md)
 - [Dungeon Editor Handle Matrix](./verification/verification-dungeon-editor-handles.md)
 - [Dungeon Editor Label Matrix](./verification/verification-dungeon-editor-labels.md)
+- [Dungeon Render Snapshot Parity Matrix](./verification/verification-dungeon-render-snapshot-parity.md)
 
 Travel matrices:
 
