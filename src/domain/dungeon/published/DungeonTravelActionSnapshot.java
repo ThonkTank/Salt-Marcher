@@ -1,7 +1,6 @@
 package src.domain.dungeon.published;
 
 public record DungeonTravelActionSnapshot(
-        String actionId,
         DungeonTravelActionKind kind,
         String label,
         String destinationLabel,
@@ -9,7 +8,6 @@ public record DungeonTravelActionSnapshot(
 ) {
 
     public DungeonTravelActionSnapshot {
-        actionId = actionId == null ? "" : actionId.trim();
         kind = kind == null ? DungeonTravelActionKind.TRAVERSAL : kind;
         label = label == null || label.isBlank() ? kind.name() : label.trim();
         destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();

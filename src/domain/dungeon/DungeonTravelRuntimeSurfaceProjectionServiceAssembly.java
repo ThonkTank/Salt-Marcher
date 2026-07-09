@@ -102,7 +102,6 @@ final class DungeonTravelRuntimeSurfaceProjectionServiceAssembly {
             src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AvailableAction action
     ) {
         return new src.domain.dungeon.published.DungeonTravelActionSnapshot(
-                action.id(),
                 src.domain.dungeon.published.DungeonTravelActionKind.valueOf(action.kind().name()),
                 action.label(),
                 action.destinationLabel(),
@@ -113,7 +112,6 @@ final class DungeonTravelRuntimeSurfaceProjectionServiceAssembly {
             src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AvailableAction action
     ) {
         return new src.domain.dungeon.published.TravelDungeonAction(
-                action.id(),
                 action.displayLabel(),
                 action.helpText());
     }

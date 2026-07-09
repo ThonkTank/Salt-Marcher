@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
 import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
 import src.domain.dungeon.model.runtime.travel.projection.TravelDungeonSessionProjectionMapper;
+import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts.SelectedAction;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState.ActiveTravelStateData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionMovement;
@@ -37,7 +38,7 @@ public final class ApplyTravelDungeonMovementUseCase {
     public SurfaceData move(
             @Nullable PositionData requestedTravelPosition,
             @Nullable SurfaceData currentSurface,
-            String actionId
+            SelectedAction selectedAction
     ) {
         ActiveTravelStateData activeTravel = partyStateRepository.loadActiveTravelState();
         @Nullable PositionData effectivePosition =
@@ -50,7 +51,7 @@ public final class ApplyTravelDungeonMovementUseCase {
         MoveResultData result = TravelDungeonSessionMovement.safe(
                 moveDungeonTravelActionUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
                         TravelDungeonSessionProjectionMapper.toRuntimePositionFacts(effectivePosition),
-                        actionId)));
+                        selectedAction)));
         return applyResult(
                 effectivePosition,
                 activeTravel,

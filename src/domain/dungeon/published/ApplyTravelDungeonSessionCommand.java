@@ -2,7 +2,8 @@ package src.domain.dungeon.published;
 
 public record ApplyTravelDungeonSessionCommand(
         Action action,
-        String actionId,
+        int selectedActionRowIndex,
+        long mapId,
         int projectionLevel,
         DungeonOverlaySettings overlaySettings
 ) {
@@ -10,7 +11,8 @@ public record ApplyTravelDungeonSessionCommand(
     public static ApplyTravelDungeonSessionCommand projectionLevelShift(int projectionLevelShift) {
         return new ApplyTravelDungeonSessionCommand(
                 Action.SHIFT_PROJECTION_LEVEL,
-                "",
+                -1,
+                0L,
                 projectionLevelShift,
                 DungeonOverlaySettings.defaults());
     }
@@ -18,15 +20,17 @@ public record ApplyTravelDungeonSessionCommand(
     public static ApplyTravelDungeonSessionCommand overlay(DungeonOverlaySettings overlaySettings) {
         return new ApplyTravelDungeonSessionCommand(
                 Action.SET_OVERLAY,
-                "",
+                -1,
+                0L,
                 0,
                 overlaySettings);
     }
 
-    public static ApplyTravelDungeonSessionCommand action(String actionId) {
+    public static ApplyTravelDungeonSessionCommand action(int selectedActionRowIndex) {
         return new ApplyTravelDungeonSessionCommand(
                 Action.ACTION,
-                actionId,
+                selectedActionRowIndex,
+                0L,
                 0,
                 DungeonOverlaySettings.defaults());
     }
@@ -34,23 +38,39 @@ public record ApplyTravelDungeonSessionCommand(
     public static ApplyTravelDungeonSessionCommand selectMap(long mapId) {
         return new ApplyTravelDungeonSessionCommand(
                 Action.SELECT_MAP,
-                Long.toString(Math.max(0L, mapId)),
+                -1,
+                Math.max(0L, mapId),
                 0,
                 DungeonOverlaySettings.defaults());
     }
 
     public ApplyTravelDungeonSessionCommand {
         action = action == null ? Action.REFRESH : action;
-        actionId = actionId == null ? "" : actionId.trim();
+        selectedActionRowIndex = Math.max(-1, selectedActionRowIndex);
+        mapId = Math.max(0L, mapId);
         overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
     }
 
+    public int actionCode() {
+        return action.code();
+    }
+
     public enum Action {
-        REFRESH,
-        ACTION,
-        SELECT_MAP,
-        SET_PROJECTION_LEVEL,
-        SHIFT_PROJECTION_LEVEL,
-        SET_OVERLAY
+        REFRESH(0),
+        ACTION(1),
+        SELECT_MAP(2),
+        SET_PROJECTION_LEVEL(3),
+        SHIFT_PROJECTION_LEVEL(4),
+        SET_OVERLAY(5);
+
+        private final int code;
+
+        Action(int code) {
+            this.code = code;
+        }
+
+        private int code() {
+            return code;
+        }
     }
 }

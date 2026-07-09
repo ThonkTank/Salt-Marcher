@@ -2,8 +2,9 @@ package src.domain.dungeon.model.runtime.travel.projection;
 
 
 import java.util.List;
-import org.jspecify.annotations.Nullable;
+import java.util.Optional;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts.SelectedAction;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
 
 public record TravelSurfaceFacts(
@@ -41,14 +42,12 @@ public record TravelSurfaceFacts(
         return immutableActions(actions);
     }
 
-    public @Nullable TravelActionFacts action(String actionId) {
-        String requestedActionId = actionId == null ? "" : actionId.trim();
-        for (TravelActionFacts candidate : actions) {
-            if (candidate.actionId().equals(requestedActionId)) {
-                return candidate;
-            }
+    public Optional<TravelActionFacts> action(SelectedAction selectedAction) {
+        SelectedAction requestedAction = SelectedAction.safe(selectedAction);
+        if (!requestedAction.isWithin(actions)) {
+            return Optional.empty();
         }
-        return null;
+        return Optional.of(actions.get(requestedAction.rowIndex()));
     }
 
     private static TravelDungeonSessionSurface.MapData defaultMap(TravelDungeonSessionSurface.MapData map) {
