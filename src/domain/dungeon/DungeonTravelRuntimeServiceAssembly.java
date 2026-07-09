@@ -3,6 +3,8 @@ package src.domain.dungeon;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import shell.api.ServiceRegistry;
+import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
+import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
 
 final class DungeonTravelRuntimeServiceAssembly {
 
@@ -37,10 +39,10 @@ final class DungeonTravelRuntimeServiceAssembly {
                         loadDungeonMapUseCase,
                         dungeonMapRepository,
                         derive);
-        src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository partyStateRepository =
-                services.require(src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository.class);
-        src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository partyPositionRepository =
-                services.require(src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository.class);
+        TravelPartyStateRepository partyStateRepository =
+                new DungeonTravelPartyStateServiceAssembly().repository(services);
+        TravelPartyPositionRepository partyPositionRepository =
+                new DungeonTravelPartyPositionServiceAssembly().repository(services);
         src.domain.dungeon.model.runtime.usecase.LoadTravelDungeonSessionSurfaceUseCase loadSessionSurfaceUseCase =
                 new src.domain.dungeon.model.runtime.usecase.LoadTravelDungeonSessionSurfaceUseCase(
                         partyStateRepository,

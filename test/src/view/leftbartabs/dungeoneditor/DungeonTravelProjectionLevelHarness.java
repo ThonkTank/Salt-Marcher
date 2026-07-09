@@ -13,17 +13,23 @@ import shell.api.ShellSlot;
 import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.domain.dungeon.DungeonServiceContribution;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
-import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
-import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
-import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
 import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.TravelDungeonModel;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.CreateCharacterCommand;
+import src.domain.party.published.MembershipState;
+import src.domain.party.published.MovePartyCharactersCommand;
+import src.domain.party.published.PartyDungeonTravelLocationKind;
+import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
+import src.domain.party.published.PartyTravelHeading;
+import src.domain.party.published.PartyTravelLocationSnapshot;
+import src.domain.party.published.PartyTravelPositionsModel;
+import src.domain.party.published.PartyTravelPositionsResult;
+import src.domain.party.published.PartyTravelTile;
 import src.view.leftbartabs.dungeontravel.DungeonTravelContribution;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
@@ -50,7 +56,8 @@ public final class DungeonTravelProjectionLevelHarness {
         long mapId = runtime.database().createPersistedMap("Travel Visible Level Controls Map");
         runtime.database().seedTransitionDescriptionFixture(mapId);
         long transitionId = runtime.database().transitionIdByDescription(mapId, "Initial transition.");
-        runtime.partyState().moveToMap(mapId);
+        movePartyTokenToMap(runtime.party(), mapId);
+        PartyTravelPositionsResult partyPositionsBefore = runtime.partyPositions().current();
         runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
                 .applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
                         ApplyTravelDungeonSessionCommand.Action.REFRESH,
@@ -84,7 +91,7 @@ public final class DungeonTravelProjectionLevelHarness {
                 DungeonEditorBehaviorHarnessSupport.labelVisible(binding.controlsRoot(), "Ebene z=1"),
                 "DT-LVL-001 visible travel level label updates");
         assertRenderedLevel(binding.mapContentModel(), 1, "DT-LVL-001 renders level 1");
-        assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, "DT-LVL-001");
+        assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, partyPositionsBefore, "DT-LVL-001");
 
         DungeonEditorBehaviorHarnessSupport.click(DungeonEditorBehaviorHarnessSupport.button(binding.controlsRoot(), "-"));
 
@@ -94,7 +101,7 @@ public final class DungeonTravelProjectionLevelHarness {
                 DungeonEditorBehaviorHarnessSupport.labelVisible(binding.controlsRoot(), "Ebene z=0"),
                 "DT-LVL-002 visible travel level label updates");
         assertRenderedLevel(binding.mapContentModel(), 0, "DT-LVL-002 renders level 0");
-        assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, "DT-LVL-002");
+        assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, partyPositionsBefore, "DT-LVL-002");
 
         results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
                 + "DT-LVL-001 Ready: DungeonTravelControlsView + button -> SQLite/party unchanged"
@@ -116,6 +123,21 @@ public final class DungeonTravelProjectionLevelHarness {
         root.applyCss();
         root.layout();
         return new HarnessBinding(controlsRoot, DungeonEditorBehaviorHarnessSupport.boundContentModel(mapView));
+    }
+
+    private static void movePartyTokenToMap(PartyApplicationService party, long mapId) {
+        party.createCharacter(new CreateCharacterCommand(
+                new CharacterDraft("Dungeon Guide", "Harness", 3, 12, 14),
+                MembershipState.ACTIVE));
+        party.moveCharacters(new MovePartyCharactersCommand(
+                List.of(1L),
+                new PartyDungeonTravelLocationSnapshot(
+                        mapId,
+                        PartyDungeonTravelLocationKind.TILE,
+                        0L,
+                        new PartyTravelTile(1, 1, 0),
+                        PartyTravelHeading.SOUTH),
+                true));
     }
 
     private static void assertProjectionLevel(TravelDungeonSnapshot snapshot, int expectedLevel, String message) {
@@ -148,15 +170,22 @@ public final class DungeonTravelProjectionLevelHarness {
             HarnessRuntime runtime,
             long mapId,
             long geometryRowsBefore,
+            PartyTravelPositionsResult partyPositionsBefore,
             String scenario
     ) {
         DungeonEditorBehaviorHarnessSupport.assertEquals(
                 geometryRowsBefore,
                 runtime.database().countAuthoredGeometryRows(mapId),
                 scenario + " leaves authored dungeon geometry unchanged");
+        PartyTravelPositionsResult partyPositionsAfter = runtime.partyPositions().current();
         DungeonEditorBehaviorHarnessSupport.assertEquals(
-                0,
-                runtime.partyPosition().dungeonSaveCount(),
+                partyPositionsBefore.partyTokenCharacterIds(),
+                partyPositionsAfter.partyTokenCharacterIds(),
+                scenario + " leaves party-token character ids unchanged");
+        PartyTravelLocationSnapshot locationBefore = partyPositionsBefore.partyTokenLocation();
+        DungeonEditorBehaviorHarnessSupport.assertEquals(
+                locationBefore,
+                partyPositionsAfter.partyTokenLocation(),
                 scenario + " leaves party runtime position unchanged");
     }
 
@@ -168,76 +197,26 @@ public final class DungeonTravelProjectionLevelHarness {
 
     private record HarnessRuntime(
             ShellRuntimeContext context,
-            MutableTravelPartyStateRepository partyState,
-            CountingTravelPartyPositionRepository partyPosition,
+            PartyApplicationService party,
+            PartyTravelPositionsModel partyPositions,
             DungeonEditorHarnessPersistenceSupport.DatabaseAssertions database
     ) {
         static HarnessRuntime create() {
             DungeonEditorHarnessPersistenceSupport.DatabaseAssertions database =
                     new DungeonEditorHarnessPersistenceSupport.DatabaseAssertions();
             database.clearDungeonData();
-            MutableTravelPartyStateRepository partyState = new MutableTravelPartyStateRepository();
+            database.clearPartyData();
             ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-            CountingTravelPartyPositionRepository partyPosition = new CountingTravelPartyPositionRepository();
             builder.register(DungeonMapRepository.class, new SqliteDungeonMapRepository());
-            builder.register(TravelPartyStateRepository.class, partyState);
-            builder.register(TravelPartyPositionRepository.class, partyPosition);
+            new src.data.party.PartyServiceContribution().register(builder);
+            new src.domain.party.PartyServiceContribution().register(builder);
             new DungeonServiceContribution().register(builder);
             ServiceRegistry registry = builder.build();
             return new HarnessRuntime(
                     new ShellRuntimeContext(DungeonEditorHarnessPersistenceSupport.EmptyInspectorSink.INSTANCE, registry),
-                    partyState,
-                    partyPosition,
+                    registry.require(PartyApplicationService.class),
+                    registry.require(PartyTravelPositionsModel.class),
                     database);
-        }
-    }
-
-    private static final class MutableTravelPartyStateRepository implements TravelPartyStateRepository {
-        private TravelDungeonActiveState.ActiveTravelStateData activeTravelState =
-                new TravelDungeonActiveState.ActiveTravelStateData(List.of(), null);
-
-        @Override
-        public TravelDungeonActiveState.ActiveTravelStateData loadActiveTravelState() {
-            return activeTravelState;
-        }
-
-        private void moveToMap(long mapId) {
-            activeTravelState = new TravelDungeonActiveState.ActiveTravelStateData(
-                    List.of(),
-                    new TravelDungeonActiveState.PartyLocationData(
-                            new TravelDungeonSessionSurface.PositionData(
-                                    mapId,
-                                    TravelDungeonSessionValues.LocationKind.TILE,
-                                    0L,
-                                    new Cell(1, 1, 0),
-                                    "SOUTH"),
-                            0L,
-                            false));
-        }
-    }
-
-    private static final class CountingTravelPartyPositionRepository implements TravelPartyPositionRepository {
-        private int dungeonSaveCount;
-
-        @Override
-        public boolean saveDungeonPosition(
-                TravelDungeonSessionSurface.PositionData position,
-                List<Long> characterIds
-        ) {
-            dungeonSaveCount++;
-            return false;
-        }
-
-        @Override
-        public boolean saveOverworldPosition(
-                TravelDungeonSessionValues.OverworldTarget target,
-                List<Long> characterIds
-        ) {
-            return false;
-        }
-
-        private int dungeonSaveCount() {
-            return dungeonSaveCount;
         }
     }
 }
