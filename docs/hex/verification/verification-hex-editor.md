@@ -29,7 +29,9 @@ contracts.
 
 - `Mechanically Enforced`: `./gradlew hexMapEditorBehaviorHarness
   --console=plain` runs through production Hex editor/domain/persistence
-  routes with an isolated `XDG_DATA_HOME`.
+  routes with an isolated `XDG_DATA_HOME`, including a shell-bound
+  `HexMapContribution` route through the real `COCKPIT_CONTROLS`,
+  `COCKPIT_MAIN`, and `COCKPIT_STATE` slot views.
 - `Mechanically Enforced`: `./gradlew sessionPlannerShellLayoutHarness
   --console=plain` mounts `HexMapContribution` in `ShellWorkspacePane` and
   verifies the shared `CatalogCrudControlsView` plus `ShellControls.stack`
@@ -57,6 +59,7 @@ behavior IDs before broader production handoff proof.
 | `HEX-EDITOR-009` | Marker-save action routing | Marker-save controls events remain distinct from incidental map draft changes so pressing `Marker speichern` persists the marker instead of updating map metadata. | Ready |
 | `HEX-EDITOR-010` | Shared shell layout | `HexMapContribution` mounts shared catalog CRUD controls as the fixed stack child, compact Hex controls as the flexible stack child, and keeps the Hex main map visible in `COCKPIT_MAIN`. | Ready |
 | `HEX-EDITOR-011` | Catalog rename radius preservation | Renaming a non-current Hex map through the shared catalog CRUD route preserves that target map's existing radius instead of writing the create default. | Ready |
+| `HEX-EDITOR-012` | Shell-bound contribution route | Binding `HexMapContribution` through shell slots creates, edits, paints, selects, saves a marker, moves the party token, and reloads persisted Hex map state through the visible slot views. | Ready |
 
 ## Pass Or Fail Criteria
 

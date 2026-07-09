@@ -13,9 +13,11 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import javafx.event.ActionEvent;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
+import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -24,12 +26,17 @@ import javafx.scene.control.Spinner;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.HBox;
+import javafx.stage.Stage;
 import javafx.stage.Window;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
+import shell.api.ShellSlot;
 import src.data.hex.model.HexPersistenceSchema;
 import src.domain.hex.HexEditorApplicationService;
 import src.domain.hex.HexTravelApplicationService;
@@ -52,8 +59,10 @@ import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.MembershipState;
 import src.domain.party.published.MovePartyCharactersCommand;
+import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 
 public final class HexMapEditorBehaviorHarness {
 
@@ -66,6 +75,14 @@ public final class HexMapEditorBehaviorHarness {
     private static final String AUTHORED_TERRAIN = "WATER";
     private static final String MARKER_NAME = "Old Tower";
     private static final String MARKER_NOTE = "Visible from the river";
+    private static final String SHELL_BOUND_MAP_NAME = "Shell Bound Hex Map";
+    private static final String SHELL_BOUND_UPDATED_NAME = "Shell Bound Hex Map Updated";
+    private static final String SHELL_BOUND_MARKER_NAME = "Shell Tower";
+    private static final String HEX_HITS_PROPERTY = "hex.hits";
+    private static final int HIT_Q = 0;
+    private static final int HIT_R = 1;
+    private static final int HIT_CENTER_X = 2;
+    private static final int HIT_CENTER_Y = 3;
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
     private static final int AWAIT_SECONDS = 10;
 
@@ -239,6 +256,7 @@ public final class HexMapEditorBehaviorHarness {
         assertCatalogRenamePreservesNonCurrentRadius(runtime);
 
         runOnFxThread(() -> assertMarkerDraftPreservedAfterFailure(selected, missingName));
+        runOnFxThread(HexMapEditorBehaviorHarness::assertShellBoundContributionRoute);
         runtime.database().forceMapRadius(mapId.value(), 100);
         runtime.editor().loadEditor(new LoadHexEditorCommand());
         HexEditorSnapshot corruptRadius = runtime.current();
@@ -271,6 +289,7 @@ public final class HexMapEditorBehaviorHarness {
         results.add("HEX-TRAVEL-006 Ready: Hex map header shows user-facing Reisegruppe tool label");
         results.add("HEX-TRAVEL-007 Ready: marker draft survives Reisegruppe tool refresh");
         results.add("HEX-TRAVEL-008 Ready: oversized Hex map readback does not allocate rendered Canvas tiles");
+        results.add("HEX-EDITOR-012 Ready: HexMapContribution shell-bound route creates, edits, paints, selects, saves marker, moves the party token, and reloads through bound Shell slots");
     }
 
     private static HexEditorSnapshot.MapSnapshot selectedMap(HexEditorSnapshot snapshot) {
@@ -727,6 +746,189 @@ public final class HexMapEditorBehaviorHarness {
                 "HEX-TRAVEL-008 oversized map does not project hit data");
     }
 
+    private static void assertShellBoundContributionRoute() {
+        RuntimeSurface runtime = RuntimeSurface.create();
+        ShellBinding binding = new HexMapContribution().bind(runtime.shellContext());
+        Parent controlsRoot = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+        HexMapMainView mainView = slot(binding, ShellSlot.COCKPIT_MAIN, HexMapMainView.class);
+        HexMapStateView stateView = slot(binding, ShellSlot.COCKPIT_STATE, HexMapStateView.class);
+        Stage stage = new Stage();
+        HBox root = new HBox(controlsRoot, mainView, stateView);
+        try {
+            stage.setScene(new Scene(root, 1_260.0, 760.0));
+            stage.show();
+            layout(root);
+
+            createShellBoundMap(controlsRoot, SHELL_BOUND_MAP_NAME);
+            HexEditorSnapshot created = runtime.current();
+            HexMapId mapId = selectedMapId(created);
+            assertEquals(SHELL_BOUND_MAP_NAME, selectedMap(created).displayName(),
+                    "HEX-EDITOR-012 shell-bound create selects new map");
+            assertEquals(START_RADIUS, selectedMap(created).radius(),
+                    "HEX-EDITOR-012 shell-bound create uses catalog default radius");
+            assertContains(labelText(mainView), SHELL_BOUND_MAP_NAME,
+                    "HEX-EDITOR-012 shell-bound main slot shows created map");
+
+            mapNameField(stateView).setText(SHELL_BOUND_UPDATED_NAME);
+            radiusSpinner(stateView).getValueFactory().setValue(UPDATED_RADIUS);
+            mapSaveButton(stateView).fire();
+            assertEquals(SHELL_BOUND_UPDATED_NAME, selectedMap(runtime.current()).displayName(),
+                    "HEX-EDITOR-012 shell-bound state save updates name");
+            assertEquals(UPDATED_RADIUS, selectedMap(runtime.current()).radius(),
+                    "HEX-EDITOR-012 shell-bound state save updates radius");
+
+            toggleButtonDescendant(controlsRoot, "Terrain").fire();
+            ComboBox<String> terrainSelector = comboBoxByAccessibleText(controlsRoot, "Hex-Terrain");
+            selectComboBoxItem(terrainSelector, "Wasser");
+            fireComboBoxAction(terrainSelector);
+            assertEquals(AUTHORED_TERRAIN, runtime.current().activeTerrain(),
+                    "HEX-EDITOR-012 shell-bound terrain control publishes active terrain");
+            assertContains(labelText(mainView), "Terrain: Wasser",
+                    "HEX-EDITOR-012 shell-bound main slot shows active terrain");
+            clickHexTile(mainView, AUTHORED_Q, AUTHORED_R);
+            assertTileTerrain(runtime.current(), AUTHORED_Q, AUTHORED_R, AUTHORED_TERRAIN,
+                    "HEX-EDITOR-012 shell-bound paint terrain");
+            assertEquals(1L, runtime.database().terrainOverrideCount(mapId.value()),
+                    "HEX-EDITOR-012 shell-bound paint persists terrain override");
+
+            toggleButtonDescendant(controlsRoot, "Auswahl").fire();
+            clickHexTile(mainView, AUTHORED_Q, AUTHORED_R);
+            HexEditorSnapshot selected = runtime.current();
+            assertEquals(AUTHORED_Q, selected.selectedTile().orElseThrow().q(),
+                    "HEX-EDITOR-012 shell-bound select q");
+            assertContains(labelText(stateView), "Position: 2,0",
+                    "HEX-EDITOR-012 shell-bound state slot shows selected tile");
+
+            toggleButtonDescendant(controlsRoot, "Marker").fire();
+            markerNameField(stateView).setText(SHELL_BOUND_MARKER_NAME);
+            selectMarkerType(markerTypeSelector(stateView), "LANDMARK");
+            markerNoteArea(stateView).setText(MARKER_NOTE);
+            markerSaveButton(stateView).fire();
+            assertMarker(runtime.current(), SHELL_BOUND_MARKER_NAME, "LANDMARK", MARKER_NOTE,
+                    "HEX-EDITOR-012 shell-bound marker save");
+            assertEquals(1L, runtime.database().markerCount(mapId.value()),
+                    "HEX-EDITOR-012 shell-bound marker save persists one marker");
+
+            runtime.party().createCharacter(new CreateCharacterCommand(
+                    new CharacterDraft("Shell Guide", "Player", 3, 12, 14),
+                    MembershipState.ACTIVE));
+            long characterId = newestActiveMemberId(runtime);
+            runtime.party().moveCharacters(new MovePartyCharactersCommand(
+                    List.of(characterId),
+                    new PartyOverworldTravelLocationSnapshot(
+                            mapId.value(),
+                            new HexCoordinate(AUTHORED_Q, AUTHORED_R).stableTileId()),
+                    true));
+            List<Long> partyTokenCharacterIds = runtime.travel().current().partyTokenCharacterIds();
+            assertTrue(partyTokenCharacterIds.contains(characterId),
+                    "HEX-EDITOR-012 shell-bound travel includes newly positioned party member");
+            toggleButtonDescendant(controlsRoot, "Reisegruppe").fire();
+            clickHexTile(mainView, 0, 0);
+            HexTravelSnapshot moved = runtime.travel().current();
+            assertTrue(moved.active(), "HEX-EDITOR-012 shell-bound travel remains active");
+            assertEquals(0, moved.q(), "HEX-EDITOR-012 shell-bound travel moved q");
+            assertEquals(0, moved.r(), "HEX-EDITOR-012 shell-bound travel moved r");
+            assertEquals(partyTokenCharacterIds, moved.partyTokenCharacterIds(),
+                    "HEX-EDITOR-012 shell-bound travel preserves party token characters");
+
+            RuntimeSurface reloadedRuntime = RuntimeSurface.create();
+            ShellBinding reloadBinding = new HexMapContribution().bind(reloadedRuntime.shellContext());
+            slot(reloadBinding, ShellSlot.COCKPIT_MAIN, HexMapMainView.class);
+            HexEditorSnapshot reloaded = reloadedRuntime.current();
+            assertEquals(SHELL_BOUND_UPDATED_NAME, selectedMap(reloaded).displayName(),
+                    "HEX-EDITOR-012 shell-bound reload reads persisted map");
+            assertTileTerrain(reloaded, AUTHORED_Q, AUTHORED_R, AUTHORED_TERRAIN,
+                    "HEX-EDITOR-012 shell-bound reload reads persisted terrain");
+            assertMarker(reloaded, SHELL_BOUND_MARKER_NAME, "LANDMARK", MARKER_NOTE,
+                    "HEX-EDITOR-012 shell-bound reload reads persisted marker");
+        } finally {
+            stage.hide();
+        }
+    }
+
+    private static void createShellBoundMap(Parent controlsRoot, String mapName) {
+        CatalogCrudControlsView catalogView = descendant(controlsRoot, CatalogCrudControlsView.class);
+        buttonDescendant(controlsRoot, "Neu").fire();
+        Parent operationContent = catalogOperationContent(catalogView);
+        descendant(operationContent, TextField.class, "Name").setText(mapName);
+        buttonDescendant(operationContent, "Erstellen").fire();
+    }
+
+    private static Parent catalogOperationContent(CatalogCrudControlsView catalogView) {
+        Object content = catalogView.getProperties().get(CatalogCrudControlsView.OPERATION_CONTENT_PROPERTY);
+        if (content instanceof Parent parent) {
+            return parent;
+        }
+        throw new IllegalStateException("Expected Catalog CRUD operation content.");
+    }
+
+    private static long newestActiveMemberId(RuntimeSurface runtime) {
+        return runtime.partySnapshots().current().snapshot().activeMembers().stream()
+                .map(src.domain.party.published.PartyMemberDetails::id)
+                .filter(id -> id != null && id > 0L)
+                .reduce((first, second) -> second)
+                .orElseThrow(() -> new IllegalStateException("Expected active party member id."));
+    }
+
+    private static void clickHexTile(HexMapMainView view, int q, int r) {
+        Canvas canvas = tileCanvas(view);
+        double[] hit = hit(canvas, q, r);
+        MouseEvent event = new MouseEvent(
+                canvas,
+                canvas,
+                MouseEvent.MOUSE_CLICKED,
+                hit[HIT_CENTER_X],
+                hit[HIT_CENTER_Y],
+                hit[HIT_CENTER_X],
+                hit[HIT_CENTER_Y],
+                MouseButton.PRIMARY,
+                1,
+                false,
+                false,
+                false,
+                false,
+                true,
+                false,
+                false,
+                false,
+                false,
+                false,
+                null);
+        canvas.fireEvent(event);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static double[] hit(Canvas canvas, int q, int r) {
+        Object rawHits = canvas.getProperties().get(HEX_HITS_PROPERTY);
+        List<double[]> hits = rawHits instanceof List<?> ? (List<double[]>) rawHits : List.of();
+        return hits.stream()
+                .filter(candidate -> ((int) candidate[HIT_Q]) == q && ((int) candidate[HIT_R]) == r)
+                .findFirst()
+                .orElseThrow(() -> new IllegalStateException("Expected Hex hit " + q + "," + r + "."));
+    }
+
+    private static <T extends Node> T slot(ShellBinding binding, ShellSlot slot, Class<T> type) {
+        Node node = binding.slotContent().get(slot);
+        if (type.isInstance(node)) {
+            return type.cast(node);
+        }
+        throw new IllegalStateException("Expected " + type.getSimpleName() + " in " + slot + ".");
+    }
+
+    private static void layout(Parent root) {
+        root.applyCss();
+        root.layout();
+        for (Node child : root.getChildrenUnmodifiable()) {
+            if (child instanceof Parent childParent) {
+                layout(childParent);
+            }
+        }
+    }
+
+    private static String labelText(Parent parent) {
+        return String.join("\n", labels(parent).stream().map(Label::getText).toList());
+    }
+
     private static Canvas tileCanvas(Parent parent) {
         if (parent instanceof javafx.scene.control.ScrollPane scrollPane
                 && scrollPane.getContent() instanceof Parent content) {
@@ -921,6 +1123,60 @@ public final class HexMapEditorBehaviorHarness {
         throw new IllegalStateException("Expected toggle button " + text + ".");
     }
 
+    private static <T extends Node> T descendant(Parent parent, Class<T> type) {
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            if (type.isInstance(child)) {
+                return type.cast(child);
+            }
+            if (child instanceof Parent childParent) {
+                try {
+                    return descendant(childParent, type);
+                } catch (IllegalStateException ignored) {
+                    // Continue scanning sibling branches.
+                }
+            }
+        }
+        throw new IllegalStateException("Expected descendant of type " + type.getSimpleName() + ".");
+    }
+
+    private static ComboBox<String> comboBoxByAccessibleText(Parent parent, String accessibleText) {
+        for (Node child : parent.getChildrenUnmodifiable()) {
+            if (child instanceof ComboBox<?> comboBox && accessibleText.equals(comboBox.getAccessibleText())) {
+                @SuppressWarnings("unchecked")
+                ComboBox<String> typedComboBox = (ComboBox<String>) comboBox;
+                return typedComboBox;
+            }
+            if (child instanceof Parent childParent) {
+                try {
+                    return comboBoxByAccessibleText(childParent, accessibleText);
+                } catch (IllegalStateException ignored) {
+                    // Continue scanning sibling branches.
+                }
+            }
+        }
+        throw new IllegalStateException("Expected combo box " + accessibleText + ".");
+    }
+
+    private static void selectComboBoxItem(ComboBox<String> comboBox, String displayText) {
+        for (String item : comboBox.getItems()) {
+            if (displayText.equals(item)) {
+                comboBox.getSelectionModel().select(item);
+                if (!displayText.equals(comboBox.getValue())) {
+                    throw new IllegalStateException("Expected combo box value " + displayText + ".");
+                }
+                return;
+            }
+        }
+        throw new IllegalStateException("Expected combo box item " + displayText + ".");
+    }
+
+    private static void fireComboBoxAction(ComboBox<String> comboBox) {
+        if (comboBox.getOnAction() == null) {
+            throw new IllegalStateException("Expected combo box action handler.");
+        }
+        comboBox.getOnAction().handle(new ActionEvent(comboBox, comboBox));
+    }
+
     private static String prompt(Node node) {
         if (node instanceof TextField textField) {
             return textField.getPromptText();
@@ -1019,7 +1275,10 @@ public final class HexMapEditorBehaviorHarness {
             }
         };
         if (FX_STARTED.compareAndSet(false, true)) {
-            Platform.startup(wrappedAction);
+            Platform.startup(() -> {
+                Platform.setImplicitExit(false);
+                wrappedAction.run();
+            });
         } else {
             Platform.runLater(wrappedAction);
         }
@@ -1067,11 +1326,13 @@ public final class HexMapEditorBehaviorHarness {
     }
 
     private record RuntimeSurface(
+            ServiceRegistry services,
             HexEditorApplicationService editor,
             HexEditorModel model,
             HexTravelModel travel,
             HexTravelApplicationService hexTravel,
             PartyApplicationService party,
+            PartySnapshotModel partySnapshots,
             DatabaseAssertions database
     ) {
         static RuntimeSurface create() {
@@ -1082,12 +1343,18 @@ public final class HexMapEditorBehaviorHarness {
             new src.domain.hex.HexServiceContribution().register(builder);
             ServiceRegistry registry = builder.build();
             return new RuntimeSurface(
+                    registry,
                     registry.require(HexEditorApplicationService.class),
                     registry.require(HexEditorModel.class),
                     registry.require(HexTravelModel.class),
                     registry.require(HexTravelApplicationService.class),
                     registry.require(PartyApplicationService.class),
+                    registry.require(PartySnapshotModel.class),
                     new DatabaseAssertions());
+        }
+
+        ShellRuntimeContext shellContext() {
+            return new ShellRuntimeContext(NoopInspectorSink.INSTANCE, services);
         }
 
         HexEditorSnapshot current() {

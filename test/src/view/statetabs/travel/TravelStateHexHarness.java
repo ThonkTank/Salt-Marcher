@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -16,8 +15,18 @@ import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.domain.hex.HexEditorApplicationService;
+import src.domain.hex.model.map.HexCoordinate;
+import src.domain.hex.published.CreateHexMapCommand;
+import src.domain.hex.published.HexEditorModel;
 import src.domain.hex.published.HexTravelModel;
-import src.domain.hex.published.HexTravelSnapshot;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.CreateCharacterCommand;
+import src.domain.party.published.MembershipState;
+import src.domain.party.published.MovePartyCharactersCommand;
+import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
+import src.domain.party.published.PartySnapshotModel;
 
 public final class TravelStateHexHarness {
 
@@ -47,38 +56,59 @@ public final class TravelStateHexHarness {
     }
 
     private static void run() {
-        MutableHexTravelFeed feed = new MutableHexTravelFeed();
-        ShellBinding binding = new TravelStateContribution().bind(runtimeContext(feed.model()));
+        ServiceRegistry services = productionServices();
+        ShellBinding binding = new TravelStateContribution().bind(runtimeContext(services));
         TravelStateView view = travelStateView(binding);
         assertTextPresent(view, "W", "HEX-TRAVEL-STATE-001 empty icon");
         assertTextPresent(view, "Kein Hex-Ort gewaehlt", "HEX-TRAVEL-STATE-001 empty location");
         assertTextPresent(view, "\u2014", "HEX-TRAVEL-STATE-001 empty context");
 
-        feed.publish(new HexTravelSnapshot(
-                true,
-                7L,
-                2,
-                -1,
-                "Westmark 2,-1",
-                "Reisend",
-                "Regen",
-                "Abend",
-                "Langsam",
-                "Reisegruppe auf der Hex-Karte bewegen",
-                List.of(1L, 2L)));
+        HexEditorApplicationService editor = services.require(HexEditorApplicationService.class);
+        editor.createMap(new CreateHexMapCommand("Westmark", 2));
+        long mapId = services.require(HexEditorModel.class).current().selectedMap()
+                .orElseThrow(() -> new IllegalStateException("HEX-TRAVEL-STATE-002 expected selected Hex map."))
+                .mapId()
+                .value();
+        PartyApplicationService party = services.require(PartyApplicationService.class);
+        party.createCharacter(new CreateCharacterCommand(
+                new CharacterDraft("Travel Guide", "Player", 3, 12, 14),
+                MembershipState.ACTIVE));
+        long characterId = services.require(PartySnapshotModel.class).current().snapshot().activeMembers().stream()
+                .map(src.domain.party.published.PartyMemberDetails::id)
+                .filter(id -> id != null && id > 0L)
+                .reduce((first, second) -> second)
+                .orElseThrow(() -> new IllegalStateException("HEX-TRAVEL-STATE-002 expected party member id."));
+        party.moveCharacters(new MovePartyCharactersCommand(
+                List.of(characterId),
+                new PartyOverworldTravelLocationSnapshot(mapId, new HexCoordinate(2, -1).stableTileId()),
+                true));
+
         assertTextPresent(view, "H", "HEX-TRAVEL-STATE-002 active icon");
         assertTextPresent(view, "Westmark 2,-1", "HEX-TRAVEL-STATE-002 active location");
         assertTextPresent(view, "Reisend", "HEX-TRAVEL-STATE-002 active status");
         assertTextPresent(view, "Hex-Reise", "HEX-TRAVEL-STATE-002 active context");
-        assertTextPresent(view, "Regen", "HEX-TRAVEL-STATE-002 weather");
-        assertTextPresent(view, "Abend", "HEX-TRAVEL-STATE-002 time of day");
-        assertTextPresent(view, "Langsam", "HEX-TRAVEL-STATE-002 pace");
+        assertTextPresent(view, "Wetter", "HEX-TRAVEL-STATE-002 weather key");
+        assertTextPresent(view, "Tageszeit", "HEX-TRAVEL-STATE-002 time of day key");
+        assertTextPresent(view, "Tempo", "HEX-TRAVEL-STATE-002 pace key");
+        assertTextCount(view, "nicht verfuegbar", 2, "HEX-TRAVEL-STATE-002 weather/time fallback");
+        assertTextPresent(view, "Normal", "HEX-TRAVEL-STATE-002 pace");
+        assertTextPresent(view, "Reisegruppe auf der Hex-Karte bewegen", "HEX-TRAVEL-STATE-002 hint");
     }
 
-    private static ShellRuntimeContext runtimeContext(HexTravelModel model) {
+    private static ServiceRegistry productionServices() {
         ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(HexTravelModel.class, model);
-        return new ShellRuntimeContext(new NoopInspectorSink(), builder.build());
+        new src.data.hex.HexServiceContribution().register(builder);
+        new src.data.party.PartyServiceContribution().register(builder);
+        new src.domain.party.PartyServiceContribution().register(builder);
+        new src.domain.hex.HexServiceContribution().register(builder);
+        return builder.build();
+    }
+
+    private static ShellRuntimeContext runtimeContext(ServiceRegistry services) {
+        if (services.require(HexTravelModel.class) == null) {
+            throw new IllegalStateException("Expected HexTravelModel in production services.");
+        }
+        return new ShellRuntimeContext(new NoopInspectorSink(), services);
     }
 
     private static TravelStateView travelStateView(ShellBinding binding) {
@@ -112,6 +142,17 @@ public final class TravelStateHexHarness {
                 .anyMatch(expected::equals);
         if (!found) {
             throw new IllegalStateException(message + " expected visible text <" + expected + ">.");
+        }
+    }
+
+    private static void assertTextCount(Node root, String expected, long count, String message) {
+        long actual = labels(root).stream()
+                .map(Label::getText)
+                .filter(expected::equals)
+                .count();
+        if (actual != count) {
+            throw new IllegalStateException(message + " expected " + count
+                    + " visible text nodes <" + expected + "> but found " + actual + ".");
         }
     }
 
@@ -160,42 +201,9 @@ public final class TravelStateHexHarness {
         }
     }
 
-    private static void assertEquals(Object expected, Object actual, String message) {
-        if (!expected.equals(actual)) {
-            throw new IllegalStateException(message + " expected <" + expected + "> but was <" + actual + ">.");
-        }
-    }
-
     private interface ThrowingRunnable {
 
         void run() throws Exception;
-    }
-
-    private static final class MutableHexTravelFeed {
-
-        private final List<Consumer<HexTravelSnapshot>> listeners = new ArrayList<>();
-        private HexTravelSnapshot current = HexTravelSnapshot.empty("Keine Hex-Reiseposition ausgewaehlt.");
-
-        HexTravelModel model() {
-            return new HexTravelModel(this::current, this::subscribe);
-        }
-
-        void publish(HexTravelSnapshot snapshot) {
-            current = snapshot == null ? HexTravelSnapshot.empty("Keine Hex-Reiseposition ausgewaehlt.") : snapshot;
-            for (Consumer<HexTravelSnapshot> listener : List.copyOf(listeners)) {
-                listener.accept(current);
-            }
-        }
-
-        private HexTravelSnapshot current() {
-            return current;
-        }
-
-        private Runnable subscribe(Consumer<HexTravelSnapshot> listener) {
-            listeners.add(listener);
-            listener.accept(current);
-            return () -> listeners.remove(listener);
-        }
     }
 
     private static final class NoopInspectorSink implements InspectorSink {
