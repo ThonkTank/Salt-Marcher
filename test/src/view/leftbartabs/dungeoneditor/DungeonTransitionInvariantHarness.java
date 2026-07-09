@@ -1,8 +1,19 @@
 package src.view.leftbartabs.dungeoneditor;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.repository.DungeonMapRepository;
+import src.domain.dungeon.model.core.structure.DungeonMap;
+import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
+import src.domain.dungeon.model.core.structure.room.RoomCatalog;
+import src.domain.dungeon.model.core.structure.stair.StairCollection;
+import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 import src.domain.dungeon.model.core.structure.transition.Transition;
 import src.domain.dungeon.model.core.structure.transition.TransitionAnchor;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
@@ -11,6 +22,11 @@ import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.Tran
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestinationTarget;
+import src.domain.dungeon.model.core.usecase.BuildDungeonDerivedStateUseCase;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorTransitionLinkOperationUseCase;
+import src.domain.dungeon.model.runtime.usecase.AssembleDungeonSnapshotUseCase;
+import src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorHandlesUseCase;
 
 final class DungeonTransitionInvariantHarness {
 
@@ -27,6 +43,7 @@ final class DungeonTransitionInvariantHarness {
                 "DGI-TRANSITION-001",
                 "Transition owner normalizes local facts, placement, labels, descriptions, and destinations");
         assertTransitionLinkCollection();
+        assertTransitionLinkMissingPreviousMapFallback();
         DungeonEditorBehaviorHarnessSupport.recordModelInvariant(
                 results,
                 OWNER,
@@ -167,6 +184,67 @@ final class DungeonTransitionInvariantHarness {
                 "transition catalog rejects invalid authored link");
     }
 
+    private static void assertTransitionLinkMissingPreviousMapFallback() {
+        long sourceMapId = 41L;
+        long targetMapId = 42L;
+        long missingPreviousMapId = 99L;
+        long sourceTransitionId = 1L;
+        long targetTransitionId = 2L;
+        long missingPreviousTransitionId = 7L;
+        DungeonMap sourceMap = map(
+                sourceMapId,
+                "Missing previous source",
+                transition(
+                        sourceTransitionId,
+                        sourceMapId,
+                        new Cell(0, 0, 0),
+                        TransitionDestination.dungeonMap(missingPreviousMapId, missingPreviousTransitionId),
+                        null));
+        DungeonMap targetMap = map(
+                targetMapId,
+                "Missing previous target",
+                transition(
+                        targetTransitionId,
+                        targetMapId,
+                        new Cell(1, 0, 0),
+                        TransitionDestination.overworldTile(5L, 9L),
+                        null));
+        MissingPreviousMapRepository repository =
+                new MissingPreviousMapRepository(sourceMap, targetMap, missingPreviousMapId);
+        BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
+        ApplyDungeonEditorTransitionLinkOperationUseCase useCase =
+                new ApplyDungeonEditorTransitionLinkOperationUseCase(
+                        repository,
+                        derive,
+                        new AssembleDungeonSnapshotUseCase(derive),
+                        new PublishDungeonEditorHandlesUseCase());
+
+        ApplyDungeonEditorOperationUseCase.OperationResultData result = useCase.execute(
+                new DungeonMapIdentity(sourceMapId),
+                sourceTransitionId,
+                new DungeonMapIdentity(targetMapId),
+                targetTransitionId,
+                true);
+
+        assertTrue(result != null,
+                "transition link use case succeeds when the previous linked map row is missing");
+        assertTrue(repository.requestedMapIds().contains(missingPreviousMapId),
+                "transition link use case attempts to load the missing previous map");
+        assertEquals(List.of(sourceMapId, targetMapId), repository.savedMapIds(),
+                "transition link use case saves only source and target when previous map is missing");
+        Transition savedSourceTransition =
+                transitionById(repository.savedMap(sourceMapId), sourceTransitionId);
+        assertEquals(TransitionDestination.dungeonMap(targetMapId, targetTransitionId),
+                savedSourceTransition.destination(),
+                "transition link use case still rewrites source destination when previous map is missing");
+        Transition savedTargetTransition =
+                transitionById(repository.savedMap(targetMapId), targetTransitionId);
+        assertEquals(sourceTransitionId, savedTargetTransition.linkedTransitionId(),
+                "transition link use case still writes target reverse link when previous map is missing");
+        assertFalse(repository.savedMapIds().contains(missingPreviousMapId),
+                "transition link use case cannot mutate a missing previous map");
+    }
+
     private static void assertProtectedDeletePolicy() {
         TransitionDestination overworldDestination = TransitionDestination.overworldTile(5L, 9L);
         Transition linked = transition(1L, 4L, new Cell(0, 0, 0), overworldDestination, 3L);
@@ -207,6 +285,26 @@ final class DungeonTransitionInvariantHarness {
                 linkedTransitionId);
     }
 
+    private static DungeonMap map(long mapId, String mapName, Transition... transitions) {
+        return new DungeonMap(
+                new DungeonMapMetadata(new DungeonMapIdentity(mapId), mapName),
+                SpatialTopology.empty(),
+                RoomCatalog.empty(),
+                List.of(),
+                new StairCollection(List.of()),
+                new TransitionCatalog(List.of(transitions)),
+                0L);
+    }
+
+    private static Transition transitionById(DungeonMap map, long transitionId) {
+        for (Transition transition : map.transitionCatalog().transitions()) {
+            if (transition.transitionId() == transitionId) {
+                return transition;
+            }
+        }
+        throw new IllegalStateException("Missing transition " + transitionId);
+    }
+
     private static AuthoredTransitionLink link(
             long sourceMapId,
             long sourceTransitionId,
@@ -221,11 +319,96 @@ final class DungeonTransitionInvariantHarness {
     }
 
     private static List<Long> transitionIds(TransitionCatalog catalog) {
-        java.util.ArrayList<Long> result = new java.util.ArrayList<>();
+        ArrayList<Long> result = new ArrayList<>();
         for (Transition transition : catalog.transitions()) {
             result.add(transition.transitionId());
         }
         return List.copyOf(result);
+    }
+
+    private static final class MissingPreviousMapRepository implements DungeonMapRepository {
+        private final Map<Long, DungeonMap> mapsById = new LinkedHashMap<>();
+        private final long missingPreviousMapId;
+        private final List<Long> requestedMapIds = new ArrayList<>();
+        private final Map<Long, DungeonMap> savedMapsById = new LinkedHashMap<>();
+
+        private MissingPreviousMapRepository(
+                DungeonMap sourceMap,
+                DungeonMap targetMap,
+                long missingPreviousMapId
+        ) {
+            mapsById.put(sourceMap.metadata().mapId().value(), sourceMap);
+            mapsById.put(targetMap.metadata().mapId().value(), targetMap);
+            this.missingPreviousMapId = missingPreviousMapId;
+        }
+
+        @Override
+        public DungeonMapIdentity nextMapId() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long nextStairId() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long nextTransitionId() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Optional<DungeonMap> findById(DungeonMapIdentity mapId) {
+            long id = mapId == null ? 0L : mapId.value();
+            requestedMapIds.add(id);
+            return id == missingPreviousMapId
+                    ? Optional.empty()
+                    : Optional.ofNullable(mapsById.get(id));
+        }
+
+        @Override
+        public List<DungeonMap> searchByName(String query) {
+            return List.of();
+        }
+
+        @Override
+        public Optional<DungeonMap> firstMap() {
+            return mapsById.values().stream().findFirst();
+        }
+
+        @Override
+        public DungeonMap save(DungeonMap dungeonMap) {
+            return dungeonMap;
+        }
+
+        @Override
+        public List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps) {
+            savedMapsById.clear();
+            for (DungeonMap dungeonMap : dungeonMaps == null ? List.<DungeonMap>of() : dungeonMaps) {
+                savedMapsById.put(dungeonMap.metadata().mapId().value(), dungeonMap);
+            }
+            return List.copyOf(savedMapsById.values());
+        }
+
+        @Override
+        public void delete(DungeonMapIdentity mapId) {
+        }
+
+        private List<Long> requestedMapIds() {
+            return List.copyOf(requestedMapIds);
+        }
+
+        private List<Long> savedMapIds() {
+            return List.copyOf(savedMapsById.keySet());
+        }
+
+        private DungeonMap savedMap(long mapId) {
+            DungeonMap map = savedMapsById.get(mapId);
+            if (map == null) {
+                throw new IllegalStateException("Missing saved map " + mapId);
+            }
+            return map;
+        }
     }
 
     private static void assertEquals(Object expected, Object actual, String message) {
