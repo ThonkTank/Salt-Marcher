@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M2 - Pilot hex |
-| Work item | M2.2 - Hex baseline metrics |
-| Cycle step | 2 - Baseline metrics |
+| Work item | M2.3 - Hex target design |
+| Cycle step | 3 - Target design |
 | In-flight area | `hex` |
-| Required next proof | Hex baseline metrics recorded; `./gradlew checkDocumentationEnforcement --console=plain` if docs change |
-| Last status note | `2026-07-09 M2.1 hex-harness-closure` |
+| Required next proof | Judge-approved Hex target design before wiring or implementation |
+| Last status note | `2026-07-09 M2.2 hex-baseline-metrics` |
 
 ## M0 Step Ledger
 
@@ -61,8 +61,8 @@ but they do not advance the migration unless this ledger advances too.
 | Cycle step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
 | 1. Harness check/closure | Done on branch | `4eb00535c` | Pending PR merge | `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | `HEX-EDITOR-013` closes the production-route map-save failure visibility gap against the old Hex structure. |
-| 2. Baseline metrics | In Flight | Pending | Pending PR merge | Pending | File count, LOC, longest intent-to-mutation chain, forwarding-only classes, and String boundary round-trips. |
-| 3. Target design | Pending | Pending | Pending PR merge | Pending | Judge-approved Hex pilot design required before implementation. |
+| 2. Baseline metrics | Done on branch | Pending | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean after rework; Phase 2 Approve | Baseline artifact: `docs/project/architecture/architecture-migration-hex-baseline.md`; full roadmap set is 87 files / 5,564 physical LOC; product subset is 70 files / 4,560 physical LOC; dominant Hex-owned chains are 5 hops; 6 product/published forwarding candidates plus 1 data candidate; 5 product String round-trip families. |
+| 3. Target design | In Flight | Pending | Pending PR merge | Pending | Judge-approved Hex pilot design required before implementation. |
 | 4. Harness wiring port | Pending | Pending | Pending PR merge | Pending | Separate commit only; scenarios and assertions frozen. |
 | 5. Implementation | Pending | Pending | Pending PR merge | Pending | Must follow the approved Hex pilot design. |
 | 6. Conformance review | Pending | Pending | Pending PR merge | Pending | Design conformance, parity, metric targets, Phase 1, and Phase 2. |
@@ -212,3 +212,17 @@ sichtbar im State-Panel, und der persistierte Kartenname bleibt unveraendert.
 Der kombinierte Hex-Harness, das Dokumentationsgate, `git diff --check`, Phase
 1 und der unabhaengige Judge sind gruen. Naechster Schritt ist M2.2 mit
 Baseline-Metriken fuer die Hex-Pilotflaeche.
+
+### 2026-07-09 M2.2 hex-baseline-metrics
+
+Die Hex-Baseline ist in
+`docs/project/architecture/architecture-migration-hex-baseline.md`
+festgehalten. Der reproduzierbare Roadmap-Schnitt umfasst 87 Java-Dateien mit
+5.564 physischen LOC; die normale M2-Produktstruktur ohne Data-Layer umfasst
+70 Dateien mit 4.560 LOC. Die laengsten Hex-eigenen User-Action-Ketten liegen
+bei 5 Hops bis zur ersten Mutation; der Reisegruppen-Pfad ist als laengerer
+Cross-Area-Seam fuer das Target-Design markiert. Forwarding-Kandidaten und
+String-Roundtrips sind konkret mit Repo-Pfaden und Zeilen belegt.
+Dokumentationsgate, `git diff --check`, Phase 1 und der unabhaengige Judge sind
+gruen. Naechster Schritt ist M2.3 mit judge-geprueftem Hex-Target-Design; es
+wurde noch keine Wiring- oder Implementierungsarbeit begonnen.
