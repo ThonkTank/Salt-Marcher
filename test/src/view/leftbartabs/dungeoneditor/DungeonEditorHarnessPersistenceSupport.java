@@ -17,6 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 import src.data.dungeon.model.DungeonPersistenceSchema;
 import src.data.dungeon.repository.SqliteDungeonMapRepository;
+import src.data.party.model.PartyPersistenceSchema;
 import src.domain.dungeon.DungeonServiceContribution;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
@@ -156,6 +157,19 @@ class DungeonEditorHarnessPersistenceSupport {
                 statement.executeUpdate("DELETE FROM dungeon_maps");
             } catch (SQLException exception) {
                 throw new IllegalStateException("Failed to reset Dungeon Editor behavior DB.", exception);
+            }
+        }
+
+        void clearPartyData() {
+            try (Connection connection = open();
+                 Statement statement = connection.createStatement()) {
+                statement.execute(PartyPersistenceSchema.CREATE_PLAYER_CHARACTERS_TABLE_SQL);
+                statement.execute(PartyPersistenceSchema.CREATE_PARTY_ROSTER_METADATA_TABLE_SQL);
+                statement.execute(PartyPersistenceSchema.INITIALIZE_METADATA_SQL);
+                statement.executeUpdate("DELETE FROM player_characters");
+                statement.executeUpdate("UPDATE party_roster_metadata SET next_character_id=1 WHERE singleton_id=1");
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to reset Party behavior DB.", exception);
             }
         }
 
