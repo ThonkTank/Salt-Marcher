@@ -17,18 +17,10 @@ import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.creatures.CreaturesApplicationService;
+import src.domain.creatures.CreaturesServiceContribution;
 import src.domain.creatures.model.catalog.CreatureCatalogData;
 import src.domain.creatures.model.catalog.CreatureCatalogData.CreatureProfile;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
-import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
-import src.domain.creatures.model.catalog.usecase.LoadCreatureDetailUseCase;
-import src.domain.creatures.model.catalog.usecase.LoadCreatureEncounterCandidatesUseCase;
-import src.domain.creatures.model.catalog.usecase.LoadCreatureFilterOptionsUseCase;
-import src.domain.creatures.model.catalog.usecase.SearchCreatureCatalogUseCase;
-import src.domain.creatures.published.CreatureDetailModel;
-import src.domain.creatures.published.CreatureDetailResult;
-import src.domain.creatures.published.CreatureLookupStatus;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.application.ApplyEncounterStateUseCase;
 import src.domain.encounter.model.plan.EncounterPlanBudgetLoadResult;
@@ -129,10 +121,8 @@ public final class EncounterStateTabHarness {
         ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
         builder.register(EncounterStateModel.class, model);
         builder.register(EncounterApplicationService.class, noopEncounterApplicationService());
-        builder.register(CreaturesApplicationService.class, noopCreaturesApplicationService());
-        builder.register(CreatureDetailModel.class, new CreatureDetailModel(
-                EncounterStateTabHarness::emptyCreatureDetail,
-                listener -> () -> { }));
+        builder.register(CreatureCatalogPort.class, new NoopCreatureCatalogPort());
+        new CreaturesServiceContribution().register(builder);
         return new ShellRuntimeContext(new NoopInspectorSink(), builder.build());
     }
 
@@ -144,20 +134,6 @@ public final class EncounterStateTabHarness {
                 new ApplyEncounterStateUseCase(null, publishSession, publishSavedPlans),
                 new UpdateEncounterBuilderInputsUseCase(null, publishSession),
                 new PublishEncounterPlanBudgetUseCase(repository, null));
-    }
-
-    private static CreaturesApplicationService noopCreaturesApplicationService() {
-        NoopCreatureCatalogPort lookup = new NoopCreatureCatalogPort();
-        NoopCreaturesPublishedStateRepository published = new NoopCreaturesPublishedStateRepository();
-        return new CreaturesApplicationService(
-                new LoadCreatureFilterOptionsUseCase(lookup, published),
-                new SearchCreatureCatalogUseCase(lookup, published),
-                new LoadCreatureDetailUseCase(lookup, published),
-                new LoadCreatureEncounterCandidatesUseCase(lookup, published));
-    }
-
-    private static CreatureDetailResult emptyCreatureDetail() {
-        return new CreatureDetailResult(CreatureLookupStatus.NOT_FOUND, null);
     }
 
     private static EncounterStateView encounterStateView(ShellBinding binding) {
@@ -308,29 +284,6 @@ public final class EncounterStateTabHarness {
         @Override
         public void publishPlanBudget(EncounterPlanBudgetLoadResult result) {
             // Harness input is driven by EncounterStateModel readback.
-        }
-    }
-
-    private static final class NoopCreaturesPublishedStateRepository implements CreaturesPublishedStateRepository {
-
-        @Override
-        public void publishFilterOptions(FilterOptionsPublication result) {
-            // Creature commands are not exercised by this state-tab harness.
-        }
-
-        @Override
-        public void publishCatalogPage(CatalogPagePublication result) {
-            // Creature commands are not exercised by this state-tab harness.
-        }
-
-        @Override
-        public void publishCreatureDetail(CreatureDetailPublication result) {
-            // Creature commands are not exercised by this state-tab harness.
-        }
-
-        @Override
-        public void publishEncounterCandidates(EncounterCandidatesPublication result) {
-            // Creature commands are not exercised by this state-tab harness.
         }
     }
 
