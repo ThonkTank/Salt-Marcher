@@ -124,7 +124,7 @@ public final class DungeonEditorStatePanelTransitionDestinationDrafts {
 
         static DraftValue from(TransitionDestinationDraftInput input) {
             TransitionDestinationDraftInput safeInput = input == null
-                    ? new TransitionDestinationDraftInput(DEFAULT_DESTINATION_TYPE, "", "", "", true)
+                    ? TransitionDestinationDraftInput.unlinkedEntrance()
                     : input;
             return new DraftValue(
                     safeInput.destinationType(),

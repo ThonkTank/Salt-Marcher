@@ -18,7 +18,52 @@ final class DungeonEditorInspectorProjectionServiceAssembly {
                 inspector.title(),
                 inspector.summary(),
                 inspector.facts(),
+                statePanelFacts(inspector.statePanelFacts()),
                 cards(inspector.roomNarrations()));
+    }
+
+    private static src.domain.dungeon.published.DungeonInspectorSnapshot.StatePanelFacts statePanelFacts(
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.InspectorStatePanelState facts
+    ) {
+        src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.InspectorStatePanelState safeFacts =
+                facts == null
+                        ? src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.InspectorStatePanelState.empty()
+                        : facts;
+        return new src.domain.dungeon.published.DungeonInspectorSnapshot.StatePanelFacts(
+                stairGeometryFacts(safeFacts.stairGeometryState()),
+                transitionDestinationFacts(safeFacts.transitionDestinationState()));
+    }
+
+    private static src.domain.dungeon.published.DungeonInspectorSnapshot.StairGeometryFacts stairGeometryFacts(
+            src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.InspectorStairGeometryState facts
+    ) {
+        src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.InspectorStairGeometryState safeFacts =
+                facts == null
+                        ? src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.InspectorStairGeometryState.empty()
+                        : facts;
+        return new src.domain.dungeon.published.DungeonInspectorSnapshot.StairGeometryFacts(
+                safeFacts.selected(),
+                safeFacts.selectedStairId(),
+                safeFacts.authoredShapeName(),
+                safeFacts.authoredDirectionName(),
+                safeFacts.firstDimension(),
+                safeFacts.secondDimension());
+    }
+
+    private static src.domain.dungeon.published.DungeonInspectorSnapshot.TransitionDestinationFacts
+            transitionDestinationFacts(
+                    src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.InspectorTransitionDestinationState facts
+            ) {
+        src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.InspectorTransitionDestinationState
+                safeFacts = facts == null
+                        ? src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.InspectorTransitionDestinationState.empty()
+                        : facts;
+        return new src.domain.dungeon.published.DungeonInspectorSnapshot.TransitionDestinationFacts(
+                safeFacts.linked(),
+                safeFacts.targetKindKey(),
+                safeFacts.targetMapId(),
+                safeFacts.targetTileId(),
+                safeFacts.targetTransitionId());
     }
 
     private static List<src.domain.dungeon.published.DungeonInspectorSnapshot.RoomNarrationCard> cards(

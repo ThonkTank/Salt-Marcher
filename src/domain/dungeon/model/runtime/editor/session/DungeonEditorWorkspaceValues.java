@@ -494,12 +494,20 @@ public final class DungeonEditorWorkspaceValues {
         private final String title;
         private final String summary;
         private final List<String> facts;
+        private final InspectorStatePanelState statePanelFacts;
         private final List<RoomNarrationCard> roomNarrations;
 
-        public Inspector(String title, String summary, List<String> facts, List<RoomNarrationCard> roomNarrations) {
+        public Inspector(
+                String title,
+                String summary,
+                List<String> facts,
+                InspectorStatePanelState statePanelFacts,
+                List<RoomNarrationCard> roomNarrations
+        ) {
             this.title = title == null || title.isBlank() ? "Dungeon" : title;
             this.summary = summary == null ? "" : summary;
             this.facts = facts == null ? List.of() : List.copyOf(facts);
+            this.statePanelFacts = statePanelFacts == null ? InspectorStatePanelState.empty() : statePanelFacts;
             this.roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
         }
 
@@ -513,6 +521,10 @@ public final class DungeonEditorWorkspaceValues {
 
         public List<String> facts() {
             return List.copyOf(facts);
+        }
+
+        public InspectorStatePanelState statePanelFacts() {
+            return statePanelFacts;
         }
 
         public List<RoomNarrationCard> roomNarrations() {
@@ -530,18 +542,84 @@ public final class DungeonEditorWorkspaceValues {
             return Objects.equals(title, that.title)
                     && Objects.equals(summary, that.summary)
                     && Objects.equals(facts, that.facts)
+                    && Objects.equals(statePanelFacts, that.statePanelFacts)
                     && Objects.equals(roomNarrations, that.roomNarrations);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(title, summary, facts, roomNarrations);
+            return Objects.hash(title, summary, facts, statePanelFacts, roomNarrations);
         }
 
         @Override
         public String toString() {
-            return "Inspector[title=%s, summary=%s, facts=%s, roomNarrations=%s]"
-                    .formatted(title, summary, facts, roomNarrations);
+            return "Inspector[title=%s, summary=%s, facts=%s, statePanelFacts=%s, roomNarrations=%s]"
+                    .formatted(title, summary, facts, statePanelFacts, roomNarrations);
+        }
+    }
+
+    public record InspectorStatePanelState(
+            InspectorStairGeometryState stairGeometryState,
+            InspectorTransitionDestinationState transitionDestinationState
+    ) {
+        public InspectorStatePanelState {
+            stairGeometryState =
+                    stairGeometryState == null ? InspectorStairGeometryState.empty() : stairGeometryState;
+            transitionDestinationState = transitionDestinationState == null
+                    ? InspectorTransitionDestinationState.empty()
+                    : transitionDestinationState;
+        }
+
+        public static InspectorStatePanelState empty() {
+            return new InspectorStatePanelState(
+                    InspectorStairGeometryState.empty(),
+                    InspectorTransitionDestinationState.empty());
+        }
+    }
+
+    public record InspectorStairGeometryState(
+            boolean selected,
+            long selectedStairId,
+            String authoredShapeName,
+            String authoredDirectionName,
+            int firstDimension,
+            int secondDimension
+    ) {
+        public InspectorStairGeometryState {
+            selectedStairId = Math.max(0L, selectedStairId);
+            authoredShapeName =
+                    authoredShapeName == null || authoredShapeName.isBlank() ? "STRAIGHT" : authoredShapeName.strip();
+            authoredDirectionName = authoredDirectionName == null || authoredDirectionName.isBlank()
+                    ? "NORTH"
+                    : authoredDirectionName.strip();
+            firstDimension = Math.max(0, firstDimension);
+            secondDimension = Math.max(0, secondDimension);
+            selected = selected && selectedStairId > 0L;
+        }
+
+        public static InspectorStairGeometryState empty() {
+            return new InspectorStairGeometryState(false, 0L, "", "", 0, 0);
+        }
+    }
+
+    public record InspectorTransitionDestinationState(
+            boolean linked,
+            String targetKindKey,
+            long targetMapId,
+            long targetTileId,
+            long targetTransitionId
+    ) {
+        public InspectorTransitionDestinationState {
+            targetKindKey = targetKindKey == null || targetKindKey.isBlank()
+                    ? "UNLINKED_ENTRANCE"
+                    : targetKindKey.strip();
+            targetMapId = Math.max(0L, targetMapId);
+            targetTileId = Math.max(0L, targetTileId);
+            targetTransitionId = Math.max(0L, targetTransitionId);
+        }
+
+        public static InspectorTransitionDestinationState empty() {
+            return new InspectorTransitionDestinationState(false, "UNLINKED_ENTRANCE", 0L, 0L, 0L);
         }
     }
 

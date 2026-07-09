@@ -37,7 +37,52 @@ final class DungeonAuthoredReadProjectionServiceAssembly {
                 inspector.title(),
                 inspector.description(),
                 inspector.facts(),
+                statePanelFacts(inspector.statePanelFacts()),
                 roomNarrations(inspector));
+    }
+
+    private static src.domain.dungeon.published.DungeonInspectorSnapshot.StatePanelFacts statePanelFacts(
+            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.StatePanelFacts facts
+    ) {
+        src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.StatePanelFacts
+                safeFacts = facts == null
+                        ? src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.StatePanelFacts.empty()
+                        : facts;
+        return new src.domain.dungeon.published.DungeonInspectorSnapshot.StatePanelFacts(
+                stairGeometryFacts(safeFacts.stairGeometry()),
+                transitionDestinationFacts(safeFacts.transitionDestination()));
+    }
+
+    private static src.domain.dungeon.published.DungeonInspectorSnapshot.StairGeometryFacts stairGeometryFacts(
+            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.StairGeometryPublication facts
+    ) {
+        src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.StairGeometryPublication
+                safeFacts = facts == null
+                        ? src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.StairGeometryPublication.empty()
+                        : facts;
+        return new src.domain.dungeon.published.DungeonInspectorSnapshot.StairGeometryFacts(
+                safeFacts.present(),
+                safeFacts.stairId(),
+                safeFacts.shapeName(),
+                safeFacts.directionName(),
+                safeFacts.dimension1(),
+                safeFacts.dimension2());
+    }
+
+    private static src.domain.dungeon.published.DungeonInspectorSnapshot.TransitionDestinationFacts
+            transitionDestinationFacts(
+                    src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.TransitionDestinationPublication facts
+            ) {
+        src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.TransitionDestinationPublication
+                safeFacts = facts == null
+                        ? src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.TransitionDestinationPublication.empty()
+                        : facts;
+        return new src.domain.dungeon.published.DungeonInspectorSnapshot.TransitionDestinationFacts(
+                safeFacts.present(),
+                safeFacts.destinationTypeKey(),
+                safeFacts.mapId(),
+                safeFacts.tileId(),
+                safeFacts.transitionId());
     }
 
     private static String aggregateSummary(src.domain.dungeon.model.core.projection.DungeonState aggregate) {

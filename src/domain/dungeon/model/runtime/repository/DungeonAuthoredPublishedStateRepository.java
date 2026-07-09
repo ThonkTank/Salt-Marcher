@@ -86,17 +86,20 @@ public interface DungeonAuthoredPublishedStateRepository {
         private final String title;
         private final String description;
         private final List<String> facts;
+        private final StatePanelFacts statePanelFacts;
         private final List<RoomNarrationPublication> roomNarrations;
 
         public InspectorPublication(
                 String title,
                 String description,
                 List<String> facts,
+                StatePanelFacts statePanelFacts,
                 List<RoomNarrationPublication> roomNarrations
         ) {
             this.title = title == null ? "" : title;
             this.description = description == null ? "" : description;
             this.facts = facts == null ? List.of() : List.copyOf(facts);
+            this.statePanelFacts = statePanelFacts == null ? StatePanelFacts.empty() : statePanelFacts;
             this.roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
         }
 
@@ -112,6 +115,10 @@ public interface DungeonAuthoredPublishedStateRepository {
             return facts;
         }
 
+        public StatePanelFacts statePanelFacts() {
+            return statePanelFacts;
+        }
+
         public List<RoomNarrationPublication> roomNarrations() {
             return roomNarrations;
         }
@@ -122,12 +129,13 @@ public interface DungeonAuthoredPublishedStateRepository {
                     && Objects.equals(title, that.title)
                     && Objects.equals(description, that.description)
                     && Objects.equals(facts, that.facts)
+                    && Objects.equals(statePanelFacts, that.statePanelFacts)
                     && Objects.equals(roomNarrations, that.roomNarrations);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(title, description, facts, roomNarrations);
+            return Objects.hash(title, description, facts, statePanelFacts, roomNarrations);
         }
 
         @Override
@@ -135,7 +143,67 @@ public interface DungeonAuthoredPublishedStateRepository {
             return "InspectorPublication[title=" + title
                     + ", description=" + description
                     + ", facts=" + facts
+                    + ", statePanelFacts=" + statePanelFacts
                     + ", roomNarrations=" + roomNarrations + "]";
+        }
+    }
+
+    record StatePanelFacts(
+            StairGeometryPublication stairGeometry,
+            TransitionDestinationPublication transitionDestination
+    ) {
+        public StatePanelFacts {
+            stairGeometry = stairGeometry == null ? StairGeometryPublication.empty() : stairGeometry;
+            transitionDestination = transitionDestination == null
+                    ? TransitionDestinationPublication.empty()
+                    : transitionDestination;
+        }
+
+        public static StatePanelFacts empty() {
+            return new StatePanelFacts(StairGeometryPublication.empty(), TransitionDestinationPublication.empty());
+        }
+    }
+
+    record StairGeometryPublication(
+            boolean present,
+            long stairId,
+            String shapeName,
+            String directionName,
+            int dimension1,
+            int dimension2
+    ) {
+        public StairGeometryPublication {
+            stairId = Math.max(0L, stairId);
+            shapeName = shapeName == null || shapeName.isBlank() ? "STRAIGHT" : shapeName.strip();
+            directionName = directionName == null || directionName.isBlank() ? "NORTH" : directionName.strip();
+            dimension1 = Math.max(0, dimension1);
+            dimension2 = Math.max(0, dimension2);
+            present = present && stairId > 0L;
+        }
+
+        public static StairGeometryPublication empty() {
+            return new StairGeometryPublication(false, 0L, "", "", 0, 0);
+        }
+    }
+
+    record TransitionDestinationPublication(
+            boolean present,
+            String destinationTypeKey,
+            long mapId,
+            long tileId,
+            long transitionId
+    ) {
+        public TransitionDestinationPublication {
+            destinationTypeKey = destinationTypeKey == null || destinationTypeKey.isBlank()
+                    ? "UNLINKED_ENTRANCE"
+                    : destinationTypeKey.strip();
+            mapId = Math.max(0L, mapId);
+            tileId = Math.max(0L, tileId);
+            transitionId = Math.max(0L, transitionId);
+        }
+
+        public static TransitionDestinationPublication empty() {
+            return new TransitionDestinationPublication(false, "UNLINKED_ENTRANCE", 0L, 0L, 0L);
         }
     }
 

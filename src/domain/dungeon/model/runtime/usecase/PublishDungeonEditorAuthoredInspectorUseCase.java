@@ -1,12 +1,7 @@
 package src.domain.dungeon.model.runtime.usecase;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository;
 
 public final class PublishDungeonEditorAuthoredInspectorUseCase {
@@ -24,108 +19,11 @@ public final class PublishDungeonEditorAuthoredInspectorUseCase {
     }
 
     public void execute(LoadDungeonSnapshotUseCase.InspectorSnapshotData inspector) {
-        state.replaceInspector(inspectorFacts(inspector));
+        state.replaceInspector(DungeonInspectorWorkspaceMapper.inspectorFacts(inspector));
         DungeonAuthoredPublishedStateRepository.InspectorPublication publication =
-                inspectorPublication(inspector);
+                DungeonInspectorPublicationMapper.inspectorPublication(inspector);
         if (publication != null) {
             publishedStateRepository.publishInspector(publication);
         }
-    }
-
-    private static DungeonEditorWorkspaceValues.@Nullable Inspector inspectorFacts(
-            LoadDungeonSnapshotUseCase.@Nullable InspectorSnapshotData inspector
-    ) {
-        if (inspector == null) {
-            return null;
-        }
-        return new DungeonEditorWorkspaceValues.Inspector(
-                inspector.title(),
-                inspector.description(),
-                inspector.facts(),
-                roomNarrations(inspector.roomNarrations()));
-    }
-
-    private static DungeonAuthoredPublishedStateRepository.@Nullable InspectorPublication inspectorPublication(
-            LoadDungeonSnapshotUseCase.@Nullable InspectorSnapshotData inspector
-    ) {
-        if (inspector == null) {
-            return null;
-        }
-        return new DungeonAuthoredPublishedStateRepository.InspectorPublication(
-                inspector.title(),
-                inspector.description(),
-                inspector.facts(),
-                roomNarrationPublications(inspector.roomNarrations()));
-    }
-
-    private static List<DungeonAuthoredPublishedStateRepository.RoomNarrationPublication> roomNarrationPublications(
-            List<LoadDungeonSnapshotUseCase.RoomNarrationData> roomNarrations
-    ) {
-        List<DungeonAuthoredPublishedStateRepository.RoomNarrationPublication> result = new ArrayList<>();
-        for (LoadDungeonSnapshotUseCase.RoomNarrationData roomNarration : roomNarrations) {
-            result.add(roomNarrationPublication(roomNarration));
-        }
-        return List.copyOf(result);
-    }
-
-    private static DungeonAuthoredPublishedStateRepository.RoomNarrationPublication roomNarrationPublication(
-            LoadDungeonSnapshotUseCase.RoomNarrationData roomNarration
-    ) {
-        return new DungeonAuthoredPublishedStateRepository.RoomNarrationPublication(
-                roomNarration.roomId(),
-                roomNarration.roomName(),
-                roomNarration.visualDescription(),
-                roomExitPublications(roomNarration.exits()));
-    }
-
-    private static List<DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication> roomExitPublications(
-            List<LoadDungeonSnapshotUseCase.RoomExitNarrationData> exits
-    ) {
-        List<DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication> result = new ArrayList<>();
-        for (LoadDungeonSnapshotUseCase.RoomExitNarrationData exit : exits) {
-            result.add(new DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication(
-                    exit.label(),
-                    exit.cell(),
-                    exit.direction(),
-                    exit.description()));
-        }
-        return List.copyOf(result);
-    }
-
-    private static List<DungeonEditorWorkspaceValues.RoomNarrationCard> roomNarrations(
-            List<LoadDungeonSnapshotUseCase.RoomNarrationData> roomNarrations
-    ) {
-        List<DungeonEditorWorkspaceValues.RoomNarrationCard> result = new ArrayList<>();
-        for (LoadDungeonSnapshotUseCase.RoomNarrationData roomNarration : roomNarrations) {
-            result.add(roomNarration(roomNarration));
-        }
-        return List.copyOf(result);
-    }
-
-    private static DungeonEditorWorkspaceValues.RoomNarrationCard roomNarration(
-            LoadDungeonSnapshotUseCase.RoomNarrationData roomNarration
-    ) {
-        return new DungeonEditorWorkspaceValues.RoomNarrationCard(
-                roomNarration.roomId(),
-                roomNarration.roomName(),
-                roomNarration.visualDescription(),
-                roomExits(roomNarration.exits()));
-    }
-
-    private static List<DungeonEditorWorkspaceValues.RoomExitNarration> roomExits(
-            List<LoadDungeonSnapshotUseCase.RoomExitNarrationData> exits
-    ) {
-        List<DungeonEditorWorkspaceValues.RoomExitNarration> result = new ArrayList<>();
-        for (LoadDungeonSnapshotUseCase.RoomExitNarrationData exit : exits) {
-            Cell cell = exit.cell();
-            result.add(new DungeonEditorWorkspaceValues.RoomExitNarration(
-                    exit.label(),
-                    cell == null
-                            ? DungeonEditorWorkspaceValues.Cell.empty()
-                            : new DungeonEditorWorkspaceValues.Cell(cell.q(), cell.r(), cell.level()),
-                    exit.direction().name(),
-                    exit.description()));
-        }
-        return List.copyOf(result);
     }
 }

@@ -2,7 +2,6 @@ package src.view.leftbartabs.dungeoneditor;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
@@ -64,7 +63,7 @@ final class DungeonEditorStateTransitionContentPartModel {
         if (!runtimeDraft.targetPresent()) {
             return null;
         }
-        TransitionDestinationDraft baseline = TransitionDestinationDraft.fromInspector(safeFrame.inspector());
+        TransitionDestinationDraft baseline = TransitionDestinationDraft.fromTypedInspector(safeFrame.inspector());
         TransitionDestinationDraft draft = runtimeDraft.present()
                 ? TransitionDestinationDraft.fromRuntimeDraft(runtimeDraft)
                 : baseline;
@@ -263,16 +262,20 @@ final class DungeonEditorStateTransitionContentPartModel {
             return new TransitionDestinationDraft(DESTINATION_UNLINKED_ENTRANCE, "", "", "", true);
         }
 
-        static TransitionDestinationDraft fromInspector(@Nullable DungeonInspectorSnapshot inspector) {
-            if (inspector == null || inspector.facts().isEmpty()) {
+        static TransitionDestinationDraft fromTypedInspector(@Nullable DungeonInspectorSnapshot inspector) {
+            if (inspector == null) {
                 return defaultDraft();
             }
-            Map<String, String> facts = DungeonEditorStateContentModel.factMap(inspector.facts());
+            DungeonInspectorSnapshot.TransitionDestinationFacts facts =
+                    inspector.statePanelFacts().transitionDestination();
+            if (!facts.present()) {
+                return defaultDraft();
+            }
             return new TransitionDestinationDraft(
-                    normalizeDestinationTypeKey(facts.get("destinationtype")),
-                    facts.getOrDefault("destinationmapid", ""),
-                    facts.getOrDefault("destinationtileid", ""),
-                    facts.getOrDefault("destinationtransitionid", ""),
+                    normalizeDestinationTypeKey(facts.destinationTypeKey()),
+                    facts.mapId() > 0L ? String.valueOf(facts.mapId()) : "",
+                    facts.tileId() > 0L ? String.valueOf(facts.tileId()) : "",
+                    facts.transitionId() > 0L ? String.valueOf(facts.transitionId()) : "",
                     true);
         }
 

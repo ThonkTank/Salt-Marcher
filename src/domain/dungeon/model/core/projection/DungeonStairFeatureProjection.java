@@ -42,6 +42,12 @@ final class DungeonStairFeatureProjection {
                 stairDescription(stair, exits),
                 stairDestinationLabel(exits),
                 stairFacts(stair),
+                DungeonFeatureFacts.StatePanelFacts.stair(
+                        stair.stairId(),
+                        stair.shape(),
+                        stair.direction(),
+                        stair.dimension1(),
+                        stair.dimension2()),
                 new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId())));
         if (stair.corridorId() != null) {
             relations.add(new DungeonRelationGraph.FeatureRelation(

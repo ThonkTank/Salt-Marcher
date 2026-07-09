@@ -1,6 +1,5 @@
 package src.features.dungeon.runtime;
 
-import src.domain.dungeon.model.core.structure.transition.TransitionDestinationType;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 
@@ -72,12 +71,7 @@ final class DungeonEditorRuntimeDraftSession {
             TransitionDestinationDraftInput input
     ) {
         TransitionDestinationDraftInput safeInput = input == null
-                ? new TransitionDestinationDraftInput(
-                        TransitionDestinationType.UNLINKED_ENTRANCE,
-                        "",
-                        "",
-                        "",
-                        true)
+                ? TransitionDestinationDraftInput.unlinkedEntrance()
                 : input;
         DungeonEditorStatePanelTransitionDestinationDrafts.Target target =
                 DungeonEditorStatePanelTransitionDestinationDrafts.target(controls, state);

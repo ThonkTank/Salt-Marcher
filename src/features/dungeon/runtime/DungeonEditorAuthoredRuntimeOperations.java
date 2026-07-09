@@ -224,15 +224,9 @@ final class DungeonEditorAuthoredRuntimeOperations {
 
     DungeonEditorRuntimeOperationResult saveTransitionLink(
             long sourceTransitionId,
-            long targetMapId,
-            long targetTransitionId,
-            boolean bidirectional
+            TransitionDestinationDraftInput input
     ) {
-        return detailSaveOperations.saveTransitionLink(
-                sourceTransitionId,
-                targetMapId,
-                targetTransitionId,
-                bidirectional);
+        return detailSaveOperations.saveTransitionLink(sourceTransitionId, input);
     }
 
     DungeonEditorRuntimeOperationResult saveTransitionDescription(
@@ -242,18 +236,7 @@ final class DungeonEditorAuthoredRuntimeOperations {
         return detailSaveOperations.saveTransitionDescription(transitionId, description);
     }
 
-    DungeonEditorRuntimeOperationResult saveStairGeometry(
-            long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
-    ) {
-        return detailSaveOperations.saveStairGeometry(
-                stairId,
-                shapeName,
-                directionName,
-                dimension1,
-                dimension2);
+    DungeonEditorRuntimeOperationResult saveStairGeometry(StairGeometryDraftInput input) {
+        return detailSaveOperations.saveStairGeometry(input);
     }
 }

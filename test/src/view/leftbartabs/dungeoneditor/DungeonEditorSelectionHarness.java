@@ -339,9 +339,8 @@ final class DungeonEditorSelectionHarness {
                 "DE-SEL-003 state model selected stair handle topology ref");
         assertTrue(selectedState.inspector() != null, "DE-SEL-003 inspector is published for selected stair");
         assertTrue(selectedState.inspector().title().contains("S1")
-                        || selectedState.inspector().facts().stream()
-                        .anyMatch(fact -> fact.contains("STAIR") || fact.contains(String.valueOf(stairRef.id()))),
-                "DE-SEL-003 inspector identifies selected stair");
+                        || selectedState.inspector().statePanelFacts().stairGeometry().stairId() == stairRef.id(),
+                "DE-SEL-003 inspector typed state-panel facts identify selected stair");
         assertTrue(renderHasSelectedGlyphPrimitive(binding.mapContentModel(), stairRef),
                 "DE-SEL-003 render scene highlights the selected stair marker");
         assertTrue(renderHasSelectedSurfacePrimitive(binding.mapContentModel(), stairRef),
