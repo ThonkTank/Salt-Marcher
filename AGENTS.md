@@ -51,7 +51,7 @@ Always run verification from the repository root.
 
 | Surface | Owner doc | Mandatory skill |
 | --- | --- | --- |
-| Migration source areas (`src/domain/**`, `src/features/**`, `src/view/**`) | `docs/project/architecture/architecture-migration-roadmap.md`; `docs/project/architecture/migration-ledger.md` once created | - |
+| Migration source areas (`src/domain/**`, `src/features/**`, `src/view/**`) | `docs/project/architecture/architecture-migration-roadmap.md`; `docs/project/architecture/migration-ledger.md` | - |
 | `src/domain/dungeon/**`, `docs/dungeon/**` | `docs/dungeon/README.md` | - |
 | Documentation placement | `docs/project/architecture/documentation.md` | - |
 | Verification policy | `docs/project/verification/quality-platforms.md` | - |
