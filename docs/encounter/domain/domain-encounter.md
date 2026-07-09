@@ -222,7 +222,7 @@ runtime state.
 
 ## References
 
-- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
 - [Feature Spec](docs/encounter/requirements/requirements-encounter.md:1)
 - [Encounter Persistence](docs/encounter/contract/contract-encounter-persistence.md:1)
 - [Encounter Builder Inputs Contract](docs/encounter/contract/contract-encounter-builder-inputs.md:1)

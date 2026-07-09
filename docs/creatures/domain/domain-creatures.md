@@ -95,7 +95,7 @@ Reclassify `creatures` before adding any of:
 
 ## References
 
-- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
 - [Creatures Persistence](docs/creatures/contract/contract-creatures-persistence.md:1)
 - [Catalog Tab UI](docs/creatures/requirements/requirements-creatures-catalog.md:1)
 - [Creature Details UI](docs/creatures/requirements/requirements-creatures-details.md:1)

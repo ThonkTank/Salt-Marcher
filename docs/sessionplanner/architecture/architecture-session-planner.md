@@ -121,15 +121,15 @@ Target state:
 
 ## Verification Notes
 
-- the `sessionplanner` context-role contract and the canonical context map are
-  `Mechanically Enforced` by `./gradlew checkDomainContextEnforcement`
-- broader feature-boundary and role placement remain partly `Review-Owned`
-  until the view, domain, and data harnesses gain dedicated session-planner
-  knowledge
+- documentation-only edits use `./gradlew checkDocumentationEnforcement
+  --console=plain`
+- broader feature-boundary and placement questions remain review-owned until
+  the migration ledger starts the sessionplanner area and its behavior harness
+  inventory is closed
 
 ## References
 
-- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
 - [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
 - [Session Planner Persistence Contract](docs/sessionplanner/contract/contract-session-planner-persistence.md:1)
 - [Session Planner Requirements](docs/sessionplanner/requirements/requirements-session-planner.md:1)

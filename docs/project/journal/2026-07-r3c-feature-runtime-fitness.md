@@ -8,7 +8,7 @@ Entry Document: [July 2026 Journal](2026-07.md)
 
 ## 2026-07-08 feature-runtime-fitness-gate - Add narrow R3c feature-runtime gate
 
-Problem: `checkFeatureRuntimeEnforcement` previously proved only
+Problem: the retired feature-runtime diagnostic previously proved only
 `src/features/**` placement while PH-20260707 tracked high-drift
 feature-runtime fitness expectations as review-owned.
 Target state: the feature-runtime diagnostic surface runs the existing
@@ -27,13 +27,13 @@ wording. Remaining non-listed semantics stay Review-Owned.
 Gate and docs: the target gate lives in build-harness
 `FeatureRuntimeFitnessRules`, the `featureRuntimeFitness` enforcement bundle,
 and the `feature-runtime` diagnostic surface; the durable wording lives in the
-feature-runtime, layering-enforcement, quality-platform entrypoint, and
+feature-runtime, migration verification, quality-platform entrypoint, and
 project-health-debt docs.
 Risk: this is R3c work because it adds a frozen gate surface and diagnostic
 bundle that can block future PRs; it must carry R3c review/label treatment and
 the full required gate set before merge.
 Scoped input proof already recorded green: `compileJava`,
-`checkFeatureRuntimeEnforcement`, `checkDocumentationEnforcement`, and
+the retired feature-runtime diagnostic, `checkDocumentationEnforcement`, and
 `focused-handoff --path src/features/dungeon/runtime --area feature-runtime`
 passed in the after-W10 stack worker.
 Blocked before final handoff: after-W10 `production-handoff` is still red on

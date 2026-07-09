@@ -59,4 +59,4 @@ Current state:
 
 - [Adventuring Day Top-Bar UI](docs/party/requirements/requirements-adventuring-day-dropdown.md:1)
 - [Party Dropdown UI](docs/party/requirements/requirements-party-dropdown.md:1)
-- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)

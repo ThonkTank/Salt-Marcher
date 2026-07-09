@@ -29,12 +29,12 @@ but they do not advance the migration unless this ledger advances too.
 | Field | Value |
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
-| Milestone | M0 - Migration Constitution and Doctrine Removal |
-| Work item | M0.5 - Doctrine doc and skill removal |
+| Milestone | M1 - Parity Oracle |
+| Work item | M1.1 - Harness inventory |
 | Cycle step | Milestone step; per-area cycle not active yet |
 | In-flight area | None |
-| Required next proof | `./gradlew checkDocumentationEnforcement --console=plain` for doctrine doc and skill removal; full proof if M0.5 touches build or production verification code |
-| Last status note | `2026-07-09 M0.4 form-enforcement-removal` |
+| Required next proof | `./gradlew checkDocumentationEnforcement --console=plain` for initial harness inventory ledger/doc updates; behavior harness proof as each M1 item names it |
+| Last status note | `2026-07-09 M0.5 doctrine-removal` |
 
 ## M0 Step Ledger
 
@@ -42,16 +42,16 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- | --- | --- | --- | --- |
 | M0.1 Charter | Done | `0ff4c2f82` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09 | Roadmap materialized under `docs/project/architecture/`. |
 | M0.2 AGENTS.md amendment | Done | `0b8aa4637` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09 | Rule 3, R3c, source-owner routing, and migration-regime pointer updated. |
-| M0.3 Migration ledger | Done on branch | Pending current commit | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09 | This ledger becomes the state source; next work item is M0.4. |
-| M0.4 Global removal of form enforcement | Done on branch | Pending current commit | Pending PR merge | `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09; `./gradlew architectureTest --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; judge review Clean | Removed form-enforcing ErrorProne/build-harness doctrine gates and retained outcome gates, including package cycles, layer dependency direction, documentation basics, and behavior-harness gates. |
-| M0.5 Doctrine doc and skill removal | In Flight | Pending | Pending PR merge | Pending | Delete doctrine documents and doctrine-teaching skills after M0.4. |
+| M0.3 Migration ledger | Done on branch | `efd59b7cf` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09 | This ledger becomes the state source; next work item is M0.4. |
+| M0.4 Global removal of form enforcement | Done on branch | `e00a92990` | Pending PR merge | `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09; `./gradlew architectureTest --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; judge review Clean | Removed form-enforcing ErrorProne/build-harness doctrine gates and retained outcome gates, including package cycles, layer dependency direction, documentation basics, and behavior-harness gates. |
+| M0.5 Doctrine doc and skill removal | Done on branch | Pending current commit | Pending PR merge | `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; stale-doctrine grep clean; fresh-agent check passed; judge review Approve | Deleted retired domain/view/feature-runtime pattern docs, architecture enforcement inventories, doctrine-teaching skills, and the dead domain-context documentation rule; live routers now point to the roadmap, ledger, retained outcome gates, and public proof routes. |
 
 ## Milestone Ledger
 
 | Milestone | Status | Merge commit | Done-when evidence |
 | --- | --- | --- | --- |
-| M0 - Constitution and doctrine removal | In Flight | Pending | Gates green; removed checker/doc/skill grep clean; fresh-agent behavior check. |
-| M1 - Parity oracle | Pending | Pending | Ledger lists harness status for every area; parity protocol committed; hex harness verified end to end. |
+| M0 - Constitution and doctrine removal | Done on branch | Pending | Gates green; removed checker/doc/skill grep clean; fresh-agent behavior check passed. |
+| M1 - Parity oracle | In Flight | Pending | Ledger lists harness status for every area; parity protocol committed; hex harness verified end to end. |
 | M2 - Pilot hex | Pending | Pending | Binding targets met or justified; harness green with frozen scenarios; smoke checklist delivered; reference commit declared; retro journaled. |
 | M3 - Rollout wave 1 | Pending | Pending | worldplanner, creatures, party, sessionplanner, encountertable, encounter all complete their cycles. |
 | M4 - Dungeon | Pending | Pending | Five dungeon sub-slices complete full cycles with dungeon harness suite and required image snapshots. |
@@ -103,3 +103,12 @@ Error-Prone, architecture-policy und jQAssistant entfernt. Die behaltenen
 Outcome-Gates bleiben aktiv: Package-Zyklen, Layer-Dependency-Direction,
 Dokumentationsgrundregeln und Behavior-Harness-Gates sind gruen; der
 unabhaengige Judge hat die Nachpruefung ohne Must-Fix geschlossen.
+
+### 2026-07-09 M0.5 doctrine-removal
+
+Die alten Domain/View/Feature-Runtime-Doktrin-Dokumente, die
+Architecture-Enforcement-Inventare und die zugehoerigen Lehr-Skills sind aus
+dem Repo entfernt. Lebende Router zeigen jetzt auf Roadmap, Ledger, echte
+Outcome-Gates und die oeffentlichen Proof-Routen; der Fresh-Agent-Check hat
+keine alte Rule-3/Formdoktrin mehr reproduziert, und der unabhaengige Judge hat
+M0.5 nach Rework freigegeben.

@@ -85,10 +85,9 @@ owner before producing more instances.
   quality requirements, including implementation-documentation,
   project-health, and baseline-admission rules.
 - `docs/project/architecture/patterns/*.md`
-  Canonical cross-feature layer and layering owner documents.
-- `docs/project/architecture/enforcement/*.md`
-  Canonical mechanical architecture enforcement documents for the matching
-  layer or role owner.
+  Retained cross-feature architecture statements that are still valid after
+  doctrine removal. The migration roadmap and ledger own source-area
+  simplification while the migration is active.
 - `docs/project/decisions/*.md`
   Architecture decision records. ADRs are required for R1 architecture
   changes, dependency major upgrades, gate or tooling changes, and channel or
@@ -194,6 +193,10 @@ Documentation governance is broader than compile-time enforcement.
 - The gate mechanically blocks missing `docs/**` metadata, forbidden legacy
   documentation roots, redirect-only source Markdown, and Markdown files over
   350 lines on governed repo-facing surfaces.
+- The retired architecture-enforcement inventory family is not a live
+  documentation type. Outcome checks are documented through the migration
+  roadmap, verification docs, Gradle task wiring, and the tests or harnesses
+  that actually run.
 - Mechanical checks may lint structure when a dedicated docs gate exists.
 - Mixed implementation changes that also touch non-documentation code, Gradle,
   or build sources still follow the broader verification path owned by

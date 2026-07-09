@@ -28,7 +28,7 @@ It does not own adopter-native payload fields or adopter gameplay behavior.
 
 This document is not the canonical target model for reusable `slotcontent/**`.
 The canonical reusable-slotcontent architecture lives only in the
-[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
+[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1).
 The canvas-specific `CanvasPointerEvent` and `MapRenderScene` seams described
 here are current implementation debt relative to that owner.
 
@@ -102,9 +102,9 @@ its own.
   phase-specific callback APIs.
 - Active-root Binders own adopter-specific pointer translation wiring and bind
   the adopter boundary to the one canvas-facing map-slot `ContentModel`.
-- Some adopter classes still carry `*ViewModel` names; those classes must be
-  interpreted against the canonical view-layer standard, not against the old
-  monolithic `ViewModel` target.
+- Some adopter classes still carry `*ViewModel` names; those classes are
+  legacy compatibility names until the migration roadmap and ledger start the
+  owning area.
 
 ## Forbidden Shortcuts
 

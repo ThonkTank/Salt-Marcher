@@ -1,210 +1,72 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-19
-Source of Truth: System-wide routing summary and entry point into the canonical
-layer-owner standards under `docs/project/architecture/patterns/` and their
-matching mechanical enforcement documents under
-`docs/project/architecture/enforcement/`.
+Last Reviewed: 2026-07-09
+Source of Truth: Project-wide architecture routing during the role-family
+doctrine removal migration.
 
 # Architecture Overview
 
 ## Purpose
 
-SaltMarcher is structured as a passive-shell JavaFX application with feature
-slices under `src/`. The shell exposes fixed cockpit surfaces, registration
-contracts, and shell-owned runtime services. Legacy view-layer contributions
-register UI entrypoints, and migrated `src/features/**` packages own their
-feature runtime, render frames, raw-input UI, storage, and shell wiring without
-being forced back through the old view/domain role chain.
+SaltMarcher's architecture is currently governed by the migration roadmap and
+ledger while the retired role-family doctrine is removed from the repository.
+This overview routes readers to the documents that remain authoritative during
+that migration.
 
-This document is a routing summary, not the owner of layer rules. View-layer
-roles, seams, reusable `slotcontent/**` rules, and presentation-state cycles
-are owned only by the
-[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
+## Current Source Order
+
+1. `docs/project/architecture/architecture-migration-roadmap.md`
+2. `docs/project/architecture/migration-ledger.md`
+3. retained behavior, contract, requirement, domain, and verification docs
+4. surrounding production code for legacy areas
+5. the pilot reference commit named in the ledger for migrated areas
+
+Where a retained document still describes old structure, the roadmap and ledger
+win for migration work. Behavior truth remains in feature requirements,
+contracts, domain docs, behavior harnesses, and real application behavior.
 
 ## Repository Shape
 
 ```text
 bootstrap/   application startup and generic discovery
 shell/       passive cockpit host and shell contracts
-src/features/ target migrated feature runtime after the layering gate transition
-src/view/    cockpit contributions, Binders, ContributionModels, optional IntentHandlers,
-             feature-specific colocated Views, and reusable slotcontent
-src/domain/  hexagonal application core by context
-src/data/    outbound adapters by feature
+src/features/ migrated feature-owned runtime code where the ledger says so
+src/view/    legacy cockpit contributions until each area migrates
+src/domain/  legacy and non-migrated application core by context
+src/data/    outbound adapters; not migrated per area except gateway signatures
 resources/   static resources and centralized stylesheets
-docs/        canonical project and feature documentation, compatibility stubs, and references
-tools/       build infrastructure, quality platforms, and engineering scripts
+docs/        project and feature documentation
+tools/       build infrastructure, quality platforms, and scripts
 ```
 
-## System Model
+## Retained Architecture Statements
 
-- `bootstrap/` creates the shell and discovers service contributions and UI
-  contributions generically
-- `shell/` owns passive cockpit surfaces: top-left controls, primary main
-  panel, top-right details/history, bottom-right state pane, top-bar dropdown
-  windows, navigation, activation, and shared runtime-session state
-- target `src/features/<feature>/` owns migrated feature runtime after the
-  layering gate transition: one feature-owned runtime boundary, typed target
-  resolution, preview, operation dispatch, publication, render frames,
-  raw-input UI, storage, and shell wiring as defined only by the
-  [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
-- `src/view/leftbartabs/<entry>/` owns one left-bar tab contribution, its
-  Binder, aggregate `ContributionModel`, optional
-  `IntentHandler`, and feature-specific colocated Views
-- `src/view/statetabs/<entry>/` owns one global state-tab contribution, its
-  Binder, aggregate `ContributionModel`, optional
-  `IntentHandler`, and feature-specific colocated Views
-- `src/view/dropdowns/<entry>/` owns one shell-hung dropdown-window
-  contribution, its Binder, aggregate `ContributionModel`, optional
-  `IntentHandler`, and feature-specific colocated Views
-- `src/view/slotcontent/**` owns reusable generic UI units; the internal role
-  shape and all reusable-view rules are owned only by the
-  [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
-- `src/domain/<context>/` owns the legacy and non-migrated application core:
-  domain truth, internal models, family-scoped application services, published
-  language, repositories, and ports; detailed role and seam rules are owned only by the
-  [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
-- `src/data/<feature>/` owns legacy and non-migrated outer adapters that
-  satisfy domain-owned repository abstractions and confront concrete sources
-  such as SQLite, files, imports, or remote systems
-- target `src/features/<feature>/storage/**` owns migrated feature persistence
-  seams through the Feature Runtime Architecture Standard after the layering
-  gate transition
+- [Architecture Migration Roadmap](architecture-migration-roadmap.md)
+  owns the target principles, per-area cycle, and migration milestones.
+- [Migration Ledger](migration-ledger.md)
+  owns current milestone, in-flight work, area state, and close-out notes.
+- [Layering Architecture Standard](patterns/layering-architecture.md)
+  owns the retained package-level dependency direction statement.
+- [Bootstrap Standard](patterns/bootstrap.md) and
+  [Shell Layer Standard](patterns/shell-layer.md) own startup and shell hosting
+  responsibilities that remain stable during migration.
+- [Data Layer Standard](patterns/data-layer.md) owns the adapter-zone decision
+  for `src/data/**`; data is excluded from per-area migration unless a migrated
+  boundary requires a gateway signature change.
+- [Styling Standard](patterns/styling.md) owns centralized styling rules.
+- [Verification Core Architecture](verification-core.md) owns public
+  verification surfaces and the retained outcome-check wiring.
 
-Feature documentation follows the same ownership model. System-wide canonical
-documents live under `docs/project/<type>/`, feature-owned canonical documents
-live under `docs/<feature>/<type>/`, and redirect-only legacy copies must be
-removed once the owning document exists.
+## Migration Rule
 
-## Dependency Direction
-
-Dependencies point inward toward the application core:
-
-- bootstrap depends on shell contracts
-- shell owns generic cockpit hosting and must not import feature code
-- migrated `src/features/**` code reaches shell public contracts and documented
-  persistence/authored-fact seams; the internal feature-runtime contract is owned
-  only by the
-  [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
-- legacy view contributions reach shell public contracts and the documented
-  domain public boundaries; the internal View/Binder/Model/IntentHandler contract is
-  owned only by the
-  [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
-- domain code owns business rules, internal models, published language,
-  repositories, and ports
-- data code satisfies domain-owned repository abstractions and externalizes
-  source and infrastructure details
-
-Below the legacy `src/view/**` layer, the public backend boundary is a
-context's one-or-more family `*ApplicationService` roots. Migrated
-`src/features/**` packages instead follow the feature-runtime owner and may use
-explicit persistence/authored-fact seams without inheriting the full legacy
-view/domain role stack.
-
-## Registration Model
-
-The application registers legacy feature UI through UI contributions, migrated
-feature UI through feature-runtime shell bindings, and exported runtime
-capabilities through service contributions.
-
-- shell public contracts provide registration metadata, fixed surface binding,
-  lifecycle hooks, details/history publication, and runtime context
-- `src/view/leftbartabs/**` contributes left-bar tabs
-- `src/view/statetabs/**` contributes global state tabs
-- `src/view/dropdowns/**` contributes top-bar dropdown windows through exactly
-  one `*Contribution` per active root
-- `src/features/<feature>/shell/**` binds migrated feature surfaces through the
-  narrow shell seam defined by the Feature Runtime Architecture Standard
-- `shell/api/ServiceContribution` lets data roots register source-backed
-  capabilities and domain roots register typed application services/readback
-  models into the shared shell service registry
-- `shell/api/ShellRuntimeContext` provides shell-owned shared services such as
-  runtime-capability lookup, details/history publishing, and per-shell runtime
-  sessions
-
-The view layer follows SaltMarcher's cockpit view-layer model. Detailed rules
-live only in the dedicated
-[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
-
-## Canonical Architecture Owners
-
-- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
-- [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
-- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
-- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
-- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
-- [Shell Layer Standard](docs/project/architecture/patterns/shell-layer.md:1)
-- [Bootstrap Standard](docs/project/architecture/patterns/bootstrap.md:1)
-- [Styling Standard](docs/project/architecture/patterns/styling.md:1)
-- [Verification Core Architecture](docs/project/architecture/verification-core.md:1)
-
-## Mechanical Enforcement Owners
-
-- `docs/project/architecture/enforcement/` owns the matching mechanical
-  enforcement truth for layer and role invariants
-- `shell-layer-enforcement.md` owns shell-wide topology, fixed public shell
-  surface, and shell-wide dependency-cleanliness claims
-- `shell-app-shell-enforcement.md` owns the passive shell host role contract
-- `shell-runtime-context-enforcement.md` owns the shell-scoped runtime gateway
-  contract
-- `patterns/` defines the architectural intent; `enforcement/` defines which
-  of those invariants are currently mechanical, candidate, or review-owned
-- for domain roles, `domain-layer.md` owns the architecture and the split
-  `domain-*.md` enforcement files own only role-local gate inventory and
-  current mechanical drift
-- feature-runtime architecture for migrated `src/features/**` is currently
-  review-owned; existing view/domain enforcement surfaces do not claim
-  mechanical proof for that root until a later owner names a specific gate
-- the styling package is split between layer-wide centralized styling ownership
-  and passive-`View` direct-render styling ownership
-- verification operation and Gradle gate entrypoints live under
-  `docs/project/verification/`, not as separate architecture harness documents
-- `verification-core.md` owns the four-layer verification split and the public
-  verification-surface ownership model for runtime wrappers, Gradle lifecycle
-  surfaces, focused bundles, and private rule engines
-
-## Documentation Map
-
-- `AGENTS.md` for project-wide rules and documentation governance
-- `docs/project/architecture/` for canonical project-wide architecture
-  guidance, with owner standards under `patterns/` and mechanical owner docs
-  under `enforcement/`
-- `docs/<feature>/` for canonical feature documentation grouped by type
+Legacy areas match surrounding code until their ledger row starts. Migrated
+areas match the pilot reference named in the ledger. New architecture pattern
+documents are not introduced during the migration; durable design decisions are
+recorded in the roadmap, ledger, owner docs, and journal as required.
 
 ## References
 
-- [Documentation Standard](docs/project/architecture/documentation.md:1)
-- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
-- [Shell Layer Standard](docs/project/architecture/patterns/shell-layer.md:1)
-- [Bootstrap Standard](docs/project/architecture/patterns/bootstrap.md:1)
-- [Shell Layer Enforcement](docs/project/architecture/enforcement/shell-layer-enforcement.md:1)
-- [Shell AppShell Enforcement](docs/project/architecture/enforcement/shell-app-shell-enforcement.md:1)
-- [Shell RuntimeContext Enforcement](docs/project/architecture/enforcement/shell-runtime-context-enforcement.md:1)
-- [Styling Standard](docs/project/architecture/patterns/styling.md:1)
-- [Verification Core Architecture](docs/project/architecture/verification-core.md:1)
-- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
-- [Feature Runtime Architecture Standard](docs/project/architecture/patterns/feature-runtime.md:1)
-- [Styling Layer Enforcement](docs/project/architecture/enforcement/styling-layer-enforcement.md:1)
-- [View Styling Enforcement](docs/project/architecture/enforcement/styling-view-enforcement.md:1)
-- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
-- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
-- [View Layer Enforcement](docs/project/architecture/enforcement/view-layer-enforcement.md:1)
-- [Domain Layer Enforcement](docs/project/architecture/enforcement/domain-layer-enforcement.md:1)
-- [Domain Context Enforcement](docs/project/architecture/enforcement/domain-context-enforcement.md:1)
-- [Domain ApplicationService Enforcement](docs/project/architecture/enforcement/domain-application-service-enforcement.md:1)
-- [Domain UseCase Enforcement](docs/project/architecture/enforcement/domain-use-case-enforcement.md:1)
-- [Domain Published Enforcement](docs/project/architecture/enforcement/domain-published-enforcement.md:1)
-- [Domain Port Enforcement](docs/project/architecture/enforcement/domain-port-enforcement.md:1)
-- [Domain Repository Enforcement](docs/project/architecture/enforcement/domain-repository-enforcement.md:1)
-- [Domain Model Enforcement](docs/project/architecture/enforcement/domain-model-enforcement.md:1)
-- [Domain Helper Enforcement](docs/project/architecture/enforcement/domain-helper-enforcement.md:1)
-- [Domain Constants Enforcement](docs/project/architecture/enforcement/domain-constants-enforcement.md:1)
-- [Data Layer Enforcement](docs/project/architecture/enforcement/data-layer-enforcement.md:1)
-- [Data ServiceContribution Enforcement](docs/project/architecture/enforcement/data-service-contribution-enforcement.md:1)
-- [Data Repository Enforcement](docs/project/architecture/enforcement/data-repository-enforcement.md:1)
-- [Data Query Enforcement](docs/project/architecture/enforcement/data-query-enforcement.md:1)
-- [Data Gateway Enforcement](docs/project/architecture/enforcement/data-gateway-enforcement.md:1)
-- [Data Model Enforcement](docs/project/architecture/enforcement/data-model-enforcement.md:1)
-- [Data Mapper Enforcement](docs/project/architecture/enforcement/data-mapper-enforcement.md:1)
-- [Data Persistencecore Enforcement](docs/project/architecture/enforcement/data-persistencecore-enforcement.md:1)
+- [Documentation Standard](documentation.md)
+- [Agent Instruction Standard](agent-instructions.md)
+- [Quality Platforms Standard](../verification/quality-platforms.md)
+- [Harness Gaps](../verification/harness-gaps.md)

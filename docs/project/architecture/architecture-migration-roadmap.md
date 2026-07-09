@@ -136,12 +136,10 @@ Nothing in `src/**` production code changes in M0.
   documentation link/placement basics, behavior-harness gates. CI green
   afterward (removal cannot change behavior; the gate set shrinks, the
   remaining gates stay binding).
-- **M0.5 Doctrine doc and skill removal.** Delete the pattern documents
-  (`domain-layer.md`, `view-layer.md`, `feature-runtime.md`, related
-  enforcement inventories) and the doctrine-teaching skills
-  (`domain-layer`, `view-layer-mvvm`, `feature-runtime`). Requirements,
-  contract, and verification docs stay. They are behavior truth, not
-  structure doctrine.
+- **M0.5 Doctrine doc and skill removal.** Delete the retired domain/view/
+  feature-runtime pattern documents, related enforcement inventories, and
+  doctrine-teaching skills. Requirements, contract, and verification docs stay.
+  They are behavior truth, not structure doctrine.
 - **Done when:** gates green; grep for the removed checker names and
   doctrine docs returns nothing; a fresh agent asked to simplify a small
   legacy surface no longer refuses on Rule-3 grounds and no longer
