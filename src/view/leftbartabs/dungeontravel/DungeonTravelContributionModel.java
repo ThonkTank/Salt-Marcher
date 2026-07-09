@@ -1,7 +1,6 @@
 package src.view.leftbartabs.dungeontravel;
 
 import java.util.List;
-import java.util.Optional;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -54,18 +53,6 @@ public final class DungeonTravelContributionModel {
         mapCatalogContentModel = contentModel;
     }
 
-    Optional<String> actionIdForRow(int rowIndex) {
-        List<ActionProjection> currentActions = actions.get();
-        if (rowIndex < 0 || currentActions == null || rowIndex >= currentActions.size()) {
-            return Optional.empty();
-        }
-        String actionId = currentActions.get(rowIndex).actionId();
-        if (actionId.isBlank()) {
-            return Optional.empty();
-        }
-        return Optional.of(actionId);
-    }
-
     void applyMapCatalog(DungeonMapCatalogResponse response, long selectedMapId) {
         if (mapCatalogContentModel == null || !(response instanceof DungeonMapCatalogResponse.MapList mapList)) {
             return;
@@ -114,12 +101,10 @@ public final class DungeonTravelContributionModel {
 
     static final class ActionProjection {
 
-        private final String actionId;
         private final String buttonLabel;
         private final String descriptionText;
 
-        private ActionProjection(String actionId, String buttonLabel, String descriptionText) {
-            this.actionId = actionId == null ? "" : actionId.trim();
+        private ActionProjection(String buttonLabel, String descriptionText) {
             this.buttonLabel = buttonLabel == null || buttonLabel.isBlank()
                     ? "Aktion"
                     : buttonLabel.trim();
@@ -128,13 +113,9 @@ public final class DungeonTravelContributionModel {
 
         static ActionProjection from(TravelDungeonAction action) {
             if (action == null) {
-                return new ActionProjection("", "Aktion", "");
+                return new ActionProjection("Aktion", "");
             }
-            return new ActionProjection(action.actionId(), action.label(), action.description());
-        }
-
-        String actionId() {
-            return actionId;
+            return new ActionProjection(action.label(), action.description());
         }
 
         String buttonLabel() {

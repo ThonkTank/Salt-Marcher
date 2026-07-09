@@ -22,6 +22,7 @@ import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestinationTarget;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts;
+import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts.SelectedAction;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionKind;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurfaceProjectionMapper;
@@ -223,12 +224,16 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 "runtime transition projection explains missing unlinked entrance destination");
         assertEquals(TravelTransitionTarget.absent(), unlinkedTransition.transitionTarget(),
                 "runtime transition projection blocks travel target for unlinked entrance");
-        assertUnlinkedTransitionMovementBlocked(unlinkedMap, unlinkedTransition);
+        assertUnlinkedTransitionMovementBlocked(
+                unlinkedMap,
+                unlinkedTransition,
+                SelectedAction.atRow(indexOfAction(unlinkedSurface, unlinkedTransition)));
     }
 
     private static void assertUnlinkedTransitionMovementBlocked(
             DungeonMap unlinkedMap,
-            TravelActionFacts unlinkedTransition
+            TravelActionFacts unlinkedTransition,
+            SelectedAction selectedAction
     ) {
         DungeonMapRepository repository = repositoryOf(
                 unlinkedMap,
@@ -251,7 +256,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
 
         MoveResultData moveResult = moveUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
                 position,
-                unlinkedTransition.actionId()));
+                selectedAction));
         assertEquals(MoveStatus.TARGET_UNAVAILABLE, moveResult.status(),
                 "runtime unlinked entrance movement must report missing destination");
         assertContains(moveResult.surface().statusLabel(), "Übergangsziel ist nicht verfügbar.",
@@ -280,7 +285,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
         SurfaceData applied = applyUseCase.move(
                 currentSurface.position(),
                 currentSurface,
-                unlinkedTransition.actionId());
+                selectedAction);
         assertContains(applied.statusLabel(), "Übergangsziel ist nicht verfügbar.",
                 "runtime unlinked entrance apply path explains missing destination");
         assertEquals(0, partyPositions.savedDungeonPositions(),
@@ -679,6 +684,16 @@ final class DungeonRuntimeProjectionInvariantHarness {
             }
         }
         return null;
+    }
+
+    private static int indexOfAction(TravelSurfaceFacts surface, TravelActionFacts expected) {
+        List<TravelActionFacts> actions = surface.actions();
+        for (int index = 0; index < actions.size(); index++) {
+            if (actions.get(index).equals(expected)) {
+                return index;
+            }
+        }
+        return -1;
     }
 
     private static void assertEquals(Object expected, Object actual, String message) {

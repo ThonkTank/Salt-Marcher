@@ -21,24 +21,14 @@ public final class DungeonTravelRuntimeApplicationService {
 
     public void applyDungeonTravelSession(ApplyTravelDungeonSessionCommand command) {
         Objects.requireNonNull(command, "command");
-        publishTravelDungeonSessionUseCase.execute(toUseCaseCommand(command));
-    }
-
-    private static Command toUseCaseCommand(
-            ApplyTravelDungeonSessionCommand command
-    ) {
-        return switch (command.action().name()) {
-            case "REFRESH" -> Command.refresh();
-            case "ACTION" -> Command.travelAction(command.actionId());
-            case "SELECT_MAP" -> Command.selectMap(command.actionId());
-            case "SET_PROJECTION_LEVEL" -> Command.setProjectionLevel(command.projectionLevel());
-            case "SHIFT_PROJECTION_LEVEL" -> Command.shiftProjectionLevel(command.projectionLevel());
-            case "SET_OVERLAY" -> Command.setOverlay(
-                    command.overlaySettings().modeKey(),
-                    command.overlaySettings().levelRange(),
-                    command.overlaySettings().opacity(),
-                    command.overlaySettings().selectedLevels());
-            default -> throw new IllegalStateException("Unhandled travel dungeon session action.");
-        };
+        publishTravelDungeonSessionUseCase.execute(Command.fromBoundary(
+                command.actionCode(),
+                command.selectedActionRowIndex(),
+                command.mapId(),
+                command.projectionLevel(),
+                command.overlaySettings().modeKey(),
+                command.overlaySettings().levelRange(),
+                command.overlaySettings().opacity(),
+                command.overlaySettings().selectedLevels()));
     }
 }

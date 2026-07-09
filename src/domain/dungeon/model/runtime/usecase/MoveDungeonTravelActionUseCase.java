@@ -3,6 +3,7 @@ package src.domain.dungeon.model.runtime.usecase;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts;
+import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts.SelectedAction;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionKind;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurfaceProjectionMapper;
@@ -28,22 +29,22 @@ public final class MoveDungeonTravelActionUseCase {
 
     public static final class Input {
         private final @Nullable TravelPositionFacts position;
-        private final String actionId;
+        private final SelectedAction selectedAction;
 
         public Input(
                 @Nullable TravelPositionFacts position,
-                String actionId
+                SelectedAction selectedAction
         ) {
             this.position = position;
-            this.actionId = actionId == null ? "" : actionId.trim();
+            this.selectedAction = SelectedAction.safe(selectedAction);
         }
 
         public @Nullable TravelPositionFacts position() {
             return position;
         }
 
-        public String actionId() {
-            return actionId;
+        public SelectedAction selectedAction() {
+            return selectedAction;
         }
     }
 
@@ -64,11 +65,11 @@ public final class MoveDungeonTravelActionUseCase {
 
     public MoveResultData execute(Input input) {
         TravelPositionFacts position = input == null ? null : input.position();
-        String actionId = input == null ? "" : input.actionId();
+        SelectedAction selectedAction = input == null ? SelectedAction.invalid() : input.selectedAction();
         DungeonMap currentMap = loadMap(position);
         TravelAuthoredSurface currentSurface =
                 TravelAuthoredSurfaceProjectionMapper.from(currentMap, deriveState.execute(currentMap));
-        return new MoveResolver(currentSurface, position).move(actionId);
+        return new MoveResolver(currentSurface, position).move(selectedAction);
     }
 
     private DungeonMap loadMap(@Nullable TravelPositionFacts position) {
@@ -91,19 +92,20 @@ public final class MoveDungeonTravelActionUseCase {
             this.currentSurface = projectSurface(currentSurfaceInput, requestedPosition, "");
         }
 
-        private MoveResultData move(String actionId) {
-            TravelActionFacts action = currentSurface.action(actionId);
-            if (action == null) {
+        private MoveResultData move(SelectedAction selectedAction) {
+            java.util.Optional<TravelActionFacts> action = currentSurface.action(selectedAction);
+            if (action.isEmpty()) {
                 return new MoveResultData(
                         MoveStatus.INVALID_ACTION,
                         TravelDungeonSessionProjectionMapper.toRuntimeSurface(
                                 projectCurrentMap(requestedPosition, "Aktion ist nicht verfügbar.")),
                         null);
             }
-            if (action.kind() == TravelActionKind.TRAVERSAL) {
-                return moveTraversal(action);
+            TravelActionFacts selected = action.get();
+            if (selected.kind() == TravelActionKind.TRAVERSAL) {
+                return moveTraversal(selected);
             }
-            return moveTransition(action);
+            return moveTransition(selected);
         }
 
         private MoveResultData moveTraversal(TravelActionFacts action) {

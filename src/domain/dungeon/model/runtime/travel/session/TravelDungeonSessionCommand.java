@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.runtime.travel.session;
 
 import java.util.List;
+import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts.SelectedAction;
 
 public final class TravelDungeonSessionCommand {
 
@@ -14,8 +15,8 @@ public final class TravelDungeonSessionCommand {
         return new TravelDungeonSessionCommand(new Refresh());
     }
 
-    public static TravelDungeonSessionCommand travelAction(String actionId) {
-        return new TravelDungeonSessionCommand(new TravelAction(actionId));
+    public static TravelDungeonSessionCommand travelAction(SelectedAction selectedAction) {
+        return new TravelDungeonSessionCommand(new TravelAction(selectedAction));
     }
 
     public static TravelDungeonSessionCommand selectMap(String mapIdValue) {
@@ -51,9 +52,9 @@ public final class TravelDungeonSessionCommand {
     public record Refresh() implements Variant {
     }
 
-    public record TravelAction(String actionId) implements Variant {
+    public record TravelAction(SelectedAction selectedAction) implements Variant {
         public TravelAction {
-            actionId = normalizeText(actionId);
+            selectedAction = SelectedAction.safe(selectedAction);
         }
     }
 

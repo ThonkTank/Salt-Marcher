@@ -61,7 +61,8 @@ public final class DungeonTravelProjectionLevelHarness {
         runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
                 .applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
                         ApplyTravelDungeonSessionCommand.Action.REFRESH,
-                        "",
+                        -1,
+                        0L,
                         0,
                         DungeonOverlaySettings.defaults()));
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
@@ -103,12 +104,24 @@ public final class DungeonTravelProjectionLevelHarness {
         assertRenderedLevel(binding.mapContentModel(), 0, "DT-LVL-002 renders level 0");
         assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, partyPositionsBefore, "DT-LVL-002");
 
+        runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
+                .applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.action(-1));
+        TravelDungeonSnapshot invalidActionSnapshot = travelModel.current();
+        DungeonEditorBehaviorHarnessSupport.assertTrue(
+                invalidActionSnapshot.workspaceState() != null
+                        && invalidActionSnapshot.workspaceState().statusLabel().contains("Aktion ist nicht verfügbar."),
+                "DT-ACT-INVALID typed invalid selected action reports invalid action");
+        assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, "DT-ACT-INVALID");
+
         results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
                 + "DT-LVL-001 Ready: DungeonTravelControlsView + button -> SQLite/party unchanged"
                 + " -> published projection z=1 -> rendered level 1");
         results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
                 + "DT-LVL-002 Ready: DungeonTravelControlsView - button -> SQLite/party unchanged"
                 + " -> published projection z=0 -> rendered level 0");
+        results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
+                + "DT-ACT-INVALID Ready: typed invalid selected action -> ApplicationService"
+                + " -> INVALID_ACTION status -> SQLite/party unchanged");
     }
 
     private static HarnessBinding bindHarness(HarnessRuntime runtime) {

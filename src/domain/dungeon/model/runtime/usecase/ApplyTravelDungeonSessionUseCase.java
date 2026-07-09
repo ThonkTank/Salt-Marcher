@@ -2,6 +2,7 @@ package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.List;
 import java.util.Objects;
+import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts.SelectedAction;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSession;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionCommand;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSnapshot.SnapshotData;
@@ -41,7 +42,7 @@ public final class ApplyTravelDungeonSessionUseCase {
             return refresh();
         }
         if (variant instanceof TravelDungeonSessionCommand.TravelAction travelAction) {
-            return move(travelAction.actionId());
+            return move(travelAction.selectedAction());
         }
         if (variant instanceof TravelDungeonSessionCommand.SelectMap selectMap) {
             return selectMap(selectMap.mapIdValue());
@@ -67,11 +68,11 @@ public final class ApplyTravelDungeonSessionUseCase {
         return snapshot();
     }
 
-    private SnapshotData move(String actionId) {
+    private SnapshotData move(SelectedAction selectedAction) {
         session.applySurface(applyTravelDungeonMovementUseCase.move(
                 session.currentPosition(),
                 session.currentSurface(),
-                actionId));
+                selectedAction));
         return snapshot();
     }
 
