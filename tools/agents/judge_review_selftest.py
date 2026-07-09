@@ -46,6 +46,25 @@ def patched_environ(values: dict[str, str]):
 
 
 class JudgeOverrideOwnershipTest(unittest.TestCase):
+    def test_claude_code_prompt_uses_stdin_not_argv(self) -> None:
+        prompt = "large prompt\n" * 10000
+        completed = judge_review.subprocess.CompletedProcess(
+            args=["claude"],
+            returncode=0,
+            stdout="VERDICT: PASS\n",
+            stderr="",
+        )
+
+        with patched_environ({"CLAUDE_CODE_OAUTH_TOKEN": "oauth-token"}), mock.patch.object(
+            judge_review.shutil, "which", return_value="/usr/bin/claude"
+        ), mock.patch.object(judge_review.subprocess, "run", return_value=completed) as run:
+            self.assertEqual("VERDICT: PASS\n", judge_review.call_claude_code(prompt))
+
+        command = run.call_args.args[0]
+        self.assertNotIn(prompt, command)
+        self.assertEqual(prompt, run.call_args.kwargs["input"])
+        self.assertIn("--input-format", command)
+
     def test_latest_owner_label_event_authorizes_override(self) -> None:
         events = [
             NON_OWNER_EVENT | {"created_at": "2026-07-06T07:00:00Z"},
