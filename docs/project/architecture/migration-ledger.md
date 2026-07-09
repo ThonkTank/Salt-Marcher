@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M1 - Parity Oracle |
-| Work item | M1.4 - Owner smoke scripts |
-| Cycle step | Milestone step; German owner smoke checklist drafting, per-area cycle not active yet |
-| In-flight area | M1.4 owner smoke scripts only; no product area cycle active |
-| Required next proof | `./gradlew checkDocumentationEnforcement --console=plain` |
-| Last status note | `2026-07-09 M1.3 hex-harness-hardening` |
+| Work item | M1.5 - Render parity net |
+| Cycle step | Milestone step; render snapshot parity preparation, per-area cycle not active yet |
+| In-flight area | M1.5 render parity net only; no product area cycle active |
+| Required next proof | Dungeon render snapshot parity proof plus `./gradlew checkDocumentationEnforcement --console=plain` if docs change |
+| Last status note | `2026-07-09 M1.4 owner-smoke-checklists` |
 
 ## M0 Step Ledger
 
@@ -53,8 +53,8 @@ but they do not advance the migration unless this ledger advances too.
 | M1.1 Harness inventory | Done on branch | `90e4ac7ac` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; judge review Approve | Existing harnesses, imported boundary surfaces, scenario coverage, and current gaps are listed below for every migration area. |
 | M1.2 Parity protocol | Done on branch | `a027ac712` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | Roadmap protocol freezes scenario/assertion inventories in per-area designs, keeps wiring ports separate, closes gaps against old structure, and handles nondeterministic old behavior through deterministic envelopes plus R2 issue filing. |
 | M1.3 Pilot harness hardening | Done on branch | `6d9747a5d` | Pending PR merge | `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | Hex Map and Reise state-tab production-route gaps are closed against the old structure. |
-| M1.4 Owner smoke scripts | In Flight | Pending | Pending PR merge | Pending | German owner smoke checklists are being drafted in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`. |
-| M1.5 Render parity net | Pending | Pending | Pending PR merge | Pending | Not started. |
+| M1.4 Owner smoke scripts | Done on branch | `b63bdb458` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --cached --check` passed; Phase 1 Clean; Phase 2 Approve | German owner smoke checklists for all 13 ledger areas are in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`. |
+| M1.5 Render parity net | In Flight | Pending | Pending PR merge | Pending | Dungeon render snapshot parity preparation is next. |
 
 ## Milestone Ledger
 
@@ -167,3 +167,12 @@ Reisegruppe und Reload; `hexTravelStateBehaviorHarness` treibt Hex- und
 Party-Services bis in das kompakte `Reise`-State-Tab. Der kombinierte
 Hex-Harness, das Dokumentationsgate, Phase 1 und der unabhaengige Judge sind
 gruen. Naechster Schritt ist M1.4 mit deutschen Owner-Smoke-Checklisten.
+
+### 2026-07-09 M1.4 owner-smoke-checklists
+
+Die deutschen Owner-Smoke-Checklisten liegen jetzt neben Roadmap und Ledger in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`.
+Alle 13 aktuellen Ledger-Areas haben je zehn kurze, sichtbare Pruefschritte;
+die Checklisten definieren kein neues Produktverhalten und blockieren die
+Pipeline nicht. Dokumentationsgate, Phase 1 und der unabhaengige Judge sind
+gruen. Naechster Schritt ist M1.5 mit Render-Snapshot-Parity.
