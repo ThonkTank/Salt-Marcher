@@ -32,11 +32,11 @@ migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M3 - Rollout wave 1 |
-| Work item | M3.2 - creatures baseline metrics |
-| Cycle step | 2 - Baseline metrics |
+| Work item | M3.3 - creatures target design |
+| Cycle step | 3 - Target design |
 | In-flight area | `creatures` |
-| Required next proof | Measure the Creature migration scope: file count, physical LOC, longest intent-to-publication chain, forwarding-only classes, and String boundary round-trips before any target design work. |
-| Last status note | `2026-07-09 M3.1 creatures-harness-closure` |
+| Required next proof | Produce a judge-approved Creature target design with named target classes, representative call chains, deletion list, seam statement, untouched-list, and frozen parity inventory before any wiring or implementation work. |
+| Last status note | `2026-07-09 M3.2 creatures-baseline-metrics` |
 
 ## M0 Step Ledger
 
@@ -87,7 +87,8 @@ migration unless this ledger advances too.
 | Cycle step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
 | 1. Harness check/closure | Done on branch | `80b9e11e1` | Pending PR merge | `./gradlew creatureCatalogHarness --console=plain` passed with 9 proof items, 2026-07-09; `./gradlew checkHarnessMapConsistency checkBehaviorHarnessTopology --console=plain` passed; `env -u CODEX_THREAD_ID tools/gradle/run-staged-verification.sh focused-handoff --path src/domain/creatures --area creatures` passed after a first wildcard-IP Gradle startup failure; `./gradlew checkDocumentationEnforcement --console=plain` passed; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved | Dedicated `creatureCatalogHarness` now drives `CreaturesApplicationService` through a controlled `CreatureCatalogPort` and asserts published catalog, detail, filter, and encounter-candidate models. Create/edit are harness fixture setup/update only; the product domain remains a read-only imported reference catalog, and the P2 Creature catalog gap is removed from `harness-gaps.md`. |
-| 2. Baseline metrics | In Flight | Pending | Pending | Pending | Measure files, LOC, dominant chains, forwarding-only classes, and String round-trips for the Creature migration scope before target design. |
+| 2. Baseline metrics | Done on branch | `66d3b773d` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Approved after rework; Phase 2 Approved | Baseline artifact: `docs/project/architecture/architecture-migration-creatures-baseline.md`; full roadmap set is 90 files / 4,587 physical LOC; product subset is 35 files / 2,060 physical LOC; dominant Creature-owned chains are 7 hops to first publication; 7 product/published forwarding or proxy candidates plus 2 data candidates; 4 product String boundary families. |
+| 3. Target design | In Flight | Pending | Pending | Pending | Create the concrete Creature target design before any wiring or implementation: target class list, representative call chains, deletion list, seam statement, untouched-list, frozen parity inventory, and explicit metric target expectations. |
 
 ## Milestone Ledger
 
@@ -107,7 +108,7 @@ migration unless this ledger advances too.
 | --- | --- | --- | --- | --- |
 | `hex` | Pilot reference commit `3679a19e2` | Done on branch | Pending | M2 done: `hexMapEditorBehaviorHarness` and `hexTravelStateBehaviorHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 41-file / 3,701-LOC metric exception; owner smoke checklist is available. |
 | `worldplanner` | Worldplanner reference commit `f499d321d` | Done on branch | Pending | M3 done on branch: backend, UI, raw-input, and encounter harnesses are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 43-file / 3,709-LOC metric exception; owner smoke checklist is available. |
-| `creatures` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 done on branch: `creatureCatalogHarness` covers create/edit fixture setup, filter, catalog readback, detail readback, encounter-candidate readback, invalid-query, missing-detail, and storage-error publication through `CreaturesApplicationService` and published models. Current step is M3.2 baseline metrics. |
+| `creatures` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.2 done on branch: `architecture-migration-creatures-baseline.md` records 90 files / 4,587 physical LOC for the full roadmap set and 35 files / 2,060 physical LOC for the product subset; current step is M3.3 target design. |
 | `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains. |
 | `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
 | `encountertable` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner UI imports only; P2 dedicated encounter-table readback harness gap remains. |
@@ -141,4 +142,4 @@ migration unless this ledger advances too.
 
 German owner status notes are maintained in
 `docs/project/architecture/architecture-migration-owner-status-notes.md`.
-Latest note: `2026-07-09 M3.1 creatures-harness-closure`.
+Latest note: `2026-07-09 M3.2 creatures-baseline-metrics`.

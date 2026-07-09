@@ -236,3 +236,18 @@ Der Worldplanner ist mit Referenzcommit `f499d321d` abgeschlossen; alte Usecases
 ### 2026-07-09 M3.1 creatures-harness-closure
 
 Der neue `creatureCatalogHarness` schliesst den Creature-Katalog-Gap gegen die alte Struktur: Create/Edit sind nur Harness-Fixture-Aufbau und -Update, die Produktgrenze bleibt ein read-only Referenzkatalog, und die Orakel laufen ueber `CreaturesApplicationService` plus publizierte Catalog-, Detail-, Filter- und Encounter-Candidate-Models. Harness, Harness-Map/Topology, Focused-Handoff, Dokumentationsgate und Phase 1 sind gruen. Naechster Schritt ist M3.2 Baseline-Metriken fuer `creatures`.
+
+### 2026-07-09 M3.2 creatures-baseline-metrics
+
+Die Creature-Baseline ist in
+`docs/project/architecture/architecture-migration-creatures-baseline.md`
+festgehalten. Der reproduzierbare Roadmap-Schnitt umfasst 90 Java-Dateien mit
+4.587 physischen LOC; die normale M3-Produktstruktur ohne Data-Layer umfasst
+35 Dateien mit 2.060 LOC. Weil `creatures` ein read-only Referenzkatalog ohne
+autorisierte Produkt-Schreibfluesse ist, misst die Baseline die laengsten
+Ketten bis zur publizierten Catalog-/Detail-/Filter-/Encounter-Candidate-
+Publication: maximal 7 Hops bis zur ersten Creature-Publikation. Forwarding-/
+Proxy-Kandidaten und vier String-Grenzfamilien sind konkret belegt. Das
+Dokumentationsgate, Phase 1 nach Rework und der unabhaengige Judge sind gruen.
+Naechster Schritt ist M3.3 mit judge-geprueftem Creature-Target-Design; es
+wurde noch keine Wiring- oder Implementierungsarbeit begonnen.
