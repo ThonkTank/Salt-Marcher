@@ -12,7 +12,6 @@ import src.domain.hex.HexEditorApplicationService;
 import src.domain.hex.HexTravelApplicationService;
 import src.domain.hex.published.HexEditorModel;
 import src.domain.hex.published.HexTravelModel;
-import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 
 final class HexMapBinder {
@@ -29,39 +28,28 @@ final class HexMapBinder {
         HexTravelApplicationService travel = services.require(HexTravelApplicationService.class);
         HexEditorModel editorModel = services.require(HexEditorModel.class);
         HexTravelModel travelModel = services.require(HexTravelModel.class);
-        HexMapControlsContentModel controlsContentModel = new HexMapControlsContentModel();
-        CatalogCrudControlsContentModel mapCatalogContentModel = new CatalogCrudControlsContentModel();
-        HexMapMainContentModel mainContentModel = new HexMapMainContentModel();
-        HexMapStateContentModel stateContentModel = new HexMapStateContentModel();
-        HexMapContributionModel contributionModel = new HexMapContributionModel(
-                controlsContentModel,
-                mainContentModel,
-                stateContentModel);
+        HexMapViewModel viewModel = new HexMapViewModel();
         HexMapIntentHandler intentHandler = new HexMapIntentHandler(
                 editor,
                 travel,
-                contributionModel,
-                controlsContentModel,
-                stateContentModel,
-                mapCatalogContentModel);
+                viewModel);
         HexMapControlsView controls = new HexMapControlsView();
         CatalogCrudControlsView mapCatalog = new CatalogCrudControlsView();
         HexMapMainView main = new HexMapMainView();
         HexMapStateView state = new HexMapStateView();
 
-        controls.bind(contributionModel.controlsContentModel());
-        mapCatalog.bind(mapCatalogContentModel);
-        main.bind(contributionModel.mainContentModel());
-        state.bind(contributionModel.stateContentModel());
+        controls.bind(viewModel);
+        mapCatalog.bind(viewModel.mapCatalogContentModel());
+        main.bind(viewModel);
+        state.bind(viewModel);
         controls.onViewInputEvent(intentHandler::consume);
         mapCatalog.onViewInputEvent(intentHandler::consume);
         main.onViewInputEvent(intentHandler::consume);
         state.onViewInputEvent(intentHandler::consume);
-        contributionModel.bindMapCatalogContentModel(mapCatalogContentModel);
-        editorModel.subscribe(contributionModel::applySnapshot);
-        travelModel.subscribe(contributionModel::applyTravelSnapshot);
-        contributionModel.applySnapshot(editorModel.current());
-        contributionModel.applyTravelSnapshot(travelModel.current());
+        editorModel.subscribe(viewModel::applySnapshot);
+        travelModel.subscribe(viewModel::applyTravelSnapshot);
+        viewModel.applySnapshot(editorModel.current());
+        viewModel.applyTravelSnapshot(travelModel.current());
         intentHandler.activateEditor();
         return new Binding(ShellControls.stack(mapCatalog, controls), main, state);
     }

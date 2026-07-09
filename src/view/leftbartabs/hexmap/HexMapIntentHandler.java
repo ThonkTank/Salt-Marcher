@@ -23,25 +23,18 @@ final class HexMapIntentHandler {
 
     private final HexEditorApplicationService editor;
     private final HexTravelApplicationService travel;
-    private final HexMapContributionModel contributionModel;
-    private final HexMapControlsContentModel controlsContentModel;
-    private final HexMapStateContentModel stateContentModel;
+    private final HexMapViewModel viewModel;
     private final CatalogCrudControlsContentModel mapCatalogContentModel;
 
     HexMapIntentHandler(
             HexEditorApplicationService editor,
             HexTravelApplicationService travel,
-            HexMapContributionModel contributionModel,
-            HexMapControlsContentModel controlsContentModel,
-            HexMapStateContentModel stateContentModel,
-            CatalogCrudControlsContentModel mapCatalogContentModel
+            HexMapViewModel viewModel
     ) {
         this.editor = Objects.requireNonNull(editor, "editor");
         this.travel = Objects.requireNonNull(travel, "travel");
-        this.contributionModel = Objects.requireNonNull(contributionModel, "contributionModel");
-        this.controlsContentModel = Objects.requireNonNull(controlsContentModel, "controlsContentModel");
-        this.stateContentModel = Objects.requireNonNull(stateContentModel, "stateContentModel");
-        this.mapCatalogContentModel = Objects.requireNonNull(mapCatalogContentModel, "mapCatalogContentModel");
+        this.viewModel = Objects.requireNonNull(viewModel, "viewModel");
+        this.mapCatalogContentModel = viewModel.mapCatalogContentModel();
     }
 
     void activateEditor() {
@@ -52,9 +45,10 @@ final class HexMapIntentHandler {
         if (event == null) {
             return;
         }
-        HexMapControlsContentModel.Projection projection = controlsContentModel.currentProjection();
-        String toolKey = controlsContentModel.resolvedToolKey(event.toolOptionIndex());
-        String terrainKey = controlsContentModel.resolvedTerrainKey(event.terrainOptionIndex());
+        HexMapControlsContentModel controls = viewModel.controlsContentModel();
+        HexMapControlsContentModel.Projection projection = controls.currentProjection();
+        String toolKey = controls.resolvedToolKey(event.toolOptionIndex());
+        String terrainKey = controls.resolvedTerrainKey(event.terrainOptionIndex());
         if (toolChanged(toolKey, terrainKey, projection)) {
             editor.setActiveTool(new SetHexEditorToolCommand(toolKey, terrainKey));
         }
@@ -126,20 +120,21 @@ final class HexMapIntentHandler {
             saveMarker(event);
             return;
         }
-        long markerId = stateContentModel.resolvedMarkerId(event.markerOptionIndex());
-        String markerName = stateContentModel.resolvedMarkerName(
+        HexMapStateContentModel state = viewModel.stateContentModel();
+        long markerId = state.resolvedMarkerId(event.markerOptionIndex());
+        String markerName = state.resolvedMarkerName(
                 event.markerOptionIndex(),
                 event.markerName(),
                 event.markerSelectionRequested());
-        String markerTypeKey = stateContentModel.resolvedMarkerTypeKey(
+        String markerTypeKey = state.resolvedMarkerTypeKey(
                 event.markerOptionIndex(),
                 event.markerTypeOptionIndex(),
                 event.markerSelectionRequested());
-        String markerNote = stateContentModel.resolvedMarkerNote(
+        String markerNote = state.resolvedMarkerNote(
                 event.markerOptionIndex(),
                 event.markerNote(),
                 event.markerSelectionRequested());
-        stateContentModel.updateMarkerDraft(
+        state.updateMarkerDraft(
                 markerId,
                 markerName,
                 markerTypeKey,
@@ -151,12 +146,13 @@ final class HexMapIntentHandler {
             return;
         }
         if (event.mapId() <= UNRESOLVED_ID) {
-            contributionModel.showLocalFailure("Hex map is required.");
+            viewModel.showLocalFailure("Hex map is required.");
             return;
         }
-        String activeTool = controlsContentModel.resolvedToolKey(event.activeToolKey());
-        String activeTerrain = controlsContentModel.resolvedTerrainKey(event.activeTerrainKey());
-        if (controlsContentModel.isPaintTerrainTool(activeTool)) {
+        HexMapControlsContentModel controls = viewModel.controlsContentModel();
+        String activeTool = controls.resolvedToolKey(event.activeToolKey());
+        String activeTerrain = controls.resolvedTerrainKey(event.activeTerrainKey());
+        if (controls.isPaintTerrainTool(activeTool)) {
             editor.paintTerrain(new PaintHexTerrainCommand(
                     event.mapId(),
                     event.q(),
@@ -164,19 +160,19 @@ final class HexMapIntentHandler {
                     activeTerrain));
             return;
         }
-        if (controlsContentModel.isMovePartyTool(activeTool)) {
+        if (controls.isMovePartyTool(activeTool)) {
             movePartyToken(event.mapId(), event.q(), event.r());
             return;
         }
         editor.selectTile(new SelectHexTileCommand(event.mapId(), event.q(), event.r()));
-        if (controlsContentModel.isPlaceMarkerTool(activeTool)) {
+        if (controls.isPlaceMarkerTool(activeTool)) {
             editor.setActiveTool(new SetHexEditorToolCommand(activeTool, activeTerrain));
         }
     }
 
     private void selectMap(long mapId) {
         if (mapId <= UNRESOLVED_ID) {
-            contributionModel.showLocalFailure("Hex map selection is required.");
+            viewModel.showLocalFailure("Hex map selection is required.");
             return;
         }
         editor.selectMap(new SelectHexMapCommand(mapId));
@@ -208,10 +204,10 @@ final class HexMapIntentHandler {
     }
 
     private void updateMap(HexMapStateViewInputEvent event) {
-        HexMapStateContentModel.Projection projection = stateContentModel.currentProjection();
+        HexMapStateContentModel.Projection projection = viewModel.stateContentModel().currentProjection();
         long mapId = projection.selectedMapId();
         if (mapId <= UNRESOLVED_ID) {
-            contributionModel.showLocalFailure("Hex map is required.");
+            viewModel.showLocalFailure("Hex map is required.");
             return;
         }
         editor.updateMap(new UpdateHexMapCommand(
@@ -222,31 +218,32 @@ final class HexMapIntentHandler {
     }
 
     private void saveMarker(HexMapStateViewInputEvent event) {
-        HexMapStateContentModel.Projection projection = stateContentModel.currentProjection();
+        HexMapStateContentModel state = viewModel.stateContentModel();
+        HexMapStateContentModel.Projection projection = state.currentProjection();
         long mapId = projection.selectedMapId();
         if (mapId <= UNRESOLVED_ID) {
-            contributionModel.showLocalFailure("Hex map is required.");
+            viewModel.showLocalFailure("Hex map is required.");
             return;
         }
         if (!projection.tileSelected()) {
-            contributionModel.showLocalFailure("Select a Hex tile before saving a marker.");
+            viewModel.showLocalFailure("Select a Hex tile before saving a marker.");
             return;
         }
-        long markerId = stateContentModel.resolvedMarkerId(event.markerOptionIndex());
-        String markerName = stateContentModel.resolvedMarkerName(
+        long markerId = state.resolvedMarkerId(event.markerOptionIndex());
+        String markerName = state.resolvedMarkerName(
                 event.markerOptionIndex(),
                 event.markerName(),
                 false);
-        String markerTypeKey = stateContentModel.resolvedMarkerTypeKey(
+        String markerTypeKey = state.resolvedMarkerTypeKey(
                 event.markerOptionIndex(),
                 event.markerTypeOptionIndex(),
                 false);
-        String markerNote = stateContentModel.resolvedMarkerNote(
+        String markerNote = state.resolvedMarkerNote(
                 event.markerOptionIndex(),
                 event.markerNote(),
                 false);
         if (markerTypeKey.isBlank()) {
-            contributionModel.showLocalFailure("Marker type is required.");
+            viewModel.showLocalFailure("Marker type is required.");
             return;
         }
         editor.saveMarker(new SaveHexMarkerCommand(
@@ -260,9 +257,9 @@ final class HexMapIntentHandler {
     }
 
     private void movePartyToken(long mapId, int q, int r) {
-        java.util.List<Long> characterIds = contributionModel.partyTokenCharacterIds();
+        java.util.List<Long> characterIds = viewModel.partyTokenCharacterIds();
         if (characterIds.isEmpty()) {
-            contributionModel.showLocalFailure("No party token characters are available for Hex travel.");
+            viewModel.showLocalFailure("No party token characters are available for Hex travel.");
             return;
         }
         travel.movePartyToken(new MoveHexPartyTokenCommand(mapId, q, r, characterIds));

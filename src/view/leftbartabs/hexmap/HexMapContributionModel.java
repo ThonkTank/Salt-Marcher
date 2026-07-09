@@ -60,18 +60,6 @@ public final class HexMapContributionModel {
         stateContentModel.showLocalFailure(failureText);
     }
 
-    HexMapControlsContentModel controlsContentModel() {
-        return controlsContentModel;
-    }
-
-    HexMapMainContentModel mainContentModel() {
-        return mainContentModel;
-    }
-
-    HexMapStateContentModel stateContentModel() {
-        return stateContentModel;
-    }
-
     void bindMapCatalogContentModel(CatalogCrudControlsContentModel contentModel) {
         mapCatalogContentModel = Objects.requireNonNull(contentModel, "contentModel");
         refreshMapCatalog();

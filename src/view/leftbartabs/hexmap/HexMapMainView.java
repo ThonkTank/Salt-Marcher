@@ -74,6 +74,12 @@ public final class HexMapMainView extends ScrollPane {
         contentModel.partyTokenProperty().addListener((ignored, before, after) -> drawPartyLayer(after));
     }
 
+    void bind(HexMapViewModel viewModel) {
+        if (viewModel != null) {
+            bind(viewModel.mainContentModel());
+        }
+    }
+
     public void onViewInputEvent(Consumer<HexMapMainViewInputEvent> consumer) {
         eventConsumer = consumer == null ? ignored -> { } : consumer;
     }

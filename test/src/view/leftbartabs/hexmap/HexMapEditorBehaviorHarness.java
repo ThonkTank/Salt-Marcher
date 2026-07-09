@@ -61,7 +61,6 @@ import src.domain.party.published.MembershipState;
 import src.domain.party.published.MovePartyCharactersCommand;
 import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
-import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 
 public final class HexMapEditorBehaviorHarness {
@@ -346,18 +345,18 @@ public final class HexMapEditorBehaviorHarness {
             HexEditorSnapshot beforeFailure,
             HexEditorSnapshot failureSnapshot
     ) {
-        HexMapStateContentModel contentModel = new HexMapStateContentModel();
+        HexMapViewModel viewModel = new HexMapViewModel();
         HexMapStateView view = new HexMapStateView();
-        view.bind(contentModel);
-        wireMarkerDraftEvents(view, contentModel);
-        contentModel.applySnapshot(beforeFailure);
+        view.bind(viewModel);
+        wireMarkerDraftEvents(view, viewModel);
+        viewModel.applySnapshot(beforeFailure);
         TextField markerName = markerNameField(view);
         ComboBox<String> markerType = markerTypeSelector(view);
         TextArea markerNote = markerNoteArea(view);
         markerName.setText("Draft Camp");
         selectMarkerType(markerType, "RESOURCE");
         markerNote.setText("Draft note");
-        contentModel.applySnapshot(failureSnapshot);
+        viewModel.applySnapshot(failureSnapshot);
         assertEquals("Draft Camp", markerName.getText(),
                 "HEX-EDITOR-006 controls preserve marker name draft after validation failure");
         assertEquals("RESOURCE", markerTypeKey(markerType.getValue()),
@@ -370,18 +369,18 @@ public final class HexMapEditorBehaviorHarness {
             HexEditorSnapshot beforeToolRefresh,
             HexEditorSnapshot afterToolRefresh
     ) {
-        HexMapStateContentModel stateContentModel = new HexMapStateContentModel();
+        HexMapViewModel stateViewModel = new HexMapViewModel();
         HexMapStateView stateView = new HexMapStateView();
-        stateView.bind(stateContentModel);
-        wireMarkerDraftEvents(stateView, stateContentModel);
-        stateContentModel.applySnapshot(beforeToolRefresh);
+        stateView.bind(stateViewModel);
+        wireMarkerDraftEvents(stateView, stateViewModel);
+        stateViewModel.applySnapshot(beforeToolRefresh);
         TextField markerName = markerNameField(stateView);
         ComboBox<String> markerType = markerTypeSelector(stateView);
         TextArea markerNote = markerNoteArea(stateView);
         markerName.setText("Draft Shrine");
         selectMarkerType(markerType, "DANGER");
         markerNote.setText("Draft danger note");
-        stateContentModel.applySnapshot(afterToolRefresh);
+        stateViewModel.applySnapshot(afterToolRefresh);
         assertEquals("Draft Shrine", markerName.getText(),
                 "HEX-TRAVEL-007 state preserves marker name draft across tool refresh");
         assertEquals("DANGER", markerTypeKey(markerType.getValue()),
@@ -389,33 +388,34 @@ public final class HexMapEditorBehaviorHarness {
         assertEquals("Draft danger note", markerNote.getText(),
                 "HEX-TRAVEL-007 state preserves marker note draft across tool refresh");
 
-        HexMapControlsContentModel controlsContentModel = new HexMapControlsContentModel();
+        HexMapViewModel controlsViewModel = new HexMapViewModel();
         HexMapControlsView controlsView = new HexMapControlsView();
-        controlsView.bind(controlsContentModel);
-        controlsContentModel.applySnapshot(afterToolRefresh);
+        controlsView.bind(controlsViewModel);
+        controlsViewModel.applySnapshot(afterToolRefresh);
         assertTrue(reisegruppeToolButton(controlsView).isSelected(),
                 "HEX-TRAVEL-007 Reisegruppe tool selected after refresh");
     }
 
     private static void wireMarkerDraftEvents(
             HexMapStateView stateView,
-            HexMapStateContentModel stateContentModel
+            HexMapViewModel viewModel
     ) {
         stateView.onViewInputEvent(event -> {
-            long markerId = stateContentModel.resolvedMarkerId(event.markerOptionIndex());
-            String markerName = stateContentModel.resolvedMarkerName(
+            HexMapStateContentModel state = viewModel.stateContentModel();
+            long markerId = state.resolvedMarkerId(event.markerOptionIndex());
+            String markerName = state.resolvedMarkerName(
                     event.markerOptionIndex(),
                     event.markerName(),
                     event.markerSelectionRequested());
-            String markerTypeKey = stateContentModel.resolvedMarkerTypeKey(
+            String markerTypeKey = state.resolvedMarkerTypeKey(
                     event.markerOptionIndex(),
                     event.markerTypeOptionIndex(),
                     event.markerSelectionRequested());
-            String markerNote = stateContentModel.resolvedMarkerNote(
+            String markerNote = state.resolvedMarkerNote(
                     event.markerOptionIndex(),
                     event.markerNote(),
                     event.markerSelectionRequested());
-            stateContentModel.updateMarkerDraft(
+            state.updateMarkerDraft(
                     markerId,
                     markerName,
                     markerTypeKey,
@@ -428,26 +428,16 @@ public final class HexMapEditorBehaviorHarness {
             HexEditorSnapshot snapshot,
             int proofRadius
     ) {
-        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
-        HexMapMainContentModel mainModel = new HexMapMainContentModel();
-        HexMapStateContentModel stateModel = new HexMapStateContentModel();
-        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
-        contributionModel.applySnapshot(snapshot);
+        HexMapViewModel viewModel = viewModel(snapshot);
         HexMapStateView view = new HexMapStateView();
         AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
         view.onViewInputEvent(emitted::set);
-        view.bind(stateModel);
+        view.bind(viewModel);
         Spinner<Integer> radiusSpinner = radiusSpinner(view);
         radiusSpinner.getValueFactory().setValue(proofRadius);
         mapSaveButton(view).fire();
 
-        HexMapIntentHandler handler = new HexMapIntentHandler(
-                runtime.editor(),
-                runtime.hexTravel(),
-                contributionModel,
-                controlsModel,
-                stateModel,
-                new CatalogCrudControlsContentModel());
+        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
         handler.consume(requiredEvent(emitted, "HEX-EDITOR-002 expected radius state event."));
         assertEquals(proofRadius, selectedMap(runtime.current()).radius(),
                 "HEX-EDITOR-002 state pane accepts radius above old UI cap");
@@ -464,25 +454,15 @@ public final class HexMapEditorBehaviorHarness {
     ) {
         long mapId = selectedMapId(snapshot).value();
         String persistedName = selectedMap(snapshot).displayName();
-        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
-        HexMapMainContentModel mainModel = new HexMapMainContentModel();
-        HexMapStateContentModel stateModel = new HexMapStateContentModel();
-        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
-        contributionModel.applySnapshot(snapshot);
+        HexMapViewModel viewModel = viewModel(snapshot);
         HexMapStateView view = new HexMapStateView();
         AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
         view.onViewInputEvent(emitted::set);
-        view.bind(stateModel);
+        view.bind(viewModel);
         mapNameField(view).setText("Save Failure Draft");
         mapSaveButton(view).fire();
 
-        HexMapIntentHandler handler = new HexMapIntentHandler(
-                runtime.editor(),
-                runtime.hexTravel(),
-                contributionModel,
-                controlsModel,
-                stateModel,
-                new CatalogCrudControlsContentModel());
+        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
         runtime.database().installFailingMapUpdateTrigger();
         try {
             handler.consume(requiredEvent(emitted, "HEX-EDITOR-013 expected map save state event."));
@@ -491,7 +471,7 @@ public final class HexMapEditorBehaviorHarness {
                     "HEX-EDITOR-013 save failure published through snapshot");
             assertEquals(persistedName, runtime.database().mapName(mapId),
                     "HEX-EDITOR-013 failed save leaves persisted map name unchanged");
-            contributionModel.applySnapshot(failed);
+            viewModel.applySnapshot(failed);
             assertVisibleLabelContains(view, "Failed to save Hex map to SQLite",
                     "HEX-EDITOR-013 save failure visible in state pane");
         } finally {
@@ -500,19 +480,8 @@ public final class HexMapEditorBehaviorHarness {
     }
 
     private static void activateEditorThroughIntentHandler(RuntimeSurface runtime) {
-        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
-        HexMapMainContentModel mainModel = new HexMapMainContentModel();
-        HexMapStateContentModel stateModel = new HexMapStateContentModel();
-        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
-        contributionModel.applySnapshot(runtime.current());
-        contributionModel.applyTravelSnapshot(runtime.travel().current());
-        HexMapIntentHandler handler = new HexMapIntentHandler(
-                runtime.editor(),
-                runtime.hexTravel(),
-                contributionModel,
-                controlsModel,
-                stateModel,
-                new CatalogCrudControlsContentModel());
+        HexMapViewModel viewModel = viewModel(runtime.current(), runtime.travel().current());
+        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
         handler.activateEditor();
     }
 
@@ -564,18 +533,7 @@ public final class HexMapEditorBehaviorHarness {
         long targetMapId = selectedMapId(runtime.current()).value();
         runtime.editor().selectMap(new SelectHexMapCommand(currentMapId));
         HexEditorSnapshot snapshot = runtime.current();
-        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
-        HexMapMainContentModel mainModel = new HexMapMainContentModel();
-        HexMapStateContentModel stateModel = new HexMapStateContentModel();
-        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
-        contributionModel.applySnapshot(snapshot);
-        HexMapIntentHandler handler = new HexMapIntentHandler(
-                runtime.editor(),
-                runtime.hexTravel(),
-                contributionModel,
-                controlsModel,
-                stateModel,
-                new CatalogCrudControlsContentModel());
+        HexMapIntentHandler handler = intentHandler(runtime, viewModel(snapshot));
         handler.consume(new src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent(
                 "",
                 "",
@@ -610,15 +568,11 @@ public final class HexMapEditorBehaviorHarness {
             HexEditorSnapshot snapshot
     ) {
         long mapId = selectedMapId(snapshot).value();
-        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
-        HexMapMainContentModel mainModel = new HexMapMainContentModel();
-        HexMapStateContentModel stateModel = new HexMapStateContentModel();
-        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
+        HexMapViewModel viewModel = viewModel(snapshot);
         HexMapStateView view = new HexMapStateView();
         AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
         view.onViewInputEvent(emitted::set);
-        view.bind(stateModel);
-        stateModel.applySnapshot(snapshot);
+        view.bind(viewModel);
         TextField markerName = markerNameField(view);
         ComboBox<String> markerType = markerTypeSelector(view);
         TextArea markerNote = markerNoteArea(view);
@@ -635,13 +589,7 @@ public final class HexMapEditorBehaviorHarness {
         assertTrue(!event.saveMarkerRequested(), "HEX-EDITOR-008 map save must not request marker save");
         assertEquals(1L, runtime.database().markerCount(mapId), "HEX-EDITOR-008 marker count before handler");
 
-        HexMapIntentHandler handler = new HexMapIntentHandler(
-                runtime.editor(),
-                runtime.hexTravel(),
-                contributionModel,
-                controlsModel,
-                stateModel,
-                new CatalogCrudControlsContentModel());
+        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
         handler.consume(event);
         assertEquals(1L, runtime.database().markerCount(mapId),
                 "HEX-EDITOR-008 map save does not persist marker draft");
@@ -652,15 +600,11 @@ public final class HexMapEditorBehaviorHarness {
             HexEditorSnapshot snapshot
     ) {
         long mapId = selectedMapId(snapshot).value();
-        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
-        HexMapMainContentModel mainModel = new HexMapMainContentModel();
-        HexMapStateContentModel stateModel = new HexMapStateContentModel();
-        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
+        HexMapViewModel viewModel = viewModel(snapshot);
         HexMapStateView view = new HexMapStateView();
         AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
         view.onViewInputEvent(emitted::set);
-        view.bind(stateModel);
-        stateModel.applySnapshot(snapshot);
+        view.bind(viewModel);
         mapNameField(view).setText("Incidental Map Draft");
         TextField markerName = markerNameField(view);
         ComboBox<String> markerType = markerTypeSelector(view);
@@ -677,13 +621,7 @@ public final class HexMapEditorBehaviorHarness {
         assertTrue(event.saveMarkerRequested(), "HEX-EDITOR-009 marker save requests marker save");
         assertTrue(!event.updateMapRequested(), "HEX-EDITOR-009 marker save must not request map update");
 
-        HexMapIntentHandler handler = new HexMapIntentHandler(
-                runtime.editor(),
-                runtime.hexTravel(),
-                contributionModel,
-                controlsModel,
-                stateModel,
-                new CatalogCrudControlsContentModel());
+        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
         handler.consume(event);
         HexEditorSnapshot afterMarkerSave = runtime.current();
         assertEquals(UPDATED_NAME, selectedMap(afterMarkerSave).displayName(),
@@ -698,19 +636,8 @@ public final class HexMapEditorBehaviorHarness {
             HexEditorSnapshot snapshot,
             HexTravelSnapshot travel
     ) {
-        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
-        HexMapMainContentModel mainModel = new HexMapMainContentModel();
-        HexMapStateContentModel stateModel = new HexMapStateContentModel();
-        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
-        contributionModel.applySnapshot(snapshot);
-        contributionModel.applyTravelSnapshot(travel);
-        HexMapIntentHandler handler = new HexMapIntentHandler(
-                runtime.editor(),
-                runtime.hexTravel(),
-                contributionModel,
-                controlsModel,
-                stateModel,
-                new CatalogCrudControlsContentModel());
+        HexMapViewModel viewModel = viewModel(snapshot, travel);
+        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
         handler.consume(new HexMapMainViewInputEvent(
                 selectedMapId(snapshot).value(),
                 0,
@@ -727,16 +654,16 @@ public final class HexMapEditorBehaviorHarness {
             HexEditorSnapshot snapshot,
             HexTravelSnapshot travel
     ) {
-        HexMapMainContentModel contentModel = new HexMapMainContentModel();
+        HexMapViewModel viewModel = new HexMapViewModel();
         HexMapMainView view = new HexMapMainView();
-        view.bind(contentModel);
-        contentModel.applySnapshot(snapshot);
+        view.bind(viewModel);
+        viewModel.applySnapshot(snapshot);
         Canvas tileCanvas = tileCanvas(view);
         long beforeTravelDraws = tileDrawCount(tileCanvas);
-        contentModel.applyTravelSnapshot(travel);
+        viewModel.applyTravelSnapshot(travel);
         assertEquals(beforeTravelDraws, tileDrawCount(tileCanvas),
                 "HEX-TRAVEL-005 first travel overlay update does not redraw tiles");
-        contentModel.applyTravelSnapshot(new HexTravelSnapshot(
+        viewModel.applyTravelSnapshot(new HexTravelSnapshot(
                 true,
                 selectedMapId(snapshot).value(),
                 0,
@@ -753,10 +680,10 @@ public final class HexMapEditorBehaviorHarness {
     }
 
     private static void assertMainViewUsesToolLabel(HexEditorSnapshot snapshot) {
-        HexMapMainContentModel contentModel = new HexMapMainContentModel();
+        HexMapViewModel viewModel = new HexMapViewModel();
         HexMapMainView view = new HexMapMainView();
-        view.bind(contentModel);
-        contentModel.applySnapshot(snapshot);
+        view.bind(viewModel);
+        viewModel.applySnapshot(snapshot);
         List<String> labels = labels(view).stream()
                 .map(Label::getText)
                 .toList();
@@ -777,15 +704,14 @@ public final class HexMapEditorBehaviorHarness {
                 "Oversized loaded.",
                 "",
                 "");
-        HexMapMainContentModel model = new HexMapMainContentModel();
-        model.applySnapshot(oversized);
-        assertTrue(!model.projectionProperty().get().mapLoaded(),
+        HexMapViewModel viewModel = viewModel(oversized);
+        assertTrue(!viewModel.mainContentModel().projectionProperty().get().mapLoaded(),
                 "HEX-TRAVEL-008 oversized map hides Canvas projection");
-        assertContains(model.projectionProperty().get().emptyText(), "zu gross",
+        assertContains(viewModel.mainContentModel().projectionProperty().get().emptyText(), "zu gross",
                 "HEX-TRAVEL-008 oversized map explains render cap");
-        assertEquals(0, model.tileLayerProperty().get().tiles().size(),
+        assertEquals(0, viewModel.mainContentModel().tileLayerProperty().get().tiles().size(),
                 "HEX-TRAVEL-008 oversized map does not project rendered tiles");
-        assertEquals(0, model.tileLayerProperty().get().hits().size(),
+        assertEquals(0, viewModel.mainContentModel().tileLayerProperty().get().hits().size(),
                 "HEX-TRAVEL-008 oversized map does not project hit data");
     }
 
@@ -1243,19 +1169,14 @@ public final class HexMapEditorBehaviorHarness {
     }
 
     private static HexMapMainContentModel.Projection mainProjection(HexEditorSnapshot snapshot) {
-        HexMapMainContentModel model = new HexMapMainContentModel();
-        model.applySnapshot(snapshot);
-        return model.projectionProperty().get();
+        return viewModel(snapshot).mainContentModel().projectionProperty().get();
     }
 
     private static HexMapMainContentModel.Projection mainProjection(
             HexEditorSnapshot snapshot,
             HexTravelSnapshot travel
     ) {
-        HexMapMainContentModel model = new HexMapMainContentModel();
-        model.applySnapshot(snapshot);
-        model.applyTravelSnapshot(travel);
-        return model.projectionProperty().get();
+        return viewModel(snapshot, travel).mainContentModel().projectionProperty().get();
     }
 
     private static HexMapMainContentModel.TileItem mainTileProjection(
@@ -1263,28 +1184,40 @@ public final class HexMapEditorBehaviorHarness {
             int q,
             int r
     ) {
-        HexMapMainContentModel model = new HexMapMainContentModel();
-        model.applySnapshot(snapshot);
-        return model.tileLayerProperty().get().tiles().stream()
+        return viewModel(snapshot).mainContentModel().tileLayerProperty().get().tiles().stream()
                 .filter(candidate -> candidate.q() == q && candidate.r() == r)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Expected projected Hex tile " + q + "," + r + "."));
     }
 
     private static HexMapStateContentModel.Projection stateProjection(HexEditorSnapshot snapshot) {
-        HexMapStateContentModel model = new HexMapStateContentModel();
-        model.applySnapshot(snapshot);
-        return model.projectionProperty().get();
+        return viewModel(snapshot).stateContentModel().currentProjection();
     }
 
     private static HexMapStateContentModel.Projection stateProjection(
             HexEditorSnapshot snapshot,
             HexTravelSnapshot travel
     ) {
-        HexMapStateContentModel model = new HexMapStateContentModel();
-        model.applySnapshot(snapshot);
-        model.applyTravelSnapshot(travel);
-        return model.projectionProperty().get();
+        return viewModel(snapshot, travel).stateContentModel().currentProjection();
+    }
+
+    private static HexMapViewModel viewModel(HexEditorSnapshot snapshot) {
+        HexMapViewModel viewModel = new HexMapViewModel();
+        viewModel.applySnapshot(snapshot);
+        return viewModel;
+    }
+
+    private static HexMapViewModel viewModel(
+            HexEditorSnapshot snapshot,
+            HexTravelSnapshot travel
+    ) {
+        HexMapViewModel viewModel = viewModel(snapshot);
+        viewModel.applyTravelSnapshot(travel);
+        return viewModel;
+    }
+
+    private static HexMapIntentHandler intentHandler(RuntimeSurface runtime, HexMapViewModel viewModel) {
+        return new HexMapIntentHandler(runtime.editor(), runtime.hexTravel(), viewModel);
     }
 
     private static void assertContains(String actual, String expectedFragment, String message) {

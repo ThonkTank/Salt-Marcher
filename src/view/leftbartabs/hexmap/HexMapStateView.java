@@ -87,6 +87,12 @@ public final class HexMapStateView extends VBox {
         contentModel.markerDraftProperty().addListener((ignored, before, after) -> showMarkerDraft(after));
     }
 
+    void bind(HexMapViewModel viewModel) {
+        if (viewModel != null) {
+            bind(viewModel.stateContentModel());
+        }
+    }
+
     public void onViewInputEvent(Consumer<HexMapStateViewInputEvent> consumer) {
         eventConsumer = consumer == null ? ignored -> { } : consumer;
     }

@@ -41,6 +41,12 @@ public final class HexMapControlsView extends VBox {
                 show(after, updating, toolGroup, toolButtons, terrainSelector));
     }
 
+    void bind(HexMapViewModel viewModel) {
+        if (viewModel != null) {
+            bind(viewModel.controlsContentModel());
+        }
+    }
+
     public void onViewInputEvent(Consumer<HexMapControlsViewInputEvent> consumer) {
         eventConsumer = consumer == null ? ignored -> { } : consumer;
     }
