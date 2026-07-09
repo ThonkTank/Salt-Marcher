@@ -1,7 +1,9 @@
 package src.view.leftbartabs.sessionplanner;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import org.jspecify.annotations.Nullable;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
 import src.domain.sessionplanner.SessionPlannerEncounterApplicationService;
@@ -27,23 +29,6 @@ import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEve
 final class SessionPlannerIntentHandler {
 
     private static final BigDecimal ALLOCATION_STEP = BigDecimal.TEN;
-    private static final String WIDGET_SCENE_SELECT = "session-planner.timeline.scene.select";
-    private static final String WIDGET_ALLOCATION_DECREASE = "session-planner.timeline.allocation.decrease";
-    private static final String WIDGET_ALLOCATION_INCREASE = "session-planner.timeline.allocation.increase";
-    private static final String WIDGET_SCENE_MOVE_UP = "session-planner.timeline.scene.move-up";
-    private static final String WIDGET_SCENE_MOVE_DOWN = "session-planner.timeline.scene.move-down";
-    private static final String WIDGET_SCENE_REMOVE = "session-planner.timeline.scene.remove";
-    private static final String WIDGET_REST_SHORT = "session-planner.timeline.rest.short";
-    private static final String WIDGET_REST_LONG = "session-planner.timeline.rest.long";
-    private static final String WIDGET_REST_CLEAR = "session-planner.timeline.rest.clear";
-    private static final String WIDGET_LOOT_ADD = "session-planner.timeline.loot.add";
-    private static final String WIDGET_LOOT_REMOVE = "session-planner.timeline.loot.remove";
-    private static final String WIDGET_SCENE_SAVE = "session-planner.timeline.scene.save";
-    private static final String WIDGET_SCENE_DRAFT = "session-planner.timeline.scene.draft";
-    private static final String WIDGET_PARTICIPANT_ADD = "session-planner.timeline.participant.add";
-    private static final String WIDGET_PARTICIPANT_REMOVE = "session-planner.timeline.participant.remove";
-    private static final String WIDGET_ENCOUNTER_DAYS = "session-planner.timeline.encounter-days.apply";
-    private static final String WIDGET_SCENE_ADD = "session-planner.timeline.scene.add";
 
     private final SessionPlannerApplicationService planner;
     private final SessionPlannerParticipantApplicationService participants;
@@ -53,6 +38,7 @@ final class SessionPlannerIntentHandler {
     private final SessionPlannerControlsContentModel controlsContentModel;
     private final CatalogCrudControlsContentModel catalogContentModel;
     private final SessionPlannerTimelineMainContentModel timelineMainContentModel;
+    private final Map<String, Consumer<SessionPlannerTimelineMainViewInputEvent>> timelineActions;
 
     SessionPlannerIntentHandler(
             SessionPlannerApplicationService planner,
@@ -72,6 +58,7 @@ final class SessionPlannerIntentHandler {
         this.controlsContentModel = Objects.requireNonNull(controlsContentModel, "controlsContentModel");
         this.catalogContentModel = Objects.requireNonNull(catalogContentModel, "catalogContentModel");
         this.timelineMainContentModel = Objects.requireNonNull(timelineMainContentModel, "timelineMainContentModel");
+        this.timelineActions = timelineActions();
     }
 
     void consume(SessionPlannerControlsViewInputEvent event) {
@@ -87,27 +74,37 @@ final class SessionPlannerIntentHandler {
         if (event == null || !controlsContentModel.hasCurrentSession()) {
             return;
         }
-        switch (event.widgetId()) {
-            case WIDGET_SCENE_SELECT -> selectTimelineScene(event);
-            case WIDGET_ALLOCATION_DECREASE -> adjustTimelineAllocation(event, ALLOCATION_STEP.negate());
-            case WIDGET_ALLOCATION_INCREASE -> adjustTimelineAllocation(event, ALLOCATION_STEP);
-            case WIDGET_SCENE_MOVE_UP -> moveTimelineSceneUp(event);
-            case WIDGET_SCENE_MOVE_DOWN -> moveTimelineSceneDown(event);
-            case WIDGET_SCENE_REMOVE -> removeTimelineScene(event);
-            case WIDGET_REST_SHORT -> setTimelineRest(event, SessionPlannerRestKind.SHORT_REST);
-            case WIDGET_REST_LONG -> setTimelineRest(event, SessionPlannerRestKind.LONG_REST);
-            case WIDGET_REST_CLEAR -> clearTimelineRest(event);
-            case WIDGET_LOOT_ADD -> addTimelineLoot(event);
-            case WIDGET_LOOT_REMOVE -> removeTimelineLoot(event);
-            case WIDGET_SCENE_SAVE -> saveTimelineScene(event);
-            case WIDGET_SCENE_DRAFT -> updateTimelineSceneDraft(event);
-            case WIDGET_PARTICIPANT_ADD -> addTimelineParticipant(event);
-            case WIDGET_PARTICIPANT_REMOVE -> removeTimelineParticipant(event);
-            case WIDGET_ENCOUNTER_DAYS -> applyTimelineEncounterDays(event);
-            case WIDGET_SCENE_ADD -> addScene();
-            default -> {
-            }
+        Consumer<SessionPlannerTimelineMainViewInputEvent> action = timelineActions.get(event.widgetId());
+        if (action != null) {
+            action.accept(event);
         }
+    }
+
+    private Map<String, Consumer<SessionPlannerTimelineMainViewInputEvent>> timelineActions() {
+        return Map.ofEntries(
+                Map.entry("session-planner.timeline.scene.select", this::selectTimelineScene),
+                Map.entry("session-planner.timeline.allocation.decrease",
+                        event -> adjustTimelineAllocation(event, ALLOCATION_STEP.negate())),
+                Map.entry("session-planner.timeline.allocation.increase",
+                        event -> adjustTimelineAllocation(event, ALLOCATION_STEP)),
+                Map.entry("session-planner.timeline.scene.move-up", this::moveTimelineSceneUp),
+                Map.entry("session-planner.timeline.scene.move-down", this::moveTimelineSceneDown),
+                Map.entry("session-planner.timeline.scene.remove", this::removeTimelineScene),
+                Map.entry("session-planner.timeline.rest.short",
+                        event -> setTimelineRest(event, SessionPlannerRestKind.SHORT_REST)),
+                Map.entry("session-planner.timeline.rest.long",
+                        event -> setTimelineRest(event, SessionPlannerRestKind.LONG_REST)),
+                Map.entry("session-planner.timeline.rest.clear", this::clearTimelineRest),
+                Map.entry("session-planner.timeline.loot.add", this::addTimelineLoot),
+                Map.entry("session-planner.timeline.loot.remove", this::removeTimelineLoot),
+                Map.entry("session-planner.timeline.scene.save", this::saveTimelineScene),
+                Map.entry("session-planner.timeline.scene.draft", this::updateTimelineSceneDraft),
+                Map.entry("session-planner.timeline.participant.add", this::addTimelineParticipant),
+                Map.entry("session-planner.timeline.participant.remove",
+                        this::removeTimelineParticipant),
+                Map.entry("session-planner.timeline.encounter-days.apply",
+                        this::applyTimelineEncounterDays),
+                Map.entry("session-planner.timeline.scene.add", ignored -> addScene()));
     }
 
     private void selectTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {

@@ -87,7 +87,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         Button addScene = actionButton(
                 "Szene hinzufuegen",
                 WIDGET_SCENE_ADD,
-                event -> rawPublish(event),
+                this::rawPublish,
                 STYLE_ACCENT);
         addScene.setDisable(projection.setup().sessionActionsDisabled());
         addNode(rows, addScene);
@@ -338,19 +338,63 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private void rawPublish(ActionEvent event) {
-        rawPublish(rawWidgetId(event), 0L, 0L, 0L, 0L, 0L, -1, "", "", "", 0L);
+        publish(new SessionPlannerTimelineMainViewInputEvent(
+                rawWidgetId(event),
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                -1,
+                "",
+                "",
+                "",
+                0L));
     }
 
     private void rawPublishScene(ActionEvent event, long sceneToken) {
-        rawPublish(rawWidgetId(event), sceneToken, 0L, 0L, 0L, 0L, -1, "", "", "", 0L);
+        publish(new SessionPlannerTimelineMainViewInputEvent(
+                rawWidgetId(event),
+                sceneToken,
+                0L,
+                0L,
+                0L,
+                0L,
+                -1,
+                "",
+                "",
+                "",
+                0L));
     }
 
     private void rawPublishRestGap(ActionEvent event, long leftSceneToken, long rightSceneToken) {
-        rawPublish(rawWidgetId(event), 0L, leftSceneToken, rightSceneToken, 0L, 0L, -1, "", "", "", 0L);
+        publish(new SessionPlannerTimelineMainViewInputEvent(
+                rawWidgetId(event),
+                0L,
+                leftSceneToken,
+                rightSceneToken,
+                0L,
+                0L,
+                -1,
+                "",
+                "",
+                "",
+                0L));
     }
 
     private void rawPublishLoot(ActionEvent event, long lootToken) {
-        rawPublish(rawWidgetId(event), 0L, 0L, 0L, lootToken, 0L, -1, "", "", "", 0L);
+        publish(new SessionPlannerTimelineMainViewInputEvent(
+                rawWidgetId(event),
+                0L,
+                0L,
+                0L,
+                lootToken,
+                0L,
+                -1,
+                "",
+                "",
+                "",
+                0L));
     }
 
     private void rawPublishSceneText(
@@ -360,15 +404,37 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             String sceneNotes,
             long locationId
     ) {
-        rawPublish(rawWidgetId(event), sceneToken, 0L, 0L, 0L, 0L, -1, "", sceneTitle, sceneNotes, locationId);
+        publish(new SessionPlannerTimelineMainViewInputEvent(
+                rawWidgetId(event),
+                sceneToken,
+                0L,
+                0L,
+                0L,
+                0L,
+                -1,
+                "",
+                sceneTitle,
+                sceneNotes,
+                locationId));
     }
 
     private void rawPublishSceneDraft(long sceneToken, String sceneTitle, String sceneNotes, long locationId) {
-        rawPublish(WIDGET_SCENE_DRAFT, sceneToken, 0L, 0L, 0L, 0L, -1, "", sceneTitle, sceneNotes, locationId);
+        publish(new SessionPlannerTimelineMainViewInputEvent(
+                WIDGET_SCENE_DRAFT,
+                sceneToken,
+                0L,
+                0L,
+                0L,
+                0L,
+                -1,
+                "",
+                sceneTitle,
+                sceneNotes,
+                locationId));
     }
 
     private void rawPublishParticipantAdd(ActionEvent event, ComboBox<String> participantSelector) {
-        rawPublish(
+        publish(new SessionPlannerTimelineMainViewInputEvent(
                 rawWidgetId(event),
                 0L,
                 0L,
@@ -379,42 +445,37 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 "",
                 "",
                 "",
-                0L);
+                0L));
     }
 
     private void rawPublishParticipantRemove(ActionEvent event, long participantId) {
-        rawPublish(rawWidgetId(event), 0L, 0L, 0L, 0L, participantId, -1, "", "", "", 0L);
+        publish(new SessionPlannerTimelineMainViewInputEvent(
+                rawWidgetId(event),
+                0L,
+                0L,
+                0L,
+                0L,
+                participantId,
+                -1,
+                "",
+                "",
+                "",
+                0L));
     }
 
     private void rawPublishEncounterDays(ActionEvent event, String encounterDays) {
-        rawPublish(rawWidgetId(event), 0L, 0L, 0L, 0L, 0L, -1, encounterDays, "", "", 0L);
-    }
-
-    private void rawPublish(
-            String widgetId,
-            long sceneToken,
-            long leftSceneToken,
-            long rightSceneToken,
-            long lootToken,
-            long participantId,
-            int participantChoiceIndex,
-            String encounterDaysText,
-            String sceneTitleText,
-            String sceneNotesText,
-            long locationId
-    ) {
         publish(new SessionPlannerTimelineMainViewInputEvent(
-                widgetId,
-                sceneToken,
-                leftSceneToken,
-                rightSceneToken,
-                lootToken,
-                participantId,
-                participantChoiceIndex,
-                encounterDaysText,
-                sceneTitleText,
-                sceneNotesText,
-                locationId));
+                rawWidgetId(event),
+                0L,
+                0L,
+                0L,
+                0L,
+                0L,
+                -1,
+                encounterDays,
+                "",
+                "",
+                0L));
     }
 
     private String rawWidgetId(ActionEvent event) {
