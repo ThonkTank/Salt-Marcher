@@ -17,16 +17,16 @@ import src.domain.hex.published.HexEditorSnapshot;
 import src.domain.hex.published.HexMapId;
 import src.domain.hex.published.HexMarkerId;
 
-final class HexEditorSnapshotProjectionServiceAssembly {
+final class HexEditorSnapshotProjection {
 
-    private HexEditorSnapshotProjectionServiceAssembly() {
+    private HexEditorSnapshotProjection() {
     }
 
     static HexEditorSnapshot project(HexEditorState state) {
         Optional<HexMap> selectedMap = state.selectedMap();
         if (selectedMap.isEmpty()) {
             return new HexEditorSnapshot(
-                    state.catalog().stream().map(HexEditorSnapshotProjectionServiceAssembly::summary).toList(),
+                    state.catalog().stream().map(HexEditorSnapshotProjection::summary).toList(),
                     Optional.empty(),
                     List.of(),
                     Optional.empty(),
@@ -41,7 +41,7 @@ final class HexEditorSnapshotProjectionServiceAssembly {
         Map<HexCoordinate, List<HexEditorSnapshot.MarkerSnapshot>> markersByCoordinate =
                 markerSnapshotsByCoordinate(map);
         return new HexEditorSnapshot(
-                state.catalog().stream().map(HexEditorSnapshotProjectionServiceAssembly::summary).toList(),
+                state.catalog().stream().map(HexEditorSnapshotProjection::summary).toList(),
                 Optional.of(mapSnapshot(map, coordinates.size())),
                 tiles(map, state.selectedTile(), coordinates, markersByCoordinate),
                 selectedTile(map, state.selectedTile(), markersByCoordinate),

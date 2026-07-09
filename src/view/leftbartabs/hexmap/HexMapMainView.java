@@ -12,6 +12,8 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
+import src.domain.hex.model.map.HexEditorMode;
+import src.domain.hex.model.map.HexTerrain;
 
 public final class HexMapMainView extends ScrollPane {
 
@@ -30,6 +32,7 @@ public final class HexMapMainView extends ScrollPane {
     private static final String KEY_ACTIVE_TOOL = "hex.activeTool";
     private static final String KEY_ACTIVE_TERRAIN = "hex.activeTerrain";
     private static final String KEY_HITS = "hex.hits";
+    private static final String PMD_LAW_OF_DEMETER = "PMD.LawOfDemeter";
     static final String KEY_TILE_DRAW_COUNT = "hex.tileDrawCount";
     private static final int HIT_Q = 0;
     private static final int HIT_R = 1;
@@ -47,7 +50,7 @@ public final class HexMapMainView extends ScrollPane {
     private final StackPane canvasLayer = new StackPane();
     private final Canvas tileCanvas = new Canvas();
     private final Canvas partyCanvas = new Canvas();
-    private Consumer<HexMapMainViewInputEvent> eventConsumer = ignored -> { };
+    private Consumer<TileAction> tileConsumer = ignored -> { };
 
     public HexMapMainView() {
         getStyleClass().addAll("surface-root", "hex-map-scroll");
@@ -62,35 +65,29 @@ public final class HexMapMainView extends ScrollPane {
         setHbarPolicy(ScrollBarPolicy.AS_NEEDED);
     }
 
-    public void bind(HexMapMainContentModel contentModel) {
-        if (contentModel == null) {
+    void bind(HexMapViewModel viewModel) {
+        if (viewModel == null) {
             return;
         }
-        show(contentModel.projectionProperty().get());
-        drawTileLayer(contentModel.tileLayerProperty().get());
-        drawPartyLayer(contentModel.partyTokenProperty().get());
-        contentModel.projectionProperty().addListener((ignored, before, after) -> show(after));
-        contentModel.tileLayerProperty().addListener((ignored, before, after) -> drawTileLayer(after));
-        contentModel.partyTokenProperty().addListener((ignored, before, after) -> drawPartyLayer(after));
+        show(viewModel.properties().main().get());
+        drawTileLayer(viewModel.properties().tileLayer().get());
+        drawPartyLayer(viewModel.properties().partyToken().get());
+        viewModel.properties().main().addListener((ignored, before, after) -> show(after));
+        viewModel.properties().tileLayer().addListener((ignored, before, after) -> drawTileLayer(after));
+        viewModel.properties().partyToken().addListener((ignored, before, after) -> drawPartyLayer(after));
     }
 
-    void bind(HexMapViewModel viewModel) {
-        if (viewModel != null) {
-            bind(viewModel.mainContentModel());
-        }
+    void onTileAction(Consumer<TileAction> consumer) {
+        tileConsumer = consumer == null ? ignored -> { } : consumer;
     }
 
-    public void onViewInputEvent(Consumer<HexMapMainViewInputEvent> consumer) {
-        eventConsumer = consumer == null ? ignored -> { } : consumer;
-    }
-
-    private void show(HexMapMainContentModel.Projection projection) {
+    private void show(HexMapViewModel.MainProjection projection) {
         if (projection == null) {
             return;
         }
         tileCanvas.getProperties().put(KEY_MAP_ID, projection.selectedMapId());
-        tileCanvas.getProperties().put(KEY_ACTIVE_TOOL, projection.activeToolKey());
-        tileCanvas.getProperties().put(KEY_ACTIVE_TERRAIN, projection.activeTerrainKey());
+        tileCanvas.getProperties().put(KEY_ACTIVE_TOOL, projection.activeTool());
+        tileCanvas.getProperties().put(KEY_ACTIVE_TERRAIN, projection.activeTerrain());
         titleLabel.setText(projection.title());
         subtitleLabel.setText(projection.subtitle());
         statusLabel.setText(projection.status());
@@ -109,7 +106,7 @@ public final class HexMapMainView extends ScrollPane {
         return header;
     }
 
-    private void drawTileLayer(HexMapMainContentModel.TileLayer tileLayer) {
+    private void drawTileLayer(HexMapViewModel.TileLayer tileLayer) {
         if (tileLayer == null) {
             return;
         }
@@ -128,7 +125,7 @@ public final class HexMapMainView extends ScrollPane {
         tileCanvas.getProperties().put(KEY_TILE_DRAW_COUNT, nextDrawCount);
     }
 
-    private void drawPartyLayer(HexMapMainContentModel.PartyTokenItem partyToken) {
+    private void drawPartyLayer(HexMapViewModel.PartyTokenItem partyToken) {
         drawPartyLayer(
                 partyCanvas.getGraphicsContext2D(),
                 partyCanvas.getWidth(),
@@ -140,10 +137,10 @@ public final class HexMapMainView extends ScrollPane {
             GraphicsContext graphics,
             double canvasWidth,
             double canvasHeight,
-            List<HexMapMainContentModel.TileItem> tiles
+            List<HexMapViewModel.TileItem> tiles
     ) {
         graphics.clearRect(0, 0, canvasWidth, canvasHeight);
-        for (HexMapMainContentModel.TileItem tile : tiles) {
+        for (HexMapViewModel.TileItem tile : tiles) {
             drawTile(graphics, tile);
         }
     }
@@ -152,14 +149,14 @@ public final class HexMapMainView extends ScrollPane {
             GraphicsContext graphics,
             double canvasWidth,
             double canvasHeight,
-            HexMapMainContentModel.PartyTokenItem partyToken
+            HexMapViewModel.PartyTokenItem partyToken
     ) {
         graphics.clearRect(0, 0, canvasWidth, canvasHeight);
         drawPartyToken(graphics, partyToken);
     }
 
-    private static void drawTile(GraphicsContext graphics, HexMapMainContentModel.TileItem tile) {
-        graphics.setFill(terrainColor(tile.terrainKey()));
+    private static void drawTile(GraphicsContext graphics, HexMapViewModel.TileItem tile) {
+        graphics.setFill(terrainColor(tile.terrain()));
         double[] xPoints = tile.rawXPoints();
         double[] yPoints = tile.rawYPoints();
         graphics.fillPolygon(xPoints, yPoints, 6);
@@ -176,7 +173,7 @@ public final class HexMapMainView extends ScrollPane {
 
     private static void drawPartyToken(
             GraphicsContext graphics,
-            HexMapMainContentModel.PartyTokenItem partyToken
+            HexMapViewModel.PartyTokenItem partyToken
     ) {
         if (partyToken != null && partyToken.active()) {
             graphics.setFill(COLOR_PARTY);
@@ -192,12 +189,12 @@ public final class HexMapMainView extends ScrollPane {
             return;
         }
         double[] hitData = hit.get();
-        eventConsumer.accept(new HexMapMainViewInputEvent(
+        tileConsumer.accept(new TileAction(
                 rawLongProperty(tileCanvas, KEY_MAP_ID),
                 (int) hitData[HIT_Q],
                 (int) hitData[HIT_R],
-                rawStringProperty(tileCanvas, KEY_ACTIVE_TOOL),
-                rawStringProperty(tileCanvas, KEY_ACTIVE_TERRAIN)));
+                rawToolProperty(tileCanvas),
+                rawTerrainProperty(tileCanvas)));
     }
 
     private Optional<double[]> rawHit(double x, double y) {
@@ -215,38 +212,47 @@ public final class HexMapMainView extends ScrollPane {
         return normalizedX + normalizedY * 0.75 <= 1.0;
     }
 
-    @SuppressWarnings({"unchecked", "PMD.LawOfDemeter"})
+    @SuppressWarnings({"unchecked", PMD_LAW_OF_DEMETER})
     private List<double[]> rawHits() {
         Object value = tileCanvas.getProperties().get(KEY_HITS);
         return value instanceof List<?> hits ? (List<double[]>) hits : List.of();
     }
 
-    private static Color terrainColor(String terrainKey) {
-        return switch (terrainKey == null ? "" : terrainKey.trim()) {
-            case "FOREST" -> COLOR_FOREST;
-            case "MOUNTAINS" -> COLOR_MOUNTAINS;
-            case "WATER" -> COLOR_WATER;
-            case "DESERT" -> COLOR_DESERT;
-            case "SWAMP" -> COLOR_SWAMP;
+    private static Color terrainColor(HexTerrain terrain) {
+        return switch (terrain == null ? HexTerrain.GRASSLAND : terrain) {
+            case FOREST -> COLOR_FOREST;
+            case MOUNTAINS -> COLOR_MOUNTAINS;
+            case WATER -> COLOR_WATER;
+            case DESERT -> COLOR_DESERT;
+            case SWAMP -> COLOR_SWAMP;
             default -> COLOR_GRASSLAND;
         };
     }
 
-    @SuppressWarnings("PMD.LawOfDemeter")
+    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private static long rawLongProperty(Node node, String key) {
         Object value = node.getProperties().get(key);
         return value instanceof Number number ? number.longValue() : 0L;
     }
 
-    @SuppressWarnings("PMD.LawOfDemeter")
-    private static String rawStringProperty(Node node, String key) {
-        Object value = node.getProperties().get(key);
-        return value instanceof String text ? text : "";
+    @SuppressWarnings(PMD_LAW_OF_DEMETER)
+    private static HexEditorMode rawToolProperty(Node node) {
+        Object value = node.getProperties().get(KEY_ACTIVE_TOOL);
+        return value instanceof HexEditorMode tool ? tool : HexEditorMode.SELECT;
+    }
+
+    @SuppressWarnings(PMD_LAW_OF_DEMETER)
+    private static HexTerrain rawTerrainProperty(Node node) {
+        Object value = node.getProperties().get(KEY_ACTIVE_TERRAIN);
+        return value instanceof HexTerrain terrain ? terrain : HexTerrain.GRASSLAND;
     }
 
     private static Label label(String text, String... styleClasses) {
         Label label = new Label(text);
         label.getStyleClass().addAll(styleClasses);
         return label;
+    }
+
+    record TileAction(long mapId, int q, int r, HexEditorMode activeTool, HexTerrain activeTerrain) {
     }
 }

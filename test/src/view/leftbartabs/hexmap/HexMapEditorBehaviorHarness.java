@@ -40,7 +40,10 @@ import shell.api.ShellSlot;
 import src.data.hex.model.HexPersistenceSchema;
 import src.domain.hex.HexEditorApplicationService;
 import src.domain.hex.HexTravelApplicationService;
+import src.domain.hex.model.map.HexEditorMode;
 import src.domain.hex.model.map.HexCoordinate;
+import src.domain.hex.model.map.HexMarkerKind;
+import src.domain.hex.model.map.HexTerrain;
 import src.domain.hex.published.CreateHexMapCommand;
 import src.domain.hex.published.HexEditorModel;
 import src.domain.hex.published.HexEditorSnapshot;
@@ -49,6 +52,7 @@ import src.domain.hex.published.HexTravelModel;
 import src.domain.hex.published.HexTravelSnapshot;
 import src.domain.hex.published.LoadHexEditorCommand;
 import src.domain.hex.published.PaintHexTerrainCommand;
+import src.domain.hex.published.RenameHexMapCommand;
 import src.domain.hex.published.SaveHexMarkerCommand;
 import src.domain.hex.published.SelectHexMapCommand;
 import src.domain.hex.published.SelectHexTileCommand;
@@ -62,6 +66,7 @@ import src.domain.party.published.MovePartyCharactersCommand;
 import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
+import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent;
 
 public final class HexMapEditorBehaviorHarness {
 
@@ -133,7 +138,7 @@ public final class HexMapEditorBehaviorHarness {
         HexEditorSnapshot painted = runtime.current();
         assertTileTerrain(painted, AUTHORED_Q, AUTHORED_R, AUTHORED_TERRAIN, "HEX-EDITOR-004 painted snapshot");
         assertEquals(
-                HexMapVocabularyContentPartModel.terrainLabel(AUTHORED_TERRAIN),
+                HexMapVocabulary.label(HexMapVocabulary.terrain(AUTHORED_TERRAIN)),
                 mainTileProjection(painted, AUTHORED_Q, AUTHORED_R).terrainLabel(),
                 "HEX-EDITOR-004 visible terrain label");
         assertEquals(1L, runtime.database().terrainOverrideCount(mapId.value()),
@@ -163,7 +168,7 @@ public final class HexMapEditorBehaviorHarness {
         assertEquals(AUTHORED_Q, tileDetails.q(), "HEX-EDITOR-003 selected q");
         assertEquals(AUTHORED_R, tileDetails.r(), "HEX-EDITOR-003 selected r");
         assertEquals(AUTHORED_TERRAIN, tileDetails.terrain(), "HEX-EDITOR-003 selected terrain");
-        HexMapStateContentModel.Projection stateProjection = stateProjection(selected);
+        HexMapViewModel.StateProjection stateProjection = stateProjection(selected);
         assertTrue(stateProjection.tileSelected(), "HEX-EDITOR-003 state projection selected");
         assertEquals("2,0", stateProjection.coordinateText(), "HEX-EDITOR-003 visible coordinate");
         assertEquals("Wasser", stateProjection.terrainText(), "HEX-EDITOR-003 visible terrain detail");
@@ -400,26 +405,18 @@ public final class HexMapEditorBehaviorHarness {
             HexMapStateView stateView,
             HexMapViewModel viewModel
     ) {
-        stateView.onViewInputEvent(event -> {
-            HexMapStateContentModel state = viewModel.stateContentModel();
-            long markerId = state.resolvedMarkerId(event.markerOptionIndex());
-            String markerName = state.resolvedMarkerName(
-                    event.markerOptionIndex(),
-                    event.markerName(),
-                    event.markerSelectionRequested());
-            String markerTypeKey = state.resolvedMarkerTypeKey(
-                    event.markerOptionIndex(),
-                    event.markerTypeOptionIndex(),
-                    event.markerSelectionRequested());
-            String markerNote = state.resolvedMarkerNote(
-                    event.markerOptionIndex(),
-                    event.markerNote(),
-                    event.markerSelectionRequested());
-            state.updateMarkerDraft(
-                    markerId,
-                    markerName,
-                    markerTypeKey,
-                    markerNote);
+        stateView.onMarkerDraft(request -> {
+            HexMapViewModel.StateProjection state = viewModel.properties().state().get();
+            HexMapViewModel.MarkerSelectorItem marker = state.markerOption(request.markerOptionIndex());
+            if (request.markerSelectionRequested()) {
+                viewModel.updateMarkerDraft(marker.markerId(), marker.name(), marker.type(), marker.note());
+                return;
+            }
+            viewModel.updateMarkerDraft(
+                    marker.markerId(),
+                    request.markerName(),
+                    state.markerType(request.markerTypeOptionIndex()),
+                    request.markerNote());
         });
     }
 
@@ -430,15 +427,14 @@ public final class HexMapEditorBehaviorHarness {
     ) {
         HexMapViewModel viewModel = viewModel(snapshot);
         HexMapStateView view = new HexMapStateView();
-        AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
-        view.onViewInputEvent(emitted::set);
+        AtomicReference<HexMapStateView.MapSaveRequest> emitted = new AtomicReference<>();
+        view.onMapSave(emitted::set);
         view.bind(viewModel);
         Spinner<Integer> radiusSpinner = radiusSpinner(view);
         radiusSpinner.getValueFactory().setValue(proofRadius);
         mapSaveButton(view).fire();
 
-        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
-        handler.consume(requiredEvent(emitted, "HEX-EDITOR-002 expected radius state event."));
+        consumeMapSave(runtime, viewModel, requiredMapSave(emitted, "HEX-EDITOR-002 expected radius state event."));
         assertEquals(proofRadius, selectedMap(runtime.current()).radius(),
                 "HEX-EDITOR-002 state pane accepts radius above old UI cap");
         runtime.editor().updateMap(new UpdateHexMapCommand(
@@ -456,16 +452,15 @@ public final class HexMapEditorBehaviorHarness {
         String persistedName = selectedMap(snapshot).displayName();
         HexMapViewModel viewModel = viewModel(snapshot);
         HexMapStateView view = new HexMapStateView();
-        AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
-        view.onViewInputEvent(emitted::set);
+        AtomicReference<HexMapStateView.MapSaveRequest> emitted = new AtomicReference<>();
+        view.onMapSave(emitted::set);
         view.bind(viewModel);
         mapNameField(view).setText("Save Failure Draft");
         mapSaveButton(view).fire();
 
-        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
         runtime.database().installFailingMapUpdateTrigger();
         try {
-            handler.consume(requiredEvent(emitted, "HEX-EDITOR-013 expected map save state event."));
+            consumeMapSave(runtime, viewModel, requiredMapSave(emitted, "HEX-EDITOR-013 expected map save state event."));
             HexEditorSnapshot failed = runtime.current();
             assertContains(failed.failureText(), "Failed to save Hex map to SQLite",
                     "HEX-EDITOR-013 save failure published through snapshot");
@@ -480,9 +475,7 @@ public final class HexMapEditorBehaviorHarness {
     }
 
     private static void activateEditorThroughIntentHandler(RuntimeSurface runtime) {
-        HexMapViewModel viewModel = viewModel(runtime.current(), runtime.travel().current());
-        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
-        handler.activateEditor();
+        runtime.editor().loadEditor(new LoadHexEditorCommand());
     }
 
     private static void assertBinderActivationLoadsAfterReadSideSetup() {
@@ -533,8 +526,7 @@ public final class HexMapEditorBehaviorHarness {
         long targetMapId = selectedMapId(runtime.current()).value();
         runtime.editor().selectMap(new SelectHexMapCommand(currentMapId));
         HexEditorSnapshot snapshot = runtime.current();
-        HexMapIntentHandler handler = intentHandler(runtime, viewModel(snapshot));
-        handler.consume(new src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent(
+        consumeCatalogEvent(runtime, viewModel(snapshot), new src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent(
                 "",
                 "",
                 "",
@@ -570,8 +562,10 @@ public final class HexMapEditorBehaviorHarness {
         long mapId = selectedMapId(snapshot).value();
         HexMapViewModel viewModel = viewModel(snapshot);
         HexMapStateView view = new HexMapStateView();
-        AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
-        view.onViewInputEvent(emitted::set);
+        AtomicReference<HexMapStateView.MapSaveRequest> mapSave = new AtomicReference<>();
+        AtomicReference<HexMapStateView.MarkerSaveRequest> markerSave = new AtomicReference<>();
+        view.onMapSave(mapSave::set);
+        view.onMarkerSave(markerSave::set);
         view.bind(viewModel);
         TextField markerName = markerNameField(view);
         ComboBox<String> markerType = markerTypeSelector(view);
@@ -581,16 +575,15 @@ public final class HexMapEditorBehaviorHarness {
         markerNote.setText("Should stay a draft");
         mapSaveButton(view).fire();
 
-        HexMapStateViewInputEvent event = emitted.get();
+        HexMapStateView.MapSaveRequest event = mapSave.get();
         if (event == null) {
             throw new IllegalStateException("HEX-EDITOR-008 expected map save state event.");
         }
-        assertTrue(event.updateMapRequested(), "HEX-EDITOR-008 map save requests map update");
-        assertTrue(!event.saveMarkerRequested(), "HEX-EDITOR-008 map save must not request marker save");
+        assertTrue(event != null, "HEX-EDITOR-008 map save requests map update");
+        assertTrue(markerSave.get() == null, "HEX-EDITOR-008 map save must not request marker save");
         assertEquals(1L, runtime.database().markerCount(mapId), "HEX-EDITOR-008 marker count before handler");
 
-        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
-        handler.consume(event);
+        consumeMapSave(runtime, viewModel, event);
         assertEquals(1L, runtime.database().markerCount(mapId),
                 "HEX-EDITOR-008 map save does not persist marker draft");
     }
@@ -602,8 +595,10 @@ public final class HexMapEditorBehaviorHarness {
         long mapId = selectedMapId(snapshot).value();
         HexMapViewModel viewModel = viewModel(snapshot);
         HexMapStateView view = new HexMapStateView();
-        AtomicReference<HexMapStateViewInputEvent> emitted = new AtomicReference<>();
-        view.onViewInputEvent(emitted::set);
+        AtomicReference<HexMapStateView.MapSaveRequest> mapSave = new AtomicReference<>();
+        AtomicReference<HexMapStateView.MarkerSaveRequest> markerSave = new AtomicReference<>();
+        view.onMapSave(mapSave::set);
+        view.onMarkerSave(markerSave::set);
         view.bind(viewModel);
         mapNameField(view).setText("Incidental Map Draft");
         TextField markerName = markerNameField(view);
@@ -614,15 +609,14 @@ public final class HexMapEditorBehaviorHarness {
         markerNote.setText("Should become a marker");
         markerSaveButton(view).fire();
 
-        HexMapStateViewInputEvent event = emitted.get();
+        HexMapStateView.MarkerSaveRequest event = markerSave.get();
         if (event == null) {
             throw new IllegalStateException("HEX-EDITOR-009 expected marker save state event.");
         }
-        assertTrue(event.saveMarkerRequested(), "HEX-EDITOR-009 marker save requests marker save");
-        assertTrue(!event.updateMapRequested(), "HEX-EDITOR-009 marker save must not request map update");
+        assertTrue(event != null, "HEX-EDITOR-009 marker save requests marker save");
+        assertTrue(mapSave.get() == null, "HEX-EDITOR-009 marker save must not request map update");
 
-        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
-        handler.consume(event);
+        consumeMarkerSave(runtime, viewModel, event);
         HexEditorSnapshot afterMarkerSave = runtime.current();
         assertEquals(UPDATED_NAME, selectedMap(afterMarkerSave).displayName(),
                 "HEX-EDITOR-009 marker save leaves map name unchanged");
@@ -637,13 +631,12 @@ public final class HexMapEditorBehaviorHarness {
             HexTravelSnapshot travel
     ) {
         HexMapViewModel viewModel = viewModel(snapshot, travel);
-        HexMapIntentHandler handler = intentHandler(runtime, viewModel);
-        handler.consume(new HexMapMainViewInputEvent(
+        consumeTileAction(runtime, viewModel, new HexMapMainView.TileAction(
                 selectedMapId(snapshot).value(),
                 0,
                 0,
-                "MOVE_PARTY",
-                "GRASSLAND"));
+                HexEditorMode.MOVE_PARTY,
+                HexTerrain.GRASSLAND));
         HexTravelSnapshot moved = runtime.travel().current();
         assertTrue(moved.active(), "HEX-TRAVEL-003 moved travel remains active");
         assertEquals(0, moved.q(), "HEX-TRAVEL-003 moved q");
@@ -705,13 +698,13 @@ public final class HexMapEditorBehaviorHarness {
                 "",
                 "");
         HexMapViewModel viewModel = viewModel(oversized);
-        assertTrue(!viewModel.mainContentModel().projectionProperty().get().mapLoaded(),
+        assertTrue(!viewModel.properties().main().get().mapLoaded(),
                 "HEX-TRAVEL-008 oversized map hides Canvas projection");
-        assertContains(viewModel.mainContentModel().projectionProperty().get().emptyText(), "zu gross",
+        assertContains(viewModel.properties().main().get().emptyText(), "zu gross",
                 "HEX-TRAVEL-008 oversized map explains render cap");
-        assertEquals(0, viewModel.mainContentModel().tileLayerProperty().get().tiles().size(),
+        assertEquals(0, viewModel.properties().tileLayer().get().tiles().size(),
                 "HEX-TRAVEL-008 oversized map does not project rendered tiles");
-        assertEquals(0, viewModel.mainContentModel().tileLayerProperty().get().hits().size(),
+        assertEquals(0, viewModel.properties().tileLayer().get().hits().size(),
                 "HEX-TRAVEL-008 oversized map does not project hit data");
     }
 
@@ -1041,9 +1034,9 @@ public final class HexMapEditorBehaviorHarness {
 
     private static String markerTypeKey(String label) {
         String safeLabel = label == null ? "" : label;
-        return HexMapVocabularyContentPartModel.MARKER_TYPE_OPTIONS.stream()
+        return HexMapVocabulary.MARKER_TYPE_OPTIONS.stream()
                 .filter(option -> option.label().equals(safeLabel))
-                .map(HexMapVocabularyContentPartModel.Option::key)
+                .map(option -> option.value().name())
                 .findFirst()
                 .orElse("");
     }
@@ -1053,6 +1046,14 @@ public final class HexMapEditorBehaviorHarness {
             return Long.parseLong(value == null ? "" : value.trim());
         } catch (NumberFormatException ignored) {
             return 0L;
+        }
+    }
+
+    private static int parseInt(String value, int fallback) {
+        try {
+            return Integer.parseInt(value == null ? "" : value.trim());
+        } catch (NumberFormatException ignored) {
+            return fallback;
         }
     }
 
@@ -1168,37 +1169,37 @@ public final class HexMapEditorBehaviorHarness {
         return "";
     }
 
-    private static HexMapMainContentModel.Projection mainProjection(HexEditorSnapshot snapshot) {
-        return viewModel(snapshot).mainContentModel().projectionProperty().get();
+    private static HexMapViewModel.MainProjection mainProjection(HexEditorSnapshot snapshot) {
+        return viewModel(snapshot).properties().main().get();
     }
 
-    private static HexMapMainContentModel.Projection mainProjection(
+    private static HexMapViewModel.MainProjection mainProjection(
             HexEditorSnapshot snapshot,
             HexTravelSnapshot travel
     ) {
-        return viewModel(snapshot, travel).mainContentModel().projectionProperty().get();
+        return viewModel(snapshot, travel).properties().main().get();
     }
 
-    private static HexMapMainContentModel.TileItem mainTileProjection(
+    private static HexMapViewModel.TileItem mainTileProjection(
             HexEditorSnapshot snapshot,
             int q,
             int r
     ) {
-        return viewModel(snapshot).mainContentModel().tileLayerProperty().get().tiles().stream()
+        return viewModel(snapshot).properties().tileLayer().get().tiles().stream()
                 .filter(candidate -> candidate.q() == q && candidate.r() == r)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Expected projected Hex tile " + q + "," + r + "."));
     }
 
-    private static HexMapStateContentModel.Projection stateProjection(HexEditorSnapshot snapshot) {
-        return viewModel(snapshot).stateContentModel().currentProjection();
+    private static HexMapViewModel.StateProjection stateProjection(HexEditorSnapshot snapshot) {
+        return viewModel(snapshot).properties().state().get();
     }
 
-    private static HexMapStateContentModel.Projection stateProjection(
+    private static HexMapViewModel.StateProjection stateProjection(
             HexEditorSnapshot snapshot,
             HexTravelSnapshot travel
     ) {
-        return viewModel(snapshot, travel).stateContentModel().currentProjection();
+        return viewModel(snapshot, travel).properties().state().get();
     }
 
     private static HexMapViewModel viewModel(HexEditorSnapshot snapshot) {
@@ -1216,8 +1217,89 @@ public final class HexMapEditorBehaviorHarness {
         return viewModel;
     }
 
-    private static HexMapIntentHandler intentHandler(RuntimeSurface runtime, HexMapViewModel viewModel) {
-        return new HexMapIntentHandler(runtime.editor(), runtime.hexTravel(), viewModel);
+    private static void consumeMapSave(
+            RuntimeSurface runtime,
+            HexMapViewModel viewModel,
+            HexMapStateView.MapSaveRequest request
+    ) {
+        HexMapViewModel.StateProjection projection = viewModel.properties().state().get();
+        long mapId = projection.selectedMapId();
+        if (mapId <= 0L) {
+            viewModel.showLocalFailure("Hex map is required.");
+            return;
+        }
+        runtime.editor().updateMap(new UpdateHexMapCommand(
+                mapId,
+                request.mapName(),
+                parseInt(request.mapRadius(), START_RADIUS),
+                request.confirmDestructiveShrink()));
+    }
+
+    private static void consumeMarkerSave(
+            RuntimeSurface runtime,
+            HexMapViewModel viewModel,
+            HexMapStateView.MarkerSaveRequest request
+    ) {
+        HexMapViewModel.StateProjection projection = viewModel.properties().state().get();
+        HexMapViewModel.MarkerSelectorItem marker = projection.markerOption(request.markerOptionIndex());
+        HexMarkerKind markerType = projection.markerType(request.markerTypeOptionIndex());
+        runtime.editor().saveMarker(new SaveHexMarkerCommand(
+                projection.selectedMapId(),
+                marker.markerId(),
+                projection.selectedQ(),
+                projection.selectedR(),
+                request.markerName(),
+                markerType.name(),
+                request.markerNote()));
+    }
+
+    private static void consumeTileAction(
+            RuntimeSurface runtime,
+            HexMapViewModel viewModel,
+            HexMapMainView.TileAction action
+    ) {
+        if (action.activeTool() == HexEditorMode.MOVE_PARTY) {
+            runtime.hexTravel().movePartyToken(new src.domain.hex.published.MoveHexPartyTokenCommand(
+                    action.mapId(),
+                    action.q(),
+                    action.r(),
+                    viewModel.partyTokenCharacterIds()));
+            return;
+        }
+        if (action.activeTool() == HexEditorMode.PAINT_TERRAIN) {
+            runtime.editor().paintTerrain(new PaintHexTerrainCommand(
+                    action.mapId(),
+                    action.q(),
+                    action.r(),
+                    action.activeTerrain().name()));
+            return;
+        }
+        runtime.editor().selectTile(new SelectHexTileCommand(action.mapId(), action.q(), action.r()));
+        if (action.activeTool() == HexEditorMode.PLACE_MARKER) {
+            runtime.editor().setActiveTool(new SetHexEditorToolCommand(
+                    action.activeTool().name(),
+                    action.activeTerrain().name()));
+        }
+    }
+
+    private static void consumeCatalogEvent(
+            RuntimeSurface runtime,
+            HexMapViewModel viewModel,
+            CatalogCrudControlsViewInputEvent event
+    ) {
+        if (!event.renameItemId().isBlank()) {
+            long mapId = parseLong(event.renameItemId());
+            if (mapId <= 0L) {
+                viewModel.mapCatalogContentModel().showValidationError("Hex-Karte fehlt.");
+                return;
+            }
+            if (event.renameDraftName().trim().isBlank()) {
+                viewModel.mapCatalogContentModel().showValidationError("Name fehlt.");
+                return;
+            }
+            runtime.editor().renameMap(new RenameHexMapCommand(mapId, event.renameDraftName().trim()));
+            viewModel.mapCatalogContentModel().closeOperation();
+        }
     }
 
     private static void assertContains(String actual, String expectedFragment, String message) {
@@ -1227,11 +1309,11 @@ public final class HexMapEditorBehaviorHarness {
         }
     }
 
-    private static HexMapStateViewInputEvent requiredEvent(
-            AtomicReference<HexMapStateViewInputEvent> emitted,
+    private static HexMapStateView.MapSaveRequest requiredMapSave(
+            AtomicReference<HexMapStateView.MapSaveRequest> emitted,
             String message
     ) {
-        HexMapStateViewInputEvent event = emitted.get();
+        HexMapStateView.MapSaveRequest event = emitted.get();
         if (event == null) {
             throw new IllegalStateException(message);
         }

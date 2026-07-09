@@ -1,24 +1,26 @@
 package src.view.leftbartabs.hexmap;
 
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import src.domain.hex.model.map.HexEditorMode;
+import src.domain.hex.model.map.HexTerrain;
 
 public final class HexMapControlsView extends VBox {
 
-    private Consumer<HexMapControlsViewInputEvent> eventConsumer = ignored -> { };
+    private BiConsumer<HexEditorMode, HexTerrain> selectionConsumer = (tool, terrain) -> { };
 
     public HexMapControlsView() {
         getStyleClass().addAll("surface-root", "control-toolbar");
         setFillWidth(true);
     }
 
-    public void bind(HexMapControlsContentModel contentModel) {
-        if (contentModel == null) {
+    void bind(HexMapViewModel viewModel) {
+        if (viewModel == null) {
             return;
         }
         boolean[] updating = {false};
@@ -31,28 +33,23 @@ public final class HexMapControlsView extends VBox {
         getChildren().setAll(toolButtons, terrainRow);
         terrainSelector.setOnAction(event -> {
             if (!updating[0]) {
+                HexMapViewModel.ControlsProjection projection = viewModel.properties().controls().get();
                 publish(
-                        contentModel.currentProjection().paintTerrainToolOptionIndex(),
-                        selectedTerrainOptionIndex(terrainSelector));
+                        projection.tool(projection.paintTerrainToolOptionIndex()),
+                        projection.terrain(selectedTerrainOptionIndex(terrainSelector)));
             }
         });
-        show(contentModel.projectionProperty().get(), updating, toolGroup, toolButtons, terrainSelector);
-        contentModel.projectionProperty().addListener((ignored, before, after) ->
+        show(viewModel.properties().controls().get(), updating, toolGroup, toolButtons, terrainSelector);
+        viewModel.properties().controls().addListener((ignored, before, after) ->
                 show(after, updating, toolGroup, toolButtons, terrainSelector));
     }
 
-    void bind(HexMapViewModel viewModel) {
-        if (viewModel != null) {
-            bind(viewModel.controlsContentModel());
-        }
-    }
-
-    public void onViewInputEvent(Consumer<HexMapControlsViewInputEvent> consumer) {
-        eventConsumer = consumer == null ? ignored -> { } : consumer;
+    void onToolSelection(BiConsumer<HexEditorMode, HexTerrain> consumer) {
+        selectionConsumer = consumer == null ? (tool, terrain) -> { } : consumer;
     }
 
     private void show(
-            HexMapControlsContentModel.Projection projection,
+            HexMapViewModel.ControlsProjection projection,
             boolean[] updating,
             ToggleGroup toolGroup,
             HBox toolButtons,
@@ -72,7 +69,7 @@ public final class HexMapControlsView extends VBox {
     private void renderToolButtons(
             ToggleGroup toolGroup,
             HBox toolButtons,
-            HexMapControlsContentModel.Projection projection
+            HexMapViewModel.ControlsProjection projection
     ) {
         toolButtons.getChildren().clear();
         int toolIndex = 0;
@@ -84,24 +81,18 @@ public final class HexMapControlsView extends VBox {
             button.setDisable(!projection.mapLoaded());
             int optionIndex = toolIndex;
             button.setOnAction(event -> publish(
-                    optionIndex,
-                    projection.activeTerrainOptionIndex()));
+                    projection.tool(optionIndex),
+                    projection.terrain(projection.activeTerrainOptionIndex())));
             toolButtons.getChildren().add(button);
             toolIndex++;
         }
     }
 
-    private void publish(
-            int toolOptionIndex,
-            int terrainOptionIndex
-    ) {
-        eventConsumer.accept(new HexMapControlsViewInputEvent(toolOptionIndex, terrainOptionIndex));
+    private void publish(HexEditorMode tool, HexTerrain terrain) {
+        selectionConsumer.accept(tool, terrain);
     }
 
-    private static void selectByIndex(
-            ComboBox<String> comboBox,
-            int index
-    ) {
+    private static void selectByIndex(ComboBox<String> comboBox, int index) {
         if (index >= 0 && index < comboBox.getItems().size()) {
             comboBox.getSelectionModel().select(index);
             return;
@@ -122,5 +113,4 @@ public final class HexMapControlsView extends VBox {
         label.getStyleClass().addAll(styleClasses);
         return label;
     }
-
 }
