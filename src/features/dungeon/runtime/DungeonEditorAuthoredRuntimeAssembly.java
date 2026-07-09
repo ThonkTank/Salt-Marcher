@@ -62,6 +62,7 @@ import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorToolUseCase;
 import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorViewModeUseCase;
 import src.domain.dungeon.model.runtime.usecase.ShiftDungeonEditorProjectionLevelUseCase;
 
+// PROJECT_HEALTH_DEBT[PH-20260709-001]: broad Dungeon Editor runtime assembly remains after feature-runtime migration; owner=feature-runtime; remove_when=runtime assembly, store state, operation dispatch, root coordination, and frame publication have narrower target feature-runtime owners.
 final class DungeonEditorAuthoredRuntimeAssembly {
 
     private DungeonEditorAuthoredRuntimeAssembly() {

@@ -58,6 +58,40 @@ Resolver field transitions are defined by the
 
 ## Active Debt
 
+## PH-20260709-001 - Dungeon Editor Feature Runtime Migration Residual
+
+- Status: Open
+- Resolution Mode: Next Matching Touch
+- Resolver Status: Blocked
+- Marker: src/features/dungeon/runtime/DungeonEditorAuthoredRuntimeAssembly.java:65
+- Problem: The accepted Dungeon Editor feature-runtime migration residual still concentrates runtime assembly over authored domain internals, broad runtime store state, operation-family dispatch, runtime root composition, and readback/frame publication compatibility instead of the target feature-runtime split where runtime state, operation engines, typed targets, publication, and render-frame construction have narrower owners.
+- Owner Areas: feature-runtime, project-health
+- Affected Paths: src/features/dungeon/runtime/DungeonEditorAuthoredRuntimeAssembly.java, src/features/dungeon/runtime/DungeonEditorStoreState.java, src/features/dungeon/runtime/DungeonEditorAuthoredRuntimeOperations.java, src/features/dungeon/runtime/DungeonEditorFeatureRuntimeRoot.java, src/features/dungeon/runtime/DungeonEditorRuntimeFramePublisher.java
+- Related Symbols: DungeonEditorAuthoredRuntimeAssembly, DungeonEditorStoreState, DungeonEditorAuthoredRuntimeOperations, DungeonEditorFeatureRuntimeRoot, DungeonEditorRuntimeFramePublisher, runtime assembly, runtime store, operation owner, frame publisher
+- Intake Trigger: src/features/dungeon/runtime, feature-runtime
+- Required Next Action: When the Dungeon Editor feature runtime is next touched, either split the residual into target feature-runtime owners for runtime assembly, transient store state, operation engines, root coordination, and frame publication or replace this entry with narrower active debt entries that name the remaining primary causes.
+- Source Evidence: build/agent-pass-logs/2026-07-09-architecture-goal-completion-audit/final-h01-h18-completion-audit.md identified F1 as accepted but unmaterialized debt keeping H01, H03, H05, and H16 open on c53a853c201cf12fe17f801df1f911256cb29da0.
+- Decision: Materialized as active project-health debt because the final audit accepted F1 as large residual debt outside this materialization pass, but leaving it only in pass logs would hide the feature-runtime migration blocker from future intake.
+- Remove When: Dungeon Editor feature-runtime runtime assembly, transient store state, operation-family dispatch, runtime root coordination, and frame publication are owned by narrower target feature-runtime components, or a later feature-runtime owner replaces this broad family with synchronized narrower debt entries.
+- Last Checked: 2026-07-09
+
+## PH-20260709-002 - Dungeon Map Content Model And Hit-Ref Target Protocol Residual
+
+- Status: Open
+- Resolution Mode: Next Matching Touch
+- Resolver Status: Blocked
+- Marker: src/view/slotcontent/main/dungeonmap/DungeonMapContentModel.java:34
+- Problem: The accepted Dungeon map residual still couples the reusable map ContentModel, prepared pointer-target frames, string hit-ref lookup, placeholder target kinds, and runtime target selection protocol instead of a narrower target model where map content projection and runtime hit/target resolution have explicit owners and typed boundaries.
+- Owner Areas: view-layer, feature-runtime, project-health
+- Affected Paths: src/view/slotcontent/main/dungeonmap/DungeonMapContentModel.java, src/features/dungeon/runtime/PointerInteractionTargets.java, src/features/dungeon/runtime/DungeonEditorMapHitRefs.java
+- Related Symbols: DungeonMapContentModel, PointerTarget, pointerHitRefsAt, currentPointerTargetFrames, PointerInteractionTargets.fromHitTargets, DungeonEditorMapHitRefs, hit-ref protocol, prepared pointer target frames
+- Intake Trigger: src/view/slotcontent/main/dungeonmap, src/features/dungeon/runtime/PointerInteractionTargets.java, src/features/dungeon/runtime/DungeonEditorMapHitRefs.java, view-layer, feature-runtime
+- Required Next Action: When the Dungeon map content model or runtime hit-ref protocol is next touched, either move hit-ref/target resolution to typed target-owner seams with a smaller map content projection model or replace this entry with narrower synchronized debt entries for the remaining content-model and protocol owners.
+- Source Evidence: build/agent-pass-logs/2026-07-09-architecture-goal-completion-audit/final-h01-h18-completion-audit.md identified F2 as accepted but unmaterialized debt keeping H05, H16, and H17 open on c53a853c201cf12fe17f801df1f911256cb29da0.
+- Decision: Materialized as active project-health debt because the final audit accepted F2 as large residual debt outside this materialization pass, but leaving it only in pass logs would hide the cross-owner content-model and hit-ref protocol blocker from future intake.
+- Remove When: Dungeon map content projection and runtime hit/target resolution no longer depend on the broad ContentModel plus string hit-ref/prepared-target protocol, or a later view-layer and feature-runtime owner replaces this broad family with synchronized narrower debt entries.
+- Last Checked: 2026-07-09
+
 ## Removed Or Closed Debt
 
 ## PH-20260707-001 - Feature Runtime Fitness Function Gap

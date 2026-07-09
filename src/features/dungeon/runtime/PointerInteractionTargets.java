@@ -3,6 +3,7 @@ package src.features.dungeon.runtime;
 import java.util.List;
 import java.util.Map;
 
+// Project-health debt PH-20260709-002 satellite: current hit-ref-to-runtime-target selection protocol is listed in the register.
 public record PointerInteractionTargets(
         double sceneX,
         double sceneY,

@@ -31,6 +31,7 @@ import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedTopo
 import src.features.dungeon.runtime.DungeonEditorRenderFrame;
 import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 
+// PROJECT_HEALTH_DEBT[PH-20260709-002]: broad map ContentModel still owns content projection and string hit-ref target protocol surfaces; owner=view-layer, feature-runtime; remove_when=map projection and runtime hit/target resolution have narrower typed owners without the broad ContentModel plus string hit-ref protocol.
 public final class DungeonMapContentModel {
 
     private static final String EMPTY_KIND = "EMPTY";
