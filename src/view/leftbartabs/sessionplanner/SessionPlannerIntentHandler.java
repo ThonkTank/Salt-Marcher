@@ -26,6 +26,25 @@ import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEve
 
 final class SessionPlannerIntentHandler {
 
+    private static final BigDecimal ALLOCATION_STEP = BigDecimal.TEN;
+    private static final String WIDGET_SCENE_SELECT = "session-planner.timeline.scene.select";
+    private static final String WIDGET_ALLOCATION_DECREASE = "session-planner.timeline.allocation.decrease";
+    private static final String WIDGET_ALLOCATION_INCREASE = "session-planner.timeline.allocation.increase";
+    private static final String WIDGET_SCENE_MOVE_UP = "session-planner.timeline.scene.move-up";
+    private static final String WIDGET_SCENE_MOVE_DOWN = "session-planner.timeline.scene.move-down";
+    private static final String WIDGET_SCENE_REMOVE = "session-planner.timeline.scene.remove";
+    private static final String WIDGET_REST_SHORT = "session-planner.timeline.rest.short";
+    private static final String WIDGET_REST_LONG = "session-planner.timeline.rest.long";
+    private static final String WIDGET_REST_CLEAR = "session-planner.timeline.rest.clear";
+    private static final String WIDGET_LOOT_ADD = "session-planner.timeline.loot.add";
+    private static final String WIDGET_LOOT_REMOVE = "session-planner.timeline.loot.remove";
+    private static final String WIDGET_SCENE_SAVE = "session-planner.timeline.scene.save";
+    private static final String WIDGET_SCENE_DRAFT = "session-planner.timeline.scene.draft";
+    private static final String WIDGET_PARTICIPANT_ADD = "session-planner.timeline.participant.add";
+    private static final String WIDGET_PARTICIPANT_REMOVE = "session-planner.timeline.participant.remove";
+    private static final String WIDGET_ENCOUNTER_DAYS = "session-planner.timeline.encounter-days.apply";
+    private static final String WIDGET_SCENE_ADD = "session-planner.timeline.scene.add";
+
     private final SessionPlannerApplicationService planner;
     private final SessionPlannerParticipantApplicationService participants;
     private final SessionPlannerEncounterApplicationService encounters;
@@ -68,89 +87,122 @@ final class SessionPlannerIntentHandler {
         if (event == null || !controlsContentModel.hasCurrentSession()) {
             return;
         }
-        consumeTimelineSelection(event);
-        consumeTimelineSetup(event);
-        consumeTimelineMutation(event);
-        consumeTimelineRest(event);
-        consumeTimelineLoot(event);
-        consumeTimelineSceneDraft(event);
-        consumeTimelineScene(event);
+        switch (event.widgetId()) {
+            case WIDGET_SCENE_SELECT -> selectTimelineScene(event);
+            case WIDGET_ALLOCATION_DECREASE -> adjustTimelineAllocation(event, ALLOCATION_STEP.negate());
+            case WIDGET_ALLOCATION_INCREASE -> adjustTimelineAllocation(event, ALLOCATION_STEP);
+            case WIDGET_SCENE_MOVE_UP -> moveTimelineSceneUp(event);
+            case WIDGET_SCENE_MOVE_DOWN -> moveTimelineSceneDown(event);
+            case WIDGET_SCENE_REMOVE -> removeTimelineScene(event);
+            case WIDGET_REST_SHORT -> setTimelineRest(event, SessionPlannerRestKind.SHORT_REST);
+            case WIDGET_REST_LONG -> setTimelineRest(event, SessionPlannerRestKind.LONG_REST);
+            case WIDGET_REST_CLEAR -> clearTimelineRest(event);
+            case WIDGET_LOOT_ADD -> addTimelineLoot(event);
+            case WIDGET_LOOT_REMOVE -> removeTimelineLoot(event);
+            case WIDGET_SCENE_SAVE -> saveTimelineScene(event);
+            case WIDGET_SCENE_DRAFT -> updateTimelineSceneDraft(event);
+            case WIDGET_PARTICIPANT_ADD -> addTimelineParticipant(event);
+            case WIDGET_PARTICIPANT_REMOVE -> removeTimelineParticipant(event);
+            case WIDGET_ENCOUNTER_DAYS -> applyTimelineEncounterDays(event);
+            case WIDGET_SCENE_ADD -> addScene();
+            default -> {
+            }
+        }
     }
 
-    private void consumeTimelineSelection(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.SelectionSnapshot selection = event.selection();
-        if (hasPositiveId(selection.selectedSceneToken())) {
-            selectEncounter(selection.selectedSceneToken());
-        }
-        if (hasPositiveId(selection.allocationSceneToken())) {
-            setEncounterAllocation(selection.allocationSceneToken(), selection.targetAllocationPercentage());
+    private void selectTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            selectEncounter(event.sceneToken());
         }
     }
 
-    private void consumeTimelineSetup(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.SetupSnapshot setup = event.setup();
-        long participantToAddId = timelineMainContentModel.participantChoiceId(setup.participantChoiceIndex());
+    private void adjustTimelineAllocation(SessionPlannerTimelineMainViewInputEvent event, BigDecimal delta) {
+        if (hasPositiveId(event.sceneToken())) {
+            setEncounterAllocation(
+                    event.sceneToken(),
+                    timelineMainContentModel.budgetPercentage(event.sceneToken()).add(delta));
+        }
+    }
+
+    private void moveTimelineSceneUp(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            moveEncounterUp(event.sceneToken());
+        }
+    }
+
+    private void moveTimelineSceneDown(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            moveEncounterDown(event.sceneToken());
+        }
+    }
+
+    private void removeTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            removeEncounter(event.sceneToken());
+        }
+    }
+
+    private void setTimelineRest(SessionPlannerTimelineMainViewInputEvent event, SessionPlannerRestKind restKind) {
+        if (isResolvedGap(event.leftSceneToken(), event.rightSceneToken())) {
+            setRestGap(event.leftSceneToken(), event.rightSceneToken(), restKind);
+        }
+    }
+
+    private void clearTimelineRest(SessionPlannerTimelineMainViewInputEvent event) {
+        if (isResolvedGap(event.leftSceneToken(), event.rightSceneToken())) {
+            clearRestGap(event.leftSceneToken(), event.rightSceneToken());
+        }
+    }
+
+    private void addTimelineLoot(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            addLootPlaceholder(event.sceneToken());
+        }
+    }
+
+    private void removeTimelineLoot(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.lootToken())) {
+            removeLootPlaceholder(event.lootToken());
+        }
+    }
+
+    private void saveTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            updateEncounterScene(
+                    event.sceneToken(),
+                    event.sceneTitleText().trim(),
+                    event.sceneNotesText().trim(),
+                    event.locationId());
+        }
+    }
+
+    private void updateTimelineSceneDraft(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.sceneToken())) {
+            timelineMainContentModel.updateSceneDraft(
+                    event.sceneToken(),
+                    event.sceneTitleText(),
+                    event.sceneNotesText(),
+                    event.locationId());
+        }
+    }
+
+    private void addTimelineParticipant(SessionPlannerTimelineMainViewInputEvent event) {
+        long participantToAddId = timelineMainContentModel.participantChoiceId(event.participantChoiceIndex());
         if (hasPositiveId(participantToAddId)) {
             addParticipant(participantToAddId);
         }
-        if (hasPositiveId(setup.participantToRemoveId())) {
-            removeParticipant(setup.participantToRemoveId());
+    }
+
+    private void removeTimelineParticipant(SessionPlannerTimelineMainViewInputEvent event) {
+        if (hasPositiveId(event.participantId())) {
+            removeParticipant(event.participantId());
         }
-        BigDecimal encounterDays = parsePositiveDecimal(setup.encounterDaysText());
+    }
+
+    private void applyTimelineEncounterDays(SessionPlannerTimelineMainViewInputEvent event) {
+        BigDecimal encounterDays = parsePositiveDecimal(event.encounterDaysText());
         if (encounterDays != null) {
             setEncounterDays(encounterDays);
-        }
-        if (setup.addSceneRequested()) {
-            addScene();
-        }
-    }
-
-    private void consumeTimelineMutation(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.MutationSnapshot mutation = event.mutation();
-        if (hasPositiveId(mutation.moveSceneToken())) {
-            applyMove(mutation.moveSceneToken(), mutation.moveDirection());
-        }
-        if (hasPositiveId(mutation.sceneTokenToRemove())) {
-            removeEncounter(mutation.sceneTokenToRemove());
-        }
-    }
-
-    private void consumeTimelineRest(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.RestSnapshot rest = event.rest();
-        if (isResolvedGap(rest.leftSceneToken(), rest.rightSceneToken())) {
-            applyRestGap(rest.leftSceneToken(), rest.rightSceneToken(), rest.selection());
-        }
-    }
-
-    private void consumeTimelineLoot(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.LootSnapshot lootSnapshot = event.loot();
-        if (hasPositiveId(lootSnapshot.sceneTokenToAdd())) {
-            addLootPlaceholder(lootSnapshot.sceneTokenToAdd());
-        }
-        if (hasPositiveId(lootSnapshot.tokenToRemove())) {
-            removeLootPlaceholder(lootSnapshot.tokenToRemove());
-        }
-    }
-
-    private void consumeTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.SceneSnapshot scene = event.scene();
-        if (hasPositiveId(scene.sceneToken())) {
-            updateEncounterScene(
-                    scene.sceneToken(),
-                    scene.title(),
-                    scene.notes(),
-                    scene.locationId());
-        }
-    }
-
-    private void consumeTimelineSceneDraft(SessionPlannerTimelineMainViewInputEvent event) {
-        SessionPlannerTimelineMainViewInputEvent.SceneDraftSnapshot sceneDraft = event.sceneDraft();
-        if (hasPositiveId(sceneDraft.sceneToken())) {
-            timelineMainContentModel.updateSceneDraft(
-                    sceneDraft.sceneToken(),
-                    sceneDraft.title(),
-                    sceneDraft.notes(),
-                    sceneDraft.locationId());
         }
     }
 
@@ -168,29 +220,6 @@ final class SessionPlannerIntentHandler {
 
     private static boolean isResolvedGap(long leftSceneToken, long rightSceneToken) {
         return hasPositiveId(leftSceneToken) && hasPositiveId(rightSceneToken);
-    }
-
-    private void applyMove(long sceneToken, int moveDirection) {
-        if (moveDirection > 0) {
-            moveEncounterDown(sceneToken);
-            return;
-        }
-        if (moveDirection < 0) {
-            moveEncounterUp(sceneToken);
-        }
-    }
-
-    private void applyRestGap(
-            long leftSceneToken,
-            long rightSceneToken,
-            SessionPlannerTimelineMainViewInputEvent.RestSelection restSelection
-    ) {
-        switch (restSelection) {
-            case NONE -> clearRestGap(leftSceneToken, rightSceneToken);
-            case SHORT_REST -> setRestGap(leftSceneToken, rightSceneToken, SessionPlannerRestKind.SHORT_REST);
-            case LONG_REST -> setRestGap(leftSceneToken, rightSceneToken, SessionPlannerRestKind.LONG_REST);
-            default -> throw new IllegalStateException("Unhandled rest selection: " + restSelection);
-        }
     }
 
     void consume(CatalogCrudControlsViewInputEvent event) {

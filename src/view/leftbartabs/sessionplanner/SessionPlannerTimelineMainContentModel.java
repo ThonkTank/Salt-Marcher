@@ -77,6 +77,17 @@ public final class SessionPlannerTimelineMainContentModel {
                 : choices.get(choiceIndex).characterId();
     }
 
+    BigDecimal budgetPercentage(long sceneToken) {
+        if (sceneToken <= NO_SCENE_TOKEN) {
+            return BigDecimal.ZERO;
+        }
+        return latestSceneTimelineProjection.sessionScenes().stream()
+                .filter(scene -> scene.sceneToken() == sceneToken)
+                .map(SessionPlannerSceneTimelineProjection.SessionScene::budgetPercentage)
+                .findFirst()
+                .orElse(BigDecimal.ZERO);
+    }
+
     private void pruneSceneDrafts(SessionPlannerSceneTimelineProjection sceneTimelineProjection) {
         Set<Long> activeTokens = sceneTimelineProjection.sessionScenes().stream()
                 .map(SessionPlannerSceneTimelineProjection.SessionScene::sceneToken)
