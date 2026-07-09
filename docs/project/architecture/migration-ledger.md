@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M3 - Rollout wave 1 |
-| Work item | M3.2 - worldplanner baseline metrics |
-| Cycle step | 2 - Baseline metrics |
+| Work item | M3.3 - worldplanner target design |
+| Cycle step | 3 - Target design |
 | In-flight area | `worldplanner` |
-| Required next proof | Measure worldplanner baseline file count, LOC, longest intent-to-mutation chains, forwarding-only classes, and String boundary round-trips before target design |
-| Last status note | `2026-07-09 M3.1 worldplanner-harness-closure` |
+| Required next proof | Write concrete worldplanner target design with target classes, representative call chains, deletion list, seam statement, frozen parity inventory, and untouched-list; obtain Phase 1 and Phase 2 approval before wiring or implementation |
+| Last status note | `2026-07-09 M3.2 worldplanner-baseline-metrics` |
 
 ## M0 Step Ledger
 
@@ -73,7 +73,8 @@ but they do not advance the migration unless this ledger advances too.
 | Cycle step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
 | 1. Harness check/closure | Done on branch | `36ede990b` | Pending PR merge | `./gradlew worldPlannerBackendHarness worldPlannerEncounterHarness worldPlannerControlsRawInputHarness worldPlannerUiHarness --console=plain` passed, 2026-07-09; `tools/gradle/run-staged-verification.sh focused-handoff --path src/domain/worldplanner --area worldplanner` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09 | `worldPlannerEncounterHarness` now seeds World Planner through production service/persistence, resolves encounter source constraints through registered `WorldPlannerSnapshotModel`, drives Encounter through `EncounterApplicationService`, and asserts through published `EncounterStateModel`; the P1 worldplanner-to-encounter route gap is removed from `docs/project/verification/harness-gaps.md`. |
-| 2. Baseline metrics | In Flight | Pending | Pending | Pending | Measure file count, physical LOC, longest representative chains, forwarding-only classes, and String boundary round-trips before writing the M3.3 target design. |
+| 2. Baseline metrics | Done on branch | Pending current commit | Pending | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed, 2026-07-09 | Baseline artifact: `docs/project/architecture/architecture-migration-worldplanner-baseline.md`; full roadmap set is 82 files / 5,440 physical LOC; product subset is 68 files / 4,667 physical LOC; dominant Worldplanner-owned chains are 5 hops to first domain mutation and up to 7 including immutable replacement/save tails; 3 product/published forwarding or proxy candidates plus 1 data candidate; 7 product String round-trip families. |
+| 3. Target design | In Flight | Pending | Pending | Pending | Write the concrete M3.3 target design before any wiring port or implementation. |
 
 ## Milestone Ledger
 
@@ -92,7 +93,7 @@ but they do not advance the migration unless this ledger advances too.
 | Area | Standard | Status | Merge commit | Harness status |
 | --- | --- | --- | --- | --- |
 | `hex` | Pilot reference commit `3679a19e2` | Done on branch | Pending | M2 done: `hexMapEditorBehaviorHarness` and `hexTravelStateBehaviorHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 41-file / 3,701-LOC metric exception; owner smoke checklist is available. |
-| `worldplanner` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 done on branch: backend, UI, raw-input, and encounter harnesses are green; `worldPlannerEncounterHarness` now covers the cross-context route through production World Planner publication/persistence, Encounter source wiring, and published Encounter state. M3.2 baseline metrics are next. |
+| `worldplanner` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 done on branch: backend, UI, raw-input, and encounter harnesses are green; `worldPlannerEncounterHarness` now covers the cross-context route through production World Planner publication/persistence, Encounter source wiring, and published Encounter state. M3.2 baseline metrics are recorded in `docs/project/architecture/architecture-migration-worldplanner-baseline.md`; M3.3 target design is next. |
 | `creatures` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner and encounter harness imports only; P2 dedicated creature catalog harness gap remains. |
 | `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains. |
 | `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
@@ -294,3 +295,17 @@ Services, und das Ergebnis wird aus dem veroeffentlichten `EncounterStateModel`
 gelesen. Backend-, Encounter-, Raw-Input- und UI-Harnesses sind gruen; der
 alte P1-Gap fuer die World-Planner-zu-Encounter-Route ist aus dem Gap-Register
 entfernt. Naechster Schritt ist M3.2 mit Baseline-Metriken fuer `worldplanner`.
+
+### 2026-07-09 M3.2 worldplanner-baseline-metrics
+
+Die Worldplanner-Baseline ist in
+`docs/project/architecture/architecture-migration-worldplanner-baseline.md`
+festgehalten. Der reproduzierbare Roadmap-Schnitt umfasst 82 Java-Dateien mit
+5.440 physischen LOC; die normale M3-Produktstruktur ohne Data-Layer umfasst
+68 Dateien mit 4.667 LOC. Die dominanten Worldplanner-eigenen
+User-Action-Ketten liegen bei 5 Hops bis zur ersten Domain-Mutation und bei 7
+Hops, wenn die immutable Replacement- und Save-Tails separat mitgezaehlt
+werden. Forwarding-Kandidaten, Seam-Proxies und String-Roundtrips sind konkret
+mit Repo-Pfaden und Zeilen belegt. Naechster Schritt ist M3.3 mit
+judge-geprueftem Worldplanner-Target-Design; es wurde noch keine Wiring- oder
+Implementierungsarbeit begonnen.
