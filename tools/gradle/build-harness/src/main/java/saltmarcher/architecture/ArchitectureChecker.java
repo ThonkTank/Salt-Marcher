@@ -1,14 +1,12 @@
 package saltmarcher.architecture;
 
-import saltmarcher.architecture.data.DataPersistenceRules;
-import saltmarcher.architecture.domain.DomainFeatureRules;
-import saltmarcher.architecture.system.BuildHarnessPolicyRules;
-import saltmarcher.architecture.system.SourceLayoutRules;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+import saltmarcher.architecture.system.BuildHarnessPolicyRules;
+import saltmarcher.architecture.system.SourceLayoutRules;
 
 public final class ArchitectureChecker {
 
@@ -36,9 +34,7 @@ public final class ArchitectureChecker {
         if (includeDefaultRules) {
             rules.addAll(List.of(
                     new BuildHarnessPolicyRules(),
-                    new SourceLayoutRules(),
-                    new DomainFeatureRules(),
-                    new DataPersistenceRules()));
+                    new SourceLayoutRules()));
         }
         rules.addAll(ArchitectureRuleLoader.instantiateRules(optionalRuleClassNames, "architectureCheck"));
 

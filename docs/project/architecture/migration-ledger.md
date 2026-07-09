@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M0 - Migration Constitution and Doctrine Removal |
-| Work item | M0.4 - Global removal of form enforcement |
+| Work item | M0.5 - Doctrine doc and skill removal |
 | Cycle step | Milestone step; per-area cycle not active yet |
 | In-flight area | None |
-| Required next proof | `./gradlew checkDocumentationEnforcement --console=plain` for docs-only M0 state changes; full proof selected by M0.4 write set before commit |
-| Last status note | `2026-07-09 M0.3 ledger-start` |
+| Required next proof | `./gradlew checkDocumentationEnforcement --console=plain` for doctrine doc and skill removal; full proof if M0.5 touches build or production verification code |
+| Last status note | `2026-07-09 M0.4 form-enforcement-removal` |
 
 ## M0 Step Ledger
 
@@ -43,8 +43,8 @@ but they do not advance the migration unless this ledger advances too.
 | M0.1 Charter | Done | `0ff4c2f82` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09 | Roadmap materialized under `docs/project/architecture/`. |
 | M0.2 AGENTS.md amendment | Done | `0b8aa4637` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09 | Rule 3, R3c, source-owner routing, and migration-regime pointer updated. |
 | M0.3 Migration ledger | Done on branch | Pending current commit | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09 | This ledger becomes the state source; next work item is M0.4. |
-| M0.4 Global removal of form enforcement | In Flight | Pending | Pending | Pending | Remove form-enforcing ErrorProne/build-harness doctrine gates; keep outcome gates. |
-| M0.5 Doctrine doc and skill removal | Pending | - | Pending | Pending | Delete doctrine documents and doctrine-teaching skills after M0.4. |
+| M0.4 Global removal of form enforcement | Done on branch | Pending current commit | Pending PR merge | `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09; `./gradlew architectureTest --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; judge review Clean | Removed form-enforcing ErrorProne/build-harness doctrine gates and retained outcome gates, including package cycles, layer dependency direction, documentation basics, and behavior-harness gates. |
+| M0.5 Doctrine doc and skill removal | In Flight | Pending | Pending PR merge | Pending | Delete doctrine documents and doctrine-teaching skills after M0.4. |
 
 ## Milestone Ledger
 
@@ -95,3 +95,11 @@ Roadmap-Migration nicht.
 Der Ledger ist angelegt und setzt M0.4 als naechsten In-Flight-Schritt. Noch
 ist keine Produkt-Area gestartet; alle Area-Zeilen bleiben pending bis zur
 M1/M2-Zyklusarbeit.
+
+### 2026-07-09 M0.4 form-enforcement-removal
+
+Die alten Form-Enforcement-Gates sind aus Build-Logic, Build-Harness,
+Error-Prone, architecture-policy und jQAssistant entfernt. Die behaltenen
+Outcome-Gates bleiben aktiv: Package-Zyklen, Layer-Dependency-Direction,
+Dokumentationsgrundregeln und Behavior-Harness-Gates sind gruen; der
+unabhaengige Judge hat die Nachpruefung ohne Must-Fix geschlossen.

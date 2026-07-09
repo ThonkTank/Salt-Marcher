@@ -18,7 +18,7 @@
           language="java"
           since="7.0.0"
           message="The {0} ''{1}'' has a cyclomatic complexity of {2}."
-          class="saltmarcher.quality.pmd.hygiene.RoleAwareCyclomaticComplexityRule"
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeCyclomaticComplexityRule"
           externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#cyclomaticcomplexity">
         <priority>3</priority>
         <properties>
@@ -37,7 +37,7 @@
           language="java"
           since="1.04"
           message="A value of {0} may denote a high amount of coupling within the class (threshold: {1})"
-          class="saltmarcher.quality.pmd.hygiene.RoleAwareCouplingBetweenObjectsRule"
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeCouplingBetweenObjectsRule"
           externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#couplingbetweenobjects">
         <priority>3</priority>
         <properties>
@@ -68,7 +68,7 @@
           language="java"
           since="4.2"
           message="This class has too many methods, consider refactoring it."
-          class="saltmarcher.quality.pmd.hygiene.RoleAwareTooManyMethodsRule"
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeTooManyMethodsRule"
           externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#toomanymethods">
         <priority>3</priority>
     </rule>
@@ -81,7 +81,7 @@
           language="java"
           since="1.04"
           message="A high number of imports ({0}) can indicate a high degree of coupling within an object; current threshold is {1}."
-          class="saltmarcher.quality.pmd.hygiene.RoleAwareExcessiveImportsRule"
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeExcessiveImportsRule"
           externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#excessiveimports">
         <priority>3</priority>
     </rule>
@@ -90,7 +90,7 @@
           language="java"
           since="5.0"
           message="Possible God Class (WMC={0}, ATFD={1}, TCC={2}%)"
-          class="saltmarcher.quality.pmd.hygiene.RoleAwareGodClassRule"
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeGodClassRule"
           externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#godclass">
         <priority>3</priority>
     </rule>
@@ -99,7 +99,7 @@
           language="java"
           since="6.0.0"
           message="The class ''{0}'' is suspected to be a Data Class (WOC={1}, NOPA={2}, NOAM={3}, WMC={4})"
-          class="saltmarcher.quality.pmd.hygiene.RoleAwareDataClassRule"
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeDataClassRule"
           externalInfoUrl="https://docs.pmd-code.org/pmd-doc-7.23.0/pmd_rules_java_design.html#dataclass">
         <priority>3</priority>
     </rule>

@@ -26,10 +26,6 @@ dependencies {
 
 gradlePlugin {
     plugins {
-        register("saltmarcherEnforcementBundles") {
-            id = "saltmarcher.enforcement-bundles"
-            implementationClass = "saltmarcher.buildlogic.enforcement.SaltmarcherEnforcementBundlesPlugin"
-        }
         register("saltmarcherQualityConventions") {
             id = "saltmarcher.quality-conventions"
             implementationClass = "saltmarcher.buildlogic.verification.SaltmarcherQualityConventionsPlugin"

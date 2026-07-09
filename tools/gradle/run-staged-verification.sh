@@ -163,11 +163,11 @@ settingsEvaluated { settings ->
     if (new File(repoRoot).canonicalFile != settings.settingsDir.canonicalFile) {
         return
     }
-    def selected = System.getProperty('saltmarcher.focusedDiagnosticSurfaceIds', '')
+    def selected = System.getProperty('saltmarcher.focusedVerificationPaths', '')
     if (selected == null || selected.trim().isEmpty()) {
         selected = '<none>'
     }
-    println("[staged-verification] Focused diagnostic surface ids: ${selected}")
+    println("[staged-verification] Focused verification paths: ${selected}")
 }
 EOF
     printf '%s\n' "$init_script"
@@ -215,7 +215,7 @@ copy_observable_retained_summary() {
     if line="$(staged_latest_log_line "$observable_log" '^\[observable-gradle\] Configuration cache: ')"; then
         log_staged_line "[staged-verification] ${line#\[observable-gradle\] }"
     fi
-    if line="$(staged_latest_log_line "$observable_log" '^\[staged-verification\] Focused diagnostic surface ids: ')"; then
+    if line="$(staged_latest_log_line "$observable_log" '^\[staged-verification\] Focused verification paths: ')"; then
         log_staged_line "$line"
     fi
 }

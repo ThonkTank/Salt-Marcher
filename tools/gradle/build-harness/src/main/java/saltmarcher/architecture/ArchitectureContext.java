@@ -14,7 +14,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import saltmarcher.architecture.domain.DomainRoleTopologySupport;
 
 public final class ArchitectureContext {
 
@@ -87,21 +86,14 @@ public final class ArchitectureContext {
             return stream
                     .filter(Files::isRegularFile)
                     .filter(path -> path.getFileName().toString().equals(simpleTypeName + ".java"))
-                    .map(this::relativeSegments)
-                    .anyMatch(segments -> isLegacyDomainNamedModuleType(featureName, segments)
-                            || DomainRoleTopologySupport.isModelRoleSource(segments, "model"));
+                .map(this::relativeSegments)
+                .anyMatch(segments -> segments.size() >= 4
+                        && "src".equals(segments.get(0))
+                        && "domain".equals(segments.get(1))
+                        && featureName.equals(segments.get(2)));
         } catch (IOException ignored) {
             return false;
         }
-    }
-
-    private static boolean isLegacyDomainNamedModuleType(String featureName, List<String> segments) {
-        return segments.size() == 6
-                && "src".equals(segments.get(0))
-                && "domain".equals(segments.get(1))
-                && featureName.equals(segments.get(2))
-                && !Set.of("published", "application").contains(segments.get(3))
-                && DomainRoleTopologySupport.isAllowedDomainRolePackage(segments.get(4));
     }
 
     public String domainContextName(String featureName) {

@@ -50,10 +50,8 @@ internal fun Project.registerQualityConventionPackagingTasks(environment: Qualit
     }
 
     tasks.named<ProcessResources>("processResources") {
-        if (!environment.focusedEnforcementBundleMode) {
-            dependsOn(renderDesktopIconPng)
-            from(renderDesktopIconPng.flatMap { task -> task.outputDirectory })
-        }
+        dependsOn(renderDesktopIconPng)
+        from(renderDesktopIconPng.flatMap { task -> task.outputDirectory })
     }
 
     tasks.register<CheckDesktopPackagingInputsTask>("checkDesktopPackagingInputs") {
