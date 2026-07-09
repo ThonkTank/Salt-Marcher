@@ -2,7 +2,7 @@ Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-09
 Source of Truth: Current architecture migration position, in-flight work,
-area status, harness status, and close-out notes for the roadmap in
+area status, and harness status for the roadmap in
 `docs/project/architecture/architecture-migration-roadmap.md`.
 
 # Architecture Migration Ledger
@@ -11,8 +11,10 @@ area status, harness status, and close-out notes for the roadmap in
 
 This ledger is the single source of truth for the architecture migration state.
 It records the active milestone, the current work item, area status, merge
-commit state, and harness status. Chat plans and pass logs may describe work,
-but they do not advance the migration unless this ledger advances too.
+commit state, and harness status. German owner status notes live in
+`docs/project/architecture/architecture-migration-owner-status-notes.md`.
+Chat plans and pass logs may describe work, but they do not advance the
+migration unless this ledger advances too.
 
 ## State Rules
 
@@ -30,11 +32,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M3 - Rollout wave 1 |
-| Work item | M3.1 - creatures harness check/closure |
-| Cycle step | 1 - Harness check/closure |
+| Work item | M3.2 - creatures baseline metrics |
+| Cycle step | 2 - Baseline metrics |
 | In-flight area | `creatures` |
-| Required next proof | Verify Creature behavior harness coverage against the old structure, close the dedicated create/edit/filter/readback catalog harness gap or record a concrete blocker before M3.2 baseline metrics. |
-| Last status note | `2026-07-09 M3.7 worldplanner-close-out` |
+| Required next proof | Measure the Creature migration scope: file count, physical LOC, longest intent-to-publication chain, forwarding-only classes, and String boundary round-trips before any target design work. |
+| Last status note | `2026-07-09 M3.1 creatures-harness-closure` |
 
 ## M0 Step Ledger
 
@@ -80,6 +82,13 @@ but they do not advance the migration unless this ledger advances too.
 | 6. Conformance review | Done on branch | `f499d321d` | Pending PR merge | Phase 1 returned Rework for NPC row text drift and raw-input oracle weakening, then Phase 1 re-review Approved; Phase 2 Approved; product subset 43 Java files / 3,709 physical LOC; deletion list executed; forwarding-only Worldplanner product proxies absent; `production-handoff` passed, 2026-07-09 | Conformance review accepted the M3.5 LOC exception recorded in `docs/project/architecture/architecture-migration-worldplanner-target-design.md`, verified parity fixes after rework, and found no remaining Must Fix findings. |
 | 7. Close-out | Done on branch | `f499d321d` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; Worldplanner owner smoke checklist available in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`; retained harness and production-handoff logs are green | Worldplanner close-out records the German owner note, accepted metric exception, retained proof set, and owner smoke checklist location. Next in-flight area is `creatures` at harness check/closure. |
 
+## M3 Creatures Cycle Ledger
+
+| Cycle step | Status | Local branch commit | Merge commit | Proof | Notes |
+| --- | --- | --- | --- | --- | --- |
+| 1. Harness check/closure | Done on branch | `80b9e11e1` | Pending PR merge | `./gradlew creatureCatalogHarness --console=plain` passed with 9 proof items, 2026-07-09; `./gradlew checkHarnessMapConsistency checkBehaviorHarnessTopology --console=plain` passed; `env -u CODEX_THREAD_ID tools/gradle/run-staged-verification.sh focused-handoff --path src/domain/creatures --area creatures` passed after a first wildcard-IP Gradle startup failure; `./gradlew checkDocumentationEnforcement --console=plain` passed; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved | Dedicated `creatureCatalogHarness` now drives `CreaturesApplicationService` through a controlled `CreatureCatalogPort` and asserts published catalog, detail, filter, and encounter-candidate models. Create/edit are harness fixture setup/update only; the product domain remains a read-only imported reference catalog, and the P2 Creature catalog gap is removed from `harness-gaps.md`. |
+| 2. Baseline metrics | In Flight | Pending | Pending | Pending | Measure files, LOC, dominant chains, forwarding-only classes, and String round-trips for the Creature migration scope before target design. |
+
 ## Milestone Ledger
 
 | Milestone | Status | Merge commit | Done-when evidence |
@@ -98,7 +107,7 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- | --- | --- | --- |
 | `hex` | Pilot reference commit `3679a19e2` | Done on branch | Pending | M2 done: `hexMapEditorBehaviorHarness` and `hexTravelStateBehaviorHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 41-file / 3,701-LOC metric exception; owner smoke checklist is available. |
 | `worldplanner` | Worldplanner reference commit `f499d321d` | Done on branch | Pending | M3 done on branch: backend, UI, raw-input, and encounter harnesses are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 43-file / 3,709-LOC metric exception; owner smoke checklist is available. |
-| `creatures` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M1.1 inventory: adjacent worldplanner and encounter harness imports only; P2 dedicated creature catalog harness gap remains. Current step is M3.1 harness check/closure against the old Creature structure. |
+| `creatures` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 done on branch: `creatureCatalogHarness` covers create/edit fixture setup, filter, catalog readback, detail readback, encounter-candidate readback, invalid-query, missing-detail, and storage-error publication through `CreaturesApplicationService` and published models. Current step is M3.2 baseline metrics. |
 | `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains. |
 | `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
 | `encountertable` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner UI imports only; P2 dedicated encounter-table readback harness gap remains. |
@@ -116,7 +125,7 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- | --- | --- | --- |
 | `hex` | `hexMapEditorBehaviorHarness`, `hexTravelStateBehaviorHarness` | `HexEditorApplicationService`, `HexTravelApplicationService`, `HexEditorModel`, `HexEditorSnapshot`, hex command records, `HexTravelModel`, `HexTravelSnapshot`, party travel models, Hex Map content/control models, `HexMapContribution`, `ShellBinding`, `ShellSlot`, `TravelStateContribution` | Create, update, select, paint, marker save, radius errors, persistence readback, save failure visibility, travel token readback, shell-bound Hex Map route, and production Hex/Party Reise state-tab readback | M1.3 route gaps and the M2.1 save-failure visibility gap are closed; scenarios and assertions are frozen for M2 baseline unless a separate wiring-port commit is approved. |
 | `worldplanner` | `worldPlannerBackendHarness`, `worldPlannerUiHarness`, `worldPlannerControlsRawInputHarness`, `worldPlannerEncounterHarness` | `WorldPlannerApplicationService`, `WorldPlannerSnapshotModel`, world planner commands/reference ports, `WorldPlannerSnapshot`, creature and encounter-table published catalogs, `EncounterApplicationService`, `EncounterStateModel`, encounter generation/session bridge | NPC/faction/location mutations, reference validation, persistence errors/readback, raw input controls, UI projection, production-route encounter source resolution, finite stock cap enforcement, and World Planner NPC identity through Encounter result state | M3.1 cross-context production-route gap closed on branch; no open worldplanner P1 gap remains. |
-| `creatures` | None dedicated; adjacent worldplanner UI and encounter state-tab harnesses import creature surfaces | `CreaturesApplicationService`, `CreatureCatalogPort`, catalog usecases, `CreatureCatalogModel/Page/Row`, `CreatureDetailModel`, `CreatureLookupStatus` | Adjacent lookup, display, and encounter candidate use only | P2 dedicated create/edit/filter/readback catalog harness |
+| `creatures` | `creatureCatalogHarness`; adjacent worldplanner UI and encounter state-tab harnesses import creature surfaces | `CreaturesApplicationService`, `CreatureCatalogPort`, catalog usecases, `CreatureCatalogModel/Page/Row`, `CreatureDetailModel`, `CreatureFilterOptionsModel`, `CreatureEncounterCandidatesModel`, lookup/query/read statuses | Dedicated old-structure catalog route: fixture create/edit setup, filter option publication, normalized catalog query/readback, detail readback, encounter-candidate readback, invalid queries, missing details, and storage-error publication | M3.1 dedicated catalog gap closed on branch; no open Creature harness gap remains. |
 | `party` | `partyDropdownHarness`; also imported by hex and dungeon travel harnesses | `PartyApplicationService`, active-party composition/model, party snapshot/mutation models, character commands, travel position snapshots, dropdown content model | Create character, move between active/reserve, active-party publication, trigger label, travel-token publication consumers | P1 shell-bound dropdown route |
 | `sessionplanner` | `sessionPlannerCatalogHarness`, `sessionPlannerShellLayoutHarness` | `SessionPlannerContribution`, `SessionPlannerCatalogModel`, current-session, scene timeline, participants projections, `ShellBinding`, `ShellSlot`, session data mappers | Catalog create/rename/select/delete, scene timeline, loot placeholders, session-scoped drafts, compact shell layout | No registered M1.1 gap |
 | `encountertable` | None dedicated; adjacent worldplanner UI harness imports table catalog surfaces | `EncounterTableCatalogModel`, `EncounterTableCatalogResult`, `EncounterTableSummary`, `EncounterTableReadStatus` | Adjacent catalog display/reference lookup only | P2 readback harness for authored summary, weighted candidates, empty selection, XP ceiling, and storage-error publication |
@@ -130,220 +139,6 @@ but they do not advance the migration unless this ledger advances too.
 
 ## Owner Status Notes
 
-### 2026-07-09 M0.1 charter
-
-Die Migrations-Roadmap ist als aktives Architektur-Dokument im Repo
-eingetragen. Es gab keine Produktionscode-Aenderung; das Dokumentationsgate
-war gruen.
-
-### 2026-07-09 M0.2 agent-guide
-
-`AGENTS.md` routet die Migration jetzt auf die Roadmap: Outcome-Gates bleiben
-bindend, alte Form-Checks werden im M0-Pfad entfernt, und R3c blockiert die
-Roadmap-Migration nicht.
-
-### 2026-07-09 M0.3 ledger-start
-
-Der Ledger ist angelegt und setzt M0.4 als naechsten In-Flight-Schritt. Noch
-ist keine Produkt-Area gestartet; alle Area-Zeilen bleiben pending bis zur
-M1/M2-Zyklusarbeit.
-
-### 2026-07-09 M0.4 form-enforcement-removal
-
-Die alten Form-Enforcement-Gates sind aus Build-Logic, Build-Harness,
-Error-Prone, architecture-policy und jQAssistant entfernt. Die behaltenen
-Outcome-Gates bleiben aktiv: Package-Zyklen, Layer-Dependency-Direction,
-Dokumentationsgrundregeln und Behavior-Harness-Gates sind gruen; der
-unabhaengige Judge hat die Nachpruefung ohne Must-Fix geschlossen.
-
-### 2026-07-09 M0.5 doctrine-removal
-
-Die alten Domain/View/Feature-Runtime-Doktrin-Dokumente, die
-Architecture-Enforcement-Inventare und die zugehoerigen Lehr-Skills sind aus
-dem Repo entfernt. Lebende Router zeigen jetzt auf Roadmap, Ledger, echte
-Outcome-Gates und die oeffentlichen Proof-Routen; der Fresh-Agent-Check hat
-keine alte Rule-3/Formdoktrin mehr reproduziert, und der unabhaengige Judge hat
-M0.5 nach Rework freigegeben.
-
-### 2026-07-09 M1.1 harness-inventory
-
-Der Ledger listet jetzt fuer jede Migrations-Area die vorhandenen Harnesses,
-importierten Boundary-Surfaces, Szenarioabdeckung und bekannten Gaps. Die
-Dokumentationspruefung ist gruen; der unabhaengige Judge hat die Inventur nach
-Rework freigegeben. Naechster Schritt ist M1.2, das Einfrieren des
-Parity-Protokolls.
-
-### 2026-07-09 M1.2 parity-protocol
-
-Die Roadmap enthaelt jetzt das verbindliche Parity-Protokoll: Szenarien und
-Assertions werden im per-area Design-Artefakt materialisiert und vor dem ersten
-Wiring-Port eingefroren; Wiring-Ports bleiben eigene Vorab-Commits, und
-nichtdeterministisches Altverhalten wird nur als deterministische Envelope plus
-R2-Issue dokumentiert. Phase 1 und der unabhaengige Judge haben den Schritt
-freigegeben. Naechster Schritt ist M1.3 Hex-Harness-Haertung.
-
-### 2026-07-09 M1.3 hex-harness-hardening
-
-Die beiden offenen Hex-Produktionsrouten sind gegen die alte Struktur
-abgedeckt: `hexMapEditorBehaviorHarness` bindet `HexMapContribution` durch die
-Shell-Slots und prueft Erstellen, Bearbeiten, Malen, Auswaehlen, Marker,
-Reisegruppe und Reload; `hexTravelStateBehaviorHarness` treibt Hex- und
-Party-Services bis in das kompakte `Reise`-State-Tab. Der kombinierte
-Hex-Harness, das Dokumentationsgate, Phase 1 und der unabhaengige Judge sind
-gruen. Naechster Schritt ist M1.4 mit deutschen Owner-Smoke-Checklisten.
-
-### 2026-07-09 M1.4 owner-smoke-checklists
-
-Die deutschen Owner-Smoke-Checklisten liegen jetzt neben Roadmap und Ledger in
-`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`.
-Alle 13 aktuellen Ledger-Areas haben je zehn kurze, sichtbare Pruefschritte;
-die Checklisten definieren kein neues Produktverhalten und blockieren die
-Pipeline nicht. Dokumentationsgate, Phase 1 und der unabhaengige Judge sind
-gruen. Naechster Schritt ist M1.5 mit Render-Snapshot-Parity.
-
-### 2026-07-09 M1.5 render-parity-net
-
-Der neue `dungeonMapRenderParityHarness` erzeugt Bild-Snapshots fuer die
-Dungeon-Karte und vergleicht echte Canvas-Pixel paarweise: Editor-Projektion,
-Editor-Wandpreview und Dungeon-Travel-Projektion rendern denselben Frame
-zweimal mit `changedPixels=0`; die Editor-Kontrollvergleiche beweisen
-zusaetzlich, dass der Diff-Orakel sichtbare Aenderungen erkennt. PNG-Belege
-liegen nur unter `build/dungeon-map-render-parity-results/`. Die alte
-Dungeon-Travel-Auffaelligkeit, dass `z=0` und `z=1` aktuell pixelgleich bleiben
-koennen, ist als separater R2-Eintrag journalisiert und in der Migration nicht
-repariert. M1 ist damit auf dem Branch abgeschlossen; naechster Schritt ist
-M2.1 Hex-Harness-Check.
-
-### 2026-07-09 M2.1 hex-harness-closure
-
-Die M2.1-Harness-Pruefung hat die verbleibende Hex-Save-Failure-Luecke gegen
-die alte Struktur geschlossen: `HEX-EDITOR-013` treibt das State-Panel
-`Speichern` durch `HexMapStateView`, `HexMapIntentHandler`, Domain-Use-Case und
-SQLite-Update und erzwingt dort einen Speicherfehler. Der Fehler erscheint
-sichtbar im State-Panel, und der persistierte Kartenname bleibt unveraendert.
-Der kombinierte Hex-Harness, das Dokumentationsgate, `git diff --check`, Phase
-1 und der unabhaengige Judge sind gruen. Naechster Schritt ist M2.2 mit
-Baseline-Metriken fuer die Hex-Pilotflaeche.
-
-### 2026-07-09 M2.2 hex-baseline-metrics
-
-Die Hex-Baseline ist in
-`docs/project/architecture/architecture-migration-hex-baseline.md`
-festgehalten. Der reproduzierbare Roadmap-Schnitt umfasst 87 Java-Dateien mit
-5.564 physischen LOC; die normale M2-Produktstruktur ohne Data-Layer umfasst
-70 Dateien mit 4.560 LOC. Die laengsten Hex-eigenen User-Action-Ketten liegen
-bei 5 Hops bis zur ersten Mutation; der Reisegruppen-Pfad ist als laengerer
-Cross-Area-Seam fuer das Target-Design markiert. Forwarding-Kandidaten und
-String-Roundtrips sind konkret mit Repo-Pfaden und Zeilen belegt.
-Dokumentationsgate, `git diff --check`, Phase 1 und der unabhaengige Judge sind
-gruen. Naechster Schritt ist M2.3 mit judge-geprueftem Hex-Target-Design; es
-wurde noch keine Wiring- oder Implementierungsarbeit begonnen.
-
-### 2026-07-09 M2.3 hex-target-design
-
-Das Hex-Target-Design ist in
-`docs/project/architecture/architecture-migration-hex-target-design.md`
-genehmigt. Es legt die Zielklassen, Repraesentativketten, Loeschliste,
-byte-kompatiblen Seams, eingefrorene Parity-Inventur, Wiring-Port-Grenze und
-Metrik-Ausnahmen konkret fest. Nach Rework war Phase 1 sauber; der
-unabhaengige Judge hat M2.3 freigegeben. Dokumentationsgate und
-`git diff --check` sind gruen. Naechster Schritt ist M2.4: ein reiner
-Wiring-Port auf die `HexMapViewModel`-Kompatibilitaetsgrenze, ohne Szenario-
-oder Assertion-Aenderung und ohne Implementierung.
-
-### 2026-07-09 M2.4 hex-wiring-port
-
-Der Hex-Wiring-Port ist als eigener Commit abgeschlossen. `HexMapViewModel`
-buendelt vorlaeufig die alten Content- und Contribution-Modelle; Binder,
-IntentHandler, Views und Hex-Harness nutzen diese Kompatibilitaetsgrenze,
-ohne Szenarien, Assertion-Texte oder sichtbares Verhalten zu aendern. Die
-alten Content-Models, Input-Event-Records und `HexMapIntentHandler` bleiben
-fuer M2.5 noch vorhanden. Hex-Harnesses, Produktions-Handoff, Phase 1 und der
-unabhaengige Judge sind gruen. Naechster Schritt ist M2.5: Umsetzung des
-genehmigten Designs mit ausgefuehrter Loeschliste und weiter eingefrorenen
-Harness-Orakeln.
-
-### 2026-07-09 M2.5 hex-implementation
-
-Die Hex-Implementierung ersetzt den vorlaeufigen Facade-Inhalt durch das
-genehmigte Zielmodell: Editor- und Reise-Services besitzen jetzt die alten
-Use-Case-Pfade direkt, `HexMapViewModel` und `HexMapVocabulary` tragen die
-getypte View-Projektion, und die Loeschliste fuer Usecases, Ports,
-Published-State-Adapter, Content-Models, Input-Events und `HexMapIntentHandler`
-ist ausgefuehrt. Die Produktflaeche liegt bei 41 Dateien und 3.701 LOC; diese
-Abweichung ist durch das M2.5-Design-Amendment begrenzt und von Phase 1 sowie
-dem unabhaengigen Judge akzeptiert. Produktions-Handoff und die direkten
-Hex-Harnesses sind gruen; retained Harness-Logs scheitern nur vor Task-Start
-an der dokumentierten Gradle-Wildcard-IP-Umgebung. Naechster Schritt ist M2.6:
-Conformance-Evidence final bestaetigen und dann den Hex-Close-out vorbereiten.
-
-### 2026-07-09 M2.7 hex-close-out
-
-Der Hex-Pilot ist auf dem Branch abgeschlossen. Referenz fuer weitere
-migrierte Areas ist Commit `3679a19e2`: dort sind die alten Hex-Usecases,
-Ports, Published-State-Adapter, View-Content-Models, Input-Events und
-`HexMapIntentHandler` geloescht, waehrend die sichtbaren Hex-Editor-,
-Reisegruppen- und Reise-State-Verhalten durch die eingefrorenen Harnesses
-erhalten bleiben. Die Owner-Smoke-Checkliste fuer `hex` steht in
-`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`.
-Die akzeptierte Metrik-Ausnahme gilt nur fuer diesen Pilotstand; M3 startet mit
-`worldplanner` im Schritt Harness-Check/Closure.
-
-### 2026-07-09 M3.1 worldplanner-harness-closure
-
-Die World-Planner-Harness-Pruefung ist fuer M3.1 geschlossen. Der
-`worldPlannerEncounterHarness` nutzt keine statische World-Snapshot-Fixture
-und kein manuell verdrahtetes Encounter-Repository mehr: World Planner wird
-ueber Service und Persistenz gesaet, Encounter laeuft ueber die registrierten
-Services, und das Ergebnis wird aus dem veroeffentlichten `EncounterStateModel`
-gelesen. Backend-, Encounter-, Raw-Input- und UI-Harnesses sind gruen; der
-alte P1-Gap fuer die World-Planner-zu-Encounter-Route ist aus dem Gap-Register
-entfernt. Naechster Schritt ist M3.2 mit Baseline-Metriken fuer `worldplanner`.
-
-### 2026-07-09 M3.2 worldplanner-baseline-metrics
-
-Die Worldplanner-Baseline ist in
-`docs/project/architecture/architecture-migration-worldplanner-baseline.md`
-festgehalten. Der reproduzierbare Roadmap-Schnitt umfasst 82 Java-Dateien mit
-5.440 physischen LOC; die normale M3-Produktstruktur ohne Data-Layer umfasst
-68 Dateien mit 4.667 LOC. Die dominanten Worldplanner-eigenen
-User-Action-Ketten liegen bei 5 Hops bis zur ersten Domain-Mutation und bei 7
-Hops, wenn die immutable Replacement- und Save-Tails separat mitgezaehlt
-werden. Forwarding-Kandidaten, Seam-Proxies und String-Roundtrips sind konkret
-mit Repo-Pfaden und Zeilen belegt. Naechster Schritt ist M3.3 mit
-judge-geprueftem Worldplanner-Target-Design; es wurde noch keine Wiring- oder
-Implementierungsarbeit begonnen.
-
-### 2026-07-09 M3.3 worldplanner-target-design
-
-Das Worldplanner-Target-Design ist in
-`docs/project/architecture/architecture-migration-worldplanner-target-design.md`
-genehmigt. Phase 1 fand zunaechst eine fehlende UI-Proof-Grenze fuer
-`Zum Encounter` und eine missverstaendliche Refresh-Formulierung; der Rework
-schliesst den sichtbaren Button gegen die alte Struktur im
-`worldPlannerUiHarness` und haelt `Aktualisieren` weiter als eingefrorenes
-Verhalten fest. Retained Harness-, Focused-Handoff- und Dokumentationslogs sind
-gruen; Phase 1 Re-Review und der unabhaengige Judge haben M3.3 freigegeben.
-Naechster Schritt ist M3.4: ein reiner Wiring-Port auf die
-`WorldPlannerViewModel`-Kompatibilitaetsgrenze, ohne Loeschliste und ohne
-Szenario- oder Assertion-Aenderung.
-
-### 2026-07-09 M3.4 worldplanner-wiring-port
-
-Der Worldplanner-Wiring-Port ist abgeschlossen. `WorldPlannerViewModel` ist
-jetzt die Kompatibilitaetsfassade ueber den alten Content- und
-Contribution-Modellen; Binder, IntentHandler und Raw-Input-Harness laufen ueber
-diese Grenze, waehrend Start-Refresh und Command-Konstruktion unveraendert im
-`WorldPlannerIntentHandler` bleiben. Der Backend-Harness nutzt fuer die
-Foreign-Reference-Pruefung die Service-Registry- und Reference-Port-Seam statt
-`WorldPlannerUseCaseServiceAssembly` direkt zu instanziieren. Phase 1 fand
-zunaechst eine zu weit verschobene Start-Refresh-Verantwortung; der Rework hat
-das Orakel auf den IntentHandler zurueckgestellt. Finale Harness-, PMD-,
-Dead-Code- und `production-handoff`-Logs sind gruen, Phase 1 und Phase 2 haben
-den finalen Stand freigegeben. Naechster Schritt ist M3.5: Umsetzung des
-genehmigten Target-Designs inklusive 28-Datei-Loeschliste und
-Metric-/Parity-Proof vor der Conformance Review.
-
-### 2026-07-09 M3.7 worldplanner-close-out
-
-Der Worldplanner ist mit Referenzcommit `f499d321d` abgeschlossen; alte Usecases, Content-Models, Input-Events und `WorldPlannerIntentHandler` sind geloescht, Harnesses und `production-handoff` sind gruen, Phase 1/2 akzeptieren die 43-Dateien-/3.709-LOC-Ausnahme, und M3.1 `creatures` startet mit Harness-Check/Closure.
+German owner status notes are maintained in
+`docs/project/architecture/architecture-migration-owner-status-notes.md`.
+Latest note: `2026-07-09 M3.1 creatures-harness-closure`.
