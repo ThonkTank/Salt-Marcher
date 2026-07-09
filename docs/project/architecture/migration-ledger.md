@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M2 - Pilot hex |
-| Work item | M2.3 - Hex target design |
-| Cycle step | 3 - Target design |
+| Work item | M2.4 - Hex harness wiring port |
+| Cycle step | 4 - Harness wiring port |
 | In-flight area | `hex` |
-| Required next proof | Judge-approved Hex target design before wiring or implementation |
-| Last status note | `2026-07-09 M2.2 hex-baseline-metrics` |
+| Required next proof | Separate Hex wiring-port commit with frozen scenarios/assertions and selected Hex harnesses green |
+| Last status note | `2026-07-09 M2.3 hex-target-design` |
 
 ## M0 Step Ledger
 
@@ -61,9 +61,9 @@ but they do not advance the migration unless this ledger advances too.
 | Cycle step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
 | 1. Harness check/closure | Done on branch | `4eb00535c` | Pending PR merge | `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | `HEX-EDITOR-013` closes the production-route map-save failure visibility gap against the old Hex structure. |
-| 2. Baseline metrics | Done on branch | Pending | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean after rework; Phase 2 Approve | Baseline artifact: `docs/project/architecture/architecture-migration-hex-baseline.md`; full roadmap set is 87 files / 5,564 physical LOC; product subset is 70 files / 4,560 physical LOC; dominant Hex-owned chains are 5 hops; 6 product/published forwarding candidates plus 1 data candidate; 5 product String round-trip families. |
-| 3. Target design | In Flight | Pending | Pending PR merge | Pending | Judge-approved Hex pilot design required before implementation. |
-| 4. Harness wiring port | Pending | Pending | Pending PR merge | Pending | Separate commit only; scenarios and assertions frozen. |
+| 2. Baseline metrics | Done on branch | `d7b66a3da` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean after rework; Phase 2 Approve | Baseline artifact: `docs/project/architecture/architecture-migration-hex-baseline.md`; full roadmap set is 87 files / 5,564 physical LOC; product subset is 70 files / 4,560 physical LOC; dominant Hex-owned chains are 5 hops; 6 product/published forwarding candidates plus 1 data candidate; 5 product String round-trip families. |
+| 3. Target design | Done on branch | `153aebd3b` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean after rework; Phase 2 Approve | Approved design artifact: `docs/project/architecture/architecture-migration-hex-target-design.md`; names target classes, representative call chains, deletion list, byte-compatible seams, frozen parity inventory, wiring-port boundary, and metric exceptions. |
+| 4. Harness wiring port | In Flight | Pending | Pending PR merge | Pending | Separate commit only; scenarios and assertions frozen. Port Hex harness/view references through the approved `HexMapViewModel` compatibility boundary before implementation. |
 | 5. Implementation | Pending | Pending | Pending PR merge | Pending | Must follow the approved Hex pilot design. |
 | 6. Conformance review | Pending | Pending | Pending PR merge | Pending | Design conformance, parity, metric targets, Phase 1, and Phase 2. |
 | 7. Close-out | Pending | Pending | Pending PR merge | Pending | Ledger update, German status note, owner smoke checklist available, and Hex reference commit declaration. |
@@ -226,3 +226,15 @@ String-Roundtrips sind konkret mit Repo-Pfaden und Zeilen belegt.
 Dokumentationsgate, `git diff --check`, Phase 1 und der unabhaengige Judge sind
 gruen. Naechster Schritt ist M2.3 mit judge-geprueftem Hex-Target-Design; es
 wurde noch keine Wiring- oder Implementierungsarbeit begonnen.
+
+### 2026-07-09 M2.3 hex-target-design
+
+Das Hex-Target-Design ist in
+`docs/project/architecture/architecture-migration-hex-target-design.md`
+genehmigt. Es legt die Zielklassen, Repraesentativketten, Loeschliste,
+byte-kompatiblen Seams, eingefrorene Parity-Inventur, Wiring-Port-Grenze und
+Metrik-Ausnahmen konkret fest. Nach Rework war Phase 1 sauber; der
+unabhaengige Judge hat M2.3 freigegeben. Dokumentationsgate und
+`git diff --check` sind gruen. Naechster Schritt ist M2.4: ein reiner
+Wiring-Port auf die `HexMapViewModel`-Kompatibilitaetsgrenze, ohne Szenario-
+oder Assertion-Aenderung und ohne Implementierung.
