@@ -1,6 +1,5 @@
 package src.features.dungeon.runtime;
 
-import java.util.Locale;
 import java.util.Objects;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
@@ -489,25 +488,6 @@ public record DungeonEditorRuntimePointerTarget(
         WALL_VERTEX;
 
         @SuppressWarnings("PMD.CyclomaticComplexity")
-        public static ElementKind fromLegacy(String value) {
-            return switch (normalized(value)) {
-                case "ROOM" -> ROOM;
-                case "CORRIDOR" -> CORRIDOR;
-                case "CORRIDOR_ANCHOR" -> CORRIDOR_ANCHOR;
-                case "STAIR" -> STAIR;
-                case "TRANSITION" -> TRANSITION;
-                case "FEATURE_MARKER" -> FEATURE_MARKER;
-                case "FEATURE_OBJECT" -> FEATURE_OBJECT;
-                case "FEATURE_ENCOUNTER" -> FEATURE_ENCOUNTER;
-                case "FEATURE_POI" -> FEATURE_POI;
-                case "WALL" -> WALL;
-                case "DOOR" -> DOOR;
-                case "WALL_VERTEX" -> WALL_VERTEX;
-                default -> EMPTY;
-            };
-        }
-
-        @SuppressWarnings("PMD.CyclomaticComplexity")
         public static ElementKind fromTopology(TopologyKind topologyKind) {
             return switch (topologyKind == null ? TopologyKind.EMPTY : topologyKind) {
                 case ROOM -> ROOM;
@@ -529,6 +509,17 @@ public record DungeonEditorRuntimePointerTarget(
         static ElementKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedElementKind kind) {
             return kind == null ? EMPTY : ElementKind.valueOf(kind.name());
         }
+
+        static ElementKind fromCompatibilityName(String value) {
+            if (value == null) {
+                return EMPTY;
+            }
+            try {
+                return ElementKind.valueOf(value);
+            } catch (IllegalArgumentException ignored) {
+                return EMPTY;
+            }
+        }
     }
 
     public enum TopologyKind {
@@ -542,26 +533,12 @@ public record DungeonEditorRuntimePointerTarget(
         TRANSITION,
         FEATURE_MARKER;
 
-        public static TopologyKind fromLegacy(String value) {
-            return switch (normalized(value)) {
-                case "ROOM" -> ROOM;
-                case "CORRIDOR" -> CORRIDOR;
-                case "CORRIDOR_ANCHOR" -> CORRIDOR_ANCHOR;
-                case "DOOR" -> DOOR;
-                case "WALL" -> WALL;
-                case "STAIR" -> STAIR;
-                case "TRANSITION" -> TRANSITION;
-                case "FEATURE_MARKER" -> FEATURE_MARKER;
-                default -> EMPTY;
-            };
-        }
-
         public static TopologyKind fromDomain(DungeonTopologyElementKind kind) {
-            return kind == null ? EMPTY : fromLegacy(kind.name());
+            return kind == null ? EMPTY : fromCompatibilityName(kind.name());
         }
 
         public static TopologyKind fromPublished(src.domain.dungeon.published.DungeonTopologyElementKind kind) {
-            return kind == null ? EMPTY : fromLegacy(kind.name());
+            return kind == null ? EMPTY : fromCompatibilityName(kind.name());
         }
 
         static TopologyKind fromPrepared(DungeonEditorPreparedFrameFacts.PreparedTopologyKind kind) {
@@ -570,6 +547,17 @@ public record DungeonEditorRuntimePointerTarget(
 
         static TopologyKind defaultKind() {
             return EMPTY;
+        }
+
+        static TopologyKind fromCompatibilityName(String value) {
+            if (value == null) {
+                return EMPTY;
+            }
+            try {
+                return TopologyKind.valueOf(value);
+            } catch (IllegalArgumentException ignored) {
+                return EMPTY;
+            }
         }
 
         DungeonTopologyElementKind domainKind() {
@@ -610,7 +598,7 @@ public record DungeonEditorRuntimePointerTarget(
             return ownerId == EMPTY_ID && (isEmpty() || topologyId == EMPTY_ID);
         }
 
-        public String legacyName() {
+        String stableName() {
             return this == EMPTY ? "" : name();
         }
     }
@@ -618,10 +606,6 @@ public record DungeonEditorRuntimePointerTarget(
     public enum BoundaryKind {
         WALL,
         DOOR;
-
-        public static BoundaryKind fromLegacy(String value) {
-            return "DOOR".equals(normalized(value)) ? DOOR : WALL;
-        }
 
         static BoundaryKind defaultKind() {
             return WALL;
@@ -631,11 +615,22 @@ public record DungeonEditorRuntimePointerTarget(
             return kind == null ? WALL : BoundaryKind.valueOf(kind.name());
         }
 
+        static BoundaryKind fromCompatibilityName(String value) {
+            if (value == null) {
+                return WALL;
+            }
+            try {
+                return BoundaryKind.valueOf(value);
+            } catch (IllegalArgumentException ignored) {
+                return WALL;
+            }
+        }
+
         boolean isDoor() {
             return this == DOOR;
         }
 
-        public String legacyName() {
+        String stableName() {
             return name();
         }
     }
@@ -708,10 +703,6 @@ public record DungeonEditorRuntimePointerTarget(
         }
     }
 
-    private static String normalized(String value) {
-        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT).replace('-', '_');
-    }
-
     private static void requireNonNegative(long value, String fieldName) {
         if (value < EMPTY_ID) {
             throw new IllegalArgumentException(fieldName + " must be non-negative");
@@ -723,4 +714,5 @@ public record DungeonEditorRuntimePointerTarget(
             throw new IllegalArgumentException(fieldName + " must be finite");
         }
     }
+
 }

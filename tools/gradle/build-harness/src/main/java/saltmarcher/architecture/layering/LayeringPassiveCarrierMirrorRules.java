@@ -141,6 +141,9 @@ public final class LayeringPassiveCarrierMirrorRules implements ArchitectureRule
         if (("domain".equals(layer) || "data".equals(layer)) && segments.size() >= 3) {
             return String.join("/", segments.subList(0, 3));
         }
+        if ("features".equals(layer) && segments.size() >= 3) {
+            return String.join("/", segments.subList(0, 3));
+        }
         if (!"view".equals(layer) || segments.size() < 5) {
             return null;
         }

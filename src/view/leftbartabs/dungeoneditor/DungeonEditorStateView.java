@@ -287,14 +287,10 @@ public final class DungeonEditorStateView extends VBox {
     }
 
     private void emitNameInput(
-            String targetKind,
-            long targetId,
             TextField nameField,
             boolean saveRequested
     ) {
         viewInputEventHandler.accept(new DungeonEditorStateViewInputEvent(
-                targetKind,
-                targetId,
                 nameField.getText(),
                 true,
                 saveRequested));
@@ -860,8 +856,6 @@ public final class DungeonEditorStateView extends VBox {
     private final class NameCard extends VBox {
 
         private NameCard(DungeonEditorStateContentModel.NameProjection name, boolean busy) {
-            String targetKind = name.targetKind();
-            long targetId = name.targetId();
             TextField nameField = textField(name.name());
             nameField.setAccessibleText(name.label());
             Label fieldLabel = labeled("Name", nameField);
@@ -869,11 +863,11 @@ public final class DungeonEditorStateView extends VBox {
             save.setAccessibleText(name.label() + SAVE_ACTION_SUFFIX);
             Runnable updateDisabled = () -> save.setDisable(busy || nameField.getText().isBlank());
             nameField.textProperty().addListener((ignored, before, after) -> {
-                emitNameInput(targetKind, targetId, nameField, false);
+                emitNameInput(nameField, false);
                 updateDisabled.run();
             });
             updateDisabled.run();
-            save.setOnAction(event -> emitNameInput(targetKind, targetId, nameField, true));
+            save.setOnAction(event -> emitNameInput(nameField, true));
             getChildren().addAll(new PanelTitle(name.label()), fieldLabel, nameField, save);
             getStyleClass().addAll(CARD_SURFACE_STYLE, CONTENT_CARD_STYLE);
         }

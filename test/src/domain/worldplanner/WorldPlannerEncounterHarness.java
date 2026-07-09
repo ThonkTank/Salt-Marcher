@@ -128,24 +128,24 @@ public final class WorldPlannerEncounterHarness {
                 new UpdateEncounterBuilderInputsUseCase(sessionUseCase, publishSession),
                 new PublishEncounterPlanBudgetUseCase(new NoopPlanPublicationSink(), null));
 
-        service.applyState(ApplyEncounterStateCommand.worldNpc("ADD_CREATURE", 101L, 7001L));
+        service.applyState(ApplyEncounterStateCommand.addWorldNpcCreature(101L, 7001L));
         assertEquals(7001L, sink.current.snapshot().builderState().roster().get(0).worldNpcId(), "builder world npc id");
 
-        service.applyState(ApplyEncounterStateCommand.action("OPEN_INITIATIVE"));
+        service.applyState(ApplyEncounterStateCommand.openInitiative());
         List<String> ids = sink.current.snapshot().initiativeEntries().stream()
                 .map(entry -> entry.id())
                 .toList();
         List<Integer> initiatives = sink.current.snapshot().initiativeEntries().stream()
                 .map(entry -> 12)
                 .toList();
-        service.applyState(ApplyEncounterStateCommand.initiatives("CONFIRM_INITIATIVE", ids, initiatives));
+        service.applyState(ApplyEncounterStateCommand.confirmInitiative(ids, initiatives));
 
         CombatCardData npcCard = sink.current.snapshot().combatProjection().cards().stream()
                 .filter(card -> card.worldNpcId() == 7001L)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("combat card world npc id missing"));
-        service.applyState(ApplyEncounterStateCommand.hitPoints("MUTATE_HP", npcCard.id(), 999, false));
-        service.applyState(ApplyEncounterStateCommand.action("END_COMBAT"));
+        service.applyState(ApplyEncounterStateCommand.mutateHitPoints(npcCard.id(), 999, false));
+        service.applyState(ApplyEncounterStateCommand.endCombat());
 
         ResultEnemyData result = sink.current.snapshot().resultState().enemies().stream()
                 .filter(enemy -> enemy.worldNpcId() == 7001L)

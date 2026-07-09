@@ -8,12 +8,16 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDeletionTarget;
 import src.domain.dungeon.model.core.structure.corridor.DungeonCorridorEndpoint;
+import src.domain.dungeon.model.core.structure.corridor.CorridorMapAuthoring;
 import src.domain.dungeon.model.core.structure.stair.Stair;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
 public final class ApplyDungeonEditorCorridorMutationUseCase {
+    private static final CorridorMapAuthoring CORRIDOR_AUTHORING = new CorridorMapAuthoring();
+
     private final ApplyDungeonEditorOperationUseCase operationUseCase;
     private final DungeonMapRepository repository;
 
@@ -57,28 +61,20 @@ public final class ApplyDungeonEditorCorridorMutationUseCase {
 
     public ApplyDungeonEditorOperationUseCase.OperationResultData applyDelete(
             @Nullable DungeonMapIdentity mapId,
-            long corridorId,
-            String targetKind,
-            long topologyRefId,
-            long roomId,
-            int waypointIndex
+            CorridorDeletionTarget target
     ) {
         return operationUseCase.execute(
                 mapId,
-                current -> current.deleteCorridor(corridorId, targetKind, topologyRefId, roomId, waypointIndex));
+                current -> CORRIDOR_AUTHORING.deleteCorridor(current, target));
     }
 
     public ApplyDungeonEditorOperationUseCase.OperationResultData previewDelete(
             @Nullable DungeonMapIdentity mapId,
-            long corridorId,
-            String targetKind,
-            long topologyRefId,
-            long roomId,
-            int waypointIndex
+            CorridorDeletionTarget target
     ) {
         return operationUseCase.preview(
                 mapId,
-                current -> current.deleteCorridor(corridorId, targetKind, topologyRefId, roomId, waypointIndex));
+                current -> CORRIDOR_AUTHORING.deleteCorridor(current, target));
     }
 
     private long stairIdForCorridor(

@@ -117,9 +117,9 @@ fun standardEnforcementDiagnosticSurfaceCatalog(
         enforcementDiagnosticSurface(
             surfaceId = "feature-runtime",
             diagnosticTaskName = "checkFeatureRuntimeEnforcement",
-            description = "Run the focused Feature Runtime placement enforcement diagnostic surface.",
+            description = "Run the focused Feature Runtime enforcement diagnostic surface.",
             focusSourceRoots = listOf("src/features"),
-            bundleIds = listOf("layeringArchitecture")
+            bundleIds = listOf("layeringArchitecture", "featureRuntimeFitness")
         ),
         enforcementDiagnosticSurface(
             surfaceId = "domain",

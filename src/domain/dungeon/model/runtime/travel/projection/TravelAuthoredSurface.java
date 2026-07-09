@@ -5,6 +5,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.structure.transition.TransitionDestinationTarget;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.MapData;
 
 public final class TravelAuthoredSurface {
@@ -105,29 +106,42 @@ public final class TravelAuthoredSurface {
             TransitionDestinationKind kind,
             long mapId,
             long tileId,
-            long targetTransitionId
+            TransitionDestinationTarget transitionTarget
     ) {
         TransitionDestination {
             kind = Objects.requireNonNull(kind, "kind");
             mapId = kind.isUnlinkedEntrance() ? 0L : Math.max(0L, mapId);
             tileId = kind.isOverworldTile() ? Math.max(0L, tileId) : 0L;
-            targetTransitionId = kind.isDungeonMap() ? Math.max(0L, targetTransitionId) : 0L;
+            transitionTarget = kind.isDungeonMap() && transitionTarget != null
+                    ? transitionTarget
+                    : TransitionDestinationTarget.absent();
         }
 
-        static TransitionDestination dungeonMap(long mapId, @Nullable Long transitionId) {
+        static TransitionDestination dungeonMap(
+                long mapId,
+                TransitionDestinationTarget transitionTarget
+        ) {
             return new TransitionDestination(
                     TransitionDestinationKind.DUNGEON_MAP,
                     mapId,
                     0L,
-                    transitionId == null ? 0L : transitionId);
+                    transitionTarget);
         }
 
         static TransitionDestination overworldTile(long mapId, long tileId) {
-            return new TransitionDestination(TransitionDestinationKind.OVERWORLD_TILE, mapId, tileId, 0L);
+            return new TransitionDestination(
+                    TransitionDestinationKind.OVERWORLD_TILE,
+                    mapId,
+                    tileId,
+                    TransitionDestinationTarget.absent());
         }
 
         static TransitionDestination unlinkedEntrance() {
-            return new TransitionDestination(TransitionDestinationKind.UNLINKED_ENTRANCE, 0L, 0L, 0L);
+            return new TransitionDestination(
+                    TransitionDestinationKind.UNLINKED_ENTRANCE,
+                    0L,
+                    0L,
+                    TransitionDestinationTarget.absent());
         }
 
         boolean isDungeonMapDestination() {
@@ -143,7 +157,7 @@ public final class TravelAuthoredSurface {
         }
 
         @Nullable Long transitionId() {
-            return targetTransitionId > 0L ? targetTransitionId : null;
+            return transitionTarget.asNullableLong();
         }
 
     }

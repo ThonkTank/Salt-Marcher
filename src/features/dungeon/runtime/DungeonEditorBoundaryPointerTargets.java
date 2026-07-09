@@ -2,7 +2,6 @@ package src.features.dungeon.runtime;
 
 import java.util.Map;
 import src.domain.dungeon.published.DungeonEdgeRef;
-import src.domain.dungeon.published.DungeonEditorMapHitRef;
 import src.domain.dungeon.published.DungeonEditorMapSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorTopologyElementRef;
@@ -24,19 +23,19 @@ final class DungeonEditorBoundaryPointerTargets {
             String kind = boundaryKind(boundary.kind());
             DungeonEditorRuntimePointerTarget.BoundaryTarget target =
                     new DungeonEditorRuntimePointerTarget.BoundaryTarget(
-                            DungeonEditorRuntimePointerTarget.BoundaryKind.fromLegacy(kind),
+                            DungeonEditorRuntimePointerTargetCompatibility.legacyBoundaryKind(kind),
                             boundaryKey(kind, boundary.id(), boundary.topologyRef(), edge),
                             boundary.id(),
-                            DungeonEditorRuntimePointerTarget.TopologyKind.fromLegacy(
-                                    DungeonEditorMapHitRef.topologyKind(boundary.topologyRef())),
-                            DungeonEditorMapHitRef.topologyId(boundary.topologyRef()),
+                            DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
+                                    DungeonEditorTopologyHitRefs.topologyKind(boundary.topologyRef())),
+                            DungeonEditorTopologyHitRefs.topologyId(boundary.topologyRef()),
                             edge.from().q(),
                             edge.from().r(),
                             edge.from().level(),
                             edge.to().q(),
                             edge.to().r(),
                             edge.to().level());
-            targets.put(DungeonEditorMapHitRef.edge(kind, boundary.id(), boundary.topologyRef(), edge).value(),
+            targets.put(DungeonEditorEdgeHitRefs.edge(kind, boundary.id(), boundary.topologyRef(), edge).value(),
                     DungeonEditorRuntimePointerTarget.boundary(target));
         }
     }
@@ -49,8 +48,8 @@ final class DungeonEditorBoundaryPointerTargets {
     ) {
         return kind + ":"
                 + ownerId + ":"
-                + DungeonEditorMapHitRef.topologyKind(topologyRef) + ":"
-                + DungeonEditorMapHitRef.topologyId(topologyRef) + ":"
+                + DungeonEditorTopologyHitRefs.topologyKind(topologyRef) + ":"
+                + DungeonEditorTopologyHitRefs.topologyId(topologyRef) + ":"
                 + (double) edge.from().q() + ":"
                 + (double) edge.from().r() + ":"
                 + edge.from().level() + ":"

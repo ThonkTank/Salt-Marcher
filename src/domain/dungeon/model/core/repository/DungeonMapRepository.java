@@ -25,6 +25,10 @@ public interface DungeonMapRepository {
 
     DungeonMap save(DungeonMap dungeonMap);
 
+    /**
+     * Persists the supplied authored maps as one all-or-none multi-map boundary
+     * and returns the saved readback for each committed map.
+     */
     List<DungeonMap> saveAll(List<DungeonMap> dungeonMaps);
 
     void delete(DungeonMapIdentity mapId);

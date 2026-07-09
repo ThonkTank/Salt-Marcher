@@ -6,6 +6,7 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface.CorridorConnection;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface.RoomNarration;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AreaData;
@@ -80,7 +81,8 @@ final class TravelAuthoredSurfaceQueries {
         return new AreaData(AreaKind.ROOM,
                 0L,
                 "",
-                List.of());
+                List.of(),
+                DungeonTopologyRef.empty());
     }
 
     static List<String> corridorTargetLabels(TravelAuthoredSurface surface, AreaData activeArea, long corridorId) {

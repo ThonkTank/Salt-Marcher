@@ -1,10 +1,10 @@
 package src.features.dungeon.runtime;
 
-import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.published.DungeonEditorTool;
+import src.domain.dungeon.published.DungeonEditorViewMode;
 
 final class DungeonEditorAuthoredRuntimeOperations {
     private final DungeonEditorMapCatalogRuntimeOperations mapCatalogOperations;
@@ -57,16 +57,16 @@ final class DungeonEditorAuthoredRuntimeOperations {
         return mapCatalogOperations.deleteMap(mapIdValue);
     }
 
-    DungeonEditorRuntimeOperationResult setViewMode(String viewModeKey) {
-        return projectionOperations.setViewMode(viewModeKey);
+    DungeonEditorRuntimeOperationResult setViewMode(DungeonEditorViewMode viewMode) {
+        return projectionOperations.setViewMode(viewMode);
     }
 
-    DungeonEditorRuntimeOperationResult setTool(String toolKey) {
-        return projectionOperations.setTool(toolKey);
+    DungeonEditorRuntimeOperationResult setTool(DungeonEditorTool tool) {
+        return projectionOperations.setTool(tool);
     }
 
-    DungeonEditorRuntimeOperationResult setToolAndPublishSnapshot(String toolKey) {
-        return projectionOperations.setToolAndPublishSnapshot(toolKey);
+    DungeonEditorRuntimeOperationResult setToolAndPublishSnapshot(DungeonEditorTool tool) {
+        return projectionOperations.setToolAndPublishSnapshot(tool);
     }
 
     DungeonEditorRuntimeOperationResult cancelActivePreviewSession() {
@@ -77,13 +77,8 @@ final class DungeonEditorAuthoredRuntimeOperations {
         return projectionOperations.shiftProjectionLevel(levelShift);
     }
 
-    DungeonEditorRuntimeOperationResult setOverlay(
-            String modeKey,
-            int levelRange,
-            double opacity,
-            List<Integer> selectedLevels
-    ) {
-        return projectionOperations.setOverlay(modeKey, levelRange, opacity, selectedLevels);
+    DungeonEditorRuntimeOperationResult setOverlay(DungeonEditorOverlaySettings overlaySettings) {
+        return projectionOperations.setOverlay(overlaySettings);
     }
 
     DungeonEditorRuntimeOperationResult applyRoomPaint(

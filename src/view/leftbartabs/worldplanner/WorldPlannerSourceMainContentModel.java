@@ -39,6 +39,10 @@ final class WorldPlannerSourceMainContentModel {
         refreshProjection();
     }
 
+    String stateSummary() {
+        return projection.get().summary();
+    }
+
     private void refreshProjection() {
         projection.set(Projection.from(snapshot, active, query, typeFilters));
     }

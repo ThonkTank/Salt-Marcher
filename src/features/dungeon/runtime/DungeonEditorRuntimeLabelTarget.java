@@ -1,7 +1,5 @@
 package src.features.dungeon.runtime;
 
-import java.util.Locale;
-
 public record DungeonEditorRuntimeLabelTarget(Kind kind, long id) {
     private static final DungeonEditorRuntimeLabelTarget EMPTY =
             new DungeonEditorRuntimeLabelTarget(Kind.EMPTY, 0L);
@@ -31,20 +29,8 @@ public record DungeonEditorRuntimeLabelTarget(Kind kind, long id) {
         return new DungeonEditorRuntimeLabelTarget(Kind.CLUSTER, clusterId);
     }
 
-    public static DungeonEditorRuntimeLabelTarget from(String targetKind, long targetId) {
-        return switch (normalize(targetKind)) {
-            case "ROOM" -> room(targetId);
-            case "CLUSTER" -> cluster(targetId);
-            default -> empty();
-        };
-    }
-
     public boolean present() {
         return kind != Kind.EMPTY && id > 0L;
-    }
-
-    public String targetKind() {
-        return present() ? kind.name() : "";
     }
 
     public long targetId() {
@@ -57,10 +43,6 @@ public record DungeonEditorRuntimeLabelTarget(Kind kind, long id) {
 
     public String label() {
         return kind == Kind.CLUSTER ? "Cluster-Name" : "Raum-Name";
-    }
-
-    private static String normalize(String targetKind) {
-        return targetKind == null ? "" : targetKind.trim().toUpperCase(Locale.ROOT);
     }
 
     public enum Kind {

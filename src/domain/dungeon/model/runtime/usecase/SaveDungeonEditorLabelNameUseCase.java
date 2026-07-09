@@ -25,7 +25,7 @@ public final class SaveDungeonEditorLabelNameUseCase {
         if (workflow.session().selectedMapId() != null) {
             saveLabelNameUseCase.execute(
                     workflow.session().selectedMapId(),
-                    safeInput.targetKind(),
+                    safeInput.targetType(),
                     safeInput.targetId(),
                     safeInput.name());
         }
@@ -33,15 +33,37 @@ public final class SaveDungeonEditorLabelNameUseCase {
         return effectUseCase.publishCurrent();
     }
 
-    public record LabelNameInput(String targetKind, long targetId, String name) {
+    public record LabelNameInput(TargetKind targetType, long targetId, String name) {
         public LabelNameInput {
-            targetKind = targetKind == null ? "" : targetKind.trim();
+            targetType = targetType == null ? TargetKind.EMPTY : targetType;
             targetId = Math.max(0L, targetId);
             name = name == null ? "" : name.trim();
+            if (targetType == TargetKind.EMPTY || targetId == 0L) {
+                targetType = TargetKind.EMPTY;
+                targetId = 0L;
+            }
         }
 
         static LabelNameInput empty() {
-            return new LabelNameInput("", 0L, "");
+            return new LabelNameInput(TargetKind.EMPTY, 0L, "");
+        }
+    }
+
+    public enum TargetKind {
+        EMPTY,
+        ROOM,
+        CLUSTER;
+
+        static TargetKind normalize(@Nullable TargetKind targetKind) {
+            return targetKind == null ? EMPTY : targetKind;
+        }
+
+        boolean isRoom() {
+            return this == ROOM;
+        }
+
+        boolean isCluster() {
+            return this == CLUSTER;
         }
     }
 }

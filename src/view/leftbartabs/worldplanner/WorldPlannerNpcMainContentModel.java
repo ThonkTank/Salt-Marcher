@@ -88,6 +88,27 @@ final class WorldPlannerNpcMainContentModel {
                 .orElse(null);
     }
 
+    StateProjection stateProjection(boolean encounterAvailable) {
+        Projection current = projection.get();
+        boolean selected = current.selectedNpcIndex() >= 0;
+        String encounterText = encounterAvailable
+                ? "Encounter-Aktion verfügbar."
+                : "Encounter-Service nicht verfügbar.";
+        return new StateProjection(
+                selected
+                        ? current.selectedNpcName() + " | " + current.selectedStatblockLabel()
+                        : "Kein NPC ausgewählt.",
+                selected ? encounterText : "NPC anlegen oder einen NPC aus der Liste wählen.",
+                new NpcEditor(
+                        current.selectedNpcName(),
+                        current.statblockLabels(),
+                        current.selectedStatblockLabel(),
+                        current.selectedAppearanceNotes(),
+                        current.selectedBehaviorNotes(),
+                        current.selectedHistoryNotes(),
+                        current.selectedGeneralNotes()));
+    }
+
     private void retainSelection() {
         List<WorldNpcSummary> npcs = snapshot == null ? List.of() : snapshot.npcs();
         if (npcs.stream().noneMatch(npc -> npc.npcId() == selectedNpcId)) {
@@ -111,6 +132,20 @@ final class WorldPlannerNpcMainContentModel {
             return fallback;
         }
         return rows.get(index);
+    }
+
+    record StateProjection(String statusText, String nextActionText, NpcEditor npc) {
+    }
+
+    record NpcEditor(
+            String displayName,
+            List<String> statblockLabels,
+            String selectedStatblockLabel,
+            String appearanceNotes,
+            String behaviorNotes,
+            String historyNotes,
+            String generalNotes
+    ) {
     }
 
     record Projection(

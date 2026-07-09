@@ -1,6 +1,5 @@
 package src.view.leftbartabs.worldplanner;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -19,10 +18,8 @@ final class WorldPlannerContributionModel {
     private static final int FACTIONS = 1;
     private static final int LOCATIONS = 2;
     private static final int SOURCES = 3;
-    private static final String GROUP_FACTION = "faction";
-    private static final String GROUP_TABLE = "table";
-    private static final String GROUP_TYPE = "type";
-
+    private static final String TABLE_KEY = "table";
+    private static final String FACTION_KEY = "faction";
     private final WorldPlannerControlsContentModel controlsContentModel;
     private final SearchFilterControlsContentModel searchFilterContentModel;
     private final WorldPlannerNpcMainContentModel npcMainContentModel;
@@ -215,44 +212,39 @@ final class WorldPlannerContributionModel {
     }
 
     private void applyNpcState() {
-        WorldPlannerNpcMainContentModel.Projection npc = npcMainContentModel.projectionProperty().get();
-        boolean selected = npc.selectedNpcIndex() >= 0;
-        String encounterText = encounterAvailable
-                ? "Encounter-Aktion verfügbar."
-                : "Encounter-Service nicht verfügbar.";
+        WorldPlannerNpcMainContentModel.StateProjection state =
+                npcMainContentModel.stateProjection(encounterAvailable);
+        WorldPlannerNpcMainContentModel.NpcEditor npc = state.npc();
         stateContentModel.applyProjection(new WorldPlannerStateContentModel.Projection(
                 NPCS,
                 "NPCs",
-                selected ? npc.selectedNpcName() + " | " + npc.selectedStatblockLabel() : "Kein NPC ausgewählt.",
-                selected ? encounterText : "NPC anlegen oder einen NPC aus der Liste wählen.",
+                state.statusText(),
+                state.nextActionText(),
                 new WorldPlannerStateContentModel.NpcEditor(
-                        npc.selectedNpcName(),
+                        npc.displayName(),
                         npc.statblockLabels(),
                         npc.selectedStatblockLabel(),
-                        npc.selectedAppearanceNotes(),
-                        npc.selectedBehaviorNotes(),
-                        npc.selectedHistoryNotes(),
-                        npc.selectedGeneralNotes()),
+                        npc.appearanceNotes(),
+                        npc.behaviorNotes(),
+                        npc.historyNotes(),
+                        npc.generalNotes()),
                 WorldPlannerStateContentModel.FactionEditor.empty(),
                 WorldPlannerStateContentModel.LocationEditor.empty(),
                 ""));
     }
 
     private void applyFactionState() {
-        WorldPlannerFactionMainContentModel.Projection faction = factionMainContentModel.projectionProperty().get();
-        boolean selected = faction.selectedFactionIndex() >= 0;
+        WorldPlannerFactionMainContentModel.StateProjection state =
+                factionMainContentModel.stateProjection();
+        WorldPlannerFactionMainContentModel.FactionEditor faction = state.faction();
         stateContentModel.applyProjection(new WorldPlannerStateContentModel.Projection(
                 FACTIONS,
                 "Fraktionen",
-                selected
-                        ? faction.selectedFactionName() + " | " + faction.selectedPrimaryTableLabel()
-                        : "Keine Fraktion ausgewählt.",
-                selected
-                        ? "NPCs und Bestand werden hier bearbeitet."
-                        : "Fraktion anlegen oder eine Fraktion wählen.",
+                state.statusText(),
+                state.nextActionText(),
                 WorldPlannerStateContentModel.NpcEditor.empty(),
                 new WorldPlannerStateContentModel.FactionEditor(
-                        faction.selectedFactionName(),
+                        faction.displayName(),
                         faction.encounterTableLabels(),
                         faction.selectedPrimaryTableLabel(),
                         faction.npcReferenceLabels(),
@@ -262,28 +254,26 @@ final class WorldPlannerContributionModel {
     }
 
     private void applyLocationState() {
-        WorldPlannerLocationMainContentModel.Projection location = locationMainContentModel.projectionProperty().get();
-        boolean selected = location.selectedLocationIndex() >= 0;
+        WorldPlannerLocationMainContentModel.StateProjection state =
+                locationMainContentModel.stateProjection();
+        WorldPlannerLocationMainContentModel.LocationEditor location = state.location();
         stateContentModel.applyProjection(new WorldPlannerStateContentModel.Projection(
                 LOCATIONS,
                 "Locations",
-                selected ? location.selectedLocationName() : "Keine Location ausgewählt.",
-                selected
-                        ? "Fraktions- und Tabellenlinks werden hier bearbeitet."
-                        : "Location anlegen oder eine Location wählen.",
+                state.statusText(),
+                state.nextActionText(),
                 WorldPlannerStateContentModel.NpcEditor.empty(),
                 WorldPlannerStateContentModel.FactionEditor.empty(),
                 new WorldPlannerStateContentModel.LocationEditor(
-                        location.selectedLocationName(),
+                        location.displayName(),
                         location.factionReferenceLabels(),
                         location.encounterTableLabels()),
                 ""));
     }
 
     private void applySourceState() {
-        WorldPlannerSourceMainContentModel.Projection projection =
-                sourceMainContentModel.projectionProperty().get();
-        stateContentModel.applyProjection(WorldPlannerStateContentModel.Projection.sources(projection.summary()));
+        stateContentModel.applyProjection(WorldPlannerStateContentModel.Projection.sources(
+                sourceMainContentModel.stateSummary()));
     }
 
     private void applyCurrentFilter() {
@@ -302,44 +292,33 @@ final class WorldPlannerContributionModel {
 
     private void refreshSearchProjection() {
         ModuleFilterState state = activeFilterState();
+        if (activeModuleIndex == FACTIONS) {
+            applySearchProjection("Fraktionen suchen", state.query(), factionFilterGroups(state.filters()));
+        } else if (activeModuleIndex == LOCATIONS) {
+            applySearchProjection("Locations suchen", state.query(), locationFilterGroups(state.filters()));
+        } else if (activeModuleIndex == SOURCES) {
+            applySearchProjection("Quellen suchen", state.query(), sourceFilterGroups(state.filters()));
+        } else {
+            applySearchProjection("NPCs suchen", state.query(), npcFilterGroups(state.filters()));
+        }
+    }
+
+    private void applySearchProjection(
+            String searchPrompt,
+            String searchQuery,
+            List<SearchFilterControlsContentModel.FilterGroup> groups
+    ) {
         searchFilterContentModel.applyProjection(new SearchFilterControlsContentModel.Projection(
-                searchPrompt(),
-                state.query(),
-                filterGroups(state.filters()),
-                filterChips(state.filters())));
+                searchPrompt,
+                searchQuery,
+                groups,
+                filterChips(groups)));
     }
 
-    private String searchPrompt() {
-        if (activeModuleIndex == FACTIONS) {
-            return "Fraktionen suchen";
-        }
-        if (activeModuleIndex == LOCATIONS) {
-            return "Locations suchen";
-        }
-        if (activeModuleIndex == SOURCES) {
-            return "Quellen suchen";
-        }
-        return "NPCs suchen";
-    }
-
-    private List<SearchFilterControlsContentModel.FilterGroup> filterGroups(Map<String, List<String>> filters) {
-        if (activeModuleIndex == FACTIONS) {
-            return factionFilterGroups(filters);
-        }
-        if (activeModuleIndex == LOCATIONS) {
-            return locationFilterGroups(filters);
-        }
-        if (activeModuleIndex == SOURCES) {
-            return List.of(group(GROUP_TYPE, "Typ", List.of(
-                    option(GROUP_FACTION, "Faction", selected(filters, GROUP_TYPE, GROUP_FACTION)),
-                    option("location", "Location", selected(filters, GROUP_TYPE, "location")))));
-        }
-        return npcFilterGroups(filters);
-    }
-
-    private List<SearchFilterControlsContentModel.FilterGroup> npcFilterGroups(Map<String, List<String>> filters) {
-        List<SearchFilterControlsContentModel.FilterOption> statblocks = npcMainContentModel
-                .projectionProperty()
+    private List<SearchFilterControlsContentModel.FilterGroup> npcFilterGroups(
+            Map<String, List<String>> filters
+    ) {
+        List<SearchFilterControlsContentModel.FilterOption> statblocks = npcMainContentModel.projectionProperty()
                 .get()
                 .statblockLabels()
                 .stream()
@@ -352,13 +331,15 @@ final class WorldPlannerContributionModel {
                 group("statblock", "Statblock", statblocks));
     }
 
-    private List<SearchFilterControlsContentModel.FilterGroup> factionFilterGroups(Map<String, List<String>> filters) {
-        WorldPlannerFactionMainContentModel.Projection projection = factionMainContentModel.projectionProperty().get();
+    private List<SearchFilterControlsContentModel.FilterGroup> factionFilterGroups(
+            Map<String, List<String>> filters
+    ) {
+        WorldPlannerFactionMainContentModel.Projection current = factionMainContentModel.projectionProperty().get();
         return List.of(
-                group(GROUP_TABLE, "Tabelle", projection.encounterTableLabels().stream()
-                        .map(label -> option(idKey(label), label, selected(filters, GROUP_TABLE, idKey(label))))
+                group(TABLE_KEY, "Tabelle", current.encounterTableLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, TABLE_KEY, idKey(label))))
                         .toList()),
-                group("npc", "NPC", projection.npcReferenceLabels().stream()
+                group("npc", "NPC", current.npcReferenceLabels().stream()
                         .map(label -> option(idKey(label), label, selected(filters, "npc", idKey(label))))
                         .toList()),
                 group("stock", "Bestand", List.of(
@@ -366,38 +347,39 @@ final class WorldPlannerContributionModel {
                         option("unlimited", "Unlimitiert", selected(filters, "stock", "unlimited")))));
     }
 
-    private List<SearchFilterControlsContentModel.FilterGroup> locationFilterGroups(Map<String, List<String>> filters) {
-        WorldPlannerLocationMainContentModel.Projection projection = locationMainContentModel.projectionProperty().get();
+    private List<SearchFilterControlsContentModel.FilterGroup> locationFilterGroups(
+            Map<String, List<String>> filters
+    ) {
+        WorldPlannerLocationMainContentModel.Projection current = locationMainContentModel.projectionProperty().get();
         return List.of(
-                group(GROUP_FACTION, "Fraktion", projection.factionReferenceLabels().stream()
-                        .map(label -> option(idKey(label), label, selected(filters, GROUP_FACTION, idKey(label))))
+                group(FACTION_KEY, "Fraktion", current.factionReferenceLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, FACTION_KEY, idKey(label))))
                         .toList()),
-                group(GROUP_TABLE, "Tabelle", projection.encounterTableLabels().stream()
-                        .map(label -> option(idKey(label), label, selected(filters, GROUP_TABLE, idKey(label))))
+                group(TABLE_KEY, "Tabelle", current.encounterTableLabels().stream()
+                        .map(label -> option(idKey(label), label, selected(filters, TABLE_KEY, idKey(label))))
                         .toList()));
     }
 
-    private List<SearchFilterControlsContentModel.FilterChip> filterChips(Map<String, List<String>> filters) {
-        List<SearchFilterControlsContentModel.FilterChip> chips = new ArrayList<>();
-        for (SearchFilterControlsContentModel.FilterGroup group : filterGroups(filters)) {
-            for (SearchFilterControlsContentModel.FilterOption option : group.options()) {
-                if (option.selected()) {
-                    chips.add(new SearchFilterControlsContentModel.FilterChip(
-                            group.key(),
-                            option.key(),
-                            group.label() + ": " + option.label()));
-                }
-            }
-        }
-        return List.copyOf(chips);
+    private static List<SearchFilterControlsContentModel.FilterGroup> sourceFilterGroups(
+            Map<String, List<String>> filters
+    ) {
+        return List.of(
+                group("type", "Typ", List.of(
+                        option(FACTION_KEY, "Faction", selected(filters, "type", FACTION_KEY)),
+                        option("location", "Location", selected(filters, "type", "location")))));
     }
 
-    private ModuleFilterState activeFilterState() {
-        return filterStates.getOrDefault(activeModuleIndex, ModuleFilterState.empty());
-    }
-
-    private static int normalizedModule(int moduleIndex) {
-        return Math.max(NPCS, Math.min(SOURCES, moduleIndex));
+    private static List<SearchFilterControlsContentModel.FilterChip> filterChips(
+            List<SearchFilterControlsContentModel.FilterGroup> groups
+    ) {
+        return groups.stream()
+                .flatMap(group -> group.options().stream()
+                        .filter(SearchFilterControlsContentModel.FilterOption::selected)
+                        .map(option -> new SearchFilterControlsContentModel.FilterChip(
+                                group.key(),
+                                option.key(),
+                                group.label() + ": " + option.label())))
+                .toList();
     }
 
     private static SearchFilterControlsContentModel.FilterGroup group(
@@ -427,6 +409,14 @@ final class WorldPlannerContributionModel {
         }
         int end = label.indexOf(' ');
         return end > 1 ? label.substring(1, end) : label.substring(1);
+    }
+
+    private ModuleFilterState activeFilterState() {
+        return filterStates.getOrDefault(activeModuleIndex, ModuleFilterState.empty());
+    }
+
+    private static int normalizedModule(int moduleIndex) {
+        return Math.max(NPCS, Math.min(SOURCES, moduleIndex));
     }
 
     private record ModuleFilterState(String query, Map<String, List<String>> filters) {

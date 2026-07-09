@@ -144,6 +144,7 @@ desktop interaction or UI judgment that cannot be mechanically qualified.
 - require the repo-wide adversarial review route for repo-tracked
   implementation passes; this is a workflow obligation, not a new
   compile/build/check gate
+- `task:performance` work must name a concrete performance proof route in the PR and handoff evidence, such as wrapper elapsed time, actionable task-count readback, configuration-cache store/reuse readback, startup/runtime timing, or focused hot-path measurement. This route is review-owned unless the owner explicitly sets a numeric budget or promotes a blocker gate.
 - treat successful proof as necessary but not as a code-health verdict; code
   health and baseline admission are review-owned by
   `docs/project/architecture/project-health.md`
@@ -239,10 +240,9 @@ routes and technical diagnostics. Public proof routes are limited to:
   coverage path through root documentation rules plus coalesced per-surface
   documentation tasks, and stays intentionally outside `check` and `build`.
 - `production-handoff`
-  runs the canonical production-code route, including all current
-  non-documentation harness checks for production source, compiled production
-  classes, production topology, layer boundaries, role placement, and generic
-  architecture behavior.
+  runs the canonical production-code route, including current non-documentation
+  architecture/build-harness registration, map, topology, source,
+  compiled-class, layer-boundary, and role-placement checks. It checks behavior-harness registration/map consistency; behavior-harness execution is owned by focused behavior proof commands and CI behavior-gate routing.
 - `focused-handoff`
   runs a scoped public local route only for the reported non-empty package or
   resource paths, selected area, and engine surfaces that actually ran.
@@ -273,7 +273,7 @@ replace `production-handoff` where broad production-code handoff is required.
 It combines:
 
 - assemble
-- all non-documentation production-code harness checks
+- non-documentation architecture/build-harness registration, map, topology, and structure checks behind the production-code surface
 - the quality-hygiene blocker path through `pmdStrictMain`, first-party
   near-miss hygiene checks, SpotBugs, CPD, Lizard, compiled-artifact hygiene,
   and whole-program dead-code reachability

@@ -45,11 +45,16 @@ final class WorldPlannerIntentHandler {
         this.detailOpener = Objects.requireNonNull(detailOpener, "detailOpener");
     }
 
+    void activateRoot() {
+        refreshWorldPlanner();
+        detailOpener.run();
+    }
+
     void consume(WorldPlannerControlsViewInputEvent event) {
         WorldPlannerControlsViewInputEvent safeEvent = Objects.requireNonNull(event, EVENT);
         contributionModel.activate(safeEvent.selectedModuleIndex());
         if (safeEvent.refreshRequested()) {
-            worldPlanner.refresh(new RefreshWorldPlannerCommand());
+            refreshWorldPlanner();
         }
         detailOpener.run();
     }
@@ -168,7 +173,7 @@ final class WorldPlannerIntentHandler {
         long npcId = contributionModel.selectedNpcId();
         EncounterApplicationService service = encounter;
         if (service != null && statblockId > 0L && npcId > 0L) {
-            service.applyState(ApplyEncounterStateCommand.worldNpc("ADD_CREATURE", statblockId, npcId));
+            service.applyState(ApplyEncounterStateCommand.addWorldNpcCreature(statblockId, npcId));
         }
     }
 
@@ -207,6 +212,10 @@ final class WorldPlannerIntentHandler {
         worldPlanner.addLocationEncounterTable(new AddWorldLocationEncounterTableCommand(
                 contributionModel.selectedLocationId(),
                 contributionModel.locationTableChoiceId(event.encounterTableChoiceIndex())));
+    }
+
+    private void refreshWorldPlanner() {
+        worldPlanner.refresh(new RefreshWorldPlannerCommand());
     }
 
     private static Map<String, List<String>> selectedFiltersByGroup(SearchFilterControlsViewInputEvent event) {

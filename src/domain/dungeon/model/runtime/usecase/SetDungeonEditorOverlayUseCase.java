@@ -1,8 +1,8 @@
 package src.domain.dungeon.model.runtime.usecase;
 
-import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 
 public final class SetDungeonEditorOverlayUseCase {
@@ -18,12 +18,9 @@ public final class SetDungeonEditorOverlayUseCase {
     }
 
     public DungeonEditorSessionSnapshot.SessionFrameData execute(
-            String modeKey,
-            int levelRange,
-            double opacity,
-            List<Integer> selectedLevels
+            DungeonEditorSessionValues.OverlaySettings overlaySettings
     ) {
-        workflow.setOverlay(modeKey, levelRange, opacity, selectedLevels);
+        workflow.setOverlay(overlaySettings);
         DungeonEditorSessionSnapshot.SessionFrameData frameData =
                 DungeonEditorSessionSnapshot.sessionFrameData(workflow.session());
         snapshotPublicationUseCase.executeSessionFramePreservingSurface(frameData);

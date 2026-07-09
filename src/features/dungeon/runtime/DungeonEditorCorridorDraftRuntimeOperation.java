@@ -86,11 +86,7 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
             case DungeonEditorSessionValues.DeleteCorridorPreview corridor ->
                     mapId -> authoredOperationUseCase.executeDeleteCorridor(
                             mapId,
-                            corridor.corridorId(),
-                            corridor.targetKind(),
-                            corridor.topologyRefId(),
-                            corridor.roomId(),
-                            corridor.waypointIndex());
+                            corridor.target());
             case null, default -> null;
         };
     }

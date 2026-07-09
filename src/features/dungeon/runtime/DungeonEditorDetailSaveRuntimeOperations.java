@@ -51,9 +51,20 @@ final class DungeonEditorDetailSaveRuntimeOperations {
         DungeonEditorRuntimeLabelTarget safeTarget = DungeonEditorRuntimeLabelTarget.orEmpty(target);
         return DungeonEditorRuntimeResultTranslator.fromSnapshot(
                 saveLabelNameUseCase.execute(new SaveDungeonEditorLabelNameUseCase.LabelNameInput(
-                        safeTarget.targetKind(),
+                        labelTargetKind(safeTarget),
                         safeTarget.targetId(),
                         name)));
+    }
+
+    private static SaveDungeonEditorLabelNameUseCase.TargetKind labelTargetKind(
+            DungeonEditorRuntimeLabelTarget target
+    ) {
+        DungeonEditorRuntimeLabelTarget safeTarget = DungeonEditorRuntimeLabelTarget.orEmpty(target);
+        return switch (safeTarget.kind()) {
+            case ROOM -> SaveDungeonEditorLabelNameUseCase.TargetKind.ROOM;
+            case CLUSTER -> SaveDungeonEditorLabelNameUseCase.TargetKind.CLUSTER;
+            case EMPTY -> SaveDungeonEditorLabelNameUseCase.TargetKind.EMPTY;
+        };
     }
 
     DungeonEditorRuntimeOperationResult saveTransitionLink(
@@ -62,7 +73,7 @@ final class DungeonEditorDetailSaveRuntimeOperations {
             long targetTransitionId,
             boolean bidirectional
     ) {
-        return DungeonEditorRuntimeResultTranslator.fromSnapshot(
+        return DungeonEditorRuntimeResultTranslator.fromOperationResult(
                 saveTransitionLinkUseCase.execute(new SaveDungeonEditorTransitionLinkUseCase.TransitionLinkInput(
                         sourceTransitionId,
                         targetMapId,

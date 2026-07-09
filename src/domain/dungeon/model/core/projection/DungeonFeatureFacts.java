@@ -4,7 +4,6 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public record DungeonFeatureFacts(
@@ -18,27 +17,6 @@ public record DungeonFeatureFacts(
         DungeonTopologyRef topologyRef,
         @Nullable Edge anchorEdge
 ) {
-
-    public DungeonFeatureFacts(
-            DungeonFeatureType kind,
-            long id,
-            String label,
-            List<Cell> cells,
-            String description,
-            String destinationLabel,
-            List<String> facts
-    ) {
-        this(
-                kind,
-                id,
-                label,
-                cells,
-                description,
-                destinationLabel,
-                facts,
-                defaultTopologyRef(kind, id),
-                null);
-    }
 
     public DungeonFeatureFacts(
             DungeonFeatureType kind,
@@ -61,9 +39,7 @@ public record DungeonFeatureFacts(
         description = description == null ? "" : description.trim();
         destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
         facts = copyFacts(facts);
-        topologyRef = topologyRef == null
-                ? new DungeonTopologyRef(topologyKind(kind), id)
-                : topologyRef;
+        topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
     }
 
     @Override
@@ -85,19 +61,4 @@ public record DungeonFeatureFacts(
         return List.copyOf(result);
     }
 
-    private static DungeonTopologyRef defaultTopologyRef(DungeonFeatureType kind, long id) {
-        DungeonFeatureType resolvedKind = kind == null ? DungeonFeatureType.STAIR : kind;
-        long resolvedId = Math.max(1L, id);
-        return new DungeonTopologyRef(topologyKind(resolvedKind), resolvedId);
-    }
-
-    private static DungeonTopologyElementKind topologyKind(DungeonFeatureType kind) {
-        if (kind == DungeonFeatureType.TRANSITION) {
-            return DungeonTopologyElementKind.TRANSITION;
-        }
-        if (kind != null && kind.isMarker()) {
-            return DungeonTopologyElementKind.FEATURE_MARKER;
-        }
-        return DungeonTopologyElementKind.STAIR;
-    }
 }

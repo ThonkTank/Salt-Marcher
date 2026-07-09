@@ -1,28 +1,94 @@
 package src.domain.dungeon.model.runtime.travel.session;
 
 import java.util.List;
-import java.util.Objects;
 
-public record TravelDungeonSessionCommand(
-        String action,
-        String actionId,
-        int projectionLevel,
-        String overlayModeKey,
-        int overlayLevelRange,
-        double overlayOpacity,
-        List<Integer> overlaySelectedLevels
-) {
-    public TravelDungeonSessionCommand {
-        action = Objects.requireNonNull(action, "action").trim();
-        actionId = actionId == null ? "" : actionId.trim();
-        overlayModeKey = overlayModeKey == null ? "" : overlayModeKey.trim();
-        overlayLevelRange = Math.max(0, overlayLevelRange);
-        overlayOpacity = Math.max(0.0, Math.min(1.0, overlayOpacity));
-        overlaySelectedLevels = overlaySelectedLevels == null ? List.of() : List.copyOf(overlaySelectedLevels);
+public final class TravelDungeonSessionCommand {
+
+    private final Variant variant;
+
+    private TravelDungeonSessionCommand(Variant variant) {
+        this.variant = variant;
     }
 
-    @Override
-    public List<Integer> overlaySelectedLevels() {
-        return List.copyOf(overlaySelectedLevels);
+    public static TravelDungeonSessionCommand refresh() {
+        return new TravelDungeonSessionCommand(new Refresh());
+    }
+
+    public static TravelDungeonSessionCommand travelAction(String actionId) {
+        return new TravelDungeonSessionCommand(new TravelAction(actionId));
+    }
+
+    public static TravelDungeonSessionCommand selectMap(String mapIdValue) {
+        return new TravelDungeonSessionCommand(new SelectMap(mapIdValue));
+    }
+
+    public static TravelDungeonSessionCommand setProjectionLevel(int projectionLevel) {
+        return new TravelDungeonSessionCommand(new SetProjectionLevel(projectionLevel));
+    }
+
+    public static TravelDungeonSessionCommand shiftProjectionLevel(int projectionLevelShift) {
+        return new TravelDungeonSessionCommand(new ShiftProjectionLevel(projectionLevelShift));
+    }
+
+    public static TravelDungeonSessionCommand setOverlay(
+            String overlayModeKey,
+            int overlayLevelRange,
+            double overlayOpacity,
+            List<Integer> overlaySelectedLevels
+    ) {
+        return new TravelDungeonSessionCommand(
+                new SetOverlay(overlayModeKey, overlayLevelRange, overlayOpacity, overlaySelectedLevels));
+    }
+
+    public Variant variant() {
+        return variant;
+    }
+
+    public sealed interface Variant permits Refresh, TravelAction, SelectMap, SetProjectionLevel,
+            ShiftProjectionLevel, SetOverlay {
+    }
+
+    public record Refresh() implements Variant {
+    }
+
+    public record TravelAction(String actionId) implements Variant {
+        public TravelAction {
+            actionId = normalizeText(actionId);
+        }
+    }
+
+    public record SelectMap(String mapIdValue) implements Variant {
+        public SelectMap {
+            mapIdValue = normalizeText(mapIdValue);
+        }
+    }
+
+    public record SetProjectionLevel(int projectionLevel) implements Variant {
+    }
+
+    public record ShiftProjectionLevel(int projectionLevelShift) implements Variant {
+    }
+
+    public record SetOverlay(
+            String overlayModeKey,
+            int overlayLevelRange,
+            double overlayOpacity,
+            List<Integer> overlaySelectedLevels
+    ) implements Variant {
+        public SetOverlay {
+            overlayModeKey = normalizeText(overlayModeKey);
+            overlayLevelRange = Math.max(0, overlayLevelRange);
+            overlayOpacity = Math.max(0.0, Math.min(1.0, overlayOpacity));
+            overlaySelectedLevels = overlaySelectedLevels == null ? List.of() : List.copyOf(overlaySelectedLevels);
+        }
+
+        @Override
+        public List<Integer> overlaySelectedLevels() {
+            return List.copyOf(overlaySelectedLevels);
+        }
+    }
+
+    private static String normalizeText(String value) {
+        return value == null ? "" : value.trim();
     }
 }

@@ -4,6 +4,7 @@ import com.github.spotbugs.snom.SpotBugsExtension
 import com.github.spotbugs.snom.SpotBugsTask
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.plugins.quality.Pmd
+import org.gradle.api.tasks.Delete
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.compile.JavaCompile
@@ -13,6 +14,7 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.verification.BehaviorHarnessClassification
 import saltmarcher.buildlogic.verification.BehaviorHarnessRegistry
 import saltmarcher.buildlogic.tasks.MainClassesSystemPropertyProvider
+import saltmarcher.buildlogic.tasks.hygiene.ValidateSpotbugsCoverageTask
 
 plugins {
     java
@@ -168,22 +170,40 @@ spotbugs {
 tasks.withType<SpotBugsTask>().configureEach {
     excludeFilter.set(spotbugsExcludeFilterFile)
     reports {
-        create("html") {
-            required.set(true)
-        }
         create("xml") {
             required.set(true)
         }
     }
 }
 
-tasks.named<SpotBugsTask>("spotbugsMain") {
+val spotbugsMain = tasks.named<SpotBugsTask>("spotbugsMain") {
     this.classes = sourceSets["main"].output.classesDirs
     auxClassPaths.from(sourceSets["main"].output.classesDirs)
 }
+val spotbugsHtmlReportFile = layout.buildDirectory.file("reports/spotbugs/main.html")
+val spotbugsCoverageMarker = layout.buildDirectory.file("verification-markers/spotbugsMainCoverage/success.marker")
+
+val cleanSpotbugsMainEvidence = tasks.register<Delete>("cleanSpotbugsMainEvidence") {
+    delete(spotbugsCoverageMarker)
+    delete(spotbugsHtmlReportFile)
+}
+
+val validateSpotbugsMainCoverage = tasks.register<ValidateSpotbugsCoverageTask>("validateSpotbugsMainCoverage") {
+    group = LifecycleBasePlugin.VERIFICATION_GROUP
+    description = "Fail if SpotBugs XML reports zero analysed classes while compiled production classes exist."
+    xmlReportFile.set(layout.buildDirectory.file("reports/spotbugs/main.xml"))
+    compiledClasses.from(sourceSets["main"].output.classesDirs)
+    successMarker.set(spotbugsCoverageMarker)
+    mustRunAfter(spotbugsMain)
+}
+
+spotbugsMain.configure {
+    dependsOn(cleanSpotbugsMainEvidence)
+    finalizedBy(validateSpotbugsMainCoverage)
+}
 
 gradle.projectsEvaluated {
-    tasks.named<SpotBugsTask>("spotbugsMain") {
+    spotbugsMain.configure {
         init(project.extensions.getByType<SpotBugsExtension>(), false)
     }
 }

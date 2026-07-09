@@ -112,23 +112,6 @@ final class DungeonMapConnectionAuthoring {
         return corridorAuthoring.createCorridor(dungeonMap, stairId, start, end);
     }
 
-    DungeonMap deleteCorridor(
-            DungeonMap dungeonMap,
-            long corridorId,
-            String targetKind,
-            long topologyRefId,
-            long roomId,
-            int waypointIndex
-    ) {
-        return corridorAuthoring.deleteCorridor(
-                dungeonMap,
-                corridorId,
-                targetKind,
-                topologyRefId,
-                roomId,
-                waypointIndex);
-    }
-
     private DungeonMap withRelocatedDoorBoundary(
             DungeonMap baseMap,
             DungeonMap relocationSourceMap,

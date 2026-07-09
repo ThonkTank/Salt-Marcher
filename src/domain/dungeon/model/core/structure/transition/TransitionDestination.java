@@ -6,7 +6,7 @@ public record TransitionDestination(
         TransitionDestinationType type,
         long mapId,
         long tileId,
-        @Nullable Long transitionId
+        TransitionDestinationTarget transitionTarget
 ) {
     private static final String OVERWORLD_TILE_LABEL = "Overworld-Feld ";
     private static final String DUNGEON_LABEL = "Dungeon ";
@@ -17,19 +17,31 @@ public record TransitionDestination(
         type = TransitionDestinationType.normalize(type);
         mapId = type.isUnlinkedEntrance() ? 0L : Math.max(0L, mapId);
         tileId = type.isOverworldTile() ? Math.max(0L, tileId) : 0L;
-        transitionId = normalizedTransitionId(type, transitionId);
+        transitionTarget = normalizedTransitionTarget(type, transitionTarget);
     }
 
     public static TransitionDestination dungeonMap(long mapId, @Nullable Long transitionId) {
-        return new TransitionDestination(TransitionDestinationType.DUNGEON_MAP, mapId, 0L, transitionId);
+        return dungeonMap(mapId, TransitionDestinationTarget.fromPositiveId(transitionId));
+    }
+
+    public static TransitionDestination dungeonMap(long mapId, TransitionDestinationTarget transitionTarget) {
+        return new TransitionDestination(TransitionDestinationType.DUNGEON_MAP, mapId, 0L, transitionTarget);
     }
 
     public static TransitionDestination overworldTile(long mapId, long tileId) {
-        return new TransitionDestination(TransitionDestinationType.OVERWORLD_TILE, mapId, tileId, null);
+        return new TransitionDestination(
+                TransitionDestinationType.OVERWORLD_TILE,
+                mapId,
+                tileId,
+                TransitionDestinationTarget.absent());
     }
 
     public static TransitionDestination unlinkedEntrance() {
-        return new TransitionDestination(TransitionDestinationType.UNLINKED_ENTRANCE, 0L, 0L, null);
+        return new TransitionDestination(
+                TransitionDestinationType.UNLINKED_ENTRANCE,
+                0L,
+                0L,
+                TransitionDestinationTarget.absent());
     }
 
     public boolean isDungeonMap() {
@@ -54,7 +66,7 @@ public record TransitionDestination(
     }
 
     public boolean referencesTransition(long candidateTransitionId) {
-        return transitionId != null && transitionId == candidateTransitionId;
+        return transitionTarget.present() && transitionTarget.transitionId() == candidateTransitionId;
     }
 
     public String label() {
@@ -62,6 +74,7 @@ public record TransitionDestination(
             return OVERWORLD_TILE_LABEL + tileId;
         }
         if (isDungeonMap()) {
+            Long transitionId = transitionId();
             return transitionId == null
                     ? DUNGEON_LABEL + mapId
                     : DUNGEON_LABEL + mapId + TRANSITION_LABEL + transitionId;
@@ -72,20 +85,17 @@ public record TransitionDestination(
         return "";
     }
 
-    private static @Nullable Long positiveTransitionId(@Nullable Long candidate) {
-        if (candidate == null || candidate <= 0L) {
-            return null;
-        }
-        return candidate;
+    public @Nullable Long transitionId() {
+        return transitionTarget.asNullableLong();
     }
 
-    private static @Nullable Long normalizedTransitionId(
+    private static TransitionDestinationTarget normalizedTransitionTarget(
             TransitionDestinationType type,
-            @Nullable Long candidate
+            TransitionDestinationTarget candidate
     ) {
         if (type.isUnlinkedEntrance()) {
-            return null;
+            return TransitionDestinationTarget.absent();
         }
-        return positiveTransitionId(candidate);
+        return candidate == null ? TransitionDestinationTarget.absent() : candidate;
     }
 }

@@ -9,7 +9,7 @@ public record TravelActionFacts(
         String destinationLabel,
         String description,
         @Nullable TravelPositionFacts targetPosition,
-        @Nullable TravelTransitionTarget transitionTarget
+        TravelTransitionTarget transitionTarget
 ) {
 
     public TravelActionFacts {
@@ -18,6 +18,7 @@ public record TravelActionFacts(
         label = label == null || label.isBlank() ? kind.name() : label.trim();
         destinationLabel = cleanText(destinationLabel);
         description = cleanText(description);
+        transitionTarget = transitionTarget == null ? TravelTransitionTarget.absent() : transitionTarget;
     }
 
     public String displayLabel() {

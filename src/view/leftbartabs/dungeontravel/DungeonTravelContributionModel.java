@@ -1,6 +1,7 @@
 package src.view.leftbartabs.dungeontravel;
 
 import java.util.List;
+import java.util.Optional;
 import javafx.beans.property.ReadOnlyIntegerWrapper;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -51,6 +52,18 @@ public final class DungeonTravelContributionModel {
 
     void bindMapCatalogContentModel(CatalogCrudControlsContentModel contentModel) {
         mapCatalogContentModel = contentModel;
+    }
+
+    Optional<String> actionIdForRow(int rowIndex) {
+        List<ActionProjection> currentActions = actions.get();
+        if (rowIndex < 0 || currentActions == null || rowIndex >= currentActions.size()) {
+            return Optional.empty();
+        }
+        String actionId = currentActions.get(rowIndex).actionId();
+        if (actionId.isBlank()) {
+            return Optional.empty();
+        }
+        return Optional.of(actionId);
     }
 
     void applyMapCatalog(DungeonMapCatalogResponse response, long selectedMapId) {
@@ -137,17 +150,22 @@ public final class DungeonTravelContributionModel {
         if (projections == null) {
             return List.of();
         }
-        return projections.stream()
-                .map(DungeonTravelContributionModel::toStateActionItem)
-                .toList();
+        List<DungeonTravelStateContentModel.ActionItem> items = new java.util.ArrayList<>();
+        for (int index = 0; index < projections.size(); index++) {
+            items.add(toStateActionItem(index, projections.get(index)));
+        }
+        return List.copyOf(items);
     }
 
-    private static DungeonTravelStateContentModel.ActionItem toStateActionItem(ActionProjection projection) {
+    private static DungeonTravelStateContentModel.ActionItem toStateActionItem(
+            int rowIndex,
+            ActionProjection projection
+    ) {
         if (projection == null) {
-            return DungeonTravelStateContentModel.ActionItem.of("", "", "");
+            return DungeonTravelStateContentModel.ActionItem.of(rowIndex, "", "");
         }
         return DungeonTravelStateContentModel.ActionItem.of(
-                projection.actionId(),
+                rowIndex,
                 projection.buttonLabel(),
                 projection.descriptionText());
     }

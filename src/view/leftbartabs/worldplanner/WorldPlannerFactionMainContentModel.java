@@ -105,6 +105,24 @@ final class WorldPlannerFactionMainContentModel {
                 .orElse(null);
     }
 
+    StateProjection stateProjection() {
+        Projection current = projection.get();
+        boolean selected = current.selectedFactionIndex() >= 0;
+        return new StateProjection(
+                selected
+                        ? current.selectedFactionName() + " | " + current.selectedPrimaryTableLabel()
+                        : "Keine Fraktion ausgewählt.",
+                selected
+                        ? "NPCs und Bestand werden hier bearbeitet."
+                        : "Fraktion anlegen oder eine Fraktion wählen.",
+                new FactionEditor(
+                        current.selectedFactionName(),
+                        current.encounterTableLabels(),
+                        current.selectedPrimaryTableLabel(),
+                        current.npcReferenceLabels(),
+                        current.statblockLabels()));
+    }
+
     private void retainSelection() {
         List<WorldFactionSummary> factions = snapshot == null ? List.of() : snapshot.factions();
         if (factions.stream().noneMatch(faction -> faction.factionId() == selectedFactionId)) {
@@ -141,6 +159,18 @@ final class WorldPlannerFactionMainContentModel {
 
     private static List<CreatureCatalogRow> creatureRows(CreatureCatalogPageResult result) {
         return result == null || result.page() == null ? List.of() : result.page().rows();
+    }
+
+    record StateProjection(String statusText, String nextActionText, FactionEditor faction) {
+    }
+
+    record FactionEditor(
+            String displayName,
+            List<String> encounterTableLabels,
+            String selectedPrimaryTableLabel,
+            List<String> npcReferenceLabels,
+            List<String> statblockLabels
+    ) {
     }
 
     record Projection(

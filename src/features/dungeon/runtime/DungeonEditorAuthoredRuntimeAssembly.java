@@ -1,7 +1,6 @@
 package src.features.dungeon.runtime;
 
 import java.util.Objects;
-import shell.api.ServiceRegistry;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.core.usecase.ApplyDungeonMapCatalogUseCase;
 import src.domain.dungeon.model.core.usecase.BuildDungeonDerivedStateUseCase;
@@ -21,6 +20,7 @@ import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorHandleMutation
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorHandleOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorTransitionLinkOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonRoomWallMutationUseCase;
 import src.domain.dungeon.model.runtime.usecase.AssembleDungeonSnapshotUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorSnapshotUseCase;
@@ -68,18 +68,19 @@ final class DungeonEditorAuthoredRuntimeAssembly {
     }
 
     static AssemblyResult create(
-            ServiceRegistry registry,
+            DungeonEditorRuntimeDependencies dependencies,
             DungeonEditorMainViewInteractionState interactionState
     ) {
-        ServiceRegistry safeRegistry = Objects.requireNonNull(registry, "registry");
+        DungeonEditorRuntimeDependencies safeDependencies =
+                Objects.requireNonNull(dependencies, "dependencies");
         DungeonEditorMainViewInteractionState safeInteractionState =
                 Objects.requireNonNull(interactionState, "interactionState");
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         DungeonAuthoredPublishedStateRepository authoredPublishedState =
-                safeRegistry.require(DungeonAuthoredPublishedStateRepository.class);
+                safeDependencies.publishedStateRepositories().authoredPublishedStateRepository();
         DungeonEditorSnapshotPublishedStateRepository editorPublishedState =
-                safeRegistry.require(DungeonEditorSnapshotPublishedStateRepository.class);
-        AuthoredUseCases authored = authoredUseCases(safeRegistry, authoredPublishedState, dungeonState);
+                safeDependencies.publishedStateRepositories().editorSnapshotPublishedStateRepository();
+        AuthoredUseCases authored = authoredUseCases(safeDependencies, authoredPublishedState, dungeonState);
         DungeonEditorSessionWorkflow workflow = new DungeonEditorSessionWorkflow();
         InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter =
                 new InterpretDungeonEditorMainViewInputUseCase(safeInteractionState);
@@ -232,14 +233,14 @@ final class DungeonEditorAuthoredRuntimeAssembly {
     }
 
     private static AuthoredUseCases authoredUseCases(
-            ServiceRegistry registry,
+            DungeonEditorRuntimeDependencies dependencies,
             DungeonAuthoredPublishedStateRepository publishedState,
             DungeonEditorDungeonState dungeonState
     ) {
-        ApplyDungeonMapCatalogUseCase catalogUseCase = mapCatalogUseCase(registry);
-        LoadDungeonSnapshotUseCase loadSnapshotUseCase = loadDungeonSnapshotUseCase(registry);
-        DungeonMapRepository repository = registry.require(DungeonMapRepository.class);
-        SnapshotParts snapshotParts = snapshotParts(registry);
+        DungeonMapRepository repository = dependencies.authoredMapPersistence().repositoryForRuntimeAssembly();
+        ApplyDungeonMapCatalogUseCase catalogUseCase = mapCatalogUseCase(repository);
+        LoadDungeonSnapshotUseCase loadSnapshotUseCase = loadDungeonSnapshotUseCase(repository);
+        SnapshotParts snapshotParts = snapshotParts(repository);
         ApplyDungeonEditorOperationUseCase operationUseCase = authoredOperationUseCase(snapshotParts, repository);
         ApplyDungeonAuthoredMutationUseCase mutationUseCase =
                 new ApplyDungeonAuthoredMutationUseCase(operationUseCase);
@@ -278,10 +279,11 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 new SaveDungeonEditorAuthoredLabelNameUseCase(mutationUseCase, publishMutationUseCase),
                 new SaveDungeonEditorAuthoredTransitionDescriptionUseCase(operationUseCase, publishMutationUseCase),
                 new SaveDungeonEditorAuthoredTransitionLinkUseCase(
-                        repository,
-                        snapshotParts.derive(),
-                        snapshotParts.assembleDungeonSnapshotUseCase(),
-                        snapshotParts.publishDungeonEditorHandlesUseCase(),
+                        new ApplyDungeonEditorTransitionLinkOperationUseCase(
+                                repository,
+                                snapshotParts.derive(),
+                                snapshotParts.assembleDungeonSnapshotUseCase(),
+                                snapshotParts.publishDungeonEditorHandlesUseCase()),
                         publishMutationUseCase),
                 new SaveDungeonEditorAuthoredStairGeometryUseCase(
                         operationUseCase,
@@ -315,8 +317,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                         publishMutationUseCase));
     }
 
-    private static ApplyDungeonMapCatalogUseCase mapCatalogUseCase(ServiceRegistry registry) {
-        DungeonMapRepository repository = registry.require(DungeonMapRepository.class);
+    private static ApplyDungeonMapCatalogUseCase mapCatalogUseCase(DungeonMapRepository repository) {
         return new ApplyDungeonMapCatalogUseCase(
                 new SearchDungeonMapsUseCase(repository),
                 new CreateDungeonMapUseCase(repository),
@@ -324,8 +325,8 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 new DeleteDungeonMapUseCase(repository));
     }
 
-    private static LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase(ServiceRegistry registry) {
-        SnapshotParts parts = snapshotParts(registry);
+    private static LoadDungeonSnapshotUseCase loadDungeonSnapshotUseCase(DungeonMapRepository repository) {
+        SnapshotParts parts = snapshotParts(repository);
         InspectDungeonSelectionUseCase inspectDungeonSelectionUseCase =
                 new InspectDungeonSelectionUseCase(parts.derive());
         return new LoadDungeonSnapshotUseCase(
@@ -347,10 +348,10 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 parts.publishDungeonEditorHandlesUseCase());
     }
 
-    private static SnapshotParts snapshotParts(ServiceRegistry registry) {
+    private static SnapshotParts snapshotParts(DungeonMapRepository repository) {
         BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
         return new SnapshotParts(
-                new LoadDungeonMapUseCase(registry.require(DungeonMapRepository.class)),
+                new LoadDungeonMapUseCase(repository),
                 new PublishDungeonEditorHandlesUseCase(),
                 derive,
                 new AssembleDungeonSnapshotUseCase(derive));

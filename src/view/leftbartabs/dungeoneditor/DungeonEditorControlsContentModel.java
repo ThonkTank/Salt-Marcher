@@ -1,61 +1,27 @@
 package src.view.leftbartabs.dungeoneditor;
 
-import java.util.EnumMap;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 import javafx.beans.property.ReadOnlyObjectProperty;
-import javafx.beans.property.ReadOnlyObjectWrapper;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 
 final class DungeonEditorControlsContentModel {
-    private static final String SELECT_TOOL = "SELECT";
-    private static final String ROOM_PAINT_TOOL = "ROOM_PAINT";
-    private static final String WALL_CREATE_TOOL = "WALL_CREATE";
-    private static final String DOOR_CREATE_TOOL = "DOOR_CREATE";
-    private static final String CORRIDOR_CREATE_TOOL = "CORRIDOR_CREATE";
-    private static final String STAIR_CREATE_TOOL = "STAIR_CREATE";
-    private static final String STAIR_CREATE_SQUARE_TOOL = "STAIR_CREATE_SQUARE";
-    private static final String STAIR_CREATE_CIRCULAR_TOOL = "STAIR_CREATE_CIRCULAR";
-    private static final String TRANSITION_CREATE_TOOL = "TRANSITION_CREATE";
-    private static final String FEATURE_POI_CREATE_TOOL = "FEATURE_POI_CREATE";
-    private static final String FEATURE_OBJECT_CREATE_TOOL = "FEATURE_OBJECT_CREATE";
-    private static final String FEATURE_ENCOUNTER_CREATE_TOOL = "FEATURE_ENCOUNTER_CREATE";
-    private static final Map<String, String> TOOL_LABELS = Map.ofEntries(
-            Map.entry(SELECT_TOOL, "Auswahl"),
-            Map.entry(ROOM_PAINT_TOOL, "Raum malen"),
-            Map.entry(WALL_CREATE_TOOL, "Wand setzen"),
-            Map.entry(DOOR_CREATE_TOOL, "Tür setzen"),
-            Map.entry(CORRIDOR_CREATE_TOOL, "Korridor erstellen"),
-            Map.entry(STAIR_CREATE_TOOL, "Treppe erstellen"),
-            Map.entry(STAIR_CREATE_SQUARE_TOOL, "Treppe erstellen"),
-            Map.entry(STAIR_CREATE_CIRCULAR_TOOL, "Treppe erstellen"),
-            Map.entry(TRANSITION_CREATE_TOOL, "Übergang erstellen"),
-            Map.entry(FEATURE_POI_CREATE_TOOL, "POI erstellen"),
-            Map.entry(FEATURE_OBJECT_CREATE_TOOL, "Objekt erstellen"),
-            Map.entry(FEATURE_ENCOUNTER_CREATE_TOOL, "Encounter erstellen"));
-
-    private final ReadOnlyObjectWrapper<MapProjection> mapProjection =
-            new ReadOnlyObjectWrapper<>(MapProjection.empty());
-    private final ReadOnlyObjectWrapper<MapEditorUiState> mapEditor =
-            new ReadOnlyObjectWrapper<>(MapEditorUiState.hidden());
-    private final ReadOnlyObjectWrapper<ProjectionState> projection =
-            new ReadOnlyObjectWrapper<>(ProjectionState.initial());
-    private final ReadOnlyObjectWrapper<ToolProjection> toolProjection =
-            new ReadOnlyObjectWrapper<>(ToolProjection.initial());
-    private final Map<ToolFamily, String> selectedFamilyOptionKeys = new EnumMap<>(ToolFamily.class);
+    private final DungeonEditorMapCatalogContentPartModel mapCatalog = new DungeonEditorMapCatalogContentPartModel();
+    private final DungeonEditorProjectionOverlayContentPartModel projectionOverlay =
+            new DungeonEditorProjectionOverlayContentPartModel();
+    private final DungeonEditorToolPaletteContentPartModel toolPalette =
+            new DungeonEditorToolPaletteContentPartModel();
 
     ReadOnlyObjectProperty<MapEditorUiState> mapEditorProperty() {
-        return mapEditor.getReadOnlyProperty();
+        return mapCatalog.mapEditorProperty();
     }
 
     ReadOnlyObjectProperty<ProjectionState> projectionProperty() {
-        return projection.getReadOnlyProperty();
+        return projectionOverlay.projectionProperty();
     }
 
     ReadOnlyObjectProperty<ToolProjection> toolProjectionProperty() {
-        return toolProjection.getReadOnlyProperty();
+        return toolPalette.toolProjectionProperty();
     }
 
     void showControls(
@@ -69,97 +35,52 @@ final class DungeonEditorControlsContentModel {
             int projectionLevel,
             String selectedTool
     ) {
-        MapProjection nextMapProjection = new MapProjection(maps, selectedKey, busy, statusText);
-        mapProjection.set(nextMapProjection);
-        mapEditor.set(MapEditorUiState.resolve(mapEditor.get()).synchronizeWith(nextMapProjection.maps()));
+        MapProjection nextMapProjection = mapCatalog.showMapCatalog(maps, selectedKey, busy, statusText);
         boolean hasMap = !nextMapProjection.selectedKey().isBlank();
-        projection.set(new ProjectionState(
-                projectionLevel,
+        projectionOverlay.showProjection(
+                reachableLevels,
                 busy,
-                hasMap && !safeLevels(reachableLevels).isEmpty(),
+                hasMap,
                 overlaySettings,
-                OverlayPanelState.from(overlaySettings, busy),
-                busy,
-                viewMode,
-                graphViewLabel().equals(normalizeViewModeKey(viewMode))));
-        if (defaultToolLabel().equals(selectedTool)) {
-            selectedFamilyOptionKeys.clear();
-        }
-        toolProjection.set(new ToolProjection(selectedTool, toolControls()));
+                projectionLevel,
+                viewMode);
+        toolPalette.showSelectedTool(selectedTool);
     }
 
     List<OverlayModeOption> overlayModeOptions() {
-        return List.of(
-                new OverlayModeOption(overlayOffMode(), "Aus", false, false),
-                new OverlayModeOption(overlayNearbyMode(), "Nahe Ebenen", true, false),
-                new OverlayModeOption(overlaySelectedMode(), defaultToolLabel(), false, true));
+        return projectionOverlay.overlayModeOptions();
     }
 
     ToolControls toolControls() {
-        return ToolControls.current(selectedFamilyOptionKeys);
+        return toolPalette.toolControls();
     }
 
     void rememberToolSelection(String requestedFamilyKey, String selectedToolKey, String selectedOptionKey) {
-        ToolFamily requestedFamily = ToolFamily.fromKey(requestedFamilyKey);
-        ToolFamily selectedFamily = ToolFamily.fromToolKey(selectedToolKey);
-        ToolFamily family = selectedFamily == null ? requestedFamily : selectedFamily;
-        String optionKey = selectedOptionKey == null || selectedOptionKey.isBlank()
-                ? selectedToolKey
-                : selectedOptionKey;
-        if (family != null && family.containsOptionKey(optionKey)) {
-            selectedFamilyOptionKeys.put(family, optionKey);
-            toolProjection.set(new ToolProjection(toolProjection.get().selectedTool(), toolControls()));
-        }
+        toolPalette.rememberToolSelection(requestedFamilyKey, selectedToolKey, selectedOptionKey);
     }
 
     MapEditorUiState currentMapEditorUiState() {
-        return MapEditorUiState.resolve(mapEditor.get());
+        return mapCatalog.currentMapEditorUiState();
     }
 
     void openCreateMapEditor() {
-        mapEditor.set(MapEditorUiState.create("Dungeon"));
+        mapCatalog.openCreateMapEditor();
     }
 
     void openSelectedMapEditor(MapEditorMode mode, long mapIdValue) {
-        MapItem mapItem = mapProjection.get().mapItem(mapIdValue);
-        if (mapItem == null) {
-            mapEditor.set(MapEditorUiState.hidden());
-            return;
-        }
-        if (mode != null && mode.isRenameMode()) {
-            mapEditor.set(MapEditorUiState.rename(mapItem.mapId(), mapItem.mapName()));
-            return;
-        }
-        if (mode != null && mode.isDeleteMode()) {
-            mapEditor.set(MapEditorUiState.delete(mapItem.mapId(), mapItem.mapName()));
-        }
+        mapCatalog.openSelectedMapEditor(mode, mapIdValue);
     }
 
     void updateMapEditorDraft(String draftName) {
-        MapEditorUiState currentState = currentMapEditorUiState();
-        if (!currentState.visible()) {
-            return;
-        }
-        String safeDraftName = draftName == null ? "" : draftName;
-        if (currentState.draftName().equals(safeDraftName) && currentState.errorText().isBlank()) {
-            return;
-        }
-        mapEditor.set(currentState.withDraftName(safeDraftName).withErrorText(""));
+        mapCatalog.updateMapEditorDraft(draftName);
     }
 
     void showMapEditorValidationError(String errorText) {
-        MapEditorUiState currentState = currentMapEditorUiState();
-        if (currentState.visible()) {
-            mapEditor.set(currentState.withErrorText(errorText));
-        }
+        mapCatalog.showMapEditorValidationError(errorText);
     }
 
     void closeMapEditor() {
-        mapEditor.set(MapEditorUiState.hidden());
-    }
-
-    private static List<Integer> safeLevels(List<Integer> levels) {
-        return levels == null ? List.of() : List.copyOf(levels);
+        mapCatalog.closeMapEditor();
     }
 
     private static @Nullable MapItem findMapEntry(List<MapItem> mapEntries, long mapIdValue) {
@@ -334,53 +255,7 @@ final class DungeonEditorControlsContentModel {
             String triggerText
     ) {
         static OverlayPanelState from(DungeonOverlaySettings settings, boolean disabled) {
-            DungeonOverlaySettings safeSettings = settings == null ? DungeonOverlaySettings.defaults() : settings;
-            String modeKey = normalizeModeKey(safeSettings.modeKey());
-            int levelRange = Math.max(1, safeSettings.levelRange());
-            double opacity = Math.max(0.1, Math.min(0.9, safeSettings.opacity()));
-            String opacityText = opacityText(opacity);
-            String selectedLevelsText = selectedLevelList(safeSettings.selectedLevels());
-            return new OverlayPanelState(
-                    modeKey,
-                    levelRange,
-                    opacity * 100.0,
-                    opacityText,
-                    selectedLevelsText,
-                    overlayNearbyMode().equals(modeKey),
-                    overlaySelectedMode().equals(modeKey),
-                    disabled,
-                    triggerText(modeKey, levelRange, opacityText, selectedLevelsText));
-        }
-
-        private static String opacityText(double opacity) {
-            return Math.round(opacity * 100.0) + "%";
-        }
-
-        private static String triggerText(
-                String modeKey,
-                int levelRange,
-                String opacityText,
-                String selectedLevelsText
-        ) {
-            if (overlayNearbyMode().equals(modeKey)) {
-                return "Overlay: Nachbarn +/-" + levelRange + " " + opacityText;
-            }
-            if (overlaySelectedMode().equals(modeKey)) {
-                return "Overlay: Auswahl z=" + selectedLevelSummary(selectedLevelsText) + " " + opacityText;
-            }
-            return "Overlay: Aus";
-        }
-
-        private static String selectedLevelSummary(String selectedLevelsText) {
-            return selectedLevelsText.isBlank() ? "-" : selectedLevelsText;
-        }
-
-        private static String selectedLevelList(List<Integer> levels) {
-            return (levels == null ? List.<Integer>of() : levels).stream()
-                    .distinct()
-                    .sorted()
-                    .map(String::valueOf)
-                    .collect(Collectors.joining(", "));
+            return DungeonEditorProjectionOverlayContentPartModel.overlayPanelState(settings, disabled);
         }
     }
 
@@ -420,11 +295,15 @@ final class DungeonEditorControlsContentModel {
             selectedTool = selectedTool == null || selectedTool.isBlank()
                     ? defaultToolLabel()
                     : selectedTool;
-            toolControls = toolControls == null ? ToolControls.current(Map.of()) : toolControls;
+            toolControls = toolControls == null
+                    ? DungeonEditorToolPaletteContentPartModel.defaultToolControls()
+                    : toolControls;
         }
 
         static ToolProjection initial() {
-            return new ToolProjection(defaultToolLabel(), ToolControls.current(Map.of()));
+            return new ToolProjection(
+                    defaultToolLabel(),
+                    DungeonEditorToolPaletteContentPartModel.defaultToolControls());
         }
     }
 
@@ -441,20 +320,6 @@ final class DungeonEditorControlsContentModel {
             ToolFamilyButton stair,
             ToolFamilyButton transition
     ) {
-        private static ToolControls current(Map<ToolFamily, String> selectedFamilyOptionKeys) {
-            return new ToolControls(
-                    defaultToolLabel(),
-                    gridViewLabel(),
-                    graphViewLabel(),
-                    new ToolButton(defaultToolLabel(), defaultToolLabel(), SELECT_TOOL),
-                    ToolFamily.ROOM.toButton(selectedFamilyOptionKeys),
-                    ToolFamily.WALL.toButton(selectedFamilyOptionKeys),
-                    ToolFamily.DOOR.toButton(selectedFamilyOptionKeys),
-                    ToolFamily.CORRIDOR.toButton(selectedFamilyOptionKeys),
-                    ToolFamily.FEATURE.toButton(selectedFamilyOptionKeys),
-                    ToolFamily.STAIR.toButton(selectedFamilyOptionKeys),
-                    ToolFamily.TRANSITION.toButton(selectedFamilyOptionKeys));
-        }
     }
 
     record ToolFamilyButton(
@@ -499,237 +364,27 @@ final class DungeonEditorControlsContentModel {
         }
     }
 
-    enum ToolFamily {
-        ROOM("ROOM", "Raum", ROOM_PAINT_TOOL),
-        WALL(
-                "WALL",
-                "Wand",
-                WALL_CREATE_TOOL,
-                new ToolOptionSpec(
-                        wallPathModeOptionKey(),
-                        "Pfad",
-                        WALL_CREATE_TOOL,
-                        true),
-                new ToolOptionSpec(
-                        wallSingleClickModeOptionKey(),
-                        "Einzeln",
-                        WALL_CREATE_TOOL,
-                        true)),
-        DOOR("DOOR", "Tür", DOOR_CREATE_TOOL),
-        CORRIDOR("CORRIDOR", "Korridor", CORRIDOR_CREATE_TOOL),
-        FEATURE(
-                "FEATURE",
-                "Feature",
-                FEATURE_POI_CREATE_TOOL,
-                new ToolOptionSpec(
-                        "FEATURE_POI",
-                        "POI",
-                        FEATURE_POI_CREATE_TOOL,
-                        true),
-                new ToolOptionSpec(
-                        "FEATURE_OBJECT",
-                        "Objekt",
-                        FEATURE_OBJECT_CREATE_TOOL,
-                        true),
-                new ToolOptionSpec(
-                        "FEATURE_ENCOUNTER",
-                        "Encounter",
-                        FEATURE_ENCOUNTER_CREATE_TOOL,
-                        true)),
-        STAIR(
-                "STAIR",
-                "Treppe",
-                STAIR_CREATE_TOOL,
-                new ToolOptionSpec(
-                        "STAIR_STRAIGHT",
-                        "Gerade",
-                        STAIR_CREATE_TOOL,
-                        true),
-                new ToolOptionSpec(
-                        "STAIR_ANGULAR_SPIRAL",
-                        "Eckspirale",
-                        STAIR_CREATE_SQUARE_TOOL,
-                        true),
-                new ToolOptionSpec(
-                        "STAIR_ROUND_SPIRAL",
-                        "Rundspirale",
-                        STAIR_CREATE_CIRCULAR_TOOL,
-                        true)),
-        TRANSITION("TRANSITION", "Übergang", TRANSITION_CREATE_TOOL);
-
-        private final String key;
-        private final String label;
-        private final String primaryTool;
-        private final List<ToolOptionSpec> optionSpecs;
-
-        ToolFamily(String key, String label, String primaryTool, ToolOptionSpec... optionSpecs) {
-            this.key = key;
-            this.label = label;
-            this.primaryTool = primaryTool;
-            this.optionSpecs = List.copyOf(List.of(optionSpecs));
-        }
-
-        private ToolFamilyButton toButton(Map<ToolFamily, String> selectedFamilyOptionKeys) {
-            return new ToolFamilyButton(
-                    key,
-                    label,
-                    selectedOptionKey(selectedFamilyOptionKeys),
-                    toolOptions());
-        }
-
-        private String selectedOptionKey(Map<ToolFamily, String> selectedFamilyOptionKeys) {
-            String rememberedKey = selectedFamilyOptionKeys.get(this);
-            return containsOptionKey(rememberedKey) ? rememberedKey : toolOptions().getFirst().key();
-        }
-
-        private boolean containsToolKey(@Nullable String toolKey) {
-            if (primaryTool.equals(toolKey)) {
-                return true;
-            }
-            for (ToolButton option : toolOptions()) {
-                if (option.toolKey().equals(toolKey)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private boolean containsOptionKey(@Nullable String optionKey) {
-            if (optionKey == null || optionKey.isBlank()) {
-                return false;
-            }
-            for (ToolButton option : toolOptions()) {
-                if (option.enabled() && option.key().equals(optionKey)) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        private List<ToolButton> toolOptions() {
-            if (optionSpecs.isEmpty()) {
-                return List.of(toToolButton(primaryTool));
-            }
-            return optionSpecs.stream()
-                    .map(option -> new ToolButton(
-                            option.label(),
-                            labelOf(option.toolKey()),
-                            option.key(),
-                            option.toolKey(),
-                            option.enabled()))
-                    .toList();
-        }
-
-        private static ToolButton toToolButton(String tool) {
-            String label = labelOf(tool);
-            return new ToolButton(label, label, tool);
-        }
-
-        private static @Nullable ToolFamily fromKey(@Nullable String familyKey) {
-            if (familyKey == null || familyKey.isBlank()) {
-                return null;
-            }
-            for (ToolFamily family : values()) {
-                if (family.key.equalsIgnoreCase(familyKey.strip())) {
-                    return family;
-                }
-            }
-            return null;
-        }
-
-        private static @Nullable ToolFamily fromToolKey(@Nullable String selectedToolKey) {
-            if (selectedToolKey == null || selectedToolKey.isBlank()) {
-                return null;
-            }
-            for (ToolFamily family : values()) {
-                if (family.containsToolKey(selectedToolKey.strip())) {
-                    return family;
-                }
-            }
-            return null;
-        }
-    }
-
-    private record ToolOptionSpec(String key, String label, String toolKey, boolean enabled) {
-        ToolOptionSpec {
-            key = key == null ? "" : key;
-            label = label == null ? "" : label;
-            toolKey = toolKey == null ? "" : toolKey;
-        }
-
-    }
-
     static String defaultToolLabel() {
-        return labelOf(SELECT_TOOL);
+        return DungeonEditorToolPaletteContentPartModel.defaultToolLabel();
     }
 
     static String gridViewLabel() {
-        return "Grid";
+        return DungeonEditorToolPaletteContentPartModel.gridViewLabel();
     }
 
     static String graphViewLabel() {
-        return "Graph";
-    }
-
-    static String wallPathModeOptionKey() {
-        return "WALL_PATH";
-    }
-
-    static String wallSingleClickModeOptionKey() {
-        return "WALL_SINGLE_CLICK";
+        return DungeonEditorToolPaletteContentPartModel.graphViewLabel();
     }
 
     boolean wallSingleClickModeSelected() {
-        return wallSingleClickModeOptionKey().equals(selectedFamilyOptionKeys.get(ToolFamily.WALL));
-    }
-
-    static String labelOf(@Nullable String tool) {
-        return ToolPresentation.labelOf(tool);
+        return toolPalette.wallSingleClickModeSelected();
     }
 
     static String normalizeViewModeKey(@Nullable String viewModeKey) {
-        return ToolPresentation.normalizeViewModeKey(viewModeKey);
-    }
-
-    static String normalizedToolKey(@Nullable String selectedToolKey) {
-        return ToolPresentation.toPublishedToolKey(selectedToolKey);
-    }
-
-    private interface ToolPresentation {
-
-        static String labelOf(@Nullable String tool) {
-            return TOOL_LABELS.get(toPublishedToolKey(tool));
-        }
-
-        static String normalizeViewModeKey(@Nullable String viewModeKey) {
-            return graphViewLabel().equals(viewModeKey) ? graphViewLabel() : gridViewLabel();
-        }
-
-        static String toPublishedToolKey(@Nullable String selectedToolKey) {
-            String safeToolKey = selectedToolKey == null ? "" : selectedToolKey.trim();
-            return TOOL_LABELS.containsKey(safeToolKey) ? safeToolKey : SELECT_TOOL;
-        }
+        return DungeonEditorToolPaletteContentPartModel.normalizeViewModeKey(viewModeKey);
     }
 
     private static String normalizeModeKey(@Nullable String modeKey) {
-        if (overlayNearbyMode().equalsIgnoreCase(modeKey)) {
-            return overlayNearbyMode();
-        }
-        if (overlaySelectedMode().equalsIgnoreCase(modeKey)) {
-            return overlaySelectedMode();
-        }
-        return overlayOffMode();
-    }
-
-    private static String overlayOffMode() {
-        return "OFF";
-    }
-
-    private static String overlayNearbyMode() {
-        return "NEARBY";
-    }
-
-    private static String overlaySelectedMode() {
-        return "SELECTED";
+        return DungeonEditorProjectionOverlayContentPartModel.normalizeModeKey(modeKey);
     }
 }

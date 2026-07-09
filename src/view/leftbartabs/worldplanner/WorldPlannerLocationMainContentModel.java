@@ -81,6 +81,20 @@ final class WorldPlannerLocationMainContentModel {
                 .orElse(null);
     }
 
+    StateProjection stateProjection() {
+        Projection current = projection.get();
+        boolean selected = current.selectedLocationIndex() >= 0;
+        return new StateProjection(
+                selected ? current.selectedLocationName() : "Keine Location ausgewählt.",
+                selected
+                        ? "Fraktions- und Tabellenlinks werden hier bearbeitet."
+                        : "Location anlegen oder eine Location wählen.",
+                new LocationEditor(
+                        current.selectedLocationName(),
+                        current.factionReferenceLabels(),
+                        current.encounterTableLabels()));
+    }
+
     private void retainSelection() {
         List<WorldLocationSummary> locations = snapshot == null ? List.of() : snapshot.locations();
         if (locations.stream().noneMatch(location -> location.locationId() == selectedLocationId)) {
@@ -111,6 +125,16 @@ final class WorldPlannerLocationMainContentModel {
             return fallback;
         }
         return rows.get(index);
+    }
+
+    record StateProjection(String statusText, String nextActionText, LocationEditor location) {
+    }
+
+    record LocationEditor(
+            String displayName,
+            List<String> factionReferenceLabels,
+            List<String> encounterTableLabels
+    ) {
     }
 
     record Projection(

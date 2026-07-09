@@ -1,18 +1,24 @@
-Status: Draft
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-07
-Source of Truth: Authored dungeon map boundary language between
-the authored dungeon root-boundary family and downstream runtime-workspace
-contexts for map read, preview, apply, inspector, travel, and catalog work.
+Last Reviewed: 2026-07-07
+Source of Truth: Current review-owned Dungeon map surface compatibility
+contract between authored dungeon map boundaries and downstream
+runtime-workspace contexts; target feature-runtime ownership remains in the
+project-wide owner standards.
 
 # Dungeon Map Surface Contract
 
 ## Purpose
 
-This contract defines the canonical dungeon-native request and response
-families for committed map reads, authored edit preview and apply, selection
-inspection, travel action, and catalog behavior as the dungeon adoption of
-the generic maps feature.
+This contract records the current dungeon-native request and response families
+for committed map reads, authored edit preview and apply, selection
+inspection, travel action, and catalog behavior as the dungeon adoption of the
+generic maps feature.
+
+It is not target feature-runtime conformance for the live Dungeon Editor
+view/shell/UI seam. Target raw-input UI, shell binding, runtime render frame,
+and typed raw-input ownership remains in
+[Feature Runtime Architecture](docs/project/architecture/patterns/feature-runtime.md:1).
 
 Owners:
 
@@ -153,9 +159,20 @@ family-based authored-read, authored-mutation, catalog, and travel families.
 Runtime-workspace contexts now compose their own workspace surfaces from the
 authored family results they actually consume.
 
+The live Dungeon Editor still reaches this surface through the legacy
+`src/view/**` ShellContribution, Binder, and IntentHandler before dispatching
+into feature-runtime operations. That path is current compatibility, not target
+feature-runtime conformance.
+
+Removal condition: Dungeon Editor shell registration and raw input UI are owned
+by the feature-runtime shell/UI seam, with runtime render frames and typed
+raw-input APIs consumed directly by that seam.
+
 ## Verification Notes
 
 - This contract is currently `Review-Owned`.
+- Review must treat the live Dungeon Editor legacy view/shell/UI route as
+  current compatibility, not target feature-runtime conformance.
 - Review must reject reintroduction of standalone one-off dungeon boundary
   carriers that bypass the four canonical families.
 - Review must reject a second public authored dungeon edit body beside

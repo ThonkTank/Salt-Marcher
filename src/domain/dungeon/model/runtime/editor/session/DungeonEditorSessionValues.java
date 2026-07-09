@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDeletionTarget;
 
 public final class DungeonEditorSessionValues {
 
@@ -18,10 +19,6 @@ public final class DungeonEditorSessionValues {
 
         private ViewMode(String name) {
             this.name = name;
-        }
-
-        public static ViewMode fromName(@Nullable String name) {
-            return "GRAPH".equals(name) ? GRAPH : GRID;
         }
 
         public static ViewMode defaultMode() {
@@ -91,16 +88,6 @@ public final class DungeonEditorSessionValues {
             this.name = name;
         }
 
-        public static Tool fromName(@Nullable String name) {
-            String safeName = name == null ? SELECT.name : name;
-            for (Tool tool : VALUES) {
-                if (tool.name.equals(safeName)) {
-                    return tool;
-                }
-            }
-            return SELECT;
-        }
-
         public static Tool defaultTool() {
             return SELECT;
         }
@@ -143,24 +130,24 @@ public final class DungeonEditorSessionValues {
     }
 
     public static final class OverlaySettings {
-        private final String modeKey;
+        private final Mode mode;
         private final int levelRange;
         private final double opacity;
         private final List<Integer> selectedLevels;
 
-        public OverlaySettings(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
-            this.modeKey = modeKey == null || modeKey.isBlank() ? "OFF" : modeKey;
+        public OverlaySettings(Mode mode, int levelRange, double opacity, List<Integer> selectedLevels) {
+            this.mode = mode == null ? Mode.OFF : mode;
             this.levelRange = Math.max(0, levelRange);
             this.opacity = Math.max(0.0, Math.min(1.0, opacity));
             this.selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
         }
 
         public static OverlaySettings defaults() {
-            return new OverlaySettings("OFF", 2, 0.35, List.of());
+            return new OverlaySettings(Mode.OFF, 2, 0.35, List.of());
         }
 
         public String modeKey() {
-            return modeKey;
+            return mode.name();
         }
 
         public int levelRange() {
@@ -185,19 +172,25 @@ public final class DungeonEditorSessionValues {
             }
             return levelRange == that.levelRange
                     && Double.compare(opacity, that.opacity) == 0
-                    && Objects.equals(modeKey, that.modeKey)
+                    && mode == that.mode
                     && Objects.equals(selectedLevels, that.selectedLevels);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(modeKey, levelRange, opacity, selectedLevels);
+            return Objects.hash(mode, levelRange, opacity, selectedLevels);
         }
 
         @Override
         public String toString() {
             return "OverlaySettings[modeKey=%s, levelRange=%d, opacity=%s, selectedLevels=%s]"
-                    .formatted(modeKey, levelRange, opacity, selectedLevels);
+                    .formatted(modeKey(), levelRange, opacity, selectedLevels);
+        }
+
+        public enum Mode {
+            OFF,
+            NEARBY,
+            SELECTED;
         }
     }
 
@@ -343,48 +336,18 @@ public final class DungeonEditorSessionValues {
     }
 
     public static final class DeleteCorridorPreview implements Preview {
-        private final long corridorId;
-        private final String targetKind;
-        private final long topologyRefId;
-        private final long roomId;
-        private final int waypointIndex;
+        private final CorridorDeletionTarget target;
 
-        public DeleteCorridorPreview(long corridorId) {
-            this(corridorId, "CORRIDOR", 0L, 0L, 0);
+        public DeleteCorridorPreview(CorridorDeletionTarget target) {
+            this.target = target == null ? CorridorDeletionTarget.wholeCorridor(0L) : target;
         }
 
-        public DeleteCorridorPreview(
-                long corridorId,
-                String targetKind,
-                long topologyRefId,
-                long roomId,
-                int waypointIndex
-        ) {
-            this.corridorId = Math.max(0L, corridorId);
-            this.targetKind = targetKind == null || targetKind.isBlank() ? "CORRIDOR" : targetKind;
-            this.topologyRefId = Math.max(0L, topologyRefId);
-            this.roomId = Math.max(0L, roomId);
-            this.waypointIndex = Math.max(0, waypointIndex);
+        public CorridorDeletionTarget target() {
+            return target;
         }
 
         public long corridorId() {
-            return corridorId;
-        }
-
-        public String targetKind() {
-            return targetKind;
-        }
-
-        public long topologyRefId() {
-            return topologyRefId;
-        }
-
-        public long roomId() {
-            return roomId;
-        }
-
-        public int waypointIndex() {
-            return waypointIndex;
+            return target.corridorId();
         }
     }
 

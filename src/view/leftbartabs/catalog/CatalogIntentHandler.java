@@ -178,7 +178,7 @@ final class CatalogIntentHandler {
     }
 
     private void addCreatureToEncounter(long creatureId) {
-        encounters.applyState(ApplyEncounterStateCommand.creature("ADD_CREATURE", creatureId));
+        encounters.applyState(ApplyEncounterStateCommand.addCreature(creatureId));
     }
 
     private static int toDifficultyLevel(double value) {

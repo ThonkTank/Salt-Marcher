@@ -32,17 +32,20 @@ Does not apply to:
 
 Current enforcement status:
 
-- `src/features/**` feature-runtime conformance is currently `Review-Owned`
-  unless a later document names a specific mechanical gate.
+- `checkFeatureRuntimeEnforcement` is the named mechanical gate for focused
+  `src/features/**` placement plus the feature-runtime fitness invariants
+  listed below.
 - Existing `checkViewEnforcement` and `checkDomainEnforcement` routes do not
   prove feature-runtime conformance for `src/features/**`.
-- `checkFeatureRuntimeEnforcement` is a layering-backed scoped diagnostic for
-  `src/features/**` source-root placement only. It does not prove internal
-  feature-runtime topology or passive-carrier mirror absence inside
-  `src/features/**`.
+- The feature-runtime gate runs the layering-backed `src/features/**`
+  source-root placement diagnostics plus the `featureRuntimeFitness` bundle.
 - Active non-empty `src/features/**` source roots are allowed by the layering
-  `src/` direct-child allowlist. Their internal feature-runtime topology
-  remains Review-Owned until a later document names a specific mechanical gate.
+  `src/` direct-child allowlist. The feature-runtime fitness bundle adds a
+  narrow topology gate without forcing legacy `src/view/**` or `src/domain/**`
+  role chains into `src/features/**`.
+- The former retained fitness-function gap is closed as
+  [PH-20260707-001](../project-health-debt.md#ph-20260707-001---feature-runtime-fitness-function-gap);
+  remaining non-listed expectations stay Review-Owned.
 
 ## Current State And Target State
 
@@ -50,7 +53,8 @@ Current state:
 
 - SaltMarcher's canonical view and domain standards are still rooted in
   `src/view/**` and `src/domain/**`.
-- No current mechanical gate owns `src/features/**` feature-runtime topology.
+- `checkFeatureRuntimeEnforcement` owns the narrow feature-runtime fitness
+  invariants listed below.
 
 Target state:
 
@@ -62,6 +66,18 @@ Target state:
   prepared runtime frames
 - storage code under `src/features/<feature>/storage/**` persists authored facts
 - shell registration under `src/features/<feature>/shell/**` stays narrow
+
+## Current Compatibility Inventory
+
+These rows record current compatibility under the feature-runtime owner. They
+are not target naming precedent for new `src/features/**` work.
+
+| Surface | Owner | Current disposition | Affected paths | Removal condition |
+| --- | --- | --- | --- | --- |
+| Dungeon Editor legacy view/shell/UI seam | feature-runtime, view-layer | Current compatibility, not target feature-runtime conformance. The live path still registers Dungeon Editor through the legacy `src/view/**` shell contribution and routes raw map input through the view Binder/IntentHandler into feature-runtime operation ports. | `src/view/leftbartabs/dungeoneditor/**`, `src/features/dungeon/shell/DungeonEditorFeatureShellBinding.java`, `bootstrap/ShellViewDiscovery.java` | Dungeon Editor shell registration and raw input UI are owned by the feature-runtime shell/UI seam, with runtime render frames and typed raw-input APIs consumed directly by that seam. |
+| `InterpretDungeonEditorMainViewInputUseCase` | feature-runtime | Current compatibility. The `UseCase` suffix maps to a runtime operation-engine/input-interpretation component and is not domain-role naming precedent. | `src/features/dungeon/runtime/InterpretDungeonEditorMainViewInputUseCase.java` | The Dungeon Editor runtime operation/input boundary is renamed or retired into target feature-runtime vocabulary, or a later narrow feature-runtime topology rule explicitly accepts or rejects these suffixes. |
+| `DungeonEditorBoundaryClusterCellsHelper` | feature-runtime | Current compatibility. The `Helper` suffix maps to private runtime implementation detail and is not shared architecture vocabulary. | `src/features/dungeon/runtime/DungeonEditorBoundaryClusterCellsHelper.java` | The Dungeon Editor runtime operation/input boundary is renamed or retired into target feature-runtime vocabulary, or a later narrow feature-runtime topology rule explicitly accepts or rejects these suffixes. |
+| `DungeonEditorRuntimePointerPort` | feature-runtime | Current compatibility. The `Port` suffix maps to the temporary runtime pointer-operation compatibility seam and is not target shell/storage port precedent. | `src/features/dungeon/runtime/DungeonEditorRuntimePointerPort.java` | The Dungeon Editor runtime operation/input boundary is renamed or retired into target feature-runtime vocabulary, or a later narrow feature-runtime topology rule explicitly accepts or rejects these suffixes. |
 
 ## Canonical Vocabulary
 
@@ -81,6 +97,36 @@ Feature Runtime Architecture uses these target terms:
 These are architecture terms first, not mandatory filename suffixes for Wave 1.
 Future implementation waves may choose exact class names and local package
 splits, but they must preserve these ownership boundaries.
+
+## Mechanical Fitness Gate
+
+`./gradlew checkFeatureRuntimeEnforcement --console=plain` is mechanically
+enforced for these `src/features/**` invariants:
+
+- `feature-runtime-package-family-shape`: feature source files live only under
+  `runtime/`, `ui/`, `storage/`, or `shell/`.
+- `feature-runtime-runtime-root-presence`: every feature with runtime sources
+  declares exactly one public final `runtime/*FeatureRuntimeRoot.java` owner
+  that directly exposes the `RuntimeOperations` boundary and has a static
+  `create(...)` factory consuming `RuntimeDependencies`.
+- `feature-runtime-shell-binding-narrowness`: shell sources stay at the
+  `*FeatureShellBinding` or narrow `*Operations` seam and import only
+  JDK/JavaFX delivery APIs, shell public contracts, same-feature runtime APIs,
+  and same-feature domain readback/persistence seams.
+- `feature-runtime-compatibility-seam-locality`: retained
+  `*Compatibility.java` seams stay package-private inside `runtime/`, keep a
+  `LEGACY_REMOVE_ON_TOUCH` marker, and are referenced only by same-feature
+  runtime sources.
+- `layering-no-passive-carrier-shape-mirror-inside-feature-root`: the
+  feature-runtime route includes the layering passive-carrier mirror scanner
+  for `src/features/<feature>` roots so focused feature-runtime proof rejects
+  duplicated passive record/enum carrier shapes inside the migrated feature.
+
+The gate intentionally does not prove the full semantic adequacy of runtime
+state ownership, preview/commit owner identity, render-frame publication,
+storage behavior, UI raw-input behavior, or every compatibility inventory row.
+Those expectations remain Review-Owned unless a later owner names a sharper
+mechanical invariant.
 
 ## Target Package Shape
 
@@ -181,6 +227,8 @@ Until a named gate exists, review owns:
 - whether storage remains persistence-only
 - whether preview and commit run the same operation owner
 - whether render frames come from runtime publication
+- whether typed target and boundary carriers drift back into legacy
+  view/domain shapes or stringly protocols
 - whether a migration still depends on a compatibility seam and, if so, which
   wave removes it
 

@@ -1500,10 +1500,13 @@
     -fx-padding: 0 0 0 6;
     -fx-spacing: 6;
 }
-.world-planner-module-tab {
+.world-planner-module-tab,
+.world-planner-refresh {
     -fx-alignment: center;
-    -fx-min-width: 84;
     -fx-padding: 5 10 5 10;
+}
+.world-planner-module-tab {
+    -fx-min-width: 84;
 }
 .search-filter-controls {
     -fx-spacing: 7;

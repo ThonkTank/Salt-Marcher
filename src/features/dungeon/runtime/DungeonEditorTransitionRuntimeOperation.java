@@ -191,7 +191,7 @@ final class DungeonEditorTransitionRuntimeOperation {
         if (type.isDungeonMap()) {
             return src.domain.dungeon.model.core.structure.transition.TransitionDestination.dungeonMap(
                     safeDestination.targetMapId(),
-                    safeDestination.targetTransitionId() <= 0L ? null : safeDestination.targetTransitionId());
+                    safeDestination.targetTransition());
         }
         if (type.isOverworldTile()) {
             return src.domain.dungeon.model.core.structure.transition.TransitionDestination.overworldTile(

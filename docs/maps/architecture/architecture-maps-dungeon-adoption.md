@@ -1,22 +1,26 @@
-Status: Draft
+Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-04
-Source of Truth: Dungeon-specific current implementation adoption of the
-map-canvas constraints after the former shared `MapCanvasView` seam was
-removed, while the view layer migrates to the reusable three-role slotcontent
-model.
+Last Reviewed: 2026-07-07
+Source of Truth: Current Dungeon map adoption compatibility record for the
+legacy view/shell/UI seam; target feature-runtime and view ownership remains in
+the project-wide owner standards.
 
 # Dungeon Map Adoption Architecture
 
 ## Purpose
 
-This specification records the current implementation binding of map-canvas
+This specification records the current compatibility binding of map-canvas
 constraints onto the dungeon feature.
+
+It does not define target feature-runtime conformance. Target ownership for
+feature runtime and view roles remains in
+[Feature Runtime Architecture](docs/project/architecture/patterns/feature-runtime.md:1)
+and [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 
 It owns:
 
-- dungeon-side role adoption
-- dungeon-side capability paths
+- dungeon-side current compatibility role adoption
+- dungeon-side current capability paths
 - the rule that dungeon converts `canvas <-> dungeon grid` through one adapter
 
 It does not own dungeon behavior requirements, payload field detail, or domain
@@ -33,13 +37,14 @@ invariants.
   canvas-facing render-state owner; raw map normalization and preview
   projection publication stay upstream in the owning editor feature-runtime
   and travel runtime boundaries
-- `DungeonEditorBinder` and `DungeonTravelBinder` load dungeon
+- `DungeonEditorBinder` and `DungeonTravelBinder` currently load dungeon
   `published/*Model` handles for editor and travel model families; both
   subscribe to emitted snapshots and deliver those snapshots into the dungeon
   map slotcontent `ContentModel`
-- `DungeonEditorBinder` wires `DungeonMapViewInputEvent` into the same-root
-  `DungeonEditorIntentHandler`, which owns pointer-event interpretation and
-  feature-runtime input translation
+- `DungeonEditorBinder` currently wires `DungeonMapViewInputEvent` into the
+  same-root `DungeonEditorIntentHandler`, which owns pointer-event
+  interpretation and feature-runtime input translation as a compatibility seam,
+  not as target feature-runtime UI ownership
 - the active-root dungeon `ContributionModel` owns aggregate controls,
   inspector, status, and other non-canvas projection state, but must not
   mirror dungeon map render projection as a second render path
@@ -54,6 +59,17 @@ invariants.
   travel-session readback carriers consumed by the dungeon workspaces
 - `PartyApplicationService` owns persisted party travel position outside
   authored dungeon persistence and is consumed through dungeon travel runtime
+
+## Compatibility Boundary
+
+The live Dungeon Editor path still uses the legacy `src/view/**`
+ShellContribution, Binder, and IntentHandler to register the UI, bind the map
+surface, and translate raw map input into feature-runtime operation ports. This
+is current compatibility, not target conformance.
+
+Removal condition: Dungeon Editor shell registration and raw input UI are owned
+by the feature-runtime shell/UI seam, with runtime render frames and typed
+raw-input APIs consumed directly by that seam.
 
 ## Capability Paths
 
@@ -79,9 +95,9 @@ the boundary wrapper and commit semantics.
 Direct token drag is adapter-side travel action resolution, not a second
 backend movement path.
 
-These canvas-specific seams are current implementation seams, not new
-canonical reusable role families. The canonical reusable-slotcontent target
-lives only in the
+These canvas-specific seams are current compatibility seams, not new canonical
+reusable role families or target feature-runtime precedent. The canonical
+reusable-slotcontent target lives only in the
 [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
 
 ### Map Catalog
@@ -109,6 +125,8 @@ sharing the editor backend boundary.
 ## Verification Notes
 
 - This architecture is currently `Review-Owned`.
+- Review must treat the Dungeon Editor legacy view/shell/UI path as current
+  compatibility, not target feature-runtime conformance.
 - Review must treat `CanvasPointerEvent`, `MapRenderScene`, and `MapCanvasView`
   as removed legacy seams, not as target reusable-slotcontent truth.
 - Review must reject any second dungeon-to-canvas adapter for the same seam.

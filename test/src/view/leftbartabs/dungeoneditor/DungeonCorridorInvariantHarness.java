@@ -18,6 +18,7 @@ import src.domain.dungeon.model.core.structure.corridor.Corridor;
 import src.domain.dungeon.model.core.structure.corridor.CorridorAnchorEndpointMaterialization;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindings;
 import src.domain.dungeon.model.core.structure.corridor.CorridorBindingState;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDeletionTarget;
 import src.domain.dungeon.model.core.structure.corridor.CorridorEndpointSemantics;
 import src.domain.dungeon.model.core.structure.corridor.CorridorHostCells;
 import src.domain.dungeon.model.core.structure.corridor.CorridorNetwork;
@@ -191,10 +192,7 @@ final class DungeonCorridorInvariantHarness {
         CorridorTargetDeletion deletion = new CorridorTargetDeletion();
         Corridor withoutDoor = deletion.deleteTarget(
                 branch,
-                "DOOR",
-                400L,
-                0L,
-                -1,
+                CorridorDeletionTarget.doorBinding(20L, 400L, 0L),
                 List.of(
                         new CorridorTargetDeletion.DoorBindingTarget(removedDoor, 400L, new Cell(0, 0, 0)),
                         new CorridorTargetDeletion.DoorBindingTarget(survivingDoor, 500L, new Cell(4, 0, 0))),
@@ -210,10 +208,7 @@ final class DungeonCorridorInvariantHarness {
 
         Corridor withoutPoint = deletion.deleteTarget(
                 branch,
-                "CORRIDOR_WAYPOINT",
-                0L,
-                0L,
-                1,
+                CorridorDeletionTarget.corridorWaypoint(20L, 1),
                 List.of(),
                 List.of(),
                 List.of());

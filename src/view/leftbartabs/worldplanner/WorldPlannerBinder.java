@@ -13,7 +13,6 @@ import src.domain.creatures.published.CreatureCatalogModel;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encountertable.published.EncounterTableCatalogModel;
 import src.domain.worldplanner.WorldPlannerApplicationService;
-import src.domain.worldplanner.published.RefreshWorldPlannerCommand;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 import src.view.slotcontent.controls.searchfilter.SearchFilterControlsContentModel;
 import src.view.slotcontent.controls.searchfilter.SearchFilterControlsView;
@@ -96,7 +95,7 @@ final class WorldPlannerBinder {
             contributionModel.applyEncounterTables(encounterTableCatalog.current());
         }
         contributionModel.applySnapshot(snapshotModel.current());
-        worldPlanner.refresh(new RefreshWorldPlannerCommand());
+        intentHandler.activateRoot();
         return new Binding(ShellControls.stack(controlsView, searchFilterView), mainView, stateView);
     }
 

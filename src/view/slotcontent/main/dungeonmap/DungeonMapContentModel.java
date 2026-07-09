@@ -17,6 +17,7 @@ import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.published.DungeonTopologyKind;
 import src.domain.dungeon.published.DungeonTravelHeading;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
+import src.features.dungeon.runtime.DungeonEditorInlineLabelEditSession;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.MapSurfaceFrame;
 import src.features.dungeon.runtime.DungeonEditorPreparedFrameFacts.PreparedBoundaryKind;
@@ -149,32 +150,16 @@ public final class DungeonMapContentModel {
         publishHoverOverlay(DungeonMapRenderSceneContentPartModel.SceneBuckets.empty());
     }
 
-    public PointerTarget resolveLabelPointerTarget(double sceneX, double sceneY, String labelKind) {
-        String normalizedLabelKind = normalizeKind(labelKind, EMPTY_LABEL_KIND);
-        for (DungeonMapRenderState.Label label : renderState.labels()) {
-            if (DungeonMapRenderSceneContentPartModel.LevelFilter.includeLevel(renderState, label.z())
-                    && label.labelKind().equals(normalizedLabelKind)
-                    && labelContains(label, sceneX, sceneY)) {
-                return labelPointerTarget(label);
-            }
-        }
-        return PointerTarget.empty();
-    }
-
-    public PointerTarget resolveClusterLabelPointerTarget(double sceneX, double sceneY) {
-        return resolveLabelPointerTarget(sceneX, sceneY, CLUSTER_LABEL_KIND);
-    }
-
-    public Optional<InlineLabelEditCandidate> inlineLabelEditCandidate(PointerTarget target) {
-        return inlineLabelUiStateContentPartModel.inlineLabelEditCandidate(target, renderState.labels());
-    }
-
-    public void applyInlineLabelEditProjection(InlineLabelEditProjection projection) {
-        inlineLabelUiStateContentPartModel.applyInlineLabelEditProjection(projection);
+    public Optional<InlineLabelEditCandidate> inlineLabelEditCandidate(DungeonEditorRuntimePointerTarget target) {
+        return inlineLabelUiStateContentPartModel.inlineLabelEditCandidate(
+                inlineLabelEditPresentationKey(target),
+                renderState.labels());
     }
 
     public void applyEditorRenderFrame(DungeonEditorRenderFrame frame) {
         DungeonEditorRenderFrame safeFrame = frame == null ? DungeonEditorRenderFrame.empty() : frame;
+        inlineLabelUiStateContentPartModel.applyInlineLabelEditProjection(
+                inlineLabelProjection(safeFrame.inlineLabelEditSession()));
         DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
         DungeonEditorPreparedFrameFacts.MapInteractionFrame interactionFrame = facts.mapInteractionFrame();
         currentPointerTargetFrames = preparedPointerTargets(interactionFrame.pointerTargets());
@@ -199,6 +184,30 @@ public final class DungeonMapContentModel {
                 frame.interactionFrame(),
                 roomLabelPlacementContentPartModel,
                 previewDiffContentPartModel), frame.interactionFrame());
+    }
+
+    private static InlineLabelEditProjection inlineLabelProjection(
+            DungeonEditorInlineLabelEditSession session
+    ) {
+        DungeonEditorInlineLabelEditSession safeSession = session == null
+                ? DungeonEditorInlineLabelEditSession.inactive()
+                : session;
+        if (!safeSession.active()) {
+            return InlineLabelEditProjection.inactive();
+        }
+        return new InlineLabelEditProjection(
+                true,
+                safeSession.labelKind(),
+                safeSession.ownerId(),
+                safeSession.clusterId(),
+                safeSession.topologyKind(),
+                safeSession.topologyId(),
+                safeSession.draftText(),
+                safeSession.centerX(),
+                safeSession.centerY(),
+                safeSession.width(),
+                safeSession.height(),
+                safeSession.rotationDegrees());
     }
 
     public void applyTravelSnapshot(TravelDungeonSnapshot travelSnapshot) {
@@ -328,6 +337,23 @@ public final class DungeonMapContentModel {
                 preparedSyntheticHoverKind(safeTarget.syntheticHoverKind()));
     }
 
+    private static InlineLabelEditPresentationKey inlineLabelEditPresentationKey(
+            DungeonEditorRuntimePointerTarget target
+    ) {
+        DungeonEditorRuntimePointerTarget safeTarget = target == null
+                ? DungeonEditorRuntimePointerTarget.empty()
+                : target;
+        if (!safeTarget.isLabelTarget()) {
+            return InlineLabelEditPresentationKey.empty();
+        }
+        return new InlineLabelEditPresentationKey(
+                preparedLabelKind(safeTarget.labelKind()),
+                safeTarget.ownerId(),
+                safeTarget.clusterId(),
+                preparedTopologyKind(safeTarget.topologyKind()),
+                safeTarget.topologyId());
+    }
+
     private static BoundaryTarget runtimeHoverDisplayBoundaryTarget(
             DungeonEditorRuntimePointerTarget.BoundaryTarget boundary
     ) {
@@ -396,22 +422,6 @@ public final class DungeonMapContentModel {
 
     private List<DungeonMapHitGeometryContentPartModel.CanvasHit> hitsAt(double sceneX, double sceneY) {
         return hitGeometryContentPartModel.hitsAt(sceneX, sceneY, currentViewport().gridSize());
-    }
-
-    private static boolean labelContains(DungeonMapRenderState.Label label, double sceneX, double sceneY) {
-        return DungeonMapHitGeometryContentPartModel.pointInPolygon(
-                sceneX,
-                sceneY,
-                DungeonMapRenderSceneContentPartModel.SceneGeometry.rotatedCenteredRect(
-                        label.q(),
-                        label.r(),
-                        DungeonMapRenderSceneContentPartModel.SceneGeometry.Label.labelWidthScene(label),
-                        DungeonMapRenderSceneContentPartModel.SceneGeometry.Label.labelHeightScene(label),
-                        label.rotationDegrees()));
-    }
-
-    private static PointerTarget labelPointerTarget(DungeonMapRenderState.Label label) {
-        return PointerTarget.label(label.labelKind(), label.ownerId(), label.clusterId(), label.topologyRef());
     }
 
     static PreparedLabelKind preparedRenderLabelKind(String labelKind) {
@@ -741,7 +751,6 @@ public final class DungeonMapContentModel {
     }
 
     public record InlineLabelEditCandidate(
-            PointerTarget target,
             String text,
             double centerX,
             double centerY,
@@ -750,10 +759,38 @@ public final class DungeonMapContentModel {
             double rotationDegrees
     ) {
         public InlineLabelEditCandidate {
-            target = target == null ? PointerTarget.empty() : target;
             text = text == null ? "" : text;
             width = Math.max(1.0, width);
             height = Math.max(0.6, height);
+        }
+    }
+
+    record InlineLabelEditPresentationKey(
+            PreparedLabelKind labelKind,
+            long ownerId,
+            long clusterId,
+            PreparedTopologyKind topologyKind,
+            long topologyId
+    ) {
+        InlineLabelEditPresentationKey {
+            labelKind = labelKind == null ? PreparedLabelKind.EMPTY : labelKind;
+            ownerId = Math.max(0L, ownerId);
+            clusterId = Math.max(0L, clusterId);
+            topologyKind = topologyKind == null ? PreparedTopologyKind.EMPTY : topologyKind;
+            topologyId = Math.max(0L, topologyId);
+        }
+
+        static InlineLabelEditPresentationKey empty() {
+            return new InlineLabelEditPresentationKey(
+                    PreparedLabelKind.EMPTY,
+                    0L,
+                    0L,
+                    PreparedTopologyKind.EMPTY,
+                    0L);
+        }
+
+        boolean labelTarget() {
+            return labelKind != PreparedLabelKind.EMPTY;
         }
     }
 
@@ -1613,10 +1650,6 @@ public final class DungeonMapContentModel {
 
         public boolean isMarkerTarget() {
             return targetKind == PreparedTargetKind.MARKER;
-        }
-
-        public boolean isClusterLabelTarget() {
-            return isLabelTarget() && labelKind == PreparedLabelKind.CLUSTER_LABEL;
         }
 
         public boolean isRoomLabelTarget() {

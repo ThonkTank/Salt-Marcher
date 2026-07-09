@@ -33,11 +33,11 @@ Technical diagnostic route:
   include the same mechanical surface transitively, and the neighboring `Enforced
   Elsewhere` rows below stay in their owner-specific bundles.
 - `./gradlew checkFeatureRuntimeEnforcement --console=plain` is the
-  `src/features/**` scoped diagnostic surface backed by the same
-  `layering-architecture-enforcement` bundle. It exists for focused
-  feature-runtime placement diagnostics, not for internal feature-runtime
-  topology conformance or passive-carrier mirror absence inside
-  `src/features/**`.
+  `src/features/**` scoped diagnostic surface backed by the
+  `layering-architecture-enforcement` bundle and the feature-runtime-owned
+  `featureRuntimeFitness` bundle. The layering bundle still owns project-wide
+  placement diagnostics; the feature-runtime owner document owns the dedicated
+  fitness invariants.
 - `tools/gradle/run-staged-verification.sh focused-handoff --path
   src/features/dungeon/runtime --area feature-runtime` selects that
   layering-backed feature-runtime surface for package-focused local proof.
@@ -58,11 +58,9 @@ Feature-runtime active-root note:
 - `src/features/**` is an active allowed direct child under this enforced
   allowlist. `checkFeatureRuntimeEnforcement` and focused-handoff
   `--area feature-runtime` run the existing layering-backed placement
-  diagnostics for that source root. Internal feature-runtime topology,
-  passive-carrier mirror absence inside `src/features/**`, shell-binding
-  adequacy, and persistence/authored-fact seam adequacy remain owned by the
-  Feature Runtime Architecture Standard and Review-Owned unless a later
-  document names a specific mechanical gate.
+  diagnostics plus the feature-runtime-owned fitness bundle for that source
+  root. Internal feature-runtime invariants outside the named fitness rows
+  remain owned by the Feature Runtime Architecture Standard and Review-Owned.
 
 ### Must Not Contain
 
@@ -70,7 +68,7 @@ Feature-runtime active-root note:
 | --- | --- | --- | --- | --- | --- |
 | `layering-no-extra-active-layer-roots` | Enforced | every active Java source root or non-empty `src/` direct child | `layering-architecture-enforcement` bundle build-harness `LayeringArchitectureTopologyRules` | `./gradlew checkLayeringEnforcement` | The repository does not grow extra active layer roots or extra `src/` children beside the documented layer topology. |
 | `layering-no-undocumented-cross-layer-public-extension-points` | Review-Owned | every new public type or registration seam that would let one layer reach another | none | none | The system does not grow new public backend, shell, or registration extension points outside the documented cross-layer boundary set. Existing shell, view, domain, and data blockers constrain parts of that surface, but not the full repository-wide extension-point claim as one hard gate. |
-| `layering-no-passive-carrier-shape-mirror-inside-feature-root` | Enforced | every passive `record` or `enum` carrier under one active `src/` feature root, excluding top-level root boundary `*Command` records whose semantics are owned by their `*ApplicationService` entrypoint and excluding records/enums with authored methods, constructors, fields, invariants, or domain behavior | `layering-architecture-enforcement` bundle build-harness `LayeringPassiveCarrierMirrorRules` | `./gradlew checkLayeringEnforcement` | One active feature root does not keep multiple passive non-command `record`/`enum` carriers with the same recursive shape under different names or buckets. Internal behavior-owning domain values are not rejected merely because their field shape resembles a published carrier; if they are actively owning behavior or invariants, review their responsibility rather than treating them as passive mirror payloads. Workflow-specific command carriers may share a passive payload shape when the workflow is explicit in the application-service method rather than encoded inside the carrier. |
+| `layering-no-passive-carrier-shape-mirror-inside-feature-root` | Enforced | every passive `record` or `enum` carrier under one active `src/` feature root, excluding top-level root boundary `*Command` records whose semantics are owned by their `*ApplicationService` entrypoint and excluding records/enums with authored methods, constructors, fields, invariants, or domain behavior | `layering-architecture-enforcement` bundle build-harness `LayeringArchitectureTopologyRules` delegates to `LayeringPassiveCarrierMirrorRules` | `./gradlew checkLayeringEnforcement`; `./gradlew checkFeatureRuntimeEnforcement` for `src/features/**` scope | One active feature root does not keep multiple passive non-command `record`/`enum` carriers with the same recursive shape under different names or buckets when the selected route runs. Internal behavior-owning domain values are not rejected merely because their field shape resembles a published carrier; if they are actively owning behavior or invariants, review their responsibility rather than treating them as passive mirror payloads. Workflow-specific command carriers may share a passive payload shape when the workflow is explicit in the application-service method rather than encoded inside the carrier. |
 | `layering-no-direct-view-data-dependency` | Enforced Elsewhere | every dependency from `src/view/**` into `src/data/**` | Error Prone `PassiveViewInteractionBoundary`, `ViewContributionModelDependencyBoundary`, `ViewContentModelDependencyBoundary`, `ViewIntentHandlerDependencyBoundary`, and `ViewBinderDependencyBoundary` | `./gradlew compileJava` and `./gradlew checkViewEnforcement` | View-layer code does not bypass the domain core by depending directly on data-layer implementation code. |
 | `layering-no-direct-view-domain-connection-outside-documented-seams` | Enforced Elsewhere | every direct connection between `src/view/**` and `src/domain/**` | view `view-binder-dependency-boundary`, `view-binder-domain-public-boundary-surface`, `view-binder-no-legacy-intenthandler-write-sink-injection`, `view-intenthandler-root-applicationservice-boundary-surface`, `view-intenthandler-no-non-applicationservice-domain-dependencies`, `view-viewinputevent-view-origin-and-intenthandler-target-only`, `view-contributionmodel-read-side-only-direct-boundary`, and `view-contentmodel-read-side-only-direct-boundary` | see neighboring owner docs and their listed entrypoints | The allowed view/domain seam is owned only by the [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1) and the neighboring view-role enforcement documents. This row records the current blocker surface for that contract. |
 | `layering-no-non-applicationservice-public-backend-boundary-below-view` | Enforced Elsewhere | every domain-originated public callable backend root under `src/domain/<context>/`; excludes data-originated source-adapter implementation types and data runtime-registration roots | domain `domain-layer-no-non-applicationservice-public-backend-boundary` | `./gradlew checkDomainEnforcement` | Below the view layer, domain-originated public backend roots are root `*ApplicationService` classes only. Domain `*ServiceContribution`/`*ServiceAssembly` are registration exceptions, and this row does not claim that every public `src/data/**` adapter type is itself blocked as a backend boundary. Data-originated public backend and runtime-export adequacy remains owned by data-layer review rows unless a data owner names a concrete blocker. |

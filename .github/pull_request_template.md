@@ -10,6 +10,8 @@ German release note:
 ## Proof
 Command:
 Result:
+Performance proof route for `task:performance`:
+Performance evidence:
 
 ## Harness
 Harness or Harness Gap:

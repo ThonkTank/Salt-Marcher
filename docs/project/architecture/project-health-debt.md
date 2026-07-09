@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-24
+Last Reviewed: 2026-07-07
 Source of Truth: Central register for known project-health debt IDs,
 marker synchronization, removal conditions, and current disposition.
 
@@ -58,9 +58,41 @@ Resolver field transitions are defined by the
 
 ## Active Debt
 
-No active project-health debt has been registered under this governance.
-
 ## Removed Or Closed Debt
+
+## PH-20260707-001 - Feature Runtime Fitness Function Gap
+
+- Status: Removed
+- Resolution Mode: Next Matching Touch
+- Resolver Status: Resolved
+- Marker: none - marker removed from docs/project/architecture/patterns/feature-runtime.md after `checkFeatureRuntimeEnforcement` gained the dedicated `featureRuntimeFitness` bundle.
+- Problem: Feature-runtime conformance for `src/features/**` remained review-owned while the active `feature-runtime` diagnostic surface proved placement only; no named gate proved internal feature-runtime topology, passive-carrier mirror absence, shell narrowness, runtime state ownership, preview/commit owner identity, render-frame publication, typed target and boundary-carrier drift, or UI/storage boundaries for the non-trivial Dungeon feature runtime.
+- Owner Areas: feature-runtime, architecture-enforcement, project-health
+- Affected Paths: docs/project/architecture/patterns/feature-runtime.md, tools/quality/skills/feature-runtime/SKILL.md, src/features/dungeon/runtime/**, src/features/dungeon/shell/**, src/view/leftbartabs/dungeoneditor/**
+- Related Symbols: AR-09, checkFeatureRuntimeEnforcement, DungeonEditorFeatureRuntimeRoot, DungeonEditorAuthoredRuntimeAssembly, DungeonEditorFeatureShellBinding, DungeonEditorIntentHandler, passive-carrier mirror absence, featureRuntimeFitness
+- Intake Trigger: docs/project/architecture/patterns/feature-runtime.md, tools/quality/skills/feature-runtime/SKILL.md, src/features/dungeon/runtime/**, src/features/dungeon/shell/**, src/view/leftbartabs/dungeoneditor/**, feature-runtime, architecture-enforcement
+- Required Next Action: none - `checkFeatureRuntimeEnforcement` now runs a proportional feature-runtime fitness gate for package-family shape, runtime-root presence, shell-binding narrowness, compatibility-seam locality, and feature-scoped passive-carrier mirror absence.
+- Source Evidence: build/agent-pass-logs/2026-07-07-architecture-hypothesis-review/hypothesis-03-feature-runtime-legacy-chain.md; build/agent-pass-logs/2026-07-07-architecture-hypothesis-review/hypothesis-11-review-owned-fitness-functions.md; build/agent-pass-logs/2026-07-07-architecture-hypothesis-review/hypothesis-16-unmaterialized-structural-debt.md; build/agent-pass-logs/2026-07-07-architecture-repair-plan.md; build/agent-pass-logs/2026-07-07-architecture-repair-roadmaps/wave-10-feature-runtime-fitness-disposition-unter-roadmap.md; R3c after-W10 restack introduced `FeatureRuntimeFitnessRules` and added the `featureRuntimeFitness` bundle to the `feature-runtime` diagnostic surface.
+- Decision: Closed by adding a named narrow gate rather than overclaiming complete feature-runtime semantic conformance. The new gate covers the high-drift shape and seam invariants that were previously hidden; runtime state ownership adequacy, preview/commit identity, render-frame publication semantics, UI raw-input behavior, storage behavior, and compatibility-inventory judgments remain explicitly Review-Owned unless a later owner names sharper mechanical rows.
+- Remove When: resolved on 2026-07-08 by the feature-runtime fitness gate.
+- Last Checked: 2026-07-08
+
+## PH-20260708-001 - World Planner ContributionModel Residual Mapping Hotspot
+
+- Status: False Positive
+- Resolution Mode: Next Matching Touch
+- Resolver Status: False Positive
+- Marker: none - marker removed from src/view/leftbartabs/worldplanner/WorldPlannerContributionModel.java after the invalid `WorldPlannerFilterContentPartModel` dependency and mirrored module search carriers were removed, leaving only target ContributionModel orchestration into the reusable search control.
+- Problem: `WorldPlannerContributionModel` was recorded as residual debt for cross-content mapping into shared search/state/detail surfaces after the bounded module split. W10 follow-up proved two invalid alternatives: centralizing the search carrier in `WorldPlannerFilterContentPartModel` violates `ViewContributionModelDependencyBoundary`, while per-module `SearchProjection`/`Filter*` records violate `layering-no-passive-carrier-shape-mirror-inside-feature-root`.
+- Owner Areas: view-layer
+- Affected Paths: src/view/leftbartabs/worldplanner/WorldPlannerContributionModel.java
+- Related Symbols: WorldPlannerContributionModel.applySearchProjection, WorldPlannerContributionModel.detailProjection, WorldPlannerContributionModel.applyNpcState, WorldPlannerContributionModel.applyFactionState, WorldPlannerContributionModel.applyLocationState, WorldPlannerContributionModel.applySourceState
+- Intake Trigger: src/view/leftbartabs/worldplanner/**
+- Required Next Action: none - target view-layer ownership accepts the aggregate ContributionModel as the boundary adapter that orchestrates child ContentModels and applies the one canonical reusable search-control projection, while module ContentModels keep component-specific filtering, selection, and render facts.
+- Source Evidence: W8-S10 implementation pass on 2026-07-08; `tools/gradle/run-staged-verification.sh focused-handoff --path src/view/leftbartabs/worldplanner --area view` passed before residual materialization; W10 production-handoff intake matched this entry; W10 production-handoff later rejected `WorldPlannerContributionModel -> WorldPlannerFilterContentPartModel` through `ViewContributionModelDependencyBoundary`; the W10-PH001 resolution pass removed mirrored module search carriers after `layering-no-passive-carrier-shape-mirror-inside-feature-root` rejected them; `docs/project/architecture/patterns/view-layer.md` defines `ContributionModel` as root-wide projection state owner that orchestrates child `ContentModel`s and defines `ContentModel`s as component-specific owners.
+- Decision: Closed as false positive for automatic debt intake after the boundary-invalid ContentPartModel dependency and mirrored module search carriers were removed. Direct module ContentModel-to-shared ContentModel mapping remains correctly rejected by `ViewContentModelDependencyBoundary`; direct ContributionModel-to-ContentPartModel sharing is rejected by `ViewContributionModelDependencyBoundary`; mirrored module search carrier records are rejected by the layering passive-carrier mirror rule. The remaining aggregate projection into shared search/state/detail surfaces is therefore the accepted root ContributionModel orchestration path, not hidden residual debt.
+- Remove When: false positive closed on 2026-07-08.
+- Last Checked: 2026-07-08
 
 ## PH-20260624-001 - Dungeon Editor Runtime View Target Bridge
 

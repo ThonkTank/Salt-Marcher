@@ -25,7 +25,11 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.stage.Window;
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
 import shell.api.ServiceRegistry;
+import shell.api.ShellBinding;
+import shell.api.ShellRuntimeContext;
 import src.data.hex.model.HexPersistenceSchema;
 import src.domain.hex.HexEditorApplicationService;
 import src.domain.hex.HexTravelApplicationService;
@@ -223,7 +227,7 @@ public final class HexMapEditorBehaviorHarness {
                 "HEX-EDITOR-006 missing type does not persist");
 
         RuntimeSurface reloadedRuntime = RuntimeSurface.create();
-        reloadedRuntime.editor().loadEditor(new LoadHexEditorCommand());
+        activateEditorThroughIntentHandler(reloadedRuntime);
         HexEditorSnapshot reloaded = reloadedRuntime.current();
         assertEquals(UPDATED_NAME, selectedMap(reloaded).displayName(), "HEX-EDITOR-007 reloaded map name");
         assertEquals(UPDATED_RADIUS, selectedMap(reloaded).radius(), "HEX-EDITOR-007 reloaded radius");
@@ -231,6 +235,7 @@ public final class HexMapEditorBehaviorHarness {
                 "HEX-EDITOR-007 reloaded terrain");
         assertMarker(reloaded, MARKER_NAME, "LANDMARK", MARKER_NOTE,
                 "HEX-EDITOR-007 reloaded marker");
+        runOnFxThread(HexMapEditorBehaviorHarness::assertBinderActivationLoadsAfterReadSideSetup);
         assertCatalogRenamePreservesNonCurrentRadius(runtime);
 
         runOnFxThread(() -> assertMarkerDraftPreservedAfterFailure(selected, missingName));
@@ -253,7 +258,8 @@ public final class HexMapEditorBehaviorHarness {
         results.add("HEX-EDITOR-004 Ready: paintTerrain -> HexEditorModel tile terrain, main projection label, and SQLite terrain override row");
         results.add("HEX-EDITOR-005 Ready: saveMarker -> one-tile marker readback, visible marker label, and one SQLite marker row");
         results.add("HEX-EDITOR-006 Ready: missing marker name/type publish validation failures and leave marker row count unchanged");
-        results.add("HEX-EDITOR-007 Ready: rebuilt services reload metadata, terrain override, and marker from isolated SQLite route");
+        results.add("HEX-EDITOR-007 Ready: same-root HexMapIntentHandler activation reloads metadata, terrain override, and marker from isolated SQLite route");
+        results.add("HEX-EDITOR-010 Ready: HexMapBinder wires read-side subscribe/current before same-root activation intent loads persisted editor state");
         results.add("HEX-EDITOR-008 Ready: map save controls event does not route marker draft into marker persistence");
         results.add("HEX-EDITOR-009 Ready: marker save controls event does not route map draft into map metadata update");
         results.add("HEX-EDITOR-011 Ready: shared catalog rename preserves non-current Hex map radius");
@@ -429,6 +435,65 @@ public final class HexMapEditorBehaviorHarness {
                 UPDATED_NAME,
                 UPDATED_RADIUS,
                 false));
+    }
+
+    private static void activateEditorThroughIntentHandler(RuntimeSurface runtime) {
+        HexMapControlsContentModel controlsModel = new HexMapControlsContentModel();
+        HexMapMainContentModel mainModel = new HexMapMainContentModel();
+        HexMapStateContentModel stateModel = new HexMapStateContentModel();
+        HexMapContributionModel contributionModel = new HexMapContributionModel(controlsModel, mainModel, stateModel);
+        contributionModel.applySnapshot(runtime.current());
+        contributionModel.applyTravelSnapshot(runtime.travel().current());
+        HexMapIntentHandler handler = new HexMapIntentHandler(
+                runtime.editor(),
+                runtime.hexTravel(),
+                contributionModel,
+                controlsModel,
+                stateModel,
+                new CatalogCrudControlsContentModel());
+        handler.activateEditor();
+    }
+
+    private static void assertBinderActivationLoadsAfterReadSideSetup() {
+        RuntimeSurface runtime = RuntimeSurface.create();
+        if (runtime.current().selectedMap().isPresent()) {
+            throw new IllegalStateException("HEX-EDITOR-010 expected fresh Hex editor model before binder activation.");
+        }
+        List<String> events = new ArrayList<>();
+        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
+        builder.register(HexEditorApplicationService.class, runtime.editor());
+        builder.register(HexTravelApplicationService.class, runtime.hexTravel());
+        builder.register(HexEditorModel.class, new HexEditorModel(
+                () -> {
+                    events.add("editor.current");
+                    return runtime.model().current();
+                },
+                listener -> {
+                    events.add("editor.subscribe");
+                    return runtime.model().subscribe(listener);
+                }));
+        builder.register(HexTravelModel.class, new HexTravelModel(
+                () -> {
+                    events.add("travel.current");
+                    return runtime.travel().current();
+                },
+                listener -> {
+                    events.add("travel.subscribe");
+                    return runtime.travel().subscribe(listener);
+                }));
+        ShellRuntimeContext context = new ShellRuntimeContext(NoopInspectorSink.INSTANCE, builder.build());
+
+        ShellBinding binding = new HexMapBinder(context).bind();
+
+        assertEquals(List.of(
+                "editor.subscribe",
+                "travel.subscribe",
+                "editor.current",
+                "travel.current"), events, "HEX-EDITOR-010 read-side setup order before activation");
+        assertTrue(runtime.current().selectedMap().isPresent(),
+                "HEX-EDITOR-010 binder activation loads persisted Hex editor state");
+        assertTrue(binding.slotContent().containsKey(shell.api.ShellSlot.COCKPIT_MAIN),
+                "HEX-EDITOR-010 binder returns main slot binding");
     }
 
     private static void assertCatalogRenamePreservesNonCurrentRadius(RuntimeSurface runtime) {
@@ -981,6 +1046,24 @@ public final class HexMapEditorBehaviorHarness {
     private interface ThrowingRunnable {
 
         void run() throws Exception;
+    }
+
+    private enum NoopInspectorSink implements InspectorSink {
+
+        INSTANCE;
+
+        @Override
+        public void push(InspectorEntrySpec entry) {
+        }
+
+        @Override
+        public void clear() {
+        }
+
+        @Override
+        public boolean isShowing(Object entryKey) {
+            return false;
+        }
     }
 
     private record RuntimeSurface(

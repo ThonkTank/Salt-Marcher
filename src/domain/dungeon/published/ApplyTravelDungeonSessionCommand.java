@@ -45,10 +45,6 @@ public record ApplyTravelDungeonSessionCommand(
         overlaySettings = overlaySettings == null ? DungeonOverlaySettings.defaults() : overlaySettings;
     }
 
-    public String actionToken() {
-        return action.name();
-    }
-
     public enum Action {
         REFRESH,
         ACTION,

@@ -54,7 +54,8 @@ full architecture harness through `check`.
 
 | Platform | Status | Entrypoint | Current policy |
 | --- | --- | --- | --- |
-| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdMain`, `./gradlew pmdStrictMain` | `pmdMain` runs `tools/quality/config/pmd/complexity-ruleset.xml` and `tools/quality/config/pmd/law-of-demeter-ruleset.xml` once on production Java sources and writes the XML/HTML PMD reports. `pmdStrictMain` derives the text-first `build/reports/pmd/main-strict.txt` report from `pmdMain`'s XML result instead of running PMD again. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, `UselessOverridingMethod`, `UnnecessaryConstructor`, and unnecessary casts; focused Error Prone verification compiles own `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable` where those checkers are part of the selected enforcement surface. |
+| PMD XML/HTML report production | `Informational Report` | `./gradlew pmdMain` | `pmdMain` runs `tools/quality/config/pmd/complexity-ruleset.xml` and `tools/quality/config/pmd/law-of-demeter-ruleset.xml` once on production Java sources and writes the XML/HTML PMD reports. It is the report producer and diagnostic PMD entrypoint, not the blocking owner for direct or aggregate proof claims. |
+| PMD non-architecture smells | `Blocking Local Gate` | `./gradlew pmdStrictMain` | `pmdStrictMain` depends on `pmdMain` and derives the text-first `build/reports/pmd/main-strict.txt` report from `pmdMain`'s XML result instead of running PMD again. It fails the direct or aggregate invocation when the XML report contains PMD violations or analysis diagnostics. PMD owns non-architecture smell policy plus `UnusedAssignment`, including generic source-smell families such as `LawOfDemeter`, `GodClass`, `CouplingBetweenObjects`, `TooManyMethods`, `TooManyFields`, `UselessOverridingMethod`, `UnnecessaryConstructor`, and unnecessary casts; focused Error Prone verification compiles own `UnusedLabel`, `UnusedMethod`, `UnusedNestedClass`, and `UnusedVariable` where those checkers are part of the selected enforcement surface. |
 | Near-miss hygiene checks | `Blocking Local Gate` | `./gradlew checkRewriteNearMisses` | Runs first-party Error Prone checks for Map key-presence checks that compare `Map.get(...)` with `null` and JavaBean-style DTO-overfetching candidates for configured carrier packages. It does not mutate tracked sources. It is a near-miss quality gate, not a proof of redundant `A -> B -> D` carrier-converter chains. Redundant casts are owned by the separate PMD source-smell gate. |
 | Dead code reachability | `Blocking Local Gate` | `./gradlew checkNoDeadCode` | Runs the verification-core whole-program reachability analysis for compiled production declarations: files, top-level types, secondary top-level types, nested and named local types, constructors, methods, and fields. JVM `ConstantValue` fields are not reported because Java inlines compile-time constants and the compiled graph cannot prove source-level reads from bytecode field access. Structural roots currently include the configured JavaFX launcher and preloader classes, exact concrete shell contribution roots matching `ShellViewDiscovery`, exact concrete data service contribution roots matching `ServiceContributionDiscovery`, merged FXML controller resources, `META-INF/services` providers, and the explicit fallback rules in `tools/quality/config/deadcode/keep-rules.pro`. Non-constant runtime reflection is only supported through explicit keep rules. |
 | SpotBugs plus FindSecBugs | `Blocking Local Gate` | `./gradlew spotbugsMain` | Runs bytecode bug and security-smell analysis with SpotBugs effort `MAX` and confidence `MEDIUM`. Generic bytecode-level useless-indirection findings belong to this standard SpotBugs surface when the active SpotBugs detector reports them; SaltMarcher does not add a separate first-party indirection checker or suppress those standard detectors through the local exclude filter. |
@@ -132,12 +133,13 @@ the current blocking gates cannot express.
 checks. The gate remains non-mutating and configuration-cache compatible
 because it no longer invokes third-party source rewrite tasks.
 
-`pmdMain` is wired into the shared `check` / `production-handoff` lifecycle
-catalog as the single PMD scanner for this surface. It writes XML and HTML
-reports, then finalizes through `pmdStrictMain`, which derives the text report
-and fails the direct or aggregate invocation when the XML report contains PMD
-violations or analysis diagnostics. Role-aware metric classification happens
-inside the PMD ruleset itself, not inside the strict text-report derivation.
+`pmdStrictMain` is wired into the shared `check` / `production-handoff`
+lifecycle catalog as the blocking PMD owner for this surface. It depends on
+`pmdMain`, the single PMD scanner and XML/HTML report producer, then derives
+the strict text report and fails the direct or aggregate invocation when the XML
+report contains PMD violations or analysis diagnostics. Role-aware metric
+classification happens inside the PMD ruleset itself, not inside the strict
+text-report derivation.
 `pmdTest` is disabled; PMD
 non-architecture smell policy applies to production source roots, not
 architecture test sources.

@@ -85,19 +85,9 @@ public final class CorridorMapAuthoring {
 
     public DungeonMap deleteCorridor(
             DungeonMap dungeonMap,
-            long corridorId,
-            String targetKind,
-            long topologyRefId,
-            long roomId,
-            int waypointIndex
+            CorridorDeletionTarget target
     ) {
-        return DELETION.deleteCorridor(
-                dungeonMap,
-                corridorId,
-                targetKind,
-                topologyRefId,
-                roomId,
-                waypointIndex);
+        return DELETION.deleteCorridor(dungeonMap, target);
     }
 
     private static boolean validCreateEndpoints(DungeonCorridorEndpoint start, DungeonCorridorEndpoint end) {

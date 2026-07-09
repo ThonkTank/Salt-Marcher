@@ -164,11 +164,7 @@ public final class PreviewDungeonEditorAuthoredOperationUseCase {
             if (preview instanceof DungeonEditorSessionValues.DeleteCorridorPreview corridor) {
                 return corridorMutationUseCase.previewDelete(
                         domainMapId,
-                        corridor.corridorId(),
-                        corridor.targetKind(),
-                        corridor.topologyRefId(),
-                        corridor.roomId(),
-                        corridor.waypointIndex());
+                        corridor.target());
             }
             return null;
         }

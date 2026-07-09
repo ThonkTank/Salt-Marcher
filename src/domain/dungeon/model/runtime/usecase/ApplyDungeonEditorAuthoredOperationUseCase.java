@@ -5,6 +5,7 @@ import java.util.Objects;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
+import src.domain.dungeon.model.core.structure.corridor.CorridorDeletionTarget;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
@@ -98,19 +99,11 @@ public final class ApplyDungeonEditorAuthoredOperationUseCase {
 
     public void executeDeleteCorridor(
             MapId mapId,
-            long corridorId,
-            String targetKind,
-            long topologyRefId,
-            long roomId,
-            int waypointIndex
+            CorridorDeletionTarget target
     ) {
         ApplyDungeonEditorOperationUseCase.OperationResultData result = corridorMutationUseCase.applyDelete(
                 domainMapId(mapId),
-                corridorId,
-                targetKind,
-                topologyRefId,
-                roomId,
-                waypointIndex);
+                target);
         publishMutationUseCase.execute(result);
     }
 

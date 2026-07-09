@@ -7,8 +7,6 @@ public record DungeonEditorStateViewInputEvent(
         String visualDescription,
         List<String> exitDescriptions,
         boolean narrationSaveRequested,
-        String nameTargetKind,
-        long nameTargetId,
         String labelName,
         boolean labelNameInputObserved,
         boolean labelNameSaveRequested,
@@ -44,8 +42,6 @@ public record DungeonEditorStateViewInputEvent(
                 : List.copyOf(exitDescriptions.stream()
                         .map(description -> description == null ? "" : description)
                         .toList());
-        nameTargetKind = nameTargetKind == null ? "" : nameTargetKind;
-        nameTargetId = Math.max(0L, nameTargetId);
         labelName = labelName == null ? "" : labelName;
         corridorPointQ = corridorPointQ == null ? "" : corridorPointQ;
         corridorPointR = corridorPointR == null ? "" : corridorPointR;
@@ -75,8 +71,6 @@ public record DungeonEditorStateViewInputEvent(
                 exitDescriptions,
                 saveRequested,
                 "",
-                0L,
-                "",
                 false,
                 false,
                 "",
@@ -104,8 +98,6 @@ public record DungeonEditorStateViewInputEvent(
     }
 
     public DungeonEditorStateViewInputEvent(
-            String targetKind,
-            long targetId,
             String labelName,
             boolean inputObserved,
             boolean saveRequested
@@ -115,8 +107,6 @@ public record DungeonEditorStateViewInputEvent(
                 "",
                 List.of(),
                 false,
-                targetKind,
-                targetId,
                 labelName,
                 inputObserved,
                 saveRequested,
@@ -155,8 +145,6 @@ public record DungeonEditorStateViewInputEvent(
                 List.of(),
                 false,
                 "",
-                0L,
-                "",
                 false,
                 false,
                 corridorPointQ,
@@ -193,8 +181,6 @@ public record DungeonEditorStateViewInputEvent(
                 "",
                 List.of(),
                 false,
-                "",
-                0L,
                 "",
                 false,
                 false,
@@ -236,8 +222,6 @@ public record DungeonEditorStateViewInputEvent(
                 List.of(),
                 false,
                 "",
-                0L,
-                "",
                 false,
                 false,
                 "",
@@ -277,8 +261,6 @@ public record DungeonEditorStateViewInputEvent(
                 "",
                 List.of(),
                 false,
-                "",
-                0L,
                 "",
                 false,
                 false,

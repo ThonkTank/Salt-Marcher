@@ -2,7 +2,6 @@ package src.features.dungeon.runtime;
 
 import java.util.Objects;
 import java.util.function.Consumer;
-import shell.api.ServiceRegistry;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorStateModel;
@@ -19,15 +18,18 @@ public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRunti
     private final DungeonEditorRuntimeMapCatalogController mapCatalogController;
     private final DungeonEditorRuntimeFramePublisher framePublisher;
 
-    public static DungeonEditorFeatureRuntimeRoot create(ServiceRegistry registry) {
-        ServiceRegistry safeRegistry = Objects.requireNonNull(registry, "registry");
+    public static DungeonEditorFeatureRuntimeRoot create(DungeonEditorRuntimeDependencies dependencies) {
+        DungeonEditorRuntimeDependencies safeDependencies =
+                Objects.requireNonNull(dependencies, "dependencies");
+        DungeonEditorRuntimeDependencies.CompatibilityReadbackModels readback =
+                safeDependencies.compatibilityReadbackModels();
         DungeonEditorMainViewInteractionState interactionState = new DungeonEditorMainViewInteractionState();
         DungeonEditorAuthoredRuntimeAssembly.AssemblyResult runtime =
-                DungeonEditorAuthoredRuntimeAssembly.create(safeRegistry, interactionState);
+                DungeonEditorAuthoredRuntimeAssembly.create(safeDependencies, interactionState);
         return new DungeonEditorFeatureRuntimeRoot(
-                safeRegistry.require(DungeonEditorControlsModel.class),
-                safeRegistry.require(DungeonEditorMapSurfaceModel.class),
-                safeRegistry.require(DungeonEditorStateModel.class),
+                readback.controlsModel(),
+                readback.mapSurfaceModel(),
+                readback.stateModel(),
                 interactionState,
                 runtime.operations(),
                 runtime.initialResult());

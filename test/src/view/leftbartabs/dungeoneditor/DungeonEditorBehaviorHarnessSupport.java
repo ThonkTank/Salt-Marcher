@@ -1,6 +1,7 @@
 package src.view.leftbartabs.dungeoneditor;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -78,6 +79,8 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
     static final long LARGE_CURRENT_GEOMETRY_INPUT_MAX_MILLIS = 500L;
     static final long PREVIEW_LATENCY_BUDGET_MS = 250L;
     static final Color MAP_BACKGROUND = Color.rgb(0x12, 0x18, 0x1c);
+    private static final double CANVAS_BACKGROUND_DISTANCE_THRESHOLD = 0.025;
+    private static final double CANVAS_PRIMITIVE_STROKE_DISTANCE_THRESHOLD = 0.22;
 
     DungeonEditorBehaviorHarnessSupport() {
     }
@@ -1243,7 +1246,8 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         }
 
         String topologyRefText() {
-            return rawTarget.topologyKind().legacyName();
+            DungeonEditorRuntimePointerTarget.TopologyKind kind = rawTarget.topologyKind();
+            return kind == DungeonEditorRuntimePointerTarget.TopologyKind.EMPTY ? "" : kind.name();
         }
 
         long topologyId() {
@@ -1777,12 +1781,13 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             double sceneY,
             String message
     ) {
-        Canvas canvas = mapCanvas(mapView);
-        WritableImage image = canvas.snapshot(null, null);
-        int x = clampPixel((int) Math.round(sceneX * DEFAULT_GRID_SIZE), (int) image.getWidth());
-        int y = clampPixel((int) Math.round(sceneY * DEFAULT_GRID_SIZE), (int) image.getHeight());
+        CanvasSnapshot snapshot = renderedCanvasSnapshot(mapView);
+        WritableImage image = snapshot.image();
+        int x = clampPixel((int) Math.round(snapshot.viewport().sceneToScreenX(sceneX)), (int) image.getWidth());
+        int y = clampPixel((int) Math.round(snapshot.viewport().sceneToScreenY(sceneY)), (int) image.getHeight());
         Color color = image.getPixelReader().getColor(x, y);
-        assertTrue(colorDistance(color, MAP_BACKGROUND) > 0.025, message + " pixel=" + color);
+        assertTrue(colorDistance(color, MAP_BACKGROUND) > CANVAS_BACKGROUND_DISTANCE_THRESHOLD,
+                message + " pixel=" + color);
     }
 
     static void assertCanvasPaintedNearScene(
@@ -1792,10 +1797,10 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             int radiusPixels,
             String message
     ) {
-        Canvas canvas = mapCanvas(mapView);
-        WritableImage image = canvas.snapshot(null, null);
-        int x = clampPixel((int) Math.round(sceneX * DEFAULT_GRID_SIZE), (int) image.getWidth());
-        int y = clampPixel((int) Math.round(sceneY * DEFAULT_GRID_SIZE), (int) image.getHeight());
+        CanvasSnapshot snapshot = renderedCanvasSnapshot(mapView);
+        WritableImage image = snapshot.image();
+        int x = clampPixel((int) Math.round(snapshot.viewport().sceneToScreenX(sceneX)), (int) image.getWidth());
+        int y = clampPixel((int) Math.round(snapshot.viewport().sceneToScreenY(sceneY)), (int) image.getHeight());
         int radius = Math.max(0, radiusPixels);
         for (int dy = -radius; dy <= radius; dy++) {
             for (int dx = -radius; dx <= radius; dx++) {
@@ -1805,7 +1810,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                 int sampleX = clampPixel(x + dx, (int) image.getWidth());
                 int sampleY = clampPixel(y + dy, (int) image.getHeight());
                 Color color = image.getPixelReader().getColor(sampleX, sampleY);
-                if (colorDistance(color, MAP_BACKGROUND) > 0.025) {
+                if (colorDistance(color, MAP_BACKGROUND) > CANVAS_BACKGROUND_DISTANCE_THRESHOLD) {
                     return;
                 }
             }
@@ -1813,16 +1818,52 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         assertTrue(false, message + " centerPixel=" + image.getPixelReader().getColor(x, y));
     }
 
+    static void assertCanvasPaintedWithPrimitiveStrokeNearScene(
+            DungeonMapView mapView,
+            DungeonMapContentModel.MapCanvasPolygonPrimitive primitive,
+            double sceneX,
+            double sceneY,
+            int radiusPixels,
+            String message
+    ) {
+        DungeonMapContentModel.PaintStyle style = primitive.style();
+        DungeonMapContentModel.RenderColor stroke = style.stroke();
+        assertTrue(stroke != null && style.strokeWidth() > 0.0,
+                message + " primitive exposes a drawable stroke");
+
+        CanvasSnapshot snapshot = renderedCanvasSnapshot(mapView);
+        WritableImage image = snapshot.image();
+        int x = clampPixel((int) Math.round(snapshot.viewport().sceneToScreenX(sceneX)), (int) image.getWidth());
+        int y = clampPixel((int) Math.round(snapshot.viewport().sceneToScreenY(sceneY)), (int) image.getHeight());
+        int radius = Math.max(0, radiusPixels);
+        Color expectedStroke = compositeOverMapBackground(stroke, style.alpha());
+        for (int dy = -radius; dy <= radius; dy++) {
+            for (int dx = -radius; dx <= radius; dx++) {
+                if ((dx * dx) + (dy * dy) > radius * radius) {
+                    continue;
+                }
+                int sampleX = clampPixel(x + dx, (int) image.getWidth());
+                int sampleY = clampPixel(y + dy, (int) image.getHeight());
+                Color color = image.getPixelReader().getColor(sampleX, sampleY);
+                if (colorDistance(color, MAP_BACKGROUND) > CANVAS_BACKGROUND_DISTANCE_THRESHOLD
+                        && colorDistance(color, expectedStroke) <= CANVAS_PRIMITIVE_STROKE_DISTANCE_THRESHOLD) {
+                    return;
+                }
+            }
+        }
+        assertTrue(false, message + " centerPixel=" + image.getPixelReader().getColor(x, y)
+                + " expectedStroke=" + expectedStroke + " radiusPixels=" + radius);
+    }
+
     static void assertCanvasHasPaintedContent(DungeonMapView mapView, String message) {
-        Canvas canvas = mapCanvas(mapView);
-        WritableImage image = canvas.snapshot(null, null);
+        WritableImage image = renderedCanvasSnapshot(mapView).image();
         int width = (int) image.getWidth();
         int height = (int) image.getHeight();
         int paintedPixels = 0;
         for (int y = 0; y < height; y += 8) {
             for (int x = 0; x < width; x += 8) {
                 Color color = image.getPixelReader().getColor(x, y);
-                if (colorDistance(color, MAP_BACKGROUND) > 0.025) {
+                if (colorDistance(color, MAP_BACKGROUND) > CANVAS_BACKGROUND_DISTANCE_THRESHOLD) {
                     paintedPixels++;
                 }
             }
@@ -1838,6 +1879,30 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                 .orElseThrow(() -> new IllegalStateException("Dungeon map canvas not found."));
     }
 
+    private static CanvasSnapshot renderedCanvasSnapshot(DungeonMapView mapView) {
+        DungeonMapContentModel contentModel = boundContentModel(mapView);
+        redrawCanvasFromCurrentState(mapView, contentModel);
+        return new CanvasSnapshot(mapCanvas(mapView).snapshot(null, null), contentModel.canvasStateProperty().get().viewport());
+    }
+
+    private static void redrawCanvasFromCurrentState(
+            DungeonMapView mapView,
+            DungeonMapContentModel contentModel
+    ) {
+        try {
+            Method redraw = DungeonMapView.class.getDeclaredMethod(
+                    "redraw",
+                    DungeonMapContentModel.CanvasState.class,
+                    DungeonMapContentModel.class);
+            redraw.setAccessible(true);
+            mapView.applyCss();
+            mapView.layout();
+            redraw.invoke(mapView, contentModel.canvasStateProperty().get(), contentModel);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Could not force deterministic DungeonMapView canvas redraw.", exception);
+        }
+    }
+
     static int clampPixel(int value, int dimension) {
         return Math.max(0, Math.min(Math.max(0, dimension - 1), value));
     }
@@ -1847,6 +1912,26 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         double green = color.getGreen() - other.getGreen();
         double blue = color.getBlue() - other.getBlue();
         return Math.sqrt(red * red + green * green + blue * blue);
+    }
+
+    private static Color compositeOverMapBackground(
+            DungeonMapContentModel.RenderColor color,
+            double styleAlpha
+    ) {
+        double alpha = clampUnit(color.alphaUnit() * styleAlpha);
+        double inverseAlpha = 1.0 - alpha;
+        return new Color(
+                color.redUnit() * alpha + MAP_BACKGROUND.getRed() * inverseAlpha,
+                color.greenUnit() * alpha + MAP_BACKGROUND.getGreen() * inverseAlpha,
+                color.blueUnit() * alpha + MAP_BACKGROUND.getBlue() * inverseAlpha,
+                1.0);
+    }
+
+    private static double clampUnit(double value) {
+        return Math.max(0.0, Math.min(1.0, value));
+    }
+
+    private record CanvasSnapshot(WritableImage image, DungeonMapContentModel.Viewport viewport) {
     }
 
     static void assertEmptyMapSurface(DungeonEditorMapSurfaceSnapshot snapshot, String expectedMapName) {

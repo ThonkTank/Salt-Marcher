@@ -50,7 +50,7 @@ final class DungeonEditorRuntimeControlController {
         DungeonEditorRuntimeOperationPublisher.apply(
                 store,
                 framePublisher,
-                () -> operationOwner.setViewMode(freshSelectorValue(SELECTED_VIEW_MODE).name()));
+                () -> operationOwner.setViewMode(freshSelectorValue(SELECTED_VIEW_MODE)));
     }
 
     void selectTool(DungeonEditorTool tool) {
@@ -60,13 +60,13 @@ final class DungeonEditorRuntimeControlController {
             DungeonEditorRuntimeOperationPublisher.apply(
                     store,
                     framePublisher,
-                    () -> operationOwner.setToolAndPublishSnapshot(freshSelectorValue(SELECTED_TOOL).name()));
+                    () -> operationOwner.setToolAndPublishSnapshot(freshSelectorValue(SELECTED_TOOL)));
             return;
         }
         DungeonEditorRuntimeOperationPublisher.apply(
                 store,
                 framePublisher,
-                () -> operationOwner.setTool(freshSelectorValue(SELECTED_TOOL).name()));
+                () -> operationOwner.setTool(freshSelectorValue(SELECTED_TOOL)));
     }
 
     void cancelActivePreviewSession() {
@@ -76,7 +76,7 @@ final class DungeonEditorRuntimeControlController {
             DungeonEditorRuntimeOperationPublisher.apply(
                     store,
                     framePublisher,
-                    () -> operationOwner.setTool(DungeonEditorTool.SELECT.name()));
+                    () -> operationOwner.setTool(DungeonEditorTool.SELECT));
             return;
         }
         DungeonEditorRuntimeOperationPublisher.apply(
@@ -93,17 +93,17 @@ final class DungeonEditorRuntimeControlController {
                 () -> operationOwner.shiftProjectionLevel(levelShift));
     }
 
-    void setOverlay(DungeonOverlaySettings overlaySettings) {
-        store.dispatch(new DungeonEditorAction.SetOverlay(overlaySettings));
-        DungeonOverlaySettings selectedOverlaySettings = freshSelectorValue(OVERLAY_SETTINGS);
+    void setOverlay(DungeonEditorOverlaySettings overlaySettings) {
+        DungeonEditorOverlaySettings safeOverlaySettings = overlaySettings == null
+                ? DungeonEditorOverlaySettings.defaults()
+                : overlaySettings;
+        store.dispatch(new DungeonEditorAction.SetOverlay(safeOverlaySettings.toPublishedSettings()));
+        DungeonEditorOverlaySettings selectedOverlaySettings =
+                DungeonEditorOverlaySettings.fromPublishedSettings(freshSelectorValue(OVERLAY_SETTINGS));
         DungeonEditorRuntimeOperationPublisher.apply(
                 store,
                 framePublisher,
-                () -> operationOwner.setOverlay(
-                        selectedOverlaySettings.modeKey(),
-                        selectedOverlaySettings.levelRange(),
-                        selectedOverlaySettings.opacity(),
-                        selectedOverlaySettings.selectedLevels()));
+                () -> operationOwner.setOverlay(selectedOverlaySettings));
     }
 
     void scrollSelection(int levelDelta) {
