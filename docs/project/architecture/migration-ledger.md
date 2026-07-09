@@ -30,11 +30,11 @@ but they do not advance the migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M2 - Pilot hex |
-| Work item | M2.4 - Hex harness wiring port |
-| Cycle step | 4 - Harness wiring port |
+| Work item | M2.5 - Hex implementation |
+| Cycle step | 5 - Implementation |
 | In-flight area | `hex` |
-| Required next proof | Separate Hex wiring-port commit with frozen scenarios/assertions and selected Hex harnesses green |
-| Last status note | `2026-07-09 M2.3 hex-target-design` |
+| Required next proof | Hex implementation strictly against the approved design, frozen Hex harnesses green, and production-handoff green |
+| Last status note | `2026-07-09 M2.4 hex-wiring-port` |
 
 ## M0 Step Ledger
 
@@ -63,8 +63,8 @@ but they do not advance the migration unless this ledger advances too.
 | 1. Harness check/closure | Done on branch | `4eb00535c` | Pending PR merge | `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed, 2026-07-09; `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | `HEX-EDITOR-013` closes the production-route map-save failure visibility gap against the old Hex structure. |
 | 2. Baseline metrics | Done on branch | `d7b66a3da` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean after rework; Phase 2 Approve | Baseline artifact: `docs/project/architecture/architecture-migration-hex-baseline.md`; full roadmap set is 87 files / 5,564 physical LOC; product subset is 70 files / 4,560 physical LOC; dominant Hex-owned chains are 5 hops; 6 product/published forwarding candidates plus 1 data candidate; 5 product String round-trip families. |
 | 3. Target design | Done on branch | `153aebd3b` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean after rework; Phase 2 Approve | Approved design artifact: `docs/project/architecture/architecture-migration-hex-target-design.md`; names target classes, representative call chains, deletion list, byte-compatible seams, frozen parity inventory, wiring-port boundary, and metric exceptions. |
-| 4. Harness wiring port | In Flight | Pending | Pending PR merge | Pending | Separate commit only; scenarios and assertions frozen. Port Hex harness/view references through the approved `HexMapViewModel` compatibility boundary before implementation. |
-| 5. Implementation | Pending | Pending | Pending PR merge | Pending | Must follow the approved Hex pilot design. |
+| 4. Harness wiring port | Done on branch | `492ceb3eb` | Pending PR merge | `./gradlew compileJava compileTestJava --console=plain` passed, 2026-07-09; `./gradlew checkNoDeadCode pmdStrictMain --console=plain` passed, 2026-07-09; `./gradlew hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness --console=plain` passed, 2026-07-09; `tools/gradle/run-staged-verification.sh production-handoff` passed, 2026-07-09; `git diff --check` passed; Phase 1 Clean; Phase 2 Approve | `HexMapViewModel` is a compatibility facade over the existing content/contribution models; Hex view and harness wiring now route through it. Harness scenario/assertion labels are frozen, and the old content models, input event records, and `HexMapIntentHandler` remain for M2.5 replacement. |
+| 5. Implementation | In Flight | Pending | Pending PR merge | Pending | Must follow the approved Hex pilot design, replace the facade internals with the target typed model, execute the deletion list, keep byte-compatible seams, and keep frozen harnesses green. |
 | 6. Conformance review | Pending | Pending | Pending PR merge | Pending | Design conformance, parity, metric targets, Phase 1, and Phase 2. |
 | 7. Close-out | Pending | Pending | Pending PR merge | Pending | Ledger update, German status note, owner smoke checklist available, and Hex reference commit declaration. |
 
@@ -238,3 +238,15 @@ unabhaengige Judge hat M2.3 freigegeben. Dokumentationsgate und
 `git diff --check` sind gruen. Naechster Schritt ist M2.4: ein reiner
 Wiring-Port auf die `HexMapViewModel`-Kompatibilitaetsgrenze, ohne Szenario-
 oder Assertion-Aenderung und ohne Implementierung.
+
+### 2026-07-09 M2.4 hex-wiring-port
+
+Der Hex-Wiring-Port ist als eigener Commit abgeschlossen. `HexMapViewModel`
+buendelt vorlaeufig die alten Content- und Contribution-Modelle; Binder,
+IntentHandler, Views und Hex-Harness nutzen diese Kompatibilitaetsgrenze,
+ohne Szenarien, Assertion-Texte oder sichtbares Verhalten zu aendern. Die
+alten Content-Models, Input-Event-Records und `HexMapIntentHandler` bleiben
+fuer M2.5 noch vorhanden. Hex-Harnesses, Produktions-Handoff, Phase 1 und der
+unabhaengige Judge sind gruen. Naechster Schritt ist M2.5: Umsetzung des
+genehmigten Designs mit ausgefuehrter Loeschliste und weiter eingefrorenen
+Harness-Orakeln.
