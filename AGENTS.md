@@ -14,7 +14,7 @@ Always run verification from the repository root.
 
 1. Work on a feature branch. Do not commit to `main`; merge through a PR with green CI.
 2. A pass whose required verify command has not literally passed is WIP. Report the literal result at handoff.
-3. Architecture is enforced by `tools/gradle/build-harness` and Error Prone rules. Do not weaken, disable, suppress, or bypass a check to make a build pass; fix the cause or record a concrete repair target.
+3. Outcome checks stay binding: cycles, layer direction, behavior harnesses, and doc link/placement basics. Do not weaken, suppress, or bypass them; architecture-migration form checks are removed under `docs/project/architecture/architecture-migration-roadmap.md` instead of treated as architecture truth.
 4. Transitional or superseded support you knowingly leave behind gets a `LEGACY_REMOVE_ON_TOUCH` marker plus a concrete removal condition. When your write set contains such a marker, remove the marked support in the same pass or record a concrete repair target.
 5. Structural findings you cannot fix in the same pass get a `PROJECT_HEALTH_DEBT` marker at the primary cause and an entry in `docs/project/architecture/project-health-debt.md`.
 6. Before editing a surface, read its owner doc and skill from the table below. If a surface has no clear owner, create a narrow documentation repair target instead of creating a second source of truth.
@@ -45,15 +45,13 @@ Always run verification from the repository root.
 - `R2`: visible behavior; R1 plus German release note and acceptance checklist; auto-promote as provisional next/main work, promote to stable only after owner acceptance.
 - `R3a`: real local data migration; verified restore-tested backup and copy dry run; auto-promote after backup proof.
 - `R3b`: external service, cost, account, or data egress; must fit `docs/project/policies/resource-policy.md`; outside-policy work creates a policy/no-action PR instead of blocking in chat.
-- `R3c`: frozen gate surface; requires R3c label and the full required gate set; auto-promote after merge.
+- `R3c`: frozen gate surface; requires R3c label and the full required gate set; auto-promote after merge. Roadmap-governed migration passes are R1; the R3c freeze does not apply to required doctrine-gate removal.
 
 ## Surface Owners
 
 | Surface | Owner doc | Mandatory skill |
 | --- | --- | --- |
-| `src/domain/**` | `docs/project/architecture/patterns/domain-layer.md` | `domain-layer` |
-| `src/features/**` | `docs/project/architecture/patterns/feature-runtime.md` | `feature-runtime` |
-| `src/view/**` | `docs/project/architecture/patterns/view-layer.md` | `view-layer-mvvm` |
+| Migration source areas (`src/domain/**`, `src/features/**`, `src/view/**`) | `docs/project/architecture/architecture-migration-roadmap.md`; `docs/project/architecture/migration-ledger.md` once created | - |
 | `src/domain/dungeon/**`, `docs/dungeon/**` | `docs/dungeon/README.md` | - |
 | Documentation placement | `docs/project/architecture/documentation.md` | - |
 | Verification policy | `docs/project/verification/quality-platforms.md` | - |
@@ -63,9 +61,7 @@ Always run verification from the repository root.
 | External-source-backed decisions | `docs/project/verification/source-references.md` | `source-references` |
 | Resource policy and operating model | `docs/project/policies/resource-policy.md`, `docs/project/decisions/**` | - |
 
-Harness Gap repair targets reference `docs/project/verification/harness-gaps.md`.
-Autonomous decision boundaries are defined in
-`docs/project/architecture/autonomy-boundaries.md`.
+Legacy migration areas match surrounding code; migrated areas match the pilot reference named in the ledger. Harness Gap repair targets reference `docs/project/verification/harness-gaps.md`. Autonomous decision boundaries are defined in `docs/project/architecture/autonomy-boundaries.md`.
 
 ## Workflow
 
@@ -74,5 +70,7 @@ Classify each task by tier as defined in `docs/project/architecture/agent-instru
 - **S**: docs-only or trivial mechanical fix. Edit directly and run the matching gate.
 - **M**: standard code change. State a short plan in the PR or log, implement, run proof, get one judge review, and merge on green CI.
 - **L**: architecture, governance, cross-cutting, or dependency change. Write a one-page journal design note first, unless the user explicitly waives it, then proceed as M.
+
+Architecture migration passes follow `docs/project/architecture/architecture-migration-roadmap.md`; the roadmap wins, carries the migration design obligation, and requires behavior parity, no owner questions, no security analysis, no pause/throttle/stop mechanisms, and frozen harness scenarios/assertions except separate wiring ports.
 
 Skills live in `tools/quality/skills/<name>/SKILL.md`. Read a skill when this file, an owner doc, or the task surface names it, not speculatively.
