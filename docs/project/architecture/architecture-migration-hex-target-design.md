@@ -226,6 +226,38 @@ The exceptions are individually justified by existing consumer seams, not by
 preference. The conformance review must reject any additional unexplained
 metric miss.
 
+### M2.5 LOC Exception Amendment
+
+Implementation evidence before the M2.5 commit shows that the product subset
+lands at 41 Java files and 3,701 physical LOC, not the original 2,736 LOC
+target. This is an accepted M2.5 exception only if Phase 1 and Phase 2 both
+approve the following bounded rationale:
+
+- The byte-compatible domain and published seams retained by this design account
+  for 925 LOC. They include command records, snapshot records, id wrappers,
+  aggregate/value types, repository seam, and the compatibility constructors on
+  `HexEditorModel` and `HexTravelModel`. Compressing or deleting those surfaces
+  would break the seam statement rather than simplify the implementation.
+- The target domain service/composition layer is 752 LOC after deleting the
+  per-verb use cases, port stack, and service assemblies. Its remaining size is
+  driven by inlining the old exception boundaries, exact status/warning texts,
+  aggregate calls, editor publication tail, Party readback projection, and
+  byte-compatible published model updates in the named target classes.
+- The Hex view/binder layer is 2,024 LOC because it preserves the frozen
+  controls, canvas, state-panel, marker-draft, shared catalog, and travel-overlay
+  behavior while replacing the old content/input/intent-handler stack with the
+  named `HexMapViewModel`, `HexMapVocabulary`, views, and binder. Additional
+  reduction would require either changing visible UI behavior, weakening the
+  frozen harness oracles, or introducing new cross-cutting view abstractions
+  outside the approved pilot scope.
+
+This exception does not recalibrate the roadmap-wide 40% target. M2.5 remains
+non-compliant if the deletion list is incomplete, forwarding-only classes
+remain in the Hex product subset, Hex-owned intent-to-mutation chains exceed
+three meaningful class-boundary hops, non-seam String round-trips remain, or
+the final product subset exceeds 3,701 physical LOC without a separately
+reviewed explanation.
+
 ## Untouched Surfaces
 
 - `src/data/hex/**` persistence, schema, mapper, gateway, and repository
