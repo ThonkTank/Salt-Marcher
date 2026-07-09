@@ -68,17 +68,18 @@ public final class ApplyDungeonEditorTransitionLinkOperationUseCase {
         if (requestedMapId.isPresent()) {
             long mapId = requestedMapId.orElseThrow();
             Optional<DungeonMap> requiredMap = repository.findById(new DungeonMapIdentity(mapId));
-            if (requiredMap.isEmpty()) {
-                return null;
+            if (requiredMap.isPresent()) {
+                pendingMaps.put(mapId, requiredMap.orElseThrow());
+                rewrite = transitionLinkRewrite(
+                        pendingMaps,
+                        loaded.sourceIdentity().value(),
+                        sourceTransitionId,
+                        loaded.targetIdentity().value(),
+                        targetTransitionId,
+                        bidirectional);
+            } else {
+                rewrite = rewrite.acceptMissingRequestedMap();
             }
-            pendingMaps.put(mapId, requiredMap.orElseThrow());
-            rewrite = transitionLinkRewrite(
-                    pendingMaps,
-                    loaded.sourceIdentity().value(),
-                    sourceTransitionId,
-                    loaded.targetIdentity().value(),
-                    targetTransitionId,
-                    bidirectional);
         }
         if (!rewrite.accepted()) {
             return null;

@@ -8,7 +8,7 @@ import java.util.Map;
 import java.util.OptionalLong;
 import org.jspecify.annotations.Nullable;
 
-    public record TransitionCatalog(List<Transition> transitions) {
+public record TransitionCatalog(List<Transition> transitions) {
     private static final long NO_TRANSITION_ID = 0L;
     private static final long MIN_MAP_ID = 1L;
 
@@ -253,8 +253,17 @@ import org.jspecify.annotations.Nullable;
         }
 
         public TransitionCatalog catalogFor(long mapId, TransitionCatalog currentCatalog) {
+            if (!accepted()) {
+                return currentCatalog;
+            }
             TransitionCatalog nextCatalog = updates.get(mapId);
             return nextCatalog == null ? currentCatalog : nextCatalog;
+        }
+
+        public AuthoredTransitionLinkRewrite acceptMissingRequestedMap() {
+            return state == REQUIRES_MAP
+                    ? accepted(updates)
+                    : this;
         }
 
         private static AuthoredTransitionLinkRewrite accepted(
@@ -263,8 +272,11 @@ import org.jspecify.annotations.Nullable;
             return new AuthoredTransitionLinkRewrite(ACCEPTED, OptionalLong.empty(), updates);
         }
 
-        private static AuthoredTransitionLinkRewrite requiresMap(long mapId) {
-            return new AuthoredTransitionLinkRewrite(REQUIRES_MAP, positiveMapId(mapId), Map.of());
+        private static AuthoredTransitionLinkRewrite requiresMap(
+                long mapId,
+                Map<Long, TransitionCatalog> fallbackUpdates
+        ) {
+            return new AuthoredTransitionLinkRewrite(REQUIRES_MAP, positiveMapId(mapId), fallbackUpdates);
         }
 
         private static AuthoredTransitionLinkRewrite rejected() {
@@ -318,7 +330,7 @@ import org.jspecify.annotations.Nullable;
             }
             OptionalLong previousMapId = previousLinkedMapId(sourceDestination);
             if (previousMapId.isPresent() && !catalogs.containsKey(previousMapId.orElseThrow())) {
-                return AuthoredTransitionLinkRewrite.requiresMap(previousMapId.orElseThrow());
+                return AuthoredTransitionLinkRewrite.requiresMap(previousMapId.orElseThrow(), catalogUpdates(link));
             }
             return AuthoredTransitionLinkRewrite.accepted(catalogUpdates(link));
         }
