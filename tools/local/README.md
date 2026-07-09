@@ -5,30 +5,29 @@ Source of Truth: Local operator commands for repo-owned SaltMarcher tooling.
 
 # Local SaltMarcher Tools
 
-## Autonomous Runner
+## Desktop Updater
 
-The continuous autonomous runner is repo-owned here so every device can install
-the same script, prompt, and user-systemd unit.
+The active local tool bundle owns desktop updater and status commands only.
+There is no active in-repo autonomous development runner.
 
-Install or refresh the local runner:
+Install or refresh the local updater:
 
 ```bash
-tools/local/install-autodev-runner.sh
+tools/local/install-updater.sh
 ```
 
 Installed paths:
 
-- `~/.local/bin/saltmarcher-autodev.sh`
-- `~/.local/share/saltmarcher-autodev/task-prompt.md`
-- `~/.config/systemd/user/saltmarcher-autodev.service`
+- `~/.local/bin/saltmarcher-update.sh`
+- `~/.local/bin/saltmarcher-next.sh`
+- `~/.local/bin/saltmarcher-status.sh`
+- `~/.config/systemd/user/saltmarcher-update.service`
+- `~/.config/systemd/user/saltmarcher-update.timer`
 
 Control commands:
 
 ```bash
-systemctl --user status saltmarcher-autodev.service --no-pager
-systemctl --user restart saltmarcher-autodev.service
-systemctl --user disable --now saltmarcher-autodev.service
+systemctl --user status saltmarcher-update.timer --no-pager
+systemctl --user restart saltmarcher-update.timer
+systemctl --user disable --now saltmarcher-update.timer
 ```
-
-The operating contract remains
-`docs/project/architecture/night-shift.md`.

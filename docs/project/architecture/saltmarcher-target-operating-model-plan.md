@@ -25,8 +25,8 @@ retaining a long, gate-incompatible planning document.
   `docs/project/verification/quality-platforms-ci-and-branch-protection.md`
 - Harness gaps:
   `docs/project/verification/harness-gaps.md`
-- Autonomous work-selection contract:
-  `docs/project/architecture/night-shift.md`
+- Autonomous runner status:
+  no active in-repo autonomous runner; retired on 2026-07-09
 - Owner-action checklist:
   `docs/project/journal/2026-07-target-operating-model-owner-actions.md`
 
@@ -46,9 +46,10 @@ retaining a long, gate-incompatible planning document.
 - M6: Linux systemd-user updater, next-channel launcher, status command, and
   installer.
 - M7: German status issue updater and acceptance-label workflow.
-- M8: no in-repo runner decision, night-shift contract, and monthly pruning
-  review policy.
-- M9: governed migration roadmap rule and order in the night-shift contract.
+- M8: repo-owned autonomous runner retired; local tooling kept for updater and
+  status commands only.
+- M9: governed migration roadmap remains review-owned by the active
+  architecture and verification owners.
 
 ## Remaining Owner Actions
 

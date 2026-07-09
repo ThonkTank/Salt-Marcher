@@ -61,3 +61,21 @@ instead of adding another layer of exceptions.
 Done when: documentation enforcement passes, the runner syntax and dry-run
 contract pass, old `no_work` results normalize to a repair target, and
 independent review finds no remaining normal `no_work` path.
+
+## 2026-07-09 retire-autodev-main - Remove active autonomous runner surfaces
+
+Problem: `main` still exposed an installable autonomous runner, active
+work-selection contract, process-optimizer skill, and retained runner evidence
+after the owner asked to retire Autodev rather than continue evolving it.
+Target state: no active in-repo Autodev runner, prompt, service unit, skill,
+metrics script, work-selection contract, or canonical project-doc index entry
+remains. Local tooling is limited to updater/status commands, and historical
+journal entries remain history rather than active instructions.
+Alternatives: keep deprecated tombstones for the old runner, or merge the old
+`codex/retire-no-work` branch. Both would keep active-looking Autodev surfaces
+or reintroduce runner expansion work before deleting it.
+Scope boundary: remove active Autodev surfaces and references only, including
+the active autonomy-boundary wording that still implied a Dauerbetrieb loop; do
+not delete journal history or unrelated updater tooling.
+Done when: active Autodev references outside journal history are absent,
+documentation enforcement passes, and the production handoff route is green.
