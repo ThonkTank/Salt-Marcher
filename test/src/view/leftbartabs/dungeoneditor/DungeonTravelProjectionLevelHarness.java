@@ -111,7 +111,7 @@ public final class DungeonTravelProjectionLevelHarness {
                 invalidActionSnapshot.workspaceState() != null
                         && invalidActionSnapshot.workspaceState().statusLabel().contains("Aktion ist nicht verfügbar."),
                 "DT-ACT-INVALID typed invalid selected action reports invalid action");
-        assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, "DT-ACT-INVALID");
+        assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, partyPositionsBefore, "DT-ACT-INVALID");
 
         results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
                 + "DT-LVL-001 Ready: DungeonTravelControlsView + button -> SQLite/party unchanged"
