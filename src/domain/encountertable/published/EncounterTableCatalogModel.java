@@ -5,11 +5,22 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import src.domain.shared.published.PublishedState;
 
 public final class EncounterTableCatalogModel {
 
     private final Supplier<EncounterTableCatalogResult> currentSupplier;
     private final Function<Consumer<EncounterTableCatalogResult>, Runnable> subscribeAction;
+    private PublishedState<EncounterTableCatalogResult> statefulStore;
+
+    public EncounterTableCatalogModel() {
+        this(new PublishedState<>(emptyResult()));
+    }
+
+    private EncounterTableCatalogModel(PublishedState<EncounterTableCatalogResult> store) {
+        this(store::current, store::subscribe);
+        statefulStore = store;
+    }
 
     public EncounterTableCatalogModel(
             Supplier<EncounterTableCatalogResult> currentSupplier,
@@ -29,6 +40,12 @@ public final class EncounterTableCatalogModel {
 
     public Runnable subscribe(Consumer<EncounterTableCatalogResult> listener) {
         return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
+    }
+
+    public void publish(EncounterTableCatalogResult result) {
+        if (statefulStore != null) {
+            statefulStore.publish(result == null ? emptyResult() : result);
+        }
     }
 
     private static EncounterTableCatalogResult emptyResult() {
