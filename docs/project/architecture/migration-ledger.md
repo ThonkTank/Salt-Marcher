@@ -32,11 +32,11 @@ migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M3 - Rollout wave 1 |
-| Work item | M3.7 - creatures close-out |
-| Cycle step | 7 - Close-out |
-| In-flight area | `creatures` |
-| Required next proof | Record Creature close-out: German owner note, owner smoke checklist reference, retained proof set, accepted 27-file / 1,749-LOC exception, and next in-flight M3 area. |
-| Last status note | `2026-07-09 M3.5 creatures-implementation` |
+| Work item | M3.1 - party harness check/closure |
+| Cycle step | 1 - Harness check/closure |
+| In-flight area | `party` |
+| Required next proof | Verify Party harness coverage through production routes, close the P1 shell-bound dropdown route gap against the old structure if needed, and freeze scenarios/assertions before Party baseline metrics. |
+| Last status note | `2026-07-09 M3.7 creatures-close-out` |
 
 ## M0 Step Ledger
 
@@ -92,7 +92,7 @@ migration unless this ledger advances too.
 | 4. Harness wiring port | Done on branch | `c698d770c` | Pending PR merge | `./gradlew creatureCatalogHarness encounterStateTabHarness --console=plain` passed with 9 + 2 proof items, 2026-07-09; first `tools/gradle/run-staged-verification.sh focused-handoff --path src/domain/creatures --area creatures` attempt failed before task execution on Gradle wildcard-IP startup; `env -u CODEX_THREAD_ID tools/gradle/run-staged-verification.sh focused-handoff --path src/domain/creatures --area creatures` passed with retained log `build/gradle-run-logs/20260710T010654236508275-pid1300434-focused-handoff.log`; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved; Phase 2 Approved | `EncounterStateTabHarness` no longer constructs the Creature usecase/repository stack directly; it registers a no-op `CreatureCatalogPort` and routes through `CreaturesServiceContribution`. `CreatureCatalogHarness` needed no wiring change, and Encounter proof IDs, fixture values, visible text, and assertion labels stayed frozen. |
 | 5. Implementation | Done on branch | `246d39267` | Pending PR merge | `./gradlew compileJava compileTestJava --console=plain` passed, 2026-07-09; `./gradlew pmdStrictMain checkNoDeadCode --console=plain` passed, 2026-07-09; `./gradlew creatureCatalogHarness encounterStateTabHarness --console=plain` passed with 9 + 2 proof items, 2026-07-09; `tools/gradle/run-staged-verification.sh production-handoff` retained log `build/gradle-run-logs/20260710T015224616262533-pid1316900-production-handoff.log` passed; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved; Phase 2 Approved | Implemented the approved Creature target model, executed the 9-file deletion list, moved lookup/status/projection/publication behavior into `CreaturesApplicationService`, `CreatureCatalogProjection`, and stateful published models, kept byte-compatible published seams, used the named typed sort-field data mapper adaptation, and accepted the reviewed 27-file / 1,749-LOC exception under the design cap. |
 | 6. Conformance review | Done on branch | `246d39267` | Pending PR merge | Phase 1 Approved; Phase 2 Approved; product subset 27 Java files / 1,749 physical LOC; full domain+data set 82 Java files / 4,280 physical LOC; deletion list executed; frozen `creatureCatalogHarness` and adjacent `encounterStateTabHarness` green; `production-handoff` retained log `build/gradle-run-logs/20260710T015224616262533-pid1316900-production-handoff.log` passed | Conformance review accepted the M3.5 LOC exception under the design's 1,750-LOC cap, verified byte-compatible Creature published seams and the typed sort-field data mapper adaptation, found no source/test references to deleted classes, and found no Must-Fix findings. |
-| 7. Close-out | In Flight | Pending | Pending | Pending | Record German owner note, owner smoke checklist reference, retained proof set, accepted metric exception, and advance the ledger to the next M3 area. |
+| 7. Close-out | Done on branch | `246d39267` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; Creature owner smoke checklist available in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`; retained harness and production-handoff logs are green | Creature close-out records the German owner note, accepted 27-file / 1,749-LOC exception, retained proof set, and owner smoke checklist location. Next in-flight area is `party` at harness check/closure. |
 
 ## Milestone Ledger
 
@@ -112,8 +112,8 @@ migration unless this ledger advances too.
 | --- | --- | --- | --- | --- |
 | `hex` | Pilot reference commit `3679a19e2` | Done on branch | Pending | M2 done: `hexMapEditorBehaviorHarness` and `hexTravelStateBehaviorHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 41-file / 3,701-LOC metric exception; owner smoke checklist is available. |
 | `worldplanner` | Worldplanner reference commit `f499d321d` | Done on branch | Pending | M3 done on branch: backend, UI, raw-input, and encounter harnesses are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 43-file / 3,709-LOC metric exception; owner smoke checklist is available. |
-| `creatures` | Approved design `architecture-migration-creatures-target-design.md`; pilot reference | In Flight | Pending | M3.6 done on branch: conformance review accepted the target implementation, deletion list, byte-compatible seams, frozen harness proof, production handoff, typed sort-field data mapper adaptation, and bounded 27-file / 1,749-LOC exception; current step is M3.7 close-out. |
-| `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains. |
+| `creatures` | Creature reference commit `246d39267` | Done on branch | Pending | M3 done on branch: `creatureCatalogHarness` plus adjacent `encounterStateTabHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 27-file / 1,749-LOC exception; owner smoke checklist is available. |
+| `party` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains; current step is M3.1 harness check/closure. |
 | `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
 | `encountertable` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner UI imports only; P2 dedicated encounter-table readback harness gap remains. |
 | `encounter` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `worldPlannerEncounterHarness`, `encounterStateTabHarness`; P1 production publication route gaps remain. |
@@ -146,4 +146,4 @@ migration unless this ledger advances too.
 
 German owner status notes are maintained in
 `docs/project/architecture/architecture-migration-owner-status-notes.md`.
-Latest note: `2026-07-09 M3.5 creatures-implementation`.
+Latest note: `2026-07-09 M3.7 creatures-close-out`.

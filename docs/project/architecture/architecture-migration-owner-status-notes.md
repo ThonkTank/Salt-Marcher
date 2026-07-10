@@ -313,3 +313,17 @@ typed-sort-field-Gateway-Anpassung. Die eingefrorenen Harnesses sind gruen,
 unter der genehmigten 1.750-LOC-Grenze. Naechster Schritt ist M3.7:
 Creature-Close-out mit Owner-Smoke-Checklist-Referenz, finalem Proof-Set und
 Ledger-Uebergang zum naechsten M3-Bereich.
+
+### 2026-07-09 M3.7 creatures-close-out
+
+Der Creature-Bereich ist abgeschlossen. Referenzcommit fuer den migrierten
+Creature-Zielzustand ist `246d39267`; der Close-out verweist auf die
+Owner-Smoke-Checklist in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`.
+Das finale Proof-Set ist gruen: `compileJava compileTestJava`,
+PMD/Dead-Code, `creatureCatalogHarness`, der adjacent
+`encounterStateTabHarness`, Dokumentationsgate und `production-handoff`. Die
+genehmigte 27-Dateien-/1.749-LOC-Ausnahme bleibt dokumentiert und unter der
+1.750-LOC-Grenze. Auffaelligkeiten aus dem Owner-Smoke laufen wie im Roadmap-
+Protokoll als normale R2-Anomalien oder, bei schwerer Drift, ueber den
+Revert-Pfad. Naechster M3-Bereich ist `party` mit Harness-Check/Closure.

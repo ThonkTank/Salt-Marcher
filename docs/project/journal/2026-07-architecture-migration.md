@@ -24,3 +24,21 @@ evidence-backed review gate rather than an invitation to compress readable
 code. Harness proof also exposed a desktop Gradle environment quirk: retained
 log attempts that redirect output fail before task execution with wildcard-IP
 startup errors, while direct `env -u CODEX_THREAD_ID` harness execution passes.
+
+## 2026-07-09 architecture-migration-m3-creatures-retro - Close Creature rollout
+
+The Creature rollout completed the full migration cycle on branch
+`codex/architecture-migration-m0-charter`. Reference commit `246d39267`
+collapsed the Creature read-only catalog path from four per-route usecases,
+an internal published-state repository, and publication assemblies into
+`CreaturesApplicationService`, `CreatureCatalogProjection`, `CreaturesServiceAssembly`,
+stateful published models, and the unchanged `CreatureCatalogPort` seam. The
+implementation kept `CreaturesServiceContribution`, published records/enums,
+commands, and `CatalogSearchSpec.sortField()` byte-compatible; the only data
+touch was the approved typed sort-field gateway adaptation in the mapper.
+Phase 1 and Phase 2 accepted the 27-file / 1,749-LOC result under the design's
+1,750-LOC cap because retained published seams plus `CreatureCatalogData`
+carry most of the unavoidable line count. The useful rollout lesson is that
+read-only reference catalogs can remove behavior-forwarding layers without
+inventing an authored write model; keep the public catalog vocabulary stable
+and move lookup normalization/status publication into the application service.
