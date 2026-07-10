@@ -362,3 +362,22 @@ retained Dungeon-Harness-Gruppen, Render-Parity, focused handoff, Phase 1 und
 der unabhaengige Judge sind gruen. Naechster Schritt ist M4.1 Implementation:
 die genehmigte Loeschliste ausfuehren und die Facade intern von den alten
 Wrappern auf direkte authored-core Service-Logik umstellen.
+
+### 2026-07-10 M4.1 dungeon-authored-core-close-out
+
+Der Dungeon-Authored-Core-Zyklus ist abgeschlossen. Referenzstand ist
+`bdb15a2fc`; die Design-Amendment wurde vorher in `f6f5e3b95` festgehalten.
+Die 50-Datei-Loeschliste ist ausgefuehrt, `model/core/usecase` ist leer/gone,
+und alte Runtime-Wrapper sowie die authored Inspector-Projektionshelfer sind
+ohne Stale-References aus `src` und `test` entfernt. Die neue
+`DungeonAuthoredApplicationService`-Grenze traegt Katalog-, Lade-, Preview-,
+Mutation- und Publication-Verhalten direkt; Published-Seams bleiben
+byte-kompatibel. Die Treppenform-/Richtungs-Strings werden an der
+Application-Service-Kante normalisiert und erst danach als typed Core-Specs
+weitergegeben. Static-Proof, eingefrorene Dungeon-Harness-Gruppen,
+Render-Parity, focused handoff, Phase 1 und der unabhaengige Judge sind gruen.
+Die akzeptierte Metrik liegt bei 202 Core-Dateien / 18.260 LOC und 279
+design-sichtbaren Dateien. Der Owner-Smoke steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
+unter `dungeon-authored-core`. Naechster Schritt ist M4.2
+`dungeon-editor-session-runtime` Harness Check/Closure.
