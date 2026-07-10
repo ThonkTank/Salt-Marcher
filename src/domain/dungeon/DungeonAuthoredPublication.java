@@ -4,8 +4,9 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository;
+import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 
 final class DungeonAuthoredPublication {
 
@@ -13,178 +14,186 @@ final class DungeonAuthoredPublication {
     }
 
     static Snapshot snapshot(
-            DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication source
+            String mapName,
+            @Nullable DungeonDerivedState derived,
+            List<DungeonEditorHandleProjection> editorHandles,
+            long revision
     ) {
-        return new Snapshot(source);
+        return new Snapshot(mapName, derived, editorHandles, revision);
     }
 
-    static Inspector inspector(DungeonAuthoredPublishedStateRepository.InspectorPublication source) {
-        return new Inspector(source);
-    }
-
-    static Mutation mutation(DungeonAuthoredPublishedStateRepository.MutationPublication source) {
-        return new Mutation(source);
-    }
-
-    static Catalog catalog(DungeonAuthoredPublishedStateRepository.CatalogPublication source) {
-        return new Catalog(source);
-    }
-
-    static MapMutation mapMutation(DungeonAuthoredPublishedStateRepository.MapMutationPublication source) {
-        return new MapMutation(source);
-    }
-
-    record Snapshot(DungeonAuthoredPublishedStateRepository.@Nullable SnapshotPublication source) {
-    }
-
-    record Inspector(DungeonAuthoredPublishedStateRepository.InspectorPublication source) {
-        String title() {
-            return source.title();
+    record Snapshot(
+            String mapName,
+            @Nullable DungeonDerivedState derived,
+            List<DungeonEditorHandleProjection> editorHandles,
+            long revision
+    ) {
+        Snapshot {
+            mapName = mapName == null || mapName.isBlank() ? "Dungeon" : mapName;
+            editorHandles = editorHandles == null ? List.of() : List.copyOf(editorHandles);
         }
 
-        String description() {
-            return source.description();
-        }
-
-        List<String> facts() {
-            return source.facts();
-        }
-
-        StatePanelFacts statePanelFacts() {
-            return new StatePanelFacts(source.statePanelFacts());
-        }
-
-        List<RoomNarration> roomNarrations() {
-            return source.roomNarrations().stream()
-                    .map(RoomNarration::new)
-                    .toList();
+        @Override
+        public List<DungeonEditorHandleProjection> editorHandles() {
+            return List.copyOf(editorHandles);
         }
     }
 
-    record StatePanelFacts(DungeonAuthoredPublishedStateRepository.StatePanelFacts source) {
-        StairGeometry stairGeometry() {
-            return new StairGeometry(source.stairGeometry());
+    record Inspector(
+            String title,
+            String description,
+            List<String> facts,
+            StatePanelFacts statePanelFacts,
+            List<RoomNarration> roomNarrations
+    ) {
+        Inspector {
+            title = title == null ? "" : title;
+            description = description == null ? "" : description;
+            facts = facts == null ? List.of() : List.copyOf(facts);
+            statePanelFacts = statePanelFacts == null ? StatePanelFacts.empty() : statePanelFacts;
+            roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
         }
 
-        TransitionDestination transitionDestination() {
-            return new TransitionDestination(source.transitionDestination());
+        @Override
+        public List<String> facts() {
+            return List.copyOf(facts);
+        }
+
+        @Override
+        public List<RoomNarration> roomNarrations() {
+            return List.copyOf(roomNarrations);
         }
     }
 
-    record StairGeometry(DungeonAuthoredPublishedStateRepository.StairGeometryPublication source) {
-        boolean present() {
-            return source.present();
+    record StatePanelFacts(
+            StairGeometry stairGeometry,
+            TransitionDestination transitionDestination
+    ) {
+        StatePanelFacts {
+            stairGeometry = stairGeometry == null ? StairGeometry.empty() : stairGeometry;
+            transitionDestination = transitionDestination == null
+                    ? TransitionDestination.empty()
+                    : transitionDestination;
         }
 
-        long stairId() {
-            return source.stairId();
+        static StatePanelFacts empty() {
+            return new StatePanelFacts(StairGeometry.empty(), TransitionDestination.empty());
+        }
+    }
+
+    record StairGeometry(
+            boolean present,
+            long stairId,
+            String shapeName,
+            String directionName,
+            int dimension1,
+            int dimension2
+    ) {
+        StairGeometry {
+            stairId = Math.max(0L, stairId);
+            shapeName = shapeName == null || shapeName.isBlank() ? "STRAIGHT" : shapeName.strip();
+            directionName = directionName == null || directionName.isBlank() ? "NORTH" : directionName.strip();
+            dimension1 = Math.max(0, dimension1);
+            dimension2 = Math.max(0, dimension2);
+            present = present && stairId > 0L;
         }
 
-        String shapeName() {
-            return source.shapeName();
-        }
-
-        String directionName() {
-            return source.directionName();
-        }
-
-        int dimension1() {
-            return source.dimension1();
-        }
-
-        int dimension2() {
-            return source.dimension2();
+        static StairGeometry empty() {
+            return new StairGeometry(false, 0L, "", "", 0, 0);
         }
     }
 
     record TransitionDestination(
-            DungeonAuthoredPublishedStateRepository.TransitionDestinationPublication source
+            boolean present,
+            String destinationTypeKey,
+            long mapId,
+            long tileId,
+            long transitionId
     ) {
-        boolean present() {
-            return source.present();
+        TransitionDestination {
+            destinationTypeKey = destinationTypeKey == null || destinationTypeKey.isBlank()
+                    ? "UNLINKED_ENTRANCE"
+                    : destinationTypeKey.strip();
+            mapId = Math.max(0L, mapId);
+            tileId = Math.max(0L, tileId);
+            transitionId = Math.max(0L, transitionId);
         }
 
-        String destinationTypeKey() {
-            return source.destinationTypeKey();
-        }
-
-        long mapId() {
-            return source.mapId();
-        }
-
-        long tileId() {
-            return source.tileId();
-        }
-
-        long transitionId() {
-            return source.transitionId();
+        static TransitionDestination empty() {
+            return new TransitionDestination(false, "UNLINKED_ENTRANCE", 0L, 0L, 0L);
         }
     }
 
-    record Mutation(DungeonAuthoredPublishedStateRepository.MutationPublication source) {
-    }
+    record Mutation(
+            @Nullable Snapshot snapshot,
+            List<String> validationMessages,
+            List<String> reactionMessages
+    ) {
+        Mutation {
+            validationMessages = validationMessages == null ? List.of() : List.copyOf(validationMessages);
+            reactionMessages = reactionMessages == null ? List.of() : List.copyOf(reactionMessages);
+        }
 
-    record Catalog(DungeonAuthoredPublishedStateRepository.CatalogPublication source) {
-        List<MapSummary> maps() {
-            return source == null
-                    ? List.of()
-                    : source.maps().stream().map(MapSummary::new).toList();
+        @Override
+        public List<String> validationMessages() {
+            return List.copyOf(validationMessages);
+        }
+
+        @Override
+        public List<String> reactionMessages() {
+            return List.copyOf(reactionMessages);
         }
     }
 
-    record MapMutation(DungeonAuthoredPublishedStateRepository.MapMutationPublication source) {
-        DungeonMapIdentity mapId() {
-            return source.mapId();
+    record Catalog(List<MapSummary> maps) {
+        Catalog {
+            maps = maps == null ? List.of() : List.copyOf(maps);
+        }
+
+        @Override
+        public List<MapSummary> maps() {
+            return List.copyOf(maps);
         }
     }
 
-    record MapSummary(DungeonAuthoredPublishedStateRepository.MapSummaryPublication source) {
-        DungeonMapIdentity mapId() {
-            return source.mapId();
-        }
+    record MapMutation(DungeonMapIdentity mapId) {
+    }
 
-        String mapName() {
-            return source.mapName();
-        }
-
-        long revision() {
-            return source.revision();
+    record MapSummary(DungeonMapIdentity mapId, String mapName, long revision) {
+        MapSummary {
+            mapName = mapName == null || mapName.isBlank() ? "Dungeon Map" : mapName;
         }
     }
 
-    record RoomNarration(DungeonAuthoredPublishedStateRepository.RoomNarrationPublication source) {
-        long roomId() {
-            return source.roomId();
+    record RoomNarration(
+            long roomId,
+            String roomName,
+            String visualDescription,
+            List<RoomExitNarration> exits
+    ) {
+        RoomNarration {
+            roomName = roomName == null || roomName.isBlank() ? "Raum " + roomId : roomName;
+            visualDescription = visualDescription == null ? "" : visualDescription;
+            exits = exits == null ? List.of() : List.copyOf(exits);
         }
 
-        String roomName() {
-            return source.roomName();
-        }
-
-        String visualDescription() {
-            return source.visualDescription();
-        }
-
-        List<RoomExitNarration> exits() {
-            return source.exits().stream().map(RoomExitNarration::new).toList();
+        @Override
+        public List<RoomExitNarration> exits() {
+            return List.copyOf(exits);
         }
     }
 
-    record RoomExitNarration(DungeonAuthoredPublishedStateRepository.RoomExitNarrationPublication source) {
-        String label() {
-            return source.label();
-        }
-
-        Cell cell() {
-            return source.cell();
-        }
-
-        Direction direction() {
-            return source.direction();
-        }
-
-        String description() {
-            return source.description();
+    record RoomExitNarration(
+            String label,
+            Cell cell,
+            Direction direction,
+            String description
+    ) {
+        RoomExitNarration {
+            label = label == null || label.isBlank() ? "Ausgang" : label;
+            cell = cell == null ? new Cell(0, 0, 0) : cell;
+            direction = direction == null ? Direction.NORTH : direction;
+            description = description == null ? "" : description;
         }
     }
 }

@@ -5,16 +5,27 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
-import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 
 /**
- * Loads the current committed dungeon snapshot.
+ * Shared authored dungeon snapshot records and loader seam.
  */
 public final class LoadDungeonSnapshotUseCase {
+
+    private LoadDungeonSnapshotUseCase() {
+    }
+
+    public static DungeonSnapshotData snapshotData(
+            String mapName,
+            DungeonDerivedState derived,
+            List<DungeonEditorHandleProjection> editorHandles,
+            long revision
+    ) {
+        return new DungeonSnapshotData(mapName, derived, editorHandles, revision);
+    }
 
     public record DungeonSnapshotData(
             String mapName,
@@ -138,51 +149,6 @@ public final class LoadDungeonSnapshotUseCase {
             snapshot = Objects.requireNonNull(snapshot, "snapshot");
             inspector = Objects.requireNonNull(inspector, "inspector");
         }
-    }
-
-    private final MapLoader loadDungeonMap;
-    private final AssembleDungeonSnapshotUseCase assembleDungeonSnapshot;
-    private final PublishDungeonEditorHandlesUseCase publishDungeonEditorHandles;
-    private final InspectDungeonSelectionUseCase inspectDungeonSelection;
-
-    public LoadDungeonSnapshotUseCase(
-            MapLoader loadDungeonMap,
-            AssembleDungeonSnapshotUseCase assembleDungeonSnapshot,
-            PublishDungeonEditorHandlesUseCase publishDungeonEditorHandles,
-            InspectDungeonSelectionUseCase inspectDungeonSelection
-    ) {
-        this.loadDungeonMap = loadDungeonMap;
-        this.assembleDungeonSnapshot = assembleDungeonSnapshot;
-        this.publishDungeonEditorHandles = publishDungeonEditorHandles;
-        this.inspectDungeonSelection = inspectDungeonSelection;
-    }
-
-    public DungeonSnapshotData execute(DungeonMapIdentity mapId) {
-        return snapshotData(loadDungeonMap.load(mapId));
-    }
-
-    public AuthoredSurfaceData executeWithSelection(
-            DungeonMapIdentity mapId,
-            DungeonTopologyRef topologyRef,
-            long clusterId,
-            boolean clusterSelection
-    ) {
-        DungeonMap dungeonMap = loadDungeonMap.load(mapId);
-        DungeonSnapshotData snapshot = snapshotData(dungeonMap);
-        return new AuthoredSurfaceData(
-                snapshot,
-                inspectDungeonSelection.execute(
-                        dungeonMap,
-                        snapshot.derived(),
-                        topologyRef,
-                        clusterId,
-                        clusterSelection));
-    }
-
-    private DungeonSnapshotData snapshotData(DungeonMap dungeonMap) {
-        return assembleDungeonSnapshot.execute(
-                dungeonMap,
-                publishDungeonEditorHandles.execute(dungeonMap));
     }
 
     @FunctionalInterface

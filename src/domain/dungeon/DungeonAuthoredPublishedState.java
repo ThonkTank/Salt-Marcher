@@ -2,7 +2,6 @@ package src.domain.dungeon;
 
 import java.util.List;
 import shell.api.ServiceRegistry;
-import src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository;
 import src.domain.dungeon.published.DungeonAuthoredMutationModel;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 import src.domain.dungeon.published.DungeonAuthoredReadModel;
@@ -11,7 +10,7 @@ import src.domain.dungeon.published.DungeonMapCatalogModel;
 import src.domain.dungeon.published.DungeonMapCatalogResponse;
 import src.domain.shared.published.PublishedState;
 
-class DungeonAuthoredPublishedState implements DungeonAuthoredPublishedStateRepository {
+class DungeonAuthoredPublishedState {
 
     private final PublishedState<DungeonAuthoredReadResult> authoredRead =
             new PublishedState<>(DungeonAuthoredReadProjectionServiceAssembly.defaultRead());
@@ -32,56 +31,45 @@ class DungeonAuthoredPublishedState implements DungeonAuthoredPublishedStateRepo
         services.registerFactory(DungeonMapCatalogModel.class, registry -> mapCatalogModel);
     }
 
-    @Override
-    public void publishSnapshot(SnapshotPublication snapshot) {
+    void publishSnapshot(DungeonAuthoredPublication.Snapshot snapshot) {
         if (snapshot != null) {
             authoredRead.publish(new DungeonAuthoredReadResult.CommittedSnapshot(
-                    DungeonAuthoredReadProjectionServiceAssembly.snapshot(
-                            DungeonAuthoredPublication.snapshot(snapshot))));
+                    DungeonAuthoredReadProjectionServiceAssembly.snapshot(snapshot)));
         }
     }
 
-    @Override
-    public void publishInspector(InspectorPublication inspector) {
+    void publishInspector(DungeonAuthoredPublication.Inspector inspector) {
         if (inspector != null) {
             authoredRead.publish(new DungeonAuthoredReadResult.SelectionInspector(
-                    DungeonAuthoredReadProjectionServiceAssembly.inspector(
-                            DungeonAuthoredPublication.inspector(inspector))));
+                    DungeonAuthoredReadProjectionServiceAssembly.inspector(inspector)));
         }
     }
 
-    @Override
-    public void publishMutation(MutationPublication result) {
+    void publishMutation(DungeonAuthoredPublication.Mutation result) {
         if (result != null) {
-            authoredMutation.publish(DungeonAuthoredMutationProjectionServiceAssembly.mutation(
-                    DungeonAuthoredPublication.mutation(result)));
+            authoredMutation.publish(DungeonAuthoredMutationProjectionServiceAssembly.mutation(result));
         }
     }
 
-    @Override
-    public void publishSearch(CatalogPublication result) {
-        mapCatalog.publish(DungeonAuthoredCatalogProjectionServiceAssembly.mapList(
-                DungeonAuthoredPublication.catalog(result)));
+    void publishSearch(DungeonAuthoredPublication.Catalog result) {
+        mapCatalog.publish(DungeonAuthoredCatalogProjectionServiceAssembly.mapList(result));
     }
 
-    @Override
-    public void publishCreated(MapMutationPublication mutation) {
+    void publishCreated(DungeonAuthoredPublication.MapMutation mutation) {
         mapCatalog.publish(DungeonAuthoredCatalogProjectionServiceAssembly.mapMutation(
                 DungeonMapCatalogResponse.MutationKind.CREATED,
-                DungeonAuthoredPublication.mapMutation(mutation)));
+                mutation));
     }
 
-    @Override
-    public void publishRenamed(MapMutationPublication mutation) {
+    void publishRenamed(DungeonAuthoredPublication.MapMutation mutation) {
         mapCatalog.publish(DungeonAuthoredCatalogProjectionServiceAssembly.mapMutation(
                 DungeonMapCatalogResponse.MutationKind.RENAMED,
-                DungeonAuthoredPublication.mapMutation(mutation)));
+                mutation));
     }
 
-    @Override
-    public void publishDeleted(MapMutationPublication mutation) {
+    void publishDeleted(DungeonAuthoredPublication.MapMutation mutation) {
         mapCatalog.publish(DungeonAuthoredCatalogProjectionServiceAssembly.mapMutation(
                 DungeonMapCatalogResponse.MutationKind.DELETED,
-                DungeonAuthoredPublication.mapMutation(mutation)));
+                mutation));
     }
 }

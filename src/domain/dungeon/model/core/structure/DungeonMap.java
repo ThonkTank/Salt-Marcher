@@ -13,6 +13,7 @@ import src.domain.dungeon.model.core.structure.room.DungeonRoomNarration;
 import src.domain.dungeon.model.core.structure.room.RoomCatalog;
 import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
 import src.domain.dungeon.model.core.structure.stair.StairCollection;
+import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.topology.DungeonMapTopology;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
@@ -310,46 +311,30 @@ public record DungeonMap(
 
     public DungeonMap createStair(
             long stairId,
-            Cell anchor,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
+            StairGeometrySpec spec
     ) {
-        return STAIR_AUTHORING.createStair(this, stairId, anchor, shapeName, directionName, dimension1, dimension2);
+        return STAIR_AUTHORING.createStair(this, stairId, spec);
     }
 
-    public boolean canCreateStair(
-            Cell anchor,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
-    ) {
-        return STAIR_AUTHORING.canCreateStair(this, anchor, shapeName, directionName, dimension1, dimension2);
+    public boolean canCreateStair(StairGeometrySpec spec) {
+        return STAIR_AUTHORING.canCreateStair(this, spec);
     }
 
     public boolean canSaveStairGeometry(
             long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
+            StairGeometrySpec spec
     ) {
-        return STAIR_AUTHORING.canSaveStairGeometry(this, stairId, shapeName, directionName, dimension1, dimension2);
+        return STAIR_AUTHORING.canSaveStairGeometry(this, stairId, spec);
     }
 
     public DungeonMap saveStairGeometry(
             long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
+            StairGeometrySpec spec
     ) {
-        if (!canSaveStairGeometry(stairId, shapeName, directionName, dimension1, dimension2)) {
+        if (!canSaveStairGeometry(stairId, spec)) {
             return this;
         }
-        return STAIR_AUTHORING.saveStairGeometry(this, stairId, shapeName, directionName, dimension1, dimension2);
+        return STAIR_AUTHORING.saveStairGeometry(this, stairId, spec);
     }
 
     public DungeonMap paintRoomRectangle(Cell start, Cell end) {

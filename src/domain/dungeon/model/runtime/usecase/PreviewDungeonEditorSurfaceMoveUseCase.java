@@ -16,7 +16,7 @@ import src.domain.dungeon.model.runtime.helper.PreviewDungeonEditorSurfaceAreaMo
 import src.domain.dungeon.model.runtime.helper.PreviewDungeonEditorSurfaceBoundaryMoveHelper;
 import src.domain.dungeon.model.runtime.helper.PreviewDungeonEditorSurfaceHandleMoveHelper;
 
-final class PreviewDungeonEditorSurfaceMoveUseCase {
+public final class PreviewDungeonEditorSurfaceMoveUseCase {
     private final PreviewDungeonEditorDoorMoveUseCase doorMovePreviewUseCase =
             new PreviewDungeonEditorDoorMoveUseCase();
     private final PreviewDungeonEditorSurfaceAreaMoveHelper areas = new PreviewDungeonEditorSurfaceAreaMoveHelper();
@@ -24,7 +24,7 @@ final class PreviewDungeonEditorSurfaceMoveUseCase {
             new PreviewDungeonEditorSurfaceBoundaryMoveHelper();
     private final PreviewDungeonEditorSurfaceHandleMoveHelper handles = new PreviewDungeonEditorSurfaceHandleMoveHelper();
 
-    DungeonEditorDungeonState.@Nullable PreviewFacts execute(
+    public DungeonEditorDungeonState.@Nullable PreviewFacts execute(
             DungeonEditorSessionSnapshot.@Nullable SurfaceData surface,
             DungeonEditorSessionValues.Preview preview
     ) {

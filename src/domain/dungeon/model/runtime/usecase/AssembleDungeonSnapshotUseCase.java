@@ -34,7 +34,7 @@ public final class AssembleDungeonSnapshotUseCase {
             DungeonDerivedState derived,
             List<DungeonEditorHandleProjection> editorHandles
     ) {
-        return new LoadDungeonSnapshotUseCase.DungeonSnapshotData(
+        return LoadDungeonSnapshotUseCase.snapshotData(
                 dungeonMap.metadata().mapName(),
                 derived,
                 editorHandles,

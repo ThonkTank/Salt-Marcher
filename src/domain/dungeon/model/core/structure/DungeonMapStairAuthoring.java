@@ -1,6 +1,6 @@
 package src.domain.dungeon.model.core.structure;
 
-import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairMapAuthoring;
 
 final class DungeonMapStairAuthoring {
@@ -13,72 +13,39 @@ final class DungeonMapStairAuthoring {
     DungeonMap createStair(
             DungeonMap dungeonMap,
             long stairId,
-            Cell anchor,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
+            StairGeometrySpec spec
     ) {
-        var nextStairs = stairAuthoring.withAuthoredStair(
-                dungeonMap,
-                stairId,
-                anchor,
-                shapeName,
-                directionName,
-                dimension1,
-                dimension2);
+        var nextStairs = stairAuthoring.withAuthoredStair(dungeonMap, stairId, spec);
         return nextStairs.equals(dungeonMap.stairs()) ? dungeonMap : dungeonMap.withStairs(nextStairs);
     }
 
     boolean canCreateStair(
             DungeonMap dungeonMap,
-            Cell anchor,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
+            StairGeometrySpec spec
     ) {
-        return stairAuthoring.canCreateAuthoredStair(
-                dungeonMap,
-                anchor,
-                shapeName,
-                directionName,
-                dimension1,
-                dimension2);
+        return stairAuthoring.canCreateAuthoredStair(dungeonMap, spec);
     }
 
     boolean canSaveStairGeometry(
             DungeonMap dungeonMap,
             long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
+            StairGeometrySpec spec
     ) {
         return stairAuthoring.canSaveStairGeometry(
                 dungeonMap,
                 stairId,
-                shapeName,
-                directionName,
-                dimension1,
-                dimension2);
+                spec);
     }
 
     DungeonMap saveStairGeometry(
             DungeonMap dungeonMap,
             long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
+            StairGeometrySpec spec
     ) {
         var nextStairs = stairAuthoring.withSavedStairGeometry(
                 dungeonMap,
                 stairId,
-                shapeName,
-                directionName,
-                dimension1,
-                dimension2);
+                spec);
         return nextStairs.equals(dungeonMap.stairs()) ? dungeonMap : dungeonMap.withStairs(nextStairs);
     }
 }
