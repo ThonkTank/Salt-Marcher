@@ -269,3 +269,19 @@ Published-State-Extraktion ist echte Duplikatsentfernung statt Check-Gaming.
 unter der genehmigten 5.750-LOC-Grenze. Naechster Schritt ist M3.7:
 Party-Close-out mit Owner-Smoke-Checklist-Referenz, finalem Proof-Set und
 Ledger-Uebergang zum naechsten M3-Bereich.
+
+### 2026-07-10 M3.7 party-close-out
+
+Der Party-Bereich ist abgeschlossen. Referenzcommit fuer den migrierten
+Party-Zielzustand ist `8e67f2304`; der Close-out verweist auf die
+Owner-Smoke-Checklist in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`.
+Das finale Proof-Set ist gruen: `compileJava compileTestJava`,
+Dead-Code/PMD/CPD/SpotBugs, `partyDropdownHarness`, Harness-Map/Topology,
+Dokumentationsgate und `production-handoff`. Die genehmigte
+88-Dateien-/5.740-LOC-Ausnahme bleibt dokumentiert und unter der
+5.750-LOC-Grenze. Die typed-travel-Rework-Entscheidung und die gemeinsame
+`PublishedState`-Extraktion sind in Ledger und Review festgehalten.
+Auffaelligkeiten aus dem Owner-Smoke laufen wie im Roadmap-Protokoll als
+normale R2-Anomalien oder, bei schwerer Drift, ueber den Revert-Pfad.
+Naechster M3-Bereich ist `sessionplanner` mit Harness-Check/Closure.

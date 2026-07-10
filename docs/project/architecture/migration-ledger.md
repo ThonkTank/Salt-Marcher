@@ -32,11 +32,11 @@ migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M3 - Rollout wave 1 |
-| Work item | M3.7 - party close-out |
-| Cycle step | 7 - Close-out |
-| In-flight area | `party` |
-| Required next proof | Record Party close-out: German owner note, owner smoke checklist reference, retained proof set, accepted 88-file / 5,740-LOC exception, and next in-flight M3 area. |
-| Last status note | `2026-07-10 M3.6 party-conformance-review` |
+| Work item | M3.1 - sessionplanner harness check/closure |
+| Cycle step | 1 - Harness check/closure |
+| In-flight area | `sessionplanner` |
+| Required next proof | Verify Session Planner harness coverage through production routes, confirm no harness gap blocks the area, and freeze scenarios/assertions before Session Planner baseline metrics. |
+| Last status note | `2026-07-10 M3.7 party-close-out` |
 
 ## M0 Step Ledger
 
@@ -104,7 +104,19 @@ migration unless this ledger advances too.
 | 4. Harness wiring port | Done on branch | `d1b57457f` | Pending PR merge | `./gradlew partyDropdownHarness checkHarnessMapConsistency checkBehaviorHarnessTopology --console=plain` passed, 2026-07-10; `env -u CODEX_THREAD_ID tools/gradle/run-staged-verification.sh focused-handoff --path src/view/dropdowns/party --area party` passed with retained log `build/gradle-run-logs/20260710T085450787982978-pid39376-focused-handoff.log`; Phase 1 Approved; Phase 2 Approved | No harness code port was required: `partyDropdownHarness` already imports preserved shell and Party published seams, constructs `PartyTopBarContribution`, and has no references to the approved 34-file deletion list. Harness scenarios and assertions stayed frozen; M3.5 owns production deletion and implementation. |
 | 5. Implementation | Done on branch | `8e67f2304` | Pending PR merge | `./gradlew compileJava compileTestJava --console=plain` passed, 2026-07-10; `./gradlew checkNoDeadCode pmdStrictMain cpdMain spotbugsMain --console=plain` passed, 2026-07-10; `./gradlew partyDropdownHarness checkHarnessMapConsistency checkBehaviorHarnessTopology --console=plain` passed, 2026-07-10; `env -u CODEX_THREAD_ID tools/gradle/run-staged-verification.sh production-handoff` retained log `build/gradle-run-logs/20260710T101441023183614-pid131546-production-handoff.log` passed; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved after typed-travel rework; Phase 2 Approved | Implemented the approved Party target model, executed the 34-file deletion list, replaced per-verb usecases and publication assemblies with `PartyApplicationService`, `PartyPublishedProjection`, stateful published models, and `PartyTopBarViewModel`, kept byte-compatible service/published/top-bar seams, extracted the duplicated published listener/current store into `src/domain/shared/published/PublishedState`, deleted the old String travel factory, and accepted the reviewed 88-file / 5,740-LOC exception under the design cap. |
 | 6. Conformance review | Done on branch | `8e67f2304` | Pending PR merge | Phase 1 Approved after typed-travel rework; Phase 2 Approved; product subset 88 Java files / 5,740 physical LOC; deletion list executed; frozen `partyDropdownHarness` green; `production-handoff` retained log `build/gradle-run-logs/20260710T101441023183614-pid131546-production-handoff.log` passed | Conformance review accepted the M3.5 LOC exception under the design's 5,750-LOC cap, verified byte-compatible Party service/published/top-bar seams, found no harness scenario/assertion diffs, confirmed the duplicated published-state store extraction was genuine rather than check-gaming, confirmed zero non-seam internal Party travel String round-trips after rework, and found no remaining Must-Fix findings. |
-| 7. Close-out | In Flight | Pending | Pending | Pending | Record German owner note, owner smoke checklist reference, retained proof set, accepted metric exception, and advance the ledger to the next M3 area. |
+| 7. Close-out | Done on branch | `8e67f2304` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-10; Party owner smoke checklist available in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`; retained harness, quality, and production-handoff logs are green | Party close-out records the German owner note, accepted 88-file / 5,740-LOC exception, retained proof set, owner smoke checklist location, typed travel rework, and next in-flight area `sessionplanner` at harness check/closure. |
+
+## M3 Session Planner Cycle Ledger
+
+| Cycle step | Status | Local branch commit | Merge commit | Proof | Notes |
+| --- | --- | --- | --- | --- | --- |
+| 1. Harness check/closure | In Flight | Pending | Pending | Pending | Verify `sessionPlannerCatalogHarness` and `sessionPlannerShellLayoutHarness` cover Session Planner user-visible behavior through production routes; close any gaps against the current structure before baseline metrics; freeze scenarios/assertions before M3.2. |
+| 2. Baseline metrics | Pending | Pending | Pending | Pending | Capture file count, LOC, longest intent-to-mutation chain, forwarding-only classes, and String boundary round-trips after harness closure. |
+| 3. Target design | Pending | Pending | Pending | Pending | Produce judge-approved target design with target classes, representative call chains, deletion list, seam statement, untouched surfaces, frozen parity inventory, and metric targets before implementation. |
+| 4. Harness wiring port | Pending | Pending | Pending | Pending | Port only harness or construction references needed for the approved deletion list; scenarios and assertions stay frozen. |
+| 5. Implementation | Pending | Pending | Pending | Pending | Implement the approved Session Planner target design or commit an approved design amendment first. |
+| 6. Conformance review | Pending | Pending | Pending | Pending | Phase 1 and Phase 2 review design conformance, parity, seams, deletion list, and metric targets. |
+| 7. Close-out | Pending | Pending | Pending | Pending | Ledger update, German owner note, owner smoke checklist reference, retained proof set, and next-area transition. |
 
 ## Milestone Ledger
 
@@ -125,8 +137,8 @@ migration unless this ledger advances too.
 | `hex` | Pilot reference commit `3679a19e2` | Done on branch | Pending | M2 done: `hexMapEditorBehaviorHarness` and `hexTravelStateBehaviorHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 41-file / 3,701-LOC metric exception; owner smoke checklist is available. |
 | `worldplanner` | Worldplanner reference commit `f499d321d` | Done on branch | Pending | M3 done on branch: backend, UI, raw-input, and encounter harnesses are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 43-file / 3,709-LOC metric exception; owner smoke checklist is available. |
 | `creatures` | Creature reference commit `246d39267` | Done on branch | Pending | M3 done on branch: `creatureCatalogHarness` plus adjacent `encounterStateTabHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 27-file / 1,749-LOC exception; owner smoke checklist is available. |
-| `party` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.6 done on branch: conformance review accepted the target implementation, 34-file deletion list, byte-compatible seams, frozen harness proof, production handoff, shared `PublishedState` extraction, zero non-seam internal Party travel String round-trips, and bounded 88-file / 5,740-LOC exception; current step is M3.7 close-out. |
-| `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
+| `party` | Party reference commit `8e67f2304` | Done on branch | Pending | M3 done on branch: `partyDropdownHarness` is green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 88-file / 5,740-LOC exception, the shared `PublishedState` extraction, and the typed-travel rework; owner smoke checklist is available. |
+| `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M1.1 inventory: `sessionPlannerCatalogHarness` and `sessionPlannerShellLayoutHarness`; no registered M1.1 gap; current step is M3.1 harness check/closure. |
 | `encountertable` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner UI imports only; P2 dedicated encounter-table readback harness gap remains. |
 | `encounter` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `worldPlannerEncounterHarness`, `encounterStateTabHarness`; P1 production publication route gaps remain. |
 | `dungeon-authored-core` | Legacy surrounding code until M4.1 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 inventory: `dungeonEditorCoreBehaviorHarness` plus mapped domain tasks `dungeonEditorBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness`; no registered M1.1 gap. |
@@ -158,4 +170,4 @@ migration unless this ledger advances too.
 
 German owner status notes are maintained in
 `docs/project/architecture/architecture-migration-owner-status-notes.md`.
-Latest note: `2026-07-10 M3.6 party-conformance-review`.
+Latest note: `2026-07-10 M3.7 party-close-out`.
