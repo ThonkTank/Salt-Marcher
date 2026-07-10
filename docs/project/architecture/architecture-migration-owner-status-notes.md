@@ -321,3 +321,23 @@ einen fehlenden Active-Party-Facts-Hop; nach Rework sind Dokumentationsgate,
 unabhaengige Judge gruen. Naechster Schritt ist M3.3 mit judge-geprueftem
 Session-Planner-Target-Design; es wurde noch keine Wiring- oder
 Implementierungsarbeit begonnen.
+
+### 2026-07-10 M3.3 sessionplanner-target-design
+
+Das Session-Planner-Target-Design ist in
+`docs/project/architecture/architecture-migration-sessionplanner-target-design.md`
+genehmigt. Es legt den Produkt-Schnitt auf 103 Java-Dateien / 6.664 LOC fest
+und benennt die Zielstruktur konkret: ein Root-`SessionPlannerApplicationService`,
+eine echte `SessionPlannerServiceAssembly`, neue `SessionPlannerPublishedState`-,
+`SessionPlannerProjection`-, `SessionPlannerForeignFacts`-, `SessionPlannerViewModel`-
+und `SessionPlannerVocabulary`-Klassen sowie stateful Published Models auf Basis
+des gemeinsamen `PublishedState`-Helpers. Die Deletionsliste umfasst 57
+konkrete Dateien; darunter die Split-ApplicationServices, die Usecase-/Port-/
+Repository-Zeremonie, die Projection-/Readback-Assemblies sowie die alten
+View-ContentModels, InputEvents und der IntentHandler. Phase 1 und der
+unabhaengige Judge haben das Design freigegeben. Akzeptierte Ausnahmen sind nur
+die Data-Layer-Zaehlausnahme, die Registry-Kompositionsseams, fremde
+Party/Encounter/World-Planner-Readbacks und die Shared-Catalog-String-ID-Seam.
+Kein Produkt-LOC-Miss ist vorab akzeptiert. Naechster Schritt ist M3.4:
+separater Wiring-Port auf `SessionPlannerViewModel`/Callback-Grenze, ohne
+Szenario-, Assertion-, Text- oder Orakel-Aenderung.
