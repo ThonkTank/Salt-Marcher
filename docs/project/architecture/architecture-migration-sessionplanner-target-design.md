@@ -314,6 +314,14 @@ metric miss, and it must reject any apparent metric hit achieved through code
 compression, comment deletion, cosmetic renaming, or duplicated helper
 rephrasing.
 
+### M3.5 LOC Exception Amendment
+The implemented M3.5 product subset lands at 51 Java files and 5,170 physical
+LOC. Phase 1 and Phase 2 must explicitly accept or reject the bounded 5,200
+LOC cap and review conditions in
+`docs/project/architecture/architecture-migration-sessionplanner-loc-exception.md`;
+no other target, seam, deletion-list, `PublishedState`, or harness-freeze rule
+is relaxed.
+
 ## Untouched Surfaces
 
 - `src/data/sessionplanner/**` persistence, schema, mapper, gateway, and
