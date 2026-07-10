@@ -299,3 +299,17 @@ der unabhaengige Judge haben die Umsetzung freigegeben und die
 27-Dateien-/1.749-LOC-Ausnahme unter der genehmigten 1.750-LOC-Grenze
 akzeptiert. Naechster Schritt ist M3.6: Conformance Review mit finalem
 Design-, Parity-, Seam- und Metric-Nachweis vor dem Close-out.
+
+### 2026-07-09 M3.6 creatures-conformance-review
+
+Die Creature-Conformance-Review ist abgeschlossen. Phase 1 und der
+unabhaengige Judge bestaetigen, dass das genehmigte Target-Design umgesetzt
+ist: die 9-Datei-Loeschliste ist vollstaendig ausgefuehrt, es gibt keine
+Source- oder Test-Referenzen auf die geloeschten Klassen, die
+`CreaturesServiceContribution`- und Published-Seams bleiben kompatibel, und
+die einzige Data-Layer-Beruehrung bleibt die genehmigte
+typed-sort-field-Gateway-Anpassung. Die eingefrorenen Harnesses sind gruen,
+`production-handoff` ist gruen, und die 27-Dateien-/1.749-LOC-Ausnahme liegt
+unter der genehmigten 1.750-LOC-Grenze. Naechster Schritt ist M3.7:
+Creature-Close-out mit Owner-Smoke-Checklist-Referenz, finalem Proof-Set und
+Ledger-Uebergang zum naechsten M3-Bereich.
