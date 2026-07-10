@@ -9,4 +9,8 @@ public record CombatantId(String value) {
     public static CombatantId from(String rawValue) {
         return new CombatantId(rawValue);
     }
+
+    public static CombatantId empty() {
+        return new CombatantId("");
+    }
 }

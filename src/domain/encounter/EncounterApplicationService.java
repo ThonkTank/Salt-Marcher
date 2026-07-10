@@ -90,7 +90,7 @@ public final class EncounterApplicationService {
                 effective.delta(),
                 effective.undoToken(),
                 initiativeInputs(effective),
-                CombatantId.from(effective.combatantId()).value(),
+                CombatantId.from(effective.combatantId()),
                 effective.initiative(),
                 effective.partyMemberId(),
                 effective.amount(),

@@ -15,17 +15,17 @@ public final class CombatTurn {
         return !ASSEMBLER.assemble(combatants).isEmpty();
     }
 
-    public @Nullable String activeTurnId(List<Combatant> combatants, int currentTurnIndex) {
+    public @Nullable CombatantId activeTurnId(List<Combatant> combatants, int currentTurnIndex) {
         List<CombatTurnEntry> entries = ASSEMBLER.assemble(combatants);
         int index = normalizedTurnIndex(entries, currentTurnIndex);
-        return index < 0 ? null : entries.get(index).id();
+        return index < 0 ? null : CombatantId.from(entries.get(index).id());
     }
 
-    public int turnIndexOf(List<Combatant> combatants, @Nullable String combatantId, int fallbackTurnIndex) {
+    public int turnIndexOf(List<Combatant> combatants, @Nullable CombatantId combatantId, int fallbackTurnIndex) {
         List<CombatTurnEntry> entries = ASSEMBLER.assemble(combatants);
         if (combatantId != null) {
             for (int index = 0; index < entries.size(); index++) {
-                if (entries.get(index).id().equals(combatantId)) {
+                if (idsMatch(entries.get(index), combatantId)) {
                     return index;
                 }
             }
@@ -79,13 +79,17 @@ public final class CombatTurn {
                 totalEnemies > 0 && aliveEnemies == 0);
     }
 
-    public @Nullable CombatTurnEntry turnEntry(List<Combatant> combatants, String combatantId) {
+    public @Nullable CombatTurnEntry turnEntry(List<Combatant> combatants, CombatantId combatantId) {
         for (CombatTurnEntry entry : ASSEMBLER.assemble(combatants)) {
-            if (entry.id().equals(combatantId)) {
+            if (idsMatch(entry, combatantId)) {
                 return entry;
             }
         }
         return null;
+    }
+
+    private static boolean idsMatch(CombatTurnEntry entry, CombatantId combatantId) {
+        return entry != null && combatantId != null && entry.id().equals(combatantId.value());
     }
 
     private static int normalizedTurnIndex(List<CombatTurnEntry> entries, int requestedTurnIndex) {

@@ -29,11 +29,11 @@ final class CombatTurnTracker {
         round = turn.round();
     }
 
-    @Nullable String activeTurnId(CombatTurn combatTurns, CombatRoster combatRoster) {
+    @Nullable CombatantId activeTurnId(CombatTurn combatTurns, CombatRoster combatRoster) {
         return combatTurns.activeTurnId(combatRoster.combatants(), currentTurnIndex.orElse(CombatTurn.NO_ACTIVE_TURN_INDEX));
     }
 
-    void restore(CombatTurn combatTurns, CombatRoster combatRoster, @Nullable String activeTurnId) {
+    void restore(CombatTurn combatTurns, CombatRoster combatRoster, @Nullable CombatantId activeTurnId) {
         currentTurnIndex = toOptionalTurnIndex(combatTurns.turnIndexOf(
                 combatRoster.combatants(),
                 activeTurnId,
