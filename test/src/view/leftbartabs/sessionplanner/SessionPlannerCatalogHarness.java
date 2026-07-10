@@ -31,16 +31,7 @@ import src.data.sessionplanner.model.SessionLootPlaceholderRecord;
 import src.data.sessionplanner.model.SessionPlanRecord;
 import src.data.sessionplanner.model.SessionPlanSnapshotRecord;
 import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.application.ApplyEncounterStateUseCase;
-import src.domain.encounter.model.plan.EncounterPlanBudgetLoadResult;
-import src.domain.encounter.model.plan.SavedEncounterPlansLoadResult;
-import src.domain.encounter.model.plan.repository.EncounterPlanPublishedStateRepository;
-import src.domain.encounter.model.plan.usecase.PublishEncounterPlanBudgetUseCase;
-import src.domain.encounter.model.plan.usecase.PublishEncounterSavedPlansUseCase;
-import src.domain.encounter.model.session.EncounterSessionPublicationData;
-import src.domain.encounter.model.session.repository.EncounterSessionPublishedStateRepository;
-import src.domain.encounter.model.session.usecase.PublishEncounterSessionUseCase;
-import src.domain.encounter.model.session.usecase.UpdateEncounterBuilderInputsUseCase;
+import src.domain.encounter.EncounterApplicationServiceFakes;
 import src.domain.encounter.published.EncounterPlanBudgetModel;
 import src.domain.encounter.published.EncounterPlanBudgetResult;
 import src.domain.encounter.published.EncounterPlanBudgetStatus;
@@ -646,32 +637,7 @@ public final class SessionPlannerCatalogHarness {
     }
 
     private static EncounterApplicationService noopEncounterApplicationService() {
-        NoopEncounterPublishedState state = NoopEncounterPublishedState.INSTANCE;
-        PublishEncounterSessionUseCase publishSession = new PublishEncounterSessionUseCase(state, null);
-        return new EncounterApplicationService(
-                new ApplyEncounterStateUseCase(
-                        null,
-                        publishSession,
-                        new PublishEncounterSavedPlansUseCase(state, null)),
-                new UpdateEncounterBuilderInputsUseCase(null, publishSession),
-                new PublishEncounterPlanBudgetUseCase(state, null));
-    }
-
-    private enum NoopEncounterPublishedState
-            implements EncounterSessionPublishedStateRepository, EncounterPlanPublishedStateRepository {
-        INSTANCE;
-
-        @Override
-        public void publishCurrentSession(EncounterSessionPublicationData publication) {
-        }
-
-        @Override
-        public void publishSavedPlans(SavedEncounterPlansLoadResult result) {
-        }
-
-        @Override
-        public void publishPlanBudget(EncounterPlanBudgetLoadResult result) {
-        }
+        return EncounterApplicationServiceFakes.noOp();
     }
 
     private static <T extends Node> T slot(ShellBinding binding, ShellSlot slot, Class<T> type) {

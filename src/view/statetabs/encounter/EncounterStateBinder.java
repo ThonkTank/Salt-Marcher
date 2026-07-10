@@ -32,14 +32,12 @@ final class EncounterStateBinder {
         EncounterApplicationService encounters = runtimeContext.services().require(EncounterApplicationService.class);
         WorldPlannerApplicationService worldPlanner =
                 runtimeContext.services().find(WorldPlannerApplicationService.class).orElse(null);
-        EncounterStateContributionModel presentationModel = new EncounterStateContributionModel();
-        EncounterStateIntentHandler intentHandler = new EncounterStateIntentHandler(
-                presentationModel,
+        EncounterStateViewModel viewModel = new EncounterStateViewModel(
                 encounters,
                 worldPlanner,
                 creatures,
                 creatureId -> openCreatureDetails(runtimeContext.inspector(), detailModel, creatureId));
-        EncounterStateContributionModel.ContentModels contentModels = presentationModel.contentModels();
+        EncounterStateContributionModel.ContentModels contentModels = viewModel.contentModels();
         EncounterBuilderStateView builderView = new EncounterBuilderStateView();
         EncounterInitiativeStateView initiativeView = new EncounterInitiativeStateView();
         EncounterCombatStateView combatView = new EncounterCombatStateView();
@@ -50,12 +48,12 @@ final class EncounterStateBinder {
         initiativeView.bind(contentModels.initiative());
         combatView.bind(contentModels.combat());
         resultsView.bind(contentModels.results());
-        stateModel.subscribe(presentationModel::apply);
-        presentationModel.apply(stateModel.current());
-        builderView.onViewInputEvent(intentHandler::consume);
-        initiativeView.onViewInputEvent(intentHandler::consume);
-        combatView.onViewInputEvent(intentHandler::consume);
-        resultsView.onViewInputEvent(intentHandler::consume);
+        stateModel.subscribe(viewModel::apply);
+        viewModel.apply(stateModel.current());
+        builderView.onViewInputEvent(viewModel::handleBuilderInput);
+        initiativeView.onViewInputEvent(viewModel::handleInitiativeInput);
+        combatView.onViewInputEvent(viewModel::handleCombatInput);
+        resultsView.onViewInputEvent(viewModel::handleResultsInput);
         return new Binding(state);
     }
 
