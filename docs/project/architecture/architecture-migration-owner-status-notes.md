@@ -267,3 +267,18 @@ Repository-Schicht ist geloescht. Der Owner-Smoke-Checklist-Eintrag steht in
 `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`.
 Naechster Bereich ist `encounter`, beginnend mit M3.1 Harness
 Check/Closure fuer die verbleibende State-Tab-Produktionsroute.
+
+### 2026-07-10 M3.1 encounter-harness-check-closure
+
+Der Encounter-Harness-Check ist abgeschlossen. Commit `1fae38dda` ersetzt im
+`encounterStateTabHarness` den harness-eigenen `MutableEncounterStateFeed` und
+die No-op-Services durch die alte Produktionsroute: isolierte Party- und
+Encounter-Persistenz, reales `EncounterApplicationService.applyState` fuer das
+Oeffnen eines gespeicherten Plans und Readback ueber das veroeffentlichte
+`EncounterStateModel` in der echten State-Tab-Bindung. Die
+`100 XP`-Assertion ist die alte Produktionsprojektion fuer zwei Goblins mit je
+50 XP und keine Orakelabschwaechung. Static/Harness-Proof, der gemappte
+Encounter-Harnesssatz mit `worldPlannerEncounterHarness`, Production-Handoff,
+Phase 1 und unabhaengiger Judge sind gruen. Die P1-Gap-Zeile ist aus
+`docs/project/verification/harness-gaps.md` entfernt. Naechster Schritt ist
+M3.2: Encounter-Baseline-Metriken.

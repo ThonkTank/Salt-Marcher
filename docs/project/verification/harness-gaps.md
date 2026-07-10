@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-09
+Last Reviewed: 2026-07-10
 Source of Truth: Behavior-harness coverage gaps that must be closed before touched areas change.
 
 # Harness Gaps
@@ -17,9 +17,7 @@ the minimal harness proposal needed before a touched area may change.
 
 ## Gaps
 
-| Area | Current coverage | Priority | Minimal harness proposal |
-| --- | --- | --- | --- |
-| `src/view/statetabs/encounter/**` | Route gap: `encounterStateTabHarness` renders a harness-created `MutableEncounterStateFeed` snapshot with no-op services instead of production encounter publication into the state tab. | P1 | Drive the production encounter service/publication model and read back the real `EncounterStateModel`, or retain the current task as render-only proof and add a production-route state-tab harness. |
+No open harness gaps are registered.
 
 ## Rule
 

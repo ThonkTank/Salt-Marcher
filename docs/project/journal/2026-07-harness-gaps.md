@@ -77,3 +77,19 @@ XP-ceiling handling, and storage-error publication.
 Scope boundary: this pass changes only the harness, harness registration,
 harness map, gap register, journal, and migration status documentation. It
 does not add Encounter Table mutation behavior or change production code.
+
+## 2026-07-10 encounter-state-tab-production-route-gap - Close Encounter state-tab production route
+
+Problem: the M3 Encounter review found the existing `encounterStateTabHarness`
+still published a harness-created `MutableEncounterStateFeed` snapshot with
+no-op Encounter services. That proved render text, but not the production
+Encounter publication route into the state tab.
+Target state: `encounterStateTabHarness` binds the real Encounter state tab,
+seeds old-route Party and Encounter persistence in an isolated `XDG_DATA_HOME`,
+opens a saved plan through `EncounterApplicationService.applyState`, and
+asserts readback through the real published `EncounterStateModel`.
+Scope boundary: this pass changes only harness wiring/fixture setup,
+Gradle data isolation, gap register, journal, and migration status
+documentation. No Encounter production implementation changes before design.
+The visible `100 XP` assertion records the old production `xp * count`
+projection for two 50-XP goblins, replacing the earlier fake-snapshot value.
