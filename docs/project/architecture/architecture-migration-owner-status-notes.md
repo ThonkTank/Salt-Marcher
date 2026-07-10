@@ -202,3 +202,19 @@ Das Dokumentationsgate, Phase 1 nach Citation-Rework und der unabhaengige
 Judge sind gruen. Naechster Schritt ist M3.3 mit judge-geprueftem
 Party-Target-Design; es wurde noch keine Wiring- oder Implementierungsarbeit
 begonnen.
+
+### 2026-07-10 M3.3 party-target-design
+
+Das Party-Target-Design ist in
+`docs/project/architecture/architecture-migration-party-target-design.md`
+genehmigt. Es legt die Zielklassen fest: `PartyApplicationService` uebernimmt
+die direkten Mutations- und Publication-Routen, die sieben Published Models
+werden zustandsfuehrend, `PartyPublishedProjection` kapselt Mapping, und die
+Top-Bar bekommt `PartyTopBarViewModel` plus `PartyTopBarVocabulary`. Die
+34-Datei-Loeschliste, byte-kompatiblen Published- und Top-Bar-Seams, das
+eingefrorene `partyDropdownHarness`-Inventar und die Metric-Ziele sind konkret
+benannt. `git diff --check`, `git diff --cached --check`,
+`checkDocumentationEnforcement`, Phase 1 und der unabhaengige Judge sind
+gruen. Naechster Schritt ist M3.4: Harness-Wiring-Port-Verifikation; nach
+Designstand ist kein Harness-Code-Port erwartet, solange keine
+Deletion-List-Importe im eingefrorenen Harness auftauchen.

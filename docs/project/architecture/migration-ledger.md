@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-09
+Last Reviewed: 2026-07-10
 Source of Truth: Current architecture migration position, in-flight work,
 area status, and harness status for the roadmap in
 `docs/project/architecture/architecture-migration-roadmap.md`.
@@ -32,11 +32,11 @@ migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M3 - Rollout wave 1 |
-| Work item | M3.3 - party target design |
-| Cycle step | 3 - Target design |
+| Work item | M3.4 - party harness wiring port |
+| Cycle step | 4 - Harness wiring port |
 | In-flight area | `party` |
-| Required next proof | Write and obtain judge approval for the Party target design with named target classes, representative call chains, deletion list, seam statement, frozen parity inventory, untouched list, and metric targets before any wiring or implementation. |
-| Last status note | `2026-07-10 M3.2 party-baseline-metrics` |
+| Required next proof | Verify the approved Party design's M3.4 wiring boundary against the frozen `partyDropdownHarness`; expected result is no harness code port unless a deletion-list construction/import dependency is discovered. Run the frozen Party harness/topology proof and obtain Phase 1 plus Phase 2 review before implementation. |
+| Last status note | `2026-07-10 M3.3 party-target-design` |
 
 ## M0 Step Ledger
 
@@ -100,8 +100,8 @@ migration unless this ledger advances too.
 | --- | --- | --- | --- | --- | --- |
 | 1. Harness check/closure | Done on branch | `dffa45268` | Pending PR merge | `./gradlew compileTestJava --console=plain` passed, 2026-07-10; `./gradlew partyDropdownHarness --console=plain` passed, 2026-07-10; `./gradlew checkHarnessMapConsistency checkBehaviorHarnessTopology --console=plain` passed, 2026-07-10; first `tools/gradle/run-staged-verification.sh focused-handoff --path src/view/dropdowns/party --area party` attempt failed before task execution on Gradle wildcard-IP startup; `env -u CODEX_THREAD_ID tools/gradle/run-staged-verification.sh focused-handoff --path src/view/dropdowns/party --area party` passed with retained log `build/gradle-run-logs/20260710T022825670144115-pid1334896-focused-handoff.log`; `git diff --check` and `git diff --cached --check` passed | `partyDropdownHarness` now binds `PartyTopBarContribution` through `ShellRuntimeContext` and `ShellSlot.TOP_BAR`, fires the real JavaFX dropdown trigger, create form, remove, and reserve-add controls, and retains the existing published active-party and active-composition readback assertions. The P1 Party shell-bound dropdown route gap is removed from `docs/project/verification/harness-gaps.md`; scenarios and assertions are frozen before M3.2 baseline. |
 | 2. Baseline metrics | Done on branch | `67d365a98` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-10; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved after citation rework; Phase 2 Approved | Baseline artifact: `docs/project/architecture/architecture-migration-party-baseline.md`; full roadmap set is 141 files / 7,998 physical LOC; product subset is 119 files / 6,781 physical LOC; dominant Party dropdown chains are 5 hops to roster mutation and 6 including nested character replacement; 10 product/published forwarding or proxy candidates plus 2 data candidates; 4 product String boundary families. |
-| 3. Target design | Pending | Pending | Pending | Pending | Design must name target classes, call chains, deletion list, seam statement, and untouched list before implementation. |
-| 4. Harness wiring port | Pending | Pending | Pending | Pending | Wiring-only commit if the approved Party design needs harness import/construction changes; scenario/assertion inventory remains frozen. |
+| 3. Target design | Done on branch | `9c2d7db58` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-10; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved; Phase 2 Approved | Approved design artifact: `docs/project/architecture/architecture-migration-party-target-design.md`; names target classes, representative call chains, 34-file deletion list, byte-compatible seams, frozen Party dropdown parity inventory, no expected M3.4 harness code port, untouched surfaces, and metric targets/exceptions. |
+| 4. Harness wiring port | In Flight | Pending | Pending | Pending | Verify the approved M3.4 wiring boundary against the frozen `partyDropdownHarness`; expected no code port unless a deletion-list harness dependency is discovered. |
 | 5. Implementation | Pending | Pending | Pending | Pending | Implementation must follow the approved Party target design or commit an approved design amendment first. |
 | 6. Conformance review | Pending | Pending | Pending | Pending | Phase 1 and Phase 2 review design conformance, parity, seams, deletion list, and metric targets. |
 | 7. Close-out | Pending | Pending | Pending | Pending | Ledger update, German owner note, owner smoke checklist reference, retained proof set, and next-area transition. |
@@ -125,7 +125,7 @@ migration unless this ledger advances too.
 | `hex` | Pilot reference commit `3679a19e2` | Done on branch | Pending | M2 done: `hexMapEditorBehaviorHarness` and `hexTravelStateBehaviorHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 41-file / 3,701-LOC metric exception; owner smoke checklist is available. |
 | `worldplanner` | Worldplanner reference commit `f499d321d` | Done on branch | Pending | M3 done on branch: backend, UI, raw-input, and encounter harnesses are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 43-file / 3,709-LOC metric exception; owner smoke checklist is available. |
 | `creatures` | Creature reference commit `246d39267` | Done on branch | Pending | M3 done on branch: `creatureCatalogHarness` plus adjacent `encounterStateTabHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 27-file / 1,749-LOC exception; owner smoke checklist is available. |
-| `party` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 shell-bound dropdown route gap closed on branch; M3.2 baseline metrics are captured in `docs/project/architecture/architecture-migration-party-baseline.md`; current step is M3.3 target design. |
+| `party` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 shell-bound dropdown route gap closed on branch; M3.2 baseline metrics are captured in `docs/project/architecture/architecture-migration-party-baseline.md`; M3.3 target design is approved in `docs/project/architecture/architecture-migration-party-target-design.md`; current step is M3.4 harness wiring-port verification with no code port expected unless the frozen harness imports deletion-list classes. |
 | `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
 | `encountertable` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner UI imports only; P2 dedicated encounter-table readback harness gap remains. |
 | `encounter` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `worldPlannerEncounterHarness`, `encounterStateTabHarness`; P1 production publication route gaps remain. |
@@ -158,4 +158,4 @@ migration unless this ledger advances too.
 
 German owner status notes are maintained in
 `docs/project/architecture/architecture-migration-owner-status-notes.md`.
-Latest note: `2026-07-10 M3.2 party-baseline-metrics`.
+Latest note: `2026-07-10 M3.3 party-target-design`.
