@@ -294,3 +294,20 @@ String-Grenzfamilie sind konkret belegt. Dokumentationsgate, `git diff
 --check`, Phase 1 und der unabhaengige Judge sind gruen. Naechster Schritt ist
 M3.3 mit judge-geprueftem Encounter-Table-Target-Design; es wurde noch keine
 Wiring- oder Implementierungsarbeit begonnen.
+
+### 2026-07-10 M3.3 encountertable-target-design
+
+Das Encounter-Table-Target-Design ist in
+`docs/project/architecture/architecture-migration-encountertable-target-design.md`
+genehmigt. Es legt die Zielstruktur konkret fest: `EncounterTableApplicationService`
+uebernimmt Lookup, Storage-Error-Fallback, Null-Command-Verhalten,
+XP-Ceiling-Normalisierung und Publication direkt; `EncounterTableServiceAssembly`
+bleibt nur Composition Root; `EncounterTableCatalogProjection` mappt Lookup-
+Daten in byte-kompatible Published Records; `EncounterTableCatalogModel` und
+`EncounterTableCandidatesModel` werden stateful ueber den gemeinsamen
+`PublishedState`-Helper. Die Loeschliste umfasst die zwei Usecases und das
+interne String-Status-Repository. Published Records, Commands, Data-Port,
+Data-Layer, Catalog, Worldplanner, Encounter und Harness-Orakel bleiben
+kompatibel. Dokumentationsgate, `git diff --check`, Phase 1 und der
+unabhaengige Judge sind gruen. Naechster Schritt ist M3.4 als erwarteter
+No-code-Wiring-Port-Nachweis; es wurde noch keine Implementierung begonnen.
