@@ -208,3 +208,57 @@ Selected-Proof, `production-handoff`, CPD, Phase 1 nach Re-Proof und der
 unabhaengige Judge sind gruen. Naechster Schritt ist M3.5: Umsetzung des
 genehmigten Target-Designs inklusive 57-Datei-Loeschliste, gemeinsamem
 `PublishedState`-Reuse und finalem Parity-/Metric-Proof.
+
+### 2026-07-10 M3.5 sessionplanner-implementation
+
+Die Session-Planner-Implementierung ist abgeschlossen. Das LOC-Amendment
+`cc5c78478` begrenzt die akzeptierte Ausnahme auf 51 Java-Dateien / 5.170 LOC
+unter einer 5.200-LOC-Grenze; die Begruendung liegt nicht in Check-Kosmetik,
+sondern in erhaltenen behavior-tragenden und byte-kompatiblen Seams. Der
+Implementierungscommit `e289234cb` fuehrt die 57-Datei-Loeschliste aus: die
+Split-ApplicationServices, Usecases, Ports, Publication-/Readback-Assemblies,
+alten ContentModels, InputEvents und der `SessionPlannerIntentHandler` sind
+weg. Der Root-`SessionPlannerApplicationService`, `SessionPlannerForeignFacts`,
+`SessionPlannerProjection`, `SessionPlannerPublishedState` und direkte
+VM-/Binder-Callbacks tragen die genehmigte Zielstruktur. Die CPD-relevante
+Published-State-Mechanik ist echte gemeinsame Nutzung von `PublishedState`,
+nicht umformulierter Duplikatcode. `compileJava compileTestJava`, der retained
+Selected-Proof mit Dead-Code/PMD/CPD und den beiden Session-Planner-Harnesses,
+`production-handoff` und das Dokumentationsgate sind gruen. Phase 1 und der
+unabhaengige Judge haben die Umsetzung nach Doku-/Proof-Nachkorrektur
+freigegeben. Naechster Schritt ist M3.6: Conformance Review mit finalem
+Design-, Parity-, Seam- und Metric-Nachweis.
+
+### 2026-07-10 M3.6 sessionplanner-conformance-review
+
+Die Session-Planner-Conformance-Review ist abgeschlossen. Phase 2 fand
+zunaechst zwei echte Close-out-Blocker: `SessionPlannerCatalogModel` fehlte in
+zwei Owner-Dokumenten als fuenftes exportiertes Read-Model, und fuer den
+nachtraeglichen LOC-Amendment-Split fehlte ein retained Dokumentationsgate.
+Beides ist geschlossen: Feature-Architektur und Domain-Vertrag nennen jetzt
+alle fuenf Published Models, und
+`build/gradle-run-logs/20260710T134620516069849-pid343632-checkDocumentationEnforcement.log`
+ist gruen. Phase 1 und der unabhaengige Judge bestaetigen danach: die
+57-Datei-Loeschliste ist ausgefuehrt, geloeschte Split-/Content-/Input-/
+Intent-Klassen haben keine Referenzen mehr, die fuenf Published-Seams bleiben
+byte-kompatibel, Rest-Kind laeuft typed statt ueber `.name()`-Stringrouten,
+und die gemeinsame `PublishedState`-Nutzung ist echte Duplikatsentfernung
+statt Check-Gaming. Die 51-Dateien-/5.170-LOC-Ausnahme ist unter der
+5.200-LOC-Grenze akzeptiert. Naechster Schritt ist M3.7:
+Session-Planner-Close-out mit Owner-Smoke-Checklist-Referenz und
+Ledger-Uebergang zu `encountertable`.
+
+### 2026-07-10 M3.7 sessionplanner-close-out
+
+Der Session-Planner-Bereich ist abgeschlossen. Referenzcommit fuer den
+migrierten Session-Planner-Zielzustand ist `e289234cb`; der Close-out verweist
+auf die Owner-Smoke-Checklist in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`.
+Das finale Proof-Set ist gruen: `compileJava compileTestJava`, Dead-Code/PMD/
+CPD mit `sessionPlannerCatalogHarness` und `sessionPlannerShellLayoutHarness`,
+Dokumentationsgate, `production-handoff`, `git diff --check` und die Phase-1-/
+Phase-2-Re-Reviews. Die akzeptierte 51-Dateien-/5.170-LOC-Ausnahme bleibt
+unter der 5.200-LOC-Grenze und ist im Amendment dokumentiert. Auffaelligkeiten
+aus dem Owner-Smoke laufen wie im Roadmap-Protokoll als normale R2-Anomalien
+oder, bei schwerer Drift, ueber den Revert-Pfad. Naechster M3-Bereich ist
+`encountertable` mit Harness-Check/Closure gegen die alte Struktur.
