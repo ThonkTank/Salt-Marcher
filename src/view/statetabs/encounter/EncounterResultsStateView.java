@@ -3,6 +3,7 @@ package src.view.statetabs.encounter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -34,7 +35,9 @@ public final class EncounterResultsStateView extends VBox {
     private final VBox resultEnemyList = new VBox(4);
     private final Button resultAwardButton = new Button("XP verteilen");
     private final VBox dialog = buildPane();
-    private Consumer<EncounterResultsStateViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<EncounterStateViewModel.ResultSelectionDraft> selectionChangedHandler = ignored -> { };
+    private Consumer<EncounterStateViewModel.ResultSelectionDraft> awardExperienceHandler = ignored -> { };
+    private Consumer<EncounterStateViewModel.ResultSelectionDraft> returnToBuilderHandler = ignored -> { };
 
     public EncounterResultsStateView() {
         resultEnemyList.getStyleClass().add("encounter-results-enemy-list");
@@ -42,16 +45,24 @@ public final class EncounterResultsStateView extends VBox {
         setVgrow(dialog, Priority.ALWAYS);
     }
 
-    public void onViewInputEvent(Consumer<EncounterResultsStateViewInputEvent> handler) {
-        viewInputEventHandler = handler == null ? ignored -> { } : handler;
+    public void onSelectionChanged(Consumer<EncounterStateViewModel.ResultSelectionDraft> handler) {
+        selectionChangedHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void bind(EncounterResultsStateContentModel contentModel) {
-        if (contentModel == null) {
+    public void onAwardExperience(Consumer<EncounterStateViewModel.ResultSelectionDraft> handler) {
+        awardExperienceHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    public void onReturnToBuilder(Consumer<EncounterStateViewModel.ResultSelectionDraft> handler) {
+        returnToBuilderHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    public void bind(ReadOnlyObjectProperty<EncounterStateViewModel.ResultsPanel> panelProperty) {
+        if (panelProperty == null) {
             return;
         }
-        showPanel(contentModel.panelProperty().get());
-        contentModel.panelProperty().addListener((ignored, before, after) -> showPanel(after));
+        showPanel(panelProperty.get());
+        panelProperty.addListener((ignored, before, after) -> showPanel(after));
     }
 
     private VBox buildPane() {
@@ -76,12 +87,12 @@ public final class EncounterResultsStateView extends VBox {
 
         resultAwardStatusLabel.setWrapText(true);
         resultAwardButton.setMaxWidth(Double.MAX_VALUE);
-        resultAwardButton.setOnAction(event -> publish(true, false));
+        resultAwardButton.setOnAction(event -> awardExperienceHandler.accept(draft()));
         Button doneButton = new Button("Zum Planer");
         doneButton.setTooltip(new Tooltip("Zur Encounter-Planung zurückkehren"));
         doneButton.setAccessibleText("Zur Encounter-Planung zurückkehren");
         doneButton.setMaxWidth(Double.MAX_VALUE);
-        doneButton.setOnAction(event -> publish(false, true));
+        doneButton.setOnAction(event -> returnToBuilderHandler.accept(draft()));
         HBox.setHgrow(resultAwardButton, Priority.ALWAYS);
         HBox.setHgrow(doneButton, Priority.ALWAYS);
 
@@ -95,24 +106,23 @@ public final class EncounterResultsStateView extends VBox {
         return nextDialog;
     }
 
-    private void showPanel(EncounterResultsStateContentModel.PanelModel panel) {
-        if (panel == null) {
-            return;
-        }
-        showEnemies(panel.enemies());
-        resultThresholdSlider.setValue(panel.thresholdFraction());
-        resultFractionSlider.setValue(panel.xpFraction());
-        controlsBox.setVisible(!panel.enemies().isEmpty());
+    private void showPanel(EncounterStateViewModel.ResultsPanel panel) {
+        EncounterStateViewModel.ResultsPanel safePanel =
+                panel == null ? EncounterStateViewModel.ResultsPanel.empty() : panel;
+        showEnemies(safePanel.enemies());
+        resultThresholdSlider.setValue(safePanel.thresholdFraction());
+        resultFractionSlider.setValue(safePanel.xpFraction());
+        controlsBox.setVisible(!safePanel.enemies().isEmpty());
         controlsBox.setManaged(controlsBox.isVisible());
-        resultSubtitleLabel.setText(panel.subtitle());
-        resultThresholdValueLabel.setText(panel.thresholdValue());
-        resultFractionValueLabel.setText(panel.fractionValue());
-        resultXpLabel.setText(panel.xp());
-        resultPartyLabel.setText(panel.party());
-        resultGoldLabel.setText(panel.gold());
-        resultLootLabel.setText(panel.loot());
-        resultAwardStatusLabel.setText(panel.awardStatus());
-        resultAwardButton.setDisable(panel.awardButtonDisabled());
+        resultSubtitleLabel.setText(safePanel.subtitle());
+        resultThresholdValueLabel.setText(safePanel.thresholdValue());
+        resultFractionValueLabel.setText(safePanel.fractionValue());
+        resultXpLabel.setText(safePanel.xp());
+        resultPartyLabel.setText(safePanel.party());
+        resultGoldLabel.setText(safePanel.gold());
+        resultLootLabel.setText(safePanel.loot());
+        resultAwardStatusLabel.setText(safePanel.awardStatus());
+        resultAwardButton.setDisable(safePanel.awardButtonDisabled());
     }
 
     private Separator separator() {
@@ -124,26 +134,24 @@ public final class EncounterResultsStateView extends VBox {
     }
 
     private void publishSelection() {
-        publish(false, false);
+        selectionChangedHandler.accept(draft());
     }
 
-    private void publish(boolean awardExperienceRequested, boolean returnToBuilderRequested) {
+    private EncounterStateViewModel.ResultSelectionDraft draft() {
         List<Boolean> selectedEnemies = new ArrayList<>();
         for (Node node : resultEnemyList.getChildren()) {
             boolean selected = node instanceof CheckBox checkBox && checkBox.isSelected();
             selectedEnemies.add(selected);
         }
-        viewInputEventHandler.accept(new EncounterResultsStateViewInputEvent(
-                awardExperienceRequested,
-                returnToBuilderRequested,
+        return new EncounterStateViewModel.ResultSelectionDraft(
                 selectedEnemies,
                 resultThresholdSlider.getValue(),
-                resultFractionSlider.getValue()));
+                resultFractionSlider.getValue());
     }
 
-    private void showEnemies(List<EncounterResultsStateContentModel.EnemyView> enemies) {
+    private void showEnemies(List<EncounterStateViewModel.EnemyView> enemies) {
         resultEnemyList.getChildren().clear();
-        for (EncounterResultsStateContentModel.EnemyView enemy : enemies == null ? List.<EncounterResultsStateContentModel.EnemyView>of() : enemies) {
+        for (EncounterStateViewModel.EnemyView enemy : enemies == null ? List.<EncounterStateViewModel.EnemyView>of() : enemies) {
             EnemyToggle toggle = new EnemyToggle(enemy);
             toggle.setSelected(enemy.selected());
             toggle.selectedProperty().addListener((obs, oldValue, newValue) -> publishSelection());
@@ -169,7 +177,7 @@ public final class EncounterResultsStateView extends VBox {
 
     private static final class EnemyToggle extends CheckBox {
 
-        private EnemyToggle(EncounterResultsStateContentModel.EnemyView enemy) {
+        private EnemyToggle(EncounterStateViewModel.EnemyView enemy) {
             super(enemy.name() + " (" + enemy.status() + ") - " + enemy.loot());
             getStyleClass().add(STYLE_TEXT_SECONDARY);
         }

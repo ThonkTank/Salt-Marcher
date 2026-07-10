@@ -3,6 +3,7 @@ package src.view.statetabs.encounter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -17,37 +18,41 @@ public final class EncounterInitiativeStateView extends VBox {
 
     private final VBox initiativeList = new InitiativeListPane();
     private final VBox dialog = buildPane();
-    private Consumer<EncounterInitiativeStateViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Runnable backToBuilderHandler = () -> { };
+    private Consumer<List<EncounterStateViewModel.InitiativeEntry>> confirmInitiativeHandler = ignored -> { };
 
     public EncounterInitiativeStateView() {
         getChildren().add(dialog);
         setVgrow(dialog, Priority.ALWAYS);
     }
 
-    public void onViewInputEvent(Consumer<EncounterInitiativeStateViewInputEvent> handler) {
-        viewInputEventHandler = handler == null ? ignored -> { } : handler;
+    public void onBackToBuilder(Runnable handler) {
+        backToBuilderHandler = handler == null ? () -> { } : handler;
     }
 
-    public void bind(EncounterInitiativeStateContentModel contentModel) {
-        if (contentModel == null) {
-            return;
-        }
-        showPanel(contentModel.panelProperty().get());
-        contentModel.panelProperty().addListener((ignored, before, after) -> showPanel(after));
+    public void onConfirmInitiative(Consumer<List<EncounterStateViewModel.InitiativeEntry>> handler) {
+        confirmInitiativeHandler = handler == null ? ignored -> { } : handler;
     }
 
-    private void showPanel(EncounterInitiativeStateContentModel.PanelModel panel) {
-        if (panel == null) {
+    public void bind(ReadOnlyObjectProperty<EncounterStateViewModel.InitiativePanel> panelProperty) {
+        if (panelProperty == null) {
             return;
         }
-        ((InitiativeListPane) initiativeList).showPanel(panel);
+        showPanel(panelProperty.get());
+        panelProperty.addListener((ignored, before, after) -> showPanel(after));
+    }
+
+    private void showPanel(EncounterStateViewModel.InitiativePanel panel) {
+        EncounterStateViewModel.InitiativePanel safePanel =
+                panel == null ? EncounterStateViewModel.InitiativePanel.empty() : panel;
+        ((InitiativeListPane) initiativeList).showPanel(safePanel);
     }
 
     private VBox buildPane() {
         Label title = new StyledLabel("Initiative", "title");
 
         Button backButton = new Button("\u2190 Zurueck");
-        backButton.setOnAction(event -> publish(new EncounterInitiativeStateViewInputEvent(true, List.of())));
+        backButton.setOnAction(event -> backToBuilderHandler.run());
         Button rollAllButton = new StyledButton("Alle wuerfeln", "neutral-action");
         rollAllButton.setOnAction(event -> rollAllInitiatives());
         Button startButton = new StyledButton("Kampf starten", "accent");
@@ -59,7 +64,7 @@ public final class EncounterInitiativeStateView extends VBox {
         return nextDialog;
     }
 
-    private static Node buildInitiativeRow(EncounterInitiativeStateContentModel.EntryView entry) {
+    private static Node buildInitiativeRow(EncounterStateViewModel.InitiativeEntry entry) {
         InitiativeRow row = new InitiativeRow();
         Label name = new Label(entry.label());
         name.setWrapText(true);
@@ -82,15 +87,11 @@ public final class EncounterInitiativeStateView extends VBox {
     }
 
     private void publishInitiativeConfirmation() {
-        List<EncounterInitiativeStateViewInputEvent.InitiativeEntry> inputs = new ArrayList<>();
+        List<EncounterStateViewModel.InitiativeEntry> inputs = new ArrayList<>();
         for (ValueSpinner spinner : ((InitiativeListPane) initiativeList).spinners()) {
             inputs.add(spinner.confirmedInput());
         }
-        publish(new EncounterInitiativeStateViewInputEvent(false, inputs));
-    }
-
-    private void publish(EncounterInitiativeStateViewInputEvent input) {
-        viewInputEventHandler.accept(input);
+        confirmInitiativeHandler.accept(List.copyOf(inputs));
     }
 
     private static Label sectionHeader(String text) {
@@ -134,13 +135,13 @@ public final class EncounterInitiativeStateView extends VBox {
             getStyleClass().add("encounter-initiative-list");
         }
 
-        void showPanel(EncounterInitiativeStateContentModel.PanelModel panel) {
+        void showPanel(EncounterStateViewModel.InitiativePanel panel) {
             getChildren().clear();
             String currentKind = "";
-            for (EncounterInitiativeStateContentModel.EntryView entry : panel.entries()) {
+            for (EncounterStateViewModel.InitiativeEntry entry : panel.entries()) {
                 if (!entry.kind().equals(currentKind)) {
                     currentKind = entry.kind();
-                    getChildren().add(sectionHeader("SC".equals(currentKind) ? "Spieler" : currentKind));
+                    getChildren().add(sectionHeader(EncounterStateVocabulary.initiativeSectionLabel(currentKind)));
                 }
                 getChildren().add(buildInitiativeRow(entry));
             }
@@ -168,10 +169,12 @@ public final class EncounterInitiativeStateView extends VBox {
             getValueFactory().setValue(initiative);
         }
 
-        private EncounterInitiativeStateViewInputEvent.InitiativeEntry confirmedInput() {
+        private EncounterStateViewModel.InitiativeEntry confirmedInput() {
             commitValue();
-            return new EncounterInitiativeStateViewInputEvent.InitiativeEntry(
+            return new EncounterStateViewModel.InitiativeEntry(
                     String.valueOf(getUserData()),
+                    "",
+                    "",
                     getValue().intValue());
         }
     }

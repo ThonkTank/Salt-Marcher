@@ -3,11 +3,17 @@ package src.domain.encounter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
-import src.domain.encounter.application.ApplyEncounterStateUseCase;
-import src.domain.encounter.model.plan.usecase.PublishEncounterPlanBudgetUseCase;
-import src.domain.encounter.model.session.usecase.UpdateEncounterBuilderInputsUseCase;
+import java.util.Map;
+import src.domain.encounter.model.generation.EncounterGenerationInputs;
+import src.domain.encounter.model.generation.EncounterCreatureFilters;
+import src.domain.encounter.model.generation.EncounterRequestedDifficulty;
+import src.domain.encounter.model.generation.EncounterTuningIntent;
+import src.domain.encounter.model.session.CombatantId;
+import src.domain.encounter.model.session.EncounterInitiativeInput;
+import src.domain.encounter.model.session.EncounterSession;
+import src.domain.encounter.model.session.EncounterSessionCommand;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
+import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
 import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 
@@ -16,116 +22,204 @@ import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
  */
 public final class EncounterApplicationService {
 
-    private final Consumer<ApplyEncounterStateCommand> applyStateAction;
-    private final Consumer<UpdateEncounterBuilderInputsCommand> updateBuilderInputsAction;
-    private final Consumer<RefreshEncounterPlanBudgetCommand> refreshPlanBudgetAction;
+    private static final int REFRESH_ACTION_CODE = 1;
+    private static final int DEFAULT_DIFFICULTY_LEVEL = 2;
+    private static final int DEFAULT_BALANCE_LEVEL = 3;
+    private static final double DEFAULT_AMOUNT_VALUE = 3.0;
+    private static final int DEFAULT_DIVERSITY_LEVEL = 3;
+    private static final Map<Integer, EncounterSessionCommand.Action> SESSION_ACTIONS_BY_CODE = Map.ofEntries(
+            Map.entry(Integer.valueOf(REFRESH_ACTION_CODE), EncounterSessionCommand.Action.REFRESH),
+            Map.entry(Integer.valueOf(2), EncounterSessionCommand.Action.GENERATE),
+            Map.entry(Integer.valueOf(3), EncounterSessionCommand.Action.SAVE_CURRENT_PLAN),
+            Map.entry(Integer.valueOf(4), EncounterSessionCommand.Action.OPEN_SAVED_PLAN),
+            Map.entry(Integer.valueOf(5), EncounterSessionCommand.Action.CLEAR_GENERATION_HISTORY),
+            Map.entry(Integer.valueOf(6), EncounterSessionCommand.Action.SHIFT_ALTERNATIVE),
+            Map.entry(Integer.valueOf(7), EncounterSessionCommand.Action.ADD_CREATURE),
+            Map.entry(Integer.valueOf(8), EncounterSessionCommand.Action.INCREMENT_CREATURE),
+            Map.entry(Integer.valueOf(9), EncounterSessionCommand.Action.DECREMENT_CREATURE),
+            Map.entry(Integer.valueOf(10), EncounterSessionCommand.Action.REMOVE_CREATURE),
+            Map.entry(Integer.valueOf(11), EncounterSessionCommand.Action.UNDO_REMOVE),
+            Map.entry(Integer.valueOf(12), EncounterSessionCommand.Action.OPEN_INITIATIVE),
+            Map.entry(Integer.valueOf(13), EncounterSessionCommand.Action.BACK_TO_BUILDER),
+            Map.entry(Integer.valueOf(14), EncounterSessionCommand.Action.CONFIRM_INITIATIVE),
+            Map.entry(Integer.valueOf(15), EncounterSessionCommand.Action.ADVANCE_TURN),
+            Map.entry(Integer.valueOf(16), EncounterSessionCommand.Action.ADJUST_INITIATIVE),
+            Map.entry(Integer.valueOf(17), EncounterSessionCommand.Action.ADD_PARTY_MEMBER_TO_COMBAT),
+            Map.entry(Integer.valueOf(18), EncounterSessionCommand.Action.END_COMBAT),
+            Map.entry(Integer.valueOf(19), EncounterSessionCommand.Action.AWARD_XP),
+            Map.entry(Integer.valueOf(20), EncounterSessionCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS),
+            Map.entry(Integer.valueOf(21), EncounterSessionCommand.Action.MUTATE_HP));
 
-    public EncounterApplicationService(
-            ApplyEncounterStateUseCase applyStateUseCase,
-            UpdateEncounterBuilderInputsUseCase updateBuilderInputsUseCase,
-            PublishEncounterPlanBudgetUseCase publishPlanBudgetUseCase
-    ) {
-        this(
-                applyStateAction(applyStateUseCase),
-                updateBuilderInputsAction(updateBuilderInputsUseCase),
-                refreshPlanBudgetAction(publishPlanBudgetUseCase));
-    }
+    private final CommandActions commands;
 
     EncounterApplicationService(
-            Consumer<ApplyEncounterStateCommand> applyStateAction,
-            Consumer<UpdateEncounterBuilderInputsCommand> updateBuilderInputsAction,
-            Consumer<RefreshEncounterPlanBudgetCommand> refreshPlanBudgetAction
+            EncounterSessionRuntimeAccess runtimeAccess,
+            EncounterPlanGateway plans,
+            EncounterPublishedState publishedState
     ) {
-        this.applyStateAction = Objects.requireNonNull(applyStateAction, "applyStateAction");
-        this.updateBuilderInputsAction = Objects.requireNonNull(updateBuilderInputsAction, "updateBuilderInputsAction");
-        this.refreshPlanBudgetAction = Objects.requireNonNull(refreshPlanBudgetAction, "refreshPlanBudgetAction");
+        this(RuntimeCommandActions.create(runtimeAccess, plans, publishedState));
+    }
+
+    EncounterApplicationService(CommandActions commands) {
+        this.commands = Objects.requireNonNull(commands, "commands");
     }
 
     public void applyState(ApplyEncounterStateCommand command) {
-        applyStateAction.accept(command);
+        commands.applyState(command);
     }
 
     public void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command) {
-        updateBuilderInputsAction.accept(command);
+        commands.updateBuilderInputs(command);
     }
 
     public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) {
-        refreshPlanBudgetAction.accept(command);
+        commands.refreshPlanBudget(command);
     }
 
-    private static Consumer<ApplyEncounterStateCommand> applyStateAction(
-            ApplyEncounterStateUseCase applyStateUseCase
-    ) {
-        ApplyEncounterStateUseCase safeApplyStateUseCase =
-                Objects.requireNonNull(applyStateUseCase, "applyStateUseCase");
-        return command -> safeApplyStateUseCase.execute(toApplyStateRequest(command));
+    private static EncounterSessionCommand toSessionCommand(ApplyEncounterStateCommand command) {
+        ApplyEncounterStateCommand effective = command == null
+                ? ApplyEncounterStateCommand.action(ApplyEncounterStateCommand.Action.REFRESH)
+                : command;
+        return new EncounterSessionCommand(
+                toSessionAction(effective.actionCode()),
+                java.util.Optional.empty(),
+                EncounterGenerationInputs.empty(),
+                effective.creatureId(),
+                effective.planId(),
+                effective.worldNpcId(),
+                effective.delta(),
+                effective.undoToken(),
+                initiativeInputs(effective),
+                CombatantId.from(effective.combatantId()).value(),
+                effective.initiative(),
+                effective.partyMemberId(),
+                effective.amount(),
+                effective.healing());
     }
 
-    private static Consumer<UpdateEncounterBuilderInputsCommand> updateBuilderInputsAction(
-            UpdateEncounterBuilderInputsUseCase updateBuilderInputsUseCase
-    ) {
-        UpdateEncounterBuilderInputsUseCase safeUpdateBuilderInputsUseCase =
-                Objects.requireNonNull(updateBuilderInputsUseCase, "updateBuilderInputsUseCase");
-        return command -> safeUpdateBuilderInputsUseCase.execute(toBuilderInputsRequest(command));
-    }
-
-    private static Consumer<RefreshEncounterPlanBudgetCommand> refreshPlanBudgetAction(
-            PublishEncounterPlanBudgetUseCase publishPlanBudgetUseCase
-    ) {
-        PublishEncounterPlanBudgetUseCase safePublishPlanBudgetUseCase =
-                Objects.requireNonNull(publishPlanBudgetUseCase, "publishPlanBudgetUseCase");
-        return command -> safePublishPlanBudgetUseCase.execute(command == null ? 0L : command.planId());
-    }
-
-    private static ApplyEncounterStateUseCase.Request toApplyStateRequest(ApplyEncounterStateCommand command) {
-        if (command == null) {
-            return ApplyEncounterStateUseCase.Request.refresh();
+    private static EncounterSessionCommand.Action toSessionAction(int actionCode) {
+        EncounterSessionCommand.Action action = SESSION_ACTIONS_BY_CODE.get(Integer.valueOf(actionCode));
+        if (action == null) {
+            throw new IllegalArgumentException("Unknown encounter state action code.");
         }
-        List<ApplyEncounterStateUseCase.InitiativeInput> initiativeInputs = new ArrayList<>();
+        return action;
+    }
+
+    private static List<EncounterInitiativeInput> initiativeInputs(ApplyEncounterStateCommand command) {
+        List<EncounterInitiativeInput> inputs = new ArrayList<>();
         List<String> initiativeIds = command.initiativeIds();
         List<Integer> initiativeScores = command.initiativeScores();
         int count = Math.min(initiativeIds.size(), initiativeScores.size());
         for (int index = 0; index < count; index++) {
-            initiativeInputs.add(new ApplyEncounterStateUseCase.InitiativeInput(
+            inputs.add(new EncounterInitiativeInput(
                     initiativeIds.get(index),
                     initiativeScores.get(index).intValue()));
         }
-        return new ApplyEncounterStateUseCase.Request(
-                command.actionCode(),
-                command.creatureId(),
-                command.planId(),
-                command.worldNpcId(),
-                command.delta(),
-                command.undoToken(),
-                initiativeInputs,
-                command.combatantId(),
-                command.initiative(),
-                command.partyMemberId(),
-                command.amount(),
-                command.healing());
+        return List.copyOf(inputs);
     }
 
-    private static UpdateEncounterBuilderInputsUseCase.Request toBuilderInputsRequest(
-            UpdateEncounterBuilderInputsCommand command
-    ) {
-        if (command == null) {
-            return UpdateEncounterBuilderInputsUseCase.Request.empty();
+    private static EncounterGenerationInputs toGenerationInputs(UpdateEncounterBuilderInputsCommand command) {
+        UpdateEncounterBuilderInputsCommand effective = command == null ? emptyBuilderInputsCommand() : command;
+        EncounterCreatureFilters filters = EncounterCreatureFilters.from(effective);
+        return new EncounterGenerationInputs(
+                filters.creatureTypes(),
+                filters.creatureSubtypes(),
+                filters.biomes(),
+                EncounterRequestedDifficulty.fromPublishedDifficulty(
+                        effective.autoDifficulty(),
+                        effective.difficultyLevel()),
+                EncounterTuningIntent.fromPublishedValues(
+                        effective.autoBalance(),
+                        effective.balanceLevel(),
+                        effective.autoAmount(),
+                        effective.amountValue(),
+                        effective.autoDiversity(),
+                        effective.diversityLevel()),
+                effective.encounterTableIds(),
+                effective.worldFactionIds(),
+                effective.worldLocationId(),
+                Map.of());
+    }
+
+    private static UpdateEncounterBuilderInputsCommand emptyBuilderInputsCommand() {
+        return new UpdateEncounterBuilderInputsCommand(EncounterBuilderInputs.empty());
+    }
+
+    interface CommandActions {
+
+        void applyState(ApplyEncounterStateCommand command);
+
+        void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command);
+
+        void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command);
+    }
+
+    private static final class RuntimeCommandActions implements CommandActions {
+
+        private final EncounterSessionRuntimeAccess runtimeAccess;
+        private final EncounterPlanGateway plans;
+        private final EncounterPublishedState publishedState;
+        private final EncounterSession session = new EncounterSession();
+
+        private RuntimeCommandActions(
+                EncounterSessionRuntimeAccess runtimeAccess,
+                EncounterPlanGateway plans,
+                EncounterPublishedState publishedState
+        ) {
+            this.runtimeAccess = Objects.requireNonNull(runtimeAccess, "runtimeAccess");
+            this.plans = Objects.requireNonNull(plans, "plans");
+            this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         }
-        return new UpdateEncounterBuilderInputsUseCase.Request(
-                command.creatureTypes(),
-                command.creatureSubtypes(),
-                command.biomes(),
-                command.autoDifficulty(),
-                command.difficultyLevel(),
-                command.autoBalance(),
-                command.balanceLevel(),
-                command.autoAmount(),
-                command.amountValue(),
-                command.autoDiversity(),
-                command.diversityLevel(),
-                command.encounterTableIds(),
-                command.worldFactionIds(),
-                command.worldLocationId());
+
+        private static RuntimeCommandActions create(
+                EncounterSessionRuntimeAccess runtimeAccess,
+                EncounterPlanGateway plans,
+                EncounterPublishedState publishedState
+        ) {
+            RuntimeCommandActions actions = new RuntimeCommandActions(runtimeAccess, plans, publishedState);
+            actions.initialize();
+            return actions;
+        }
+
+        private void initialize() {
+            session.apply(EncounterSessionCommand.refresh(), runtimeAccess);
+            publishCurrentSession();
+            publishSavedPlans();
+            publishPlanBudget(0L);
+        }
+
+        @Override
+        public void applyState(ApplyEncounterStateCommand command) {
+            EncounterSessionCommand effective = toSessionCommand(command);
+            session.apply(effective, runtimeAccess);
+            publishCurrentSession();
+            if (effective.action().republishesSavedPlans()) {
+                publishSavedPlans();
+            }
+        }
+
+        @Override
+        public void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command) {
+            session.apply(EncounterSessionCommand.updateBuilderInputs(toGenerationInputs(command)), runtimeAccess);
+            publishCurrentSession();
+        }
+
+        @Override
+        public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) {
+            publishPlanBudget(command == null ? 0L : command.planId());
+        }
+
+        private void publishCurrentSession() {
+            publishedState.publishCurrentSession(session, plans);
+        }
+
+        private void publishSavedPlans() {
+            publishedState.publishSavedPlans(plans.listPlans());
+        }
+
+        private void publishPlanBudget(long planId) {
+            publishedState.publishPlanBudget(plans.loadPlanBudgetForPublication(planId));
+        }
     }
 
 }

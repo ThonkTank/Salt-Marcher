@@ -37,23 +37,38 @@ final class EncounterStateBinder {
                 worldPlanner,
                 creatures,
                 creatureId -> openCreatureDetails(runtimeContext.inspector(), detailModel, creatureId));
-        EncounterStateContributionModel.ContentModels contentModels = viewModel.contentModels();
         EncounterBuilderStateView builderView = new EncounterBuilderStateView();
         EncounterInitiativeStateView initiativeView = new EncounterInitiativeStateView();
         EncounterCombatStateView combatView = new EncounterCombatStateView();
         EncounterResultsStateView resultsView = new EncounterResultsStateView();
         EncounterStateView state = new EncounterStateView(builderView, initiativeView, combatView, resultsView);
-        state.bind(contentModels.state());
-        builderView.bind(contentModels.builder());
-        initiativeView.bind(contentModels.initiative());
-        combatView.bind(contentModels.combat());
-        resultsView.bind(contentModels.results());
+        state.bind(viewModel.activeModeProperty());
+        builderView.bind(viewModel.builderPanelProperty());
+        initiativeView.bind(viewModel.initiativePanelProperty());
+        combatView.bind(viewModel.combatPanelProperty());
+        resultsView.bind(viewModel.resultsPanelProperty());
         stateModel.subscribe(viewModel::apply);
         viewModel.apply(stateModel.current());
-        builderView.onViewInputEvent(viewModel::handleBuilderInput);
-        initiativeView.onViewInputEvent(viewModel::handleInitiativeInput);
-        combatView.onViewInputEvent(viewModel::handleCombatInput);
-        resultsView.onViewInputEvent(viewModel::handleResultsInput);
+        builderView.onGenerate(viewModel::generate);
+        builderView.onShiftAlternative(viewModel::shiftAlternative);
+        builderView.onSaveCurrentPlan(viewModel::saveCurrentPlan);
+        builderView.onOpenSavedPlan(viewModel::openSavedPlan);
+        builderView.onChangeRosterCount(viewModel::changeRosterCount);
+        builderView.onRemoveCreature(viewModel::removeCreature);
+        builderView.onUndoRemove(viewModel::undoRemove);
+        builderView.onClearGenerationHistory(viewModel::clearGenerationHistory);
+        builderView.onOpenInitiative(viewModel::openInitiative);
+        builderView.onOpenCreatureDetail(viewModel::openCreatureDetail);
+        initiativeView.onBackToBuilder(viewModel::backToBuilder);
+        initiativeView.onConfirmInitiative(viewModel::confirmInitiative);
+        combatView.onAdvanceTurn(viewModel::advanceTurn);
+        combatView.onEndCombat(viewModel::endCombat);
+        combatView.onChangeHitPoints(viewModel::mutateHitPoints);
+        combatView.onEditInitiative(viewModel::adjustInitiative);
+        combatView.onAddPartyMember(viewModel::addPartyMemberToCombat);
+        resultsView.onSelectionChanged(viewModel::updateResultSelection);
+        resultsView.onAwardExperience(viewModel::awardXp);
+        resultsView.onReturnToBuilder(viewModel::returnToBuilderAfterResults);
         return new Binding(state);
     }
 

@@ -2,8 +2,8 @@ package src.view.statetabs.encounter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.IntConsumer;
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.application.Platform;
 import javafx.geometry.Pos;
 import javafx.geometry.Side;
@@ -32,7 +32,11 @@ public final class EncounterCombatStateView extends VBox {
     private final HBox endCombatActions = new EndCombatActionsPane();
     private final Button addPartyButton = new CombatStyledButton("SC hinzufuegen", "compact", "neutral-action");
     private final VBox dialog = buildPane();
-    private Consumer<EncounterCombatStateViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Runnable advanceTurnHandler = () -> { };
+    private Runnable endCombatHandler = () -> { };
+    private HitPointChangeHandler changeHitPointsHandler = (combatantId, amount, healing) -> { };
+    private InitiativeEditHandler editInitiativeHandler = (combatantId, initiative) -> { };
+    private PartyMemberJoinHandler addPartyMemberHandler = (partyMemberId, initiative) -> { };
 
     public EncounterCombatStateView() {
         addPartyButton.setId("encounter-add-party-button");
@@ -40,30 +44,44 @@ public final class EncounterCombatStateView extends VBox {
         setVgrow(dialog, Priority.ALWAYS);
     }
 
-    public void onViewInputEvent(Consumer<EncounterCombatStateViewInputEvent> handler) {
-        viewInputEventHandler = handler == null ? ignored -> { } : handler;
+    public void onAdvanceTurn(Runnable handler) {
+        advanceTurnHandler = handler == null ? () -> { } : handler;
     }
 
-    public void bind(EncounterCombatStateContentModel contentModel) {
-        if (contentModel == null) {
+    public void onEndCombat(Runnable handler) {
+        endCombatHandler = handler == null ? () -> { } : handler;
+    }
+
+    public void onChangeHitPoints(HitPointChangeHandler handler) {
+        changeHitPointsHandler = handler == null ? (combatantId, amount, healing) -> { } : handler;
+    }
+
+    public void onEditInitiative(InitiativeEditHandler handler) {
+        editInitiativeHandler = handler == null ? (combatantId, initiative) -> { } : handler;
+    }
+
+    public void onAddPartyMember(PartyMemberJoinHandler handler) {
+        addPartyMemberHandler = handler == null ? (partyMemberId, initiative) -> { } : handler;
+    }
+
+    public void bind(ReadOnlyObjectProperty<EncounterStateViewModel.CombatPanel> panelProperty) {
+        if (panelProperty == null) {
             return;
         }
-        showPanel(contentModel, contentModel.panelProperty().get());
-        contentModel.panelProperty().addListener((ignored, before, after) -> showPanel(contentModel, after));
+        showPanel(panelProperty.get());
+        panelProperty.addListener((ignored, before, after) -> showPanel(after));
     }
 
-    private void showPanel(
-            EncounterCombatStateContentModel contentModel,
-            EncounterCombatStateContentModel.PanelModel panel
-    ) {
-        EncounterCombatStateContentModel.PanelModel safePanel = contentModel.safePanel(panel);
+    private void showPanel(EncounterStateViewModel.CombatPanel panel) {
+        EncounterStateViewModel.CombatPanel safePanel =
+                panel == null ? EncounterStateViewModel.CombatPanel.empty() : panel;
         combatRoundLabel.setText("Runde " + safePanel.round());
         combatStatusLabel.setText(safePanel.status());
         showPartyCandidates(
                 safePanel.missingPartyMembers(),
-                this::publishPartyMemberJoin);
-        ((CombatCardListPane) combatCardList).showCards(safePanel.cards(), contentModel, new CombatCardActionSink());
-        ((EndCombatActionsPane) endCombatActions).showEndCombatState(safePanel.allEnemiesDefeated(), this::publish);
+                addPartyMemberHandler::addPartyMember);
+        ((CombatCardListPane) combatCardList).showCards(safePanel.cards(), new CombatCardActionSink());
+        ((EndCombatActionsPane) endCombatActions).showEndCombatState(safePanel.allEnemiesDefeated(), endCombatHandler);
     }
 
     private VBox buildPane() {
@@ -73,7 +91,7 @@ public final class EncounterCombatStateView extends VBox {
 
         CombatStyledButton nextTurnButton = new CombatStyledButton("\u25B6 _Weiter", STYLE_ACCENT);
         nextTurnButton.setMaxWidth(Double.MAX_VALUE);
-        nextTurnButton.setOnAction(event -> publish(new EncounterCombatStateViewInputEvent.AdvanceTurnInput()));
+        nextTurnButton.setOnAction(event -> advanceTurnHandler.run());
         endCombatActions.setAlignment(Pos.CENTER);
         HBox.setHgrow(nextTurnButton, Priority.ALWAYS);
         HBox.setHgrow(endCombatActions, Priority.ALWAYS);
@@ -85,10 +103,10 @@ public final class EncounterCombatStateView extends VBox {
     }
 
     private void showPartyCandidates(
-            List<EncounterCombatStateContentModel.PartyMemberCandidate> candidates,
+            List<EncounterStateViewModel.PartyMemberCandidate> candidates,
             EncounterPartyMemberSelectionListener selectionListener
     ) {
-        List<EncounterCombatStateContentModel.PartyMemberCandidate> safeCandidates =
+        List<EncounterStateViewModel.PartyMemberCandidate> safeCandidates =
                 candidates == null ? List.of() : List.copyOf(candidates);
         addPartyButton.setDisable(safeCandidates.isEmpty());
         addPartyButton.setTooltip(new Tooltip(safeCandidates.isEmpty()
@@ -100,24 +118,16 @@ public final class EncounterCombatStateView extends VBox {
                 selectionListener == null ? (memberId, initiative) -> { } : selectionListener));
     }
 
-    private void publish(EncounterCombatStateViewInputEvent.Interaction input) {
-        viewInputEventHandler.accept(new EncounterCombatStateViewInputEvent(input));
-    }
-
-    private void publishPartyMemberJoin(long partyMemberId, int initiativeValue) {
-        publish(new EncounterCombatStateViewInputEvent.PartyMemberJoinInput(partyMemberId, initiativeValue));
-    }
-
     private final class CombatCardActionSink implements EncounterCombatCardActions {
 
         @Override
-        public void changeHitPoints(String cardId, String actionId, int amount) {
-            publish(new EncounterCombatStateViewInputEvent.HpChangeInput(cardId, amount, actionId == null || !actionId.startsWith("-")));
+        public void changeHitPoints(String cardId, int amount, boolean healing) {
+            changeHitPointsHandler.changeHitPoints(cardId, amount, healing);
         }
 
         @Override
         public void editInitiative(String cardId, int initiative) {
-            publish(new EncounterCombatStateViewInputEvent.InitiativeEditInput(cardId, initiative));
+            editInitiativeHandler.editInitiative(cardId, initiative);
         }
     }
 
@@ -127,16 +137,15 @@ public final class EncounterCombatStateView extends VBox {
         private static final int HP_POPUP_STEP = 1;
 
         EncounterCombatCardPane(
-                EncounterCombatStateContentModel.CardView card,
-                EncounterCombatStateContentModel contentModel,
+                EncounterStateViewModel.CombatCard card,
                 EncounterCombatCardActions actions
         ) {
-            super(4, buildHeader(card, contentModel, actions), buildDetail(card.detail()));
+            super(4, buildHeader(card, actions), buildDetail(card.detail()));
             getStyleClass().add("combat-card");
             applyCardStateStyle(card);
         }
 
-        private void applyCardStateStyle(EncounterCombatStateContentModel.CardView card) {
+        private void applyCardStateStyle(EncounterStateViewModel.CombatCard card) {
             if (card.active()) {
                 getStyleClass().add("combat-card-active");
                 return;
@@ -151,8 +160,7 @@ public final class EncounterCombatStateView extends VBox {
         }
 
         private static Node buildHeader(
-                EncounterCombatStateContentModel.CardView card,
-                EncounterCombatStateContentModel contentModel,
+                EncounterStateViewModel.CombatCard card,
                 EncounterCombatCardActions actions
         ) {
             List<Node> nodes = new ArrayList<>();
@@ -162,7 +170,7 @@ public final class EncounterCombatStateView extends VBox {
             nodes.add(buildName(card.name(), card.alive()));
             nodes.add(headerSpacer());
             if (!card.playerCharacter()) {
-                nodes.add(buildHpMeter(card, contentModel, actions));
+                nodes.add(buildHpMeter(card, actions));
                 if (card.count() > MULTI_COUNT_MINIMUM) {
                     nodes.add(new CombatStyledLabel("x" + card.count(), "ac-badge"));
                 }
@@ -189,18 +197,17 @@ public final class EncounterCombatStateView extends VBox {
         }
 
         private static Node buildHpMeter(
-                EncounterCombatStateContentModel.CardView card,
-                EncounterCombatStateContentModel contentModel,
+                EncounterStateViewModel.CombatCard card,
                 EncounterCombatCardActions actions
         ) {
             return new EncounterCombatHpMeter(
                     card.id(),
-                    contentModel.hpMeterDisplay(card),
+                    EncounterStateVocabulary.hpMeterDisplay(card),
                     actions);
         }
 
         private static Button buildInitiativeButton(
-                EncounterCombatStateContentModel.CardView card,
+                EncounterStateViewModel.CombatCard card,
                 EncounterCombatCardActions actions
         ) {
             EncounterInitiativeEditorPopup popup = new EncounterInitiativeEditorPopup();
@@ -221,7 +228,7 @@ public final class EncounterCombatStateView extends VBox {
 
     private interface EncounterCombatCardActions {
 
-        void changeHitPoints(String cardId, String actionId, int amount);
+        void changeHitPoints(String cardId, int amount, boolean healing);
 
         void editInitiative(String cardId, int initiative);
     }
@@ -234,14 +241,13 @@ public final class EncounterCombatStateView extends VBox {
         }
 
         void showCards(
-                List<EncounterCombatStateContentModel.CardView> cards,
-                EncounterCombatStateContentModel contentModel,
+                List<EncounterStateViewModel.CombatCard> cards,
                 EncounterCombatCardActions actions
         ) {
             List<Node> cardNodes = new ArrayList<>();
-            for (EncounterCombatStateContentModel.CardView card
-                    : cards == null ? List.<EncounterCombatStateContentModel.CardView>of() : cards) {
-                cardNodes.add(new EncounterCombatCardPane(card, contentModel, actions));
+            for (EncounterStateViewModel.CombatCard card
+                    : cards == null ? List.<EncounterStateViewModel.CombatCard>of() : cards) {
+                cardNodes.add(new EncounterCombatCardPane(card, actions));
             }
             getChildren().setAll(cardNodes);
         }
@@ -256,20 +262,20 @@ public final class EncounterCombatStateView extends VBox {
 
         void showEndCombatState(
                 boolean allEnemiesDefeated,
-                Consumer<EncounterCombatStateViewInputEvent.Interaction> publisher
+                Runnable endCombat
         ) {
             CombatStyledButton end = new CombatStyledButton(
                     "_Kampf beenden",
                     allEnemiesDefeated ? STYLE_ACCENT : "");
             end.setMaxWidth(Double.MAX_VALUE);
             setHgrow(end, Priority.ALWAYS);
-            end.setOnAction(event -> showEndCombatConfirmState(allEnemiesDefeated, publisher));
+            end.setOnAction(event -> showEndCombatConfirmState(allEnemiesDefeated, endCombat));
             getChildren().setAll(end);
         }
 
         private void showEndCombatConfirmState(
                 boolean allEnemiesDefeated,
-                Consumer<EncounterCombatStateViewInputEvent.Interaction> publisher
+                Runnable endCombat
         ) {
             CombatStyledButton cancel = new CombatStyledButton("Abbruch");
             CombatStyledButton confirm = allEnemiesDefeated
@@ -279,8 +285,8 @@ public final class EncounterCombatStateView extends VBox {
             confirm.setMaxWidth(Double.MAX_VALUE);
             setHgrow(cancel, Priority.ALWAYS);
             setHgrow(confirm, Priority.ALWAYS);
-            cancel.setOnAction(event -> showEndCombatState(allEnemiesDefeated, publisher));
-            confirm.setOnAction(event -> publisher.accept(new EncounterCombatStateViewInputEvent.EndCombatInput()));
+            cancel.setOnAction(event -> showEndCombatState(allEnemiesDefeated, endCombat));
+            confirm.setOnAction(event -> endCombat.run());
             getChildren().setAll(cancel, confirm);
         }
     }
@@ -289,7 +295,7 @@ public final class EncounterCombatStateView extends VBox {
 
         EncounterCombatHpMeter(
                 String cardId,
-                EncounterCombatStateContentModel.HpMeterDisplay display,
+                EncounterStateViewModel.HpMeterDisplay display,
                 EncounterCombatCardActions actions
         ) {
             String safeCardId = cardId == null ? "" : cardId;
@@ -326,7 +332,7 @@ public final class EncounterCombatStateView extends VBox {
                     true,
                     () -> {
                         popup.hide();
-                        actions.changeHitPoints(cardId, "-hp", amountField.parse(EncounterCombatCardPane.HP_POPUP_STEP));
+                        actions.changeHitPoints(cardId, amountField.parse(EncounterCombatCardPane.HP_POPUP_STEP), false);
                     });
             CombatStyledButton increase = actionButton(
                     "+",
@@ -334,7 +340,7 @@ public final class EncounterCombatStateView extends VBox {
                     false,
                     () -> {
                         popup.hide();
-                        actions.changeHitPoints(cardId, "+hp", amountField.parse(EncounterCombatCardPane.HP_POPUP_STEP));
+                        actions.changeHitPoints(cardId, amountField.parse(EncounterCombatCardPane.HP_POPUP_STEP), true);
                     });
             popupContent.setContent(
                     amountField,
@@ -378,7 +384,7 @@ public final class EncounterCombatStateView extends VBox {
 
     private static void showPartyMemberPopup(
             Node anchor,
-            List<EncounterCombatStateContentModel.PartyMemberCandidate> candidates,
+            List<EncounterStateViewModel.PartyMemberCandidate> candidates,
             EncounterPartyMemberSelectionListener selectionListener
     ) {
             if (anchor == null || candidates == null || candidates.isEmpty()) {
@@ -388,7 +394,7 @@ public final class EncounterCombatStateView extends VBox {
             CombatStyledVBox popupContent = new CombatStyledVBox(6, "anchored-popup");
             ContextMenu popup = contextMenu(popupContent);
             List<Node> rows = new ArrayList<>();
-            for (EncounterCombatStateContentModel.PartyMemberCandidate candidate : candidates) {
+            for (EncounterStateViewModel.PartyMemberCandidate candidate : candidates) {
                 EncounterPopupNumberField initiativeField = new EncounterPopupNumberField("10");
                 initiativeField.setAccessibleText("Initiative fuer " + candidate.name());
                 Button down = spinnerButton("\u25BC");
@@ -563,5 +569,20 @@ public final class EncounterCombatStateView extends VBox {
             super(text);
             getStyleClass().add("progress-meter-text");
         }
+    }
+
+    @FunctionalInterface
+    public interface HitPointChangeHandler {
+        void changeHitPoints(String combatantId, int amount, boolean healing);
+    }
+
+    @FunctionalInterface
+    public interface InitiativeEditHandler {
+        void editInitiative(String combatantId, int initiative);
+    }
+
+    @FunctionalInterface
+    public interface PartyMemberJoinHandler {
+        void addPartyMember(long partyMemberId, int initiative);
     }
 }

@@ -6,10 +6,21 @@ public final class EncounterApplicationServiceFakes {
     }
 
     public static EncounterApplicationService noOp() {
-        return new EncounterApplicationService(
-                ignored -> { },
-                ignored -> { },
-                ignored -> { });
+        return new EncounterApplicationService(new EncounterApplicationService.CommandActions() {
+            @Override
+            public void applyState(src.domain.encounter.published.ApplyEncounterStateCommand command) {
+            }
+
+            @Override
+            public void updateBuilderInputs(
+                    src.domain.encounter.published.UpdateEncounterBuilderInputsCommand command
+            ) {
+            }
+
+            @Override
+            public void refreshPlanBudget(src.domain.encounter.published.RefreshEncounterPlanBudgetCommand command) {
+            }
+        });
     }
 
 }

@@ -1,21 +1,13 @@
 package src.view.statetabs.encounter;
 
-import static src.view.statetabs.encounter.EncounterStateContentModel.ActiveContent.BUILDER;
-import static src.view.statetabs.encounter.EncounterStateContentModel.ActiveContent.COMBAT;
-import static src.view.statetabs.encounter.EncounterStateContentModel.ActiveContent.INITIATIVE;
-import static src.view.statetabs.encounter.EncounterStateContentModel.ActiveContent.RESULTS;
-
+import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.scene.Node;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import src.domain.encounter.published.EncounterStateSnapshot;
 
 public final class EncounterStateView extends VBox {
-
-    private static final int BUILDER_INDEX = 0;
-    private static final int INITIATIVE_INDEX = 1;
-    private static final int COMBAT_INDEX = 2;
-    private static final int RESULTS_INDEX = 3;
 
     private final StackPane contentArea = new EncounterContentStack();
 
@@ -32,24 +24,16 @@ public final class EncounterStateView extends VBox {
         getChildren().add(contentArea);
     }
 
-    public void bind(EncounterStateContentModel contentModel) {
-        if (contentModel == null) {
+    public void bind(ReadOnlyObjectProperty<EncounterStateSnapshot.Mode> activeMode) {
+        if (activeMode == null) {
             return;
         }
-        show(contentModel.activeContentProperty().get());
-        contentModel.activeContentProperty().addListener((ignored, before, after) -> show(after));
+        show(activeMode.get());
+        activeMode.addListener((ignored, before, after) -> show(after));
     }
 
-    private void show(EncounterStateContentModel.ActiveContent activeContent) {
-        EncounterStateContentModel.ActiveContent safeContent =
-                activeContent == null ? BUILDER : activeContent;
-        switch (safeContent) {
-            case INITIATIVE -> showContent(INITIATIVE_INDEX);
-            case COMBAT -> showContent(COMBAT_INDEX);
-            case RESULTS -> showContent(RESULTS_INDEX);
-            case BUILDER -> showContent(BUILDER_INDEX);
-            default -> showContent(BUILDER_INDEX);
-        }
+    private void show(EncounterStateSnapshot.Mode activeContent) {
+        showContent(EncounterStateVocabulary.contentIndex(activeContent));
     }
 
     private void showContent(int contentIndex) {
