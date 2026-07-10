@@ -94,4 +94,4 @@ Current state:
 
 - [Creature Details UI](docs/creatures/requirements/requirements-creatures-details.md:1)
 - [Encounter Runtime State UI](docs/encounter/requirements/requirements-encounter-state-tab.md:1)
-- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)

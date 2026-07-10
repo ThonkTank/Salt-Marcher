@@ -85,10 +85,9 @@ owner before producing more instances.
   quality requirements, including implementation-documentation,
   project-health, and baseline-admission rules.
 - `docs/project/architecture/patterns/*.md`
-  Canonical cross-feature layer and layering owner documents.
-- `docs/project/architecture/enforcement/*.md`
-  Canonical mechanical architecture enforcement documents for the matching
-  layer or role owner.
+  Retained cross-feature architecture statements that are still valid after
+  doctrine removal. The migration roadmap and ledger own source-area
+  simplification while the migration is active.
 - `docs/project/decisions/*.md`
   Architecture decision records. ADRs are required for R1 architecture
   changes, dependency major upgrades, gate or tooling changes, and channel or
@@ -147,7 +146,8 @@ owner before producing more instances.
 - Use links instead of restating a topic that already has a source of truth.
 - Do not mix glossary, architecture, feature spec, and delivery planning in one
   file.
-- Split a document once it becomes hard to scan or exceeds 350 lines.
+- Split a document when it mixes scopes or crosses the 400-line soft
+  threshold; preserve content and cut scope, never facts.
 - Keep one language per document. German and English are both allowed.
 - Prefer fixed filenames at the owning root over free-form naming.
 
@@ -192,8 +192,16 @@ Documentation governance is broader than compile-time enforcement.
   surfaces such as `docs/**`, `src/domain/**/DOMAIN.md`, repo-local
   `AGENTS.md`, and Markdown documentation under `tools/quality/**`.
 - The gate mechanically blocks missing `docs/**` metadata, forbidden legacy
-  documentation roots, redirect-only source Markdown, and Markdown files over
-  350 lines on governed repo-facing surfaces.
+  documentation roots, and redirect-only source Markdown.
+- Markdown files over 400 lines are reported as a size signal, not a build
+  failure. File or link a `doc-split` issue for the split work; never omit,
+  compress, or relocate documentation because of size.
+- The active size-policy roadmap is
+  `docs/project/architecture/doc-size-policy-vision-and-roadmap.md`.
+- The retired architecture-enforcement inventory family is not a live
+  documentation type. Outcome checks are documented through the migration
+  roadmap, verification docs, Gradle task wiring, and the tests or harnesses
+  that actually run.
 - Mechanical checks may lint structure when a dedicated docs gate exists.
 - Mixed implementation changes that also touch non-documentation code, Gradle,
   or build sources still follow the broader verification path owned by
@@ -217,85 +225,14 @@ Reviewers must check:
 
 ## Required Templates
 
-### Architecture Standard Template
-
-Use:
-
-- purpose
-- rules
-- allowed exceptions
-- verification or enforcement notes
-- references
-
-### Feature Spec Template
-
-Use:
-
-- goal
-- non-goals
-- primary user flows
-- acceptance criteria
-- open questions or deferred concerns
-
-### Domain Template
-
-Use:
-
-- the write model and the source of domain decisions
-- aggregate roots or core objects, including mutation entrypoints when relevant
-- derived state
-- domain-owned ports and external dependency boundaries
-- ownership boundaries
-- invariants
-- explicit current-state versus target-state framing when implementation lags
-- references
-
-### UI Template
-
-Use:
-
-- component purpose
-- visible surfaces
-- interactions
-- visible states
-- shortcuts or inspector behavior when relevant
-
-### Persistence Template
-
-Use:
-
-- root contract
-- schema ownership
-- migration or stability rules
-- references
-
-### Verification Template
-
-Use:
-
-- verified sources
-- verification methods
-- pass or fail criteria
-- traceability or proof mapping
-- known gaps or review-owned proof
-- references
-
-### ADR Template
-
-Use:
-
-- title
-- status
-- date
-- context
-- decision
-- consequences
-- alternatives considered
-- related documents
+Required structural templates live in
+[Documentation Templates](documentation-templates.md).
 
 ## References
 
 - [Project Documentation Entry Point](docs/project/README.md:1)
 - [Architecture Overview](docs/project/architecture/overview.md:1)
+- [Documentation Templates](documentation-templates.md)
+- [Document Split Protocol](doc-split-protocol.md)
 - [Implementation Documentation Standard](docs/project/architecture/implementation-documentation.md:1)
 - [Work Logs](docs/project/architecture/work-logs.md:1)

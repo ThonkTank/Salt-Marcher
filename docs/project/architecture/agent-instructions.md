@@ -46,7 +46,7 @@ must be independent from the implementation.
 
 ## Judge Review
 
-Always apply `lens-code-quality`. Add `lens-security` when the diff touches IO,
+Always apply `lens-code-quality`; for documentation splits, also apply the [Document Split Protocol](doc-split-protocol.md) judge checklist. Add `lens-security` when the diff touches IO,
 persistence, parsing, external input, or shell/exec. Add `lens-performance`
 when it touches hot collection loops, caching, rendering, startup, or memory
 pressure. Add `lens-architecture` when it touches layer boundaries, owner

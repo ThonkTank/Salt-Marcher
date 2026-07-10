@@ -135,6 +135,6 @@ Target state:
 
 ## References
 
-- [Domain Layer Standard](docs/project/architecture/patterns/domain-layer.md:1)
+- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
 - [Party Persistence](docs/party/contract/contract-party-persistence.md:1)
 - [Party UI](docs/party/requirements/requirements-party-dropdown.md:1)

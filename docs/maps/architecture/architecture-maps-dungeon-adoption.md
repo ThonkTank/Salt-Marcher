@@ -14,8 +14,8 @@ constraints onto the dungeon feature.
 
 It does not define target feature-runtime conformance. Target ownership for
 feature runtime and view roles remains in
-[Feature Runtime Architecture](docs/project/architecture/patterns/feature-runtime.md:1)
-and [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
+[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
+and [Architecture Migration Ledger](docs/project/architecture/migration-ledger.md:1).
 
 It owns:
 
@@ -98,7 +98,7 @@ backend movement path.
 These canvas-specific seams are current compatibility seams, not new canonical
 reusable role families or target feature-runtime precedent. The canonical
 reusable-slotcontent target lives only in the
-[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
+[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1).
 
 ### Map Catalog
 
