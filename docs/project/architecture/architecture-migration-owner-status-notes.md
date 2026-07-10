@@ -321,3 +321,23 @@ Dokumentations-Gate, Phase 1 und unabhaengiger Judge sind gruen. Naechster
 Schritt ist M3.4: nur Harness-/Wiring-Port, besonders der Session-Planner-
 Harness-Fake-Encounter-Seam und die State-Tab-ViewModel-Grenze; es wurde noch
 keine Produktionsimplementierung der Loeschliste gestartet.
+
+### 2026-07-10 M3.4 encounter-harness-wiring-port
+
+Der Encounter-Wiring-Port ist in Commit `a6a63cc2e` abgeschlossen.
+`EncounterStateViewModel` ist eine reine Kompatibilitaets-Fassade ueber die
+bisherigen State-Tab-Content-Modelle und den `EncounterStateIntentHandler`;
+`EncounterStateBinder` fuehrt Subscriptions und View-Callbacks jetzt durch
+diese Grenze. Der `SessionPlannerCatalogHarness` importiert die genehmigten
+Loeschlisten-Kandidaten aus Encounter-Usecases und Published-State-
+Repository-Interfaces nicht mehr, sondern verwendet einen test-only Fake an
+der erhaltenen `EncounterApplicationService`-Command-Seam. Die Harness-
+Szenarien, Fixture-Werte, Proof-Labels, Assertions und sichtbaren Texte sind
+unveraendert. Der selektive Static/Harness-Proof inklusive Dead-Code-Check,
+PMD, CPD, `encounterStateTabHarness`, `worldPlannerEncounterHarness`,
+`sessionPlannerCatalogHarness` und Harness-Topologie ist gruen; der
+Production-Handoff ist gruen; Phase 1 und der unabhaengige Judge haben den
+Wiring-Port freigegeben. Es wurde kein CPD-Treffer durch Umformulierung
+umgangen und keine Produktions-Loeschliste vorgezogen. Naechster Schritt ist
+M3.5: Umsetzung des genehmigten Encounter-Target-Designs mit vollstaendiger
+Loeschliste, byte-kompatiblen Seams und eingefrorenen Harness-Orakeln.
