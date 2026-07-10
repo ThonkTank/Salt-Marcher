@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-07
+Last Reviewed: 2026-07-10
 Source of Truth: July 2026 harness-gap closure journal entries.
 Entry Document: [July 2026 Journal](2026-07.md)
 
@@ -42,3 +42,23 @@ actual public boundary: authored summary lookup, weighted candidate lookup,
 empty selection, XP ceiling, and storage-error publication.
 Scope boundary: this pass changes only the gap contract and journal evidence;
 it does not close the gap or add new behavior.
+
+## 2026-07-10 sessionplanner-production-route-gap - Close Session Planner timeline route gap
+
+Problem: the Session Planner M3.1 harness review found that
+`sessionPlannerCatalogHarness` covered catalog CRUD and the blank-scene route
+through `SessionPlannerContribution`, but some timeline, loot, and draft
+oracles were direct model/view fixtures. That overstated production-route
+coverage before the Session Planner migration baseline.
+Target state: extend `sessionPlannerCatalogHarness` against the old structure
+so rendered Session Planner controls drive `SessionPlannerContribution` ->
+`SessionPlannerBinder` -> `SessionPlannerIntentHandler` -> Session Planner
+application services, with assertions through the published Session Planner
+models for saved encounter attach, scene save/select/move/allocation/remove,
+rest set/clear, loot add/remove, participant add/remove, encounter-days, and
+catalog CRUD.
+Scope boundary: this pass changes only the Session Planner harness and
+migration status documentation. Stable fixture data is limited to foreign
+Encounter published seams; Party and World Planner setup uses their real
+application services. No visible Session Planner behavior or production code
+changes.

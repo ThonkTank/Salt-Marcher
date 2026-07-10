@@ -285,3 +285,21 @@ Dokumentationsgate und `production-handoff`. Die genehmigte
 Auffaelligkeiten aus dem Owner-Smoke laufen wie im Roadmap-Protokoll als
 normale R2-Anomalien oder, bei schwerer Drift, ueber den Revert-Pfad.
 Naechster M3-Bereich ist `sessionplanner` mit Harness-Check/Closure.
+
+### 2026-07-10 M3.1 sessionplanner-harness-closure
+
+Die Session-Planner-Harness-Pruefung ist geschlossen. Eine unabhaengige
+Vorpruefung fand eine echte Luecke: Teile der bisherigen Timeline-, Loot- und
+Draft-Oracles waren direkte Model/View-Fixtures statt Produktionsroute. Der
+Harness wurde deshalb gegen die alte Struktur erweitert. `sessionPlannerCatalogHarness`
+bindet jetzt die echte `SessionPlannerContribution`, feuert gerenderte
+Controls fuer Participant add/remove, Saved-Encounter-Attach,
+Scene-Save/Select/Move/Allocation/Remove, Rast set/clear, Loot add/remove,
+Encounter-Days und Catalog-CRUD, und liest danach die Session-Planner
+Published Models zurueck. Stabile Testdaten liegen nur an fremden Encounter
+Published-Seams; Party und World Planner werden ueber ihre echten
+Application-Services vorbereitet. `compileTestJava`, die beiden
+Session-Planner-Harnesses, Harness-Map/Topology, Focused-Handoff und
+`git diff --check` sind gruen. Phase 1 und der unabhaengige Judge haben die
+Closure freigegeben. Naechster Schritt ist M3.2:
+Session-Planner-Baseline-Metriken.
