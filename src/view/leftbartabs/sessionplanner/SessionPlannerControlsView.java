@@ -101,7 +101,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         if (event.getSource() instanceof Button button && button.getUserData() instanceof Number id) {
             planId = id.longValue();
         }
-        attachPlanHandler.accept(new SessionPlannerControlsViewInputEvent(planId).planIdToAttach());
+        attachPlanHandler.accept(Math.max(0L, planId));
     }
 
     private static Label label(String text, String... styleClasses) {
