@@ -327,3 +327,17 @@ genehmigte 27-Dateien-/1.749-LOC-Ausnahme bleibt dokumentiert und unter der
 1.750-LOC-Grenze. Auffaelligkeiten aus dem Owner-Smoke laufen wie im Roadmap-
 Protokoll als normale R2-Anomalien oder, bei schwerer Drift, ueber den
 Revert-Pfad. Naechster M3-Bereich ist `party` mit Harness-Check/Closure.
+
+### 2026-07-10 M3.1 party-harness-closure
+
+Der Party-Harness-Gap ist geschlossen. `partyDropdownHarness` laeuft jetzt
+ueber die echte Shell-Route: `PartyTopBarContribution` bindet in
+`ShellSlot.TOP_BAR`, der Harness oeffnet den JavaFX-Dropdown-Trigger und
+bedient die gerenderten Controls fuer neuen Charakter, Entfernen und
+Reserve-hinzufuegen. Die bestehenden Orakel bleiben erhalten: Party-Snapshot,
+aktive Party, aktive Komposition und Trigger-Text werden weiter geprueft.
+`compileTestJava`, `partyDropdownHarness`, Harness-Map/Topology und der
+Focused-Handoff fuer `src/view/dropdowns/party` sind gruen; der erste
+Focused-Handoff-Versuch scheiterte nur am bekannten Gradle-Wildcard-IP-Start
+vor Task-Ausfuehrung und wurde mit `CODEX_THREAD_ID` unset gruen wiederholt.
+Naechster Schritt ist M3.2: Party-Baseline-Metriken vor dem Target-Design.
