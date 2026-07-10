@@ -32,11 +32,11 @@ migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M3 - Rollout wave 1 |
-| Work item | M3.2 - sessionplanner baseline metrics |
-| Cycle step | 2 - Baseline metrics |
+| Work item | M3.3 - sessionplanner target design |
+| Cycle step | 3 - Target design |
 | In-flight area | `sessionplanner` |
-| Required next proof | Capture Session Planner file count, LOC, longest intent-to-mutation chain, forwarding-only classes, and String boundary round-trips after the frozen harness closure. |
-| Last status note | `2026-07-10 M3.1 sessionplanner-harness-closure` |
+| Required next proof | Produce a judge-approved Session Planner target design with target classes, representative call chains, explicit deletion list, byte-compatible seam statement, untouched-list, frozen parity inventory, and metric targets before any wiring or implementation. |
+| Last status note | `2026-07-10 M3.2 sessionplanner-baseline-metrics` |
 
 ## M0 Step Ledger
 
@@ -111,8 +111,8 @@ migration unless this ledger advances too.
 | Cycle step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
 | 1. Harness check/closure | Done on branch | `44e3f618a` | Pending | `./gradlew compileTestJava --console=plain` passed, 2026-07-10; `./gradlew sessionPlannerCatalogHarness sessionPlannerShellLayoutHarness checkHarnessMapConsistency checkBehaviorHarnessTopology --console=plain` passed, 2026-07-10; `env -u CODEX_THREAD_ID tools/gradle/run-staged-verification.sh focused-handoff --path src/view/leftbartabs/sessionplanner --area sessionplanner` retained log `build/gradle-run-logs/20260710T104831999328315-pid166258-focused-handoff.log` passed; `git diff --check` passed; Phase 1 Approved; Phase 2 Approved | `sessionPlannerCatalogHarness` now drives rendered Session Planner controls through `SessionPlannerContribution`, `SessionPlannerBinder`, and `SessionPlannerIntentHandler`, then asserts the published Session Planner models after real application-service mutations for participants, saved encounter attach, scene save/select/move/allocation/remove, rest set/clear, loot add/remove, encounter-days, catalog CRUD, and blank-scene add/remove. Stable fake data is limited to foreign Encounter published seams; Party and World Planner fixture setup uses their real application services. Scenarios and assertions are frozen before M3.2. |
-| 2. Baseline metrics | In Flight | Pending | Pending | Pending | Capture file count, LOC, longest intent-to-mutation chain, forwarding-only classes, and String boundary round-trips after harness closure. |
-| 3. Target design | Pending | Pending | Pending | Pending | Produce judge-approved target design with target classes, representative call chains, deletion list, seam statement, untouched surfaces, frozen parity inventory, and metric targets before implementation. |
+| 2. Baseline metrics | Done on branch | `a53e2f3b3` | Pending | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-10; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved after forwarding-count and active-party-facts rework; Phase 2 Approved | Baseline artifact: `docs/project/architecture/architecture-migration-sessionplanner-baseline.md`; full roadmap set is 121 files / 7,831 physical LOC; product subset is 103 files / 6,664 physical LOC; dominant Session Planner timeline chains are 6 hops to first `SessionPlan` mutation, with 7-hop create-session active-party-facts and nonzero World Planner location-validation paths; 30 product/published forwarding or proxy candidates plus 2 data candidates; 3 product String boundary families. |
+| 3. Target design | In Flight | Pending | Pending | Pending | Produce judge-approved target design with target classes, representative call chains, deletion list, seam statement, untouched surfaces, frozen parity inventory, and metric targets before implementation. |
 | 4. Harness wiring port | Pending | Pending | Pending | Pending | Port only harness or construction references needed for the approved deletion list; scenarios and assertions stay frozen. |
 | 5. Implementation | Pending | Pending | Pending | Pending | Implement the approved Session Planner target design or commit an approved design amendment first. |
 | 6. Conformance review | Pending | Pending | Pending | Pending | Phase 1 and Phase 2 review design conformance, parity, seams, deletion list, and metric targets. |
@@ -138,7 +138,7 @@ migration unless this ledger advances too.
 | `worldplanner` | Worldplanner reference commit `f499d321d` | Done on branch | Pending | M3 done on branch: backend, UI, raw-input, and encounter harnesses are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 43-file / 3,709-LOC metric exception; owner smoke checklist is available. |
 | `creatures` | Creature reference commit `246d39267` | Done on branch | Pending | M3 done on branch: `creatureCatalogHarness` plus adjacent `encounterStateTabHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 27-file / 1,749-LOC exception; owner smoke checklist is available. |
 | `party` | Party reference commit `8e67f2304` | Done on branch | Pending | M3 done on branch: `partyDropdownHarness` is green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 88-file / 5,740-LOC exception, the shared `PublishedState` extraction, and the typed-travel rework; owner smoke checklist is available. |
-| `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 harness closure done on branch: `sessionPlannerCatalogHarness` and `sessionPlannerShellLayoutHarness` are green with frozen scenarios; Phase 1 and Phase 2 approved the production-route closure; current step is M3.2 baseline metrics. |
+| `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 harness closure done on branch: `sessionPlannerCatalogHarness` and `sessionPlannerShellLayoutHarness` are green with frozen scenarios; M3.2 baseline metrics are recorded and Phase 1/Phase 2 approved after forwarding-count and active-party-facts rework; current step is M3.3 target design. |
 | `encountertable` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner UI imports only; P2 dedicated encounter-table readback harness gap remains. |
 | `encounter` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `worldPlannerEncounterHarness`, `encounterStateTabHarness`; P1 production publication route gaps remain. |
 | `dungeon-authored-core` | Legacy surrounding code until M4.1 design; then pilot reference plus approved dungeon design | Pending | Pending | M1.1 inventory: `dungeonEditorCoreBehaviorHarness` plus mapped domain tasks `dungeonEditorBehaviorHarness`, `dungeonEditorRouteBehaviorHarness`, `dungeonEditorDoorBehaviorHarness`, `dungeonEditorWallBehaviorHarness`, `dungeonEditorRoomBehaviorHarness`, `dungeonEditorClusterBehaviorHarness`, `dungeonEditorCorridorBehaviorHarness`, `dungeonEditorStairBehaviorHarness`, `dungeonEditorTransitionBehaviorHarness`, `dungeonEditorFeatureBehaviorHarness`; no registered M1.1 gap. |
@@ -170,4 +170,4 @@ migration unless this ledger advances too.
 
 German owner status notes are maintained in
 `docs/project/architecture/architecture-migration-owner-status-notes.md`.
-Latest note: `2026-07-10 M3.1 sessionplanner-harness-closure`.
+Latest note: `2026-07-10 M3.2 sessionplanner-baseline-metrics`.

@@ -303,3 +303,21 @@ Session-Planner-Harnesses, Harness-Map/Topology, Focused-Handoff und
 `git diff --check` sind gruen. Phase 1 und der unabhaengige Judge haben die
 Closure freigegeben. Naechster Schritt ist M3.2:
 Session-Planner-Baseline-Metriken.
+
+### 2026-07-10 M3.2 sessionplanner-baseline-metrics
+
+Die Session-Planner-Baseline ist in
+`docs/project/architecture/architecture-migration-sessionplanner-baseline.md`
+festgehalten. Der reproduzierbare Roadmap-Schnitt umfasst 121 Java-Dateien mit
+7.831 physischen LOC; die normale M3-Produktstruktur ohne Data-Layer umfasst
+103 Dateien mit 6.664 LOC. Die dominanten Timeline-Ketten liegen bei 6 Hops
+bis zur ersten `SessionPlan`-Mutation; Create-Session mit Active-Party-Facts
+und Scene-Save mit nonzero World-Planner-Location-Validierung erreichen je 7
+Hops vor dem Save-/Publication-Tail. 30 Produkt-/Published-Forwarding-
+Kandidaten, zwei Data-Kandidaten und drei produktive String-Grenzfamilien sind
+konkret belegt. Phase 1 fand zunaechst eine zu enge Forwarding-Zaehlung und
+einen fehlenden Active-Party-Facts-Hop; nach Rework sind Dokumentationsgate,
+`git diff --check`, `git diff --cached --check`, Phase 1 und der
+unabhaengige Judge gruen. Naechster Schritt ist M3.3 mit judge-geprueftem
+Session-Planner-Target-Design; es wurde noch keine Wiring- oder
+Implementierungsarbeit begonnen.
