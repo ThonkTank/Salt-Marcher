@@ -311,3 +311,18 @@ Data-Layer, Catalog, Worldplanner, Encounter und Harness-Orakel bleiben
 kompatibel. Dokumentationsgate, `git diff --check`, Phase 1 und der
 unabhaengige Judge sind gruen. Naechster Schritt ist M3.4 als erwarteter
 No-code-Wiring-Port-Nachweis; es wurde noch keine Implementierung begonnen.
+
+### 2026-07-10 M3.4 encountertable-wiring-port
+
+Der Encounter-Table-Wiring-Port ist als No-code-Schritt abgeschlossen.
+`encounterTableReadbackHarness` verwendet bereits die erhaltenen Data- und
+Domain-`EncounterTableServiceContribution`-Seams, `EncounterTableApplicationService`,
+`EncounterTableCatalogModel`, `EncounterTableCandidatesModel`, Commands,
+Records und Statuswerte. Der Harness und die geprueften aktuellen Consumer
+enthalten keine Referenzen auf die genehmigte 3-Datei-Loeschliste aus
+Usecases und internem Published-State-Repository. Die eingefrorenen Szenarien
+und Assertions wurden nicht geaendert. `encounterTableReadbackHarness`,
+Harness-Map/Topology und der Focused-Handoff fuer `src/domain/encountertable`
+sind gruen. Naechster Schritt ist M3.5: Umsetzung des genehmigten
+Encounter-Table-Target-Designs mit vollstaendiger Loeschliste,
+byte-kompatiblen Seams und unveraendertem Harness-Orakel.
