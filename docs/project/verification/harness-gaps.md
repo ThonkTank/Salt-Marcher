@@ -19,7 +19,6 @@ the minimal harness proposal needed before a touched area may change.
 
 | Area | Current coverage | Priority | Minimal harness proposal |
 | --- | --- | --- | --- |
-| `src/domain/encountertable` | No dedicated encounter-table behavior harness | P2 | Add an encounter-table readback harness covering authored summary lookup, weighted candidate lookup, empty selection, XP ceiling, and storage-error publication. |
 | `src/view/statetabs/encounter/**` | Route gap: `encounterStateTabHarness` renders a harness-created `MutableEncounterStateFeed` snapshot with no-op services instead of production encounter publication into the state tab. | P1 | Drive the production encounter service/publication model and read back the real `EncounterStateModel`, or retain the current task as render-only proof and add a production-route state-tab harness. |
 
 ## Rule

@@ -498,6 +498,7 @@ val searchFilterControlsHarnessDataDir = layout.buildDirectory.dir("search-filte
 val partyDropdownHarnessDataDir = layout.buildDirectory.dir("party-dropdown-data")
 val hexMapEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-map-editor-behavior-data")
 val hexTravelStateBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-travel-state-behavior-data")
+val encounterTableReadbackHarnessDataDir = layout.buildDirectory.dir("encounter-table-readback-data")
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
 val worldPlannerBackendHarnessDataDir = layout.buildDirectory.dir("world-planner-backend-data")
@@ -656,6 +657,26 @@ behaviorHarnesses.javaExec("encounterStateTabHarness") {
         classpath = sourceSets["test"].runtimeClasspath
         mainClass.set("src.view.statetabs.encounter.EncounterStateTabHarness")
         outputs.upToDateWhen { false }
+    }
+}
+
+behaviorHarnesses.javaExec("encounterTableReadbackHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("encounter-table-readback"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused Encounter Table readback behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.domain.encountertable.EncounterTableReadbackHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = encounterTableReadbackHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
     }
 }
 

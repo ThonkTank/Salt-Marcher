@@ -62,3 +62,18 @@ migration status documentation. Stable fixture data is limited to foreign
 Encounter published seams; Party and World Planner setup uses their real
 application services. No visible Session Planner behavior or production code
 changes.
+
+## 2026-07-10 encountertable-readback-harness-gap - Close EncounterTable readback gap
+
+Problem: `docs/project/verification/harness-gaps.md` listed
+`src/domain/encountertable` as P2 because no dedicated harness proved the
+Encounter Table public readback route.
+Target state: add focused `encounterTableReadbackHarness` coverage over the old
+structure. The harness seeds authored SQLite table rows in an isolated
+`XDG_DATA_HOME`, drives `EncounterTableApplicationService`, and asserts
+published `EncounterTableCatalogModel` / `EncounterTableCandidatesModel`
+readback for authored summaries, weighted candidates, empty selection,
+XP-ceiling handling, and storage-error publication.
+Scope boundary: this pass changes only the harness, harness registration,
+harness map, gap register, journal, and migration status documentation. It
+does not add Encounter Table mutation behavior or change production code.

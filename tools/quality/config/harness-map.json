@@ -64,6 +64,8 @@
   "src/view/slotcontent/controls/searchfilter/**": ["searchFilterControlsHarness"],
   "src/data/party/**": ["partyDropdownHarness"],
   "src/domain/creatures/**": ["creatureCatalogHarness"],
+  "src/data/encountertable/**": ["encounterTableReadbackHarness"],
+  "src/domain/encountertable/**": ["encounterTableReadbackHarness"],
   "src/domain/party/**": ["partyDropdownHarness"],
   "src/view/dropdowns/party/**": ["partyDropdownHarness"],
   "src/view/leftbartabs/sessionplanner/**": [

@@ -262,3 +262,18 @@ unter der 5.200-LOC-Grenze und ist im Amendment dokumentiert. Auffaelligkeiten
 aus dem Owner-Smoke laufen wie im Roadmap-Protokoll als normale R2-Anomalien
 oder, bei schwerer Drift, ueber den Revert-Pfad. Naechster M3-Bereich ist
 `encountertable` mit Harness-Check/Closure gegen die alte Struktur.
+
+### 2026-07-10 M3.1 encountertable-harness-closure
+
+Der Encounter-Table-Harness-Gap ist geschlossen. Der neue
+`encounterTableReadbackHarness` laeuft gegen die alte Struktur: Er seedet
+autorisierte Encounter-Table- und Creature-Zeilen in einem isolierten SQLite-
+`XDG_DATA_HOME`, registriert die echte Data- und Domain-
+`EncounterTableServiceContribution`, treibt `EncounterTableApplicationService`
+und liest danach `EncounterTableCatalogModel` und `EncounterTableCandidatesModel`
+zurueck. Die eingefrorenen Proof-Items decken authored summary lookup,
+weighted candidate lookup, leere Auswahl, XP-Ceiling inklusive `maximumXp <= 0`
+und Storage-Error-Publication ab. Harness-Topology, Harness-Map, Focused-
+Handoff fuer `src/domain/encountertable`, Dokumentationsgate und Phase 2 sind
+gruen; Phase 1 prueft nach einem Ledger-Wording-Fund erneut. Naechster Schritt
+ist M3.2: Encounter-Table-Baseline-Metriken vor dem Target-Design.
