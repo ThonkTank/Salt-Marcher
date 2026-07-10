@@ -32,11 +32,11 @@ migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M3 - Rollout wave 1 |
-| Work item | M3.5 - party implementation |
-| Cycle step | 5 - Implementation |
+| Work item | M3.6 - party conformance review |
+| Cycle step | 6 - Conformance review |
 | In-flight area | `party` |
-| Required next proof | Implement the approved Party target design exactly: execute the 34-file deletion list, keep byte-compatible Party service/published/top-bar seams, preserve frozen `partyDropdownHarness` scenarios and assertions, run parity and production proof, and obtain Phase 1 plus Phase 2 review before conformance close. |
-| Last status note | `2026-07-10 M3.4 party-wiring-port` |
+| Required next proof | Record final conformance evidence for the approved Party target design: 34-file deletion list executed, byte-compatible seams preserved, frozen harnesses green, `production-handoff` green, zero non-seam String round-trips, and metrics accepted including the 88-file / 5,740-LOC exception. |
+| Last status note | `2026-07-10 M3.5 party-implementation` |
 
 ## M0 Step Ledger
 
@@ -102,8 +102,8 @@ migration unless this ledger advances too.
 | 2. Baseline metrics | Done on branch | `67d365a98` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-10; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved after citation rework; Phase 2 Approved | Baseline artifact: `docs/project/architecture/architecture-migration-party-baseline.md`; full roadmap set is 141 files / 7,998 physical LOC; product subset is 119 files / 6,781 physical LOC; dominant Party dropdown chains are 5 hops to roster mutation and 6 including nested character replacement; 10 product/published forwarding or proxy candidates plus 2 data candidates; 4 product String boundary families. |
 | 3. Target design | Done on branch | `9c2d7db58` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-10; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved; Phase 2 Approved | Approved design artifact: `docs/project/architecture/architecture-migration-party-target-design.md`; names target classes, representative call chains, 34-file deletion list, byte-compatible seams, frozen Party dropdown parity inventory, no expected M3.4 harness code port, untouched surfaces, and metric targets/exceptions. |
 | 4. Harness wiring port | Done on branch | `d1b57457f` | Pending PR merge | `./gradlew partyDropdownHarness checkHarnessMapConsistency checkBehaviorHarnessTopology --console=plain` passed, 2026-07-10; `env -u CODEX_THREAD_ID tools/gradle/run-staged-verification.sh focused-handoff --path src/view/dropdowns/party --area party` passed with retained log `build/gradle-run-logs/20260710T085450787982978-pid39376-focused-handoff.log`; Phase 1 Approved; Phase 2 Approved | No harness code port was required: `partyDropdownHarness` already imports preserved shell and Party published seams, constructs `PartyTopBarContribution`, and has no references to the approved 34-file deletion list. Harness scenarios and assertions stayed frozen; M3.5 owns production deletion and implementation. |
-| 5. Implementation | In Flight | Pending | Pending | Pending | Implement the approved Party target design or commit an approved design amendment first; execute the 34-file deletion list and keep frozen harness behavior unchanged. |
-| 6. Conformance review | Pending | Pending | Pending | Pending | Phase 1 and Phase 2 review design conformance, parity, seams, deletion list, and metric targets. |
+| 5. Implementation | Done on branch | `8e67f2304` | Pending PR merge | `./gradlew compileJava compileTestJava --console=plain` passed, 2026-07-10; `./gradlew checkNoDeadCode pmdStrictMain cpdMain spotbugsMain --console=plain` passed, 2026-07-10; `./gradlew partyDropdownHarness checkHarnessMapConsistency checkBehaviorHarnessTopology --console=plain` passed, 2026-07-10; `env -u CODEX_THREAD_ID tools/gradle/run-staged-verification.sh production-handoff` retained log `build/gradle-run-logs/20260710T101441023183614-pid131546-production-handoff.log` passed; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved after typed-travel rework; Phase 2 Approved | Implemented the approved Party target model, executed the 34-file deletion list, replaced per-verb usecases and publication assemblies with `PartyApplicationService`, `PartyPublishedProjection`, stateful published models, and `PartyTopBarViewModel`, kept byte-compatible service/published/top-bar seams, extracted the duplicated published listener/current store into `src/domain/shared/published/PublishedState`, deleted the old String travel factory, and accepted the reviewed 88-file / 5,740-LOC exception under the design cap. |
+| 6. Conformance review | In Flight | Pending | Pending | Pending | Record conformance evidence for design alignment, parity, byte-compatible seams, executed deletion list, zero non-seam String round-trips, shared-state extraction, and accepted metrics before close-out. |
 | 7. Close-out | Pending | Pending | Pending | Pending | Ledger update, German owner note, owner smoke checklist reference, retained proof set, and next-area transition. |
 
 ## Milestone Ledger
@@ -125,7 +125,7 @@ migration unless this ledger advances too.
 | `hex` | Pilot reference commit `3679a19e2` | Done on branch | Pending | M2 done: `hexMapEditorBehaviorHarness` and `hexTravelStateBehaviorHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 41-file / 3,701-LOC metric exception; owner smoke checklist is available. |
 | `worldplanner` | Worldplanner reference commit `f499d321d` | Done on branch | Pending | M3 done on branch: backend, UI, raw-input, and encounter harnesses are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 43-file / 3,709-LOC metric exception; owner smoke checklist is available. |
 | `creatures` | Creature reference commit `246d39267` | Done on branch | Pending | M3 done on branch: `creatureCatalogHarness` plus adjacent `encounterStateTabHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 27-file / 1,749-LOC exception; owner smoke checklist is available. |
-| `party` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.1 shell-bound dropdown route gap closed on branch; M3.2 baseline metrics are captured in `docs/project/architecture/architecture-migration-party-baseline.md`; M3.3 target design is approved in `docs/project/architecture/architecture-migration-party-target-design.md`; M3.4 no-code harness wiring-port verification is approved with frozen `partyDropdownHarness` green; current step is M3.5 implementation. |
+| `party` | Legacy surrounding code until M3 design; then pilot reference | In Flight | Pending | M3.5 done on branch: target model implemented, 34-file deletion list executed, byte-compatible seams retained, frozen `partyDropdownHarness` and `production-handoff` are green, Phase 1/Phase 2 accepted the bounded 88-file / 5,740-LOC exception, and the internal Party travel String round-trip was removed; current step is M3.6 conformance review. |
 | `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
 | `encountertable` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner UI imports only; P2 dedicated encounter-table readback harness gap remains. |
 | `encounter` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `worldPlannerEncounterHarness`, `encounterStateTabHarness`; P1 production publication route gaps remain. |
@@ -158,4 +158,4 @@ migration unless this ledger advances too.
 
 German owner status notes are maintained in
 `docs/project/architecture/architecture-migration-owner-status-notes.md`.
-Latest note: `2026-07-10 M3.4 party-wiring-port`.
+Latest note: `2026-07-10 M3.5 party-implementation`.

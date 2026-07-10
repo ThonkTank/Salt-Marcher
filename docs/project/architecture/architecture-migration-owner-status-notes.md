@@ -232,3 +232,23 @@ unabhaengige Judge haben den No-code-Wiring-Port freigegeben. Naechster
 Schritt ist M3.5: Umsetzung des genehmigten Party-Target-Designs mit
 vollstaendiger Loeschliste, byte-kompatiblen Party-Seams und unveraendertem
 Harness-Orakel.
+
+### 2026-07-10 M3.5 party-implementation
+
+Die Party-Implementierung ist abgeschlossen. Die genehmigte
+34-Datei-Loeschliste ist ausgefuehrt; die alte Usecase-, Published-State-,
+Readback- und Top-Bar-Intent-Schicht ist weg. `PartyApplicationService`
+besitzt jetzt Mutations-, Readback- und Publication-Routen direkt,
+`PartyPublishedProjection` mappt die Roster-Daten in die byte-kompatiblen
+Published Records, die sieben Published Models halten ihren Zustand selbst,
+und die Top-Bar laeuft ueber `PartyTopBarViewModel` plus
+`PartyTopBarVocabulary`. Die doppelte Published-State-Mechanik wurde als
+echter gemeinsamer Helper `PublishedState` extrahiert; der alte interne
+String-Roundtrip fuer Dungeon-Reiseziele ist entfernt. `compileJava
+compileTestJava`, Dead-Code/PMD/CPD/SpotBugs, `partyDropdownHarness`,
+Harness-Map/Topology und `production-handoff` sind gruen. Phase 1 fand
+zunaechst den String-Roundtrip, nach Rework haben Phase 1 und der
+unabhaengige Judge die Umsetzung freigegeben und die 88-Dateien-/5.740-LOC-
+Ausnahme unter der genehmigten 5.750-LOC-Grenze akzeptiert. Naechster Schritt
+ist M3.6: Conformance Review mit finalem Design-, Parity-, Seam- und
+Metric-Nachweis vor dem Close-out.
