@@ -272,34 +272,34 @@ public final class SessionPlannerCatalogHarness {
                         7L,
                         List.of(new SessionPlannerSceneTimelineProjection.LootPlaceholder(10L, "Cache")))),
                 List.of());
-        SessionPlannerTimelineMainContentModel contentModel = new SessionPlannerTimelineMainContentModel();
-        contentModel.applyLocationReferences(List.of(
+        SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
+        viewModel.applyLocationReferences(List.of(
                 new SessionPlannerSessionSnapshot.LocationReference(7L, "Old Gate"),
                 new SessionPlannerSessionSnapshot.LocationReference(10L, "Moonwell")));
-        contentModel.applySceneTimeline(projection);
+        viewModel.applySceneTimeline(projection);
         assertEquals(Integer.valueOf(1), Integer.valueOf(
-                        contentModel.projectionProperty().get().scenes().getFirst().lootPlaceholders().size()),
+                        viewModel.timelineProjectionProperty().get().scenes().getFirst().lootPlaceholders().size()),
                 "timeline model keeps loot inside the scene card");
-        assertEquals("Old Gate", contentModel.projectionProperty().get().scenes().getFirst().locationLabel(),
+        assertEquals("Old Gate", viewModel.timelineProjectionProperty().get().scenes().getFirst().locationLabel(),
                 "timeline model resolves scene location labels from World Planner locations");
         assertEquals(Integer.valueOf(2),
-                Integer.valueOf(contentModel.projectionProperty().get().locationOptions().size()),
+                Integer.valueOf(viewModel.timelineProjectionProperty().get().locationOptions().size()),
                 "timeline model exposes World Planner locations for scene selection");
-        contentModel.updateSceneDraft(1L, "Bridge Alarm", "ring the bell", 9L);
-        contentModel.applySceneTimeline(projection);
-        assertEquals("Bridge Alarm", contentModel.projectionProperty().get().scenes().getFirst().sceneTitle(),
+        viewModel.updateSceneDraft(1L, "Bridge Alarm", "ring the bell", 9L);
+        viewModel.applySceneTimeline(projection);
+        assertEquals("Bridge Alarm", viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneTitle(),
                 "timeline model keeps unsaved scene title draft across readback");
-        assertEquals("ring the bell", contentModel.projectionProperty().get().scenes().getFirst().sceneNotes(),
+        assertEquals("ring the bell", viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneNotes(),
                 "timeline model keeps unsaved scene notes draft across readback");
         assertEquals(Long.valueOf(9L),
-                Long.valueOf(contentModel.projectionProperty().get().scenes().getFirst().locationId()),
+                Long.valueOf(viewModel.timelineProjectionProperty().get().scenes().getFirst().locationId()),
                 "timeline model keeps unsaved scene location draft across readback");
         assertSceneDraftsAreSessionScoped(projection);
 
         SessionPlannerTimelineMainView view = new SessionPlannerTimelineMainView();
-        List<SessionPlannerTimelineMainViewInputEvent> events = new ArrayList<>();
-        view.onViewInputEvent(events::add);
-        view.bind(contentModel);
+        List<SessionPlannerViewModel.TimelineInput> events = new ArrayList<>();
+        view.onTimelineInput(events::add);
+        view.bind(viewModel);
         Stage stage = new Stage();
         stage.setScene(new Scene(view, 520.0, 420.0));
         stage.show();
@@ -313,7 +313,7 @@ public final class SessionPlannerCatalogHarness {
                 "scene draft edits publish a technical widget token");
         events.clear();
         button(view, "Szene speichern").fire();
-        List<SessionPlannerTimelineMainViewInputEvent> saveEvents = events.stream()
+        List<SessionPlannerViewModel.TimelineInput> saveEvents = events.stream()
                 .filter(event -> event.widgetToken() > 0L && event.sceneToken() == 1L)
                 .toList();
         assertEquals(Integer.valueOf(1), Integer.valueOf(saveEvents.size()), "scene save publishes one save event");
@@ -333,24 +333,24 @@ public final class SessionPlannerCatalogHarness {
     }
 
     private static void assertSceneDraftsAreSessionScoped(SessionPlannerSceneTimelineProjection projection) {
-        SessionPlannerTimelineMainContentModel contentModel = new SessionPlannerTimelineMainContentModel();
-        contentModel.applySetup(SessionPlannerTimelineMainContentModel.SetupState.from(
+        SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
+        viewModel.applySetup(SessionPlannerViewModel.SetupState.from(
                 sessionSnapshot(11L, "Alpha"),
                 SessionPlannerParticipantsProjection.empty()));
-        contentModel.updateSceneDraft(1L, "Alpha Draft", "alpha notes", 10L);
-        contentModel.applySceneTimeline(projection);
-        assertEquals("Alpha Draft", contentModel.projectionProperty().get().scenes().getFirst().sceneTitle(),
+        viewModel.updateSceneDraft(1L, "Alpha Draft", "alpha notes", 10L);
+        viewModel.applySceneTimeline(projection);
+        assertEquals("Alpha Draft", viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneTitle(),
                 "timeline model applies scene drafts inside the active session");
-        contentModel.applySetup(SessionPlannerTimelineMainContentModel.SetupState.from(
+        viewModel.applySetup(SessionPlannerViewModel.SetupState.from(
                 sessionSnapshot(12L, "Beta"),
                 SessionPlannerParticipantsProjection.empty()));
-        contentModel.applySceneTimeline(projection);
-        assertEquals("Gate Watch", contentModel.projectionProperty().get().scenes().getFirst().sceneTitle(),
+        viewModel.applySceneTimeline(projection);
+        assertEquals("Gate Watch", viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneTitle(),
                 "timeline model does not leak scene drafts across sessions with the same scene token");
-        assertEquals("guards count torches", contentModel.projectionProperty().get().scenes().getFirst().sceneNotes(),
+        assertEquals("guards count torches", viewModel.timelineProjectionProperty().get().scenes().getFirst().sceneNotes(),
                 "timeline model restores persisted scene notes after session switch");
         assertEquals(Long.valueOf(7L),
-                Long.valueOf(contentModel.projectionProperty().get().scenes().getFirst().locationId()),
+                Long.valueOf(viewModel.timelineProjectionProperty().get().scenes().getFirst().locationId()),
                 "timeline model restores persisted scene location after session switch");
     }
 

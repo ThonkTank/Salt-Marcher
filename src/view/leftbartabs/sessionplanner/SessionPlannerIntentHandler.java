@@ -4,7 +4,6 @@ import java.math.BigDecimal;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
-import org.jspecify.annotations.Nullable;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
 import src.domain.sessionplanner.SessionPlannerEncounterApplicationService;
 import src.domain.sessionplanner.SessionPlannerLootApplicationService;
@@ -23,7 +22,6 @@ import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
 import src.domain.sessionplanner.published.UpdateSessionEncounterSceneCommand;
-import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent;
 
 final class SessionPlannerIntentHandler {
@@ -35,11 +33,9 @@ final class SessionPlannerIntentHandler {
     private final SessionPlannerEncounterApplicationService encounters;
     private final SessionPlannerRestApplicationService rests;
     private final SessionPlannerLootApplicationService loot;
-    private final SessionPlannerControlsContentModel controlsContentModel;
-    private final CatalogCrudControlsContentModel catalogContentModel;
-    private final SessionPlannerTimelineMainContentModel timelineMainContentModel;
-    private final Map<SessionPlannerTimelineMainContentModel.TimelineWidgetKind,
-            Consumer<SessionPlannerTimelineMainViewInputEvent>> timelineActions;
+    private final SessionPlannerViewModel viewModel;
+    private final Map<SessionPlannerViewModel.TimelineWidgetKind,
+            Consumer<SessionPlannerViewModel.TimelineInput>> timelineActions;
 
     SessionPlannerIntentHandler(
             SessionPlannerApplicationService planner,
@@ -47,138 +43,131 @@ final class SessionPlannerIntentHandler {
             SessionPlannerEncounterApplicationService encounters,
             SessionPlannerRestApplicationService rests,
             SessionPlannerLootApplicationService loot,
-            SessionPlannerControlsContentModel controlsContentModel,
-            CatalogCrudControlsContentModel catalogContentModel,
-            SessionPlannerTimelineMainContentModel timelineMainContentModel
+            SessionPlannerViewModel viewModel
     ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.participants = Objects.requireNonNull(participants, "participants");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
         this.rests = Objects.requireNonNull(rests, "rests");
         this.loot = Objects.requireNonNull(loot, "loot");
-        this.controlsContentModel = Objects.requireNonNull(controlsContentModel, "controlsContentModel");
-        this.catalogContentModel = Objects.requireNonNull(catalogContentModel, "catalogContentModel");
-        this.timelineMainContentModel = Objects.requireNonNull(timelineMainContentModel, "timelineMainContentModel");
+        this.viewModel = Objects.requireNonNull(viewModel, "viewModel");
         this.timelineActions = timelineActions();
     }
 
-    void consume(SessionPlannerControlsViewInputEvent event) {
-        if (event == null || !controlsContentModel.hasCurrentSession()) {
+    void consumeAttachPlan(long planId) {
+        if (!viewModel.hasCurrentSession() || !hasPositiveId(planId)) {
             return;
         }
-        if (hasPositiveId(event.planIdToAttach())) {
-            attachEncounter(event.planIdToAttach());
-        }
+        attachEncounter(planId);
     }
 
-    void consume(SessionPlannerTimelineMainViewInputEvent event) {
-        if (event == null || !controlsContentModel.hasCurrentSession()) {
+    void consume(SessionPlannerViewModel.TimelineInput event) {
+        if (event == null || !viewModel.hasCurrentSession()) {
             return;
         }
-        SessionPlannerTimelineMainContentModel.TimelineWidgetKind widgetKind =
-                timelineMainContentModel.widgetKind(event.widgetToken());
-        Consumer<SessionPlannerTimelineMainViewInputEvent> action = timelineActions.get(widgetKind);
+        SessionPlannerViewModel.TimelineWidgetKind widgetKind = viewModel.widgetKind(event.widgetToken());
+        Consumer<SessionPlannerViewModel.TimelineInput> action = timelineActions.get(widgetKind);
         if (action != null) {
             action.accept(event);
         }
     }
 
-    private Map<SessionPlannerTimelineMainContentModel.TimelineWidgetKind,
-            Consumer<SessionPlannerTimelineMainViewInputEvent>> timelineActions() {
+    private Map<SessionPlannerViewModel.TimelineWidgetKind,
+            Consumer<SessionPlannerViewModel.TimelineInput>> timelineActions() {
         return Map.ofEntries(
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_SELECT,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.SCENE_SELECT,
                         this::selectTimelineScene),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.ALLOCATION_DECREASE,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.ALLOCATION_DECREASE,
                         event -> adjustTimelineAllocation(event, ALLOCATION_STEP.negate())),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.ALLOCATION_INCREASE,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.ALLOCATION_INCREASE,
                         event -> adjustTimelineAllocation(event, ALLOCATION_STEP)),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_MOVE_UP,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.SCENE_MOVE_UP,
                         this::moveTimelineSceneUp),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_MOVE_DOWN,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.SCENE_MOVE_DOWN,
                         this::moveTimelineSceneDown),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_REMOVE,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.SCENE_REMOVE,
                         this::removeTimelineScene),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.REST_SHORT,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.REST_SHORT,
                         event -> setTimelineRest(event, SessionPlannerRestKind.SHORT_REST)),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.REST_LONG,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.REST_LONG,
                         event -> setTimelineRest(event, SessionPlannerRestKind.LONG_REST)),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.REST_CLEAR,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.REST_CLEAR,
                         this::clearTimelineRest),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.LOOT_ADD,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.LOOT_ADD,
                         this::addTimelineLoot),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.LOOT_REMOVE,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.LOOT_REMOVE,
                         this::removeTimelineLoot),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_SAVE,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.SCENE_SAVE,
                         this::saveTimelineScene),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_DRAFT,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.SCENE_DRAFT,
                         this::updateTimelineSceneDraft),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.PARTICIPANT_ADD,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.PARTICIPANT_ADD,
                         this::addTimelineParticipant),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.PARTICIPANT_REMOVE,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.PARTICIPANT_REMOVE,
                         this::removeTimelineParticipant),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.ENCOUNTER_DAYS,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.ENCOUNTER_DAYS,
                         this::applyTimelineEncounterDays),
-                Map.entry(SessionPlannerTimelineMainContentModel.TimelineWidgetKind.SCENE_ADD,
+                Map.entry(SessionPlannerViewModel.TimelineWidgetKind.SCENE_ADD,
                         ignored -> addScene()));
     }
 
-    private void selectTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
+    private void selectTimelineScene(SessionPlannerViewModel.TimelineInput event) {
         if (hasPositiveId(event.sceneToken())) {
             selectEncounter(event.sceneToken());
         }
     }
 
-    private void adjustTimelineAllocation(SessionPlannerTimelineMainViewInputEvent event, BigDecimal delta) {
+    private void adjustTimelineAllocation(SessionPlannerViewModel.TimelineInput event, BigDecimal delta) {
         if (hasPositiveId(event.sceneToken())) {
             setEncounterAllocation(
                     event.sceneToken(),
-                    timelineMainContentModel.budgetPercentage(event.sceneToken()).add(delta));
+                    viewModel.budgetPercentage(event.sceneToken()).add(delta));
         }
     }
 
-    private void moveTimelineSceneUp(SessionPlannerTimelineMainViewInputEvent event) {
+    private void moveTimelineSceneUp(SessionPlannerViewModel.TimelineInput event) {
         if (hasPositiveId(event.sceneToken())) {
             moveEncounterUp(event.sceneToken());
         }
     }
 
-    private void moveTimelineSceneDown(SessionPlannerTimelineMainViewInputEvent event) {
+    private void moveTimelineSceneDown(SessionPlannerViewModel.TimelineInput event) {
         if (hasPositiveId(event.sceneToken())) {
             moveEncounterDown(event.sceneToken());
         }
     }
 
-    private void removeTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
+    private void removeTimelineScene(SessionPlannerViewModel.TimelineInput event) {
         if (hasPositiveId(event.sceneToken())) {
             removeEncounter(event.sceneToken());
         }
     }
 
-    private void setTimelineRest(SessionPlannerTimelineMainViewInputEvent event, SessionPlannerRestKind restKind) {
+    private void setTimelineRest(SessionPlannerViewModel.TimelineInput event, SessionPlannerRestKind restKind) {
         if (isResolvedGap(event.leftSceneToken(), event.rightSceneToken())) {
             setRestGap(event.leftSceneToken(), event.rightSceneToken(), restKind);
         }
     }
 
-    private void clearTimelineRest(SessionPlannerTimelineMainViewInputEvent event) {
+    private void clearTimelineRest(SessionPlannerViewModel.TimelineInput event) {
         if (isResolvedGap(event.leftSceneToken(), event.rightSceneToken())) {
             clearRestGap(event.leftSceneToken(), event.rightSceneToken());
         }
     }
 
-    private void addTimelineLoot(SessionPlannerTimelineMainViewInputEvent event) {
+    private void addTimelineLoot(SessionPlannerViewModel.TimelineInput event) {
         if (hasPositiveId(event.sceneToken())) {
             addLootPlaceholder(event.sceneToken());
         }
     }
 
-    private void removeTimelineLoot(SessionPlannerTimelineMainViewInputEvent event) {
+    private void removeTimelineLoot(SessionPlannerViewModel.TimelineInput event) {
         if (hasPositiveId(event.lootToken())) {
             removeLootPlaceholder(event.lootToken());
         }
     }
 
-    private void saveTimelineScene(SessionPlannerTimelineMainViewInputEvent event) {
+    private void saveTimelineScene(SessionPlannerViewModel.TimelineInput event) {
         if (hasPositiveId(event.sceneToken())) {
             updateEncounterScene(
                     event.sceneToken(),
@@ -188,9 +177,9 @@ final class SessionPlannerIntentHandler {
         }
     }
 
-    private void updateTimelineSceneDraft(SessionPlannerTimelineMainViewInputEvent event) {
+    private void updateTimelineSceneDraft(SessionPlannerViewModel.TimelineInput event) {
         if (hasPositiveId(event.sceneToken())) {
-            timelineMainContentModel.updateSceneDraft(
+            viewModel.updateSceneDraft(
                     event.sceneToken(),
                     event.sceneTitleText(),
                     event.sceneNotesText(),
@@ -198,21 +187,21 @@ final class SessionPlannerIntentHandler {
         }
     }
 
-    private void addTimelineParticipant(SessionPlannerTimelineMainViewInputEvent event) {
-        long participantToAddId = timelineMainContentModel.participantChoiceId(event.participantChoiceIndex());
+    private void addTimelineParticipant(SessionPlannerViewModel.TimelineInput event) {
+        long participantToAddId = viewModel.participantChoiceId(event.participantChoiceIndex());
         if (hasPositiveId(participantToAddId)) {
             addParticipant(participantToAddId);
         }
     }
 
-    private void removeTimelineParticipant(SessionPlannerTimelineMainViewInputEvent event) {
+    private void removeTimelineParticipant(SessionPlannerViewModel.TimelineInput event) {
         if (hasPositiveId(event.participantId())) {
             removeParticipant(event.participantId());
         }
     }
 
-    private void applyTimelineEncounterDays(SessionPlannerTimelineMainViewInputEvent event) {
-        BigDecimal encounterDays = parsePositiveDecimal(event.encounterDaysText());
+    private void applyTimelineEncounterDays(SessionPlannerViewModel.TimelineInput event) {
+        BigDecimal encounterDays = SessionPlannerVocabulary.parsePositiveDecimal(event.encounterDaysText());
         if (encounterDays != null) {
             setEncounterDays(encounterDays);
         }
@@ -220,14 +209,6 @@ final class SessionPlannerIntentHandler {
 
     private static boolean hasPositiveId(long id) {
         return id > 0L;
-    }
-
-    private static long parsePositiveLong(String raw) {
-        try {
-            return Math.max(0L, Long.parseLong(raw));
-        } catch (NumberFormatException exception) {
-            return 0L;
-        }
     }
 
     private static boolean isResolvedGap(long leftSceneToken, long rightSceneToken) {
@@ -238,14 +219,14 @@ final class SessionPlannerIntentHandler {
         if (event == null) {
             return;
         }
-        catalogContentModel.updateSelectorFilter(event.selectorFilterText());
+        viewModel.updateSelectorFilter(event.selectorFilterText());
         String stagedItemId = event.selectedItemId();
         String openItemId = event.openItemId();
         if (!stagedItemId.isBlank() || !openItemId.isBlank()) {
             String itemId = stagedItemId.isBlank() ? openItemId : stagedItemId;
-            catalogContentModel.selectItem(itemId);
+            viewModel.selectCatalogItem(itemId);
             if (!openItemId.isBlank()) {
-                selectSession(parsePositiveLong(openItemId));
+                selectSession(SessionPlannerVocabulary.parsePositiveLong(openItemId));
             }
             return;
         }
@@ -254,16 +235,17 @@ final class SessionPlannerIntentHandler {
 
     private void consumeCatalogMutation(CatalogCrudControlsViewInputEvent event) {
         if (!event.createDraftName().isBlank()) {
-            catalogContentModel.closeOperation();
+            viewModel.closeCatalogOperation();
             planner.createSession(new SessionPlannerCatalogCommand.CreateSessionCommand(event.createDraftName()));
         } else if (!event.renameItemId().isBlank() && !event.renameDraftName().isBlank()) {
-            catalogContentModel.closeOperation();
+            viewModel.closeCatalogOperation();
             planner.renameSession(new SessionPlannerCatalogCommand.RenameSessionCommand(
-                    parsePositiveLong(event.renameItemId()),
+                    SessionPlannerVocabulary.parsePositiveLong(event.renameItemId()),
                     event.renameDraftName()));
         } else if (!event.deleteConfirmItemId().isBlank()) {
-            catalogContentModel.closeOperation();
-            planner.deleteSession(new SessionPlannerCatalogCommand.DeleteSessionCommand(parsePositiveLong(event.deleteConfirmItemId())));
+            viewModel.closeCatalogOperation();
+            planner.deleteSession(new SessionPlannerCatalogCommand.DeleteSessionCommand(
+                    SessionPlannerVocabulary.parsePositiveLong(event.deleteConfirmItemId())));
         } else {
             consumeCatalogEditor(event);
         }
@@ -271,13 +253,13 @@ final class SessionPlannerIntentHandler {
 
     private void consumeCatalogEditor(CatalogCrudControlsViewInputEvent event) {
         if (event.createEditorOpened()) {
-            catalogContentModel.openCreate();
+            viewModel.openCreate();
         } else if (!event.renameEditorItemId().isBlank()) {
-            catalogContentModel.openRename(event.renameEditorItemId());
+            viewModel.openRename(event.renameEditorItemId());
         } else if (!event.deleteRequestItemId().isBlank()) {
-            catalogContentModel.openDelete(event.deleteRequestItemId());
+            viewModel.openDelete(event.deleteRequestItemId());
         } else if (event.dismissed()) {
-            catalogContentModel.closeOperation();
+            viewModel.closeCatalogOperation();
         }
     }
 
@@ -349,18 +331,6 @@ final class SessionPlannerIntentHandler {
                 sceneTitle,
                 sceneNotes,
                 locationId));
-    }
-
-    private static @Nullable BigDecimal parsePositiveDecimal(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return null;
-        }
-        try {
-            BigDecimal parsed = new BigDecimal(raw.trim().replace(',', '.'));
-            return parsed.signum() <= 0 ? null : parsed;
-        } catch (NumberFormatException exception) {
-            return null;
-        }
     }
 
 }

@@ -51,38 +51,29 @@ final class SessionPlannerBinder {
                 services.require(SessionPlannerSceneTimelineModel.class);
         SessionPlannerStatePanelModel statePanelModel =
                 services.require(SessionPlannerStatePanelModel.class);
-        SessionPlannerControlsContentModel controlsContentModel = new SessionPlannerControlsContentModel();
-        CatalogCrudControlsContentModel catalogContentModel = new CatalogCrudControlsContentModel();
-        SessionPlannerTimelineMainContentModel timelineMainContentModel = new SessionPlannerTimelineMainContentModel();
-        SessionPlannerStateContentModel stateContentModel = new SessionPlannerStateContentModel();
-        SessionPlannerContributionModel contributionModel = new SessionPlannerContributionModel(
-                controlsContentModel,
-                catalogContentModel,
-                timelineMainContentModel,
-                stateContentModel);
+        SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
+        CatalogCrudControlsContentModel catalogContentModel = viewModel.catalogContentModel();
         SessionPlannerIntentHandler intentHandler = new SessionPlannerIntentHandler(
                 planner,
                 participants,
                 encounters,
                 rests,
                 loot,
-                controlsContentModel,
-                catalogContentModel,
-                timelineMainContentModel);
+                viewModel);
         SessionPlannerControlsView controlsView = new SessionPlannerControlsView();
         CatalogCrudControlsView catalogView = new CatalogCrudControlsView();
         SessionPlannerTimelineMainView timelineView = new SessionPlannerTimelineMainView();
         SessionPlannerStateView stateView = new SessionPlannerStateView();
 
         catalogView.bind(catalogContentModel);
-        controlsView.bind(controlsContentModel);
-        timelineView.bind(timelineMainContentModel);
-        stateView.bind(stateContentModel);
+        controlsView.bind(viewModel);
+        timelineView.bind(viewModel);
+        stateView.bind(viewModel);
         catalogView.onViewInputEvent(intentHandler::consume);
-        controlsView.onViewInputEvent(intentHandler::consume);
-        timelineView.onViewInputEvent(intentHandler::consume);
+        controlsView.onAttachPlan(intentHandler::consumeAttachPlan);
+        timelineView.onTimelineInput(intentHandler::consume);
 
-        contributionModel.bindReadback(
+        viewModel.bindReadback(
                 sessionModel,
                 catalogModel,
                 participantsModel,

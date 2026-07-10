@@ -392,11 +392,7 @@ public final class SessionPlannerTimelineMainContentModel {
         }
 
         private static String restLabel(SessionPlannerRestKind restKind) {
-            return switch (restKind == null ? SessionPlannerRestKind.NONE : restKind) {
-                case NONE -> "Keine Rast";
-                case SHORT_REST -> "Kurze Rast";
-                case LONG_REST -> "Lange Rast";
-            };
+            return SessionPlannerVocabulary.restLabel(restKind);
         }
 
         private static String formatXp(int value) {

@@ -18,7 +18,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private static final String STYLE_COMPACT = "compact";
     private static final String STYLE_TEXT_SECONDARY = "text-secondary";
 
-    private Consumer<SessionPlannerControlsViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<Long> attachPlanHandler = ignored -> { };
     private final Label statusLabel = statusLabel();
     private final VBox plansBox = new VBox(6);
 
@@ -29,16 +29,16 @@ public final class SessionPlannerControlsView extends ScrollPane {
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
     }
 
-    public void onViewInputEvent(Consumer<SessionPlannerControlsViewInputEvent> handler) {
-        viewInputEventHandler = handler == null ? ignored -> { } : handler;
+    public void onAttachPlan(Consumer<Long> handler) {
+        attachPlanHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void bind(SessionPlannerControlsContentModel contentModel) {
-        if (contentModel == null) {
+    void bind(SessionPlannerViewModel viewModel) {
+        if (viewModel == null) {
             return;
         }
-        contentModel.projectionProperty().addListener((ignored, before, after) -> show(after));
-        show(contentModel.projectionProperty().get());
+        viewModel.controlsProjectionProperty().addListener((ignored, before, after) -> show(after));
+        show(viewModel.controlsProjectionProperty().get());
     }
 
     private VBox content() {
@@ -51,7 +51,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         return content;
     }
 
-    private void show(SessionPlannerControlsContentModel.Projection projection) {
+    private void show(SessionPlannerViewModel.ControlsProjection projection) {
         if (projection == null) {
             return;
         }
@@ -59,7 +59,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         showPlans(projection.availablePlans());
     }
 
-    private void showPlans(List<SessionPlannerControlsContentModel.Projection.AvailablePlanModel> plans) {
+    private void showPlans(List<SessionPlannerViewModel.ControlsProjection.AvailablePlanModel> plans) {
         if (plans.isEmpty()) {
             plansBox.getChildren().setAll(label(
                     "Keine gespeicherten Encounter-Plaene.",
@@ -70,7 +70,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         plansBox.getChildren().setAll(planCards(plans));
     }
 
-    private List<Node> planCards(List<SessionPlannerControlsContentModel.Projection.AvailablePlanModel> plans) {
+    private List<Node> planCards(List<SessionPlannerViewModel.ControlsProjection.AvailablePlanModel> plans) {
         List<Node> cards = new ArrayList<>();
         for (var plan : plans) {
             cards.add(planCard(plan));
@@ -78,7 +78,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         return cards;
     }
 
-    private Node planCard(SessionPlannerControlsContentModel.Projection.AvailablePlanModel plan) {
+    private Node planCard(SessionPlannerViewModel.ControlsProjection.AvailablePlanModel plan) {
         Button importButton = button(
                 plan.actionText(),
                 this::publishAttachPlan,
@@ -101,11 +101,7 @@ public final class SessionPlannerControlsView extends ScrollPane {
         if (event.getSource() instanceof Button button && button.getUserData() instanceof Number id) {
             planId = id.longValue();
         }
-        publish(new SessionPlannerControlsViewInputEvent(planId));
-    }
-
-    private void publish(SessionPlannerControlsViewInputEvent event) {
-        viewInputEventHandler.accept(event);
+        attachPlanHandler.accept(new SessionPlannerControlsViewInputEvent(planId).planIdToAttach());
     }
 
     private static Label label(String text, String... styleClasses) {

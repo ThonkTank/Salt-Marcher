@@ -23,15 +23,15 @@ public final class SessionPlannerStateView extends ScrollPane {
         setContent(content);
     }
 
-    public void bind(SessionPlannerStateContentModel contentModel) {
-        if (contentModel == null) {
+    void bind(SessionPlannerViewModel viewModel) {
+        if (viewModel == null) {
             return;
         }
-        contentModel.projectionProperty().addListener((ignored, before, after) -> show(after));
-        show(contentModel.projectionProperty().get());
+        viewModel.stateProjectionProperty().addListener((ignored, before, after) -> show(after));
+        show(viewModel.stateProjectionProperty().get());
     }
 
-    private void show(SessionPlannerStateContentModel.Projection projection) {
+    private void show(SessionPlannerViewModel.StateProjection projection) {
         if (projection == null) {
             return;
         }
