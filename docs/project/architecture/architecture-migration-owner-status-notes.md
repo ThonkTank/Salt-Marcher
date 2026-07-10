@@ -282,3 +282,20 @@ Phase 1 sowie der unabhaengige Judge haben den Wiring-Port freigegeben.
 Naechster Schritt ist M3.5: Umsetzung des genehmigten Creature-Target-Designs
 inklusive 9-Datei-Loeschliste, byte-kompatiblen Published-Seams und
 anschliessendem Parity-/Metric-Proof.
+
+### 2026-07-09 M3.5 creatures-implementation
+
+Die Creature-Implementierung ist abgeschlossen. Die genehmigte
+9-Datei-Loeschliste ist ausgefuehrt; die alte Usecase-, interne Repository-
+und Publication-Assembly-Schicht ist weg. `CreaturesApplicationService`
+besitzt jetzt Query-Normalisierung, CR-zu-XP-Pruefung, Lookup-Aufrufe,
+Statusauswahl und Publication direkt; `CreatureCatalogProjection` mappt die
+Lookup-Daten in die byte-kompatiblen Published Records, und die vier
+Published Models halten ihren Zustand selbst. Die einzige Data-Layer-Aenderung
+ist die genehmigte typed-sort-field Gateway-Anpassung im Creature-Mapper.
+`compileJava compileTestJava`, PMD/Dead-Code, `creatureCatalogHarness`,
+`encounterStateTabHarness` und `production-handoff` sind gruen. Phase 1 und
+der unabhaengige Judge haben die Umsetzung freigegeben und die
+27-Dateien-/1.749-LOC-Ausnahme unter der genehmigten 1.750-LOC-Grenze
+akzeptiert. Naechster Schritt ist M3.6: Conformance Review mit finalem
+Design-, Parity-, Seam- und Metric-Nachweis vor dem Close-out.

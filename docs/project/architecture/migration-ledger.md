@@ -32,11 +32,11 @@ migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M3 - Rollout wave 1 |
-| Work item | M3.5 - creatures implementation |
-| Cycle step | 5 - Implementation |
+| Work item | M3.6 - creatures conformance review |
+| Cycle step | 6 - Conformance review |
 | In-flight area | `creatures` |
-| Required next proof | Implement the approved Creature target design, execute the 9-file deletion list, keep published seams byte-compatible, and rerun the frozen `creatureCatalogHarness` plus adjacent `encounterStateTabHarness` before conformance review. |
-| Last status note | `2026-07-09 M3.4 creatures-wiring-port` |
+| Required next proof | Record final conformance evidence for the approved Creature target design: deletion list executed, byte-compatible seams preserved, frozen harnesses green, `production-handoff` green, metrics accepted including the 27-file / 1,749-LOC exception. |
+| Last status note | `2026-07-09 M3.5 creatures-implementation` |
 
 ## M0 Step Ledger
 
@@ -90,7 +90,8 @@ migration unless this ledger advances too.
 | 2. Baseline metrics | Done on branch | `66d3b773d` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` passed; Phase 1 Approved after rework; Phase 2 Approved | Baseline artifact: `docs/project/architecture/architecture-migration-creatures-baseline.md`; full roadmap set is 90 files / 4,587 physical LOC; product subset is 35 files / 2,060 physical LOC; dominant Creature-owned chains are 7 hops to first publication; 7 product/published forwarding or proxy candidates plus 2 data candidates; 4 product String boundary families. |
 | 3. Target design | Done on branch | `129a4679f` | Pending PR merge | `./gradlew checkDocumentationEnforcement --console=plain` passed, 2026-07-09; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved after rework; Phase 2 Approved | Approved design artifact: `docs/project/architecture/architecture-migration-creatures-target-design.md`; names target classes, representative call chains, 9-file deletion list, byte-compatible seams, frozen Creature and adjacent Encounter state-tab inventory, wiring-port boundary, untouched-list, and metric targets/exceptions. |
 | 4. Harness wiring port | Done on branch | `c698d770c` | Pending PR merge | `./gradlew creatureCatalogHarness encounterStateTabHarness --console=plain` passed with 9 + 2 proof items, 2026-07-09; first `tools/gradle/run-staged-verification.sh focused-handoff --path src/domain/creatures --area creatures` attempt failed before task execution on Gradle wildcard-IP startup; `env -u CODEX_THREAD_ID tools/gradle/run-staged-verification.sh focused-handoff --path src/domain/creatures --area creatures` passed with retained log `build/gradle-run-logs/20260710T010654236508275-pid1300434-focused-handoff.log`; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved; Phase 2 Approved | `EncounterStateTabHarness` no longer constructs the Creature usecase/repository stack directly; it registers a no-op `CreatureCatalogPort` and routes through `CreaturesServiceContribution`. `CreatureCatalogHarness` needed no wiring change, and Encounter proof IDs, fixture values, visible text, and assertion labels stayed frozen. |
-| 5. Implementation | In Flight | Pending | Pending | Pending | Execute the approved Creature target design and deletion list while preserving byte-compatible Creature published seams and frozen harness scenarios/assertions. |
+| 5. Implementation | Done on branch | `246d39267` | Pending PR merge | `./gradlew compileJava compileTestJava --console=plain` passed, 2026-07-09; `./gradlew pmdStrictMain checkNoDeadCode --console=plain` passed, 2026-07-09; `./gradlew creatureCatalogHarness encounterStateTabHarness --console=plain` passed with 9 + 2 proof items, 2026-07-09; `tools/gradle/run-staged-verification.sh production-handoff` retained log `build/gradle-run-logs/20260710T015224616262533-pid1316900-production-handoff.log` passed; `git diff --check` and `git diff --cached --check` passed; Phase 1 Approved; Phase 2 Approved | Implemented the approved Creature target model, executed the 9-file deletion list, moved lookup/status/projection/publication behavior into `CreaturesApplicationService`, `CreatureCatalogProjection`, and stateful published models, kept byte-compatible published seams, used the named typed sort-field data mapper adaptation, and accepted the reviewed 27-file / 1,749-LOC exception under the design cap. |
+| 6. Conformance review | In Flight | Pending | Pending | Pending | Record conformance evidence for design alignment, parity, byte-compatible seams, executed deletion list, and accepted metrics before close-out. |
 
 ## Milestone Ledger
 
@@ -110,7 +111,7 @@ migration unless this ledger advances too.
 | --- | --- | --- | --- | --- |
 | `hex` | Pilot reference commit `3679a19e2` | Done on branch | Pending | M2 done: `hexMapEditorBehaviorHarness` and `hexTravelStateBehaviorHarness` are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 41-file / 3,701-LOC metric exception; owner smoke checklist is available. |
 | `worldplanner` | Worldplanner reference commit `f499d321d` | Done on branch | Pending | M3 done on branch: backend, UI, raw-input, and encounter harnesses are green with frozen scenarios; Phase 1 and Phase 2 accepted the bounded 43-file / 3,709-LOC metric exception; owner smoke checklist is available. |
-| `creatures` | Approved design `architecture-migration-creatures-target-design.md`; pilot reference | In Flight | Pending | M3.4 done on branch: `EncounterStateTabHarness` now uses the service-registry plus `CreatureCatalogPort` seam, `creatureCatalogHarness` needed no wiring change, and both selected harnesses are green with frozen scenarios/assertions; current step is M3.5 implementation. |
+| `creatures` | Approved design `architecture-migration-creatures-target-design.md`; pilot reference | In Flight | Pending | M3.5 done on branch: target model implemented, deletion list executed, byte-compatible seams retained, frozen harnesses and `production-handoff` are green, and Phase 1/Phase 2 accepted the bounded 27-file / 1,749-LOC exception; current step is M3.6 conformance review. |
 | `party` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: `partyDropdownHarness` plus travel-adjacent imports; P1 shell-bound dropdown route gap remains. |
 | `sessionplanner` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: catalog and shell-layout harnesses; no registered M1.1 gap. |
 | `encountertable` | Legacy surrounding code until M3 design; then pilot reference | Pending | Pending | M1.1 inventory: adjacent worldplanner UI imports only; P2 dedicated encounter-table readback harness gap remains. |
@@ -144,4 +145,4 @@ migration unless this ledger advances too.
 
 German owner status notes are maintained in
 `docs/project/architecture/architecture-migration-owner-status-notes.md`.
-Latest note: `2026-07-09 M3.4 creatures-wiring-port`.
+Latest note: `2026-07-09 M3.5 creatures-implementation`.
