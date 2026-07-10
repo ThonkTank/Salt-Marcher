@@ -274,6 +274,23 @@ und liest danach `EncounterTableCatalogModel` und `EncounterTableCandidatesModel
 zurueck. Die eingefrorenen Proof-Items decken authored summary lookup,
 weighted candidate lookup, leere Auswahl, XP-Ceiling inklusive `maximumXp <= 0`
 und Storage-Error-Publication ab. Harness-Topology, Harness-Map, Focused-
-Handoff fuer `src/domain/encountertable`, Dokumentationsgate und Phase 2 sind
-gruen; Phase 1 prueft nach einem Ledger-Wording-Fund erneut. Naechster Schritt
-ist M3.2: Encounter-Table-Baseline-Metriken vor dem Target-Design.
+Handoff fuer `src/domain/encountertable`, Dokumentationsgate, Phase 1 nach
+Ledger-Wording-Rework und Phase 2 sind gruen. Naechster Schritt ist M3.2:
+Encounter-Table-Baseline-Metriken vor dem Target-Design.
+
+### 2026-07-10 M3.2 encountertable-baseline-metrics
+
+Die Encounter-Table-Baseline ist in
+`docs/project/architecture/architecture-migration-encountertable-baseline.md`
+festgehalten. Der voll reproduzierbare Java-Schnitt umfasst 28 Dateien mit
+954 physischen LOC; die normale M3-Produktstruktur ohne Data-Layer umfasst
+18 Dateien mit 558 LOC. Der Bereich ist ein read-only Referenzkatalog ohne
+eigene Table-Entry-Mutation; deshalb misst die Baseline Publication- und
+Readback-Ketten. Die dominanten Encounter-Table-Ketten liegen bei 5 Hops bis
+zur ersten Published-State-Ersetzung und bei 7 Hops inklusive fremdem
+Catalog-, Worldplanner- oder Encounter-Readback. Vier Produkt-/Published-
+Forwarding-Kandidaten, zwei Data-Kandidaten und eine produktive
+String-Grenzfamilie sind konkret belegt. Dokumentationsgate, `git diff
+--check`, Phase 1 und der unabhaengige Judge sind gruen. Naechster Schritt ist
+M3.3 mit judge-geprueftem Encounter-Table-Target-Design; es wurde noch keine
+Wiring- oder Implementierungsarbeit begonnen.
