@@ -8,18 +8,12 @@ area before any wiring-port or implementation commit.
 
 ## Scope
 
-This design covers the M3 Encounter product surface:
-
-- `src/domain/encounter`
-- `src/view/statetabs/encounter`
-
-The baseline surface is 191 product Java files and 12,737 physical LOC. The
-full reproducible Encounter count is 202 Java files and 13,216 physical LOC
-when `src/data/encounter` is included
-(`docs/project/architecture/architecture-migration-encounter-baseline.md:65`).
-Data-layer code remains outside the normal M3 migration surface unless a
-gateway signature adaptation is explicitly named by this design. No such data
-gateway adaptation is part of this design.
+This design covers `src/domain/encounter` and `src/view/statetabs/encounter`.
+The baseline surface is 191 product Java files / 12,737 physical LOC; the full
+reproducible count is 202 files / 13,216 LOC when `src/data/encounter` is
+included (`docs/project/architecture/architecture-migration-encounter-baseline.md:65`).
+Data-layer code remains outside M3 unless this design names a gateway signature
+adaptation; it names none.
 
 This design is the step-3 artifact required by the roadmap. It does not permit
 implementation or harness scenario/assertion changes. The M3.4 wiring-port
@@ -28,39 +22,28 @@ needed to run the frozen Encounter harness scenarios against the old behavior.
 
 ## Non-Negotiable Constraints
 
-- Behavior parity is absolute. Any visible behavior change in a migration pass
-  is a defect. Pre-existing bugs are preserved and filed as separate R2 issues.
-- No questions to the owner. Never wait on the owner; the acceptance window
-  never blocks the pipeline. Decide yourself, journal the reasoning.
-- No security analysis. No pause/throttle/stop mechanisms. Git history plus
-  revert is the safety model.
-- Harness scenarios and assertions are frozen; only wiring may be ported, in a
-  separate prior commit.
+- Behavior parity is absolute. Any visible behavior change in a migration pass is a defect. Pre-existing bugs are preserved and filed as separate R2 issues.
+- No questions to the owner. Never wait on the owner; the acceptance window never blocks the pipeline. Decide yourself, journal the reasoning.
+- No security analysis. No pause/throttle/stop mechanisms. Git history plus revert is the safety model.
+- Harness scenarios and assertions are frozen; only wiring may be ported, in a separate prior commit.
 
 ## Current Defect
 
-The Encounter aggregate and generation algorithms are not the defect.
-`EncounterSession` already owns builder state, current mode, roster mutation,
-initiative, combat turns, combat resolution, saved-plan application, and XP
-award behavior (`src/domain/encounter/model/session/EncounterSession.java:36`).
-The generation package owns real search, draft assembly, difficulty math,
-tuning, and World Planner source constraints
-(`src/domain/encounter/model/generation/EncounterDraftGenerationModel.java:1`,
-`src/domain/encounter/model/generation/helper/EncounterAutoTuningHelper.java:1`).
+The Encounter aggregate and generation algorithms are not the defect:
+`EncounterSession` owns builder state, mode, roster mutation, initiative,
+combat turns, combat resolution, saved-plan application, and XP award behavior,
+while the generation package owns search, draft assembly, difficulty math,
+tuning, and World Planner source constraints.
 
 The defect is the role stack around those models. State-tab and foreign-area
-actions currently pass through an intent handler, command-code conversion,
-application usecases, session usecase wrappers, usecase adapter repositories,
-plan publication usecases, published-state repository interfaces, many
-`*ServiceAssembly` projection/readback classes, and proxy published models
-before observable publication. The baseline measured 13 meaningful hops to
-first Encounter state publication for generation and saved-plan readback,
-8 hops for combat progression, 6 hops for plan-budget refresh, 10
+actions currently pass through intent handling, command-code conversion,
+application/session usecases, usecase adapter repositories, plan publication
+usecases, published-state repository interfaces, many `*ServiceAssembly`
+projection/readback classes, and proxy published models before observable
+publication. The baseline measured 13 meaningful hops for generation and
+saved-plan readback, 8 for combat, 6 for plan-budget refresh, 10
 product/published forwarding or proxy candidates plus 2 data candidates, and
-3 product String boundary families
-(`docs/project/architecture/architecture-migration-encounter-baseline.md:77`,
-`docs/project/architecture/architecture-migration-encounter-baseline.md:117`,
-`docs/project/architecture/architecture-migration-encounter-baseline.md:146`).
+3 product String boundary families.
 
 ## Target Class List
 
@@ -318,18 +301,14 @@ file-count target is met exactly; the original 9,500 LOC exception cap was too
 low for the approved target shape because most remaining code is retained
 behavior or byte-compatible public surface, not the role stack being removed.
 
-The amended cap is 11,400 physical LOC for this area only. This cap is
-review-owned and must be remeasured during M3.6 conformance review. It is
-accepted only with the following local-evidence breakdown:
-
-| Group | Files / physical LOC | Primary reason retained |
-| --- | ---: | --- |
-| Root target/composition classes (`src/domain/encounter/*.java`) | 8 / 1,769 | Approved target classes replacing service assemblies, publication wrappers, foreign readback repositories, and usecase adapters. Largest classes are `EncounterForeignFacts` (526), `EncounterProjection` (479), `EncounterApplicationService` (225), and `EncounterPlanGateway` (224). |
-| Published seams (`src/domain/encounter/published/**`) | 19 / 1,086 | Byte-compatible public records, commands, statuses, and state models consumed by views, Session Planner, World Planner, Creature detail, Encounter Table, and harnesses. Largest classes are `ApplyEncounterStateCommand` (359) and `EncounterStateSnapshot` (247). |
-| Session model (`src/domain/encounter/model/session/**`) | 50 / 2,673 | Retained aggregate and combat/session behavior model. The migration removes role wrappers around this model, but rewriting the aggregate/combat internals would be a behavior pass, not an architecture pass. |
-| Generation model (`src/domain/encounter/model/generation/**`) | 44 / 2,837 | Retained search, tuning, draft assembly, scoring, role classification, and difficulty math behavior. `EncounterGenerator` replaces the old usecase stack but the algorithm helpers remain behavior-bearing. |
-| Plan/reference model (`src/domain/encounter/model/plan/**`, `src/domain/encounter/model/reference/**`) | 10 / 333 | Retained plan repository seam and Encounter-owned foreign fact request/reference values. |
-| State-tab views (`src/view/statetabs/encounter/**`) | 9 / 2,637 | JavaFX layout classes remain to preserve visible state-tab behavior. `EncounterStateViewModel` replaces the content-model/input-event/intent-handler stack, but the view layout code is behavior-facing and not compressed for metrics. |
+The amended cap is 11,400 physical LOC for this area only, review-owned, and
+remeasured during M3.6 conformance review. It is accepted only with this
+local-evidence breakdown: root target/composition classes 8 files / 1,769 LOC;
+byte-compatible published seams 19 / 1,086; retained session model 50 / 2,673;
+retained generation model 44 / 2,837; retained plan/reference model 10 / 333;
+state-tab JavaFX views 9 / 2,637. These groups remain because they carry
+approved target composition, public compatibility, aggregate/combat behavior,
+generation behavior, repository/request seams, or visible layout behavior.
 
 This amendment does not change target classes, call chains, seams, harness
 scope, or behavior. It only amends the LOC cap after implementation evidence
