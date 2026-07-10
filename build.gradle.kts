@@ -498,6 +498,7 @@ val searchFilterControlsHarnessDataDir = layout.buildDirectory.dir("search-filte
 val partyDropdownHarnessDataDir = layout.buildDirectory.dir("party-dropdown-data")
 val hexMapEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-map-editor-behavior-data")
 val hexTravelStateBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-travel-state-behavior-data")
+val encounterStateTabHarnessDataDir = layout.buildDirectory.dir("encounter-state-tab-data")
 val encounterTableReadbackHarnessDataDir = layout.buildDirectory.dir("encounter-table-readback-data")
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
@@ -657,6 +658,13 @@ behaviorHarnesses.javaExec("encounterStateTabHarness") {
         classpath = sourceSets["test"].runtimeClasspath
         mainClass.set("src.view.statetabs.encounter.EncounterStateTabHarness")
         outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = encounterStateTabHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
     }
 }
 
