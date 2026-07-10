@@ -346,3 +346,19 @@ Loeschliste, byte-kompatiblen Seams und eingefrorenen Harness-Orakeln.
 
 Der Encounter-Zyklus ist abgeschlossen. Referenzstand ist `7ec1f25e3`; die
 61-Datei-Loeschliste ist ausgefuehrt, `PublishedState` wird strukturell geteilt, und `CombatantId` laeuft intern typed statt als umformulierter String-Check. Der retained Static/Harness-Proof, `production-handoff`, Phase 1 und Phase 2 sind gruen; die Metrik liegt bei 140 Dateien / 11.340 LOC unter der genehmigten 11.400-Grenze. Der Owner-Smoke steht in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`. Naechster Schritt ist M4.1 `dungeon-authored-core` Harness Check/Closure.
+
+### 2026-07-10 M4.1 dungeon-authored-wiring-port
+
+Der Dungeon-Authored-Core-Wiring-Port ist in Commit `bfa974809`
+abgeschlossen. `DungeonAuthoredApplicationService`, `DungeonAuthoredPublication`
+und `DungeonAuthoredPublishedState` bilden jetzt die Kompatibilitaetsgrenze;
+Feature-Runtime, Shell-Binding, Travel/Readback-Helfer und die direkten
+Invariant-Harnesses laufen ueber diese neue Grenze. Die eingefrorenen
+Harness-Szenarien, Proof-Labels, sichtbaren Texte, Fixtures und Assertions
+bleiben unveraendert. Alte Usecase-Dateien bleiben fuer M4.1 Step 5 erhalten;
+nur die nicht-Usecase Legacy-State-Assembly wurde entfernt, weil der neue
+State-Owner sie strukturell ersetzt. Static-Proof, CPD, Dead-Code, alle
+retained Dungeon-Harness-Gruppen, Render-Parity, focused handoff, Phase 1 und
+der unabhaengige Judge sind gruen. Naechster Schritt ist M4.1 Implementation:
+die genehmigte Loeschliste ausfuehren und die Facade intern von den alten
+Wrappern auf direkte authored-core Service-Logik umstellen.
