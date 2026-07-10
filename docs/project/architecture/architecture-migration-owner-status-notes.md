@@ -218,3 +218,17 @@ benannt. `git diff --check`, `git diff --cached --check`,
 gruen. Naechster Schritt ist M3.4: Harness-Wiring-Port-Verifikation; nach
 Designstand ist kein Harness-Code-Port erwartet, solange keine
 Deletion-List-Importe im eingefrorenen Harness auftauchen.
+
+### 2026-07-10 M3.4 party-wiring-port
+
+Der Party-Wiring-Port ist als No-code-Schritt abgeschlossen.
+`partyDropdownHarness` bindet bereits die echte `PartyTopBarContribution` ueber
+`ShellRuntimeContext` und `ShellSlot.TOP_BAR`, verwendet die erhaltenen
+Published Models und enthaelt keine Referenzen auf die 34
+Deletion-List-Klassen. Die eingefrorenen Szenarien und Assertions wurden nicht
+geaendert. `partyDropdownHarness`, Harness-Map/Topology und der
+Focused-Handoff fuer `src/view/dropdowns/party` sind gruen; Phase 1 und der
+unabhaengige Judge haben den No-code-Wiring-Port freigegeben. Naechster
+Schritt ist M3.5: Umsetzung des genehmigten Party-Target-Designs mit
+vollstaendiger Loeschliste, byte-kompatiblen Party-Seams und unveraendertem
+Harness-Orakel.
