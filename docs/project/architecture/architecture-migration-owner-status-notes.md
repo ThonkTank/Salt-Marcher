@@ -345,3 +345,20 @@ Die gepruefte Ausnahme fuer 16 Dateien / 433 LOC bleibt unter der
 Design-Obergrenze von 460 LOC und ist durch byte-kompatible Records,
 Data-Carrier, Registry-Seams und Compatibility-Konstruktoren begruendet.
 Naechster Schritt ist M3.6: Conformance Review gegen den committeten Stand.
+
+### 2026-07-10 M3.6 encountertable-conformance-review
+
+Der Encounter-Table-Conformance-Review ist gruen. Phase 1 und der
+unabhaengige Judge haben den committeten Implementierungsstand `be5b77c8a`
+gegen das genehmigte Target-Design, die eingefrorenen Harness-Orakel, die
+Loeschliste und die Metrikziele geprueft. Die drei Altdateien fuer
+Usecases und internes Published-State-Repository sind entfernt, es gibt keine
+stalen Source- oder Test-Referenzen darauf, und interne Statuswerte laufen
+nicht mehr als Strings durch das Product-Code-Protokoll. Die
+`PublishedState`-Nutzung wurde als echte strukturelle Entdopplung bestaetigt,
+nicht als CPD-Umformulierung. Der akzeptierte Stand hat 16 Java-Dateien und
+433 LOC; die Ausnahme liegt unter der Design-Grenze von 460 LOC und ist
+durch byte-kompatible Published Records, Data-Carrier, Registry-Seams und
+Compatibility-Konstruktoren begruendet. Der selektive Static/Harness-Proof,
+der Production-Handoff und der saubere Dokumentationsnachweis fuer den
+committeten Stand sind gruen. Naechster Schritt ist M3.7 Close-out.
