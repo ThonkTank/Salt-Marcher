@@ -147,4 +147,4 @@ the fixed footer while oversized page bodies scroll.
 
 - [Encounter Feature Spec](docs/encounter/requirements/requirements-encounter.md:1)
 - [Encounter Domain Model](docs/encounter/domain/domain-encounter.md:1)
-- [View Layer Standard](docs/project/architecture/patterns/view-layer.md:1)
+- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)

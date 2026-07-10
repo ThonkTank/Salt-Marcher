@@ -18,7 +18,7 @@ generic maps feature.
 It is not target feature-runtime conformance for the live Dungeon Editor
 view/shell/UI seam. Target raw-input UI, shell binding, runtime render frame,
 and typed raw-input ownership remains in
-[Feature Runtime Architecture](docs/project/architecture/patterns/feature-runtime.md:1).
+[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1).
 
 Owners:
 

@@ -32,8 +32,8 @@ generation, campaign clocks, or encounter simulation.
   --console=plain` covers Hex map readback plus the travel readback and move
   route.
 - `Mechanically Enforced`: `./gradlew hexTravelStateBehaviorHarness
-  --console=plain` covers compact `Reise` state-tab binding from
-  `HexTravelSnapshot`.
+  --console=plain` covers compact `Reise` state-tab binding from the
+  production Hex/Party publication route into `HexTravelModel`.
 - `Mechanically Enforced`: `./gradlew checkDocumentationEnforcement
   --console=plain` for documentation structure after docs-only changes.
 
@@ -50,7 +50,7 @@ generation, campaign clocks, or encounter simulation.
 | `HEX-TRAVEL-007` | Marker draft preservation | Marker draft name, type, and note survive a `Reisegruppe` tool refresh on the combined Hex surface. | Ready |
 | `HEX-TRAVEL-008` | Render-cap safety | Hex map readback above the current Canvas render radius shows a clear non-rendered state and does not project tile or hit data into Canvas backing storage. | Ready |
 | `HEX-TRAVEL-STATE-001` | Empty compact state | The runtime `Reise` state tab shows an explicit empty Hex travel state when no approved Hex readback exists. | Ready |
-| `HEX-TRAVEL-STATE-002` | Active compact state | The runtime `Reise` state tab binds compact Hex travel readback for location, status, context, weather, time of day, pace, and hint. | Ready |
+| `HEX-TRAVEL-STATE-002` | Active compact state | The runtime `Reise` state tab binds compact Hex travel readback from production Hex/Party services for location, status, context, unavailable weather/time values, normal pace, and interaction hint. | Ready |
 
 ## Known Gaps
 

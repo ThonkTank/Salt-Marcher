@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-26
+Last Reviewed: 2026-07-09
 Source of Truth: Verification strategy and harness ownership for World
 Planner documentation and later production behavior.
 
@@ -77,11 +77,12 @@ Mechanically enforced for the current Encounter integration slice:
 - `./gradlew worldPlannerEncounterHarness --console=plain`
 
 The current implementation routes Encounter Planner faction and location IDs
-through `EncounterBuilderInputs`, resolves World Planner faction/location
-sources at generation time, intersects explicit table choices with
-World Planner source tables, enforces finite statblock stock caps in draft
-enumeration, and preserves selected World Planner NPC identity through
-Encounter result publication.
+through `EncounterBuilderInputs`, seeds World Planner state through the
+production application service and persistence route, resolves World Planner
+faction/location sources at generation time, intersects explicit table choices
+with World Planner source tables, enforces finite statblock stock caps in
+draft enumeration, and preserves selected World Planner NPC identity through
+published `EncounterStateModel` result state.
 
 Combat lifecycle harness proof is required for:
 
@@ -113,12 +114,13 @@ Mechanically enforced for the current left-bar UI slice:
 - `./gradlew worldPlannerUiHarness --console=plain`
 
 The UI harness proves the World Planner contribution bind route can create
-NPCs, update NPC notes, toggle NPC lifecycle, create factions, link NPC
-membership, set faction inventory limits, create locations, link factions, link
-encounter tables, and render selected NPC detail notes from domain readback.
-The World Planner view also exposes a selected-NPC action that adds the NPC to
-the Encounter roster through the Encounter public boundary while carrying its
-World Planner identity.
+NPCs, update NPC notes, toggle NPC lifecycle, send the selected NPC to the
+Encounter roster through the visible `Zum Encounter` button, create factions,
+link NPC membership, set faction inventory limits, create locations, link
+factions, link encounter tables, and render selected NPC detail notes from
+domain readback. The Encounter handoff assertion reads the published
+`EncounterStateModel` and checks both the selected statblock id and the World
+Planner NPC identity.
 
 ## Known Harness Gaps
 

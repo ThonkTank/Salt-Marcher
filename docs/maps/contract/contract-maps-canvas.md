@@ -25,7 +25,7 @@ domain truth.
 
 This is not the canonical target reusable-slotcontent contract. The canonical
 reusable-slotcontent target lives only in the
-[View Layer Standard](docs/project/architecture/patterns/view-layer.md:1).
+[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1).
 The `MapRenderScene` and `CanvasPointerEvent` seams below describe removed
 implementation boundary debt relative to that owner.
 
