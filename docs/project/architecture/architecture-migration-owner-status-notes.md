@@ -341,3 +341,8 @@ Wiring-Port freigegeben. Es wurde kein CPD-Treffer durch Umformulierung
 umgangen und keine Produktions-Loeschliste vorgezogen. Naechster Schritt ist
 M3.5: Umsetzung des genehmigten Encounter-Target-Designs mit vollstaendiger
 Loeschliste, byte-kompatiblen Seams und eingefrorenen Harness-Orakeln.
+
+### 2026-07-10 M3.7 encounter-close-out
+
+Der Encounter-Zyklus ist abgeschlossen. Referenzstand ist `7ec1f25e3`; die
+61-Datei-Loeschliste ist ausgefuehrt, `PublishedState` wird strukturell geteilt, und `CombatantId` laeuft intern typed statt als umformulierter String-Check. Der retained Static/Harness-Proof, `production-handoff`, Phase 1 und Phase 2 sind gruen; die Metrik liegt bei 140 Dateien / 11.340 LOC unter der genehmigten 11.400-Grenze. Der Owner-Smoke steht in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`. Naechster Schritt ist M4.1 `dungeon-authored-core` Harness Check/Closure.
