@@ -30,18 +30,48 @@ import src.data.sessionplanner.model.SessionEncounterRecord;
 import src.data.sessionplanner.model.SessionLootPlaceholderRecord;
 import src.data.sessionplanner.model.SessionPlanRecord;
 import src.data.sessionplanner.model.SessionPlanSnapshotRecord;
+import src.domain.encounter.EncounterApplicationService;
+import src.domain.encounter.application.ApplyEncounterStateUseCase;
+import src.domain.encounter.model.plan.EncounterPlanBudgetLoadResult;
+import src.domain.encounter.model.plan.SavedEncounterPlansLoadResult;
+import src.domain.encounter.model.plan.repository.EncounterPlanPublishedStateRepository;
+import src.domain.encounter.model.plan.usecase.PublishEncounterPlanBudgetUseCase;
+import src.domain.encounter.model.plan.usecase.PublishEncounterSavedPlansUseCase;
+import src.domain.encounter.model.session.EncounterSessionPublicationData;
+import src.domain.encounter.model.session.repository.EncounterSessionPublishedStateRepository;
+import src.domain.encounter.model.session.usecase.PublishEncounterSessionUseCase;
+import src.domain.encounter.model.session.usecase.UpdateEncounterBuilderInputsUseCase;
+import src.domain.encounter.published.EncounterPlanBudgetModel;
+import src.domain.encounter.published.EncounterPlanBudgetResult;
+import src.domain.encounter.published.EncounterPlanBudgetStatus;
+import src.domain.encounter.published.EncounterPlanBudgetSummary;
+import src.domain.encounter.published.SavedEncounterPlanListModel;
+import src.domain.encounter.published.SavedEncounterPlanListResult;
+import src.domain.encounter.published.SavedEncounterPlanStatus;
+import src.domain.encounter.published.SavedEncounterPlanSummary;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.CreateCharacterCommand;
+import src.domain.party.published.MembershipState;
 import src.domain.sessionplanner.model.session.EncounterDays;
 import src.domain.sessionplanner.model.session.SessionPlan;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCatalogSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
+import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
+import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SessionPlannerSceneTimelineProjection;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsProjection;
 import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
+import src.domain.worldplanner.WorldPlannerApplicationService;
+import src.domain.worldplanner.published.CreateWorldLocationCommand;
+import src.domain.worldplanner.published.WorldLocationSummary;
+import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
 public final class SessionPlannerCatalogHarness {
 
     private static final int AWAIT_SECONDS = 60;
+    private static final long SAVED_ENCOUNTER_PLAN_ID = 501L;
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
 
     private SessionPlannerCatalogHarness() {
@@ -61,6 +91,7 @@ public final class SessionPlannerCatalogHarness {
 
     private static void runHarness() {
         ServiceRegistry services = services();
+        long locationId = seedLocation(services);
         ShellRuntimeContext context = new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, services);
         ShellBinding binding = new SessionPlannerContribution().bind(context);
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
@@ -70,6 +101,7 @@ public final class SessionPlannerCatalogHarness {
         SessionPlannerCurrentSessionModel current = services.require(SessionPlannerCurrentSessionModel.class);
         src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel sceneTimeline =
                 services.require(src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel.class);
+        SessionPlannerParticipantsModel participants = services.require(SessionPlannerParticipantsModel.class);
 
         Stage stage = new Stage();
         HBox root = new HBox(controls, main, state);
@@ -148,6 +180,14 @@ public final class SessionPlannerCatalogHarness {
         assertEquals("Gamma", current.current().session().displayName(), "create after delete-last selects Gamma");
         assertTrue(afterCreatePostDelete.sessions().stream().anyMatch(session -> "Gamma".equals(session.displayName())),
                 "create after delete-last publishes Gamma");
+        assertProductionRouteTimelineInteractions(
+                services,
+                controls,
+                main,
+                current,
+                participants,
+                sceneTimeline,
+                locationId);
     }
 
     private static void createSession(Parent controls, String name) {
@@ -325,6 +365,141 @@ public final class SessionPlannerCatalogHarness {
                 "legacy loot without encounter id loads into the first encounter");
     }
 
+    private static void assertProductionRouteTimelineInteractions(
+            ServiceRegistry services,
+            Parent controls,
+            Parent main,
+            SessionPlannerCurrentSessionModel current,
+            SessionPlannerParticipantsModel participants,
+            src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel sceneTimeline,
+            long locationId
+    ) {
+        seedActiveParty(services);
+        encounterDaysField(main).setText("1");
+        button(main, "Setzen").fire();
+        layout(main);
+        comboBoxContaining(main, "Cora - Level 4");
+
+        comboBoxByPrompt(main, "Spieler").getSelectionModel().selectFirst();
+        button(main, "Hinzufuegen").fire();
+        layout(main);
+        assertEquals(Integer.valueOf(1), Integer.valueOf(participants.current().participants().size()),
+                "participant add through setup strip publishes one participant");
+        assertEquals("Cora", participants.current().participants().getFirst().name(),
+                "participant add through setup strip resolves active party member");
+        assertTrue(hasLabel(main, "Cora"), "participant add renders selected player");
+        button(main, "X").fire();
+        layout(main);
+        assertEquals(Integer.valueOf(0), Integer.valueOf(participants.current().participants().size()),
+                "participant remove through setup strip publishes empty participants");
+
+        button(controls, "An Session anhaengen").fire();
+        layout(main);
+        button(controls, "An Session anhaengen").fire();
+        layout(main);
+        SessionPlannerSceneTimelineProjection afterAttach = sceneTimeline.current();
+        assertEquals(Integer.valueOf(2), Integer.valueOf(afterAttach.sessionScenes().size()),
+                "saved encounter attach through controls creates two scene cards");
+        assertEquals(Long.valueOf(SAVED_ENCOUNTER_PLAN_ID),
+                Long.valueOf(afterAttach.sessionScenes().getFirst().linkedEncounterPlanId()),
+                "saved encounter attach publishes linked plan id");
+        assertTrue(hasLabel(main, "Ash Gate Ambush"), "saved encounter attach renders linked plan name");
+
+        long firstScene = afterAttach.sessionScenes().get(0).sceneToken();
+        long secondScene = afterAttach.sessionScenes().get(1).sceneToken();
+        textField(main, "Szenentitel").setText("Gate Alarm");
+        textArea(main, "Szenennotizen").setText("ring twice");
+        selectComboBoxItem(main, "#" + locationId + " | Old Gate");
+        button(main, "Szene speichern").fire();
+        layout(main);
+        SessionPlannerSceneTimelineProjection afterSave = sceneTimeline.current();
+        assertEquals("Gate Alarm", afterSave.sessionScenes().getFirst().sceneTitle(),
+                "scene save through card stores title");
+        assertEquals("ring twice", afterSave.sessionScenes().getFirst().sceneNotes(),
+                "scene save through card stores notes");
+        assertEquals(Long.valueOf(locationId), Long.valueOf(afterSave.sessionScenes().getFirst().locationId()),
+                "scene save through card stores location id");
+        assertTrue(hasLabel(main, "Old Gate"), "scene save renders saved location label");
+
+        buttons(main, "Loot-Platzhalter").getFirst().fire();
+        layout(main);
+        assertEquals(Integer.valueOf(1),
+                Integer.valueOf(sceneTimeline.current().sessionScenes().getFirst().lootPlaceholders().size()),
+                "loot add through scene card publishes placeholder");
+        assertTrue(hasLabel(main, "Loot-Platzhalter 1"), "loot add renders placeholder label");
+        button(main, "Entfernen").fire();
+        layout(main);
+        assertEquals(Integer.valueOf(0),
+                Integer.valueOf(sceneTimeline.current().sessionScenes().getFirst().lootPlaceholders().size()),
+                "loot remove through scene card clears placeholder");
+
+        buttons(main, "+10%").getFirst().fire();
+        layout(main);
+        assertEquals("60", sceneTimeline.current().sessionScenes().getFirst()
+                        .budgetPercentage().stripTrailingZeros().toPlainString(),
+                "allocation increase through scene card raises first scene");
+        buttons(main, "-10%").getFirst().fire();
+        layout(main);
+        assertEquals("50", sceneTimeline.current().sessionScenes().getFirst()
+                        .budgetPercentage().stripTrailingZeros().toPlainString(),
+                "allocation decrease through scene card restores first scene");
+
+        button(main, "Auswaehlen").fire();
+        layout(main);
+        assertEquals(Long.valueOf(secondScene), Long.valueOf(current.current().session().selectedEncounterId()),
+                "scene select through card updates current selected scene");
+        assertTrue(sceneTimeline.current().sessionScenes().stream()
+                        .anyMatch(scene -> scene.sceneToken() == secondScene && scene.selected()),
+                "scene select through card publishes selected scene");
+
+        button(main, "Kurze Rast").fire();
+        layout(main);
+        assertEquals(SessionPlannerRestKind.SHORT_REST, sceneTimeline.current().restGaps().getFirst().restKind(),
+                "rest set through gap card publishes short rest");
+        assertTrue(hasLabel(main, "Kurze Rast"), "rest set through gap card renders short rest");
+        button(main, "Leeren").fire();
+        layout(main);
+        assertEquals(SessionPlannerRestKind.NONE, sceneTimeline.current().restGaps().getFirst().restKind(),
+                "rest clear through gap card publishes no rest");
+
+        enabledButtons(main, "Runter").getFirst().fire();
+        layout(main);
+        assertEquals(Long.valueOf(secondScene),
+                Long.valueOf(sceneTimeline.current().sessionScenes().getFirst().sceneToken()),
+                "scene move down through card reorders first scene");
+        enabledButtons(main, "Hoch").getFirst().fire();
+        layout(main);
+        assertEquals(Long.valueOf(firstScene),
+                Long.valueOf(sceneTimeline.current().sessionScenes().getFirst().sceneToken()),
+                "scene move up through card restores order");
+
+        buttons(main, "X").getFirst().fire();
+        layout(main);
+        assertEquals(Integer.valueOf(1), Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
+                "scene remove through linked scene card removes one scene");
+    }
+
+    private static void seedActiveParty(ServiceRegistry services) {
+        PartyApplicationService party = services.require(PartyApplicationService.class);
+        party.createCharacter(new CreateCharacterCommand(
+                new CharacterDraft("Cora", "Mira", 4, 13, 15),
+                MembershipState.ACTIVE));
+        party.createCharacter(new CreateCharacterCommand(
+                new CharacterDraft("Dain", "Jules", 5, 12, 16),
+                MembershipState.ACTIVE));
+    }
+
+    private static long seedLocation(ServiceRegistry services) {
+        WorldPlannerApplicationService worldPlanner = services.require(WorldPlannerApplicationService.class);
+        WorldPlannerSnapshotModel snapshots = services.require(WorldPlannerSnapshotModel.class);
+        worldPlanner.createLocation(new CreateWorldLocationCommand("Old Gate", ""));
+        return snapshots.current().locations().stream()
+                .filter(location -> "Old Gate".equals(location.displayName()))
+                .findFirst()
+                .map(WorldLocationSummary::locationId)
+                .orElseThrow(() -> new AssertionError("World Planner location fixture not published."));
+    }
+
     private static SessionPlannerSessionSnapshot sessionSnapshot(long sessionId, String displayName) {
         return new SessionPlannerSessionSnapshot(
                 new SessionPlannerSessionSnapshot.SessionState(
@@ -349,6 +524,17 @@ public final class SessionPlannerCatalogHarness {
                 .filter(field -> "Tage".equals(field.getPromptText()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Encounter days field not found."));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ComboBox<String> comboBoxByPrompt(Parent parent, String promptText) {
+        return descendants(parent).stream()
+                .filter(ComboBox.class::isInstance)
+                .map(ComboBox.class::cast)
+                .filter(comboBox -> promptText.equals(comboBox.getPromptText()))
+                .map(comboBox -> (ComboBox<String>) comboBox)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("ComboBox not found: " + promptText));
     }
 
     private static TextField textField(Parent parent, String promptText) {
@@ -403,16 +589,89 @@ public final class SessionPlannerCatalogHarness {
     private static ServiceRegistry services() {
         ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
         new src.data.creatures.CreaturesServiceContribution().register(builder);
-        new src.data.encounter.EncounterServiceContribution().register(builder);
         new src.data.encountertable.EncounterTableServiceContribution().register(builder);
         new src.data.party.PartyServiceContribution().register(builder);
         new src.data.sessionplanner.SessionPlannerServiceContribution().register(builder);
+        new src.data.worldplanner.WorldPlannerServiceContribution().register(builder);
         new src.domain.creatures.CreaturesServiceContribution().register(builder);
         new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
+        registerEncounterFixture(builder);
         new src.domain.party.PartyServiceContribution().register(builder);
-        new src.domain.encounter.EncounterServiceContribution().register(builder);
+        new src.domain.worldplanner.WorldPlannerServiceContribution().register(builder);
         new src.domain.sessionplanner.SessionPlannerServiceContribution().register(builder);
         return builder.build();
+    }
+
+    private static void registerEncounterFixture(ServiceRegistry.Builder builder) {
+        builder.register(SavedEncounterPlanListModel.class, new SavedEncounterPlanListModel(
+                SessionPlannerCatalogHarness::savedEncounterPlans,
+                listener -> {
+                    listener.accept(savedEncounterPlans());
+                    return () -> {
+                    };
+                }));
+        builder.register(EncounterPlanBudgetModel.class, new EncounterPlanBudgetModel(
+                SessionPlannerCatalogHarness::encounterPlanBudget,
+                listener -> {
+                    listener.accept(encounterPlanBudget());
+                    return () -> {
+                    };
+                }));
+        builder.register(EncounterApplicationService.class, noopEncounterApplicationService());
+    }
+
+    private static SavedEncounterPlanListResult savedEncounterPlans() {
+        return new SavedEncounterPlanListResult(
+                SavedEncounterPlanStatus.SUCCESS,
+                List.of(new SavedEncounterPlanSummary(
+                        SAVED_ENCOUNTER_PLAN_ID,
+                        "Ash Gate Ambush",
+                        "2 Kreaturen · Medium")),
+                "");
+    }
+
+    private static EncounterPlanBudgetResult encounterPlanBudget() {
+        return new EncounterPlanBudgetResult(
+                EncounterPlanBudgetStatus.SUCCESS,
+                new EncounterPlanBudgetSummary(
+                        SAVED_ENCOUNTER_PLAN_ID,
+                        "Ash Gate Ambush",
+                        "generated",
+                        2,
+                        100,
+                        150,
+                        1.5,
+                        "Medium"),
+                "");
+    }
+
+    private static EncounterApplicationService noopEncounterApplicationService() {
+        NoopEncounterPublishedState state = NoopEncounterPublishedState.INSTANCE;
+        PublishEncounterSessionUseCase publishSession = new PublishEncounterSessionUseCase(state, null);
+        return new EncounterApplicationService(
+                new ApplyEncounterStateUseCase(
+                        null,
+                        publishSession,
+                        new PublishEncounterSavedPlansUseCase(state, null)),
+                new UpdateEncounterBuilderInputsUseCase(null, publishSession),
+                new PublishEncounterPlanBudgetUseCase(state, null));
+    }
+
+    private enum NoopEncounterPublishedState
+            implements EncounterSessionPublishedStateRepository, EncounterPlanPublishedStateRepository {
+        INSTANCE;
+
+        @Override
+        public void publishCurrentSession(EncounterSessionPublicationData publication) {
+        }
+
+        @Override
+        public void publishSavedPlans(SavedEncounterPlansLoadResult result) {
+        }
+
+        @Override
+        public void publishPlanBudget(EncounterPlanBudgetLoadResult result) {
+        }
     }
 
     private static <T extends Node> T slot(ShellBinding binding, ShellSlot slot, Class<T> type) {
@@ -424,12 +683,23 @@ public final class SessionPlannerCatalogHarness {
     }
 
     private static Button button(Parent parent, String text) {
+        return buttons(parent, text).stream()
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("Button not found: " + text));
+    }
+
+    private static List<Button> buttons(Parent parent, String text) {
         return descendants(parent).stream()
                 .filter(Button.class::isInstance)
                 .map(Button.class::cast)
                 .filter(button -> text.equals(button.getText()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("Button not found: " + text));
+                .toList();
+    }
+
+    private static List<Button> enabledButtons(Parent parent, String text) {
+        return buttons(parent, text).stream()
+                .filter(button -> !button.isDisabled())
+                .toList();
     }
 
     private static void firePrimaryAction(Parent parent) {
