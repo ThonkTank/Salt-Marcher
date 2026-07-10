@@ -326,3 +326,22 @@ Harness-Map/Topology und der Focused-Handoff fuer `src/domain/encountertable`
 sind gruen. Naechster Schritt ist M3.5: Umsetzung des genehmigten
 Encounter-Table-Target-Designs mit vollstaendiger Loeschliste,
 byte-kompatiblen Seams und unveraendertem Harness-Orakel.
+
+### 2026-07-10 M3.5 encountertable-implementation
+
+Die Encounter-Table-Implementierung ist auf dem Branch abgeschlossen.
+Commit `be5b77c8a` setzt das genehmigte Target-Design um: die beiden Usecases
+und das interne String-Status-Repository sind geloescht, der
+`EncounterTableApplicationService` veroeffentlicht direkt ueber die bestehenden
+Catalog- und Candidates-Modelle, und `EncounterTableCatalogProjection` bildet
+die Lookup-Daten in die byte-kompatiblen Published Records ab. Die Published
+Models nutzen den gemeinsamen `PublishedState`-Helper; das ist eine echte
+strukturelle Entdopplung und keine Umformulierung, um CPD zu umgehen.
+Die eingefrorenen Harness-Szenarien und Assertions wurden nicht geaendert.
+Der selektive Static/Harness-Proof inklusive CPD, PMD, Dead-Code-Check und
+`encounterTableReadbackHarness` ist gruen, der Production-Handoff ist gruen,
+und Phase 1 sowie der unabhaengige Judge haben die Umsetzung freigegeben.
+Die gepruefte Ausnahme fuer 16 Dateien / 433 LOC bleibt unter der
+Design-Obergrenze von 460 LOC und ist durch byte-kompatible Records,
+Data-Carrier, Registry-Seams und Compatibility-Konstruktoren begruendet.
+Naechster Schritt ist M3.6: Conformance Review gegen den committeten Stand.
