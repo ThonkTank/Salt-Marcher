@@ -32,6 +32,7 @@ This directory owns cross-feature canonical SaltMarcher documentation. Project-w
 - [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
 - [Architecture Migration Ledger](docs/project/architecture/migration-ledger.md:1)
 - [Architecture Migration Encounter Baseline](docs/project/architecture/architecture-migration-encounter-baseline.md:1)
+- [Architecture Migration Encounter Target Design](docs/project/architecture/architecture-migration-encounter-target-design.md:1)
 - [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
 - [Harness Gaps](docs/project/verification/harness-gaps.md:1)
 - [Source References Standard](docs/project/verification/source-references.md:1)
