@@ -8,10 +8,15 @@ import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.AdventuringDaySummaryModel;
+import src.domain.party.published.CreateCharacterCommand;
+import src.domain.party.published.MembershipState;
 import src.domain.party.published.PartyMutationModel;
 import src.domain.party.published.PartySnapshotModel;
+import src.domain.party.published.RestType;
+import src.domain.party.published.UpdateCharacterCommand;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupContentModel;
 import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
+import src.view.slotcontent.topbar.dropdown.DropdownPopupViewInputEvent;
 
 final class PartyTopBarBinder {
 
@@ -22,49 +27,109 @@ final class PartyTopBarBinder {
     }
 
     ShellBinding bind() {
-        PartyTopBarContributionModel presentationModel = new PartyTopBarContributionModel();
+        PartyTopBarViewModel viewModel = new PartyTopBarViewModel();
         DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
         PartyApplicationService partyService = runtimeContext.services().require(PartyApplicationService.class);
-        PartyTopBarIntentHandler intentHandler = new PartyTopBarIntentHandler(
-                presentationModel,
-                popupContentModel,
-                partyService);
         PartyRosterTopBarView rosterView = new PartyRosterTopBarView();
         PartyEditorTopBarView editorView = new PartyEditorTopBarView();
         PartyTopBarView panelView = new PartyTopBarView(rosterView, editorView);
         DropdownPopupView topBarView = new DropdownPopupView(panelView);
         topBarView.bind(popupContentModel);
-        panelView.bind(presentationModel.topBarContentModel());
-        rosterView.bind(presentationModel.rosterContentModel());
-        editorView.bind(presentationModel.editorContentModel());
+        panelView.bind(viewModel);
+        rosterView.bind(viewModel);
+        editorView.bind(viewModel);
         PartySnapshotModel snapshotModel = runtimeContext.services().require(PartySnapshotModel.class);
         AdventuringDaySummaryModel summaryModel = runtimeContext.services().require(AdventuringDaySummaryModel.class);
         PartyMutationModel mutationModel = runtimeContext.services().require(PartyMutationModel.class);
-        applyPopupPresentation(popupContentModel, presentationModel.topBarContentModel().triggerTextProperty().get());
-        presentationModel.topBarContentModel().triggerTextProperty().addListener((ignored, before, after) ->
+        applyPopupPresentation(popupContentModel, viewModel.triggerTextProperty().get());
+        viewModel.triggerTextProperty().addListener((ignored, before, after) ->
                 applyPopupPresentation(popupContentModel, after));
-        panelView.onViewInputEvent(intentHandler::consume);
-        topBarView.onViewInputEvent(intentHandler::consume);
-        rosterView.onViewInputEvent(intentHandler::consume);
-        editorView.onViewInputEvent(intentHandler::consume);
+        panelView.onCloseRequested(popupContentModel::close);
+        topBarView.onViewInputEvent(event -> handleDropdownEvent(popupContentModel, event));
+        installRosterCallbacks(rosterView, viewModel, partyService);
+        installEditorCallbacks(editorView, viewModel, partyService);
         snapshotModel.subscribe(snapshot ->
-                presentationModel.applyLoadResult(new PartyTopBarContributionModel.PanelData(
+                viewModel.applyLoadResult(new PartyTopBarViewModel.PanelData(
                         snapshot,
                         summaryModel.current())));
         summaryModel.subscribe(summary ->
-                presentationModel.applyLoadResult(new PartyTopBarContributionModel.PanelData(
+                viewModel.applyLoadResult(new PartyTopBarViewModel.PanelData(
                         snapshotModel.current(),
                         summary)));
         mutationModel.subscribe(result ->
-                presentationModel.applyMutationResult(new PartyTopBarContributionModel.MutationAndLoadResult(
+                viewModel.applyMutationResult(new PartyTopBarViewModel.MutationAndLoadResult(
                         result,
-                        new PartyTopBarContributionModel.PanelData(
+                        new PartyTopBarViewModel.PanelData(
                                 snapshotModel.current(),
                                 summaryModel.current()))));
-        presentationModel.applyLoadResult(new PartyTopBarContributionModel.PanelData(
+        viewModel.applyLoadResult(new PartyTopBarViewModel.PanelData(
                 snapshotModel.current(),
                 summaryModel.current()));
         return new Binding(topBarView);
+    }
+
+    private static void installRosterCallbacks(
+            PartyRosterTopBarView rosterView,
+            PartyTopBarViewModel viewModel,
+            PartyApplicationService partyService
+    ) {
+        rosterView.onReserveSearchChanged(viewModel::showReserveSearch);
+        rosterView.onCreateEditorRequested(viewModel::openCreateEditor);
+        rosterView.onEditEditorRequested(memberId -> {
+            if (!viewModel.openEditEditor(memberId)) {
+                viewModel.rejectMissingCharacter();
+            }
+        });
+        rosterView.onAddExistingRequested(memberId ->
+                viewModel.prepareMembership(memberId, MembershipState.ACTIVE).ifPresent(partyService::setMembership));
+        rosterView.onRemoveRequested(memberId ->
+                viewModel.prepareMembership(memberId, MembershipState.RESERVE).ifPresent(partyService::setMembership));
+        rosterView.onXpRequested((memberId, xpDelta) ->
+                viewModel.prepareXp(memberId, xpDelta).ifPresent(partyService::adjustXp));
+        rosterView.onShortRestRequested(() ->
+                viewModel.prepareRest(RestType.SHORT_REST).ifPresent(partyService::performRest));
+        rosterView.onLongRestRequested(() ->
+                viewModel.prepareRest(RestType.LONG_REST).ifPresent(partyService::performRest));
+    }
+
+    private static void installEditorCallbacks(
+            PartyEditorTopBarView editorView,
+            PartyTopBarViewModel viewModel,
+            PartyApplicationService partyService
+    ) {
+        editorView.onDraftChanged(viewModel::syncDraft);
+        editorView.onCancelRequested(viewModel::cancelEditor);
+        editorView.onSubmitRequested(() ->
+                viewModel.prepareSubmit(editorView.currentDraft()).ifPresent(command ->
+                        dispatchSubmit(partyService, command)));
+        editorView.onDeleteConfirmationRequested(viewModel::requestDeleteConfirmation);
+        editorView.onDeleteConfirmationCancelled(viewModel::cancelDeleteConfirmation);
+        editorView.onDeleteConfirmed(() ->
+                viewModel.prepareDeleteConfirmed(editorView.currentDraft()).ifPresent(partyService::deleteCharacter));
+    }
+
+    private static void dispatchSubmit(PartyApplicationService partyService, Object command) {
+        if (command instanceof CreateCharacterCommand createCommand) {
+            partyService.createCharacter(createCommand);
+        } else if (command instanceof UpdateCharacterCommand updateCommand) {
+            partyService.updateCharacter(updateCommand);
+        }
+    }
+
+    private static void handleDropdownEvent(
+            DropdownPopupContentModel popupContentModel,
+            DropdownPopupViewInputEvent event
+    ) {
+        if (event == null) {
+            return;
+        }
+        if (event.popupHidden()) {
+            popupContentModel.close();
+        } else if (event.triggerInvoked() && popupContentModel.isOpen()) {
+            popupContentModel.close();
+        } else if (event.triggerInvoked()) {
+            popupContentModel.open();
+        }
     }
 
     private static void applyPopupPresentation(

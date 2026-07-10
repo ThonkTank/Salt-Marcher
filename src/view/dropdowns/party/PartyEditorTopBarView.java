@@ -35,15 +35,20 @@ public final class PartyEditorTopBarView extends VBox {
     private final Button cancelButton = new Button("Abbrechen");
     private final Button submitButton = new Button("Speichern");
     private final EditorDraftBinder draftBinder = new EditorDraftBinder();
-    private Consumer<PartyEditorTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<PartyTopBarViewModel.EditorDraft> draftChangedHandler = ignored -> { };
+    private Runnable cancelRequestedHandler = () -> { };
+    private Runnable submitRequestedHandler = () -> { };
+    private Runnable deleteConfirmationRequestedHandler = () -> { };
+    private Runnable deleteConfirmationCancelledHandler = () -> { };
+    private Runnable deleteConfirmedHandler = () -> { };
 
     public PartyEditorTopBarView() {
         getStyleClass().addAll("dropdown-window", "dropdown-form", "party-editor-inline");
         deleteMessageLabel.setWrapText(true);
         revealDeleteButton.setMaxWidth(Double.MAX_VALUE);
-        revealDeleteButton.setOnAction(event -> publish(false, false, true, false, false));
-        cancelButton.setOnAction(event -> publish(true, false, false, false, false));
-        submitButton.setOnAction(event -> publish(false, true, false, false, false));
+        revealDeleteButton.setOnAction(event -> publishDeleteConfirmationRequested());
+        cancelButton.setOnAction(event -> publishCancelRequested());
+        submitButton.setOnAction(event -> publishSubmitRequested());
         submitButton.setAccessibleHelp("Charaktername erforderlich.");
         draftBinder.installDraftListeners();
 
@@ -51,9 +56,9 @@ public final class PartyEditorTopBarView extends VBox {
                 deleteMessageLabel,
                 EditorChrome.actionRow(
                         EditorChrome.styledButton("Abbrechen", "compact", "neutral-action",
-                                () -> publish(false, false, false, true, false)),
+                                this::publishDeleteConfirmationCancelled),
                         EditorChrome.styledButton("Wirklich loeschen", "compact", "danger-action",
-                                () -> publish(false, false, false, false, true))));
+                                this::publishDeleteConfirmed)));
         VBox body = new VBox(
                 10,
                 EditorChrome.formGrid(nameField, playerNameField, levelField, passivePerceptionField, armorClassField),
@@ -67,17 +72,41 @@ public final class PartyEditorTopBarView extends VBox {
         draftBinder.updateSubmitDisabled();
     }
 
-    public void bind(PartyEditorTopBarContentModel contentModel) {
-        PartyEditorTopBarContentModel safeModel = Objects.requireNonNull(contentModel, "contentModel");
+    public void bind(PartyTopBarViewModel viewModel) {
+        PartyTopBarViewModel safeModel = Objects.requireNonNull(viewModel, "viewModel");
         showEditor(safeModel.editorPanelProperty().get());
         safeModel.editorPanelProperty().addListener((ignored, before, after) -> showEditor(after));
     }
 
-    public void onViewInputEvent(Consumer<PartyEditorTopBarViewInputEvent> handler) {
-        viewInputEventHandler = handler == null ? ignored -> { } : handler;
+    public void onDraftChanged(Consumer<PartyTopBarViewModel.EditorDraft> handler) {
+        draftChangedHandler = handler == null ? ignored -> { } : handler;
     }
 
-    private void showEditor(PartyEditorTopBarContentModel.EditorPanelModel content) {
+    public void onCancelRequested(Runnable handler) {
+        cancelRequestedHandler = handler == null ? () -> { } : handler;
+    }
+
+    public void onSubmitRequested(Runnable handler) {
+        submitRequestedHandler = handler == null ? () -> { } : handler;
+    }
+
+    public void onDeleteConfirmationRequested(Runnable handler) {
+        deleteConfirmationRequestedHandler = handler == null ? () -> { } : handler;
+    }
+
+    public void onDeleteConfirmationCancelled(Runnable handler) {
+        deleteConfirmationCancelledHandler = handler == null ? () -> { } : handler;
+    }
+
+    public void onDeleteConfirmed(Runnable handler) {
+        deleteConfirmedHandler = handler == null ? () -> { } : handler;
+    }
+
+    PartyTopBarViewModel.EditorDraft currentDraft() {
+        return draftBinder.rawDraft();
+    }
+
+    private void showEditor(PartyTopBarViewModel.EditorPanelModel content) {
         boolean visible = content != null && content.visible();
         boolean editingExisting = content != null && content.editingExisting();
         boolean actionsDisabled = content != null && content.actionsDisabled();
@@ -96,28 +125,41 @@ public final class PartyEditorTopBarView extends VBox {
         revealDeleteButton.setManaged(visible && editingExisting);
     }
 
-    private void updateDeleteConfirmation(PartyEditorTopBarContentModel.EditorPanelModel content, boolean visible) {
-        deleteMessageLabel.setText("\"" + EditorChrome.safe(content == null ? "" : content.deleteTargetName()).trim()
-                + "\" wirklich dauerhaft loeschen?");
+    private void updateDeleteConfirmation(PartyTopBarViewModel.EditorPanelModel content, boolean visible) {
+        deleteMessageLabel.setText(PartyTopBarVocabulary.deleteConfirmation(
+                content == null ? "" : content.deleteTargetName()));
         boolean confirmationVisible = content != null && content.deleteConfirmationVisible();
         deleteSection.setVisible(visible && confirmationVisible);
         deleteSection.setManaged(visible && confirmationVisible);
     }
 
-    private void publish(
-            boolean cancelRequested,
-            boolean submitRequested,
-            boolean deleteConfirmationRequested,
-            boolean deleteConfirmationCancelled,
-            boolean deleteConfirmed
-    ) {
-        viewInputEventHandler.accept(new PartyEditorTopBarViewInputEvent(
-                cancelRequested,
-                submitRequested,
-                deleteConfirmationRequested,
-                deleteConfirmationCancelled,
-                deleteConfirmed,
-                draftBinder.rawDraft()));
+    private void publishCancelRequested() {
+        publishDraftChanged();
+        cancelRequestedHandler.run();
+    }
+
+    private void publishSubmitRequested() {
+        publishDraftChanged();
+        submitRequestedHandler.run();
+    }
+
+    private void publishDeleteConfirmationRequested() {
+        publishDraftChanged();
+        deleteConfirmationRequestedHandler.run();
+    }
+
+    private void publishDeleteConfirmationCancelled() {
+        publishDraftChanged();
+        deleteConfirmationCancelledHandler.run();
+    }
+
+    private void publishDeleteConfirmed() {
+        publishDraftChanged();
+        deleteConfirmedHandler.run();
+    }
+
+    private void publishDraftChanged() {
+        draftChangedHandler.accept(draftBinder.rawDraft());
     }
 
     private final class EditorDraftBinder {
@@ -126,14 +168,14 @@ public final class PartyEditorTopBarView extends VBox {
 
         private void installDraftListeners() {
             addDraftListeners();
-            nameField.setOnAction(event -> publish(false, true, false, false, false));
-            playerNameField.setOnAction(event -> publish(false, true, false, false, false));
-            levelField.setOnAction(event -> publish(false, true, false, false, false));
-            passivePerceptionField.setOnAction(event -> publish(false, true, false, false, false));
-            armorClassField.setOnAction(event -> publish(false, true, false, false, false));
+            nameField.setOnAction(event -> publishSubmitRequested());
+            playerNameField.setOnAction(event -> publishSubmitRequested());
+            levelField.setOnAction(event -> publishSubmitRequested());
+            passivePerceptionField.setOnAction(event -> publishSubmitRequested());
+            armorClassField.setOnAction(event -> publishSubmitRequested());
         }
 
-        private void updateDraftFields(PartyEditorTopBarContentModel.EditorPanelModel content) {
+        private void updateDraftFields(PartyTopBarViewModel.EditorPanelModel content) {
             removeDraftListeners();
             try {
                 nameField.setText(content == null ? "" : content.memberName());
@@ -158,8 +200,8 @@ public final class PartyEditorTopBarView extends VBox {
             updateSubmitDisabled(actionsDisabled);
         }
 
-        private PartyEditorTopBarViewInputEvent.EditorDraft rawDraft() {
-            return new PartyEditorTopBarViewInputEvent.EditorDraft(
+        private PartyTopBarViewModel.EditorDraft rawDraft() {
+            return new PartyTopBarViewModel.EditorDraft(
                     nameField.getText(),
                     playerNameField.getText(),
                     levelField.getText(),
@@ -169,7 +211,7 @@ public final class PartyEditorTopBarView extends VBox {
 
         private void onDraftChanged() {
             updateSubmitDisabled();
-            publish(false, false, false, false, false);
+            publishDraftChanged();
         }
 
         private void updateSubmitDisabled() {

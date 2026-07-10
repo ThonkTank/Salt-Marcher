@@ -1,7 +1,6 @@
 package src.view.dropdowns.party;
 
 import java.util.Objects;
-import java.util.function.Consumer;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -17,7 +16,7 @@ public final class PartyTopBarView extends HBox {
     static final String OPEN_ACCESSIBLE_TEXT = "Party-Panel geöffnet, Escape zum Schließen";
     static final String TOOLTIP_TEXT = "Party-Panel öffnen (Alt+P)";
 
-    private Consumer<PartyTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Runnable closeHandler = () -> { };
     private final Label headerLabel = new StyledLabel();
 
     public PartyTopBarView(Node... content) {
@@ -25,22 +24,22 @@ public final class PartyTopBarView extends HBox {
         getChildren().add(new PartyPanel(new PartyHeader(headerLabel, new CloseButton()), content));
     }
 
-    public void bind(PartyTopBarContentModel contentModel) {
-        PartyTopBarContentModel safeModel = Objects.requireNonNull(contentModel, "contentModel");
+    public void bind(PartyTopBarViewModel viewModel) {
+        PartyTopBarViewModel safeModel = Objects.requireNonNull(viewModel, "viewModel");
         headerLabel.textProperty().bind(safeModel.headerTitleProperty());
     }
 
-    public void onViewInputEvent(Consumer<PartyTopBarViewInputEvent> handler) {
-        viewInputEventHandler = handler == null ? ignored -> { } : handler;
+    public void onCloseRequested(Runnable handler) {
+        closeHandler = handler == null ? () -> { } : handler;
     }
 
     private final class CloseButton extends Button {
 
         private CloseButton() {
-            super("x");
+            super(PartyTopBarVocabulary.CLOSE_BUTTON_TEXT);
             getStyleClass().add("compact");
-            setAccessibleText("Party-Panel schließen");
-            setOnAction(event -> viewInputEventHandler.accept(new PartyTopBarViewInputEvent(true)));
+            setAccessibleText(PartyTopBarVocabulary.CLOSE_ACCESSIBLE_TEXT);
+            setOnAction(event -> closeHandler.run());
         }
     }
 

@@ -1,6 +1,7 @@
 package src.view.dropdowns.party;
 
 import java.util.Objects;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import javafx.event.ActionEvent;
 import javafx.geometry.Pos;
@@ -38,18 +39,25 @@ public final class PartyRosterTopBarView extends VBox {
     private final Label actionStatusLabel = new StyledLabel();
     private final RosterRows rosterRows = new RosterRows();
     private final RosterEvents rosterEvents = new RosterEvents();
-    private Consumer<PartyRosterTopBarViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<String> reserveSearchChangedHandler = ignored -> { };
+    private Runnable createEditorRequestedHandler = () -> { };
+    private Consumer<Long> editEditorRequestedHandler = ignored -> { };
+    private Consumer<Long> addExistingRequestedHandler = ignored -> { };
+    private Consumer<Long> removeRequestedHandler = ignored -> { };
+    private BiConsumer<Long, Integer> xpRequestedHandler = (ignoredId, ignoredDelta) -> { };
+    private Runnable shortRestRequestedHandler = () -> { };
+    private Runnable longRestRequestedHandler = () -> { };
 
     public PartyRosterTopBarView() {
         getStyleClass().add("party-roster-panel");
         setFillWidth(true);
         configureStaticControls();
         getChildren().addAll(
-                PartyRosterChrome.sectionLabel("AKTUELLE PARTY"),
+                PartyRosterChrome.sectionLabel(PartyTopBarVocabulary.ACTIVE_SECTION),
                 memberListPane,
                 restActionsPane,
                 new Separator(),
-                PartyRosterChrome.sectionLabel("CHARAKTER HINZUFUEGEN"),
+                PartyRosterChrome.sectionLabel(PartyTopBarVocabulary.ADD_SECTION),
                 reserveSearchField,
                 reserveListPane,
                 newCharacterButton,
@@ -58,19 +66,47 @@ public final class PartyRosterTopBarView extends VBox {
                 actionStatusLabel);
     }
 
-    public void bind(PartyRosterTopBarContentModel contentModel) {
-        PartyRosterTopBarContentModel safeModel = Objects.requireNonNull(contentModel, "contentModel");
+    public void bind(PartyTopBarViewModel viewModel) {
+        PartyTopBarViewModel safeModel = Objects.requireNonNull(viewModel, "viewModel");
         showPanel(safeModel.panelContentProperty().get());
         safeModel.panelContentProperty().addListener((ignored, before, after) -> showPanel(after));
     }
 
-    public void onViewInputEvent(Consumer<PartyRosterTopBarViewInputEvent> handler) {
-        viewInputEventHandler = handler == null ? ignored -> { } : handler;
+    public void onReserveSearchChanged(Consumer<String> handler) {
+        reserveSearchChangedHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    public void onCreateEditorRequested(Runnable handler) {
+        createEditorRequestedHandler = handler == null ? () -> { } : handler;
+    }
+
+    public void onEditEditorRequested(Consumer<Long> handler) {
+        editEditorRequestedHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    public void onAddExistingRequested(Consumer<Long> handler) {
+        addExistingRequestedHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    public void onRemoveRequested(Consumer<Long> handler) {
+        removeRequestedHandler = handler == null ? ignored -> { } : handler;
+    }
+
+    public void onXpRequested(BiConsumer<Long, Integer> handler) {
+        xpRequestedHandler = handler == null ? (ignoredId, ignoredDelta) -> { } : handler;
+    }
+
+    public void onShortRestRequested(Runnable handler) {
+        shortRestRequestedHandler = handler == null ? () -> { } : handler;
+    }
+
+    public void onLongRestRequested(Runnable handler) {
+        longRestRequestedHandler = handler == null ? () -> { } : handler;
     }
 
     private void configureStaticControls() {
-        reserveSearchField.setPromptText("Reserve durchsuchen");
-        reserveSearchField.setAccessibleText("Reserve-Charaktere durchsuchen");
+        reserveSearchField.setPromptText(PartyTopBarVocabulary.RESERVE_SEARCH_PROMPT);
+        reserveSearchField.setAccessibleText(PartyTopBarVocabulary.RESERVE_SEARCH_ACCESSIBLE);
         reserveSearchField.textProperty().addListener((ignored, before, after) ->
                 rosterEvents.publishReserveSearchChanged(after));
         shortRestButton.setAccessibleText("Short Rest, fuer die aktive Party ausfuehren");
@@ -79,7 +115,7 @@ public final class PartyRosterTopBarView extends VBox {
         longRestButton.setOnAction(event -> rosterEvents.publishLongRestRequested());
         ((StyledHBox) restActionsPane).setNodes(shortRestButton, longRestButton);
         newCharacterButton.setMaxWidth(Double.MAX_VALUE);
-        newCharacterButton.setAccessibleText("+ Neuer Charakter, neuen Charakter erstellen");
+        newCharacterButton.setAccessibleText(PartyTopBarVocabulary.NEW_CHARACTER_ACCESSIBLE);
         newCharacterButton.setOnAction(event -> rosterEvents.publishCreateEditorRequested());
         actionStatusLabel.setWrapText(true);
         actionStatusLabel.setAccessibleRole(AccessibleRole.TEXT);
@@ -88,7 +124,7 @@ public final class PartyRosterTopBarView extends VBox {
         actionStatusLabel.setManaged(false);
     }
 
-    private void showPanel(PartyRosterTopBarContentModel.PanelContent content) {
+    private void showPanel(PartyTopBarViewModel.PanelContent content) {
         if (content == null || content.loading()) {
             showLoadingPanel();
             return;
@@ -101,19 +137,19 @@ public final class PartyRosterTopBarView extends VBox {
         showActionStatus(content);
     }
 
-    private void showPanelActions(PartyRosterTopBarContentModel.PanelContent content, boolean actionsDisabled) {
+    private void showPanelActions(PartyTopBarViewModel.PanelContent content, boolean actionsDisabled) {
         boolean restDisabled = content.restActionsDisabled() || actionsDisabled;
         shortRestButton.setDisable(restDisabled);
         longRestButton.setDisable(restDisabled);
         newCharacterButton.setDisable(actionsDisabled);
     }
 
-    private void showSummaries(PartyRosterTopBarContentModel.PanelContent content) {
+    private void showSummaries(PartyTopBarViewModel.PanelContent content) {
         summaryLabel.setText(safe(content.summaryText()));
         restSummaryLabel.setText(safe(content.restSummaryText()));
     }
 
-    private void showActionStatus(PartyRosterTopBarContentModel.PanelContent content) {
+    private void showActionStatus(PartyTopBarViewModel.PanelContent content) {
         String actionStatus = safe(content.actionStatus());
         boolean hasActionStatus = !actionStatus.isBlank();
         actionStatusLabel.setText(actionStatus);
@@ -128,12 +164,12 @@ public final class PartyRosterTopBarView extends VBox {
     }
 
     private void showLoadingPanel() {
-        ((StyledVBox) memberListPane).setNodes(PartyRosterChrome.messageLabel("Lade..."));
+        ((StyledVBox) memberListPane).setNodes(PartyRosterChrome.messageLabel(PartyTopBarVocabulary.LOADING));
         ((StyledVBox) reserveListPane).clearNodes();
         shortRestButton.setDisable(true);
         longRestButton.setDisable(true);
         newCharacterButton.setDisable(true);
-        summaryLabel.setText("Lade...");
+        summaryLabel.setText(PartyTopBarVocabulary.LOADING);
         restSummaryLabel.setText("");
         actionStatusLabel.setText("");
         actionStatusLabel.setAccessibleText("");
@@ -148,37 +184,37 @@ public final class PartyRosterTopBarView extends VBox {
 
     private final class RosterRows {
 
-        private void showMemberList(PartyRosterTopBarContentModel.PanelContent content, boolean actionsDisabled) {
+        private void showMemberList(PartyTopBarViewModel.PanelContent content, boolean actionsDisabled) {
             ((StyledVBox) memberListPane).clearNodes();
             if (content.storageError()) {
                 ((StyledVBox) memberListPane).setNodes(PartyRosterChrome.messageLabel(content.storageMessage()));
                 return;
             }
             if (content.activeMembers().isEmpty()) {
-                ((StyledVBox) memberListPane).setNodes(PartyRosterChrome.messageLabel("Keine aktiven Party-Mitglieder"));
+                ((StyledVBox) memberListPane).setNodes(PartyRosterChrome.messageLabel(PartyTopBarVocabulary.EMPTY_ACTIVE));
                 return;
             }
-            for (PartyRosterTopBarContentModel.MemberModel member : content.activeMembers()) {
+            for (PartyTopBarViewModel.MemberModel member : content.activeMembers()) {
                 ((StyledVBox) memberListPane).addNode(memberRow(member, actionsDisabled));
             }
         }
 
-        private void showReserveList(PartyRosterTopBarContentModel.PanelContent content, boolean actionsDisabled) {
+        private void showReserveList(PartyTopBarViewModel.PanelContent content, boolean actionsDisabled) {
             ((StyledVBox) reserveListPane).clearNodes();
             if (content.allReserveMembers().isEmpty()) {
-                ((StyledVBox) reserveListPane).setNodes(PartyRosterChrome.messageLabel("Keine Reserve-Charaktere"));
+                ((StyledVBox) reserveListPane).setNodes(PartyRosterChrome.messageLabel(PartyTopBarVocabulary.NO_RESERVE));
                 return;
             }
             if (content.reserveMembers().isEmpty()) {
-                ((StyledVBox) reserveListPane).setNodes(PartyRosterChrome.messageLabel("Keine Treffer in der Reserve"));
+                ((StyledVBox) reserveListPane).setNodes(PartyRosterChrome.messageLabel(PartyTopBarVocabulary.NO_RESERVE_MATCH));
                 return;
             }
-            for (PartyRosterTopBarContentModel.MemberModel member : content.reserveMembers()) {
+            for (PartyTopBarViewModel.MemberModel member : content.reserveMembers()) {
                 ((StyledVBox) reserveListPane).addNode(reserveMemberButton(member, actionsDisabled));
             }
         }
 
-        private Node memberRow(PartyRosterTopBarContentModel.MemberModel member, boolean actionsDisabled) {
+        private Node memberRow(PartyTopBarViewModel.MemberModel member, boolean actionsDisabled) {
             Label identityLabel = PartyRosterChrome.clippedLabel(member.identityText(), "bold");
             HBox.setHgrow(identityLabel, Priority.ALWAYS);
 
@@ -255,7 +291,7 @@ public final class PartyRosterTopBarView extends VBox {
             return row;
         }
 
-        private Button reserveMemberButton(PartyRosterTopBarContentModel.MemberModel member, boolean actionsDisabled) {
+        private Button reserveMemberButton(PartyTopBarViewModel.MemberModel member, boolean actionsDisabled) {
             Button button = memberActionButton(
                     member.id(),
                     member.name() + " (" + member.levelLabel() + ")",
@@ -293,75 +329,41 @@ public final class PartyRosterTopBarView extends VBox {
     private final class RosterEvents {
 
         private void publishReserveSearchChanged(String reserveSearchText) {
-            publish(new PartyRosterTopBarViewInputEvent(
-                    false,
-                    false,
-                    false,
-                    0L,
-                    0,
-                    false,
-                    false,
-                    false,
-                    true,
-                    reserveSearchText));
+            reserveSearchChangedHandler.accept(safe(reserveSearchText));
         }
 
         private void publishShortRestRequested() {
-            publish(new PartyRosterTopBarViewInputEvent(
-                    false, false, false, 0L, 0, false, true, false, false, ""));
+            shortRestRequestedHandler.run();
         }
 
         private void publishLongRestRequested() {
-            publish(new PartyRosterTopBarViewInputEvent(
-                    false, false, false, 0L, 0, false, false, true, false, ""));
+            longRestRequestedHandler.run();
         }
 
         private void publishCreateEditorRequested() {
-            publish(new PartyRosterTopBarViewInputEvent(
-                    true, false, false, 0L, 0, false, false, false, false, ""));
+            createEditorRequestedHandler.run();
         }
 
         private void publishEditRequested(ActionEvent event) {
-            publishMemberEvent(event, true, false, false, 0);
+            editEditorRequestedHandler.accept(memberId(event));
         }
 
         private void publishAddExistingRequested(ActionEvent event) {
-            publishMemberEvent(event, false, true, false, 0);
+            addExistingRequestedHandler.accept(memberId(event));
         }
 
         private void publishRemoveRequested(ActionEvent event) {
-            publishMemberEvent(event, false, false, true, 0);
+            removeRequestedHandler.accept(memberId(event));
         }
 
         private void publishXp(ActionEvent event, int xpDelta) {
-            publishMemberEvent(event, false, false, false, xpDelta);
+            xpRequestedHandler.accept(memberId(event), xpDelta);
         }
 
-        private void publishMemberEvent(
-                ActionEvent event,
-                boolean editEditorRequested,
-                boolean addExistingRequested,
-                boolean removeRequested,
-                int xpDelta
-        ) {
+        private long memberId(ActionEvent event) {
             Object source = event.getSource();
             Object userData = source instanceof Node node ? node.getUserData() : null;
-            long memberId = userData instanceof Long id ? id : 0L;
-            publish(new PartyRosterTopBarViewInputEvent(
-                    false,
-                    editEditorRequested,
-                    addExistingRequested,
-                    memberId,
-                    xpDelta,
-                    removeRequested,
-                    false,
-                    false,
-                    false,
-                    ""));
-        }
-
-        private void publish(PartyRosterTopBarViewInputEvent event) {
-            viewInputEventHandler.accept(event);
+            return userData instanceof Long id ? id : 0L;
         }
     }
 
@@ -395,7 +397,7 @@ public final class PartyRosterTopBarView extends VBox {
             return label;
         }
 
-        private static Label restChipLabel(PartyRosterTopBarContentModel.MemberModel member) {
+        private static Label restChipLabel(PartyTopBarViewModel.MemberModel member) {
             StyledLabel label = new StyledLabel(member.restText(), "party-rest-chip");
             if (!member.restStyleClass().isBlank()) {
                 label.addStyle(member.restStyleClass());

@@ -4,18 +4,19 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import src.domain.shared.published.PublishedState;
 
 public final class CreatureFilterOptionsModel {
 
     private final Supplier<CreatureFilterOptionsResult> currentSupplier;
     private final Function<Consumer<CreatureFilterOptionsResult>, Runnable> subscribeAction;
-    private CreaturePublishedState<CreatureFilterOptionsResult> statefulStore;
+    private PublishedState<CreatureFilterOptionsResult> statefulStore;
 
     public CreatureFilterOptionsModel() {
-        this(new CreaturePublishedState<>(emptyResult()));
+        this(new PublishedState<>(emptyResult()));
     }
 
-    private CreatureFilterOptionsModel(CreaturePublishedState<CreatureFilterOptionsResult> store) {
+    private CreatureFilterOptionsModel(PublishedState<CreatureFilterOptionsResult> store) {
         this(store::current, store::subscribe);
         statefulStore = store;
     }
