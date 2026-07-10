@@ -299,3 +299,25 @@ State-Tab-Mode-Bruecke und `EncounterPublishedStateServiceAssembly`. Der
 Dokumentations-Gate, Phase 1 und der unabhaengige Judge sind gruen. Naechster
 Schritt ist M3.3: ein konkretes, judge-geprueftes Encounter-Target-Design;
 es wurde noch keine Produktionsverdrahtung oder Implementierung gestartet.
+
+### 2026-07-10 M3.3 encounter-target-design
+
+Das Encounter-Target-Design ist in Commit `1563da9b3` genehmigt. Es legt die
+Zielstruktur konkret fest: `EncounterApplicationService` wird die Root-
+Service-Grenze fuer Command-Normalisierung, Session-Mutation und Publication;
+`EncounterSessionRuntimeAccess`, `EncounterForeignFacts`, `EncounterPlanGateway`,
+`EncounterProjection`, `EncounterPublishedState` und `EncounterGenerator`
+ersetzen die alte Usecase-/Repository-/Assembly-Kette; im State-Tab fuehren
+`EncounterStateViewModel` und `EncounterStateVocabulary` die heutige
+ContentModel-/InputEvent-/IntentHandler-Schicht zusammen. Die byte-kompatiblen
+Published-Seams, `EncounterPlanRepository`, State-Tab-Contribution,
+State-Tab-Views, Party/Creature/Encounter-Table/Worldplanner/Session-Planner-
+Konsumenten und alle eingefrorenen Harness-Szenarien bleiben geschuetzt. Das
+Design nennt eine 61-Datei-Loeschliste, Zielketten, String-Boundary-Ziele,
+ein 140-Dateien-Ziel und eine maximal judge-pflichtige LOC-Ausnahme bis
+9.500 LOC, falls die 7.642-LOC-Roadmap-Zielmarke wegen Published Records,
+JavaFX-Views, Session-Aggregat und Generation-Logik nicht erreichbar ist.
+Dokumentations-Gate, Phase 1 und unabhaengiger Judge sind gruen. Naechster
+Schritt ist M3.4: nur Harness-/Wiring-Port, besonders der Session-Planner-
+Harness-Fake-Encounter-Seam und die State-Tab-ViewModel-Grenze; es wurde noch
+keine Produktionsimplementierung der Loeschliste gestartet.
