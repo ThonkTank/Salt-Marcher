@@ -282,3 +282,20 @@ Encounter-Harnesssatz mit `worldPlannerEncounterHarness`, Production-Handoff,
 Phase 1 und unabhaengiger Judge sind gruen. Die P1-Gap-Zeile ist aus
 `docs/project/verification/harness-gaps.md` entfernt. Naechster Schritt ist
 M3.2: Encounter-Baseline-Metriken.
+
+### 2026-07-10 M3.2 encounter-baseline-metrics
+
+Die Encounter-Baseline ist in Commit `203e46438` dokumentiert. Das
+Artefakt `docs/project/architecture/architecture-migration-encounter-baseline.md`
+trennt den breiten `*encounter*`-Suchraum sauber vom bereits migrierten
+Encounter-Table-Bereich und misst fuer Encounter 202 Java-Dateien mit
+13.216 physischen LOC; der normale Produktzuschnitt fuer das Design sind
+191 Dateien mit 12.737 LOC. Die dominanten Generate- und Saved-Plan-Ketten
+liegen bei 13 Hops bis zur ersten Encounter-Publication, Combat bei 8 Hops
+und Plan-Budget-Refresh bei 6 Hops. Nach Phase-1-Rework zaehlt die Baseline
+10 Produkt-/Published-Forwarding-Kandidaten plus 2 Data-Kandidaten und
+3 Produkt-String-Boundary-Familien; enthalten sind dabei die aktive
+State-Tab-Mode-Bruecke und `EncounterPublishedStateServiceAssembly`. Der
+Dokumentations-Gate, Phase 1 und der unabhaengige Judge sind gruen. Naechster
+Schritt ist M3.3: ein konkretes, judge-geprueftes Encounter-Target-Design;
+es wurde noch keine Produktionsverdrahtung oder Implementierung gestartet.
