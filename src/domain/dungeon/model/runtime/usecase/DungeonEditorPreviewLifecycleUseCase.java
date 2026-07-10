@@ -13,18 +13,19 @@ import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper
 
 final class DungeonEditorPreviewLifecycleUseCase {
     private final DungeonEditorSessionWorkflow workflow;
-    private final ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase;
+    private final ApplyDungeonEditorSessionEffectUseCase.AuthoredPreviewCommitter authoredPreviewCommitter;
     private final DungeonEditorDungeonState dungeonState;
     private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
 
     DungeonEditorPreviewLifecycleUseCase(
             DungeonEditorSessionWorkflow workflow,
-            ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase,
+            ApplyDungeonEditorSessionEffectUseCase.AuthoredPreviewCommitter authoredPreviewCommitter,
             DungeonEditorDungeonState dungeonState,
             BuildDungeonEditorSnapshotUseCase snapshotBuilder
     ) {
         this.workflow = Objects.requireNonNull(workflow, "workflow");
-        this.applyOperationUseCase = Objects.requireNonNull(applyOperationUseCase, "applyOperationUseCase");
+        this.authoredPreviewCommitter =
+                Objects.requireNonNull(authoredPreviewCommitter, "authoredPreviewCommitter");
         this.dungeonState = Objects.requireNonNull(dungeonState, "dungeonState");
         this.snapshotBuilder = Objects.requireNonNull(snapshotBuilder, "snapshotBuilder");
     }
@@ -108,7 +109,7 @@ final class DungeonEditorPreviewLifecycleUseCase {
     ) {
         DungeonEditorWorkspaceValues.MapId mapId = workflow.session().selectedMapId();
         if (mapId != null && authoredCommit == null) {
-            applyOperationUseCase.execute(mapId, applyPreview);
+            authoredPreviewCommitter.apply(mapId, applyPreview);
         }
         if (mapId != null && authoredCommit != null) {
             authoredCommit.apply(mapId);

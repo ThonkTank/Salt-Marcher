@@ -15,21 +15,22 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceVal
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 
 public final class BuildDungeonEditorSnapshotUseCase {
-    private final SearchDungeonEditorMapCatalogUseCase searchMapsUseCase;
-    private final LoadDungeonEditorAuthoredMapUseCase loadMapUseCase;
-    private final PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase;
+    private final CatalogRefresher catalogRefresher;
+    private final AuthoredSurfaceLoader authoredSurfaceLoader;
+    private final AuthoredPreviewRefresher authoredPreviewRefresher;
     private final CurrentDungeonFacts currentDungeonFacts;
     private final CommittedDungeonFacts committedDungeonFacts;
 
     public BuildDungeonEditorSnapshotUseCase(
-            SearchDungeonEditorMapCatalogUseCase searchMapsUseCase,
-            LoadDungeonEditorAuthoredMapUseCase loadMapUseCase,
-            PreviewDungeonEditorAuthoredOperationUseCase previewOperationUseCase,
+            CatalogRefresher catalogRefresher,
+            AuthoredSurfaceLoader authoredSurfaceLoader,
+            AuthoredPreviewRefresher authoredPreviewRefresher,
             DungeonEditorDungeonState dungeonState
     ) {
-        this.searchMapsUseCase = Objects.requireNonNull(searchMapsUseCase, "searchMapsUseCase");
-        this.loadMapUseCase = Objects.requireNonNull(loadMapUseCase, "loadMapUseCase");
-        this.previewOperationUseCase = Objects.requireNonNull(previewOperationUseCase, "previewOperationUseCase");
+        this.catalogRefresher = Objects.requireNonNull(catalogRefresher, "catalogRefresher");
+        this.authoredSurfaceLoader = Objects.requireNonNull(authoredSurfaceLoader, "authoredSurfaceLoader");
+        this.authoredPreviewRefresher =
+                Objects.requireNonNull(authoredPreviewRefresher, "authoredPreviewRefresher");
         DungeonEditorDungeonState safeDungeonState = Objects.requireNonNull(dungeonState, "dungeonState");
         currentDungeonFacts = safeDungeonState::currentFacts;
         committedDungeonFacts = safeDungeonState::committedFacts;
@@ -51,7 +52,7 @@ public final class BuildDungeonEditorSnapshotUseCase {
     }
 
     public void refreshCatalog() {
-        searchMapsUseCase.execute("");
+        catalogRefresher.refresh("");
     }
 
     public InMemoryPreviewRefresh refreshInMemoryPreview(@Nullable DungeonEditorSession state) {
@@ -62,10 +63,10 @@ public final class BuildDungeonEditorSnapshotUseCase {
                 resolvedMapId,
                 safeState.selection(),
                 DungeonEditorSessionValues.Preview.none());
-        if (previewOperationUseCase.executeAuthoredDragPreview(safeState.selectedMapId(), safeState.preview())) {
+        if (authoredPreviewRefresher.refreshAuthoredDragPreview(safeState.selectedMapId(), safeState.preview())) {
             return InMemoryPreviewRefresh.DIRECT_AUTHORED_DRAG_PREVIEW;
         }
-        previewOperationUseCase.executeInMemory(committedFacts.surface(), safeState.preview());
+        authoredPreviewRefresher.refreshInMemory(committedFacts.surface(), safeState.preview());
         return InMemoryPreviewRefresh.IN_MEMORY_PREVIEW;
     }
 
@@ -99,7 +100,7 @@ public final class BuildDungeonEditorSnapshotUseCase {
             @Nullable MapId mapId
     ) {
         if (mapId != null) {
-            loadMapUseCase.execute(mapId);
+            authoredSurfaceLoader.load(mapId);
         }
         return committedDungeonFacts.committedFacts(mapId).committedSnapshot();
     }
@@ -114,15 +115,15 @@ public final class BuildDungeonEditorSnapshotUseCase {
         }
         DungeonEditorSessionValues.Selection selection = state.selection();
         if (hasSelectionForInspector(selection)) {
-            loadMapUseCase.executeWithSelection(
+            authoredSurfaceLoader.loadWithSelection(
                     readbackMapId,
                     selection.topologyRef(),
                     selection.clusterId(),
                     selection.clusterSelection());
         } else {
-            loadMapUseCase.execute(readbackMapId);
+            authoredSurfaceLoader.load(readbackMapId);
         }
-        previewOperationUseCase.execute(authoredPreviewMapId, state.preview());
+        authoredPreviewRefresher.refresh(authoredPreviewMapId, state.preview());
     }
 
     private static boolean hasSelectionForInspector(DungeonEditorSessionValues.Selection selection) {
@@ -144,6 +145,31 @@ public final class BuildDungeonEditorSnapshotUseCase {
             }
         }
         return maps.isEmpty() ? null : maps.getFirst().mapId();
+    }
+
+    @FunctionalInterface
+    public interface CatalogRefresher {
+        void refresh(String query);
+    }
+
+    public interface AuthoredSurfaceLoader {
+        void load(@Nullable MapId mapId);
+
+        void loadWithSelection(
+                @Nullable MapId mapId,
+                DungeonTopologyRef topologyRef,
+                long clusterId,
+                boolean clusterSelection);
+    }
+
+    public interface AuthoredPreviewRefresher {
+        boolean refreshAuthoredDragPreview(@Nullable MapId mapId, DungeonEditorSessionValues.Preview preview);
+
+        void refreshInMemory(
+                DungeonEditorSessionSnapshot.SurfaceData surface,
+                DungeonEditorSessionValues.Preview preview);
+
+        void refresh(@Nullable MapId mapId, DungeonEditorSessionValues.Preview preview);
     }
 
     @FunctionalInterface

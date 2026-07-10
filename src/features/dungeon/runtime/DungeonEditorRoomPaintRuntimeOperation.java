@@ -2,10 +2,10 @@ package src.features.dungeon.runtime;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.DungeonAuthoredApplicationService;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.PaintSession;
@@ -14,7 +14,8 @@ final class DungeonEditorRoomPaintRuntimeOperation {
     private final DungeonEditorSessionWorkflow workflow;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
     private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
-    private final ApplyDungeonEditorAuthoredOperationUseCase authoredOperationUseCase;
+    private final DungeonAuthoredApplicationService authoredService;
+    private final DungeonAuthoredApplicationService.Session authoredSession;
 
     DungeonEditorRoomPaintRuntimeOperation(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
         DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases safeRuntime =
@@ -22,9 +23,8 @@ final class DungeonEditorRoomPaintRuntimeOperation {
         workflow = Objects.requireNonNull(safeRuntime.workflow(), "workflow");
         mainViewInterpreter = Objects.requireNonNull(safeRuntime.mainViewInterpreter(), "mainViewInterpreter");
         effectUseCase = Objects.requireNonNull(safeRuntime.effectUseCase(), "effectUseCase");
-        authoredOperationUseCase = Objects.requireNonNull(
-                safeRuntime.authored().applyOperationUseCase(),
-                "authoredOperationUseCase");
+        authoredService = Objects.requireNonNull(safeRuntime.authoredService(), "authoredService");
+        authoredSession = Objects.requireNonNull(safeRuntime.authored(), "authoredSession");
     }
 
     static DungeonEditorSessionValues.Tool roomTool(DungeonEditorTool tool) {
@@ -95,11 +95,12 @@ final class DungeonEditorRoomPaintRuntimeOperation {
         if (!paintSession.present()) {
             return null;
         }
-        return mapId -> authoredOperationUseCase.executeRoomRectangle(
+        return mapId -> authoredService.applyRoomRectangle(
                 mapId,
                 startCell(paintSession),
                 endCell(paintSession),
-                paintSession.deleteMode());
+                paintSession.deleteMode(),
+                authoredSession);
     }
 
     private static Cell startCell(PaintSession paintSession) {

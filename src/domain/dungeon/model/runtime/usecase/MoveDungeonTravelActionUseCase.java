@@ -1,6 +1,7 @@
 package src.domain.dungeon.model.runtime.usecase;
 
 import java.util.Objects;
+import java.util.Optional;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts.SelectedAction;
@@ -19,9 +20,6 @@ import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValue
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.OverworldTarget;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.core.repository.DungeonMapRepository;
-import src.domain.dungeon.model.core.usecase.BuildDungeonDerivedStateUseCase;
-import src.domain.dungeon.model.core.usecase.LoadDungeonMapUseCase;
 
 public final class MoveDungeonTravelActionUseCase {
     private static final String TRAVEL_ACTION_COMPLETE = "Reiseaktion ausgefuehrt.";
@@ -48,18 +46,18 @@ public final class MoveDungeonTravelActionUseCase {
         }
     }
 
-    private final LoadDungeonMapUseCase loadDungeonMap;
-    private final DungeonMapRepository repository;
-    private final BuildDungeonDerivedStateUseCase deriveState;
+    private final LoadDungeonSnapshotUseCase.MapLoader loadDungeonMap;
+    private final MapFinder mapFinder;
+    private final LoadDungeonTravelSurfaceUseCase.DerivedStateLoader deriveState;
     private final TravelSurfaceProjection projector = new TravelSurfaceProjection();
 
     public MoveDungeonTravelActionUseCase(
-            LoadDungeonMapUseCase loadDungeonMap,
-            DungeonMapRepository repository,
-            BuildDungeonDerivedStateUseCase deriveState
+            LoadDungeonSnapshotUseCase.MapLoader loadDungeonMap,
+            MapFinder mapFinder,
+            LoadDungeonTravelSurfaceUseCase.DerivedStateLoader deriveState
     ) {
         this.loadDungeonMap = Objects.requireNonNull(loadDungeonMap, "loadDungeonMap");
-        this.repository = Objects.requireNonNull(repository, "repository");
+        this.mapFinder = Objects.requireNonNull(mapFinder, "mapFinder");
         this.deriveState = Objects.requireNonNull(deriveState, "deriveState");
     }
 
@@ -68,14 +66,14 @@ public final class MoveDungeonTravelActionUseCase {
         SelectedAction selectedAction = input == null ? SelectedAction.invalid() : input.selectedAction();
         DungeonMap currentMap = loadMap(position);
         TravelAuthoredSurface currentSurface =
-                TravelAuthoredSurfaceProjectionMapper.from(currentMap, deriveState.execute(currentMap));
+                TravelAuthoredSurfaceProjectionMapper.from(currentMap, deriveState.derive(currentMap));
         return new MoveResolver(currentSurface, position).move(selectedAction);
     }
 
     private DungeonMap loadMap(@Nullable TravelPositionFacts position) {
         return position == null
-                ? loadDungeonMap.execute()
-                : loadDungeonMap.execute(new DungeonMapIdentity(position.mapId()));
+                ? loadDungeonMap.load(null)
+                : loadDungeonMap.load(new DungeonMapIdentity(position.mapId()));
     }
 
     private final class MoveResolver {
@@ -93,7 +91,7 @@ public final class MoveDungeonTravelActionUseCase {
         }
 
         private MoveResultData move(SelectedAction selectedAction) {
-            java.util.Optional<TravelActionFacts> action = currentSurface.action(selectedAction);
+            Optional<TravelActionFacts> action = currentSurface.action(selectedAction);
             if (action.isEmpty()) {
                 return new MoveResultData(
                         MoveStatus.INVALID_ACTION,
@@ -166,10 +164,10 @@ public final class MoveDungeonTravelActionUseCase {
         }
 
         private ResolvedDungeonTransition resolveTransitionTarget(TravelTransitionTarget target) {
-            DungeonMap targetMap = repository.findById(new DungeonMapIdentity(target.mapId())).orElse(null);
+            DungeonMap targetMap = mapFinder.find(new DungeonMapIdentity(target.mapId())).orElse(null);
             TravelAuthoredSurface targetSurface = targetMap == null
                     ? null
-                    : TravelAuthoredSurfaceProjectionMapper.from(targetMap, deriveState.execute(targetMap));
+                    : TravelAuthoredSurfaceProjectionMapper.from(targetMap, deriveState.derive(targetMap));
             Transition targetTransition =
                     targetSurface == null
                             ? null
@@ -203,6 +201,11 @@ public final class MoveDungeonTravelActionUseCase {
                     statusLabel);
         }
 
+    }
+
+    @FunctionalInterface
+    public interface MapFinder {
+        Optional<DungeonMap> find(DungeonMapIdentity mapId);
     }
 
     private record ResolvedDungeonTransition(

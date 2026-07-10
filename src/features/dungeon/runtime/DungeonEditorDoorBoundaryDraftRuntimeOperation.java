@@ -1,32 +1,19 @@
 package src.features.dungeon.runtime;
 
-import java.util.List;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.features.dungeon.runtime.DungeonEditorDoorBoundaryDraftInterpretation.DoorBoundaryCommit;
 
 final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
-    private final DungeonEditorSessionWorkflow workflow;
-    private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
-    private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
-    private final ApplyDungeonEditorAuthoredOperationUseCase authoredOperationUseCase;
+    private final DungeonEditorDraftRuntimeContext context;
+    private final DungeonEditorDraftAuthoredCommitter authoredCommitter;
 
     DungeonEditorDoorBoundaryDraftRuntimeOperation(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
-        DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases safeRuntime =
-                Objects.requireNonNull(runtime, "runtime");
-        workflow = Objects.requireNonNull(safeRuntime.workflow(), "workflow");
-        mainViewInterpreter = Objects.requireNonNull(safeRuntime.mainViewInterpreter(), "mainViewInterpreter");
-        effectUseCase = Objects.requireNonNull(safeRuntime.effectUseCase(), "effectUseCase");
-        authoredOperationUseCase = Objects.requireNonNull(
-                safeRuntime.authored().applyOperationUseCase(),
-                "authoredOperationUseCase");
+        context = DungeonEditorDraftRuntimeContext.from(runtime);
+        authoredCommitter = DungeonEditorDraftAuthoredCommitter.from(runtime);
     }
 
     static boolean handles(DungeonEditorTool tool) {
@@ -60,22 +47,21 @@ final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
             DungeonEditorSessionValues.Tool doorTool
     ) {
         ApplyDungeonEditorSessionEffectUseCase.CurrentGridPublication currentGrid =
-                effectUseCase.committedGridOrPublishCurrentResult();
+                context.currentGridOrPublishCurrentResult();
         MapSnapshot committedSnapshot = currentGrid.committedSnapshot();
         if (committedSnapshot == null) {
             return DungeonEditorRuntimeResultTranslator.fromSnapshot(currentGrid.snapshot());
         }
         PointerAction effectiveAction = DungeonEditorDraftOperationSupport.previewAction(action);
         DungeonEditorDoorBoundaryDraftInterpretation interpretation =
-                mainViewInterpreter.doorBoundaryOperation(
+                context.doorBoundaryOperation(
                         DungeonEditorDraftOperationSupport.pointerAction(effectiveAction),
                         input,
                         committedSnapshot,
-                        doorTool,
-                        workflow.session().projectionLevel());
+                        doorTool);
         return DungeonEditorRuntimeResultTranslator.fromPublication(
                 currentGrid.snapshot(),
-                effectUseCase.applyEffect(interpretation.effect(), commitFor(interpretation.commit())));
+                context.applyEffect(interpretation.effect(), commitFor(interpretation.commit())));
     }
 
     private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit commitFor(
@@ -84,11 +70,7 @@ final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
         if (commit == null) {
             return null;
         }
-        return mapId -> authoredOperationUseCase.executeDoorBoundary(
-                mapId,
-                commit.clusterId(),
-                DungeonEditorWorkspaceCoreGeometry.edges(List.of(commit.edge().toEdgeRef())),
-                commit.deleteMode());
+        return mapId -> authoredCommitter.applyDoorBoundary(mapId, commit);
     }
 
 }

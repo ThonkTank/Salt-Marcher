@@ -1,6 +1,7 @@
 package src.features.dungeon.runtime;
 
 import java.util.Objects;
+import src.domain.dungeon.DungeonAuthoredApplicationService;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.stair.StairGeometryDerivation;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
@@ -10,7 +11,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValue
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
-import src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorAuthoredStairUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 
 @SuppressWarnings("PMD.TooManyMethods")
@@ -21,8 +21,9 @@ final class DungeonEditorStairDraftRuntimeOperation {
     private static final DungeonEditorToolRegistry TOOL_REGISTRY = DungeonEditorToolRegistry.current();
 
     private final DungeonEditorSessionWorkflow workflow;
-    private final CreateDungeonEditorAuthoredStairUseCase createStairUseCase;
     private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
+    private final DungeonAuthoredApplicationService authoredService;
+    private final DungeonAuthoredApplicationService.Session authoredSession;
     private final StairGeometryDerivation derivation = new StairGeometryDerivation();
     private Draft draft = Draft.inactive();
 
@@ -30,8 +31,9 @@ final class DungeonEditorStairDraftRuntimeOperation {
         DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases safeRuntime =
                 Objects.requireNonNull(runtime, "runtime");
         workflow = safeRuntime.workflow();
-        createStairUseCase = safeRuntime.authored().createStairUseCase();
         effectUseCase = safeRuntime.effectUseCase();
+        authoredService = Objects.requireNonNull(safeRuntime.authoredService(), "authoredService");
+        authoredSession = Objects.requireNonNull(safeRuntime.authored(), "authoredSession");
     }
 
     static boolean handles(DungeonEditorTool tool) {
@@ -85,7 +87,7 @@ final class DungeonEditorStairDraftRuntimeOperation {
         draft = Draft.inactive();
         return DungeonEditorRuntimeResultTranslator.fromPublication(effectUseCase.applyEffect(
                 DungeonEditorSessionEffect.apply(preview),
-                mapId -> createStairUseCase.execute(mapId, spec)));
+                mapId -> authoredService.createStair(mapId, spec, authoredSession)));
     }
 
     private DungeonEditorRuntimeOperationResult preview(DungeonEditorTool tool, Cell pointerCell) {
@@ -106,7 +108,7 @@ final class DungeonEditorStairDraftRuntimeOperation {
     private boolean validForCurrentMap(StairGeometryDerivation.Result result) {
         return result != null
                 && result.valid()
-                && createStairUseCase.canExecute(workflow.session().selectedMapId(), result.spec());
+                && authoredService.canCreateStair(workflow.session().selectedMapId(), result.spec(), authoredSession);
     }
 
     private DungeonEditorRuntimeOperationResult publishPreview(

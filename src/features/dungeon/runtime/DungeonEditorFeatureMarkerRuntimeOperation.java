@@ -1,6 +1,7 @@
 package src.features.dungeon.runtime;
 
 import java.util.Objects;
+import src.domain.dungeon.DungeonAuthoredApplicationService;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
@@ -9,8 +10,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffec
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
-import src.domain.dungeon.model.runtime.usecase.CreateDungeonEditorAuthoredFeatureMarkerUseCase;
-import src.domain.dungeon.model.runtime.usecase.DeleteDungeonEditorAuthoredFeatureMarkerUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 
 final class DungeonEditorFeatureMarkerRuntimeOperation {
@@ -19,21 +18,17 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
     private static final DungeonEditorToolRegistry TOOL_REGISTRY = DungeonEditorToolRegistry.current();
 
     private final DungeonEditorSessionWorkflow workflow;
-    private final CreateDungeonEditorAuthoredFeatureMarkerUseCase createFeatureMarkerUseCase;
-    private final DeleteDungeonEditorAuthoredFeatureMarkerUseCase deleteFeatureMarkerUseCase;
     private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
+    private final DungeonAuthoredApplicationService authoredService;
+    private final DungeonAuthoredApplicationService.Session authoredSession;
 
     DungeonEditorFeatureMarkerRuntimeOperation(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
         DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases safeRuntime =
                 Objects.requireNonNull(runtime, "runtime");
         workflow = Objects.requireNonNull(safeRuntime.workflow(), "workflow");
-        createFeatureMarkerUseCase = Objects.requireNonNull(
-                safeRuntime.authored().createFeatureMarkerUseCase(),
-                "createFeatureMarkerUseCase");
-        deleteFeatureMarkerUseCase = Objects.requireNonNull(
-                safeRuntime.authored().deleteFeatureMarkerUseCase(),
-                "deleteFeatureMarkerUseCase");
         effectUseCase = Objects.requireNonNull(safeRuntime.effectUseCase(), "effectUseCase");
+        authoredService = Objects.requireNonNull(safeRuntime.authoredService(), "authoredService");
+        authoredSession = Objects.requireNonNull(safeRuntime.authored(), "authoredSession");
     }
 
     static boolean handles(DungeonEditorTool tool) {
@@ -69,11 +64,19 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
         if (!workflow.session().hasSelectedMap() || anchor == null) {
             return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
-        if (!createFeatureMarkerUseCase.canExecute(workflow.session().selectedMapId(), kind, anchor)) {
+        if (!authoredService.canCreateFeatureMarker(
+                workflow.session().selectedMapId(),
+                kind,
+                anchor,
+                authoredSession)) {
             workflow.clearPreviewWithStatus(INVALID_FEATURE_MARKER_STATUS);
             return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
-        long markerId = createFeatureMarkerUseCase.execute(workflow.session().selectedMapId(), kind, anchor);
+        long markerId = authoredService.createFeatureMarker(
+                workflow.session().selectedMapId(),
+                kind,
+                anchor,
+                authoredSession);
         if (markerId <= NO_MARKER_ID) {
             workflow.clearPreviewWithStatus(INVALID_FEATURE_MARKER_STATUS);
             return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
@@ -100,7 +103,10 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
         if (markerId <= NO_MARKER_ID) {
             return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
         }
-        boolean deleted = deleteFeatureMarkerUseCase.execute(workflow.session().selectedMapId(), markerId);
+        boolean deleted = authoredService.deleteFeatureMarker(
+                workflow.session().selectedMapId(),
+                markerId,
+                authoredSession);
         if (deleted) {
             workflow.applyEffect(DungeonEditorSessionEffect.clearedSelection());
             workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());

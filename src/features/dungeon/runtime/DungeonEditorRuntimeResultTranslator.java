@@ -2,8 +2,8 @@ package src.features.dungeon.runtime;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.DungeonAuthoredApplicationService;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 
 final class DungeonEditorRuntimeResultTranslator {
@@ -26,9 +26,9 @@ final class DungeonEditorRuntimeResultTranslator {
     }
 
     static DungeonEditorRuntimeOperationResult fromOperationResult(
-            ApplyDungeonEditorOperationUseCase.@Nullable OperationResultData result
+            DungeonAuthoredApplicationService.OperationResult result
     ) {
-        return result == null
+        return result == null || !result.present()
                 ? DungeonEditorRuntimeOperationResult.none()
                 : DungeonEditorRuntimeOperationResult.publishAfterStateModelSideEffect();
     }

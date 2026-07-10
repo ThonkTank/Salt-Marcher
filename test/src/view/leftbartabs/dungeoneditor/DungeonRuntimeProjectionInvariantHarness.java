@@ -17,6 +17,7 @@ import src.domain.dungeon.model.core.projection.DungeonAreaFacts;
 import src.domain.dungeon.model.core.projection.DungeonAreaType;
 import src.domain.dungeon.model.core.projection.DungeonBoundaryFacts;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
+import src.domain.dungeon.model.core.projection.DungeonDerivedStateProjection;
 import src.domain.dungeon.model.core.projection.DungeonMapFacts;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
@@ -53,8 +54,6 @@ import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapAuthoring;
-import src.domain.dungeon.model.core.usecase.BuildDungeonDerivedStateUseCase;
-import src.domain.dungeon.model.core.usecase.LoadDungeonMapUseCase;
 import src.domain.dungeon.model.core.structure.room.DungeonClusterBoundary;
 import src.domain.dungeon.model.core.structure.room.DungeonRoom;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
@@ -238,12 +237,11 @@ final class DungeonRuntimeProjectionInvariantHarness {
         DungeonMapRepository repository = repositoryOf(
                 unlinkedMap,
                 DungeonMapAuthoring.empty(new DungeonMapIdentity(99L), "Unused Target"));
-        LoadDungeonMapUseCase loadDungeonMapUseCase = new LoadDungeonMapUseCase(repository);
-        BuildDungeonDerivedStateUseCase deriveStateUseCase = new BuildDungeonDerivedStateUseCase();
+        DungeonDerivedStateProjection projector = new DungeonDerivedStateProjection();
         MoveDungeonTravelActionUseCase moveUseCase = new MoveDungeonTravelActionUseCase(
-                loadDungeonMapUseCase,
-                repository,
-                deriveStateUseCase);
+                mapId -> loadMap(repository, mapId),
+                repository::findById,
+                projector::project);
         TravelPositionFacts transitionPosition = java.util.Objects.requireNonNull(
                 unlinkedTransition.targetPosition(),
                 "unlinkedTransition.targetPosition");
@@ -268,8 +266,8 @@ final class DungeonRuntimeProjectionInvariantHarness {
         TravelPartyStateRepository partyStateRepository =
                 () -> new ActiveTravelStateData(List.of(12L), null);
         LoadDungeonTravelSurfaceUseCase loadSurfaceUseCase = new LoadDungeonTravelSurfaceUseCase(
-                loadDungeonMapUseCase,
-                deriveStateUseCase);
+                mapId -> loadMap(repository, mapId),
+                projector::project);
         ApplyTravelDungeonMovementUseCase applyUseCase = new ApplyTravelDungeonMovementUseCase(
                 partyStateRepository,
                 partyPositions,
@@ -279,7 +277,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 new TravelSurfaceProjection().project(
                         TravelAuthoredSurfaceProjectionMapper.from(
                                 unlinkedMap,
-                                deriveStateUseCase.execute(unlinkedMap)),
+                                projector.project(unlinkedMap)),
                         position,
                         ""));
         SurfaceData applied = applyUseCase.move(
@@ -463,10 +461,11 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 0L,
                 null);
         DungeonMapRepository repository = repositoryOf(firstMap, selectedMap);
-        LoadDungeonMapUseCase loadDungeonMapUseCase = new LoadDungeonMapUseCase(repository);
-        BuildDungeonDerivedStateUseCase deriveStateUseCase = new BuildDungeonDerivedStateUseCase();
+        DungeonDerivedStateProjection projector = new DungeonDerivedStateProjection();
         LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase =
-                new LoadDungeonTravelSurfaceUseCase(loadDungeonMapUseCase, deriveStateUseCase);
+                new LoadDungeonTravelSurfaceUseCase(
+                        mapId -> loadMap(repository, mapId),
+                        projector::project);
         TravelPartyStateRepository partyStateRepository = () -> new ActiveTravelStateData(List.of(), null);
         TravelPartyPositionRepository partyPositionRepository = new TravelPartyPositionRepository() {
             @Override
@@ -492,9 +491,9 @@ final class DungeonRuntimeProjectionInvariantHarness {
                         partyPositionRepository,
                         loadDungeonTravelSurfaceUseCase,
                         new MoveDungeonTravelActionUseCase(
-                                loadDungeonMapUseCase,
-                                repository,
-                                deriveStateUseCase)),
+                                mapId -> loadMap(repository, mapId),
+                                repository::findById,
+                                projector::project)),
                 new StabilizeTravelDungeonProjectionUseCase());
 
         SnapshotData snapshot = useCase.applyCommand(
@@ -694,6 +693,17 @@ final class DungeonRuntimeProjectionInvariantHarness {
             }
         }
         return -1;
+    }
+
+    private static DungeonMap loadMap(DungeonMapRepository repository, DungeonMapIdentity mapId) {
+        if (mapId != null) {
+            Optional<DungeonMap> map = repository.findById(mapId);
+            if (map.isPresent()) {
+                return map.get();
+            }
+        }
+        return repository.firstMap()
+                .orElse(DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Dungeon Map"));
     }
 
     private static void assertEquals(Object expected, Object actual, String message) {

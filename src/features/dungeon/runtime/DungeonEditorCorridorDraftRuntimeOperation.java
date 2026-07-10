@@ -1,29 +1,18 @@
 package src.features.dungeon.runtime;
 
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 
 final class DungeonEditorCorridorDraftRuntimeOperation {
-    private final DungeonEditorSessionWorkflow workflow;
-    private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
-    private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
-    private final ApplyDungeonEditorAuthoredOperationUseCase authoredOperationUseCase;
+    private final DungeonEditorDraftRuntimeContext context;
+    private final DungeonEditorDraftAuthoredCommitter authoredCommitter;
 
     DungeonEditorCorridorDraftRuntimeOperation(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
-        DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases safeRuntime =
-                Objects.requireNonNull(runtime, "runtime");
-        workflow = Objects.requireNonNull(safeRuntime.workflow(), "workflow");
-        mainViewInterpreter = Objects.requireNonNull(safeRuntime.mainViewInterpreter(), "mainViewInterpreter");
-        effectUseCase = Objects.requireNonNull(safeRuntime.effectUseCase(), "effectUseCase");
-        authoredOperationUseCase = Objects.requireNonNull(
-                safeRuntime.authored().applyOperationUseCase(),
-                "authoredOperationUseCase");
+        context = DungeonEditorDraftRuntimeContext.from(runtime);
+        authoredCommitter = DungeonEditorDraftAuthoredCommitter.from(runtime);
     }
 
     static boolean handles(DungeonEditorTool tool) {
@@ -56,22 +45,21 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
             DungeonEditorSessionValues.Tool corridorTool
     ) {
         ApplyDungeonEditorSessionEffectUseCase.CurrentGridPublication currentGrid =
-                effectUseCase.committedGridOrPublishCurrentResult();
+                context.currentGridOrPublishCurrentResult();
         MapSnapshot committedSnapshot = currentGrid.committedSnapshot();
         if (committedSnapshot == null) {
             return DungeonEditorRuntimeResultTranslator.fromSnapshot(currentGrid.snapshot());
         }
         PointerAction effectiveAction = DungeonEditorDraftOperationSupport.previewAction(action);
         src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect effect =
-                mainViewInterpreter.corridor(
+                context.corridor(
                         DungeonEditorDraftOperationSupport.pointerAction(effectiveAction),
                         input,
                         committedSnapshot,
-                        corridorTool,
-                        workflow.session().projectionLevel());
+                        corridorTool);
         return DungeonEditorRuntimeResultTranslator.fromPublication(
                 currentGrid.snapshot(),
-                effectUseCase.applyEffect(effect, commitFor(effect.getApplyPreview())));
+                context.applyEffect(effect, commitFor(effect.getApplyPreview())));
     }
 
     private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit commitFor(
@@ -79,14 +67,9 @@ final class DungeonEditorCorridorDraftRuntimeOperation {
     ) {
         return switch (preview) {
             case DungeonEditorSessionValues.CorridorCreatePreview corridor ->
-                    mapId -> authoredOperationUseCase.executeCreateCorridor(
-                            mapId,
-                            corridor.start(),
-                            corridor.end());
+                    mapId -> authoredCommitter.createCorridor(mapId, corridor);
             case DungeonEditorSessionValues.DeleteCorridorPreview corridor ->
-                    mapId -> authoredOperationUseCase.executeDeleteCorridor(
-                            mapId,
-                            corridor.target());
+                    mapId -> authoredCommitter.deleteCorridor(mapId, corridor);
             case null, default -> null;
         };
     }

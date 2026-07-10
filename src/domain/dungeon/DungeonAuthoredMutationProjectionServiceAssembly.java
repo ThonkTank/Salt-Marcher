@@ -24,4 +24,10 @@ final class DungeonAuthoredMutationProjectionServiceAssembly {
                         result.validationMessages(),
                         result.reactionMessages()));
     }
+
+    static src.domain.dungeon.published.DungeonAuthoredMutationResult mutation(
+            DungeonAuthoredPublication.Mutation result
+    ) {
+        return mutation(result.source());
+    }
 }

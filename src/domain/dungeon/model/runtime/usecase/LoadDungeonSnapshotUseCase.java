@@ -8,7 +8,6 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.core.usecase.LoadDungeonMapUseCase;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleProjection;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 
@@ -141,13 +140,13 @@ public final class LoadDungeonSnapshotUseCase {
         }
     }
 
-    private final LoadDungeonMapUseCase loadDungeonMap;
+    private final MapLoader loadDungeonMap;
     private final AssembleDungeonSnapshotUseCase assembleDungeonSnapshot;
     private final PublishDungeonEditorHandlesUseCase publishDungeonEditorHandles;
     private final InspectDungeonSelectionUseCase inspectDungeonSelection;
 
     public LoadDungeonSnapshotUseCase(
-            LoadDungeonMapUseCase loadDungeonMap,
+            MapLoader loadDungeonMap,
             AssembleDungeonSnapshotUseCase assembleDungeonSnapshot,
             PublishDungeonEditorHandlesUseCase publishDungeonEditorHandles,
             InspectDungeonSelectionUseCase inspectDungeonSelection
@@ -159,7 +158,7 @@ public final class LoadDungeonSnapshotUseCase {
     }
 
     public DungeonSnapshotData execute(DungeonMapIdentity mapId) {
-        return snapshotData(loadDungeonMap.execute(mapId));
+        return snapshotData(loadDungeonMap.load(mapId));
     }
 
     public AuthoredSurfaceData executeWithSelection(
@@ -168,7 +167,7 @@ public final class LoadDungeonSnapshotUseCase {
             long clusterId,
             boolean clusterSelection
     ) {
-        DungeonMap dungeonMap = loadDungeonMap.execute(mapId);
+        DungeonMap dungeonMap = loadDungeonMap.load(mapId);
         DungeonSnapshotData snapshot = snapshotData(dungeonMap);
         return new AuthoredSurfaceData(
                 snapshot,
@@ -184,6 +183,11 @@ public final class LoadDungeonSnapshotUseCase {
         return assembleDungeonSnapshot.execute(
                 dungeonMap,
                 publishDungeonEditorHandles.execute(dungeonMap));
+    }
+
+    @FunctionalInterface
+    public interface MapLoader {
+        DungeonMap load(@Nullable DungeonMapIdentity mapId);
     }
 
 }

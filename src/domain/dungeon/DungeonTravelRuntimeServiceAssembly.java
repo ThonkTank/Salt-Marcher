@@ -24,21 +24,17 @@ final class DungeonTravelRuntimeServiceAssembly {
             return existing;
         }
         ServiceRegistry services = requireRegistry(registry);
-        src.domain.dungeon.model.core.repository.DungeonMapRepository dungeonMapRepository =
-                services.require(src.domain.dungeon.model.core.repository.DungeonMapRepository.class);
-        src.domain.dungeon.model.core.usecase.LoadDungeonMapUseCase loadDungeonMapUseCase =
-                new src.domain.dungeon.model.core.usecase.LoadDungeonMapUseCase(dungeonMapRepository);
-        src.domain.dungeon.model.core.usecase.BuildDungeonDerivedStateUseCase derive =
-                new src.domain.dungeon.model.core.usecase.BuildDungeonDerivedStateUseCase();
+        DungeonAuthoredApplicationService authoredMaps =
+                services.require(DungeonAuthoredApplicationService.class);
         src.domain.dungeon.model.runtime.usecase.LoadDungeonTravelSurfaceUseCase loadSurfaceUseCase =
                 new src.domain.dungeon.model.runtime.usecase.LoadDungeonTravelSurfaceUseCase(
-                        loadDungeonMapUseCase,
-                        derive);
+                        authoredMaps::loadMap,
+                        authoredMaps::derive);
         src.domain.dungeon.model.runtime.usecase.MoveDungeonTravelActionUseCase moveActionUseCase =
                 new src.domain.dungeon.model.runtime.usecase.MoveDungeonTravelActionUseCase(
-                        loadDungeonMapUseCase,
-                        dungeonMapRepository,
-                        derive);
+                        authoredMaps::loadMap,
+                        authoredMaps::findMap,
+                        authoredMaps::derive);
         TravelPartyStateRepository partyStateRepository =
                 new DungeonTravelPartyStateServiceAssembly().repository(services);
         TravelPartyPositionRepository partyPositionRepository =

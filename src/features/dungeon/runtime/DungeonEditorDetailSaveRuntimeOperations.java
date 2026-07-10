@@ -3,43 +3,21 @@ package src.features.dungeon.runtime;
 import java.util.List;
 import java.util.Objects;
 import java.util.OptionalInt;
-import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorLabelNameUseCase;
-import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorRoomNarrationUseCase;
-import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorStairGeometryUseCase;
-import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorTransitionDescriptionUseCase;
-import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorTransitionLinkUseCase;
+import src.domain.dungeon.DungeonAuthoredApplicationService;
 
 final class DungeonEditorDetailSaveRuntimeOperations {
-    private final SaveDungeonEditorRoomNarrationUseCase saveRoomNarrationUseCase;
-    private final SaveDungeonEditorLabelNameUseCase saveLabelNameUseCase;
-    private final SaveDungeonEditorTransitionDescriptionUseCase saveTransitionDescriptionUseCase;
-    private final SaveDungeonEditorTransitionLinkUseCase saveTransitionLinkUseCase;
-    private final SaveDungeonEditorStairGeometryUseCase saveStairGeometryUseCase;
+    private final DungeonAuthoredApplicationService.RuntimeCommands commands;
 
     DungeonEditorDetailSaveRuntimeOperations(DungeonEditorAuthoredRuntimeOperationUseCases.DetailUseCases useCases) {
         DungeonEditorAuthoredRuntimeOperationUseCases.DetailUseCases safeUseCases =
                 Objects.requireNonNull(useCases, "useCases");
-        saveRoomNarrationUseCase = Objects.requireNonNull(
-                safeUseCases.saveRoomNarration(),
-                "saveRoomNarrationUseCase");
-        saveLabelNameUseCase = Objects.requireNonNull(
-                safeUseCases.saveLabelName(),
-                "saveLabelNameUseCase");
-        saveTransitionDescriptionUseCase = Objects.requireNonNull(
-                safeUseCases.saveTransitionDescription(),
-                "saveTransitionDescriptionUseCase");
-        saveTransitionLinkUseCase = Objects.requireNonNull(
-                safeUseCases.saveTransitionLink(),
-                "saveTransitionLinkUseCase");
-        saveStairGeometryUseCase = Objects.requireNonNull(
-                safeUseCases.saveStairGeometry(),
-                "saveStairGeometryUseCase");
+        commands = Objects.requireNonNull(safeUseCases.commands(), "commands");
     }
 
     DungeonEditorRuntimeOperationResult saveRoomNarration(RoomNarration narration) {
         RoomNarration safeNarration = narration == null ? new RoomNarration(0L, "", List.of()) : narration;
         return DungeonEditorRuntimeResultTranslator.fromSnapshot(
-                saveRoomNarrationUseCase.execute(new SaveDungeonEditorRoomNarrationUseCase.RoomNarrationInput(
+                commands.saveRoomNarration(new DungeonAuthoredApplicationService.RoomNarrationInput(
                         safeNarration.roomId(),
                         safeNarration.visualDescription(),
                         DungeonEditorRuntimeInputTranslator.exitInputs(safeNarration))));
@@ -51,20 +29,20 @@ final class DungeonEditorDetailSaveRuntimeOperations {
     ) {
         DungeonEditorRuntimeLabelTarget safeTarget = DungeonEditorRuntimeLabelTarget.orEmpty(target);
         return DungeonEditorRuntimeResultTranslator.fromSnapshot(
-                saveLabelNameUseCase.execute(new SaveDungeonEditorLabelNameUseCase.LabelNameInput(
+                commands.saveLabelName(new DungeonAuthoredApplicationService.LabelNameInput(
                         labelTargetKind(safeTarget),
                         safeTarget.targetId(),
                         name)));
     }
 
-    private static SaveDungeonEditorLabelNameUseCase.TargetKind labelTargetKind(
+    private static DungeonAuthoredApplicationService.LabelTargetKind labelTargetKind(
             DungeonEditorRuntimeLabelTarget target
     ) {
         DungeonEditorRuntimeLabelTarget safeTarget = DungeonEditorRuntimeLabelTarget.orEmpty(target);
         return switch (safeTarget.kind()) {
-            case ROOM -> SaveDungeonEditorLabelNameUseCase.TargetKind.ROOM;
-            case CLUSTER -> SaveDungeonEditorLabelNameUseCase.TargetKind.CLUSTER;
-            case EMPTY -> SaveDungeonEditorLabelNameUseCase.TargetKind.EMPTY;
+            case ROOM -> DungeonAuthoredApplicationService.LabelTargetKind.ROOM;
+            case CLUSTER -> DungeonAuthoredApplicationService.LabelTargetKind.CLUSTER;
+            case EMPTY -> DungeonAuthoredApplicationService.LabelTargetKind.EMPTY;
         };
     }
 
@@ -76,7 +54,7 @@ final class DungeonEditorDetailSaveRuntimeOperations {
                 ? TransitionDestinationDraftInput.unlinkedEntrance()
                 : input;
         return DungeonEditorRuntimeResultTranslator.fromOperationResult(
-                saveTransitionLinkUseCase.execute(new SaveDungeonEditorTransitionLinkUseCase.TransitionLinkInput(
+                commands.saveTransitionLink(new DungeonAuthoredApplicationService.TransitionLinkInput(
                         sourceTransitionId,
                         safeInput.targetMapId(),
                         safeInput.targetTransitionId(),
@@ -88,8 +66,8 @@ final class DungeonEditorDetailSaveRuntimeOperations {
             String description
     ) {
         return DungeonEditorRuntimeResultTranslator.fromSnapshot(
-                saveTransitionDescriptionUseCase.execute(
-                        new SaveDungeonEditorTransitionDescriptionUseCase.TransitionDescriptionInput(
+                commands.saveTransitionDescription(
+                        new DungeonAuthoredApplicationService.TransitionDescriptionInput(
                                 transitionId,
                                 description)));
     }
@@ -99,7 +77,7 @@ final class DungeonEditorDetailSaveRuntimeOperations {
         OptionalInt dimension1 = safeInput.dimension1Value();
         OptionalInt dimension2 = safeInput.dimension2Value();
         return DungeonEditorRuntimeResultTranslator.fromSnapshot(
-                saveStairGeometryUseCase.execute(new SaveDungeonEditorStairGeometryUseCase.StairGeometryInput(
+                commands.saveStairGeometry(new DungeonAuthoredApplicationService.StairGeometryInput(
                         safeInput.stairId(),
                         safeInput.shapeName(),
                         safeInput.directionName(),

@@ -1,14 +1,13 @@
 package src.domain.dungeon.model.runtime.usecase;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurfaceProjectionMapper;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceProjection;
 import src.domain.dungeon.model.runtime.travel.projection.TravelPositionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceFacts;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.DungeonMapIdentity;
-import src.domain.dungeon.model.core.usecase.BuildDungeonDerivedStateUseCase;
-import src.domain.dungeon.model.core.usecase.LoadDungeonMapUseCase;
 
 public final class LoadDungeonTravelSurfaceUseCase {
 
@@ -38,13 +37,13 @@ public final class LoadDungeonTravelSurfaceUseCase {
         }
     }
 
-    private final LoadDungeonMapUseCase loadDungeonMap;
-    private final BuildDungeonDerivedStateUseCase derive;
+    private final LoadDungeonSnapshotUseCase.MapLoader loadDungeonMap;
+    private final DerivedStateLoader derive;
     private final TravelSurfaceProjection projector = new TravelSurfaceProjection();
 
     public LoadDungeonTravelSurfaceUseCase(
-            LoadDungeonMapUseCase loadDungeonMap,
-            BuildDungeonDerivedStateUseCase derive
+            LoadDungeonSnapshotUseCase.MapLoader loadDungeonMap,
+            DerivedStateLoader derive
     ) {
         this.loadDungeonMap = loadDungeonMap;
         this.derive = derive;
@@ -55,18 +54,23 @@ public final class LoadDungeonTravelSurfaceUseCase {
         Long mapId = input == null ? null : input.mapId();
         DungeonMap dungeonMap = loadMap(mapId, position);
         return projector.project(
-                TravelAuthoredSurfaceProjectionMapper.from(dungeonMap, derive.execute(dungeonMap)),
+                TravelAuthoredSurfaceProjectionMapper.from(dungeonMap, derive.derive(dungeonMap)),
                 position,
                 "Token auf der Karte ziehen");
     }
 
     private DungeonMap loadMap(@Nullable Long requestedMapId, @Nullable TravelPositionFacts position) {
         if (position != null) {
-            return loadDungeonMap.execute(new DungeonMapIdentity(position.mapId()));
+            return loadDungeonMap.load(new DungeonMapIdentity(position.mapId()));
         }
         if (requestedMapId != null) {
-            return loadDungeonMap.execute(new DungeonMapIdentity(requestedMapId));
+            return loadDungeonMap.load(new DungeonMapIdentity(requestedMapId));
         }
-        return loadDungeonMap.execute();
+        return loadDungeonMap.load(null);
+    }
+
+    @FunctionalInterface
+    public interface DerivedStateLoader {
+        DungeonDerivedState derive(DungeonMap dungeonMap);
     }
 }

@@ -9,7 +9,7 @@ final class DungeonAuthoredCatalogProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonMapCatalogResponse mapList(
-            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.CatalogPublication result
+            DungeonAuthoredPublication.Catalog result
     ) {
         return new src.domain.dungeon.published.DungeonMapCatalogResponse.MapList(summaries(result));
     }
@@ -21,21 +21,25 @@ final class DungeonAuthoredCatalogProjectionServiceAssembly {
         return new src.domain.dungeon.published.DungeonMapCatalogResponse.MapMutation(kind, id(mapId));
     }
 
+    static src.domain.dungeon.published.DungeonMapCatalogResponse mapMutation(
+            src.domain.dungeon.published.DungeonMapCatalogResponse.MutationKind kind,
+            DungeonAuthoredPublication.MapMutation mutation
+    ) {
+        return mapMutation(kind, mutation.mapId());
+    }
+
     private static List<src.domain.dungeon.published.DungeonMapSummary> summaries(
-            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.CatalogPublication result
+            DungeonAuthoredPublication.Catalog result
     ) {
         List<src.domain.dungeon.published.DungeonMapSummary> summaries = new ArrayList<>();
-        for (src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.MapSummaryPublication map :
-                result == null
-                        ? List.<src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.MapSummaryPublication>of()
-                        : result.maps()) {
+        for (DungeonAuthoredPublication.MapSummary map : result.maps()) {
             summaries.add(summary(map));
         }
         return List.copyOf(summaries);
     }
 
     private static src.domain.dungeon.published.DungeonMapSummary summary(
-            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.MapSummaryPublication map
+            DungeonAuthoredPublication.MapSummary map
     ) {
         return new src.domain.dungeon.published.DungeonMapSummary(
                 id(map.mapId()),

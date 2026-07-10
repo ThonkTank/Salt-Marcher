@@ -5,6 +5,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import shell.api.ServiceRegistry;
+import src.domain.dungeon.DungeonServiceContribution;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
@@ -22,11 +24,16 @@ import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.Tran
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.TransitionLinkDirectionality;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestinationTarget;
-import src.domain.dungeon.model.core.usecase.BuildDungeonDerivedStateUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorOperationUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorTransitionLinkOperationUseCase;
-import src.domain.dungeon.model.runtime.usecase.AssembleDungeonSnapshotUseCase;
-import src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorHandlesUseCase;
+import src.domain.dungeon.DungeonAuthoredApplicationService;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
+import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository;
+import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
+import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorSnapshotUseCase;
+import src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorSnapshotUseCase;
 
 final class DungeonTransitionInvariantHarness {
 
@@ -211,22 +218,41 @@ final class DungeonTransitionInvariantHarness {
                         null));
         MissingPreviousMapRepository repository =
                 new MissingPreviousMapRepository(sourceMap, targetMap, missingPreviousMapId);
-        BuildDungeonDerivedStateUseCase derive = new BuildDungeonDerivedStateUseCase();
-        ApplyDungeonEditorTransitionLinkOperationUseCase useCase =
-                new ApplyDungeonEditorTransitionLinkOperationUseCase(
-                        repository,
-                        derive,
-                        new AssembleDungeonSnapshotUseCase(derive),
-                        new PublishDungeonEditorHandlesUseCase());
+        ServiceRegistry services = servicesWithRepository(repository);
+        DungeonAuthoredApplicationService authoredService = services.require(DungeonAuthoredApplicationService.class);
+        DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
+        DungeonAuthoredApplicationService.Session authoredSession =
+                authoredService.openSession(dungeonState);
+        DungeonEditorSessionWorkflow workflow = new DungeonEditorSessionWorkflow();
+        workflow.selectMap(sourceMapId);
+        BuildDungeonEditorSnapshotUseCase snapshotBuilder = new BuildDungeonEditorSnapshotUseCase(
+                authoredSession::searchMaps,
+                new HarnessSurfaceLoader(authoredSession),
+                new HarnessPreviewRefresher(authoredSession),
+                dungeonState);
+        PublishDungeonEditorSnapshotUseCase publishSnapshots =
+                new PublishDungeonEditorSnapshotUseCase(new NoopEditorSnapshotPublishedStateRepository());
+        ApplyDungeonEditorSessionEffectUseCase effectUseCase = new ApplyDungeonEditorSessionEffectUseCase(
+                workflow,
+                (mapId, preview) -> authoredService.applyPreview(mapId, preview, authoredSession),
+                dungeonState,
+                snapshotBuilder,
+                publishSnapshots);
+        DungeonAuthoredApplicationService.RuntimeCommands commands = authoredSession.runtimeCommands(
+                dungeonState,
+                workflow,
+                snapshotBuilder,
+                publishSnapshots,
+                effectUseCase);
 
-        ApplyDungeonEditorOperationUseCase.OperationResultData result = useCase.execute(
-                new DungeonMapIdentity(sourceMapId),
-                sourceTransitionId,
-                new DungeonMapIdentity(targetMapId),
-                targetTransitionId,
-                true);
+        DungeonAuthoredApplicationService.OperationResult result = commands.saveTransitionLink(
+                new DungeonAuthoredApplicationService.TransitionLinkInput(
+                        sourceTransitionId,
+                        targetMapId,
+                        targetTransitionId,
+                        true));
 
-        assertTrue(result != null,
+        assertTrue(result.present(),
                 "transition link use case succeeds when the previous linked map row is missing");
         assertTrue(repository.requestedMapIds().contains(missingPreviousMapId),
                 "transition link use case attempts to load the missing previous map");
@@ -243,6 +269,78 @@ final class DungeonTransitionInvariantHarness {
                 "transition link use case still writes target reverse link when previous map is missing");
         assertFalse(repository.savedMapIds().contains(missingPreviousMapId),
                 "transition link use case cannot mutate a missing previous map");
+    }
+
+    private static ServiceRegistry servicesWithRepository(DungeonMapRepository repository) {
+        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
+        builder.register(DungeonMapRepository.class, repository);
+        new DungeonServiceContribution().register(builder);
+        return builder.build();
+    }
+
+    private record HarnessSurfaceLoader(
+            DungeonAuthoredApplicationService.Session authored
+    ) implements BuildDungeonEditorSnapshotUseCase.AuthoredSurfaceLoader {
+        @Override
+        public void load(MapId mapId) {
+            authored.loadMap(mapId);
+        }
+
+        @Override
+        public void loadWithSelection(
+                MapId mapId,
+                src.domain.dungeon.model.core.graph.DungeonTopologyRef topologyRef,
+                long clusterId,
+                boolean clusterSelection
+        ) {
+            authored.loadMapWithSelection(mapId, topologyRef, clusterId, clusterSelection);
+        }
+    }
+
+    private record HarnessPreviewRefresher(
+            DungeonAuthoredApplicationService.Session authored
+    ) implements BuildDungeonEditorSnapshotUseCase.AuthoredPreviewRefresher {
+        @Override
+        public boolean refreshAuthoredDragPreview(
+                MapId mapId,
+                DungeonEditorSessionValues.Preview preview
+        ) {
+            return authored.executeAuthoredDragPreview(mapId, preview);
+        }
+
+        @Override
+        public void refreshInMemory(
+                DungeonEditorSessionSnapshot.SurfaceData surface,
+                DungeonEditorSessionValues.Preview preview
+        ) {
+            authored.executeInMemoryPreview(surface, preview);
+        }
+
+        @Override
+        public void refresh(MapId mapId, DungeonEditorSessionValues.Preview preview) {
+            authored.executePreview(mapId, preview);
+        }
+    }
+
+    private static final class NoopEditorSnapshotPublishedStateRepository
+            implements DungeonEditorSnapshotPublishedStateRepository {
+        @Override
+        public void publishEditorSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
+        }
+
+        @Override
+        public void publishEditorControls(DungeonEditorSessionSnapshot.ControlsData controls) {
+        }
+
+        @Override
+        public void publishEditorSessionFrame(DungeonEditorSessionSnapshot.SessionFrameData frameData) {
+        }
+
+        @Override
+        public void publishEditorSessionFramePreservingSurface(
+                DungeonEditorSessionSnapshot.SessionFrameData frameData
+        ) {
+        }
     }
 
     private static void assertProtectedDeletePolicy() {

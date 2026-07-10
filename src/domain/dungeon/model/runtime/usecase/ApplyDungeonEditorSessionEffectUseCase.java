@@ -6,6 +6,7 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonFacts
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 
@@ -17,7 +18,7 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
 
     public ApplyDungeonEditorSessionEffectUseCase(
             DungeonEditorSessionWorkflow workflow,
-            ApplyDungeonEditorAuthoredOperationUseCase applyOperationUseCase,
+            AuthoredPreviewCommitter authoredPreviewCommitter,
             DungeonEditorDungeonState dungeonState,
             BuildDungeonEditorSnapshotUseCase snapshotBuilder,
             PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase
@@ -28,7 +29,7 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
                 Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
         previewLifecycle = new DungeonEditorPreviewLifecycleUseCase(
                 this.workflow,
-                applyOperationUseCase,
+                authoredPreviewCommitter,
                 dungeonState,
                 this.snapshotBuilder);
     }
@@ -83,6 +84,11 @@ public final class ApplyDungeonEditorSessionEffectUseCase {
     @FunctionalInterface
     public interface AuthoredCommit {
         void apply(DungeonEditorWorkspaceValues.MapId mapId);
+    }
+
+    @FunctionalInterface
+    public interface AuthoredPreviewCommitter {
+        void apply(DungeonEditorWorkspaceValues.MapId mapId, DungeonEditorSessionValues.Preview preview);
     }
 
     public record CurrentGridPublication(
