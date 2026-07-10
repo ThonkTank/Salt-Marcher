@@ -362,3 +362,20 @@ durch byte-kompatible Published Records, Data-Carrier, Registry-Seams und
 Compatibility-Konstruktoren begruendet. Der selektive Static/Harness-Proof,
 der Production-Handoff und der saubere Dokumentationsnachweis fuer den
 committeten Stand sind gruen. Naechster Schritt ist M3.7 Close-out.
+
+### 2026-07-10 M3.7 encountertable-close-out
+
+Der Encounter-Table-Zyklus ist auf dem Branch abgeschlossen. Der finale
+Stand haelt die eingefrorenen `encounterTableReadbackHarness`-Szenarien fuer
+Summary-Lookup, gewichtete Kandidaten, leere Auswahl, XP-Grenze und
+Storage-Error-Publication gruen. Die finale Proof-Kette umfasst den
+selektiven Static/Harness-Run mit CPD, PMD, Dead-Code-Check,
+Harness-Map/Topology und 5 Harness-Proof-Items, den gruenen
+Production-Handoff, den sauberen Dokumentationsnachweis fuer den committeten
+Docs-Stand, `git diff --check` sowie Phase-1- und Phase-2-Freigaben. Die
+16-Datei-/433-LOC-Ausnahme bleibt akzeptiert und begruendet; die
+`PublishedState`-Entdopplung ist strukturell und die alte Usecase/
+Repository-Schicht ist geloescht. Der Owner-Smoke-Checklist-Eintrag steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`.
+Naechster Bereich ist `encounter`, beginnend mit M3.1 Harness
+Check/Closure fuer die verbleibende State-Tab-Produktionsroute.
