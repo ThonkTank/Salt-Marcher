@@ -2,57 +2,41 @@ package src.domain.creatures;
 
 import java.util.List;
 import src.domain.creatures.model.catalog.CreatureCatalogData;
-import src.domain.creatures.model.catalog.repository.CreaturesPublishedStateRepository;
-import src.domain.creatures.published.CreatureLookupStatus;
-import src.domain.creatures.published.CreatureQueryStatus;
-import src.domain.creatures.published.CreatureReadStatus;
+import src.domain.creatures.published.CreatureActionDetail;
+import src.domain.creatures.published.CreatureCatalogPage;
+import src.domain.creatures.published.CreatureCatalogRow;
+import src.domain.creatures.published.CreatureDetail;
+import src.domain.creatures.published.CreatureEncounterCandidate;
+import src.domain.creatures.published.CreatureFilterOptions;
 
-final class CreaturesPublicationProjectionServiceAssembly {
+final class CreatureCatalogProjection {
 
-    private CreaturesPublicationProjectionServiceAssembly() {
+    private CreatureCatalogProjection() {
     }
 
-    static CreatureReadStatus toReadStatus(String status) {
-        return CreaturesPublishedStateRepository.SUCCESS.equals(status)
-                ? CreatureReadStatus.SUCCESS
-                : CreatureReadStatus.STORAGE_ERROR;
-    }
-
-    static CreatureQueryStatus toQueryStatus(String status) {
-        return switch (status) {
-            case CreaturesPublishedStateRepository.SUCCESS -> CreatureQueryStatus.SUCCESS;
-            case CreaturesPublishedStateRepository.INVALID_QUERY -> CreatureQueryStatus.INVALID_QUERY;
-            default -> CreatureQueryStatus.STORAGE_ERROR;
-        };
-    }
-
-    static CreatureLookupStatus toLookupStatus(String status) {
-        return switch (status) {
-            case CreaturesPublishedStateRepository.SUCCESS -> CreatureLookupStatus.SUCCESS;
-            case CreaturesPublishedStateRepository.NOT_FOUND -> CreatureLookupStatus.NOT_FOUND;
-            default -> CreatureLookupStatus.STORAGE_ERROR;
-        };
-    }
-
-    static src.domain.creatures.published.CreatureFilterOptions toPublishedFilterOptions(
+    static CreatureFilterOptions filterOptions(
             CreatureCatalogData.DistinctFilterValues values,
             List<String> challengeRatings
     ) {
-        return new src.domain.creatures.published.CreatureFilterOptions(
-                values.sizes(),
-                values.types(),
-                values.subtypes(),
-                values.biomes(),
-                values.alignments(),
-                challengeRatings);
+        CreatureCatalogData.DistinctFilterValues safeValues = values == null
+                ? CreatureCatalogData.emptyFilterValues()
+                : values;
+        return new CreatureFilterOptions(
+                safeValues.sizes(),
+                safeValues.types(),
+                safeValues.subtypes(),
+                safeValues.biomes(),
+                safeValues.alignments(),
+                challengeRatings == null ? List.of() : List.copyOf(challengeRatings));
     }
 
-    static src.domain.creatures.published.CreatureCatalogPage toPublishedCatalogPage(
-            CreatureCatalogData.CatalogPageData page
-    ) {
-        return new src.domain.creatures.published.CreatureCatalogPage(
-                page.rows().stream()
-                        .map(row -> new src.domain.creatures.published.CreatureCatalogRow(
+    static CreatureCatalogPage catalogPage(CreatureCatalogData.CatalogPageData page) {
+        CreatureCatalogData.CatalogPageData safePage = page == null
+                ? CreatureCatalogData.emptyCatalogPage(50, 0)
+                : page;
+        return new CreatureCatalogPage(
+                safePage.rows().stream()
+                        .map(row -> new CreatureCatalogRow(
                                 row.id(),
                                 row.name(),
                                 row.size(),
@@ -63,18 +47,16 @@ final class CreaturesPublicationProjectionServiceAssembly {
                                 row.hitPoints(),
                                 row.armorClass()))
                         .toList(),
-                page.totalCount(),
-                page.pageSize(),
-                page.pageOffset());
+                safePage.totalCount(),
+                safePage.pageSize(),
+                safePage.pageOffset());
     }
 
-    static src.domain.creatures.published.CreatureDetail toPublishedCreatureDetail(
-            CreatureCatalogData.CreatureProfile detail
-    ) {
+    static CreatureDetail creatureDetail(CreatureCatalogData.CreatureProfile detail) {
         if (detail == null) {
             return null;
         }
-        return new src.domain.creatures.published.CreatureDetail(
+        return new CreatureDetail(
                 detail.id(),
                 detail.name(),
                 detail.size(),
@@ -115,7 +97,7 @@ final class CreaturesPublicationProjectionServiceAssembly {
                 detail.languages(),
                 detail.legendaryActionCount(),
                 detail.actions().stream()
-                        .map(action -> new src.domain.creatures.published.CreatureActionDetail(
+                        .map(action -> new CreatureActionDetail(
                                 action.actionType(),
                                 action.name(),
                                 action.description(),
@@ -123,10 +105,8 @@ final class CreaturesPublicationProjectionServiceAssembly {
                         .toList());
     }
 
-    static src.domain.creatures.published.CreatureEncounterCandidate toPublishedEncounterCandidate(
-            CreatureCatalogData.EncounterCandidateProfile candidate
-    ) {
-        return new src.domain.creatures.published.CreatureEncounterCandidate(
+    static CreatureEncounterCandidate encounterCandidate(CreatureCatalogData.EncounterCandidateProfile candidate) {
+        return new CreatureEncounterCandidate(
                 candidate.id(),
                 candidate.name(),
                 candidate.creatureType(),

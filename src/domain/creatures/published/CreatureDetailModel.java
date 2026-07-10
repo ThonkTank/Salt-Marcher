@@ -9,6 +9,16 @@ public final class CreatureDetailModel {
 
     private final Supplier<CreatureDetailResult> currentSupplier;
     private final Function<Consumer<CreatureDetailResult>, Runnable> subscribeAction;
+    private CreaturePublishedState<CreatureDetailResult> statefulStore;
+
+    public CreatureDetailModel() {
+        this(new CreaturePublishedState<>(emptyResult()));
+    }
+
+    private CreatureDetailModel(CreaturePublishedState<CreatureDetailResult> store) {
+        this(store::current, store::subscribe);
+        statefulStore = store;
+    }
 
     public CreatureDetailModel(
             Supplier<CreatureDetailResult> currentSupplier,
@@ -28,6 +38,12 @@ public final class CreatureDetailModel {
 
     public Runnable subscribe(Consumer<CreatureDetailResult> listener) {
         return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
+    }
+
+    public void publish(CreatureDetailResult result) {
+        if (statefulStore != null) {
+            statefulStore.publish(result == null ? emptyResult() : result);
+        }
     }
 
     private static CreatureDetailResult emptyResult() {

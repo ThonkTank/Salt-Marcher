@@ -1,7 +1,6 @@
 package src.data.creatures.mapper;
 
 import java.util.List;
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureCatalogPageRecord;
 import src.data.creatures.model.CreatureCatalogSearchCriteriaRecord;
@@ -10,6 +9,7 @@ import src.data.creatures.model.CreatureFilterValuesRecord;
 import src.data.creatures.model.EncounterCandidateCriteriaRecord;
 import src.data.creatures.model.EncounterCandidateRecord;
 import src.domain.creatures.model.catalog.CreatureCatalogData;
+import src.domain.creatures.model.catalog.CreatureCatalogData.CatalogSortField;
 import src.domain.creatures.model.catalog.CreatureCatalogData.CreatureProfile;
 
 public final class CreatureCatalogQueryMappingFacade {
@@ -33,7 +33,7 @@ public final class CreatureCatalogQueryMappingFacade {
                 spec.subtypes(),
                 spec.biomes(),
                 spec.alignments(),
-                toSearchSortField(Objects.requireNonNull(spec.sortField(), "sortField")),
+                toSearchSortField(spec.sortFieldType()),
                 CreatureCatalogSearchCriteriaRecord.sortDirection(spec.sortAscending()),
                 spec.pageSize(),
                 spec.pageOffset());
@@ -65,7 +65,11 @@ public final class CreatureCatalogQueryMappingFacade {
                 .toList();
     }
 
-    private static CreatureCatalogSearchCriteriaRecord.SortField toSearchSortField(String sortField) {
-        return CreatureCatalogSearchCriteriaRecord.SortField.valueOf(sortField);
+    private static CreatureCatalogSearchCriteriaRecord.SortField toSearchSortField(CatalogSortField sortField) {
+        return switch (sortField) {
+            case CHALLENGE_RATING -> CreatureCatalogSearchCriteriaRecord.SortField.CHALLENGE_RATING;
+            case XP -> CreatureCatalogSearchCriteriaRecord.SortField.XP;
+            default -> CreatureCatalogSearchCriteriaRecord.SortField.NAME;
+        };
     }
 }

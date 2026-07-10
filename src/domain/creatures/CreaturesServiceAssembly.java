@@ -3,50 +3,43 @@ package src.domain.creatures;
 import java.util.Objects;
 import shell.api.ServiceRegistry;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
-import src.domain.creatures.model.catalog.usecase.LoadCreatureDetailUseCase;
-import src.domain.creatures.model.catalog.usecase.LoadCreatureEncounterCandidatesUseCase;
-import src.domain.creatures.model.catalog.usecase.LoadCreatureFilterOptionsUseCase;
-import src.domain.creatures.model.catalog.usecase.SearchCreatureCatalogUseCase;
+import src.domain.creatures.published.CreatureCatalogModel;
+import src.domain.creatures.published.CreatureDetailModel;
+import src.domain.creatures.published.CreatureEncounterCandidatesModel;
+import src.domain.creatures.published.CreatureFilterOptionsModel;
 
 final class CreaturesServiceAssembly {
 
     private static final String REGISTRY_PARAMETER = "registry";
 
-    private final CreaturesPublishedStateServiceAssembly publishedState =
-            new CreaturesPublishedStateServiceAssembly();
-
     CreaturesApplicationService createApplicationService(ServiceRegistry registry) {
         ServiceRegistry services = Objects.requireNonNull(registry, REGISTRY_PARAMETER);
-        CreatureCatalogPort lookup = services.require(CreatureCatalogPort.class);
         return new CreaturesApplicationService(
-                new LoadCreatureFilterOptionsUseCase(lookup, publishedState),
-                new SearchCreatureCatalogUseCase(lookup, publishedState),
-                new LoadCreatureDetailUseCase(lookup, publishedState),
-                new LoadCreatureEncounterCandidatesUseCase(lookup, publishedState));
+                services.require(CreatureCatalogPort.class),
+                services.require(CreatureFilterOptionsModel.class),
+                services.require(CreatureCatalogModel.class),
+                services.require(CreatureDetailModel.class),
+                services.require(CreatureEncounterCandidatesModel.class));
     }
 
-    src.domain.creatures.published.CreatureFilterOptionsModel createFilterOptionsModel(
-            ServiceRegistry registry
-    ) {
+    CreatureFilterOptionsModel createFilterOptionsModel(ServiceRegistry registry) {
         Objects.requireNonNull(registry, REGISTRY_PARAMETER);
-        return publishedState.filterOptionsModel();
+        return new CreatureFilterOptionsModel();
     }
 
-    src.domain.creatures.published.CreatureCatalogModel createCatalogModel(ServiceRegistry registry) {
+    CreatureCatalogModel createCatalogModel(ServiceRegistry registry) {
         Objects.requireNonNull(registry, REGISTRY_PARAMETER);
-        return publishedState.catalogModel();
+        return new CreatureCatalogModel();
     }
 
-    src.domain.creatures.published.CreatureDetailModel createDetailModel(ServiceRegistry registry) {
+    CreatureDetailModel createDetailModel(ServiceRegistry registry) {
         Objects.requireNonNull(registry, REGISTRY_PARAMETER);
-        return publishedState.detailModel();
+        return new CreatureDetailModel();
     }
 
-    src.domain.creatures.published.CreatureEncounterCandidatesModel createEncounterCandidatesModel(
-            ServiceRegistry registry
-    ) {
+    CreatureEncounterCandidatesModel createEncounterCandidatesModel(ServiceRegistry registry) {
         Objects.requireNonNull(registry, REGISTRY_PARAMETER);
-        return publishedState.encounterCandidatesModel();
+        return new CreatureEncounterCandidatesModel();
     }
 
 }
