@@ -252,3 +252,20 @@ unabhaengige Judge die Umsetzung freigegeben und die 88-Dateien-/5.740-LOC-
 Ausnahme unter der genehmigten 5.750-LOC-Grenze akzeptiert. Naechster Schritt
 ist M3.6: Conformance Review mit finalem Design-, Parity-, Seam- und
 Metric-Nachweis vor dem Close-out.
+
+### 2026-07-10 M3.6 party-conformance-review
+
+Die Party-Conformance-Review ist abgeschlossen. Phase 1 hat zunaechst den
+alten internen String-Roundtrip fuer Reiseziele beanstandet; nach Rework nutzt
+die Party-Route typed Mapping zwischen Published Enums und Domain-Werten, und
+der alte String-basierte Dungeon-Reiseziel-Factory-Pfad ist geloescht. Phase 1
+und der unabhaengige Judge bestaetigen jetzt, dass das genehmigte Target-Design
+umgesetzt ist: die 34-Datei-Loeschliste ist vollstaendig ausgefuehrt, es gibt
+keine Source- oder Test-Referenzen auf die geloeschten Klassen, die
+Party-Service-, Published- und Top-Bar-Seams bleiben kompatibel, das
+eingefrorene `partyDropdownHarness`-Orakel ist unveraendert, und die
+Published-State-Extraktion ist echte Duplikatsentfernung statt Check-Gaming.
+`production-handoff` ist gruen, und die 88-Dateien-/5.740-LOC-Ausnahme liegt
+unter der genehmigten 5.750-LOC-Grenze. Naechster Schritt ist M3.7:
+Party-Close-out mit Owner-Smoke-Checklist-Referenz, finalem Proof-Set und
+Ledger-Uebergang zum naechsten M3-Bereich.
