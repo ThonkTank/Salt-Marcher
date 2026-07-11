@@ -6,7 +6,6 @@ import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorStateModel;
 
-// Project-health debt PH-20260709-001 satellite: runtime root coordination and frame publication are listed in the register.
 public final class DungeonEditorFeatureRuntimeRoot implements DungeonEditorRuntimeOperations {
     private final DungeonEditorControlsModel controlsModel;
     private final DungeonEditorStateModel stateModel;

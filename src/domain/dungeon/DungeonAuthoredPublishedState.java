@@ -1,7 +1,6 @@
 package src.domain.dungeon;
 
 import java.util.List;
-import shell.api.ServiceRegistry;
 import src.domain.dungeon.published.DungeonAuthoredMutationModel;
 import src.domain.dungeon.published.DungeonAuthoredMutationResult;
 import src.domain.dungeon.published.DungeonAuthoredReadModel;
@@ -25,10 +24,16 @@ class DungeonAuthoredPublishedState {
     private final DungeonMapCatalogModel mapCatalogModel =
             new DungeonMapCatalogModel(mapCatalog::current, mapCatalog::subscribe);
 
-    void registerModels(ServiceRegistry.Builder services) {
-        services.registerFactory(DungeonAuthoredReadModel.class, registry -> authoredReadModel);
-        services.registerFactory(DungeonAuthoredMutationModel.class, registry -> authoredMutationModel);
-        services.registerFactory(DungeonMapCatalogModel.class, registry -> mapCatalogModel);
+    DungeonAuthoredReadModel authoredReadModel() {
+        return authoredReadModel;
+    }
+
+    DungeonAuthoredMutationModel authoredMutationModel() {
+        return authoredMutationModel;
+    }
+
+    DungeonMapCatalogModel mapCatalogModel() {
+        return mapCatalogModel;
     }
 
     void publishSnapshot(DungeonAuthoredPublication.Snapshot snapshot) {

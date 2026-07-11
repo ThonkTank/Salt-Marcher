@@ -12,15 +12,34 @@ final class DungeonServiceAssembly {
 
     void register(ServiceRegistry.Builder services) {
         services.registerFactory(DungeonAuthoredApplicationService.class, this::authoredApplicationService);
+        services.registerFactory(DungeonEditorRuntimeApplicationService.class, this::editorRuntimeApplicationService);
         services.registerFactory(DungeonTravelRuntimeApplicationService.class, travelRuntime::service);
-        authoredPublishedState.registerModels(services);
+        services.registerFactory(src.domain.dungeon.published.DungeonAuthoredReadModel.class,
+                registry -> authoredPublishedState.authoredReadModel());
+        services.registerFactory(src.domain.dungeon.published.DungeonAuthoredMutationModel.class,
+                registry -> authoredPublishedState.authoredMutationModel());
+        services.registerFactory(src.domain.dungeon.published.DungeonMapCatalogModel.class,
+                registry -> authoredPublishedState.mapCatalogModel());
         services.registerFactory(src.domain.dungeon.published.TravelDungeonModel.class, travelRuntime::travelModel);
-        editorPublishedState.registerModels(services);
+        services.registerFactory(src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository.class,
+                registry -> editorPublishedState.repository());
+        services.registerFactory(src.domain.dungeon.published.DungeonEditorControlsModel.class,
+                registry -> editorPublishedState.controlsModel());
+        services.registerFactory(src.domain.dungeon.published.DungeonEditorMapSurfaceModel.class,
+                registry -> editorPublishedState.mapSurfaceModel());
+        services.registerFactory(src.domain.dungeon.published.DungeonEditorStateModel.class,
+                registry -> editorPublishedState.stateModel());
     }
 
     private DungeonAuthoredApplicationService authoredApplicationService(ServiceRegistry registry) {
         return new DungeonAuthoredApplicationService(
                 registry.require(src.domain.dungeon.model.core.repository.DungeonMapRepository.class),
                 authoredPublishedState);
+    }
+
+    private DungeonEditorRuntimeApplicationService editorRuntimeApplicationService(ServiceRegistry registry) {
+        return new DungeonEditorRuntimeApplicationService(
+                registry.require(DungeonAuthoredApplicationService.class),
+                editorPublishedState.repository());
     }
 }

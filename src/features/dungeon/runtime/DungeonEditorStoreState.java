@@ -8,7 +8,6 @@ import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapSummary;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 
-// Project-health debt PH-20260709-001 satellite: broad transient runtime store state is listed in the register.
 record DungeonEditorStoreState(
         DungeonEditorStoreVersion version,
         DungeonEditorTool selectedTool,

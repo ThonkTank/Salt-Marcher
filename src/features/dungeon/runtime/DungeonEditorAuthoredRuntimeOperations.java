@@ -6,7 +6,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceVal
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorViewMode;
 
-// Project-health debt PH-20260709-001 satellite: broad operation-family dispatch is listed in the register.
 final class DungeonEditorAuthoredRuntimeOperations {
     private final DungeonEditorMapCatalogRuntimeOperations mapCatalogOperations;
     private final DungeonEditorProjectionRuntimeOperations projectionOperations;

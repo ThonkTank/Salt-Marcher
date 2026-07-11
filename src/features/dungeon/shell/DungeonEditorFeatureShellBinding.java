@@ -5,8 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Platform;
 import shell.api.ServiceRegistry;
 import shell.api.ShellRuntimeContext;
-import src.domain.dungeon.DungeonAuthoredApplicationService;
-import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository;
+import src.domain.dungeon.DungeonEditorRuntimeApplicationService;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorStateModel;
@@ -50,9 +49,7 @@ public final class DungeonEditorFeatureShellBinding {
                         services.require(DungeonEditorControlsModel.class),
                         services.require(DungeonEditorMapSurfaceModel.class),
                         services.require(DungeonEditorStateModel.class)),
-                services.require(DungeonAuthoredApplicationService.class),
-                new DungeonEditorRuntimeDependencies.PublishedStateRepositories(
-                        services.require(DungeonEditorSnapshotPublishedStateRepository.class)));
+                services.require(DungeonEditorRuntimeApplicationService.class));
     }
 
     private static final class JavaFxPublicationDelivery {

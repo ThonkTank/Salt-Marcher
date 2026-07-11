@@ -4,7 +4,6 @@ import java.util.Objects;
 import src.domain.dungeon.DungeonAuthoredApplicationService;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository;
 import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorSnapshotUseCase;
 import src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorSnapshotUseCase;
@@ -13,7 +12,6 @@ import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorToolUseCase;
 import src.domain.dungeon.model.runtime.usecase.SetDungeonEditorViewModeUseCase;
 import src.domain.dungeon.model.runtime.usecase.ShiftDungeonEditorProjectionLevelUseCase;
 
-// PROJECT_HEALTH_DEBT[PH-20260709-001]: broad Dungeon Editor runtime assembly remains after feature-runtime migration; owner=feature-runtime; remove_when=runtime assembly, store state, operation dispatch, root coordination, and frame publication have narrower target feature-runtime owners.
 final class DungeonEditorAuthoredRuntimeAssembly {
 
     private DungeonEditorAuthoredRuntimeAssembly() {
@@ -28,38 +26,21 @@ final class DungeonEditorAuthoredRuntimeAssembly {
         DungeonEditorMainViewInteractionState safeInteractionState =
                 Objects.requireNonNull(interactionState, "interactionState");
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
-        DungeonAuthoredApplicationService authoredService = safeDependencies.authoredApplicationService();
-        DungeonEditorSnapshotPublishedStateRepository editorPublishedState =
-                safeDependencies.publishedStateRepositories().editorSnapshotPublishedStateRepository();
-        DungeonAuthoredApplicationService.Session authored =
-                authoredService.openSession(dungeonState);
-        DungeonEditorSessionWorkflow workflow = new DungeonEditorSessionWorkflow();
         InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter =
                 new InterpretDungeonEditorMainViewInputUseCase(safeInteractionState);
-        BuildDungeonEditorSnapshotUseCase snapshotBuilder = new BuildDungeonEditorSnapshotUseCase(
-                authored::searchMaps,
-                new AuthoredSurfaceLoader(authored),
-                new AuthoredPreviewRefresher(authored),
-                dungeonState);
-        PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase =
-                new PublishDungeonEditorSnapshotUseCase(editorPublishedState);
-        ApplyDungeonEditorSessionEffectUseCase effectUseCase = new ApplyDungeonEditorSessionEffectUseCase(
-                workflow,
-                (mapId, preview) -> authoredService.applyPreview(mapId, preview, authored),
+        return safeDependencies.editorRuntimeApplicationService().openSession(
                 dungeonState,
-                snapshotBuilder,
-                snapshotPublicationUseCase);
-        DungeonEditorRuntimeOperationResult initialResult =
-                DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
-        return new AssemblyResult(operations(runtimeUseCases(
-                authored,
-                authoredService,
-                dungeonState,
-                workflow,
-                mainViewInterpreter,
-                snapshotBuilder,
-                snapshotPublicationUseCase,
-                effectUseCase)), initialResult);
+                (authored, authoredCommands, authoredService, runtimeDungeonState, workflow, snapshotBuilder,
+                        snapshotPublicationUseCase, effectUseCase) -> assemblyResult(
+                        authored,
+                        authoredCommands,
+                        authoredService,
+                        runtimeDungeonState,
+                        workflow,
+                        mainViewInterpreter,
+                        snapshotBuilder,
+                        snapshotPublicationUseCase,
+                        effectUseCase));
     }
 
     record AssemblyResult(
@@ -127,6 +108,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
 
     private static RuntimeUseCases runtimeUseCases(
             DungeonAuthoredApplicationService.Session authored,
+            DungeonAuthoredApplicationService.RuntimeCommands authoredCommands,
             DungeonAuthoredApplicationService authoredService,
             DungeonEditorDungeonState dungeonState,
             DungeonEditorSessionWorkflow workflow,
@@ -137,7 +119,7 @@ final class DungeonEditorAuthoredRuntimeAssembly {
     ) {
         return new RuntimeUseCases(
                 authored,
-                authored.runtimeCommands(dungeonState, workflow, snapshotBuilder, snapshotPublicationUseCase, effectUseCase),
+                authoredCommands,
                 authoredService,
                 dungeonState,
                 workflow,
@@ -145,6 +127,31 @@ final class DungeonEditorAuthoredRuntimeAssembly {
                 snapshotBuilder,
                 snapshotPublicationUseCase,
                 effectUseCase);
+    }
+
+    private static AssemblyResult assemblyResult(
+            DungeonAuthoredApplicationService.Session authored,
+            DungeonAuthoredApplicationService.RuntimeCommands authoredCommands,
+            DungeonAuthoredApplicationService authoredService,
+            DungeonEditorDungeonState dungeonState,
+            DungeonEditorSessionWorkflow workflow,
+            InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
+            BuildDungeonEditorSnapshotUseCase snapshotBuilder,
+            PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase,
+            ApplyDungeonEditorSessionEffectUseCase effectUseCase
+    ) {
+        DungeonEditorRuntimeOperationResult initialResult =
+                DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
+        return new AssemblyResult(operations(runtimeUseCases(
+                authored,
+                authoredCommands,
+                authoredService,
+                dungeonState,
+                workflow,
+                mainViewInterpreter,
+                snapshotBuilder,
+                snapshotPublicationUseCase,
+                effectUseCase)), initialResult);
     }
 
     record RuntimeUseCases(
@@ -160,50 +167,4 @@ final class DungeonEditorAuthoredRuntimeAssembly {
     ) {
     }
 
-    private record AuthoredSurfaceLoader(
-            DungeonAuthoredApplicationService.Session authored
-    ) implements BuildDungeonEditorSnapshotUseCase.AuthoredSurfaceLoader {
-        @Override
-        public void load(src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId mapId) {
-            authored.loadMap(mapId);
-        }
-
-        @Override
-        public void loadWithSelection(
-                src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId mapId,
-                src.domain.dungeon.model.core.graph.DungeonTopologyRef topologyRef,
-                long clusterId,
-                boolean clusterSelection
-        ) {
-            authored.loadMapWithSelection(mapId, topologyRef, clusterId, clusterSelection);
-        }
-    }
-
-    private record AuthoredPreviewRefresher(
-            DungeonAuthoredApplicationService.Session authored
-    ) implements BuildDungeonEditorSnapshotUseCase.AuthoredPreviewRefresher {
-        @Override
-        public boolean refreshAuthoredDragPreview(
-                src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId mapId,
-                src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues.Preview preview
-        ) {
-            return authored.executeAuthoredDragPreview(mapId, preview);
-        }
-
-        @Override
-        public void refreshInMemory(
-                src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot.SurfaceData surface,
-                src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues.Preview preview
-        ) {
-            authored.executeInMemoryPreview(surface, preview);
-        }
-
-        @Override
-        public void refresh(
-                src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId mapId,
-                src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues.Preview preview
-        ) {
-            authored.executePreview(mapId, preview);
-        }
-    }
 }
