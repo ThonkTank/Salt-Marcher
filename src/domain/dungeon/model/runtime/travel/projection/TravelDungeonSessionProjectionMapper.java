@@ -3,7 +3,6 @@ package src.domain.dungeon.model.runtime.travel.projection;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.ActionKind;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.ContextKind;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.LocationKind;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.PositionData;
@@ -43,7 +42,7 @@ public final class TravelDungeonSessionProjectionMapper {
                 LocationKind.fromName(position.locationKind().name()),
                 position.ownerId(),
                 position.tile(),
-                TravelHeading.fromName(position.headingToken()));
+                position.heading());
     }
 
     private static TravelDungeonSessionSurface.AvailableAction toRuntimeAction(
@@ -51,9 +50,7 @@ public final class TravelDungeonSessionProjectionMapper {
     ) {
         return new TravelDungeonSessionSurface.AvailableAction(
                 action == null ? "" : action.actionId(),
-                action == null
-                        ? ActionKind.defaultKind()
-                        : ActionKind.fromName(action.kind().name()),
+                action == null ? TravelActionKind.defaultKind() : action.kind(),
                 action == null ? "" : action.label(),
                 action == null ? "" : action.destinationLabel(),
                 action == null ? "" : action.description());
@@ -67,6 +64,6 @@ public final class TravelDungeonSessionProjectionMapper {
                         : LocationKind.fromName(position.locationKind().name()),
                 position == null ? 0L : position.ownerId(),
                 position == null ? new Cell(0, 0, 0) : position.tile(),
-                position == null ? "SOUTH" : position.heading().name());
+                position == null ? TravelHeading.defaultHeading() : position.heading());
     }
 }

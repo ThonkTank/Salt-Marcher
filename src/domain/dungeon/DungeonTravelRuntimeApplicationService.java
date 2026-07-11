@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts.SelectedAction;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSession;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.OverlayMode;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 
 /**
@@ -57,7 +58,7 @@ public final class DungeonTravelRuntimeApplicationService {
                 ? DungeonOverlaySettings.defaults()
                 : overlaySettings;
         session.setOverlay(
-                safeOverlay.modeKey(),
+                OverlayMode.fromKey(safeOverlay.modeKey()),
                 safeOverlay.levelRange(),
                 safeOverlay.opacity(),
                 selectedLevels(safeOverlay));

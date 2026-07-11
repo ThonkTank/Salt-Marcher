@@ -5,6 +5,7 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSnapshot.SnapshotData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.ContextKind;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.MapData;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.OverlayMode;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.OverlayState;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.PositionData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.SurfaceData;
@@ -37,8 +38,8 @@ public final class TravelDungeonSession {
         state.projectionLevel = nextProjectionLevel;
     }
 
-    public void setOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
-        state.configureOverlay(modeKey, levelRange, opacity, selectedLevels);
+    public void setOverlay(OverlayMode mode, int levelRange, double opacity, List<Integer> selectedLevels) {
+        state.configureOverlay(mode, levelRange, opacity, selectedLevels);
     }
 
     public void stabilizeProjectionLevel() {
@@ -77,8 +78,8 @@ public final class TravelDungeonSession {
             currentSurface = surface;
         }
 
-        private void configureOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
-            overlayState = OverlayState.of(modeKey, levelRange, opacity, selectedLevels);
+        private void configureOverlay(OverlayMode mode, int levelRange, double opacity, List<Integer> selectedLevels) {
+            overlayState = OverlayState.of(mode, levelRange, opacity, selectedLevels);
         }
 
         private void stabilizeProjectionLevel() {

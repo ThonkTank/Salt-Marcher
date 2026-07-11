@@ -2,6 +2,7 @@ package src.domain.dungeon;
 
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSnapshot;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AvailableAction;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.MapData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.OverlayState;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.PositionData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.SurfaceData;
@@ -19,6 +20,7 @@ import src.domain.dungeon.published.TravelDungeonAction;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.domain.dungeon.published.TravelDungeonWorkspaceState;
 
+@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 final class DungeonTravelPublishedProjection {
 
     private DungeonTravelPublishedProjection() {
@@ -39,7 +41,7 @@ final class DungeonTravelPublishedProjection {
     private static DungeonOverlaySettings overlaySettings(OverlayState overlayState) {
         OverlayState safeOverlay = overlayState == null ? OverlayState.defaults() : overlayState;
         return new DungeonOverlaySettings(
-                safeOverlay.modeKey(),
+                safeOverlay.mode().modeKey(),
                 safeOverlay.levelRange(),
                 safeOverlay.opacity(),
                 safeOverlay.selectedLevels());
@@ -67,7 +69,7 @@ final class DungeonTravelPublishedProjection {
                 DungeonTravelContextKind.valueOf(surface.contextKind().name()),
                 surface.mapName(),
                 surface.revision(),
-                DungeonTravelPublishedMapProjection.mapSnapshot(surface.map()),
+                mapSnapshot(surface.map()),
                 travelPosition(surface.position()),
                 surface.surfaceTitle(),
                 surface.areaLabel(),
@@ -91,8 +93,8 @@ final class DungeonTravelPublishedProjection {
                 new DungeonMapId(position.mapId()),
                 DungeonTravelLocationKind.valueOf(position.locationKind().name()),
                 position.ownerId(),
-                DungeonTravelPublishedMapProjection.cell(position.tile()),
-                DungeonTravelHeading.valueOf(position.headingToken()));
+                cell(position.tile()),
+                DungeonTravelHeading.valueOf(position.heading().name()));
     }
 
     private static DungeonTravelActionSnapshot surfaceAction(AvailableAction action) {
@@ -107,5 +109,95 @@ final class DungeonTravelPublishedProjection {
         return new TravelDungeonAction(
                 action.displayLabel(),
                 action.helpText());
+    }
+
+    private static src.domain.dungeon.published.DungeonMapSnapshot mapSnapshot(MapData map) {
+        MapData safeMap = map == null ? MapData.empty() : map;
+        return new src.domain.dungeon.published.DungeonMapSnapshot(
+                src.domain.dungeon.published.DungeonTopologyKind.valueOf(safeMap.topology().name()),
+                safeMap.width(),
+                safeMap.height(),
+                safeMap.areas().stream().map(DungeonTravelPublishedProjection::area).toList(),
+                safeMap.boundaries().stream().map(DungeonTravelPublishedProjection::boundary).toList(),
+                safeMap.features().stream().map(DungeonTravelPublishedProjection::feature).toList());
+    }
+
+    private static DungeonCellRef cell(src.domain.dungeon.model.core.geometry.Cell cell) {
+        src.domain.dungeon.model.core.geometry.Cell safeCell = cell == null
+                ? new src.domain.dungeon.model.core.geometry.Cell(0, 0, 0)
+                : cell;
+        return new DungeonCellRef(
+                safeCell.q(),
+                safeCell.r(),
+                safeCell.level());
+    }
+
+    private static src.domain.dungeon.published.DungeonAreaSnapshot area(
+            src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AreaData area
+    ) {
+        return new src.domain.dungeon.published.DungeonAreaSnapshot(
+                src.domain.dungeon.published.DungeonAreaKind.valueOf(area.kind().name()),
+                area.id(),
+                0L,
+                area.label(),
+                area.cells().stream().map(DungeonTravelPublishedProjection::cell).toList(),
+                topologyRef(area.topologyRef()));
+    }
+
+    private static src.domain.dungeon.published.DungeonBoundarySnapshot boundary(
+            src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.BoundaryData boundary
+    ) {
+        return new src.domain.dungeon.published.DungeonBoundarySnapshot(
+                boundary.doorBoundary() ? "door" : "wall",
+                boundary.id(),
+                boundary.label(),
+                edge(boundary.edge()),
+                topologyRef(boundary.topologyRef()));
+    }
+
+    private static src.domain.dungeon.published.DungeonFeatureSnapshot feature(
+            src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.FeatureData feature
+    ) {
+        return new src.domain.dungeon.published.DungeonFeatureSnapshot(
+                src.domain.dungeon.published.DungeonFeatureKind.valueOf(feature.kind().name()),
+                feature.id(),
+                feature.label(),
+                feature.cells().stream().map(DungeonTravelPublishedProjection::cell).toList(),
+                feature.description(),
+                feature.destinationLabel(),
+                topologyRef(feature.topologyRef()),
+                null);
+    }
+
+    private static src.domain.dungeon.published.DungeonEdgeRef edge(
+            src.domain.dungeon.model.core.geometry.Edge edge
+    ) {
+        src.domain.dungeon.model.core.geometry.Edge safeEdge = edge == null
+                ? new src.domain.dungeon.model.core.geometry.Edge(
+                        new src.domain.dungeon.model.core.geometry.Cell(0, 0, 0),
+                        new src.domain.dungeon.model.core.geometry.Cell(0, 0, 0))
+                : edge;
+        return new src.domain.dungeon.published.DungeonEdgeRef(cell(safeEdge.from()), cell(safeEdge.to()));
+    }
+
+    private static src.domain.dungeon.published.DungeonTopologyElementRef topologyRef(
+            src.domain.dungeon.model.core.graph.DungeonTopologyRef ref
+    ) {
+        if (ref == null) {
+            return src.domain.dungeon.published.DungeonTopologyElementRef.empty();
+        }
+        return new src.domain.dungeon.published.DungeonTopologyElementRef(
+                publishedTopologyKind(ref),
+                ref.id());
+    }
+
+    private static src.domain.dungeon.published.DungeonTopologyElementKind publishedTopologyKind(
+            src.domain.dungeon.model.core.graph.DungeonTopologyRef ref
+    ) {
+        try {
+            return src.domain.dungeon.published.DungeonTopologyElementKind.valueOf(ref.kind().name());
+        } catch (IllegalArgumentException exception) {
+            return src.domain.dungeon.published.DungeonTopologyElementKind.EMPTY;
+        }
     }
 }

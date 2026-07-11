@@ -6,6 +6,8 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
+import src.domain.dungeon.model.runtime.travel.projection.TravelActionKind;
+import src.domain.dungeon.model.runtime.travel.projection.TravelHeading;
 
 public final class TravelDungeonSessionSurface {
 
@@ -82,43 +84,52 @@ public final class TravelDungeonSessionSurface {
         }
     }
 
-    public enum ActionKind {
-        TRAVERSAL,
-        TRANSITION;
+    public enum OverlayMode {
+        OFF,
+        NEARBY,
+        SELECTED;
 
-        public static ActionKind defaultKind() {
-            return TRAVERSAL;
+        public static OverlayMode defaultMode() {
+            return OFF;
         }
 
-        public static ActionKind fromName(@Nullable String name) {
-            return "TRANSITION".equals(normalizeName(name)) ? TRANSITION : TRAVERSAL;
+        public static OverlayMode fromKey(@Nullable String modeKey) {
+            return switch (normalizeName(modeKey)) {
+                case "NEARBY" -> NEARBY;
+                case "SELECTED" -> SELECTED;
+                default -> OFF;
+            };
+        }
+
+        public String modeKey() {
+            return name();
         }
     }
 
     public record OverlayState(
-            String modeKey,
+            OverlayMode mode,
             int levelRange,
             double opacity,
             List<Integer> selectedLevels
     ) {
         public OverlayState {
-            modeKey = modeKey == null || modeKey.isBlank() ? "OFF" : modeKey.trim();
+            mode = mode == null ? OverlayMode.defaultMode() : mode;
             levelRange = Math.max(0, levelRange);
             opacity = Math.max(0.0, Math.min(1.0, opacity));
             selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
         }
 
         public static OverlayState defaults() {
-            return new OverlayState("OFF", 2, 0.35, List.of());
+            return new OverlayState(OverlayMode.defaultMode(), 2, 0.35, List.of());
         }
 
         public static OverlayState of(
-                String modeKey,
+                OverlayMode mode,
                 int levelRange,
                 double opacity,
                 List<Integer> selectedLevels
         ) {
-            return new OverlayState(modeKey, levelRange, opacity, selectedLevels);
+            return new OverlayState(mode, levelRange, opacity, selectedLevels);
         }
 
         @Override
@@ -148,7 +159,7 @@ public final class TravelDungeonSessionSurface {
                         LocationKind.TILE,
                         0L,
                         new Cell(0, 0, 0),
-                        "SOUTH"),
+                        TravelHeading.defaultHeading()),
                 "Overworld",
                 "Overworld-Feld " + tileId,
                 "-",
@@ -180,7 +191,7 @@ public final class TravelDungeonSessionSurface {
             revision = Math.max(0, revision);
             map = map == null ? MapData.empty() : map;
             position = position == null
-                    ? new PositionData(1L, LocationKind.TILE, 0L, new Cell(0, 0, 0), "SOUTH")
+                    ? new PositionData(1L, LocationKind.TILE, 0L, new Cell(0, 0, 0), TravelHeading.defaultHeading())
                     : position;
             surfaceTitle = surfaceTitle == null || surfaceTitle.isBlank() ? mapName : surfaceTitle.trim();
             areaLabel = areaLabel == null || areaLabel.isBlank() ? "Kein Standort" : areaLabel.trim();
@@ -202,23 +213,14 @@ public final class TravelDungeonSessionSurface {
             LocationKind locationKind,
             long ownerId,
             Cell tile,
-            String headingToken
+            TravelHeading heading
     ) {
         public PositionData {
             mapId = Math.max(1L, mapId);
             locationKind = locationKind == null ? LocationKind.TILE : locationKind;
             ownerId = Math.max(0L, ownerId);
             tile = tile == null ? new Cell(0, 0, 0) : tile;
-            headingToken = normalizeHeadingToken(headingToken);
-        }
-
-        private static String normalizeHeadingToken(@Nullable String token) {
-            return switch (token == null ? "" : token.trim().toUpperCase(Locale.ROOT)) {
-                case "NORTH" -> "NORTH";
-                case "EAST" -> "EAST";
-                case "WEST" -> "WEST";
-                default -> "SOUTH";
-            };
+            heading = heading == null ? TravelHeading.defaultHeading() : heading;
         }
     }
 
@@ -322,14 +324,14 @@ public final class TravelDungeonSessionSurface {
 
     public record AvailableAction(
             String id,
-            ActionKind kind,
+            TravelActionKind kind,
             String label,
             String destinationLabel,
             String helpText
     ) {
         public AvailableAction {
             id = id == null ? "" : id.trim();
-            kind = kind == null ? ActionKind.defaultKind() : kind;
+            kind = kind == null ? TravelActionKind.defaultKind() : kind;
             label = label == null || label.isBlank() ? kind.name() : label.trim();
             destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
             helpText = helpText == null ? "" : helpText.trim();

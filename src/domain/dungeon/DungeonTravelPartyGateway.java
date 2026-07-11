@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.model.runtime.travel.projection.TravelHeading;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState.ActiveTravelStateData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState.PartyLocationData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.LocationKind;
@@ -76,7 +77,7 @@ final class DungeonTravelPartyGateway {
                                 : PartyDungeonTravelLocationKind.TILE,
                         position.ownerId(),
                         new PartyTravelTile(position.tile().q(), position.tile().r(), position.tile().level()),
-                        partyTravelHeading(position.headingToken())),
+                        partyTravelHeading(position.heading())),
                 true));
         return partyMutationModel.current().status() == MutationStatus.SUCCESS;
     }
@@ -115,7 +116,7 @@ final class DungeonTravelPartyGateway {
                                     dungeonLocation.tile().q(),
                                     dungeonLocation.tile().r(),
                                     dungeonLocation.tile().level()),
-                            dungeonLocation.heading().name()),
+                            TravelHeading.fromName(dungeonLocation.heading().name())),
                     0L,
                     false);
         }
@@ -128,12 +129,12 @@ final class DungeonTravelPartyGateway {
         return null;
     }
 
-    private static PartyTravelHeading partyTravelHeading(String headingToken) {
-        return switch (headingToken == null ? "" : headingToken.trim()) {
-            case "NORTH" -> PartyTravelHeading.NORTH;
-            case "EAST" -> PartyTravelHeading.EAST;
-            case "WEST" -> PartyTravelHeading.WEST;
-            default -> PartyTravelHeading.SOUTH;
+    private static PartyTravelHeading partyTravelHeading(TravelHeading heading) {
+        return switch (heading == null ? TravelHeading.defaultHeading() : heading) {
+            case NORTH -> PartyTravelHeading.NORTH;
+            case EAST -> PartyTravelHeading.EAST;
+            case WEST -> PartyTravelHeading.WEST;
+            case SOUTH -> PartyTravelHeading.SOUTH;
         };
     }
 }
