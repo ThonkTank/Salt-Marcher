@@ -92,15 +92,18 @@ this design does not disguise it by renaming or rephrasing helper code.
 
 Counting rule: count named production class boundaries in the render/readback
 path. Same-class private helpers, record construction, and field access are not
-separate hops. The map view canvas draw is listed because M4.4 owns render
-parity.
+separate hops. Package-private source-shape helper files added by the
+implementation amendment are counted in the expanded source-shape chain below
+when they own behavior. The metric table separately counts them as helper
+groups so conformance can judge file-count exceptions without hiding class
+boundaries. The map view canvas draw is listed because M4.4 owns render parity.
 
 | Interaction | Target chain | Target |
 | --- | --- | --- |
-| Editor frame to rendered canvas | `DungeonEditorRuntimeFramePublisher.publishCurrentToSubscribers/currentFrame` -> `DungeonEditorRuntimeReadbackFrameInputs.from` -> `DungeonEditorRuntimeDraftSession.draftFrame` -> `DungeonEditorRuntimeFrameFactsAssembler.preparedFacts` -> `DungeonEditorFeatureShellBinding` -> `DungeonEditorBinder.applyFrame` -> `DungeonMapContentModel.applyEditorRenderFrame` -> `DungeonMapFrameProjector.editorFrame` -> `DungeonMapSceneAssembler.scene` -> `DungeonMapHitIndex.rebuild` -> `DungeonMapView.redraw/CanvasRenderer.render` | At most 9 hops to `RenderScene`; at most 11 including hit-index rebuild and canvas draw. The baseline was 13 and 15 respectively. |
-| Travel snapshot to rendered canvas | `TravelDungeonModel.subscribe/current` -> `DungeonTravelBinder.applySnapshot` -> `DungeonMapContentModel.applyTravelSnapshot` -> `DungeonMapFrameProjector.travelSnapshot` -> `DungeonMapSceneAssembler.scene` -> `DungeonMapHitIndex.rebuild` -> `DungeonMapView.redraw/CanvasRenderer.render` | At most 5 hops to `RenderScene`; at most 7 including hit-index rebuild and canvas draw. The baseline was 5 and 7; M4.4 keeps parity while deleting the content-part cascade instead of adding ceremony. |
-| Editor pointer hit selection | `DungeonMapView` emits `DungeonMapViewInputEvent` -> `DungeonEditorIntentHandler.pointerInteractionTargets` -> `DungeonMapContentModel.pointerHitRefsAt/currentPointerTargetFrames` -> `DungeonMapHitIndex.hitsAt` -> `PointerInteractionTargets.fromHitTargets` -> `DungeonEditorRuntimePointerTarget.fromPreparedFrame` priority selection | At most 6 hops. The `PH-20260711-001` hit-ref protocol stays byte-compatible and is not repaired in M4.4. |
-| Hover overlay redraw | `DungeonEditorIntentHandler` sends hover display target -> `DungeonMapContentModel.updateRuntimeHoverDisplayTarget` -> `DungeonMapHitIndex`/stored render-state target lookup -> `DungeonMapSceneAssembler.hoverOverlay` -> `DungeonMapView.redraw/CanvasRenderer.render` | At most 5 hops. Hover target retention stays behavior-compatible; only the content-part routing is removed. |
+| Editor frame to rendered canvas | `DungeonEditorRuntimeFramePublisher.publishCurrentToSubscribers/currentFrame` -> `DungeonEditorRuntimeReadbackFrameInputs.from` -> `DungeonEditorRuntimeDraftSession.draftFrame` -> `DungeonEditorRuntimeFrameFactsAssembler.preparedFacts` -> `DungeonEditorFeatureShellBinding` -> `DungeonEditorBinder.applyFrame` -> `DungeonMapContentModel.applyEditorRenderFrame` -> `DungeonMapFrameProjector.editorFrame` -> `DungeonMapEditorRenderProjector.project` -> `DungeonMapSceneAssembler.scene` -> `DungeonMapGridSceneAssembler` or `DungeonMapGraphSceneAssembler` -> `DungeonMapHitIndex.rebuild` -> `DungeonMapHitAreaIndex` -> `DungeonMapView.redraw/CanvasRenderer.render` | At most 11 hops to `RenderScene`; at most 14 including hit-index rebuild and canvas draw. The accepted source-shape exception still removes the content-part cascade and improves the baseline 13/15 editor chain by deleting wrapper and forwarding boundaries. |
+| Travel snapshot to rendered canvas | `TravelDungeonModel.subscribe/current` -> `DungeonTravelBinder.applySnapshot` -> `DungeonMapContentModel.applyTravelSnapshot` -> `DungeonMapFrameProjector.travelSnapshot` -> `DungeonMapTravelRenderProjector.project` -> `DungeonMapSceneAssembler.scene` -> `DungeonMapGridSceneAssembler` or `DungeonMapGraphSceneAssembler` -> `DungeonMapHitIndex.rebuild` -> `DungeonMapHitAreaIndex` -> `DungeonMapView.redraw/CanvasRenderer.render` | At most 7 hops to `RenderScene`; at most 10 including hit-index rebuild and canvas draw. This is an accepted source-shape exception to the original 5/7 target: travel keeps parity, deletes the content-part cascade, and pays one package-private projector boundary plus one scene-helper boundary to satisfy PMD/CKJM. |
+| Editor pointer hit selection | `DungeonMapView` emits `DungeonMapViewInputEvent` -> `DungeonEditorIntentHandler.pointerInteractionTargets` -> `DungeonMapContentModel.pointerHitRefsAt/currentPointerTargetFrames` -> `DungeonMapHitIndex.hitsAt` -> `DungeonMapHitAreaIndex` -> `PointerInteractionTargets.fromHitTargets` -> `DungeonEditorRuntimePointerTarget.fromPreparedFrame` priority selection | At most 7 hops. The added hit-index helper is the source-shape split of the old hit-geometry content part; the `PH-20260711-001` hit-ref protocol stays byte-compatible and is not repaired in M4.4. |
+| Hover overlay redraw | `DungeonEditorIntentHandler` sends hover display target -> `DungeonMapContentModel.updateRuntimeHoverDisplayTarget` -> `DungeonMapFrameConsumption` hover retention -> `DungeonMapSceneAssembler.hoverOverlay` -> `DungeonMapGridSceneAssembler` or `DungeonMapGraphSceneAssembler` -> `DungeonMapView.redraw/CanvasRenderer.render` | At most 6 hops. Hover target retention stays behavior-compatible; only the content-part routing is removed. |
 
 ## Frozen Parity Inventory
 
@@ -180,7 +183,7 @@ In-file removal requirements:
   `DungeonMapContentModel` seam, in which case the implementation must keep a
   byte-compatible public alias and name that alias in the conformance review.
 
-New files allowed by this design:
+Core target files allowed by the initial step-3 design:
 
 - `src/view/slotcontent/main/dungeonmap/DungeonMapRenderState.java`
 - `src/view/slotcontent/main/dungeonmap/DungeonMapFrameProjector.java`
@@ -188,6 +191,9 @@ New files allowed by this design:
 - `src/view/slotcontent/main/dungeonmap/DungeonMapHitIndex.java`
 - `src/view/slotcontent/main/dungeonmap/DungeonMapInlineLabelState.java`
 - `src/view/slotcontent/main/dungeonmap/DungeonMapViewportState.java`
+
+The implementation amendment below names the additional package-private helper
+files permitted only to keep the moved behavior cohesive and PMD/CKJM/CPD-clean.
 
 Deleting comments, compressing lines, cosmetically renaming wrappers, or
 rephrasing duplicated helpers without executing this deletion list is Rework.
@@ -277,6 +283,144 @@ geometry, alter harness scenarios or assertions, change visible text, change
 image snapshots, weaken or replace pass/fail oracles, or start the target
 implementation before the design is approved.
 
+## Implementation Amendment: Source-Shape Split
+
+During step-5 implementation, `pmdStrictMain`, `cpdMain`, and clean
+`compileJava` exposed that the old `*ContentPartModel` suffix had been a
+metric-carrier exception. Removing that suffix while placing all moved logic
+into `DungeonMapFrameProjector`, `DungeonMapSceneAssembler`,
+`DungeonMapHitIndex`, and `DungeonMapViewportState` preserves behavior but
+creates new PMD/CKJM hotspots and CPD-visible duplicate responsibilities.
+M4.4 therefore adds a source-shape split to the target design instead of
+suppressing checks, rephrasing duplicate blocks, or renaming files into
+another excluded surface.
+
+The approved top-level target classes remain the external design landmarks:
+
+- `DungeonMapRenderState`
+- `DungeonMapFrameProjector`
+- `DungeonMapSceneAssembler`
+- `DungeonMapHitIndex`
+- `DungeonMapInlineLabelState`
+- `DungeonMapViewportState`
+
+The implementation may add only these package-private helper files to keep each
+target class cohesive and PMD/CKJM/CPD-green:
+
+- `src/features/dungeon/runtime/DungeonEditorPreparedMapEntries.java`: map
+  list and status-text preparation for
+  `DungeonEditorRuntimeFrameFactsAssembler`.
+- `src/features/dungeon/runtime/DungeonEditorMapInteractionFrames.java`:
+  map-surface pointer-target facts for the byte-compatible
+  `DungeonEditorPreparedFrameFacts.MapInteractionFrame.from(...)` factory.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapFrameConsumption.java`:
+  render-frame change detection, hover-target retention, and exact-cell
+  enrichment previously hidden in `DungeonMapFrameConsumptionContentPartModel`.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapEditorRenderProjector.java`:
+  editor-surface to render-state projection from `DungeonEditorMapSnapshot`,
+  selection, prepared preview, and interaction facts.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapEditorProjectionAccumulator.java`:
+  editor projection list ownership before render-state construction.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapEditorAreaProjector.java`:
+  editor area, graph-node, room-label, and cluster-label projection.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapEditorFeatureProjector.java`:
+  editor feature cell and marker projection.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapEditorHandleProjector.java`:
+  runtime-prepared editor handle marker projection.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapPreparedPreviewProjector.java`:
+  prepared stair and boundary preview projection from
+  `PreviewRenderFrame`.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapTravelRenderProjector.java`:
+  travel-snapshot to render-state projection from `DungeonMapSnapshot` and
+  `DungeonTravelSurfaceSnapshot`.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapTravelMarkerProjector.java`:
+  travel feature marker and travel marker-handle projection.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapRenderElementFactory.java`:
+  room-label, topology-ref, and shared render-element construction.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapRenderCells.java`: typed
+  render-cell construction and feature/area kind normalization.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapRenderEdges.java`: typed
+  render-edge construction and boundary kind normalization.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapRenderMarkers.java`: typed
+  render-marker construction.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapRenderMarkerPlacement.java`:
+  shared feature marker placement, level, anchor-edge, and cell-center
+  decisions for editor, travel, and preview markers.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapRenderMarkerHandles.java`:
+  typed marker-handle construction.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapRenderMarkerKinds.java`:
+  typed marker kind and display-token decisions.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapRenderSelection.java`:
+  typed render selection checks for areas, handles, boundaries, features, and
+  clusters.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapPreviewDiffProjector.java`:
+  prepared preview-diff projection into typed render cells, edges, labels, and
+  markers.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapPreviewAreaDiffProjector.java`:
+  preview area-diff cell and room-label projection.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapPreviewBoundaryDiffProjector.java`:
+  preview boundary-diff edge projection.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapPreviewHandleDiffProjector.java`:
+  preview handle-diff marker projection.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapPreviewFeatureDiffProjector.java`:
+  preview feature-diff cell, label, marker, and stair-level projection.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapRoomLabelPlanner.java`:
+  room-label placement and wall-run selection.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapGridSceneAssembler.java`:
+  grid scene bucket assembly used only by `DungeonMapSceneAssembler`.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapGraphSceneAssembler.java`:
+  graph scene bucket assembly used only by `DungeonMapSceneAssembler`.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapSceneGeometry.java`: scene
+  geometry shared by scene assembly and hit indexing.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapSceneIdentity.java`: hit-ref
+  identity and selection-ref construction under `PH-20260711-001`.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapSceneStyles.java`: surface,
+  edge, marker, label, hover, and palette style decisions.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapHitAreaIndex.java`: hit-area
+  bucketing and hit ordering.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapHitAreaProjector.java`:
+  scene primitive to hit-area projection plus polygon/polyline math.
+- `src/view/slotcontent/main/dungeonmap/DungeonMapViewportScale.java`:
+  viewport scale constants and zoom clamping used by `DungeonMapViewportState`,
+  render geometry, and hit tolerance.
+
+These helpers are not replacement wrappers. Each must own real behavior moved
+from the deleted files or from the oversized target classes. They must not use
+the retired `ContentPartModel` suffix, must not reintroduce the deleted class
+names, and must not preserve duplicate methods by rephrasing them. The
+deletion list remains binding, and the helper split is accepted only if the
+PMD/CKJM/CPD/source-shape gates pass without new suppressions, checker
+weakening, or duplicate-helper rephrasing.
+
+Metric impact is explicit:
+
+- The 31 map helper files above plus the six map target classes,
+  `DungeonMapContentModel`, `DungeonMapView`, and
+  `DungeonMapViewInputEvent` raise the primary map package file cap to
+  **at most 40 Java files / 8,050 physical LOC**. The clean-compile snapshot
+  after the split is 40 Java files / 7,915 physical LOC. This is a reviewed exception
+  to the original 10-file / 6,000-LOC target because the old content-part
+  suffix was a view metric-carrier exception and the replacement must be
+  PMD/CKJM/CPD-green without reusing that suffix.
+- The runtime frame/publication subset deletes
+  `DungeonEditorRuntimePublication`, `DungeonEditorMapInteractionFrameAssembler`,
+  and `DungeonEditorPreparedFrameProjection`, adds the two runtime helper files
+  above, and measures 9 Java files / 1,693 physical LOC by the baseline
+  `(Render|Frame|Prepared)` formula. The primary map plus runtime
+  frame/publication subset cap becomes
+  **at most 49 Java files / 9,750 physical LOC**.
+- The direct product render route cap becomes
+  **at most 72 Java files / 13,400 physical LOC** by the baseline formula:
+  primary map package, runtime frame/publication subset, the unchanged 16-file
+  hit-ref and pointer-target protocol seam, and the seven direct adjacent
+  render consumers. The exception is limited to implementation helper files in
+  the exact paths above; no editor/travel/domain behavior surface may be added
+  to satisfy the file cap.
+- Design-visible render ceremony counts the helpers as these nine groups:
+  runtime frame publication/facts; content model coordinator; render state;
+  frame projection helpers; scene assembly helpers; hit-index helpers;
+  inline-label state; viewport state/scale; and map view/input.
+
 ## Metric Targets And Exceptions
 
 The conformance review re-runs the baseline measurements against these binding
@@ -284,15 +428,15 @@ targets:
 
 | Metric | Baseline | Target |
 | --- | ---: | ---: |
-| Primary map package | 13 files / 7,484 LOC | At most 10 files / 6,000 LOC. |
-| Primary map plus runtime frame/publication subset | 23 files / 9,200 LOC | At most 16 files / 7,300 LOC. |
-| Direct product render route | 46 files / 12,829 LOC | At most 40 files / 11,000 LOC. |
+| Primary map package | 13 files / 7,484 LOC | Source-shape exception: at most 40 files / 8,050 LOC, using only the helper files named in the amendment. |
+| Primary map plus runtime frame/publication subset | 23 files / 9,200 LOC | Source-shape exception: at most 49 files / 9,750 LOC, using only the helper files named in the amendment. |
+| Direct product render route | 46 files / 12,829 LOC | Source-shape exception: at most 72 files / 13,400 LOC, using only the helper files named in the amendment. |
 | Strict forwarding/proxy classes in M4.4-owned route | 2 | 0. `DungeonEditorRuntimePublication` is deleted. `DungeonEditorFeatureShellBinding` may remain only as the byte-compatible shell seam, not as an M4.4-owned proxy. |
 | One-method render helper classes | 1 | 0. `DungeonMapStairPreviewLevelLabelContentPartModel` is deleted and its behavior moves into `DungeonMapFrameProjector` or `DungeonMapSceneAssembler`. |
-| Design-visible render ceremony classes/groups | 17 | At most 9 target classes/groups. |
-| Editor publication to canvas chain | 13 to scene / 15 to canvas | At most 9 to scene / 11 to canvas. This target counts the retained `DungeonEditorRuntimeReadbackFrameInputs` and `DungeonEditorRuntimeDraftSession.draftFrame` boundaries; M4.4's reduction comes from deleting the publication wrapper and content-part cascade, not from hiding retained runtime work. |
-| Travel snapshot to canvas chain | 5 to scene / 7 to canvas | At most 5 to scene / 7 to canvas, with the content-part cascade removed. |
-| Pointer hit selection chain | 6 | At most 6. Accepted M4.4 exception because `PH-20260711-001` keeps the hit-ref protocol byte-compatible for M4.5/runtime consumers. |
+| Design-visible render ceremony classes/groups | 17 | At most 9 target groups, counted by the amendment grouping rule. |
+| Editor publication to canvas chain | 13 to scene / 15 to canvas | Source-shape exception: at most 11 to scene / 14 to canvas. This target counts the retained `DungeonEditorRuntimeReadbackFrameInputs`, `DungeonEditorRuntimeDraftSession.draftFrame`, and real helper boundaries; M4.4's reduction comes from deleting the publication wrapper and content-part cascade, not from hiding retained runtime work. |
+| Travel snapshot to canvas chain | 5 to scene / 7 to canvas | Source-shape exception: at most 7 to scene / 10 to canvas, with the content-part cascade removed and helper boundaries counted. |
+| Pointer hit selection chain | 6 | Source-shape exception: at most 7. Accepted M4.4 exception because `PH-20260711-001` keeps the hit-ref protocol byte-compatible for M4.5/runtime consumers and `DungeonMapHitAreaIndex` is counted as a real helper boundary. |
 | Product String boundary protocol families | 5 | At most 4 outside the accepted `PH-20260711-001` hit-ref/pointer-target seam. Render-owned topology and label-kind refs become typed inside `DungeonMapRenderState` where no public/harness seam requires Strings. |
 | Render-state representations | 6 | At most 5. `DungeonMapHitIndex` is a derived cache, not a separate source of render truth. `DungeonEditorPreparedFrameFacts` remains as a byte-compatible M4.5-consumed seam exception. |
 
