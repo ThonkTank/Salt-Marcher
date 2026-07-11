@@ -591,3 +591,17 @@ Domain-/Repository-/Published-Route und nicht zur alten UseCase-/Port-/
 IntentHandler-/ContentModel-Rollenfamilie. Es wurde kein Doc-Gate
 ausgefuehrt oder wiederhergestellt. Naechster nicht-migrationstechnischer
 Schritt ist PR/CI/Merge nach `main`.
+
+### 2026-07-12 M6-post-merge-close-out
+
+Die Architektur-Migration M0-M6 ist jetzt auf `main` abgeschlossen. PR #451
+wurde mit Merge-Commit `c12cb494f` integriert. Der finale CI-Lauf auf
+`5e9fd38ec` war gruen: `production-handoff`, `warden-freeze`,
+`behavior-gate`, `judge-review`, `ckjm-report`, `sonarcloud` und `codescene`
+haben bestanden. `risk:R3c` wurde nur fuer die eingefrorenen Mess- und
+CI-Flaechen gesetzt. Der CI-Judge lief ueber den owner-only
+`judge-override`, weil der Base-Judge die von der Roadmap geforderte
+Entfernung der alten Doc-/Role-Family-Gates selbst abgelehnt hat; die
+unabhaengigen M6-Judges und die retained Outcome-Gates waren bereits gruen.
+Die entfernten Doc-Gates bleiben entfernt und wurden nicht als Proof
+wiederhergestellt. Es gibt keinen naechsten Architektur-Migrationsschritt.
