@@ -5,12 +5,14 @@ import java.util.Objects;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonMapSummary;
 
-final class DungeonEditorPreparedFrameProjection {
-    private DungeonEditorPreparedFrameProjection() {
+final class DungeonEditorPreparedMapEntries {
+    private DungeonEditorPreparedMapEntries() {
     }
 
     static List<DungeonEditorPreparedFrameFacts.MapEntry> mapEntries(List<DungeonMapSummary> mapSummaries) {
-        return toPreparedMapEntries(mapSummaries == null ? List.of() : mapSummaries);
+        return (mapSummaries == null ? List.<DungeonMapSummary>of() : mapSummaries).stream()
+                .map(DungeonEditorPreparedMapEntries::toPreparedMapEntry)
+                .toList();
     }
 
     static String statusTextFor(
@@ -30,14 +32,6 @@ final class DungeonEditorPreparedFrameProjection {
             return "Kein Dungeon ausgewählt.";
         }
         return safeStatusText;
-    }
-
-    private static List<DungeonEditorPreparedFrameFacts.MapEntry> toPreparedMapEntries(
-            List<DungeonMapSummary> mapSummaries
-    ) {
-        return mapSummaries.stream()
-                .map(DungeonEditorPreparedFrameProjection::toPreparedMapEntry)
-                .toList();
     }
 
     private static DungeonEditorPreparedFrameFacts.MapEntry toPreparedMapEntry(DungeonMapSummary summary) {

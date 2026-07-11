@@ -24,7 +24,7 @@ final class DungeonEditorRuntimeFrameFactsAssembler {
         long selectedMapIdValue = frameSelection.selectedMapId() == null
                 ? 0L
                 : frameSelection.selectedMapId().value();
-        String preparedStatusText = DungeonEditorPreparedFrameProjection.statusTextFor(
+        String preparedStatusText = DungeonEditorPreparedMapEntries.statusTextFor(
                 frameSelection.surfaceLoaded(),
                 frameSelection.mapEntries(),
                 frameSelection.selectedMapId(),
@@ -94,7 +94,7 @@ final class DungeonEditorRuntimeFrameFactsAssembler {
                 ? DungeonEditorControlsSnapshot.empty("")
                 : controlsSnapshot;
         return new RuntimeFrameSelection(
-                DungeonEditorPreparedFrameProjection.mapEntries(safeControls.maps()),
+                DungeonEditorPreparedMapEntries.mapEntries(safeControls.maps()),
                 safeControls.selectedMapId(),
                 safeControls.overlaySettings(),
                 safeControls.projectionLevel(),

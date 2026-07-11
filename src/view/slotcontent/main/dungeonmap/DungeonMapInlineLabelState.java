@@ -12,7 +12,7 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEd
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.PointerTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.Viewport;
 
-final class DungeonMapInlineLabelUiStateContentPartModel {
+final class DungeonMapInlineLabelState {
     private final ReadOnlyObjectWrapper<InlineLabelEditState> inlineLabelEditState =
             new ReadOnlyObjectWrapper<>(InlineLabelEditState.inactive());
 
@@ -30,7 +30,7 @@ final class DungeonMapInlineLabelUiStateContentPartModel {
 
     Optional<InlineLabelEditCandidate> inlineLabelEditCandidate(
             InlineLabelEditPresentationKey target,
-            List<DungeonMapContentModel.DungeonMapRenderState.Label> labels
+            List<DungeonMapRenderState.Label> labels
     ) {
         InlineLabelEditPresentationKey safeTarget = target == null
                 ? InlineLabelEditPresentationKey.empty()
@@ -42,8 +42,8 @@ final class DungeonMapInlineLabelUiStateContentPartModel {
                 label.label(),
                 label.q(),
                 label.r(),
-                DungeonMapRenderSceneContentPartModel.SceneGeometry.Label.labelWidthScene(label),
-                DungeonMapRenderSceneContentPartModel.SceneGeometry.Label.labelHeightScene(label),
+                DungeonMapSceneGeometry.Label.labelWidthScene(label),
+                DungeonMapSceneGeometry.Label.labelHeightScene(label),
                 label.rotationDegrees()));
     }
 
@@ -51,13 +51,13 @@ final class DungeonMapInlineLabelUiStateContentPartModel {
         inlineLabelEditState.set(stateFromProjection(projection));
     }
 
-    private static Optional<DungeonMapContentModel.DungeonMapRenderState.Label> labelForTarget(
+    private static Optional<DungeonMapRenderState.Label> labelForTarget(
             InlineLabelEditPresentationKey target,
-            List<DungeonMapContentModel.DungeonMapRenderState.Label> labels
+            List<DungeonMapRenderState.Label> labels
     ) {
-        List<DungeonMapContentModel.DungeonMapRenderState.Label> safeLabels =
+        List<DungeonMapRenderState.Label> safeLabels =
                 labels == null ? List.of() : labels;
-        for (DungeonMapContentModel.DungeonMapRenderState.Label label : safeLabels) {
+        for (DungeonMapRenderState.Label label : safeLabels) {
             if (sameLabelTarget(label, target)) {
                 return Optional.of(label);
             }
@@ -66,26 +66,25 @@ final class DungeonMapInlineLabelUiStateContentPartModel {
     }
 
     private static boolean sameLabelTarget(
-            DungeonMapContentModel.DungeonMapRenderState.Label label,
+            DungeonMapRenderState.Label label,
             InlineLabelEditPresentationKey target
     ) {
         return label != null
                 && target != null
                 && label.ownerId() == target.ownerId()
                 && label.clusterId() == target.clusterId()
-                && DungeonMapContentModel.preparedRenderLabelKind(label.labelKind()) == target.labelKind()
-                && DungeonMapContentModel.preparedRenderTopologyKind(label.topologyRef().kind())
-                        == target.topologyKind()
+                && label.labelKind() == target.labelKind()
+                && label.topologyRef().kind() == target.topologyKind()
                 && label.topologyRef().id() == target.topologyId();
     }
 
     private static PointerTarget pointerTargetFromProjection(InlineLabelEditProjection projection) {
         return PointerTarget.label(
-                projection.labelKind(),
+                DungeonMapRenderElementFactory.labelKind(projection.labelKind()),
                 projection.ownerId(),
                 projection.clusterId(),
-                new DungeonMapContentModel.DungeonMapRenderState.TopologyRef(
-                        projection.topologyKind(),
+                new DungeonMapRenderState.TopologyRef(
+                        DungeonMapRenderElementFactory.topologyKind(projection.topologyKind()),
                         projection.topologyId()));
     }
 

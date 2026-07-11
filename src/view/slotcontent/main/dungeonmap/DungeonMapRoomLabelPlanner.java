@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 import org.jspecify.annotations.Nullable;
 
-final class DungeonMapRoomLabelPlacementContentPartModel {
+final class DungeonMapRoomLabelPlanner {
     private static final double WALL_OFFSET_SCENE = 0.34;
     private static final double LABEL_WALL_PADDING_SCENE = 0.32;
     private static final Comparator<WallRun> WALL_RUN_ORDER =
@@ -15,16 +15,16 @@ final class DungeonMapRoomLabelPlacementContentPartModel {
                     .thenComparingDouble(WallRun::centerR)
                     .thenComparingDouble(run -> -run.centerQ());
 
-    RoomLabelPlacement placementFor(List<DungeonMapContentModel.DungeonMapRenderState.Cell> cells) {
-        List<DungeonMapContentModel.DungeonMapRenderState.Cell> safeCells = cells == null ? List.of() : cells;
-        DungeonMapEditorProjectionContentPartModel.CellCenter fallback =
-                DungeonMapEditorProjectionContentPartModel.centerOfCells(safeCells);
+    RoomLabelPlacement placementFor(List<DungeonMapRenderState.Cell> cells) {
+        List<DungeonMapRenderState.Cell> safeCells = cells == null ? List.of() : cells;
+        DungeonMapRenderElementFactory.RenderCellCenter fallback =
+                DungeonMapRenderElementFactory.centerOfCells(safeCells);
         if (safeCells.isEmpty()) {
             return new RoomLabelPlacement(fallback.q(), fallback.r(), 0.0, 0.0);
         }
         Set<String> occupied = occupiedCells(safeCells);
         WallRun best = null;
-        for (DungeonMapContentModel.DungeonMapRenderState.Cell cell : safeCells) {
+        for (DungeonMapRenderState.Cell cell : safeCells) {
             best = better(best, horizontalRunIfStart(cell, occupied, -1, 2, 0, 1));
             best = better(best, horizontalRunIfStart(cell, occupied, 1, 0, 1, -1));
             best = better(best, verticalRunIfStart(cell, occupied, -1, 1, 0, 1));
@@ -33,16 +33,16 @@ final class DungeonMapRoomLabelPlacementContentPartModel {
         return best == null ? new RoomLabelPlacement(fallback.q(), fallback.r(), 0.0, 0.0) : best.toPlacement();
     }
 
-    private static Set<String> occupiedCells(List<DungeonMapContentModel.DungeonMapRenderState.Cell> cells) {
+    private static Set<String> occupiedCells(List<DungeonMapRenderState.Cell> cells) {
         Set<String> occupied = new LinkedHashSet<>();
-        for (DungeonMapContentModel.DungeonMapRenderState.Cell cell : cells) {
+        for (DungeonMapRenderState.Cell cell : cells) {
             occupied.add(cellKey(cell.q(), cell.r(), cell.z()));
         }
         return occupied;
     }
 
     private static @Nullable WallRun horizontalRunIfStart(
-            DungeonMapContentModel.DungeonMapRenderState.Cell cell,
+            DungeonMapRenderState.Cell cell,
             Set<String> occupied,
             int neighborDeltaR,
             int priority,
@@ -65,7 +65,7 @@ final class DungeonMapRoomLabelPlacementContentPartModel {
     }
 
     private static @Nullable WallRun verticalRunIfStart(
-            DungeonMapContentModel.DungeonMapRenderState.Cell cell,
+            DungeonMapRenderState.Cell cell,
             Set<String> occupied,
             int neighborDeltaQ,
             int priority,

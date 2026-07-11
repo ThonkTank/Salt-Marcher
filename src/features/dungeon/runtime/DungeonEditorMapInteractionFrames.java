@@ -8,8 +8,8 @@ import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorSurface;
 import src.domain.dungeon.published.DungeonEditorViewMode;
 
-final class DungeonEditorMapInteractionFrameAssembler {
-    private DungeonEditorMapInteractionFrameAssembler() {
+final class DungeonEditorMapInteractionFrames {
+    private DungeonEditorMapInteractionFrames() {
     }
 
     static DungeonEditorPreparedFrameFacts.MapInteractionFrame from(DungeonEditorMapSurfaceSnapshot snapshot) {
