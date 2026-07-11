@@ -32,11 +32,11 @@ migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M6 - Completion |
-| Work item | M6.3 - final measurement |
-| Cycle step | M6.3 - Final measurement |
-| In-flight area | `completion-final-measurement` |
-| Required next proof | Measure repo-wide metrics against the pre-migration baseline, verify no live instruction surface teaches or enforces the old role family, and write the German closing report without restoring removed doc gates. |
-| Last status note | `2026-07-12 M6.2 governance-right-sizing` |
+| Work item | Architecture migration complete |
+| Cycle step | M6 complete |
+| In-flight area | None |
+| Required next proof | None; M0-M6 are complete on branch. Merge through PR with required CI before treating the migration as complete on `main`. |
+| Last status note | `2026-07-12 M6.3 final-measurement-close-out` |
 
 ## M0 Step Ledger
 
@@ -232,7 +232,7 @@ migration unless this ledger advances too.
 | --- | --- | --- | --- | --- | --- |
 | M6.1 Doc teardown remainder | Done on branch | `7df621ea9` | Pending | `git diff --check 577f57a60..7df621ea9` passed; code-pointer existence check passed; Phase judge `Halley` returned REWORK for weakened principle wording, then APPROVE after commit `7df621ea9`; no documentation gate was run or required. | Added `docs/project/architecture/source-architecture.md` as the concise source architecture statement with the six roadmap Target Principles and real code pointers; updated `AGENTS.md` to route source architecture work to that statement and to stop requiring removed doc gates as acceptance evidence. `AGENTS.md` stayed at 76 lines; the statement is 69 lines. |
 | M6.2 Governance right-sizing | Done on branch | `cc86ed0e7` | Pending | `git diff --check 62f9289c9..cc86ed0e7` passed; targeted live-governance grep for `checkDocumentationEnforcement`, `LEGACY_REMOVE_ON_TOUCH`, migration-regime wording, and dedicated documentation gates returned no matches; `AGENTS.md` decreased from 76 to 73 lines; judge `Wegener` returned APPROVE with no blocking findings; no documentation gate was run or required. | Removed the remaining self-referential migration-completion instruction from `AGENTS.md`, reduced required documentation header metadata to `Status` plus `Source of Truth`, routed documentation/instruction proof through `git diff --check` plus owner-named proof, removed `checkDocumentationEnforcement` from live public proof surfaces, and merged legacy-removal guidance into the single `PROJECT_HEALTH_DEBT` marker flow. Historical proof references remain as past records only. |
-| M6.3 Final measurement | In Flight | Pending | Pending | Pending | Measure repo-wide metrics against the pre-migration baseline, verify no live instruction surface teaches or enforces the old role family, and write the German closing report. |
+| M6.3 Final measurement | Done on branch | `71112f943` | Pending | Final measurement report `docs/project/architecture/architecture-migration-final-measurement.md`; `git diff --check b244aa2d5..71112f943` passed; role-family checker/policy formula returned 0 at `b244aa2d5`; `AGENTS.md` stayed 73 lines; judge `Hilbert` returned APPROVE and reproduced the metrics; fresh-agent check `Kepler` returned APPROVE for a hypothetical small Hex feature shape without adding retired role-family layers; no documentation gate was run or required. | Final report measures baseline `d2d1cb4bde6d26be66ea88d726cfa7ac4bfbfcdd` against final measured commit `b244aa2d5`: tracked files 2,017 -> 1,601; tracked text LOC 216,768 -> 188,361; production Java files 1,496 -> 1,214; production Java LOC 124,831 -> 114,411; documentation files 184 -> 181; documentation lines 18,489 -> 21,775 with the increase explicitly attributed to retained migration evidence; checker sources 128 -> 38; old role-family checker/policy sources 83 -> 0; average accepted area chain length 7.62 -> 4.62. M6 done-when is satisfied on branch. |
 
 ## Area Ledger
 

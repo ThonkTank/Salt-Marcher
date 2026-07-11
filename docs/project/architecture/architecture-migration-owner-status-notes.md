@@ -538,3 +538,24 @@ Live-Governance-Grep findet keine aktiven `checkDocumentationEnforcement`-,
 `LEGACY_REMOVE_ON_TOUCH`- oder Migration-Regime-Routings, und der
 unabhaengige Judge `Wegener` hat APPROVE ohne Must-Fix gegeben. Naechster
 Schritt ist M6.3 Final Measurement und der deutsche Abschlussbericht.
+
+### 2026-07-12 M6.3 final-measurement-close-out
+
+Die Architektur-Migration M0-M6 ist auf dem Branch technisch abgeschlossen.
+Der Abschlussbericht steht in
+`docs/project/architecture/architecture-migration-final-measurement.md`.
+Gemessen wurde der Vor-Migrationsstand `d2d1cb4b` gegen den finalen
+Governance-Stand `b244aa2d5`: getrackte Dateien 2.017 -> 1.601,
+getrackte Text-LOC 216.768 -> 188.361, Produkt-Java-Dateien 1.496 ->
+1.214, Produkt-Java-LOC 124.831 -> 114.411, Check-/Rule-/Task-Quellen
+128 -> 38, alte Role-Family-Checker/Policy-Quellen 83 -> 0 und die
+durchschnittliche akzeptierte Area-Chain 7,62 -> 4,62. Die
+Dokumentationszeilen steigen 18.489 -> 21.775; das ist offen im Bericht
+markiert und stammt aus behaltenen Migrationsbelegen, nicht aus wiederbelebter
+Strukturdoctrine. `Hilbert` hat den M6.3-Bericht mit reproduzierten Zahlen
+APPROVE gegeben. Der Fresh-Agent-Check `Kepler` fuehrt bei einer kleinen
+hypothetischen Hex-Erweiterung zur direkten `HexEditorApplicationService`-/
+Domain-/Repository-/Published-Route und nicht zur alten UseCase-/Port-/
+IntentHandler-/ContentModel-Rollenfamilie. Es wurde kein Doc-Gate
+ausgefuehrt oder wiederhergestellt. Naechster nicht-migrationstechnischer
+Schritt ist PR/CI/Merge nach `main`.
