@@ -186,7 +186,11 @@ In-file removal requirements:
   `DungeonEditorStateViewInputEvent`.
 - `DungeonMapContentModel.pointerHitRefsAt(...)`.
 - `DungeonMapContentModel.currentPointerTargetFrames()`.
-- `PointerInteractionTargets.fromHitTargets(...)`.
+- `PointerInteractionTargets.fromHitTargets(...)`. Amendment 2026-07-11:
+  this non-foreign runtime bridge may be removed in the wiring-port commit
+  after all production and frozen-harness callers are ported to
+  `fromRuntimeTargets(...)`; retaining it solely through a keep rule would
+  hide real dead-code proof instead of preserving a byte-compatible seam.
 - The `PH-20260711-001` marker in `PointerInteractionTargets` only after
   runtime pointer selection consumes typed targets and the project-health
   register is updated to `Removed` or to a judge-accepted narrower debt.
@@ -302,7 +306,10 @@ The wiring-port step may:
   behavior through the old model/handler stack if needed
 - add `DungeonMapContentModel.runtimePointerTargetsAt(...)` and
   `PointerInteractionTargets.fromRuntimeTargets(...)` as compatibility methods
-  while keeping old methods alive until implementation
+  while keeping old methods alive until implementation, except that the
+  amended `PointerInteractionTargets.fromHitTargets(...)` bridge may be
+  removed once every production and frozen-harness caller uses the typed
+  target seam
 - mechanically port harness imports only if a deleted-class reference would
   otherwise block compiling the frozen harness inventory
 
