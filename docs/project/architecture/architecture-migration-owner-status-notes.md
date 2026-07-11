@@ -443,3 +443,19 @@ als PH-20260711-001 an der Runtime-Auswahlstelle markiert. Phase 1 bestaetigt
 nach Rework: keine offene Render-Harness-Luecke, PH-20260711-001 ist kein
 M4.4-Render-Handoff-Blocker. Naechster Schritt ist M4.4 Baseline-Metriken;
 es wurde noch keine Render-Implementierung begonnen.
+
+### 2026-07-11 M4.4 dungeon-rendering-pipeline-close-out
+
+Die Dungeon-Rendering-Pipeline ist auf dem Branch abgeschlossen. Referenzstand
+ist `e95c907b0`: Die alte `ContentPartModel`-Kaskade im Dungeon-Map-Renderpfad
+ist geloescht, die vorbereiteten Runtime-Frame- und Map-Interaction-Assembler
+sind in echte Runtime-Helfer ueberfuehrt, und `DungeonMapContentModel` ist nur
+noch Koordinator ueber Render-State, Frame-Projektion, Szenenaufbau,
+Hit-Index, Inline-Label-State und Viewport-State. Die byte-kompatiblen
+Editor-/Travel-/Map-Seams bleiben erhalten; der bekannte Hit-Ref-/
+Pointer-Target-Stringrest bleibt absichtlich als PH-20260711-001 fuer M4.5/
+Runtime erhalten. Der vollstaendige Proof ist gruen: Static/CPD/PMD/CKJM,
+alle eingefrorenen Dungeon-Harnessgruppen, Render-Parity mit `DE-IMG-001`,
+`DE-IMG-002` und `DT-IMG-001`, Focused-Handoff, Production-Handoff sowie
+Phase 1 und der unabhaengige Judge. Naechster Schritt ist M4.5
+`dungeon-editor-view` Harness-Check/Closure gegen die aktuelle Struktur.
