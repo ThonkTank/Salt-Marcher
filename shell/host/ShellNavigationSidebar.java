@@ -52,9 +52,9 @@ final class ShellNavigationSidebar extends VBox {
     private ToggleButton createButton(
             ShellLeftBarTabSpec registrationSpec,
             ShellBinding binding,
-            Consumer<ContributionKey> onSelect) {
+                Consumer<ContributionKey> onSelect) {
         ToggleButton button = new ToggleButton();
-        ShellFx.addStyleClass(button, "nav-btn");
+        button.getStyleClass().add("nav-btn");
         button.setToggleGroup(navGroup);
         button.setTooltip(new Tooltip(binding.title()));
         button.setAccessibleText(binding.title());
@@ -73,7 +73,7 @@ final class ShellNavigationSidebar extends VBox {
             ShellLeftBarTabMode currentMode = item.registrationSpec().mode();
             if (previousMode != null && previousMode != currentMode) {
                 Region separator = new Region();
-                ShellFx.addStyleClass(separator, "nav-separator");
+                separator.getStyleClass().add("nav-separator");
                 getChildren().add(separator);
             }
             getChildren().add(item.button());

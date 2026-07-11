@@ -1,6 +1,9 @@
 package src.view.leftbartabs.worldplanner;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -21,16 +24,16 @@ import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.domain.creatures.published.CreatureCatalogModel;
-import src.domain.creatures.published.CreatureCatalogPage;
-import src.domain.creatures.published.CreatureCatalogPageResult;
-import src.domain.creatures.published.CreatureCatalogRow;
-import src.domain.creatures.published.CreatureQueryStatus;
-import src.domain.encountertable.published.EncounterTableCatalogModel;
-import src.domain.encountertable.published.EncounterTableCatalogResult;
-import src.domain.encountertable.published.EncounterTableReadStatus;
-import src.domain.encountertable.published.EncounterTableSummary;
-import src.domain.worldplanner.model.world.port.WorldPlannerReferencePort;
+import src.domain.creatures.CreaturesApplicationService;
+import src.domain.creatures.model.catalog.CreatureCatalogData;
+import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
+import src.domain.encounter.published.EncounterStateModel;
+import src.domain.encounter.published.EncounterStateSnapshot;
+import src.domain.encountertable.EncounterTableApplicationService;
+import src.domain.encountertable.model.catalog.EncounterTableCandidateData;
+import src.domain.encountertable.model.catalog.EncounterTableSummaryData;
+import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
+import src.domain.encountertable.published.RefreshEncounterTableCatalogCommand;
 import src.domain.worldplanner.published.WorldNpcLifecycleStatus;
 import src.domain.worldplanner.published.WorldPlannerSnapshot;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
@@ -64,6 +67,7 @@ public final class WorldPlannerUiHarness {
         Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
         Parent state = slot(binding, ShellSlot.COCKPIT_STATE, Parent.class);
         WorldPlannerSnapshotModel model = services.require(WorldPlannerSnapshotModel.class);
+        EncounterStateModel encounterState = services.require(EncounterStateModel.class);
 
         assertNoButton(controls, "Refresh", "Refresh button removed from World Planner controls");
         assertNoLabelContains(controls, "0 NPCs", "NPC counter label removed from World Planner controls");
@@ -101,6 +105,14 @@ public final class WorldPlannerUiHarness {
         assertEquals(WorldNpcLifecycleStatus.DEFEATED, model.current().npcs().get(0).status(), "NPC defeated through UI");
         button(state, "Aktiv").fire();
         assertEquals(WorldNpcLifecycleStatus.ACTIVE, model.current().npcs().get(0).status(), "NPC reactivated through UI");
+        button(state, "Zum Encounter").fire();
+        EncounterStateSnapshot.RosterCard rosterCard =
+                encounterState.current().builderPane().rosterCards().getFirst();
+        assertEquals(101L, rosterCard.creatureId(), "Encounter receives selected NPC statblock through UI");
+        assertEquals(
+                model.current().npcs().getFirst().npcId(),
+                rosterCard.worldNpcId(),
+                "Encounter receives selected World NPC id through UI");
 
         toggleButton(controls, "Fraktionen").fire();
         assertVisibleLabel(main, "Fraktionen", "Faction module visible after controls tab switch");
@@ -162,52 +174,149 @@ public final class WorldPlannerUiHarness {
 
     private static ServiceRegistry services() {
         ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
+        builder.register(CreatureCatalogPort.class, new FixtureCreatureCatalogPort());
+        builder.register(EncounterTableCatalogPort.class, new FixtureEncounterTableCatalogPort());
         new src.data.worldplanner.WorldPlannerServiceContribution().register(builder);
-        builder.register(WorldPlannerReferencePort.class, new PositiveReferencePort());
-        builder.register(CreatureCatalogModel.class, new CreatureCatalogModel(
-                WorldPlannerUiHarness::creatureCatalog,
-                listener -> () -> { }));
-        builder.register(EncounterTableCatalogModel.class, new EncounterTableCatalogModel(
-                WorldPlannerUiHarness::encounterTableCatalog,
-                listener -> () -> { }));
+        new src.data.party.PartyServiceContribution().register(builder);
+        new src.data.encounter.EncounterServiceContribution().register(builder);
+        new src.domain.creatures.CreaturesServiceContribution().register(builder);
+        new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
+        new src.domain.party.PartyServiceContribution().register(builder);
         new src.domain.worldplanner.WorldPlannerServiceContribution().register(builder);
-        return builder.build();
+        new src.domain.encounter.EncounterServiceContribution().register(builder);
+        ServiceRegistry registry = builder.build();
+        registry.require(CreaturesApplicationService.class).refreshCatalog(null);
+        registry.require(EncounterTableApplicationService.class)
+                .refreshCatalog(new RefreshEncounterTableCatalogCommand());
+        return registry;
     }
 
-    private static CreatureCatalogPageResult creatureCatalog() {
-        return new CreatureCatalogPageResult(
-                CreatureQueryStatus.SUCCESS,
-                new CreatureCatalogPage(
-                        List.of(new CreatureCatalogRow(
-                                101L,
-                                "Ash Guard",
-                                "Medium",
-                                "humanoid",
-                                "LN",
-                                "1/4",
-                                50,
-                                11,
-                                13)),
-                        1,
-                        50,
-                        0));
-    }
+    private static final class FixtureCreatureCatalogPort implements CreatureCatalogPort {
 
-    private static EncounterTableCatalogResult encounterTableCatalog() {
-        return new EncounterTableCatalogResult(
-                EncounterTableReadStatus.SUCCESS,
-                List.of(new EncounterTableSummary(201L, "Gate Patrol", null)));
-    }
+        private static final long ASH_GUARD_ID = 101L;
+        private final Map<Long, CreatureCatalogData.CreatureProfile> profiles =
+                Map.of(ASH_GUARD_ID, profile(ASH_GUARD_ID, "Ash Guard", 50));
 
-    private static final class PositiveReferencePort implements WorldPlannerReferencePort {
         @Override
-        public boolean creatureStatblockExists(long creatureStatblockId) {
-            return creatureStatblockId > 0L;
+        public CreatureCatalogData.DistinctFilterValues loadFilterValues() {
+            return CreatureCatalogData.emptyFilterValues();
         }
 
         @Override
-        public boolean encounterTableExists(long encounterTableId) {
-            return encounterTableId > 0L;
+        public CreatureCatalogData.CatalogPageData searchCatalog(CreatureCatalogData.CatalogSearchSpec spec) {
+            List<CreatureCatalogData.CatalogRowData> rows = profiles.values().stream()
+                    .map(profile -> new CreatureCatalogData.CatalogRowData(
+                            profile.id(),
+                            profile.name(),
+                            profile.size(),
+                            profile.creatureType(),
+                            profile.alignment(),
+                            profile.challengeRating(),
+                            profile.xp(),
+                            profile.hitPoints(),
+                            profile.armorClass()))
+                    .toList();
+            return new CreatureCatalogData.CatalogPageData(rows, rows.size(), 50, 0);
+        }
+
+        @Override
+        public CreatureCatalogData.CreatureProfile loadCreatureDetail(long creatureId) {
+            return profiles.get(creatureId);
+        }
+
+        @Override
+        public List<CreatureCatalogData.EncounterCandidateProfile> loadEncounterCandidates(
+                CreatureCatalogData.EncounterCandidateSpec spec
+        ) {
+            List<CreatureCatalogData.EncounterCandidateProfile> candidates = new ArrayList<>();
+            for (CreatureCatalogData.CreatureProfile profile : profiles.values()) {
+                if (profile.xp() >= spec.minimumXp() && profile.xp() <= spec.maximumXp()) {
+                    candidates.add(candidate(profile));
+                }
+            }
+            return candidates.stream().limit(Math.max(0, spec.limit())).toList();
+        }
+
+        private static CreatureCatalogData.CreatureProfile profile(long id, String name, int xp) {
+            return new CreatureCatalogData.CreatureProfile(
+                    new CreatureCatalogData.CreatureIdentity(
+                            id,
+                            name,
+                            "Medium",
+                            "humanoid",
+                            List.of(),
+                            List.of(),
+                            "neutral",
+                            "1/4",
+                            xp),
+                    new CreatureCatalogData.CreatureVitals(10, null, 1, 8, 0, 12, null, 30, 0, 0, 0, 0),
+                    new CreatureCatalogData.CreatureAbilities(10, 12, 10, 10, 10, 10, 1, 2),
+                    new CreatureCatalogData.CreatureTraits(null, null, null, null, null, null, null, 10, null, 0),
+                    List.of());
+        }
+
+        private static CreatureCatalogData.EncounterCandidateProfile candidate(
+                CreatureCatalogData.CreatureProfile profile
+        ) {
+            return new CreatureCatalogData.EncounterCandidateProfile(
+                    profile.id(),
+                    profile.name(),
+                    profile.creatureType(),
+                    profile.challengeRating(),
+                    profile.xp(),
+                    profile.hitPoints(),
+                    profile.hitDiceCount(),
+                    profile.hitDiceSides(),
+                    profile.hitDiceModifier(),
+                    profile.armorClass(),
+                    profile.initiativeBonus(),
+                    profile.legendaryActionCount());
+        }
+    }
+
+    private static final class FixtureEncounterTableCatalogPort implements EncounterTableCatalogPort {
+
+        private final Map<Long, List<EncounterTableCandidateData>> tableCandidates = new LinkedHashMap<>();
+
+        private FixtureEncounterTableCatalogPort() {
+            tableCandidates.put(201L, List.of(tableCandidate(101L, "Ash Guard", 50)));
+        }
+
+        @Override
+        public List<EncounterTableSummaryData> loadSummaries() {
+            return tableCandidates.keySet().stream()
+                    .map(id -> new EncounterTableSummaryData(id, "Gate Patrol", null))
+                    .toList();
+        }
+
+        @Override
+        public List<EncounterTableCandidateData> loadGenerationCandidates(List<Long> tableIds, int maximumXp) {
+            Map<Long, EncounterTableCandidateData> unique = new LinkedHashMap<>();
+            for (Long tableId : tableIds == null ? List.<Long>of() : tableIds) {
+                for (EncounterTableCandidateData candidate : tableCandidates.getOrDefault(tableId, List.of())) {
+                    if (candidate.xp() <= maximumXp) {
+                        unique.putIfAbsent(candidate.creatureId(), candidate);
+                    }
+                }
+            }
+            return List.copyOf(unique.values());
+        }
+
+        private static EncounterTableCandidateData tableCandidate(long creatureId, String name, int xp) {
+            return new EncounterTableCandidateData(
+                    creatureId,
+                    name,
+                    "humanoid",
+                    "1/4",
+                    xp,
+                    10,
+                    1,
+                    8,
+                    0,
+                    12,
+                    1,
+                    0,
+                    1);
         }
     }
 

@@ -240,6 +240,8 @@ val dungeonEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("dungeon-edi
 val dungeonEditorBehaviorHarnessResultsDir = layout.buildDirectory.dir("dungeon-editor-behavior-results")
 val dungeonTravelProjectionLevelHarnessDataDir = layout.buildDirectory.dir("dungeon-travel-projection-level-data")
 val dungeonTravelProjectionLevelHarnessResultsDir = layout.buildDirectory.dir("dungeon-travel-projection-level-results")
+val dungeonMapRenderParityHarnessDataDir = layout.buildDirectory.dir("dungeon-map-render-parity-data")
+val dungeonMapRenderParityHarnessResultsDir = layout.buildDirectory.dir("dungeon-map-render-parity-results")
 val behaviorHarnesses = extensions.getByType<BehaviorHarnessRegistry>()
 
 fun registerDungeonEditorBehaviorHarnessTask(
@@ -454,15 +456,54 @@ behaviorHarnesses.javaExec("dungeonTravelProjectionLevelHarness") {
     }
 }
 
+behaviorHarnesses.javaExec("dungeonMapRenderParityHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("dungeon-map-render-parity"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused Dungeon map render image snapshot parity harness."
+        dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
+        classpath = dungeonEditorBehaviorHarness.runtimeClasspath
+        mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonMapRenderParitySnapshotHarness")
+        inputs.files(fileTree("docs/dungeon/verification") {
+            include("verification-dungeon-editor-fixtures.md")
+            include("verification-dungeon-editor-map-controls.md")
+            include("verification-dungeon-editor-walls.md")
+            include("verification-dungeon-render-snapshot-parity.md")
+            include("verification-dungeon-travel-map-controls.md")
+        })
+            .withPropertyName("dungeonMapRenderParityCatalogs")
+            .withPathSensitivity(PathSensitivity.RELATIVE)
+        outputs.dir(dungeonMapRenderParityHarnessResultsDir)
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = dungeonMapRenderParityHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            mkdir(dungeonMapRenderParityHarnessResultsDir)
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+        systemProperty(
+            "saltmarcher.dungeonEditorBehavior.resultsDir",
+            dungeonMapRenderParityHarnessResultsDir.get().asFile.absolutePath
+        )
+    }
+}
+
 val catalogInitialLoadHarnessDataDir = layout.buildDirectory.dir("catalog-initial-load-data")
 val catalogCrudControlsHarnessDataDir = layout.buildDirectory.dir("catalog-crud-controls-data")
 val catalogControlsRawInputHarnessDataDir = layout.buildDirectory.dir("catalog-controls-raw-input-data")
 val searchFilterControlsHarnessDataDir = layout.buildDirectory.dir("search-filter-controls-data")
 val partyDropdownHarnessDataDir = layout.buildDirectory.dir("party-dropdown-data")
 val hexMapEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-map-editor-behavior-data")
+val hexTravelStateBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-travel-state-behavior-data")
+val encounterStateTabHarnessDataDir = layout.buildDirectory.dir("encounter-state-tab-data")
+val encounterTableReadbackHarnessDataDir = layout.buildDirectory.dir("encounter-table-readback-data")
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
 val worldPlannerBackendHarnessDataDir = layout.buildDirectory.dir("world-planner-backend-data")
+val worldPlannerEncounterHarnessDataDir = layout.buildDirectory.dir("world-planner-encounter-data")
 val worldPlannerControlsRawInputHarnessDataDir = layout.buildDirectory.dir("world-planner-controls-raw-input-data")
 val worldPlannerUiHarnessDataDir = layout.buildDirectory.dir("world-planner-ui-data")
 val smokeStartupHarnessDataDir = layout.buildDirectory.dir("smoke-startup-data")
@@ -597,6 +638,13 @@ behaviorHarnesses.javaExec("hexTravelStateBehaviorHarness") {
         classpath = hexMapEditorBehaviorHarness.runtimeClasspath
         mainClass.set("src.view.statetabs.travel.TravelStateHexHarness")
         outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = hexTravelStateBehaviorHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
     }
 }
 
@@ -609,6 +657,46 @@ behaviorHarnesses.javaExec("encounterStateTabHarness") {
         dependsOn(tasks.named("testClasses"))
         classpath = sourceSets["test"].runtimeClasspath
         mainClass.set("src.view.statetabs.encounter.EncounterStateTabHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = encounterStateTabHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+    }
+}
+
+behaviorHarnesses.javaExec("encounterTableReadbackHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("encounter-table-readback"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused Encounter Table readback behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.domain.encountertable.EncounterTableReadbackHarness")
+        outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = encounterTableReadbackHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
+    }
+}
+
+behaviorHarnesses.javaExec("creatureCatalogHarness") {
+    classification.set(BehaviorHarnessClassification.FOCUSED)
+    conceptIds.set(listOf("creature-catalog"))
+    task {
+        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        description = "Run the focused Creature catalog domain behavior harness."
+        dependsOn(tasks.named("testClasses"))
+        classpath = sourceSets["test"].runtimeClasspath
+        mainClass.set("src.domain.creatures.CreatureCatalogHarness")
         outputs.upToDateWhen { false }
     }
 }
@@ -683,6 +771,13 @@ behaviorHarnesses.javaExec("worldPlannerEncounterHarness") {
         classpath = worldPlannerBackendHarness.runtimeClasspath
         mainClass.set("src.domain.encounter.WorldPlannerEncounterHarness")
         outputs.upToDateWhen { false }
+        doFirst {
+            val runDataDir = worldPlannerEncounterHarnessDataDir.get()
+                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            mkdir(runDataDir)
+            mkdir(runDataDir.dir("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+        }
     }
 }
 

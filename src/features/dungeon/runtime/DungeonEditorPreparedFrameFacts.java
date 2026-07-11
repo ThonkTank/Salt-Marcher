@@ -607,7 +607,7 @@ public record DungeonEditorPreparedFrameFacts(
         }
 
         public static MapInteractionFrame from(DungeonEditorMapSurfaceSnapshot snapshot) {
-            return DungeonEditorMapInteractionFrameAssembler.from(snapshot);
+            return DungeonEditorMapInteractionFrames.from(snapshot);
         }
     }
 

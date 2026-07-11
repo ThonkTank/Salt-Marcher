@@ -15,7 +15,7 @@ public record EncounterSessionCommand(
         int delta,
         long token,
         List<EncounterInitiativeInput> initiativeInputs,
-        String combatantId,
+        CombatantId combatantId,
         int initiative,
         long partyMemberId,
         int amount,
@@ -26,7 +26,7 @@ public record EncounterSessionCommand(
         generation = generation == null ? Optional.empty() : generation;
         builderInputs = builderInputs == null ? EncounterGenerationInputs.empty() : builderInputs;
         initiativeInputs = initiativeInputs == null ? List.of() : List.copyOf(initiativeInputs);
-        combatantId = combatantId == null ? "" : combatantId;
+        combatantId = combatantId == null ? CombatantId.empty() : combatantId;
     }
 
     public static EncounterSessionCommand refresh() {
@@ -40,7 +40,7 @@ public record EncounterSessionCommand(
                 0,
                 0L,
                 List.of(),
-                "",
+                CombatantId.empty(),
                 0,
                 0L,
                 0,
@@ -58,7 +58,7 @@ public record EncounterSessionCommand(
                 0,
                 0L,
                 List.of(),
-                "",
+                CombatantId.empty(),
                 0,
                 0L,
                 0,

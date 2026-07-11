@@ -6,30 +6,25 @@ import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.projection.DungeonDerivedState;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.structure.room.DungeonRoomCluster;
-import src.domain.dungeon.model.core.usecase.BuildDungeonDerivedStateUseCase;
 
 /**
  * Builds dungeon inspector snapshots from authored truth and selection context.
  */
 public final class InspectDungeonSelectionUseCase {
 
-    private final BuildDungeonDerivedStateUseCase derive;
     private final BuildDungeonSelectionFactsUseCase selectionFacts;
     private final BuildDungeonRoomNarrationsUseCase roomNarrations;
 
-    public InspectDungeonSelectionUseCase(BuildDungeonDerivedStateUseCase derive) {
+    public InspectDungeonSelectionUseCase() {
         this(
-                derive,
                 new BuildDungeonSelectionFactsUseCase(),
                 new BuildDungeonRoomNarrationsUseCase());
     }
 
     public InspectDungeonSelectionUseCase(
-            BuildDungeonDerivedStateUseCase derive,
             BuildDungeonSelectionFactsUseCase selectionFacts,
             BuildDungeonRoomNarrationsUseCase roomNarrations
     ) {
-        this.derive = Objects.requireNonNull(derive, "derive");
         this.selectionFacts = Objects.requireNonNull(selectionFacts, "selectionFacts");
         this.roomNarrations = Objects.requireNonNull(roomNarrations, "roomNarrations");
     }

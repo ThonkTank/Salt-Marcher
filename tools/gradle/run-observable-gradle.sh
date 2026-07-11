@@ -11,9 +11,9 @@ Usage:
   tools/gradle/run-observable-gradle.sh [--fail-fast] <gradle-task> [<gradle-task> ...] [-- <extra-gradle-args>]
 
 Examples:
-  tools/gradle/run-observable-gradle.sh checkDataEnforcement
+  tools/gradle/run-observable-gradle.sh architectureTest
   tools/gradle/run-observable-gradle.sh --fail-fast compileJava
-  tools/gradle/run-observable-gradle.sh checkDomainEnforcement checkDataEnforcement -- --rerun-tasks
+  tools/gradle/run-observable-gradle.sh pmdStrictMain spotbugsMain -- --rerun-tasks
 
 Options:
   --fail-fast  Do not add wrapper-owned Gradle --continue.

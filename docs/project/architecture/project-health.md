@@ -13,9 +13,9 @@ discoverable where they hurt the code and searchable from one register. Pass
 logs are evidence for how a problem was found; they are not the only acceptable
 home for a known problem.
 
-This standard defines project-health debt handling. It does not replace layer
-architecture standards, behavior harness proof, verification policy, or the
-`LEGACY_REMOVE_ON_TOUCH` delete signal.
+This standard defines the single project-health marker flow. It does not
+replace layer architecture standards, behavior harness proof, or verification
+policy.
 
 ## Owner Areas
 
@@ -96,8 +96,9 @@ in generated logs.
 
 ## Debt Marker
 
-Use `PROJECT_HEALTH_DEBT` for known structural or governance debt that cannot
-be fixed in the same pass. The marker format is:
+Use `PROJECT_HEALTH_DEBT` for known structural, governance, compatibility, or
+legacy-removal debt that cannot be fixed in the same pass. The marker format
+is:
 
 ```text
 PROJECT_HEALTH_DEBT[PH-YYYYMMDD-NNN]: <problem>; owner=<area>; remove_when=<concrete condition>.
@@ -108,10 +109,11 @@ the primary cause and list satellite paths in the register. The marker must be
 close enough that an agent editing the affected area sees it without opening a
 central log.
 
-`LEGACY_REMOVE_ON_TOUCH` remains the targeted delete signal for legacy or
-compatibility support that must be removed when touched. Use
-`PROJECT_HEALTH_DEBT` when the problem is broader than a local delete signal or
-must be tracked centrally across areas, skills, or review governance.
+For targeted legacy removal, use the same marker with a concrete
+`remove_when` condition. Do not create a second marker family for legacy
+delete-on-touch work; when an old delete signal is encountered in live work,
+remove the support or replace the signal with synchronized
+`PROJECT_HEALTH_DEBT` debt.
 
 ## Register
 
@@ -200,7 +202,6 @@ Every repo-tracked implementation review must search the reviewed scope for:
 
 ```text
 PROJECT_HEALTH_DEBT
-LEGACY_REMOVE_ON_TOUCH
 temporary compatibility
 retained compatibility
 stale

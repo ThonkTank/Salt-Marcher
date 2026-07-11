@@ -46,14 +46,14 @@ final class DungeonEditorRuntimeDraftSession {
         statePanelCorridorPointDrafts.update(selectedMapIdValue, selection, q, r);
     }
 
-    DungeonEditorRuntimeOperationResult moveCorridorPoint(
+    DungeonEditorRuntimeContext.Result moveCorridorPoint(
             long selectedMapIdValue,
             DungeonEditorStateSnapshot.Selection selection,
             int q,
             int r,
-            DungeonEditorAuthoredRuntimeOperations operationOwner
+            DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation
     ) {
-        return statePanelCorridorPointDrafts.move(selectedMapIdValue, selection, q, r, operationOwner);
+        return statePanelCorridorPointDrafts.move(selectedMapIdValue, selection, q, r, selectedHandleOperation);
     }
 
     void updateTransitionDescriptionDraft(long selectedMapIdValue, long transitionId, String description) {

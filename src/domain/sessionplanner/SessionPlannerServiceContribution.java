@@ -22,18 +22,6 @@ public final class SessionPlannerServiceContribution implements ServiceContribut
                 SessionPlannerApplicationService.class,
                 registry -> resolver.apply(registry).createSessionPlanner(registry));
         services.registerFactory(
-                SessionPlannerParticipantApplicationService.class,
-                registry -> resolver.apply(registry).createParticipants(registry));
-        services.registerFactory(
-                SessionPlannerEncounterApplicationService.class,
-                registry -> resolver.apply(registry).createEncounters(registry));
-        services.registerFactory(
-                SessionPlannerRestApplicationService.class,
-                registry -> resolver.apply(registry).createRests(registry));
-        services.registerFactory(
-                SessionPlannerLootApplicationService.class,
-                registry -> resolver.apply(registry).createLoot(registry));
-        services.registerFactory(
                 SessionPlannerCurrentSessionModel.class,
                 registry -> resolver.apply(registry).currentSessionModel(registry));
         services.registerFactory(

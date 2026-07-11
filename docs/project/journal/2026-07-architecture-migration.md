@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-09
+Last Reviewed: 2026-07-11
 Source of Truth: July 2026 architecture-migration retros and durable pilot
 lessons.
 
@@ -42,3 +42,17 @@ carry most of the unavoidable line count. The useful rollout lesson is that
 read-only reference catalogs can remove behavior-forwarding layers without
 inventing an authored write model; keep the public catalog vocabulary stable
 and move lookup normalization/status publication into the application service.
+
+## 2026-07-11 architecture-migration-m45-harness-closure - Carry hit-ref debt into design
+
+M4.5 `dungeon-editor-view` harness closure ran the full mapped editor-view
+suite in a clean detached proof worktree at `5df089e6a`: the eleven mapped
+editor harness tasks, dungeon render parity, travel projection, topology, and
+harness-map consistency all passed with frozen scenarios and assertions. The
+focused handoff wrapper stopped before Gradle because project-health intake
+matched `PH-20260711-001` against `dungeon-editor-view`. Phase 1 review
+classified that as real active M4.5 debt, not as a harness coverage gap:
+baseline/design must count the runtime/editor hit-ref and pointer-target string
+protocol, and later M4.5 handoff remains blocked until the debt is structurally
+resolved or legitimately narrowed. No documentation gate was used as migration
+acceptance evidence.

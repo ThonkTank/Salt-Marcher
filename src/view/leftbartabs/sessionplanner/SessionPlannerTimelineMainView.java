@@ -27,7 +27,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     private static final String STYLE_FLAT = "flat";
     private final VBox content = new VBox(12);
     private final VBox rows = new VBox(8);
-    private Consumer<SessionPlannerTimelineMainViewInputEvent> viewInputEventHandler = ignored -> { };
+    private Consumer<SessionPlannerViewModel.TimelineInput> viewInputEventHandler = ignored -> { };
 
     public SessionPlannerTimelineMainView() {
         addStyles(content, "session-planner-main");
@@ -37,19 +37,19 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
     }
 
-    public void onViewInputEvent(Consumer<SessionPlannerTimelineMainViewInputEvent> handler) {
+    public void onTimelineInput(Consumer<SessionPlannerViewModel.TimelineInput> handler) {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void bind(SessionPlannerTimelineMainContentModel contentModel) {
-        if (contentModel == null) {
+    void bind(SessionPlannerViewModel viewModel) {
+        if (viewModel == null) {
             return;
         }
-        contentModel.projectionProperty().addListener((ignored, before, after) -> show(after));
-        show(contentModel.projectionProperty().get());
+        viewModel.timelineProjectionProperty().addListener((ignored, before, after) -> show(after));
+        show(viewModel.timelineProjectionProperty().get());
     }
 
-    private void show(SessionPlannerTimelineMainContentModel.Projection projection) {
+    private void show(SessionPlannerViewModel.TimelineProjection projection) {
         if (projection == null) {
             return;
         }
@@ -59,7 +59,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             addNode(rows, label("Noch keine Szenen.", STYLE_TEXT_SECONDARY, "session-planner-empty"));
         } else {
             for (int index = 0; index < projection.scenes().size(); index++) {
-                SessionPlannerTimelineMainContentModel.Projection.SceneModel scene =
+                SessionPlannerViewModel.TimelineProjection.SceneModel scene =
                         projection.scenes().get(index);
                 addNode(rows, sceneCard(scene, index + 1));
                 if (index < projection.restGaps().size()) {
@@ -75,7 +75,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         addNode(rows, addScene);
     }
 
-    private Node setupBox(SessionPlannerTimelineMainContentModel.Projection.SetupModel setup) {
+    private Node setupBox(SessionPlannerViewModel.TimelineProjection.SetupModel setup) {
         ComboBox<String> partyMemberSelector = new ComboBox<>();
         partyMemberSelector.getItems().setAll(setup.partyMemberChoiceLabels());
         partyMemberSelector.setPromptText("Spieler");
@@ -117,7 +117,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
 
         HBox participantRow = new HBox(6);
         participantRow.getChildren().add(label("In Session", "session-planner-card-title"));
-        for (SessionPlannerTimelineMainContentModel.Projection.SessionParticipantModel participant
+        for (SessionPlannerViewModel.TimelineProjection.SessionParticipantModel participant
                 : setup.sessionParticipantRows()) {
             Button remove = actionButton(
                     participant.removeText(),
@@ -144,7 +144,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private Node sceneCard(
-            SessionPlannerTimelineMainContentModel.Projection.SceneModel scene,
+            SessionPlannerViewModel.TimelineProjection.SceneModel scene,
             int position
     ) {
         Label title = label("Szene " + position + ": " + scene.sceneTitle(), "session-planner-encounter-title");
@@ -198,7 +198,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         return card;
     }
 
-    private Node linkedEncounterSummary(SessionPlannerTimelineMainContentModel.Projection.SceneModel scene) {
+    private Node linkedEncounterSummary(SessionPlannerViewModel.TimelineProjection.SceneModel scene) {
         if (!scene.linkedEncounterPlan()) {
             return label("Keine Begegnung verknuepft.", STYLE_TEXT_SECONDARY);
         }
@@ -217,7 +217,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         return summary;
     }
 
-    private Node sceneSection(SessionPlannerTimelineMainContentModel.Projection.SceneModel scene) {
+    private Node sceneSection(SessionPlannerViewModel.TimelineProjection.SceneModel scene) {
         TextField title = new TextField(scene.sceneTitle());
         title.setPromptText("Szenentitel");
         title.getStyleClass().add(STYLE_COMPACT);
@@ -256,7 +256,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 actionRow(location, save));
     }
 
-    private Node lootSection(SessionPlannerTimelineMainContentModel.Projection.SceneModel scene) {
+    private Node lootSection(SessionPlannerViewModel.TimelineProjection.SceneModel scene) {
         Button addButton = actionButton(
                 "Loot-Platzhalter",
                 event -> rawPublishScene(event, scene.addLootWidgetToken(), scene.sceneToken()),
@@ -268,7 +268,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                     STYLE_TEXT_SECONDARY,
                     "session-planner-empty"));
         } else {
-            for (SessionPlannerTimelineMainContentModel.Projection.LootModel loot : scene.lootPlaceholders()) {
+            for (SessionPlannerViewModel.TimelineProjection.LootModel loot : scene.lootPlaceholders()) {
                 addNode(rows, lootCard(loot));
             }
         }
@@ -278,7 +278,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 rows);
     }
 
-    private Node lootCard(SessionPlannerTimelineMainContentModel.Projection.LootModel loot) {
+    private Node lootCard(SessionPlannerViewModel.TimelineProjection.LootModel loot) {
         Label label = label(loot.label());
         Button remove = actionButton(
                 "Entfernen",
@@ -290,7 +290,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private Node restGapCard(
-            SessionPlannerTimelineMainContentModel.Projection.RestGapModel gap,
+            SessionPlannerViewModel.TimelineProjection.RestGapModel gap,
             int leftScene,
             int rightScene
     ) {
@@ -328,7 +328,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private void rawPublish(ActionEvent event, long widgetToken) {
-        publish(new SessionPlannerTimelineMainViewInputEvent(
+        publish(new SessionPlannerViewModel.TimelineInput(
                 rawWidgetToken(event, widgetToken),
                 0L,
                 0L,
@@ -343,7 +343,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private void rawPublishScene(ActionEvent event, long widgetToken, long sceneToken) {
-        publish(new SessionPlannerTimelineMainViewInputEvent(
+        publish(new SessionPlannerViewModel.TimelineInput(
                 rawWidgetToken(event, widgetToken),
                 sceneToken,
                 0L,
@@ -358,7 +358,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private void rawPublishRestGap(ActionEvent event, long widgetToken, long leftSceneToken, long rightSceneToken) {
-        publish(new SessionPlannerTimelineMainViewInputEvent(
+        publish(new SessionPlannerViewModel.TimelineInput(
                 rawWidgetToken(event, widgetToken),
                 0L,
                 leftSceneToken,
@@ -373,7 +373,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private void rawPublishLoot(ActionEvent event, long widgetToken, long lootToken) {
-        publish(new SessionPlannerTimelineMainViewInputEvent(
+        publish(new SessionPlannerViewModel.TimelineInput(
                 rawWidgetToken(event, widgetToken),
                 0L,
                 0L,
@@ -395,7 +395,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             String sceneNotes,
             long locationId
     ) {
-        publish(new SessionPlannerTimelineMainViewInputEvent(
+        publish(new SessionPlannerViewModel.TimelineInput(
                 rawWidgetToken(event, widgetToken),
                 sceneToken,
                 0L,
@@ -416,7 +416,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             String sceneNotes,
             long locationId
     ) {
-        publish(new SessionPlannerTimelineMainViewInputEvent(
+        publish(new SessionPlannerViewModel.TimelineInput(
                 widgetToken,
                 sceneToken,
                 0L,
@@ -435,7 +435,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             long widgetToken,
             ComboBox<String> participantSelector
     ) {
-        publish(new SessionPlannerTimelineMainViewInputEvent(
+        publish(new SessionPlannerViewModel.TimelineInput(
                 rawWidgetToken(event, widgetToken),
                 0L,
                 0L,
@@ -450,7 +450,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private void rawPublishParticipantRemove(ActionEvent event, long widgetToken, long participantId) {
-        publish(new SessionPlannerTimelineMainViewInputEvent(
+        publish(new SessionPlannerViewModel.TimelineInput(
                 rawWidgetToken(event, widgetToken),
                 0L,
                 0L,
@@ -465,7 +465,7 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private void rawPublishEncounterDays(ActionEvent event, long widgetToken, String encounterDays) {
-        publish(new SessionPlannerTimelineMainViewInputEvent(
+        publish(new SessionPlannerViewModel.TimelineInput(
                 rawWidgetToken(event, widgetToken),
                 0L,
                 0L,
@@ -483,12 +483,12 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
         return event.getSource() instanceof Node ? Math.max(0L, widgetToken) : 0L;
     }
 
-    private void publish(SessionPlannerTimelineMainViewInputEvent event) {
+    private void publish(SessionPlannerViewModel.TimelineInput event) {
         viewInputEventHandler.accept(event);
     }
 
     private static String generatedLabelSuffix(
-            SessionPlannerTimelineMainContentModel.Projection.SceneModel scene
+            SessionPlannerViewModel.TimelineProjection.SceneModel scene
     ) {
         return scene.linkedEncounterGeneratedLabel().isBlank() ? "" : " · " + scene.linkedEncounterGeneratedLabel();
     }
@@ -542,10 +542,10 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
     }
 
     private static final class LocationComboBox
-            extends ComboBox<SessionPlannerTimelineMainContentModel.Projection.LocationChoice> {
+            extends ComboBox<SessionPlannerViewModel.TimelineProjection.LocationChoice> {
 
         private LocationComboBox(
-                List<SessionPlannerTimelineMainContentModel.Projection.LocationChoice> choices,
+                List<SessionPlannerViewModel.TimelineProjection.LocationChoice> choices,
                 long selectedLocationId
         ) {
             getItems().setAll(choices == null ? List.of() : choices);
@@ -554,26 +554,26 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
             getStyleClass().add(STYLE_COMPACT);
             setConverter(new StringConverter<>() {
                 @Override
-                public String toString(SessionPlannerTimelineMainContentModel.Projection.LocationChoice value) {
+                public String toString(SessionPlannerViewModel.TimelineProjection.LocationChoice value) {
                     return value == null ? "" : value.toString();
                 }
 
                 @Override
-                public SessionPlannerTimelineMainContentModel.Projection.LocationChoice fromString(String text) {
+                public SessionPlannerViewModel.TimelineProjection.LocationChoice fromString(String text) {
                     return null;
                 }
             });
         }
 
         private long selectedLocationId() {
-            SessionPlannerTimelineMainContentModel.Projection.LocationChoice selected = getValue();
+            SessionPlannerViewModel.TimelineProjection.LocationChoice selected = getValue();
             return selected == null ? 0L : selected.id();
         }
 
-        private SessionPlannerTimelineMainContentModel.Projection.LocationChoice choiceForLocationId(
+        private SessionPlannerViewModel.TimelineProjection.LocationChoice choiceForLocationId(
                 long selectedLocationId
         ) {
-            for (SessionPlannerTimelineMainContentModel.Projection.LocationChoice choice : getItems()) {
+            for (SessionPlannerViewModel.TimelineProjection.LocationChoice choice : getItems()) {
                 if (choice.id() == selectedLocationId) {
                     return choice;
                 }

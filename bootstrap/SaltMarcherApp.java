@@ -18,7 +18,7 @@ public final class SaltMarcherApp extends Application {
 
         AppShell shell = new AppBootstrap().createShell();
         Scene scene = new Scene(shell, 1150, 700);
-        BootstrapFx.addStylesheet(scene, SaltMarcherApp.class.getResource("/salt-marcher.css").toExternalForm());
+        scene.getStylesheets().add(SaltMarcherApp.class.getResource("/salt-marcher.css").toExternalForm());
 
         primaryStage.setTitle("SaltMarcher");
         DesktopWindowIcons.applyTo(primaryStage);

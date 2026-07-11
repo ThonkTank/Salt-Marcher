@@ -15,7 +15,8 @@
     "dungeonEditorStairBehaviorHarness",
     "dungeonEditorTransitionBehaviorHarness",
     "dungeonEditorFeatureBehaviorHarness",
-    "dungeonTravelProjectionLevelHarness"
+    "dungeonTravelProjectionLevelHarness",
+    "dungeonMapRenderParityHarness"
   ],
   "src/view/leftbartabs/dungeoneditor/**": [
     "dungeonEditorBehaviorHarness",
@@ -28,7 +29,8 @@
     "dungeonEditorCorridorBehaviorHarness",
     "dungeonEditorStairBehaviorHarness",
     "dungeonEditorTransitionBehaviorHarness",
-    "dungeonEditorFeatureBehaviorHarness"
+    "dungeonEditorFeatureBehaviorHarness",
+    "dungeonMapRenderParityHarness"
   ],
   "src/domain/dungeon/**": [
     "dungeonEditorBehaviorHarness",
@@ -41,9 +43,14 @@
     "dungeonEditorCorridorBehaviorHarness",
     "dungeonEditorStairBehaviorHarness",
     "dungeonEditorTransitionBehaviorHarness",
-    "dungeonEditorFeatureBehaviorHarness"
+    "dungeonEditorFeatureBehaviorHarness",
+    "dungeonMapRenderParityHarness"
   ],
-  "src/view/leftbartabs/dungeontravel/**": ["dungeonTravelProjectionLevelHarness"],
+  "src/view/leftbartabs/dungeontravel/**": [
+    "dungeonTravelProjectionLevelHarness",
+    "dungeonMapRenderParityHarness"
+  ],
+  "src/view/slotcontent/main/dungeonmap/**": ["dungeonMapRenderParityHarness"],
   "src/view/leftbartabs/hexmap/**": ["hexMapEditorBehaviorHarness", "hexTravelStateBehaviorHarness"],
   "src/view/statetabs/travel/**": ["hexTravelStateBehaviorHarness"],
   "src/view/statetabs/encounter/**": ["encounterStateTabHarness"],
@@ -56,6 +63,9 @@
   "src/view/slotcontent/controls/catalogcrud/**": ["catalogCrudControlsHarness"],
   "src/view/slotcontent/controls/searchfilter/**": ["searchFilterControlsHarness"],
   "src/data/party/**": ["partyDropdownHarness"],
+  "src/domain/creatures/**": ["creatureCatalogHarness"],
+  "src/data/encountertable/**": ["encounterTableReadbackHarness"],
+  "src/domain/encountertable/**": ["encounterTableReadbackHarness"],
   "src/domain/party/**": ["partyDropdownHarness"],
   "src/view/dropdowns/party/**": ["partyDropdownHarness"],
   "src/view/leftbartabs/sessionplanner/**": [

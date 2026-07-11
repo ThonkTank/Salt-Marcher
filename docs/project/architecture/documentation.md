@@ -1,7 +1,7 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-06-30
-Source of Truth: Documentation taxonomy, required metadata, and review rules
+Source of Truth: Documentation taxonomy, header metadata, and review rules
 for all project documentation outside `AGENTS.md`.
 
 # Documentation Standard
@@ -11,14 +11,15 @@ for all project documentation outside `AGENTS.md`.
 SaltMarcher documentation must stay small, explicit, and trustworthy. Each
 document has one purpose, one audience, and one ownership boundary.
 
-## Required Metadata
+## Header Metadata
 
 Every active document outside `AGENTS.md` must start with:
 
 - `Status`
-- `Owner`
-- `Last Reviewed`
 - `Source of Truth`
+
+`Owner` and `Last Reviewed` may remain on older or high-coordination documents
+when useful, but they are not required header fields and are not gate inputs.
 
 Allowed `Status` values:
 
@@ -186,13 +187,11 @@ needs before editing governed docs or workflow artifacts.
 
 Documentation governance is broader than compile-time enforcement.
 
-- The dedicated documentation gate is
-  `./gradlew checkDocumentationEnforcement --console=plain`.
-- That gate owns focused structural enforcement for governed documentation
-  surfaces such as `docs/**`, `src/domain/**/DOMAIN.md`, repo-local
-  `AGENTS.md`, and Markdown documentation under `tools/quality/**`.
-- The gate mechanically blocks missing `docs/**` metadata, forbidden legacy
-  documentation roots, and redirect-only source Markdown.
+- Documentation-only proof is `git diff --check` plus any owner-named proof
+  from `AGENTS.md`; removed documentation gates are not acceptance evidence.
+- Header metadata, placement, link integrity, legacy documentation roots, and
+  redirect-only source Markdown are review responsibilities unless a current
+  owner explicitly names a narrower proof route.
 - Markdown files over 400 lines are reported as a size signal, not a build
   failure. File or link a `doc-split` issue for the split work; never omit,
   compress, or relocate documentation because of size.
@@ -202,7 +201,6 @@ Documentation governance is broader than compile-time enforcement.
   documentation type. Outcome checks are documented through the migration
   roadmap, verification docs, Gradle task wiring, and the tests or harnesses
   that actually run.
-- Mechanical checks may lint structure when a dedicated docs gate exists.
 - Mixed implementation changes that also touch non-documentation code, Gradle,
   or build sources still follow the broader verification path owned by
   `AGENTS.md` and the quality-platform standards.

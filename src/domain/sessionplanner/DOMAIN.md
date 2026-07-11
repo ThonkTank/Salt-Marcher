@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-10
+Last Reviewed: 2026-07-10
 Source of Truth: Compatibility-visible domain contract for the session planner
 context.
 
@@ -12,8 +12,8 @@ Context Role: Roster Truth Context
 Context Name: SessionPlanner
 
 - `sessionplanner` is the roster-truth context for one authored session plan.
-- Its public backend boundaries are the session, participant, encounter, rest,
-  and loot `*ApplicationService` roots under `src/domain/sessionplanner/`.
+- Its public backend boundary is `SessionPlannerApplicationService` under
+  `src/domain/sessionplanner/`.
 - It owns session-local participant references, encounter allocations, rest
   placement, placeholder state, and selection truth.
 - It does not own party truth, encounter-plan roster truth, creature truth, or
@@ -27,7 +27,10 @@ and the read-only planner session observation model.
 Current state:
 
 - the current published API already exposes focused planner workflow commands
-  plus four directly exported read-only planner models
+  plus five directly exported read-only planner models:
+  `SessionPlannerCurrentSessionModel`, `SessionPlannerCatalogModel`,
+  `SessionPlannerParticipantsModel`, `SessionPlannerSceneTimelineModel`, and
+  `SessionPlannerStatePanelModel`
 
 Target state:
 
@@ -37,23 +40,17 @@ Target state:
 ## Application Boundary
 
 Application Service: SessionPlannerApplicationService
-Application Service: SessionPlannerParticipantApplicationService
-Application Service: SessionPlannerEncounterApplicationService
-Application Service: SessionPlannerRestApplicationService
-Application Service: SessionPlannerLootApplicationService
 
-The root application services coordinate active-party composition reads,
+The root application service coordinates active-party composition reads,
 party-based adventuring-day calculations, saved encounter-plan budget reads
 through the encounter public boundary, planner-owned repository access, and
-session-local mutations by decision family. Readback is published separately
-through the exported planner read models.
+all session-local mutations. Readback is published separately through the
+exported planner read models.
 
 Current state:
 
-- the current code already delegates planner mutations to dedicated
-  `model/session/usecase/*UseCase` owners over `SessionPlan`
 - it now keeps multiple repository-backed sessions through planner-owned
-  session repositories, canonical load/save use cases, and a current-session
+  session repositories, root-service load/save logic, and a current-session
   pointer
 - the read-only planner state model is exported directly instead of being
   loaded through a root query method

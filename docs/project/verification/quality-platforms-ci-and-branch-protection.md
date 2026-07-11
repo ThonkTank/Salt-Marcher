@@ -33,11 +33,9 @@ GitHub's UI displays these jobs as `quality-platforms / <job>`. Branch
 protection must require the job context names in the table, because those are
 the contexts reported by the Checks API and accepted by the merge gate.
 
-The focused local gate
-`./gradlew checkDocumentationEnforcement --console=plain` remains intentionally
-outside the required GitHub Actions job set. It is the local default proof
-route for documentation-only governance changes without reclassifying them as
-CI full-build work.
+Documentation-only governance changes use the local owner-named proof route
+from `AGENTS.md`. Removed documentation gates are not required local or CI
+entrypoints.
 
 CI jobs run in fresh GitHub-hosted checkouts, so they do not need repo-local
 same-worktree isolation cleanup. The concurrency concern in CI is stale runs on

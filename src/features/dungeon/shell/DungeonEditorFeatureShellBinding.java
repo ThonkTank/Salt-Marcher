@@ -5,9 +5,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javafx.application.Platform;
 import shell.api.ServiceRegistry;
 import shell.api.ShellRuntimeContext;
-import src.domain.dungeon.model.core.repository.DungeonMapRepository;
-import src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository;
-import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository;
+import src.domain.dungeon.DungeonEditorRuntimeApplicationService;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorStateModel;
@@ -31,7 +29,7 @@ public final class DungeonEditorFeatureShellBinding {
     public Runnable subscribe(PublicationSink sink) {
         PublicationSink safeSink = Objects.requireNonNull(sink, "sink");
         JavaFxPublicationDelivery delivery = new JavaFxPublicationDelivery(safeSink);
-        Runnable unsubscribeRuntime = runtimeRoot.subscribe(publication -> delivery.deliver(publication.frame()));
+        Runnable unsubscribeRuntime = runtimeRoot.subscribe(delivery::deliver);
         return () -> {
             delivery.close();
             unsubscribeRuntime.run();
@@ -41,7 +39,7 @@ public final class DungeonEditorFeatureShellBinding {
     public void publishCurrent(PublicationSink sink) {
         JavaFxPublicationDelivery delivery =
                 new JavaFxPublicationDelivery(Objects.requireNonNull(sink, "sink"));
-        delivery.deliver(runtimeRoot.currentPublication().frame());
+        delivery.deliver(runtimeRoot.currentFrame());
     }
 
     private static DungeonEditorRuntimeDependencies dependencies(ServiceRegistry registry) {
@@ -51,11 +49,7 @@ public final class DungeonEditorFeatureShellBinding {
                         services.require(DungeonEditorControlsModel.class),
                         services.require(DungeonEditorMapSurfaceModel.class),
                         services.require(DungeonEditorStateModel.class)),
-                new DungeonEditorRuntimeDependencies.PublishedStateRepositories(
-                        services.require(DungeonAuthoredPublishedStateRepository.class),
-                        services.require(DungeonEditorSnapshotPublishedStateRepository.class)),
-                new DungeonEditorRuntimeDependencies.AuthoredMapPersistence(
-                        services.require(DungeonMapRepository.class)));
+                services.require(DungeonEditorRuntimeApplicationService.class));
     }
 
     private static final class JavaFxPublicationDelivery {

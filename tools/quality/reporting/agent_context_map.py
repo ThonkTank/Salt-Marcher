@@ -179,9 +179,9 @@ def mandatory_skills(surface: str) -> tuple[str, ...]:
     if "/delivery/" in surface:
         skills.append("delivery")
     if under(surface, "src/domain"):
-        skills.extend(["continuous-refactoring", "domain-layer"])
+        skills.append("continuous-refactoring")
     elif under(surface, "src/view"):
-        skills.extend(["continuous-refactoring", "view-layer-mvvm"])
+        skills.append("continuous-refactoring")
     elif under(surface, "src") or under(surface, "bootstrap") or under(surface, "shell"):
         skills.append("continuous-refactoring")
     elif not is_markdown(surface) and is_quality_tooling_surface(surface):
@@ -207,15 +207,13 @@ def owner_candidates(surface: str) -> tuple[str, ...]:
             paths.append(sibling_skill)
     if under(surface, "src/domain"):
         paths.extend([
-            "docs/project/architecture/patterns/domain-layer.md",
-            "tools/quality/skills/domain-layer/SKILL.md",
-            "docs/project/architecture/enforcement/domain-layer-enforcement.md",
+            "docs/project/architecture/architecture-migration-roadmap.md",
+            "docs/project/architecture/migration-ledger.md",
         ])
     if under(surface, "src/view"):
         paths.extend([
-            "docs/project/architecture/patterns/view-layer.md",
-            "tools/quality/skills/view-layer-mvvm/SKILL.md",
-            "docs/project/architecture/enforcement/view-layer-enforcement.md",
+            "docs/project/architecture/architecture-migration-roadmap.md",
+            "docs/project/architecture/migration-ledger.md",
         ])
     if is_quality_tooling_surface(surface):
         paths.extend([

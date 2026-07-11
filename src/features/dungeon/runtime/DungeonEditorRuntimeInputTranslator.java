@@ -1,8 +1,8 @@
 package src.features.dungeon.runtime;
 
 import java.util.List;
+import src.domain.dungeon.DungeonAuthoredApplicationService;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
-import src.domain.dungeon.model.runtime.usecase.SaveDungeonEditorRoomNarrationUseCase.ExitInput;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorViewMode;
 
@@ -86,15 +86,15 @@ final class DungeonEditorRuntimeInputTranslator {
                 safeSettings.selectedLevels());
     }
 
-    static List<ExitInput> exitInputs(RoomNarration narration) {
+    static List<DungeonAuthoredApplicationService.RoomNarrationExitInput> exitInputs(RoomNarration narration) {
         RoomNarration safeNarration = narration == null ? new RoomNarration(0L, "", List.of()) : narration;
         return safeNarration.exits().stream()
                 .map(DungeonEditorRuntimeInputTranslator::exitInput)
                 .toList();
     }
 
-    private static ExitInput exitInput(ExitNarration exit) {
-        return new ExitInput(
+    private static DungeonAuthoredApplicationService.RoomNarrationExitInput exitInput(ExitNarration exit) {
+        return new DungeonAuthoredApplicationService.RoomNarrationExitInput(
                 exit.label(),
                 exit.q(),
                 exit.r(),

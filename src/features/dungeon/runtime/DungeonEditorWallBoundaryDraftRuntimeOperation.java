@@ -1,39 +1,24 @@
 package src.features.dungeon.runtime;
 
-import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.model.core.structure.room.RoomClusterBoundaryMaterialization.BoundaryKind;
+import src.domain.dungeon.DungeonEditorRuntimeApplicationService;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.features.dungeon.runtime.DungeonEditorWallBoundaryDraftInterpretation.WallBoundaryCommit;
 
 final class DungeonEditorWallBoundaryDraftRuntimeOperation {
-    private final DungeonEditorSessionWorkflow workflow;
-    private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
-    private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
-    private final ApplyDungeonEditorAuthoredOperationUseCase authoredOperationUseCase;
+    private final DungeonEditorRuntimeContext context;
 
-    DungeonEditorWallBoundaryDraftRuntimeOperation(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
-        DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases safeRuntime =
-                Objects.requireNonNull(runtime, "runtime");
-        workflow = Objects.requireNonNull(safeRuntime.workflow(), "workflow");
-        mainViewInterpreter = Objects.requireNonNull(safeRuntime.mainViewInterpreter(), "mainViewInterpreter");
-        effectUseCase = Objects.requireNonNull(safeRuntime.effectUseCase(), "effectUseCase");
-        authoredOperationUseCase = Objects.requireNonNull(
-                safeRuntime.authored().applyOperationUseCase(),
-                "authoredOperationUseCase");
+    DungeonEditorWallBoundaryDraftRuntimeOperation(DungeonEditorRuntimeContext context) {
+        this.context = java.util.Objects.requireNonNull(context, "context");
     }
 
     static boolean handles(DungeonEditorTool tool) {
         return tool == DungeonEditorTool.WALL_CREATE || tool == DungeonEditorTool.WALL_DELETE;
     }
 
-    DungeonEditorRuntimeOperationResult apply(
+    DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
             DungeonEditorTool wallTool,
             PointerSample sample,
@@ -53,42 +38,39 @@ final class DungeonEditorWallBoundaryDraftRuntimeOperation {
         }
     }
 
-    private DungeonEditorRuntimeOperationResult applyWorkflow(
+    private DungeonEditorRuntimeContext.Result applyWorkflow(
             PointerAction action,
             DungeonEditorMainViewInput input,
             DungeonEditorSessionValues.Tool wallTool
     ) {
-        ApplyDungeonEditorSessionEffectUseCase.CurrentGridPublication currentGrid =
-                effectUseCase.committedGridOrPublishCurrentResult();
+        DungeonEditorRuntimeApplicationService.CurrentGridPublication currentGrid =
+                context.currentGridOrPublishCurrentResult();
         MapSnapshot committedSnapshot = currentGrid.committedSnapshot();
         if (committedSnapshot == null) {
-            return DungeonEditorRuntimeResultTranslator.fromSnapshot(currentGrid.snapshot());
+            return context.fromSnapshot(currentGrid.snapshot());
         }
         PointerAction effectiveAction = DungeonEditorDraftOperationSupport.previewAction(action);
         DungeonEditorWallBoundaryDraftInterpretation interpretation =
-                mainViewInterpreter.wallBoundaryOperation(
+                context.wallBoundaryOperation(
                         DungeonEditorDraftOperationSupport.pointerAction(effectiveAction),
                         input,
                         committedSnapshot,
-                        workflow.session().selection(),
-                        wallTool,
-                        workflow.session().projectionLevel());
-        return DungeonEditorRuntimeResultTranslator.fromPublication(
+                        wallTool);
+        return context.fromPublication(
                 currentGrid.snapshot(),
-                effectUseCase.applyEffect(interpretation.effect(), commitFor(interpretation.commit())));
+                context.applyEffectPublication(interpretation.effect(), commitFor(interpretation.commit())));
     }
 
-    private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit commitFor(
+    private DungeonEditorRuntimeApplicationService.@Nullable AuthoredCommit commitFor(
             @Nullable WallBoundaryCommit commit
     ) {
         if (commit == null) {
             return null;
         }
-        return mapId -> authoredOperationUseCase.executeClusterBoundaries(
+        return mapId -> context.applyWallBoundary(
                 mapId,
                 commit.clusterId(),
-                DungeonEditorWorkspaceCoreGeometry.edges(DungeonEditorBoundaryDraftEffectHelper.edgeRefs(commit.edges())),
-                BoundaryKind.WALL,
+                DungeonEditorBoundaryDraftEffectHelper.edgeRefs(commit.edges()),
                 commit.deleteMode());
     }
 

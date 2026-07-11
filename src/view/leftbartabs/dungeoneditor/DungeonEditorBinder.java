@@ -7,7 +7,6 @@ import shell.api.ShellBinding;
 import shell.api.ShellControls;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
-import src.features.dungeon.runtime.DungeonEditorRenderFrame;
 import src.features.dungeon.shell.DungeonEditorFeatureShellBinding;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
@@ -24,50 +23,34 @@ final class DungeonEditorBinder {
 
     ShellBinding bind() {
         DungeonEditorFeatureShellBinding featureShell = new DungeonEditorFeatureShellBinding(runtimeContext);
-        DungeonEditorControlsContentModel controlsContentModel = new DungeonEditorControlsContentModel();
+        DungeonEditorControlsPanelModel controlsPanelModel = new DungeonEditorControlsPanelModel();
         CatalogCrudControlsContentModel mapCatalogContentModel = new CatalogCrudControlsContentModel();
-        DungeonEditorStateContentModel stateContentModel = new DungeonEditorStateContentModel();
-        DungeonEditorContributionModel contributionModel = new DungeonEditorContributionModel(stateContentModel);
+        DungeonEditorStatePanelModel statePanelModel = new DungeonEditorStatePanelModel();
         DungeonMapContentModel mapContentModel = new DungeonMapContentModel("Dungeon workspace", true);
-        DungeonEditorIntentHandler intentHandler =
-                new DungeonEditorIntentHandler(
-                        contributionModel,
-                        controlsContentModel,
-                        mapCatalogContentModel,
-                        stateContentModel,
-                        mapContentModel,
-                        featureShell.operations());
+        DungeonEditorViewModel viewModel = new DungeonEditorViewModel(
+                controlsPanelModel,
+                statePanelModel,
+                mapCatalogContentModel,
+                mapContentModel,
+                featureShell.operations());
         DungeonEditorControlsView controls = new DungeonEditorControlsView();
         CatalogCrudControlsView mapCatalog = new CatalogCrudControlsView();
         DungeonMapView main = new DungeonMapView();
         DungeonEditorStateView state = new DungeonEditorStateView();
 
         main.bind(mapContentModel);
-        controls.bind(controlsContentModel);
+        controls.bind(controlsPanelModel);
         mapCatalog.bind(mapCatalogContentModel);
-        state.bind(stateContentModel);
-        main.onViewInputEvent(intentHandler::consume);
-        controls.onViewInputEvent(intentHandler::consume);
-        mapCatalog.onViewInputEvent(intentHandler::consume);
-        state.onViewInputEvent(intentHandler::consume);
-        contributionModel.bindControlsContentModel(controlsContentModel);
-        contributionModel.bindMapCatalogContentModel(controlsContentModel, mapCatalogContentModel);
-        DungeonEditorFeatureShellBinding.PublicationSink frameSink = frame -> applyFrame(
-                frame,
-                contributionModel,
-                mapContentModel);
+        state.bind(statePanelModel);
+        main.onViewInputEvent(viewModel::consume);
+        controls.onControlsInput(viewModel::consume);
+        mapCatalog.onViewInputEvent(viewModel::consume);
+        state.onStateInput(viewModel::consume);
+        viewModel.bindPanelModels();
+        DungeonEditorFeatureShellBinding.PublicationSink frameSink = viewModel::applyFrame;
         featureShell.subscribe(frameSink);
         featureShell.publishCurrent(frameSink);
         return new Binding(ShellControls.stack(mapCatalog, controls), main, state);
-    }
-
-    private static void applyFrame(
-            DungeonEditorRenderFrame frame,
-            DungeonEditorContributionModel contributionModel,
-            DungeonMapContentModel mapContentModel
-    ) {
-        contributionModel.applyFrame(frame);
-        mapContentModel.applyEditorRenderFrame(frame);
     }
 
     private record Binding(

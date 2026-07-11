@@ -1,6 +1,6 @@
 Status: Deprecated
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-10
+Last Reviewed: 2026-07-10
 Source of Truth: Compatibility mirror for canonical documentation at `docs/encounter/domain/domain-encounter.md`.
 
 # Encounter Domain Model Compatibility Mirror
@@ -27,11 +27,11 @@ bands, generator tuning, budget summaries, generated encounter results,
 encounter creature entries, saved encounter-plan commands and queries, thin
 chooser display language, and status vocabulary.
 
-Saved encounter plans publish only thin chooser display language. The
-SessionPlanner list/detail work forms leave encounter through the foreign
-`SessionEncounterFactsRepository` service seam instead of encounter-owned
-published read models. Creature details remain owned by the creatures context
-and are reloaded when a saved plan is opened.
+Saved encounter plans publish thin chooser display language and plan-budget
+readback through encounter-owned published read models. Session Planner
+consumes those public read models through its own foreign-facts adapter.
+Creature details remain owned by the creatures context and are reloaded when a
+saved plan is opened.
 
 ## Application Boundary
 

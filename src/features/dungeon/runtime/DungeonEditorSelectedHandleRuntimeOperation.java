@@ -2,39 +2,22 @@ package src.features.dungeon.runtime;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.DungeonEditorRuntimeApplicationService;
 import src.domain.dungeon.model.runtime.editor.interaction.DungeonEditorHandleType;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorAuthoredOperationUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorHandleOperationUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 
 final class DungeonEditorSelectedHandleRuntimeOperation {
-    private final DungeonEditorSessionWorkflow workflow;
-    private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
-    private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
-    private final ApplyDungeonEditorAuthoredOperationUseCase authoredOperationUseCase;
-    private final ApplyDungeonEditorHandleOperationUseCase handleOperationUseCase;
+    private final DungeonEditorRuntimeContext context;
 
-    DungeonEditorSelectedHandleRuntimeOperation(
-            DungeonEditorSessionWorkflow workflow,
-            InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter,
-            ApplyDungeonEditorSessionEffectUseCase effectUseCase,
-            ApplyDungeonEditorAuthoredOperationUseCase authoredOperationUseCase,
-            ApplyDungeonEditorHandleOperationUseCase handleOperationUseCase
-    ) {
-        this.workflow = Objects.requireNonNull(workflow, "workflow");
-        this.mainViewInterpreter = Objects.requireNonNull(mainViewInterpreter, "mainViewInterpreter");
-        this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
-        this.authoredOperationUseCase = Objects.requireNonNull(authoredOperationUseCase, "authoredOperationUseCase");
-        this.handleOperationUseCase = Objects.requireNonNull(handleOperationUseCase, "handleOperationUseCase");
+    DungeonEditorSelectedHandleRuntimeOperation(DungeonEditorRuntimeContext context) {
+        this.context = Objects.requireNonNull(context, "context");
     }
 
-    DungeonEditorRuntimeOperationResult apply(
+    DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
             PointerSample sample,
             boolean wallSingleClickMode,
@@ -58,14 +41,11 @@ final class DungeonEditorSelectedHandleRuntimeOperation {
         }
     }
 
-    DungeonEditorRuntimeOperationResult scroll(int projectionLevelDelta) {
-        return DungeonEditorRuntimeResultTranslator.fromPublication(effectUseCase.applyEffect(mainViewInterpreter.scrollSelection(
-                projectionLevelDelta,
-                workflow.session().projectionLevel(),
-                effectUseCase.loadCommittedSnapshot()), null));
+    DungeonEditorRuntimeContext.Result scroll(int projectionLevelDelta) {
+        return context.applyEffect(context.scrollSelection(projectionLevelDelta), null);
     }
 
-    DungeonEditorRuntimeOperationResult moveCorridorPoint(
+    DungeonEditorRuntimeContext.Result moveCorridorPoint(
             DungeonEditorWorkspaceValues.HandleRef handle,
             int q,
             int r
@@ -74,116 +54,108 @@ final class DungeonEditorSelectedHandleRuntimeOperation {
                 ? DungeonEditorWorkspaceValues.HandleRef.empty()
                 : handle;
         if (!DungeonEditorSessionPreviewHelper.directCorridorMoveCommitHandle(handleRef.kind())
-                || !workflow.session().hasSelectedMap()) {
-            return DungeonEditorRuntimeOperationResult.none();
+                || !context.hasSelectedMap()) {
+            return DungeonEditorRuntimeContext.Result.none();
         }
         DungeonEditorWorkspaceValues.Cell sourceCell = handleRef.cell();
         int deltaQ = q - sourceCell.q();
         int deltaR = r - sourceCell.r();
         if (deltaQ == 0 && deltaR == 0) {
-            return DungeonEditorRuntimeOperationResult.none();
+            return DungeonEditorRuntimeContext.Result.none();
         }
         DungeonEditorSessionValues.MoveHandlePreview preview = new DungeonEditorSessionValues.MoveHandlePreview(
                 handleRef,
                 deltaQ,
                 deltaR,
                 0);
-        DungeonEditorWorkspaceValues.MapId selectedMapId = workflow.session().selectedMapId();
+        DungeonEditorWorkspaceValues.MapId selectedMapId = context.selectedMapId();
         if (selectedMapId == null) {
-            return DungeonEditorRuntimeOperationResult.none();
+            return DungeonEditorRuntimeContext.Result.none();
         }
-        handleOperationUseCase.executeCorridorHandleMove(selectedMapId, preview);
-        workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-        return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
+        context.moveCorridorHandle(selectedMapId, preview);
+        context.clearPreviewWithStatus(context.currentFacts().mutationStatusText());
+        return context.publishCurrent();
     }
 
-    private DungeonEditorRuntimeOperationResult press(DungeonEditorMainViewInput input) {
-        ApplyDungeonEditorSessionEffectUseCase.CurrentGridPublication currentGrid =
-                effectUseCase.committedGridOrPublishCurrentResult();
+    private DungeonEditorRuntimeContext.Result press(DungeonEditorMainViewInput input) {
+        DungeonEditorRuntimeApplicationService.CurrentGridPublication currentGrid =
+                context.currentGridOrPublishCurrentResult();
         MapSnapshot committedSnapshot = currentGrid.committedSnapshot();
         if (committedSnapshot == null) {
-            return DungeonEditorRuntimeResultTranslator.fromSnapshot(currentGrid.snapshot());
+            return context.fromSnapshot(currentGrid.snapshot());
         }
-        DungeonEditorSessionEffect effect = mainViewInterpreter.selection(
+        DungeonEditorSessionEffect effect = context.selection(
                 InterpretDungeonEditorMainViewInputUseCase.PointerAction.PRESS,
                 input,
-                committedSnapshot,
-                workflow.session().selection(),
-                workflow.session().projectionLevel());
-        return DungeonEditorRuntimeResultTranslator.fromPublication(
+                committedSnapshot);
+        return context.fromPublication(
                 currentGrid.snapshot(),
-                effectUseCase.applyEffect(effect, null));
+                context.applyEffectPublication(effect, null));
     }
 
-    private DungeonEditorRuntimeOperationResult drag(DungeonEditorMainViewInput input) {
-        ApplyDungeonEditorSessionEffectUseCase.CurrentGridPublication currentGrid =
-                effectUseCase.committedGridOrPublishCurrentResult();
+    private DungeonEditorRuntimeContext.Result drag(DungeonEditorMainViewInput input) {
+        DungeonEditorRuntimeApplicationService.CurrentGridPublication currentGrid =
+                context.currentGridOrPublishCurrentResult();
         if (currentGrid.committedSnapshot() == null) {
-            return DungeonEditorRuntimeResultTranslator.fromSnapshot(currentGrid.snapshot());
+            return context.fromSnapshot(currentGrid.snapshot());
         }
-        DungeonEditorSessionEffect effect = mainViewInterpreter.selection(
+        DungeonEditorSessionEffect effect = context.selection(
                 InterpretDungeonEditorMainViewInputUseCase.PointerAction.DRAG,
                 input,
-                null,
-                workflow.session().selection(),
-                workflow.session().projectionLevel());
-        return DungeonEditorRuntimeResultTranslator.fromPublication(
+                null);
+        return context.fromPublication(
                 currentGrid.snapshot(),
-                effectUseCase.applyEffect(effect, null));
+                context.applyEffectPublication(effect, null));
     }
 
-    private DungeonEditorRuntimeOperationResult release(DungeonEditorMainViewInput input) {
-        ApplyDungeonEditorSessionEffectUseCase.CurrentGridPublication currentGrid =
-                effectUseCase.committedGridOrPublishCurrentResult();
+    private DungeonEditorRuntimeContext.Result release(DungeonEditorMainViewInput input) {
+        DungeonEditorRuntimeApplicationService.CurrentGridPublication currentGrid =
+                context.currentGridOrPublishCurrentResult();
         if (currentGrid.committedSnapshot() == null) {
-            return DungeonEditorRuntimeResultTranslator.fromSnapshot(currentGrid.snapshot());
+            return context.fromSnapshot(currentGrid.snapshot());
         }
-        DungeonEditorSessionEffect effect = mainViewInterpreter.selection(
+        DungeonEditorSessionEffect effect = context.selection(
                 InterpretDungeonEditorMainViewInputUseCase.PointerAction.RELEASE,
                 input,
-                null,
-                workflow.session().selection(),
-                workflow.session().projectionLevel());
-        return DungeonEditorRuntimeResultTranslator.fromPublication(
+                null);
+        return context.fromPublication(
                 currentGrid.snapshot(),
-                effectUseCase.applyEffect(effect, commitFor(effect.getApplyPreview())));
+                context.applyEffectPublication(effect, commitFor(effect.getApplyPreview())));
     }
 
-    private DungeonEditorRuntimeOperationResult hover(DungeonEditorMainViewInput input) {
-        return DungeonEditorRuntimeResultTranslator.fromPublication(effectUseCase.applyEffect(mainViewInterpreter.selection(
+    private DungeonEditorRuntimeContext.Result hover(DungeonEditorMainViewInput input) {
+        return context.applyEffect(context.selection(
                 InterpretDungeonEditorMainViewInputUseCase.PointerAction.HOVER,
                 input,
-                null,
-                workflow.session().selection(),
-                workflow.session().projectionLevel()), null));
+                null), null);
     }
 
-    private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit commitFor(
+    private DungeonEditorRuntimeApplicationService.@Nullable AuthoredCommit commitFor(
             DungeonEditorSessionValues.@Nullable Preview preview
     ) {
         if (preview instanceof DungeonEditorSessionValues.MoveHandlePreview move) {
             return moveHandleCommitFor(move);
         }
         if (preview instanceof DungeonEditorSessionValues.MoveBoundaryStretchPreview stretch) {
-            return mapId -> authoredOperationUseCase.executeClusterBoundaryStretch(mapId, stretch);
+            return mapId -> context.stretchClusterBoundary(mapId, stretch);
         }
         return null;
     }
 
-    private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit moveHandleCommitFor(
+    private DungeonEditorRuntimeApplicationService.@Nullable AuthoredCommit moveHandleCommitFor(
             DungeonEditorSessionValues.MoveHandlePreview move
     ) {
         if (DungeonEditorSessionPreviewHelper.directClusterMoveCommitHandle(move.handleRef().kind())) {
-            return mapId -> authoredOperationUseCase.executeClusterHandleMove(mapId, move);
+            return mapId -> context.moveClusterHandle(mapId, move);
         }
         if (DungeonEditorSessionPreviewHelper.directDoorMoveCommitHandle(move.handleRef().kind())) {
-            return mapId -> handleOperationUseCase.executeDoorHandleMove(mapId, move);
+            return mapId -> context.moveDoorHandle(mapId, move);
         }
         if (DungeonEditorSessionPreviewHelper.directCorridorMoveCommitHandle(move.handleRef().kind())) {
-            return mapId -> handleOperationUseCase.executeCorridorHandleMove(mapId, move);
+            return mapId -> context.moveCorridorHandle(mapId, move);
         }
         if (move.handleRef().kind() == DungeonEditorHandleType.STAIR_ANCHOR) {
-            return mapId -> authoredOperationUseCase.executeStairHandleMove(mapId, move);
+            return mapId -> context.moveStairHandle(mapId, move);
         }
         return null;
     }

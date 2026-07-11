@@ -11,7 +11,7 @@ public final class WorldPlannerLocationMainView extends VBox {
 
     private final ListView<String> locations = new ListView<>();
     private final Label emptyText = new Label();
-    private Consumer<WorldPlannerLocationMainViewInputEvent> eventSink = event -> { };
+    private Consumer<LocationMainInput> eventSink = event -> { };
 
     WorldPlannerLocationMainView() {
         getStyleClass().addAll("world-planner-main", "world-planner-module-main");
@@ -24,17 +24,17 @@ public final class WorldPlannerLocationMainView extends VBox {
         locations.setOnKeyReleased(event -> emit());
     }
 
-    public void bind(WorldPlannerLocationMainContentModel model) {
-        WorldPlannerLocationMainContentModel safeModel = Objects.requireNonNull(model, "model");
-        safeModel.projectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
-        render(safeModel.projectionProperty().get());
+    public void bind(WorldPlannerViewModel viewModel) {
+        WorldPlannerViewModel safeModel = Objects.requireNonNull(viewModel, "viewModel");
+        safeModel.locationProjectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
+        render(safeModel.locationProjectionProperty().get());
     }
 
-    public void onViewInputEvent(Consumer<WorldPlannerLocationMainViewInputEvent> sink) {
+    public void onViewInputEvent(Consumer<LocationMainInput> sink) {
         eventSink = sink == null ? event -> { } : sink;
     }
 
-    private void render(WorldPlannerLocationMainContentModel.Projection projection) {
+    private void render(LocationProjection projection) {
         setVisible(projection.active());
         setManaged(projection.active());
         locations.getItems().setAll(projection.locationLabels());
@@ -49,13 +49,7 @@ public final class WorldPlannerLocationMainView extends VBox {
     }
 
     private void emit() {
-        eventSink.accept(new WorldPlannerLocationMainViewInputEvent(
-                false,
-                false,
-                false,
-                locations.getSelectionModel().getSelectedIndex(),
-                "",
-                -1,
-                -1));
+        eventSink.accept(new LocationMainInput(
+                locations.getSelectionModel().getSelectedIndex()));
     }
 }

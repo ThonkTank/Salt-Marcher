@@ -22,7 +22,7 @@ public final class WorldPlannerControlsView extends HBox {
     private final ToggleButton locations = moduleButton("Locations", LOCATIONS);
     private final ToggleButton sources = moduleButton("Encounter Sources", SOURCES);
     private final Button refresh = refreshButton();
-    private Consumer<WorldPlannerControlsViewInputEvent> eventSink = event -> { };
+    private Consumer<ControlsInput> eventSink = event -> { };
 
     WorldPlannerControlsView() {
         super(8);
@@ -35,13 +35,13 @@ public final class WorldPlannerControlsView extends HBox {
         setAlignment(Pos.CENTER_LEFT);
     }
 
-    public void bind(WorldPlannerControlsContentModel model) {
-        WorldPlannerControlsContentModel safeModel = Objects.requireNonNull(model, "model");
-        safeModel.projectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
-        render(safeModel.projectionProperty().get());
+    public void bind(WorldPlannerViewModel viewModel) {
+        WorldPlannerViewModel safeModel = Objects.requireNonNull(viewModel, "viewModel");
+        safeModel.controlsProjectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
+        render(safeModel.controlsProjectionProperty().get());
     }
 
-    public void onViewInputEvent(Consumer<WorldPlannerControlsViewInputEvent> sink) {
+    public void onViewInputEvent(Consumer<ControlsInput> sink) {
         eventSink = sink == null ? event -> { } : sink;
     }
 
@@ -60,7 +60,7 @@ public final class WorldPlannerControlsView extends HBox {
         return button;
     }
 
-    private void render(WorldPlannerControlsContentModel.Projection projection) {
+    private void render(ControlsProjection projection) {
         selectButton(projection.activeModuleIndex());
     }
 
@@ -77,7 +77,7 @@ public final class WorldPlannerControlsView extends HBox {
     }
 
     private void emit(int moduleIndex, boolean refreshRequested) {
-        eventSink.accept(new WorldPlannerControlsViewInputEvent(moduleIndex, refreshRequested));
+        eventSink.accept(new ControlsInput(moduleIndex, refreshRequested));
     }
 
     private int selectedModuleIndex() {

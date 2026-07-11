@@ -1,54 +1,30 @@
 package src.features.dungeon.runtime;
 
 import java.util.List;
-import java.util.Objects;
+import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonMapId;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 
 final class DungeonEditorRuntimeFrameFactsAssembler {
-    private static final DungeonEditorSelector<String> SELECTED_TOOL_KEY =
-            DungeonEditorSelector.of(state -> state.selectedTool().name());
-    private static final DungeonEditorSelector<String> SELECTED_TOOL_LABEL =
-            DungeonEditorSelector.of(state -> state.selectedTool().displayLabel());
-    private static final DungeonEditorSelector<String> SELECTED_VIEW_MODE_KEY =
-            DungeonEditorSelector.of(state -> state.viewMode().name());
-    private static final DungeonEditorSelector<Integer> PROJECTION_LEVEL =
-            DungeonEditorSelector.of(DungeonEditorStoreState::projectionLevel);
-    private static final DungeonEditorSelector<DungeonOverlaySettings> OVERLAY_SETTINGS =
-            DungeonEditorSelector.of(DungeonEditorStoreState::overlaySettings);
-    private static final DungeonEditorSelector<DungeonMapId> SELECTED_MAP =
-            DungeonEditorSelector.of(DungeonEditorStoreState::selectedMapId);
-    private static final DungeonEditorSelector<String> STATUS_TEXT =
-            DungeonEditorSelector.of(DungeonEditorStoreState::statusText);
-    private static final DungeonEditorSelector<Boolean> SURFACE_LOADED =
-            DungeonEditorSelector.of(DungeonEditorStoreState::surfaceLoaded);
-    private static final DungeonEditorSelector<List<Integer>> REACHABLE_LEVELS =
-            DungeonEditorSelector.of(DungeonEditorStoreState::reachableLevels);
-
-    private final DungeonEditorStore store;
-
     private DungeonEditorMapSurfaceSnapshot cachedMapSurfaceSnapshot = DungeonEditorMapSurfaceSnapshot.empty();
     private DungeonEditorPreparedFrameFacts.MapInteractionFrame cachedMapInteractionFrame =
             DungeonEditorPreparedFrameFacts.MapInteractionFrame.empty();
     private long mapInteractionFrameRecomputeCount;
     private long mapInteractionFrameRecomputeNanos;
 
-    DungeonEditorRuntimeFrameFactsAssembler(DungeonEditorStore store) {
-        this.store = Objects.requireNonNull(store, "store");
-    }
-
     DungeonEditorPreparedFrameFacts preparedFacts(
+            DungeonEditorControlsSnapshot controlsSnapshot,
             DungeonEditorMapSurfaceSnapshot mapSurfaceSnapshot,
             DungeonEditorStateSnapshot stateSnapshot,
             DungeonEditorRuntimeDraftFrame draftFrame
     ) {
-        RuntimeFrameSelection frameSelection = currentFrameSelection();
+        RuntimeFrameSelection frameSelection = currentFrameSelection(controlsSnapshot);
         long selectedMapIdValue = frameSelection.selectedMapId() == null
                 ? 0L
                 : frameSelection.selectedMapId().value();
-        String preparedStatusText = DungeonEditorPreparedFrameProjection.statusTextFor(
+        String preparedStatusText = DungeonEditorPreparedMapEntries.statusTextFor(
                 frameSelection.surfaceLoaded(),
                 frameSelection.mapEntries(),
                 frameSelection.selectedMapId(),
@@ -113,18 +89,21 @@ final class DungeonEditorRuntimeFrameFactsAssembler {
                         safeDraftFrame.stairGeometryDraft()));
     }
 
-    private RuntimeFrameSelection currentFrameSelection() {
+    private RuntimeFrameSelection currentFrameSelection(DungeonEditorControlsSnapshot controlsSnapshot) {
+        DungeonEditorControlsSnapshot safeControls = controlsSnapshot == null
+                ? DungeonEditorControlsSnapshot.empty("")
+                : controlsSnapshot;
         return new RuntimeFrameSelection(
-                freshSelectorValue(DungeonEditorPreparedFrameProjection.mapEntriesSelector()),
-                freshSelectorValue(SELECTED_MAP),
-                freshSelectorValue(OVERLAY_SETTINGS),
-                freshSelectorValue(PROJECTION_LEVEL),
-                freshSelectorValue(SELECTED_VIEW_MODE_KEY),
-                freshSelectorValue(SELECTED_TOOL_KEY),
-                freshSelectorValue(SELECTED_TOOL_LABEL),
-                freshSelectorValue(STATUS_TEXT),
-                freshSelectorValue(SURFACE_LOADED),
-                freshSelectorValue(REACHABLE_LEVELS));
+                DungeonEditorPreparedMapEntries.mapEntries(safeControls.maps()),
+                safeControls.selectedMapId(),
+                safeControls.overlaySettings(),
+                safeControls.projectionLevel(),
+                safeControls.viewMode().name(),
+                safeControls.selectedTool().name(),
+                safeControls.selectedTool().displayLabel(),
+                safeControls.statusText(),
+                safeControls.surfaceLoaded(),
+                safeControls.reachableLevels());
     }
 
     private DungeonEditorPreparedFrameFacts.MapInteractionFrame mapInteractionFrameFor(
@@ -152,13 +131,6 @@ final class DungeonEditorRuntimeFrameFactsAssembler {
                 runtimeFramePublicationCount,
                 mapInteractionFrameRecomputeCount,
                 mapInteractionFrameRecomputeNanos);
-    }
-
-    private <T> T freshSelectorValue(DungeonEditorSelector<T> selector) {
-        DungeonEditorSelectorResult<T> result = store.select(selector);
-        return result.requireFreshAgainst(
-                store.state(),
-                "Dungeon editor store selector result is stale");
     }
 
     private static String keyOf(DungeonMapId mapId) {

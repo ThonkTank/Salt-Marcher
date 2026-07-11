@@ -57,6 +57,23 @@ public final class CreatureCatalogData {
         }
     }
 
+    public enum CatalogSortField {
+        NAME,
+        CHALLENGE_RATING,
+        XP;
+
+        public static CatalogSortField fromName(@Nullable String sortFieldName) {
+            if (sortFieldName == null) {
+                return NAME;
+            }
+            return switch (sortFieldName) {
+                case "CHALLENGE_RATING" -> CHALLENGE_RATING;
+                case "XP" -> XP;
+                default -> NAME;
+            };
+        }
+    }
+
     public record CatalogSearchSpec(
             @Nullable String nameQuery,
             @Nullable Integer minimumXp,
@@ -102,6 +119,10 @@ public final class CreatureCatalogData {
         @Override
         public List<String> alignments() {
             return copyStrings(alignments);
+        }
+
+        public CatalogSortField sortFieldType() {
+            return CatalogSortField.fromName(sortField);
         }
     }
 

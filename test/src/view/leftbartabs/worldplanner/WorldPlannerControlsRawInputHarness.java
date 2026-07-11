@@ -22,8 +22,8 @@ public final class WorldPlannerControlsRawInputHarness {
     private static final int AWAIT_SECONDS = 30;
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
 
-    private final WorldPlannerControlsContentModel model = new WorldPlannerControlsContentModel();
-    private final List<WorldPlannerControlsViewInputEvent> events = new ArrayList<>();
+    private final WorldPlannerViewModel viewModel = new WorldPlannerViewModel(false);
+    private final List<ControlsInput> events = new ArrayList<>();
     private WorldPlannerControlsView view;
 
     private WorldPlannerControlsRawInputHarness() {
@@ -36,7 +36,7 @@ public final class WorldPlannerControlsRawInputHarness {
             runOnFxThread(harness::assertProjectionRenderDoesNotPublishInput);
             runOnFxThread(harness::assertUserModuleSwitchesPublishOneInput);
             runOnFxThread(harness::assertUserRefreshPublishesRefreshInput);
-            assertStartupRefreshOwnedByIntentHandler();
+            assertStartupRefreshOwnedByViewModel();
             shutdownFx();
             System.out.println("World Planner controls raw-input harness passed.");
         } catch (Throwable throwable) {
@@ -48,8 +48,8 @@ public final class WorldPlannerControlsRawInputHarness {
 
     private void start() {
         view = new WorldPlannerControlsView();
-        view().onViewInputEvent(events::add);
-        view().bind(model);
+        viewModel.onControlsInput(view(), events::add);
+        view().bind(viewModel);
         Stage stage = new Stage();
         stage.setScene(new Scene(view(), 620.0, 120.0));
         stage.show();
@@ -60,7 +60,7 @@ public final class WorldPlannerControlsRawInputHarness {
     private void assertProjectionRenderDoesNotPublishInput() {
         for (int moduleIndex = 0; moduleIndex < 4; moduleIndex++) {
             events.clear();
-            model.activate(moduleIndex);
+            viewModel.activate(moduleIndex);
             view().applyCss();
             view().layout();
             assertEquals(0, events.size(), "projection render must not publish raw input for module " + moduleIndex);
@@ -70,11 +70,11 @@ public final class WorldPlannerControlsRawInputHarness {
 
     private void assertUserModuleSwitchesPublishOneInput() {
         for (int moduleIndex = 0; moduleIndex < 4; moduleIndex++) {
-            model.activate(0);
+            viewModel.activate(0);
             events.clear();
             moduleButton(moduleIndex).fire();
             assertEquals(1, events.size(), "user module switch must publish one input for module " + moduleIndex);
-            WorldPlannerControlsViewInputEvent event = events.getLast();
+            ControlsInput event = events.getLast();
             assertEquals(moduleIndex, event.selectedModuleIndex(), "event carries selected module index");
             assertEquals(false, event.refreshRequested(), "module switch does not request refresh");
         }
@@ -88,13 +88,13 @@ public final class WorldPlannerControlsRawInputHarness {
             events.clear();
             refreshButton().fire();
             assertEquals(1, events.size(), "user refresh must publish one input for module " + moduleIndex);
-            WorldPlannerControlsViewInputEvent event = events.getLast();
+            ControlsInput event = events.getLast();
             assertEquals(moduleIndex, event.selectedModuleIndex(), "refresh event carries active module index");
             assertEquals(true, event.refreshRequested(), "refresh control requests refresh");
         }
     }
 
-    private static void assertStartupRefreshOwnedByIntentHandler() throws IOException {
+    private static void assertStartupRefreshOwnedByViewModel() throws IOException {
         String binder = Files.readString(Path.of(
                 "src/view/leftbartabs/worldplanner/WorldPlannerBinder.java"));
         assertFalse(
@@ -103,15 +103,18 @@ public final class WorldPlannerControlsRawInputHarness {
         assertFalse(
                 binder.contains(".refresh(new"),
                 "Binder must not call World Planner refresh directly during startup");
-
-        String intentHandler = Files.readString(Path.of(
-                "src/view/leftbartabs/worldplanner/WorldPlannerIntentHandler.java"));
         assertTrue(
-                intentHandler.contains("void activateRoot()"),
+                binder.contains("viewModel.activateRoot(worldPlanner::refresh"),
+                "Binder must route startup refresh through the ViewModel activation boundary");
+
+        String viewModel = Files.readString(Path.of(
+                "src/view/leftbartabs/worldplanner/WorldPlannerViewModel.java"));
+        assertTrue(
+                viewModel.contains("void activateRoot("),
                 "World Planner startup refresh must be routed through explicit same-root activation intent");
         assertTrue(
-                intentHandler.contains("worldPlanner.refresh(new RefreshWorldPlannerCommand())"),
-                "World Planner refresh command construction must stay in the same-root IntentHandler");
+                viewModel.contains("refreshSink.accept(new RefreshWorldPlannerCommand())"),
+                "World Planner activation boundary must send the startup refresh command to the supplied refresh sink");
     }
 
     private ToggleButton moduleButton(int moduleIndex) {

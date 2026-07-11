@@ -22,6 +22,14 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
+import shell.api.ServiceRegistry;
+import shell.api.ShellBinding;
+import shell.api.ShellRuntimeContext;
+import shell.api.ShellSlot;
+import src.domain.hex.published.HexEditorModel;
+import src.view.leftbartabs.hexmap.HexMapContribution;
 
 public final class CatalogCrudControlsHarness {
 
@@ -34,6 +42,7 @@ public final class CatalogCrudControlsHarness {
     public static void main(String[] args) throws Exception {
         try {
             runOnFxThread(CatalogCrudControlsHarness::runHarness);
+            runOnFxThread(CatalogCrudControlsHarness::assertHexMapProductionCatalogRoute);
             shutdownFx();
             System.out.println("Catalog CRUD controls harness passed.");
         } catch (Throwable throwable) {
@@ -370,6 +379,40 @@ public final class CatalogCrudControlsHarness {
         assertEquals(List.of("m1", "m2"), List.copyOf(selector.getItems()), "available catalog restores selector-local filtering");
     }
 
+    private static void assertHexMapProductionCatalogRoute() {
+        ServiceRegistry services = hexMapServices();
+        ShellBinding binding = new HexMapContribution().bind(
+                new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, services));
+        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+        CatalogCrudControlsView catalog = descendant(controls, CatalogCrudControlsView.class);
+        Stage stage = new Stage();
+        stage.setScene(new Scene(controls, 760.0, 420.0));
+        stage.show();
+        layoutOpenWindows();
+
+        button(catalog, "Neu").fire();
+        layoutOpenWindows();
+        popupTextField(catalog).setText("Route Map");
+        popupButton(catalog, "Erstellen").fire();
+        layoutOpenWindows();
+
+        String selectedName = services.require(HexEditorModel.class).current().selectedMap()
+                .orElseThrow(() -> new AssertionError("Hex production route did not select the created map."))
+                .displayName();
+        assertEquals("Route Map", selectedName,
+                "shared Catalog CRUD controls create through HexMapContribution production route");
+        stage.close();
+    }
+
+    private static ServiceRegistry hexMapServices() {
+        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
+        new src.data.hex.HexServiceContribution().register(builder);
+        new src.data.party.PartyServiceContribution().register(builder);
+        new src.domain.party.PartyServiceContribution().register(builder);
+        new src.domain.hex.HexServiceContribution().register(builder);
+        return builder.build();
+    }
+
     private static CatalogCrudControlsContentModel.CatalogState state(
             String selectedId,
             List<CatalogCrudControlsContentModel.Item> items,
@@ -580,6 +623,14 @@ public final class CatalogCrudControlsHarness {
                 .orElseThrow(() -> new AssertionError("Descendant not found: " + type.getSimpleName()));
     }
 
+    private static <T extends Node> T slot(ShellBinding binding, ShellSlot slot, Class<T> type) {
+        Node node = binding.slotContent().get(slot);
+        if (type.isInstance(node)) {
+            return type.cast(node);
+        }
+        throw new AssertionError("Shell slot not found: " + slot);
+    }
+
     private static Parent operationPopupContent(CatalogCrudControlsView view) {
         Object content = view.getProperties().get(CatalogCrudControlsView.OPERATION_CONTENT_PROPERTY);
         if (content instanceof Parent parent) {
@@ -621,6 +672,15 @@ public final class CatalogCrudControlsHarness {
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 collect(child, result);
+            }
+        }
+    }
+
+    private static void layoutOpenWindows() {
+        for (Window window : Window.getWindows()) {
+            if (window.getScene() != null && window.getScene().getRoot() != null) {
+                window.getScene().getRoot().applyCss();
+                window.getScene().getRoot().layout();
             }
         }
     }
@@ -687,5 +747,22 @@ public final class CatalogCrudControlsHarness {
     @FunctionalInterface
     private interface ThrowingRunnable {
         void run() throws Exception;
+    }
+
+    private enum EmptyInspectorSink implements InspectorSink {
+        INSTANCE;
+
+        @Override
+        public void push(InspectorEntrySpec entry) {
+        }
+
+        @Override
+        public void clear() {
+        }
+
+        @Override
+        public boolean isShowing(Object entryKey) {
+            return false;
+        }
     }
 }

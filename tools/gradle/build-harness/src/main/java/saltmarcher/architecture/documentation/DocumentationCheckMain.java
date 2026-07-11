@@ -9,7 +9,6 @@ import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
 import saltmarcher.architecture.ArchitectureRuleLoader;
 import saltmarcher.architecture.ViolationSink;
-import saltmarcher.architecture.documentation.support.MarkdownTableCoverageValidator;
 
 public final class DocumentationCheckMain {
 
@@ -19,7 +18,7 @@ public final class DocumentationCheckMain {
     public static void main(String[] args) {
         if (args.length < 1) {
             throw new IllegalArgumentException(
-                    "Expected at least one argument: <repo-root> [--rule-class <fqcn>] [--coverage-spec <id>].");
+                    "Expected at least one argument: <repo-root> [--rule-class <fqcn>].");
         }
 
         Arguments parsed = parseArguments(args);
@@ -30,18 +29,6 @@ public final class DocumentationCheckMain {
                 parsed.ruleClasses(),
                 "documentationEnforcementCheck"));
         rules.forEach(rule -> rule.check(context, sink));
-
-        parsed.coverageSpecIds().stream()
-                .map(DocumentationCoverageCatalog::specification)
-                .forEach(specification -> MarkdownTableCoverageValidator.validateDocument(
-                        context,
-                        specification.documentPath(),
-                        specification.coverageRule(),
-                        specification.missingDocumentMessage(),
-                        specification.unreadableMessagePrefix(),
-                        specification.expectedRows(),
-                        true,
-                        sink));
 
         List<ArchitectureChecker.Violation> ordered = sink.violations().stream()
                 .sorted(Comparator.comparing(ArchitectureChecker.Violation::source)
@@ -59,21 +46,17 @@ public final class DocumentationCheckMain {
 
     private static Arguments parseArguments(String[] args) {
         List<String> ruleClasses = new ArrayList<>();
-        List<String> coverageSpecIds = new ArrayList<>();
         int index = 1;
         while (index < args.length) {
             String option = args[index];
             if ("--rule-class".equals(option)) {
                 ruleClasses.add(requireValue(args, index, option));
                 index += 2;
-            } else if ("--coverage-spec".equals(option)) {
-                coverageSpecIds.add(requireValue(args, index, option));
-                index += 2;
             } else {
                 throw new IllegalArgumentException("Unknown documentation option '" + option + "'.");
             }
         }
-        return new Arguments(List.copyOf(ruleClasses), List.copyOf(coverageSpecIds));
+        return new Arguments(List.copyOf(ruleClasses));
     }
 
     private static String requireValue(String[] args, int optionIndex, String optionName) {
@@ -85,8 +68,7 @@ public final class DocumentationCheckMain {
     }
 
     private record Arguments(
-            List<String> ruleClasses,
-            List<String> coverageSpecIds
+            List<String> ruleClasses
     ) {
     }
 }

@@ -210,7 +210,7 @@ public record DungeonEditorRuntimePointerTarget(
                 new VertexTarget(true, q, r, level));
     }
 
-    static DungeonEditorRuntimePointerTarget fromPreparedFrame(
+    public static DungeonEditorRuntimePointerTarget fromPreparedFrame(
             DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame target
     ) {
         DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame safeTarget = target == null

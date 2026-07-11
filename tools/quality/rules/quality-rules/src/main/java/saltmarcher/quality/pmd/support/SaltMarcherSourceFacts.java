@@ -101,6 +101,19 @@ public final class SaltMarcherSourceFacts {
                 || simpleName.endsWith("PublishedEvent"));
     }
 
+    public boolean isViewMetricCarrierSource() {
+        return startsWith("src", "view")
+                && (simpleName.endsWith("Binder")
+                || simpleName.endsWith("ContentModel")
+                || simpleName.endsWith("ContentPartModel")
+                || simpleName.endsWith("Contribution")
+                || simpleName.endsWith("ContributionModel")
+                || simpleName.endsWith("IntentHandler")
+                || simpleName.endsWith("PublishedEvent")
+                || simpleName.endsWith("View")
+                || simpleName.endsWith("ViewInputEvent"));
+    }
+
     private boolean isDataModel() {
         return startsWith("src", "data") && segments.size() >= 5 && segments.get(3).equals("model");
     }

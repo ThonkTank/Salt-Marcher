@@ -23,11 +23,6 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
-import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
@@ -66,8 +61,6 @@ class DungeonEditorHarnessPersistenceSupport {
             database.clearDungeonData();
             ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
             builder.register(DungeonMapRepository.class, new SqliteDungeonMapRepository());
-            builder.register(TravelPartyStateRepository.class, new EmptyTravelPartyStateRepository());
-            builder.register(TravelPartyPositionRepository.class, new EmptyTravelPartyPositionRepository());
             new DungeonServiceContribution().register(builder);
             ServiceRegistry registry = builder.build();
             return new HarnessRuntime(
@@ -92,31 +85,6 @@ class DungeonEditorHarnessPersistenceSupport {
 
         @Override
         public boolean isShowing(Object entryKey) {
-            return false;
-        }
-    }
-
-    static final class EmptyTravelPartyStateRepository implements TravelPartyStateRepository {
-        @Override
-        public TravelDungeonActiveState.ActiveTravelStateData loadActiveTravelState() {
-            return new TravelDungeonActiveState.ActiveTravelStateData(List.of(), null);
-        }
-    }
-
-    static final class EmptyTravelPartyPositionRepository implements TravelPartyPositionRepository {
-        @Override
-        public boolean saveDungeonPosition(
-                TravelDungeonSessionSurface.PositionData position,
-                List<Long> characterIds
-        ) {
-            return false;
-        }
-
-        @Override
-        public boolean saveOverworldPosition(
-                TravelDungeonSessionValues.OverworldTarget target,
-                List<Long> characterIds
-        ) {
             return false;
         }
     }
@@ -1373,6 +1341,49 @@ class DungeonEditorHarnessPersistenceSupport {
                 connection.commit();
             } catch (SQLException exception) {
                 throw new IllegalStateException("Failed to seed transition link fixture.", exception);
+            }
+        }
+
+        void seedResolvedTransitionLinkFixture(long sourceMapId, long targetMapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, sourceMapId, "R1", 0, 1, 1);
+                insertRectangularRoom(connection, sourceMapId, "R2", 1, 1, 1);
+                insertRectangularRoom(connection, sourceMapId, "R3", 2, 1, 1);
+                long sourceTransitionId = insertTransition(connection, sourceMapId, "Source transition.", 5, 2, 0);
+                insertRectangularRoom(connection, targetMapId, "R1", 0, 1, 1);
+                long targetTransitionId = insertTransition(connection, targetMapId, "Target transition.", 6, 2, 0);
+                updateDungeonMapDestination(connection, sourceTransitionId, targetMapId, targetTransitionId);
+                updateLinkedTransition(connection, targetTransitionId, sourceTransitionId);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed resolved transition link fixture.", exception);
+            }
+        }
+
+        void seedUnlinkedTransitionFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertRectangularRoom(connection, mapId, "R2", 1, 1, 1);
+                insertRectangularRoom(connection, mapId, "R3", 2, 1, 1);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Unlinked transition.",
+                        5,
+                        2,
+                        0,
+                        "CELL",
+                        null,
+                        "UNLINKED_ENTRANCE",
+                        null,
+                        null,
+                        null,
+                        null);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed unlinked transition fixture.", exception);
             }
         }
 

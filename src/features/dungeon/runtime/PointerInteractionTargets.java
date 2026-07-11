@@ -1,9 +1,7 @@
 package src.features.dungeon.runtime;
 
 import java.util.List;
-import java.util.Map;
 
-// Project-health debt PH-20260709-002 satellite: current hit-ref-to-runtime-target selection protocol is listed in the register.
 public record PointerInteractionTargets(
         double sceneX,
         double sceneY,
@@ -38,25 +36,23 @@ public record PointerInteractionTargets(
                 DungeonEditorRuntimePointerTarget.empty());
     }
 
-    public static PointerInteractionTargets fromHitTargets(
+    public static PointerInteractionTargets fromRuntimeTargets(
             double sceneX,
             double sceneY,
             boolean primaryButtonDown,
             boolean secondaryButtonDown,
-            List<String> hitRefs,
-            Map<String, DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame> pointerTargets,
+            List<DungeonEditorRuntimePointerTarget> pointerTargets,
             int projectionLevel
     ) {
-        List<String> safeHitRefs = hitRefs == null ? List.of() : List.copyOf(hitRefs);
-        Map<String, DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame> safeTargets =
-                pointerTargets == null ? Map.of() : pointerTargets;
+        List<DungeonEditorRuntimePointerTarget> safeTargets =
+                pointerTargets == null ? List.of() : List.copyOf(pointerTargets);
         return new PointerInteractionTargets(
                 sceneX,
                 sceneY,
                 primaryButtonDown,
                 secondaryButtonDown,
-                choosePrimary(safeHitRefs, safeTargets, sceneX, sceneY, false),
-                choosePrimary(safeHitRefs, safeTargets, sceneX, sceneY, true),
+                choosePrimary(safeTargets, sceneX, sceneY, false),
+                choosePrimary(safeTargets, sceneX, sceneY, true),
                 nearestWallBoundaryHoverTarget(sceneX, sceneY, projectionLevel));
     }
 
@@ -65,8 +61,7 @@ public record PointerInteractionTargets(
     }
 
     private static DungeonEditorRuntimePointerTarget choosePrimary(
-            List<String> hitRefs,
-            Map<String, DungeonEditorPreparedFrameFacts.PreparedPointerTargetFrame> pointerTargets,
+            List<DungeonEditorRuntimePointerTarget> pointerTargets,
             double sceneX,
             double sceneY,
             boolean preferBoundary
@@ -74,9 +69,7 @@ public record PointerInteractionTargets(
         DungeonEditorRuntimePointerTarget bestTarget = DungeonEditorRuntimePointerTarget.empty();
         int bestPriority = Integer.MAX_VALUE;
         double bestBoundaryDistance = Double.POSITIVE_INFINITY;
-        for (String hitRef : hitRefs) {
-            DungeonEditorRuntimePointerTarget candidate =
-                    DungeonEditorRuntimePointerTarget.fromPreparedFrame(pointerTargets.get(hitRef));
+        for (DungeonEditorRuntimePointerTarget candidate : pointerTargets) {
             int candidatePriority = priority(candidate, preferBoundary);
             double candidateBoundaryDistance = boundaryDistance(candidate, sceneX, sceneY);
             if (betterCandidate(

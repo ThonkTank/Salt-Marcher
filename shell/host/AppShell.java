@@ -72,7 +72,7 @@ public final class AppShell extends BorderPane {
                 registrationSpec.key(),
                 registrationSpec.tabLabel(),
                 registrationSpec.itemOrder(),
-                Objects.requireNonNull(slotContent.stateTab(), "state tab content"));
+                Objects.requireNonNull(slotContent.stateContent(), "state tab content"));
     }
 
     public void navigateTo(ContributionKey key) {

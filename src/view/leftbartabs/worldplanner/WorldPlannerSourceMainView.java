@@ -20,13 +20,13 @@ public final class WorldPlannerSourceMainView extends VBox {
         setVgrow(rows, Priority.ALWAYS);
     }
 
-    public void bind(WorldPlannerSourceMainContentModel model) {
-        WorldPlannerSourceMainContentModel safeModel = Objects.requireNonNull(model, "model");
-        safeModel.projectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
-        render(safeModel.projectionProperty().get());
+    public void bind(WorldPlannerViewModel viewModel) {
+        WorldPlannerViewModel safeModel = Objects.requireNonNull(viewModel, "viewModel");
+        safeModel.sourceProjectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
+        render(safeModel.sourceProjectionProperty().get());
     }
 
-    private void render(WorldPlannerSourceMainContentModel.Projection projection) {
+    private void render(SourceProjection projection) {
         setVisible(projection.active());
         setManaged(projection.active());
         summary.setText(projection.summary());

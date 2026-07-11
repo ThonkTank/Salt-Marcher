@@ -11,7 +11,7 @@ public final class WorldPlannerFactionMainView extends VBox {
 
     private final ListView<String> factions = new ListView<>();
     private final Label emptyText = new Label();
-    private Consumer<WorldPlannerFactionMainViewInputEvent> eventSink = event -> { };
+    private Consumer<FactionMainInput> eventSink = event -> { };
 
     WorldPlannerFactionMainView() {
         getStyleClass().addAll("world-planner-main", "world-planner-module-main");
@@ -24,17 +24,17 @@ public final class WorldPlannerFactionMainView extends VBox {
         factions.setOnKeyReleased(event -> emit());
     }
 
-    public void bind(WorldPlannerFactionMainContentModel model) {
-        WorldPlannerFactionMainContentModel safeModel = Objects.requireNonNull(model, "model");
-        safeModel.projectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
-        render(safeModel.projectionProperty().get());
+    public void bind(WorldPlannerViewModel viewModel) {
+        WorldPlannerViewModel safeModel = Objects.requireNonNull(viewModel, "viewModel");
+        safeModel.factionProjectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
+        render(safeModel.factionProjectionProperty().get());
     }
 
-    public void onViewInputEvent(Consumer<WorldPlannerFactionMainViewInputEvent> sink) {
+    public void onViewInputEvent(Consumer<FactionMainInput> sink) {
         eventSink = sink == null ? event -> { } : sink;
     }
 
-    private void render(WorldPlannerFactionMainContentModel.Projection projection) {
+    private void render(FactionProjection projection) {
         setVisible(projection.active());
         setManaged(projection.active());
         factions.getItems().setAll(projection.factionLabels());
@@ -49,16 +49,7 @@ public final class WorldPlannerFactionMainView extends VBox {
     }
 
     private void emit() {
-        eventSink.accept(new WorldPlannerFactionMainViewInputEvent(
-                false,
-                false,
-                false,
-                factions.getSelectionModel().getSelectedIndex(),
-                "",
-                -1,
-                -1,
-                -1,
-                false,
-                ""));
+        eventSink.accept(new FactionMainInput(
+                factions.getSelectionModel().getSelectedIndex()));
     }
 }

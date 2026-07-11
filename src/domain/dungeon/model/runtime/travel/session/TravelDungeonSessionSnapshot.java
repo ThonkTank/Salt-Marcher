@@ -1,8 +1,8 @@
 package src.domain.dungeon.model.runtime.travel.session;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.OverlayState;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.SurfaceData;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.TravelOverlayState;
 
 public final class TravelDungeonSessionSnapshot {
 
@@ -11,7 +11,7 @@ public final class TravelDungeonSessionSnapshot {
 
     public static SnapshotData snapshot(
             @Nullable SurfaceData surface,
-            TravelOverlayState overlayState,
+            OverlayState overlayState,
             int projectionLevel
     ) {
         return new SnapshotData(surface, overlayState, projectionLevel);
@@ -19,11 +19,11 @@ public final class TravelDungeonSessionSnapshot {
 
     public record SnapshotData(
             @Nullable SurfaceData surface,
-            TravelOverlayState overlayState,
+            OverlayState overlayState,
             int projectionLevel
     ) {
         public SnapshotData {
-            overlayState = overlayState == null ? TravelDungeonSessionValues.defaultOverlayState() : overlayState;
+            overlayState = overlayState == null ? OverlayState.defaults() : overlayState;
         }
     }
 }

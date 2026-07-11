@@ -75,7 +75,7 @@ public final class EncounterSession {
         }
         CreatureDetailData creature = detail.orElseThrow();
         if (Mode.isCombatMode(context.mode())) {
-            String activeTurnId = combatTurnTracker.activeTurnId(combatTurns, combatRoster);
+            var activeTurnId = combatTurnTracker.activeTurnId(combatTurns, combatRoster);
             String displayName = combatRosterBuilder.addReinforcement(
                     combatRoster,
                     creature,
@@ -111,7 +111,7 @@ public final class EncounterSession {
             context.setStatus(PARTY_MEMBER_LOAD_FAILURE_STATUS);
             return;
         }
-        String activeTurnId = combatTurnTracker.activeTurnId(combatTurns, combatRoster);
+        var activeTurnId = combatTurnTracker.activeTurnId(combatTurns, combatRoster);
         boolean added = combatRosterBuilder.addPlayerToRunningCombat(
                 combatRoster,
                 member.id(),
@@ -137,12 +137,12 @@ public final class EncounterSession {
         context.enterMode(Mode.BUILDER, RETURNED_TO_BUILDER_STATUS);
     }
 
-    private void mutateHp(String combatantId, int amount, boolean healing) {
+    private void mutateHp(EncounterSessionCommand command) {
         if (!combatRosterMutations.mutateHp(
                 combatRoster,
-                combatTurns.turnEntry(combatRoster.combatants(), combatantId),
-                Math.max(0, amount),
-                healing)) {
+                combatTurns.turnEntry(combatRoster.combatants(), command.combatantId()),
+                Math.max(0, command.amount()),
+                command.healing())) {
             return;
         }
         combatTurnTracker.restore(
@@ -223,10 +223,7 @@ public final class EncounterSession {
             handlers.put(EncounterSessionCommand.Action.RETURN_TO_BUILDER_AFTER_RESULTS, (session, command, access) ->
                     session.returnToBuilderAfterResults());
             handlers.put(EncounterSessionCommand.Action.MUTATE_HP, (session, command, access) ->
-                    session.mutateHp(
-                            command.combatantId(),
-                            command.amount(),
-                            command.healing()));
+                    session.mutateHp(command));
             return Map.copyOf(handlers);
         }
     }

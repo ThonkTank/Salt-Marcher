@@ -38,11 +38,11 @@ final class StateTabPane extends VBox {
         setMinHeight(0);
         setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
-        ShellFx.addStyleClass(tabBar, "scene-tab-bar");
+        tabBar.getStyleClass().add("scene-tab-bar");
         tabBar.setAlignment(Pos.CENTER_LEFT);
         tabBar.setPadding(new Insets(4, 8, 4, 8));
 
-        ShellFx.addStyleClass(placeholder, "text-muted");
+        placeholder.getStyleClass().add("text-muted");
         placeholder.setMaxWidth(Double.MAX_VALUE);
         placeholder.setMaxHeight(Double.MAX_VALUE);
         placeholder.setAlignment(Pos.CENTER);
@@ -50,7 +50,7 @@ final class StateTabPane extends VBox {
         contentArea.setAlignment(Pos.TOP_LEFT);
         ShellContentLayout.makeShrinkable(contentArea);
         setVgrow(contentArea, Priority.ALWAYS);
-        ShellFx.setChildren(contentArea, placeholderHost);
+        contentArea.getChildren().setAll(placeholderHost);
 
         getChildren().addAll(tabBar, contentArea);
         rebuildTabBar();
@@ -77,7 +77,7 @@ final class StateTabPane extends VBox {
             return;
         }
         tab.select();
-        ShellFx.setChildren(contentArea, tab.contentOr(placeholderHost));
+        contentArea.getChildren().setAll(tab.contentOr(placeholderHost));
     }
 
     boolean hasTabs() {
@@ -85,9 +85,9 @@ final class StateTabPane extends VBox {
     }
 
     private void rebuildTabBar() {
-        ShellFx.clearChildren(tabBar);
+        tabBar.getChildren().clear();
         for (StateTab tab : getSortedTabs()) {
-            ShellFx.addChild(tabBar, tab.button);
+            tabBar.getChildren().add(tab.button);
         }
         tabBar.setVisible(tabs.size() > 1);
         tabBar.setManaged(tabs.size() > 1);
@@ -115,7 +115,7 @@ final class StateTabPane extends VBox {
             this.itemOrder = itemOrder;
             this.content = ShellContentLayout.shellOwned(content);
             this.button = new ToggleButton(label);
-            ShellFx.addStyleClass(button, "scene-tab");
+            button.getStyleClass().add("scene-tab");
             button.setToggleGroup(tabGroup);
             button.setOnAction(event -> {
                 manualSelectionMade = true;

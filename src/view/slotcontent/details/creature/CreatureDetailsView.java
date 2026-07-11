@@ -13,11 +13,36 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
 import org.jspecify.annotations.Nullable;
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
+import src.domain.creatures.published.CreatureDetailModel;
+import src.domain.creatures.published.CreatureDetailResult;
 
 public final class CreatureDetailsView extends VBox {
 
+    private static final long NO_CREATURE_ID = 0L;
+
     public CreatureDetailsView() {
         getStyleClass().add("stat-block-pane");
+    }
+
+    public static void openInspector(InspectorSink inspector, CreatureDetailModel detailModel, long creatureId) {
+        if (creatureId <= NO_CREATURE_ID) {
+            return;
+        }
+        inspector.push(new InspectorEntrySpec(
+                "Creature",
+                "creature:" + creatureId,
+                () -> loaded(detailModel.current()),
+                null));
+    }
+
+    private static Node loaded(CreatureDetailResult detailResult) {
+        CreatureDetailsView detailView = new CreatureDetailsView();
+        CreatureDetailsContentModel contentModel = new CreatureDetailsContentModel(detailResult);
+        detailView.bind(contentModel);
+        contentModel.load();
+        return detailView;
     }
 
     public void bind(CreatureDetailsContentModel presentationModel) {
@@ -48,7 +73,7 @@ public final class CreatureDetailsView extends VBox {
 
     private void showMessage(@Nullable String text) {
         if (hasText(text)) {
-            getChildren().setAll(new MessageLabel(text));
+            getChildren().setAll(new WrappedLabel(text, "stat-block-loading"));
         }
     }
 
@@ -58,28 +83,6 @@ public final class CreatureDetailsView extends VBox {
             super(text);
             getStyleClass().add(styleClass);
             setWrapText(true);
-        }
-    }
-
-    private static final class MessageLabel extends WrappedLabel {
-
-        MessageLabel(String text) {
-            super(text, "stat-block-loading");
-        }
-    }
-
-    private static final class MetaLabel extends WrappedLabel {
-
-        MetaLabel(String text) {
-            super(text, "stat-block-meta");
-        }
-    }
-
-    private static final class SectionTitleLabel extends Label {
-
-        SectionTitleLabel(String text) {
-            super(text);
-            getStyleClass().add("stat-block-section-header");
         }
     }
 
@@ -96,7 +99,7 @@ public final class CreatureDetailsView extends VBox {
         HeaderView(CreatureDetailsContentModel.DetailState detail) {
             getChildren().addAll(
                     new WrappedLabel(detail.name(), "stat-block-name"),
-                    new MetaLabel(detail.meta()));
+                    new WrappedLabel(detail.meta(), "stat-block-meta"));
         }
     }
 
@@ -130,24 +133,8 @@ public final class CreatureDetailsView extends VBox {
             constraints.setPercentWidth(100.0 / scoreCount);
             constraints.setHalignment(HPos.CENTER);
             getColumnConstraints().add(constraints);
-            add(new AbilityHeaderLabel(score.label()), index, 0);
-            add(new AbilityValueLabel(score.value()), index, 1);
-        }
-    }
-
-    private static final class AbilityHeaderLabel extends Label {
-
-        AbilityHeaderLabel(String text) {
-            super(text);
-            getStyleClass().add("stat-block-ability-header");
-        }
-    }
-
-    private static final class AbilityValueLabel extends Label {
-
-        AbilityValueLabel(String text) {
-            super(text);
-            getStyleClass().add("stat-block-ability-value");
+            add(styledLabel(score.label(), "stat-block-ability-header"), index, 0);
+            add(styledLabel(score.value(), "stat-block-ability-value"), index, 1);
         }
     }
 
@@ -170,6 +157,12 @@ public final class CreatureDetailsView extends VBox {
 
     private static <T> List<T> safeList(@Nullable List<T> values) {
         return values == null ? List.of() : values;
+    }
+
+    private static Label styledLabel(String text, String styleClass) {
+        Label label = new Label(text);
+        label.getStyleClass().add(styleClass);
+        return label;
     }
 
     private static final class Separator extends Region {
@@ -223,10 +216,10 @@ public final class CreatureDetailsView extends VBox {
                 CreatureDetailsContentModel.ActionGroup section
         ) {
             if (hasText(section.title())) {
-                nodes.add(new SectionTitleLabel(section.title()));
+                nodes.add(styledLabel(section.title(), "stat-block-section-header"));
             }
             if (hasText(section.description())) {
-                nodes.add(new MetaLabel(section.description()));
+                nodes.add(new WrappedLabel(section.description(), "stat-block-meta"));
             }
         }
 

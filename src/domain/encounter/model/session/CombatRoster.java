@@ -19,9 +19,9 @@ public final class CombatRoster {
         return List.copyOf(combatants);
     }
 
-    public boolean containsId(String combatantId) {
+    public boolean containsId(CombatantId combatantId) {
         for (Combatant combatant : combatants) {
-            if (combatant.id().equals(combatantId)) {
+            if (combatantId != null && combatant.id().equals(combatantId.value())) {
                 return true;
             }
         }

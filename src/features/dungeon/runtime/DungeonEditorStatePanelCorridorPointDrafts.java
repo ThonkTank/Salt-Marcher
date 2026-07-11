@@ -24,22 +24,22 @@ public final class DungeonEditorStatePanelCorridorPointDrafts {
         draftR = cleanCoordinate(r);
     }
 
-    DungeonEditorRuntimeOperationResult move(
+    DungeonEditorRuntimeContext.Result move(
             long selectedMapIdValue,
             DungeonEditorStateSnapshot.Selection selection,
             int q,
             int r,
-            DungeonEditorAuthoredRuntimeOperations operationOwner
+            DungeonEditorSelectedHandleRuntimeOperation selectedHandleOperation
     ) {
         DungeonEditorWorkspaceValues.HandleRef target = DungeonEditorStatePanelCorridorPointTarget.from(selection);
         Key key = Key.from(selectedMapIdValue, target);
-        if (!key.valid() || operationOwner == null) {
-            return DungeonEditorRuntimeOperationResult.none();
+        if (!key.valid() || selectedHandleOperation == null) {
+            return DungeonEditorRuntimeContext.Result.none();
         }
         if (draftKey.equals(key)) {
             clearDraft();
         }
-        return operationOwner.moveCorridorPoint(target, q, r);
+        return selectedHandleOperation.moveCorridorPoint(target, q, r);
     }
 
     Draft current(long selectedMapIdValue, DungeonEditorStateSnapshot.Selection selection) {

@@ -3,18 +3,7 @@ package src.domain.party;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import shell.api.ServiceRegistry;
-import src.domain.party.model.roster.repository.PartyEncounterSessionRepository;
-import src.domain.party.model.roster.repository.PartyPublishedStateRepository;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
-import src.domain.party.model.roster.usecase.AdjustPartyXpUseCase;
-import src.domain.party.model.roster.usecase.AwardPartyXpUseCase;
-import src.domain.party.model.roster.usecase.CalculateAdventuringDayUseCase;
-import src.domain.party.model.roster.usecase.CreateCharacterUseCase;
-import src.domain.party.model.roster.usecase.DeleteCharacterUseCase;
-import src.domain.party.model.roster.usecase.MovePartyCharactersUseCase;
-import src.domain.party.model.roster.usecase.PerformPartyRestUseCase;
-import src.domain.party.model.roster.usecase.SetPartyMembershipUseCase;
-import src.domain.party.model.roster.usecase.UpdateCharacterUseCase;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.AdventuringDayCalculationModel;
@@ -25,74 +14,74 @@ import src.domain.party.published.PartyTravelPositionsModel;
 
 final class PartyServiceAssembly {
 
-    private final AtomicReference<PartyPublishedStateServiceAssembly> publishedState = new AtomicReference<>();
+    private final AtomicReference<PartyRuntime> runtime = new AtomicReference<>();
 
     PartyApplicationService createApplicationService(ServiceRegistry services) {
-        PartyRosterRepository repository = services.require(PartyRosterRepository.class);
-        PartyPublishedStateServiceAssembly state = publishedState(services);
-        PartyPublishedStateRepository publishedStateRepository = state;
-        PartyEncounterSessionRepository encounterSessionRepository =
-                PartyEncounterSessionPublicationRefresh.INSTANCE;
-        return new PartyApplicationService(
-                new CreateCharacterUseCase(repository, publishedStateRepository, encounterSessionRepository),
-                new UpdateCharacterUseCase(repository, publishedStateRepository, encounterSessionRepository),
-                new DeleteCharacterUseCase(repository, publishedStateRepository, encounterSessionRepository),
-                new SetPartyMembershipUseCase(repository, publishedStateRepository, encounterSessionRepository),
-                new AdjustPartyXpUseCase(repository, publishedStateRepository, encounterSessionRepository),
-                new AwardPartyXpUseCase(repository, publishedStateRepository),
-                new PerformPartyRestUseCase(repository, publishedStateRepository, encounterSessionRepository),
-                new MovePartyCharactersUseCase(repository, publishedStateRepository),
-                new CalculateAdventuringDayUseCase(publishedStateRepository));
+        return runtime(services).applicationService;
     }
 
     PartySnapshotModel partySnapshotModel(ServiceRegistry services) {
-        return publishedState(services).partySnapshotModel();
+        return runtime(services).partySnapshotModel;
     }
 
     ActivePartyModel activePartyModel(ServiceRegistry services) {
-        return publishedState(services).activePartyModel();
+        return runtime(services).activePartyModel;
     }
 
     ActivePartyCompositionModel activePartyCompositionModel(ServiceRegistry services) {
-        return publishedState(services).activePartyCompositionModel();
+        return runtime(services).activePartyCompositionModel;
     }
 
     AdventuringDaySummaryModel adventuringDaySummaryModel(ServiceRegistry services) {
-        return publishedState(services).adventuringDaySummaryModel();
+        return runtime(services).adventuringDaySummaryModel;
     }
 
     PartyTravelPositionsModel partyTravelPositionsModel(ServiceRegistry services) {
-        return publishedState(services).partyTravelPositionsModel();
+        return runtime(services).partyTravelPositionsModel;
     }
 
     PartyMutationModel partyMutationModel(ServiceRegistry services) {
-        return publishedState(services).partyMutationModel();
+        return runtime(services).partyMutationModel;
     }
 
     AdventuringDayCalculationModel adventuringDayCalculationModel(ServiceRegistry services) {
-        return publishedState(services).adventuringDayCalculationModel();
+        return runtime(services).adventuringDayCalculationModel;
     }
 
-    private PartyPublishedStateServiceAssembly publishedState(ServiceRegistry services) {
-        PartyPublishedStateServiceAssembly existing = publishedState.get();
+    private PartyRuntime runtime(ServiceRegistry services) {
+        PartyRuntime existing = runtime.get();
         if (existing != null) {
             return existing;
         }
-        PartyPublishedStateServiceAssembly candidate =
-                new PartyPublishedStateServiceAssembly(services.require(PartyRosterRepository.class));
-        return publishedState.compareAndSet(null, candidate)
+        PartyRuntime candidate = new PartyRuntime(services.require(PartyRosterRepository.class));
+        return runtime.compareAndSet(null, candidate)
                 ? candidate
-                : Objects.requireNonNull(publishedState.get(), "publishedState");
+                : Objects.requireNonNull(runtime.get(), "runtime");
     }
 
-    private enum PartyEncounterSessionPublicationRefresh implements PartyEncounterSessionRepository {
+    private static final class PartyRuntime {
 
-        INSTANCE;
+        private final PartySnapshotModel partySnapshotModel = new PartySnapshotModel();
+        private final ActivePartyModel activePartyModel = new ActivePartyModel();
+        private final ActivePartyCompositionModel activePartyCompositionModel = new ActivePartyCompositionModel();
+        private final AdventuringDaySummaryModel adventuringDaySummaryModel = new AdventuringDaySummaryModel();
+        private final PartyTravelPositionsModel partyTravelPositionsModel = new PartyTravelPositionsModel();
+        private final PartyMutationModel partyMutationModel = new PartyMutationModel();
+        private final AdventuringDayCalculationModel adventuringDayCalculationModel =
+                new AdventuringDayCalculationModel();
+        private final PartyApplicationService applicationService;
 
-        @Override
-        public void refreshEncounterSession() {
-            // Party mutation publication is authoritative; consumers refresh from party published models.
+        private PartyRuntime(PartyRosterRepository repository) {
+            applicationService = new PartyApplicationService(
+                    Objects.requireNonNull(repository, "repository"),
+                    partySnapshotModel,
+                    activePartyModel,
+                    activePartyCompositionModel,
+                    adventuringDaySummaryModel,
+                    partyTravelPositionsModel,
+                    partyMutationModel,
+                    adventuringDayCalculationModel);
+            applicationService.refreshPublishedState();
         }
     }
-
 }

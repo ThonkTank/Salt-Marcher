@@ -1,112 +1,76 @@
 package src.domain.hex;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-import java.util.function.Consumer;
-import src.domain.hex.model.map.HexEditorState;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import shell.api.ServiceRegistry;
 import src.domain.hex.model.map.HexEditorWorkspace;
-import src.domain.hex.model.map.port.HexTravelPositionPort;
-import src.domain.hex.model.map.repository.HexEditorPublishedStateRepository;
 import src.domain.hex.model.map.repository.HexMapRepository;
-import src.domain.hex.model.map.repository.HexTravelPartyPositionApplicationRepository;
-import src.domain.hex.model.map.repository.HexTravelPartyPositionRepository;
-import src.domain.hex.model.map.usecase.CreateHexMapUseCase;
-import src.domain.hex.model.map.usecase.LoadHexEditorStateUseCase;
-import src.domain.hex.model.map.usecase.LoadHexEditorUseCase;
-import src.domain.hex.model.map.usecase.MoveHexPartyTokenUseCase;
-import src.domain.hex.model.map.usecase.PaintHexTerrainUseCase;
-import src.domain.hex.model.map.usecase.RenameHexMapUseCase;
-import src.domain.hex.model.map.usecase.SaveHexMarkerUseCase;
-import src.domain.hex.model.map.usecase.SelectHexMapUseCase;
-import src.domain.hex.model.map.usecase.SelectHexTileUseCase;
-import src.domain.hex.model.map.usecase.SetHexEditorToolUseCase;
-import src.domain.hex.model.map.usecase.UpdateHexMapUseCase;
-import src.domain.hex.model.map.usecase.UpdateHexTravelPositionUseCase;
 import src.domain.hex.published.HexEditorModel;
-import src.domain.hex.published.HexEditorSnapshot;
 import src.domain.hex.published.HexTravelModel;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.PartyTravelPositionsModel;
 
-final class HexServiceAssembly implements HexEditorPublishedStateRepository {
+final class HexServiceAssembly {
 
-    private final HexMapRepository repository;
-    private final HexTravelPartyPositionRepository travelRepository;
-    private final HexTravelPublishedStateServiceAssembly travelPublishedState;
-    private final HexEditorWorkspace workspace = new HexEditorWorkspace();
-    private final List<Consumer<HexEditorSnapshot>> listeners = new ArrayList<>();
-    private HexEditorSnapshot currentSnapshot = HexEditorSnapshot.empty("No Hex map loaded.");
+    private final HexEditorApplicationService editorApplicationService;
+    private final HexTravelApplicationService travelApplicationService;
+    private final HexEditorModel editorModel = new HexEditorModel();
+    private final HexTravelModel travelModel = new HexTravelModel();
+
+    static void registerFactories(ServiceRegistry.Builder services) {
+        AtomicReference<HexServiceAssembly> assembly = new AtomicReference<>();
+        Function<ServiceRegistry, HexServiceAssembly> resolver = registry -> resolveAssembly(assembly, registry);
+        services.registerFactory(
+                HexEditorApplicationService.class,
+                registry -> resolver.apply(registry).editorApplicationService);
+        services.registerFactory(
+                HexEditorModel.class,
+                registry -> resolver.apply(registry).editorModel);
+        services.registerFactory(
+                HexTravelApplicationService.class,
+                registry -> resolver.apply(registry).travelApplicationService);
+        services.registerFactory(
+                HexTravelModel.class,
+                registry -> resolver.apply(registry).travelModel);
+    }
 
     HexServiceAssembly(
             HexMapRepository repository,
             PartyTravelPositionsModel partyTravelPositions,
             PartyApplicationService partyApplicationService
     ) {
-        this.repository = Objects.requireNonNull(repository, "repository");
-        this.travelPublishedState = new HexTravelPublishedStateServiceAssembly();
-        HexTravelPartyBoundaryServiceAssembly partyBoundary = new HexTravelPartyBoundaryServiceAssembly(
-                Objects.requireNonNull(partyApplicationService, "partyApplicationService"));
-        this.travelRepository = new HexTravelPartyPositionApplicationRepository(
-                partyBoundary);
-        registerTravelPositionPort(Objects.requireNonNull(partyTravelPositions, "partyTravelPositions"));
+        HexMapRepository safeRepository = Objects.requireNonNull(repository, "repository");
+        editorApplicationService = new HexEditorApplicationService(
+                safeRepository,
+                new HexEditorWorkspace(),
+                editorModel);
+        travelApplicationService = new HexTravelApplicationService(
+                safeRepository,
+                Objects.requireNonNull(partyApplicationService, "partyApplicationService"),
+                travelModel);
+        registerTravelReadback(Objects.requireNonNull(partyTravelPositions, "partyTravelPositions"));
     }
 
-    HexEditorApplicationService editorApplicationService() {
-        LoadHexEditorStateUseCase loadState = new LoadHexEditorStateUseCase(
-                repository,
-                workspace,
-                this);
-        return new HexEditorApplicationService(
-                new CreateHexMapUseCase(repository, loadState),
-                new LoadHexEditorUseCase(loadState),
-                new SelectHexMapUseCase(repository, loadState),
-                new UpdateHexMapUseCase(repository, loadState),
-                new RenameHexMapUseCase(repository, loadState),
-                new SelectHexTileUseCase(repository, loadState),
-                new PaintHexTerrainUseCase(repository, loadState),
-                new SaveHexMarkerUseCase(repository, loadState),
-                new SetHexEditorToolUseCase(loadState));
-    }
-
-    HexEditorModel editorModel() {
-        return new HexEditorModel(this::current, this::subscribe);
-    }
-
-    HexTravelApplicationService travelApplicationService() {
-        return new HexTravelApplicationService(new MoveHexPartyTokenUseCase(repository, travelRepository));
-    }
-
-    HexTravelModel travelModel() {
-        return travelPublishedState.model();
-    }
-
-    @Override
-    public void publish(HexEditorState state) {
-        currentSnapshot = HexEditorSnapshotProjectionServiceAssembly.project(Objects.requireNonNull(state, "state"));
-        for (Consumer<HexEditorSnapshot> listener : List.copyOf(listeners)) {
-            listener.accept(currentSnapshot);
+    private static HexServiceAssembly resolveAssembly(
+            AtomicReference<HexServiceAssembly> assembly,
+            ServiceRegistry registry
+    ) {
+        HexServiceAssembly existing = assembly.get();
+        if (existing != null) {
+            return existing;
         }
+        HexServiceAssembly candidate = new HexServiceAssembly(
+                registry.require(HexMapRepository.class),
+                registry.require(PartyTravelPositionsModel.class),
+                registry.require(PartyApplicationService.class));
+        return assembly.compareAndSet(null, candidate)
+                ? candidate
+                : Objects.requireNonNull(assembly.get(), "assembly");
     }
 
-    private HexEditorSnapshot current() {
-        return currentSnapshot;
+    private void registerTravelReadback(PartyTravelPositionsModel partyTravelPositions) {
+        travelApplicationService.acceptPartyTravelPosition(partyTravelPositions.current());
+        partyTravelPositions.subscribe(travelApplicationService::acceptPartyTravelPosition);
     }
-
-    private Runnable subscribe(Consumer<HexEditorSnapshot> listener) {
-        Consumer<HexEditorSnapshot> safeListener = Objects.requireNonNull(listener, "listener");
-        listeners.add(safeListener);
-        safeListener.accept(currentSnapshot);
-        return () -> listeners.remove(safeListener);
-    }
-
-    private void registerTravelPositionPort(PartyTravelPositionsModel partyTravelPositions) {
-        HexTravelPositionPort travelPositionPort = new HexTravelPositionPort(
-                new UpdateHexTravelPositionUseCase(repository, travelPublishedState));
-        travelPositionPort.acceptPartyTravelPosition(
-                HexTravelPartyBoundaryServiceAssembly.toFact(partyTravelPositions.current()));
-        partyTravelPositions.subscribe(result -> travelPositionPort.acceptPartyTravelPosition(
-                HexTravelPartyBoundaryServiceAssembly.toFact(result)));
-    }
-
 }

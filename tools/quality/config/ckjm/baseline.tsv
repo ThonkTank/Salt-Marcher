@@ -7,7 +7,6 @@ src.domain.encounter.EncounterApplicationService	26	50	152	317	47
 src.domain.encounter.application.PrepareEncounterGenerationUseCase	23	53	188	253	51
 src.domain.party.PartyApplicationService	34	88	187	537	77
 src.data.dungeon.gateway.local.DungeonSqliteGateway	46	20	158	1033	18
-src.view.leftbartabs.catalog.CatalogBinder	31	59	166	463	58
 src.view.leftbartabs.dungeoneditor.DungeonEditorBinder	30	44	146	433	43
 src.view.leftbartabs.dungeoneditor.DungeonEditorControlsView	74	41	182	2409	40
 src.view.leftbartabs.dungeoneditor.DungeonEditorViewModel	58	51	204	1257	50
@@ -18,6 +17,5 @@ src.view.dropdowns.party.PartyTopBarViewModel	57	46	195	1426	45
 src.view.slotcontent.controls.catalog.CatalogControlsView	65	50	257	1930	49
 src.view.slotcontent.main.dungeonmap.DungeonMapDisplayModel	50	34	155	1328	32
 src.view.slotcontent.main.dungeonmap.DungeonMapMainView	117	64	324	6737	62
-src.view.statetabs.encounter.EncounterStateBinder	30	59	212	433	58
 src.view.statetabs.encounter.EncounterStateView	141	58	386	9654	57
 src.view.statetabs.encounter.EncounterStateViewModel	60	48	226	1168	47

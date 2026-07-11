@@ -15,19 +15,14 @@ import org.gradle.kotlin.dsl.dependencies
 import org.gradle.kotlin.dsl.get
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.the
-import saltmarcher.buildlogic.enforcement.EnforcementBundlesExtension
 import saltmarcher.buildlogic.tasks.resolveDesktopDirectory
-
-private const val DefaultJqassistantVersion = "2.9.1"
 
 internal data class QualityConventionVerificationLayout(
     val sourceSets: SourceSetContainer,
     val mainSourceSet: SourceSet,
     val sourceRoots: FileCollection,
     val sourceJavaRoots: FileCollection,
-    val mainJavaClassesDir: Provider<Directory>,
-    val commonFocusedArchunitSupportSourceRoots: List<String>,
-    val commonFocusedArchunitSupportIncludes: List<String>
+    val mainJavaClassesDir: Provider<Directory>
 )
 
 internal data class QualityConventionPackagingMetadata(
@@ -47,29 +42,22 @@ internal data class QualityConventionPackagingMetadata(
 )
 
 internal data class QualityConventionEnvironment(
-    val enforcementBundles: EnforcementBundlesExtension,
-    val focusedEnforcementBundleMode: Boolean,
     val includeBuildHarness: Boolean,
     val includeQualityRules: Boolean,
     val includeQualityRulesErrorProne: Boolean,
-    val includeJqassistant: Boolean,
     val discoveryBuildRequest: Boolean,
     val verificationLayout: QualityConventionVerificationLayout,
-    val packagingMetadata: QualityConventionPackagingMetadata,
-    val jqassistantVersion: String
+    val packagingMetadata: QualityConventionPackagingMetadata
 )
 
 internal data class QualityConventionToolConfigurations(
     val cpdCli: NamedDomainObjectProvider<Configuration>,
     val pmdCli: NamedDomainObjectProvider<Configuration>,
     val ckjmToolClasspath: NamedDomainObjectProvider<Configuration>,
-    val proguardToolClasspath: NamedDomainObjectProvider<Configuration>,
-    val jqassistantDistribution: NamedDomainObjectProvider<Configuration>
+    val proguardToolClasspath: NamedDomainObjectProvider<Configuration>
 )
 
-internal fun Project.createQualityConventionEnvironment(
-    enforcementBundles: EnforcementBundlesExtension
-): QualityConventionEnvironment {
+internal fun Project.createQualityConventionEnvironment(): QualityConventionEnvironment {
     val appDisplayNameProvider = providers.gradleProperty("saltMarcherDisplayName").orElse("SaltMarcher")
     val desktopIconSourceRelativePathProvider = providers.gradleProperty("saltMarcherDesktopIconSource")
         .orElse("icons/salt-marcher.svg")
@@ -86,17 +74,11 @@ internal fun Project.createQualityConventionEnvironment(
         .orElse("bootstrap.SaltMarcherApp")
     val stylesheetRelativePathProvider = providers.gradleProperty("saltMarcherStylesheet")
         .orElse("resources/salt-marcher.css")
-    val jqassistantVersion = providers.gradleProperty("saltMarcherJqassistantVersion").orNull ?: DefaultJqassistantVersion
     val sourceRoots = files("bootstrap", "shell", "src")
     val sourceJavaRoots = files("bootstrap", "shell", "src")
     val sourceSets = the<SourceSetContainer>()
     val mainSourceSet = sourceSets["main"]
     val mainJavaClassesDir = tasks.named<JavaCompile>("compileJava").flatMap(JavaCompile::getDestinationDirectory)
-    val commonFocusedArchunitSupportSourceRoots = listOf("test")
-    val commonFocusedArchunitSupportIncludes = listOf(
-        "architecture/AnalyzeMainClasses.java",
-        "architecture/MainSourceLocationProvider.java"
-    )
     val installedAppDirectory = layout.dir(
         launcherNameProvider.map { launcherName ->
             File(System.getProperty("user.home"), ".local/opt/$launcherName")
@@ -108,21 +90,16 @@ internal fun Project.createQualityConventionEnvironment(
     )
 
     return QualityConventionEnvironment(
-        enforcementBundles = enforcementBundles,
-        focusedEnforcementBundleMode = enforcementBundles.focusedEnforcementBundleMode,
         includeBuildHarness = systemBoolean("saltmarcher.includeBuildHarness", defaultValue = true),
         includeQualityRules = systemBoolean("saltmarcher.includeQualityRules", defaultValue = true),
         includeQualityRulesErrorProne = systemBoolean("saltmarcher.includeQualityRulesErrorProne", defaultValue = true),
-        includeJqassistant = systemBoolean("saltmarcher.includeJqassistant", defaultValue = true),
         discoveryBuildRequest = systemBoolean("saltmarcher.discoveryBuildRequest", defaultValue = true),
         verificationLayout = QualityConventionVerificationLayout(
             sourceSets = sourceSets,
             mainSourceSet = mainSourceSet,
             sourceRoots = sourceRoots,
             sourceJavaRoots = sourceJavaRoots,
-            mainJavaClassesDir = mainJavaClassesDir,
-            commonFocusedArchunitSupportSourceRoots = commonFocusedArchunitSupportSourceRoots,
-            commonFocusedArchunitSupportIncludes = commonFocusedArchunitSupportIncludes
+            mainJavaClassesDir = mainJavaClassesDir
         ),
         packagingMetadata = QualityConventionPackagingMetadata(
             appDisplayNameProvider = appDisplayNameProvider,
@@ -138,8 +115,7 @@ internal fun Project.createQualityConventionEnvironment(
             installedAppDirectory = installedAppDirectory,
             desktopDirectory = desktopDirectory,
             applicationsDirectory = applicationsDirectory
-        ),
-        jqassistantVersion = jqassistantVersion
+        )
     )
 }
 
@@ -154,8 +130,7 @@ internal fun Project.registerQualityConventionToolConfigurations(): QualityConve
         cpdCli = registerToolConfiguration("cpdCli"),
         pmdCli = registerToolConfiguration("pmdCli"),
         ckjmToolClasspath = registerToolConfiguration("ckjmToolClasspath"),
-        proguardToolClasspath = registerToolConfiguration("proguardToolClasspath"),
-        jqassistantDistribution = registerToolConfiguration("jqassistantDistribution")
+        proguardToolClasspath = registerToolConfiguration("proguardToolClasspath")
     )
 }
 
@@ -182,10 +157,6 @@ internal fun Project.registerQualityConventionDependencies(
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.ant:ant:1.10.15")
         add(toolConfigurations.ckjmToolClasspath.name, "org.apache.commons:commons-math3:3.6.1")
         add(toolConfigurations.proguardToolClasspath.name, "com.guardsquare:proguard-base:7.9.1")
-        add(
-            toolConfigurations.jqassistantDistribution.name,
-            "com.buschmais.jqassistant.cli:jqassistant-commandline-neo4jv5:${environment.jqassistantVersion}:distribution@zip"
-        )
     }
 }
 

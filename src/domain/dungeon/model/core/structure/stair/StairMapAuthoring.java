@@ -38,71 +38,43 @@ public final class StairMapAuthoring {
     public StairCollection withAuthoredStair(
             DungeonMap dungeonMap,
             long stairId,
-            Cell anchor,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
+            StairGeometrySpec spec
     ) {
         return dungeonMap.stairs().withAuthoredStair(
                 stairId,
                 dungeonMap.metadata().mapId().value(),
-                anchor,
-                shapeName,
-                directionName,
-                dimension1,
-                dimension2,
+                spec,
                 roomInteriorCells(dungeonMap));
     }
 
     public boolean canCreateAuthoredStair(
             DungeonMap dungeonMap,
-            Cell anchor,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
+            StairGeometrySpec spec
     ) {
         return dungeonMap.stairs().canCreateAuthoredStairGeometry(
-                anchor,
-                shapeName,
-                directionName,
-                dimension1,
-                dimension2,
+                spec,
                 roomInteriorCells(dungeonMap));
     }
 
     public boolean canSaveStairGeometry(
             DungeonMap dungeonMap,
             long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
+            StairGeometrySpec spec
     ) {
         return dungeonMap.stairs().canRecomputeAuthoredStair(
                 stairId,
-                shapeName,
-                directionName,
-                dimension1,
-                dimension2,
+                spec,
                 roomInteriorCells(dungeonMap));
     }
 
     public StairCollection withSavedStairGeometry(
             DungeonMap dungeonMap,
             long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
+            StairGeometrySpec spec
     ) {
         return dungeonMap.stairs().withRecomputedAuthoredStair(
                 stairId,
-                shapeName,
-                directionName,
-                dimension1,
-                dimension2,
+                spec,
                 roomInteriorCells(dungeonMap));
     }
 

@@ -39,16 +39,16 @@ public final class TravelStateView extends VBox {
                 buildActionSection());
     }
 
-    public void bind(TravelStateContentModel contentModel) {
-        iconLabel.textProperty().bind(contentModel.iconProperty());
-        locationLabel.textProperty().bind(contentModel.locationProperty());
-        statusLabel.textProperty().bind(contentModel.statusProperty());
-        contextLabel.textProperty().bind(contentModel.contextProperty());
-        sectionHeaderLabel.textProperty().bind(contentModel.sectionHeaderProperty());
-        sectionValueLabel.textProperty().bind(contentModel.sectionValueProperty());
-        bindDetail(detailKeyOneLabel, detailValueOneLabel, contentModel.weather());
-        bindDetail(detailKeyTwoLabel, detailValueTwoLabel, contentModel.timeOfDay());
-        bindDetail(detailKeyThreeLabel, detailValueThreeLabel, contentModel.pace());
+    public void bind(TravelStateViewModel viewModel) {
+        iconLabel.textProperty().bind(viewModel.iconProperty());
+        locationLabel.textProperty().bind(viewModel.locationProperty());
+        statusLabel.textProperty().bind(viewModel.statusProperty());
+        contextLabel.textProperty().bind(viewModel.contextProperty());
+        sectionHeaderLabel.textProperty().bind(viewModel.sectionHeaderProperty());
+        sectionValueLabel.textProperty().bind(viewModel.sectionValueProperty());
+        bindDetail(detailKeyOneLabel, detailValueOneLabel, viewModel.weather());
+        bindDetail(detailKeyTwoLabel, detailValueTwoLabel, viewModel.timeOfDay());
+        bindDetail(detailKeyThreeLabel, detailValueThreeLabel, viewModel.pace());
     }
 
     private HBox buildLocationRow() {
@@ -89,7 +89,7 @@ public final class TravelStateView extends VBox {
     private static void bindDetail(
             Label keyLabel,
             Label valueLabel,
-            TravelStateContentModel.Detail detail
+            TravelStateViewModel.Detail detail
     ) {
         keyLabel.textProperty().bind(detail.keyProperty());
         valueLabel.textProperty().bind(detail.valueProperty());

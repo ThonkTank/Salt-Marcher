@@ -19,8 +19,9 @@ the scoped local route for narrow package/resource work. It is valid only when
 the selected focused scope is non-empty and the selected engines actually
 consume that scope.
 
-`./gradlew checkDocumentationEnforcement --console=plain` is the
-documentation-only route for Markdown-backed documentation checks.
+Documentation-only and instruction-surface changes use `git diff --check` plus
+any owner-named proof from `AGENTS.md`; removed documentation gates are not
+public local entrypoints.
 
 Public handoff claims must cite the literal command result and selected scope.
 Private diagnostics and raw Gradle task runs do not replace the public route

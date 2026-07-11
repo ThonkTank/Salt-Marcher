@@ -23,6 +23,7 @@ Project-wide documentation placement and layer rules are owned by the
 ## Current Canonical Project Docs
 
 - [Architecture Overview](docs/project/architecture/overview.md:1)
+- [Source Architecture Statement](docs/project/architecture/source-architecture.md:1)
 - [Documentation Standard](docs/project/architecture/documentation.md:1)
 - [Documentation Templates](docs/project/architecture/documentation-templates.md:1)
 - [Document Split Protocol](docs/project/architecture/doc-split-protocol.md:1)
@@ -30,6 +31,7 @@ Project-wide documentation placement and layer rules are owned by the
 - [Document Size Policy Ledger](docs/project/architecture/doc-size-policy-ledger.md:1)
 - [Document Size Policy Owner Status Notes](docs/project/architecture/doc-size-policy-owner-status-notes.md:1)
 - [Document Size Policy Hex Repair Audit](docs/project/architecture/doc-size-policy-hex-repair-audit.md:1)
+- [Slicing Protocol](docs/project/architecture/slicing-protocol.md:1)
 - [Agent Instruction Standard](docs/project/architecture/agent-instructions.md:1)
 - [Agent Context Standard](docs/project/architecture/agent-context.md:1)
 - [Implementation Documentation Standard](docs/project/architecture/implementation-documentation.md:1)
@@ -50,6 +52,7 @@ Project-wide documentation placement and layer rules are owned by the
 - [Verification Core Architecture](docs/project/architecture/verification-core.md:1)
 - [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
 - [Architecture Migration Ledger](docs/project/architecture/migration-ledger.md:1)
+- [Architecture Migration Final Measurement](docs/project/architecture/architecture-migration-final-measurement.md:1)
 - [Architecture Migration Owner Smoke Checklists](docs/project/architecture/architecture-migration-owner-smoke-checklists.md:1)
 - [Architecture Migration Owner Status Notes](docs/project/architecture/architecture-migration-owner-status-notes.md:1)
 - [Architecture Migration Owner Status Notes M0-M2](docs/project/architecture/architecture-migration-owner-status-notes-m0-m2.md:1)

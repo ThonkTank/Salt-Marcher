@@ -47,7 +47,7 @@ public final class WorldPlannerStateView extends VBox {
     private final VBox factionEditor = new VBox(8);
     private final VBox locationEditor = new VBox(8);
     private final VBox sourcesPreview = new VBox(8);
-    private Consumer<WorldPlannerStateViewInputEvent> eventSink = event -> { };
+    private Consumer<StateInput> eventSink = event -> { };
 
     WorldPlannerStateView() {
         getStyleClass().add("world-planner-state");
@@ -63,13 +63,13 @@ public final class WorldPlannerStateView extends VBox {
                 sourcesPreview);
     }
 
-    public void bind(WorldPlannerStateContentModel model) {
-        WorldPlannerStateContentModel safeModel = Objects.requireNonNull(model, "model");
-        safeModel.projectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
-        render(safeModel.projectionProperty().get());
+    public void bind(WorldPlannerViewModel viewModel) {
+        WorldPlannerViewModel safeModel = Objects.requireNonNull(viewModel, "viewModel");
+        safeModel.stateProjectionProperty().addListener((observable, oldValue, newValue) -> render(newValue));
+        render(safeModel.stateProjectionProperty().get());
     }
 
-    public void onViewInputEvent(Consumer<WorldPlannerStateViewInputEvent> sink) {
+    public void onViewInputEvent(Consumer<StateInput> sink) {
         eventSink = sink == null ? event -> { } : sink;
     }
 
@@ -94,7 +94,7 @@ public final class WorldPlannerStateView extends VBox {
         sourcesPreview.getChildren().setAll(new Label("Encounter Sources"), sourcesSummary);
     }
 
-    private void render(WorldPlannerStateContentModel.Projection projection) {
+    private void render(StateProjection projection) {
         int activeModuleIndex = projection.activeModuleIndex();
         moduleTitle.setText(projection.moduleTitle());
         status.setText(projection.statusText());
@@ -109,7 +109,7 @@ public final class WorldPlannerStateView extends VBox {
         visible(sourcesPreview, activeModuleIndex == SOURCES);
     }
 
-    private void renderNpc(WorldPlannerStateContentModel.NpcEditor npc) {
+    private void renderNpc(NpcEditor npc) {
         npcName.setText(npc.displayName());
         renderChoices(statblockChoice, npc.statblockLabels(), npc.selectedStatblockLabel());
         appearanceNotes.setText(npc.appearanceNotes());
@@ -118,14 +118,14 @@ public final class WorldPlannerStateView extends VBox {
         generalNotes.setText(npc.generalNotes());
     }
 
-    private void renderFaction(WorldPlannerStateContentModel.FactionEditor faction) {
+    private void renderFaction(FactionEditor faction) {
         factionName.setText(faction.displayName());
         renderChoices(primaryEncounterTableChoice, faction.encounterTableLabels(), faction.selectedPrimaryTableLabel());
         renderChoices(npcChoice, faction.npcReferenceLabels(), "");
         renderChoices(inventoryStatblockChoice, faction.statblockLabels(), "");
     }
 
-    private void renderLocation(WorldPlannerStateContentModel.LocationEditor location) {
+    private void renderLocation(LocationEditor location) {
         locationName.setText(location.displayName());
         renderChoices(factionChoice, location.factionReferenceLabels(), "");
         renderChoices(locationTableChoice, location.encounterTableLabels(), "");
@@ -186,40 +186,40 @@ public final class WorldPlannerStateView extends VBox {
         return new HBox(8, create, linkFaction, linkTable);
     }
 
-    private Button action(int moduleIndex, String label, WorldPlannerStateViewInputEvent.ActionSnapshot actions) {
+    private Button action(int moduleIndex, String label, ActionSnapshot actions) {
         Button button = new Button(label);
         button.setOnAction(event -> eventSink.accept(snapshot(moduleIndex, actions)));
         return button;
     }
 
-    private WorldPlannerStateViewInputEvent snapshot(
+    private StateInput snapshot(
             int moduleIndex,
-            WorldPlannerStateViewInputEvent.ActionSnapshot actions
+            ActionSnapshot actions
     ) {
-        return new WorldPlannerStateViewInputEvent(
+        return new StateInput(
                 moduleIndex,
-                new WorldPlannerStateViewInputEvent.NpcSnapshot(
+                new NpcSnapshot(
                         npcName.getText(),
                         statblockChoice.getSelectionModel().getSelectedIndex(),
                         appearanceNotes.getText(),
                         behaviorNotes.getText(),
                         historyNotes.getText(),
                         generalNotes.getText()),
-                new WorldPlannerStateViewInputEvent.FactionSnapshot(
+                new FactionSnapshot(
                         factionName.getText(),
                         primaryEncounterTableChoice.getSelectionModel().getSelectedIndex(),
                         npcChoice.getSelectionModel().getSelectedIndex(),
                         inventoryStatblockChoice.getSelectionModel().getSelectedIndex(),
                         finiteInventory.isSelected(),
                         inventoryQuantity.getText()),
-                new WorldPlannerStateViewInputEvent.LocationSnapshot(
+                new LocationSnapshot(
                         locationName.getText(),
                         factionChoice.getSelectionModel().getSelectedIndex(),
                         locationTableChoice.getSelectionModel().getSelectedIndex()),
                 actions);
     }
 
-    private static WorldPlannerStateViewInputEvent.ActionSnapshot actions(
+    private static ActionSnapshot actions(
             boolean create,
             boolean saveNotes,
             boolean defeat,
@@ -230,7 +230,7 @@ public final class WorldPlannerStateView extends VBox {
             boolean linkFaction,
             boolean linkTable
     ) {
-        return new WorldPlannerStateViewInputEvent.ActionSnapshot(
+        return new ActionSnapshot(
                 create,
                 saveNotes,
                 defeat,

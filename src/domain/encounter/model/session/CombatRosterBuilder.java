@@ -50,7 +50,7 @@ public final class CombatRosterBuilder {
     }
 
     public boolean addPlayerToRunningCombat(CombatRoster roster, String id, String name, int initiative) {
-        if (roster.containsId(id)) {
+        if (roster.containsId(CombatantId.from(id))) {
             return false;
         }
         roster.add(Combatant.playerCharacter(id, name, initiative, nextOrder(roster.combatants())));

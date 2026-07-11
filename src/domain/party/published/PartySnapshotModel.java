@@ -5,11 +5,22 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import src.domain.shared.published.PublishedState;
 
 public final class PartySnapshotModel {
 
     private final Supplier<PartySnapshotResult> currentSupplier;
     private final Function<Consumer<PartySnapshotResult>, Runnable> subscribeAction;
+    private PublishedState<PartySnapshotResult> statefulStore;
+
+    public PartySnapshotModel() {
+        this(new PublishedState<>(emptyResult()));
+    }
+
+    private PartySnapshotModel(PublishedState<PartySnapshotResult> store) {
+        this(store::current, store::subscribe);
+        statefulStore = store;
+    }
 
     public PartySnapshotModel(
             Supplier<PartySnapshotResult> currentSupplier,
@@ -29,6 +40,18 @@ public final class PartySnapshotModel {
 
     public Runnable subscribe(Consumer<PartySnapshotResult> listener) {
         return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
+    }
+
+    public void publish(PartySnapshotResult result) {
+        if (statefulStore != null) {
+            statefulStore.publish(result == null ? emptyResult() : result);
+        }
+    }
+
+    public void replace(PartySnapshotResult result) {
+        if (statefulStore != null) {
+            statefulStore.replace(result == null ? emptyResult() : result);
+        }
     }
 
     private static PartySnapshotResult emptyResult() {

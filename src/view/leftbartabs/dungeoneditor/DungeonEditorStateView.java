@@ -47,7 +47,7 @@ public final class DungeonEditorStateView extends VBox {
     private final TextArea transitionDescriptionFocusState = new TextArea();
     private final TextArea narrationFocusState = new TextArea();
     private final TextField stairGeometryFocusState = new TextField();
-    private Consumer<DungeonEditorStateViewInputEvent> viewInputEventHandler = ignored -> {};
+    private Consumer<DungeonEditorStateInput> stateInputHandler = ignored -> {};
 
     public DungeonEditorStateView() {
         getStyleClass().addAll("surface-root", "control-stack", "dungeon-state-panel");
@@ -67,11 +67,11 @@ public final class DungeonEditorStateView extends VBox {
                 narrationCards);
     }
 
-    public void onViewInputEvent(Consumer<DungeonEditorStateViewInputEvent> handler) {
-        viewInputEventHandler = handler == null ? ignored -> {} : handler;
+    void onStateInput(Consumer<DungeonEditorStateInput> handler) {
+        stateInputHandler = handler == null ? ignored -> {} : handler;
     }
 
-    public void bind(DungeonEditorStateContentModel contentModel) {
+    public void bind(DungeonEditorStatePanelModel contentModel) {
         if (contentModel == null) {
             return;
         }
@@ -80,12 +80,12 @@ public final class DungeonEditorStateView extends VBox {
     }
 
     private void showNarrationCards(
-            List<DungeonEditorStateContentModel.RoomNarrationCardProjection> cards,
+            List<DungeonEditorStatePanelModel.RoomNarrationCardProjection> cards,
             boolean busy,
             String statusText,
             String narrationRenderStructureKey
     ) {
-        List<DungeonEditorStateContentModel.RoomNarrationCardProjection> safeCards =
+        List<DungeonEditorStatePanelModel.RoomNarrationCardProjection> safeCards =
                 cards == null ? List.of() : cards;
         String safeRenderStructureKey = narrationRenderStructureKey == null ? "" : narrationRenderStructureKey;
         if (safeRenderStructureKey.equals(narrationCards.getUserData())
@@ -97,7 +97,7 @@ public final class DungeonEditorStateView extends VBox {
             rememberCurrentNarrationFocus();
         }
         narrationCards.getChildren().clear();
-        for (DungeonEditorStateContentModel.RoomNarrationCardProjection card : safeCards) {
+        for (DungeonEditorStatePanelModel.RoomNarrationCardProjection card : safeCards) {
             narrationCards.getChildren().add(new NarrationCard(card, busy, statusText));
         }
         narrationCards.setUserData(safeRenderStructureKey);
@@ -105,7 +105,7 @@ public final class DungeonEditorStateView extends VBox {
         clearNarrationFocus();
     }
 
-    private void showProjection(DungeonEditorStateContentModel.StateProjection projection) {
+    private void showProjection(DungeonEditorStatePanelModel.StateProjection projection) {
         body.setText(projection.stateText());
         showCorridorPoint(projection.corridorPoint(), projection.busy());
         showTransitionDestination(projection.transitionDestination(), projection.busy(), projection.statusText());
@@ -120,7 +120,7 @@ public final class DungeonEditorStateView extends VBox {
     }
 
     private void showCorridorPoint(
-            DungeonEditorStateContentModel.CorridorPointProjection corridorPoint,
+            DungeonEditorStatePanelModel.CorridorPointProjection corridorPoint,
             boolean busy
     ) {
         if (!corridorPointFocusPending()) {
@@ -135,7 +135,7 @@ public final class DungeonEditorStateView extends VBox {
     }
 
     private void showTransitionDescription(
-            DungeonEditorStateContentModel.TransitionDescriptionProjection transitionDescription,
+            DungeonEditorStatePanelModel.TransitionDescriptionProjection transitionDescription,
             boolean busy,
             String statusText
     ) {
@@ -154,7 +154,7 @@ public final class DungeonEditorStateView extends VBox {
     }
 
     private void showTransitionDestination(
-            DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
+            DungeonEditorStatePanelModel.TransitionDestinationProjection transitionDestination,
             boolean busy,
             String statusText
     ) {
@@ -173,7 +173,7 @@ public final class DungeonEditorStateView extends VBox {
     }
 
     private void showStairGeometry(
-            DungeonEditorStateContentModel.StairGeometryProjection stairGeometry,
+            DungeonEditorStatePanelModel.StairGeometryProjection stairGeometry,
             boolean busy,
             String statusText
     ) {
@@ -189,7 +189,7 @@ public final class DungeonEditorStateView extends VBox {
     }
 
     private void showName(
-            DungeonEditorStateContentModel.NameProjection name,
+            DungeonEditorStatePanelModel.NameProjection name,
             boolean busy
     ) {
         nameCards.getChildren().clear();
@@ -268,7 +268,7 @@ public final class DungeonEditorStateView extends VBox {
         for (TextArea exitArea : exitAreas) {
             exitDescriptions.add(exitArea.getText());
         }
-        viewInputEventHandler.accept(new DungeonEditorStateViewInputEvent(
+        stateInputHandler.accept(DungeonEditorStateInput.narration(
                 roomId,
                 visualArea.getText(),
                 exitDescriptions,
@@ -280,7 +280,7 @@ public final class DungeonEditorStateView extends VBox {
             TextField rField,
             boolean submitRequested
     ) {
-        viewInputEventHandler.accept(new DungeonEditorStateViewInputEvent(
+        stateInputHandler.accept(DungeonEditorStateInput.corridorPoint(
                 qField.getText(),
                 rField.getText(),
                 submitRequested));
@@ -290,7 +290,7 @@ public final class DungeonEditorStateView extends VBox {
             TextField nameField,
             boolean saveRequested
     ) {
-        viewInputEventHandler.accept(new DungeonEditorStateViewInputEvent(
+        stateInputHandler.accept(DungeonEditorStateInput.labelName(
                 nameField.getText(),
                 true,
                 saveRequested));
@@ -301,7 +301,7 @@ public final class DungeonEditorStateView extends VBox {
             TextArea descriptionArea,
             boolean saveRequested
     ) {
-        viewInputEventHandler.accept(new DungeonEditorStateViewInputEvent(
+        stateInputHandler.accept(DungeonEditorStateInput.transitionDescription(
                 transitionId,
                 descriptionArea.getText(),
                 saveRequested));
@@ -315,7 +315,7 @@ public final class DungeonEditorStateView extends VBox {
             CheckBox bidirectionalBox,
             boolean saveRequested
         ) {
-        viewInputEventHandler.accept(new DungeonEditorStateViewInputEvent(
+        stateInputHandler.accept(DungeonEditorStateInput.transitionDestination(
                 destinationTypeBox.getSelectionModel().getSelectedIndex(),
                 mapIdField.getText(),
                 tileIdField.getText(),
@@ -332,7 +332,7 @@ public final class DungeonEditorStateView extends VBox {
             TextField dimension2Field,
             boolean saveRequested
     ) {
-        viewInputEventHandler.accept(new DungeonEditorStateViewInputEvent(
+        stateInputHandler.accept(DungeonEditorStateInput.stairGeometry(
                 stairId,
                 shapeBox.getValue(),
                 directionBox.getValue(),
@@ -344,7 +344,7 @@ public final class DungeonEditorStateView extends VBox {
     private final class CorridorPointCard extends VBox {
 
         private CorridorPointCard(
-                DungeonEditorStateContentModel.CorridorPointProjection corridorPoint,
+                DungeonEditorStatePanelModel.CorridorPointProjection corridorPoint,
                 boolean busy
         ) {
             TextField qField = corridorPointCoordinateField(corridorPoint.q(), CORRIDOR_POINT_Q_ACCESSIBLE);
@@ -786,7 +786,7 @@ public final class DungeonEditorStateView extends VBox {
     }
 
     private boolean synchronizeExistingNarrationCards(
-            List<DungeonEditorStateContentModel.RoomNarrationCardProjection> cards
+            List<DungeonEditorStatePanelModel.RoomNarrationCardProjection> cards
     ) {
         Map<String, String> nextTextByAccessibleText = narrationTextByAccessibleText(cards);
         Map<String, TextArea> existingAreas = narrationTextAreasByAccessibleText();
@@ -803,12 +803,12 @@ public final class DungeonEditorStateView extends VBox {
     }
 
     private static Map<String, String> narrationTextByAccessibleText(
-            List<DungeonEditorStateContentModel.RoomNarrationCardProjection> cards
+            List<DungeonEditorStatePanelModel.RoomNarrationCardProjection> cards
     ) {
         Map<String, String> result = new HashMap<>();
-        for (DungeonEditorStateContentModel.RoomNarrationCardProjection card : cards) {
+        for (DungeonEditorStatePanelModel.RoomNarrationCardProjection card : cards) {
             result.put(narrationVisualAccessibleText(card.roomId()), card.visualDescription());
-            for (DungeonEditorStateContentModel.RoomExitNarrationProjection exit : card.exits()) {
+            for (DungeonEditorStatePanelModel.RoomExitNarrationProjection exit : card.exits()) {
                 result.put(narrationExitAccessibleText(card.roomId(), exit), exit.description());
             }
         }
@@ -855,7 +855,7 @@ public final class DungeonEditorStateView extends VBox {
 
     private final class NameCard extends VBox {
 
-        private NameCard(DungeonEditorStateContentModel.NameProjection name, boolean busy) {
+        private NameCard(DungeonEditorStatePanelModel.NameProjection name, boolean busy) {
             TextField nameField = textField(name.name());
             nameField.setAccessibleText(name.label());
             Label fieldLabel = labeled("Name", nameField);
@@ -882,7 +882,7 @@ public final class DungeonEditorStateView extends VBox {
     private final class TransitionDescriptionCard extends VBox {
 
         private TransitionDescriptionCard(
-                DungeonEditorStateContentModel.TransitionDescriptionProjection transitionDescription,
+                DungeonEditorStatePanelModel.TransitionDescriptionProjection transitionDescription,
                 boolean busy,
             String statusText
         ) {
@@ -919,7 +919,7 @@ public final class DungeonEditorStateView extends VBox {
     private final class TransitionDestinationCard extends VBox {
 
         private TransitionDestinationCard(
-                DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
+                DungeonEditorStatePanelModel.TransitionDestinationProjection transitionDestination,
                 boolean busy,
                 String statusText
         ) {
@@ -936,7 +936,7 @@ public final class DungeonEditorStateView extends VBox {
         }
 
         private TransitionDestinationControls createControls(
-                DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
+                DungeonEditorStatePanelModel.TransitionDestinationProjection transitionDestination,
                 String statusText
         ) {
             return transitionDestination.controlState().linkMode()
@@ -945,7 +945,7 @@ public final class DungeonEditorStateView extends VBox {
         }
 
         private TransitionDestinationControls createLinkControls(
-                DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
+                DungeonEditorStatePanelModel.TransitionDestinationProjection transitionDestination,
                 String statusText
         ) {
             ComboBox<String> destinationTypeBox = destinationTypeBox(
@@ -988,7 +988,7 @@ public final class DungeonEditorStateView extends VBox {
         }
 
         private TransitionDestinationControls createDestinationControls(
-                DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
+                DungeonEditorStatePanelModel.TransitionDestinationProjection transitionDestination,
                 String statusText
         ) {
             ComboBox<String> destinationTypeBox = destinationTypeBox(
@@ -1043,7 +1043,7 @@ public final class DungeonEditorStateView extends VBox {
         }
 
         private void updateDestinationMode(
-                DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
+                DungeonEditorStatePanelModel.TransitionDestinationProjection transitionDestination,
                 TransitionDestinationControls controls
         ) {
             applyControlState(transitionDestination.controlStateForOptionIndex(
@@ -1053,7 +1053,7 @@ public final class DungeonEditorStateView extends VBox {
         }
 
         private void applyControlState(
-                DungeonEditorStateContentModel.TransitionDestinationControlState controlState,
+                DungeonEditorStatePanelModel.TransitionDestinationControlState controlState,
                 TransitionDestinationControls controls
         ) {
             controls.destinationTypeBox().setDisable(controlState.destinationTypeDisabled());
@@ -1095,7 +1095,7 @@ public final class DungeonEditorStateView extends VBox {
         }
 
         private void configureLinkControls(
-                DungeonEditorStateContentModel.TransitionDestinationControlState controlState,
+                DungeonEditorStatePanelModel.TransitionDestinationControlState controlState,
                 TransitionDestinationControls controls
         ) {
             controls.save().setVisible(controlState.linkMode());
@@ -1105,8 +1105,8 @@ public final class DungeonEditorStateView extends VBox {
         }
 
         private void addCardChildren(
-                DungeonEditorStateContentModel.TransitionDestinationProjection transitionDestination,
-                DungeonEditorStateContentModel.TransitionDestinationControlState controlState,
+                DungeonEditorStatePanelModel.TransitionDestinationProjection transitionDestination,
+                DungeonEditorStatePanelModel.TransitionDestinationControlState controlState,
                 TransitionDestinationControls controls,
                 HBox destinationRow,
                 HBox targetRow
@@ -1170,7 +1170,7 @@ public final class DungeonEditorStateView extends VBox {
     private final class StairGeometryCard extends VBox {
 
         private StairGeometryCard(
-                DungeonEditorStateContentModel.StairGeometryProjection stairGeometry,
+                DungeonEditorStatePanelModel.StairGeometryProjection stairGeometry,
                 boolean busy,
                 String statusText
         ) {
@@ -1247,7 +1247,7 @@ public final class DungeonEditorStateView extends VBox {
     private final class NarrationCard extends VBox {
 
         private NarrationCard(
-                DungeonEditorStateContentModel.RoomNarrationCardProjection card,
+                DungeonEditorStatePanelModel.RoomNarrationCardProjection card,
                 boolean busy,
                 String statusText
         ) {
@@ -1256,7 +1256,7 @@ public final class DungeonEditorStateView extends VBox {
             visualArea.setTextFormatter(new TextFormatter<>(narrationTextFilter(visualArea.getAccessibleText())));
             List<TextArea> exitAreas = new ArrayList<>();
             getChildren().addAll(new PanelTitle(card.roomName()), narrationLabel("Visueller Eindruck", visualArea), visualArea);
-            for (DungeonEditorStateContentModel.RoomExitNarrationProjection exit : card.exits()) {
+            for (DungeonEditorStatePanelModel.RoomExitNarrationProjection exit : card.exits()) {
                 TextArea exitArea = textArea(exit.description());
                 exitArea.setAccessibleText(narrationExitAccessibleText(card.roomId(), exit));
                 exitArea.setTextFormatter(new TextFormatter<>(narrationTextFilter(exitArea.getAccessibleText())));
@@ -1297,7 +1297,7 @@ public final class DungeonEditorStateView extends VBox {
 
     private static String narrationExitAccessibleText(
             long roomId,
-            DungeonEditorStateContentModel.RoomExitNarrationProjection exit
+            DungeonEditorStatePanelModel.RoomExitNarrationProjection exit
     ) {
         String label = exit == null ? "" : exit.label();
         int q = exit == null ? 0 : exit.q();

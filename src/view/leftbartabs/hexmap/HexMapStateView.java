@@ -38,7 +38,9 @@ public final class HexMapStateView extends VBox {
     private final TextArea markerNoteArea = new TextArea();
     private final Button saveMarkerButton = button("Marker speichern");
     private final VBox markerList = new VBox(6);
-    private Consumer<HexMapStateViewInputEvent> eventConsumer = ignored -> { };
+    private Consumer<MapSaveRequest> mapSaveConsumer = ignored -> { };
+    private Consumer<MarkerSaveRequest> markerSaveConsumer = ignored -> { };
+    private Consumer<MarkerDraftRequest> markerDraftConsumer = ignored -> { };
 
     public HexMapStateView() {
         getStyleClass().addAll("surface-root", "control-stack");
@@ -74,24 +76,32 @@ public final class HexMapStateView extends VBox {
         markerNoteArea.textProperty().addListener((ignored, before, after) -> publishMarkerDraftFromFields());
     }
 
-    public void bind(HexMapStateContentModel contentModel) {
-        if (contentModel == null) {
+    void bind(HexMapViewModel viewModel) {
+        if (viewModel == null) {
             return;
         }
-        show(contentModel.projectionProperty().get());
-        showMarkerDraft(contentModel.markerDraftProperty().get());
-        contentModel.projectionProperty().addListener((ignored, before, after) -> {
+        show(viewModel.properties().state().get());
+        showMarkerDraft(viewModel.properties().markerDraft().get());
+        viewModel.properties().state().addListener((ignored, before, after) -> {
             show(after);
-            showMarkerDraft(contentModel.markerDraftProperty().get());
+            showMarkerDraft(viewModel.properties().markerDraft().get());
         });
-        contentModel.markerDraftProperty().addListener((ignored, before, after) -> showMarkerDraft(after));
+        viewModel.properties().markerDraft().addListener((ignored, before, after) -> showMarkerDraft(after));
     }
 
-    public void onViewInputEvent(Consumer<HexMapStateViewInputEvent> consumer) {
-        eventConsumer = consumer == null ? ignored -> { } : consumer;
+    void onMapSave(Consumer<MapSaveRequest> consumer) {
+        mapSaveConsumer = consumer == null ? ignored -> { } : consumer;
     }
 
-    private void show(HexMapStateContentModel.Projection nextProjection) {
+    void onMarkerSave(Consumer<MarkerSaveRequest> consumer) {
+        markerSaveConsumer = consumer == null ? ignored -> { } : consumer;
+    }
+
+    void onMarkerDraft(Consumer<MarkerDraftRequest> consumer) {
+        markerDraftConsumer = consumer == null ? ignored -> { } : consumer;
+    }
+
+    private void show(HexMapViewModel.StateProjection nextProjection) {
         if (nextProjection == null) {
             return;
         }
@@ -129,7 +139,7 @@ public final class HexMapStateView extends VBox {
         });
     }
 
-    private void showMarkerDraft(HexMapStateContentModel.MarkerDraftProjection draft) {
+    private void showMarkerDraft(HexMapViewModel.MarkerDraftProjection draft) {
         if (draft == null) {
             return;
         }
@@ -141,40 +151,24 @@ public final class HexMapStateView extends VBox {
         });
     }
 
-    private void showMarkerList(HexMapStateContentModel.Projection projection) {
+    private void showMarkerList(HexMapViewModel.StateProjection projection) {
         markerList.getChildren().clear();
         if (projection.markers().isEmpty()) {
             markerList.getChildren().add(label("Keine Marker auf diesem Hex.", TEXT_MUTED));
             return;
         }
-        for (HexMapStateContentModel.MarkerItem marker : projection.markers()) {
+        for (HexMapViewModel.MarkerItem marker : projection.markers()) {
             markerList.getChildren().add(markerNode(marker));
         }
     }
 
     private void publishMap(boolean confirmShrink) {
-        eventConsumer.accept(new HexMapStateViewInputEvent(
-                true,
-                false,
-                mapNameField.getText(),
-                rawRadius(),
-                confirmShrink,
-                -1,
-                false,
-                "",
-                -1,
-                ""));
+        mapSaveConsumer.accept(new MapSaveRequest(mapNameField.getText(), rawRadius(), confirmShrink));
     }
 
     private void publishMarker() {
-        eventConsumer.accept(new HexMapStateViewInputEvent(
-                false,
-                true,
-                mapNameField.getText(),
-                rawRadius(),
-                false,
+        markerSaveConsumer.accept(new MarkerSaveRequest(
                 markerSelector.getSelectionModel().getSelectedIndex(),
-                false,
                 markerNameField.getText(),
                 markerTypeSelector.getSelectionModel().getSelectedIndex(),
                 markerNoteArea.getText()));
@@ -184,12 +178,7 @@ public final class HexMapStateView extends VBox {
         if (updating()) {
             return;
         }
-        eventConsumer.accept(new HexMapStateViewInputEvent(
-                false,
-                false,
-                mapNameField.getText(),
-                rawRadius(),
-                false,
+        markerDraftConsumer.accept(new MarkerDraftRequest(
                 markerSelector.getSelectionModel().getSelectedIndex(),
                 true,
                 "",
@@ -201,12 +190,7 @@ public final class HexMapStateView extends VBox {
         if (updating()) {
             return;
         }
-        eventConsumer.accept(new HexMapStateViewInputEvent(
-                false,
-                false,
-                mapNameField.getText(),
-                rawRadius(),
-                false,
+        markerDraftConsumer.accept(new MarkerDraftRequest(
                 markerSelector.getSelectionModel().getSelectedIndex(),
                 false,
                 markerNameField.getText(),
@@ -214,7 +198,7 @@ public final class HexMapStateView extends VBox {
                 markerNoteArea.getText()));
     }
 
-    private static Node markerNode(HexMapStateContentModel.MarkerItem marker) {
+    private static Node markerNode(HexMapViewModel.MarkerItem marker) {
         VBox box = new VBox(2);
         box.getStyleClass().add("content-card");
         box.getChildren().add(label(marker.name() + " | " + marker.typeLabel(), TEXT_SECONDARY));
@@ -247,10 +231,7 @@ public final class HexMapStateView extends VBox {
         return radius == null ? "" : radius.toString();
     }
 
-    private static void selectByIndex(
-            ComboBox<String> comboBox,
-            int index
-    ) {
+    private static void selectByIndex(ComboBox<String> comboBox, int index) {
         if (index >= 0 && index < comboBox.getItems().size()) {
             comboBox.getSelectionModel().select(index);
             return;
@@ -287,4 +268,37 @@ public final class HexMapStateView extends VBox {
         return label;
     }
 
+    record MapSaveRequest(String mapName, String mapRadius, boolean confirmDestructiveShrink) {
+
+        MapSaveRequest {
+            mapName = mapName == null ? "" : mapName;
+            mapRadius = mapRadius == null ? "" : mapRadius;
+        }
+    }
+
+    record MarkerSaveRequest(int markerOptionIndex, String markerName, int markerTypeOptionIndex, String markerNote) {
+
+        MarkerSaveRequest {
+            markerOptionIndex = Math.max(-1, markerOptionIndex);
+            markerName = markerName == null ? "" : markerName;
+            markerTypeOptionIndex = Math.max(-1, markerTypeOptionIndex);
+            markerNote = markerNote == null ? "" : markerNote;
+        }
+    }
+
+    record MarkerDraftRequest(
+            int markerOptionIndex,
+            boolean markerSelectionRequested,
+            String markerName,
+            int markerTypeOptionIndex,
+            String markerNote
+    ) {
+
+        MarkerDraftRequest {
+            markerOptionIndex = Math.max(-1, markerOptionIndex);
+            markerName = markerName == null ? "" : markerName;
+            markerTypeOptionIndex = Math.max(-1, markerTypeOptionIndex);
+            markerNote = markerNote == null ? "" : markerNote;
+        }
+    }
 }

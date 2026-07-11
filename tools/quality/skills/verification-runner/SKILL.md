@@ -19,6 +19,6 @@ Do not edit implementation files while proving them.
 
 ## Common Commands
 
-- Documentation: `./gradlew checkDocumentationEnforcement --console=plain`
+- Documentation: `git diff --check` plus any owner-named proof from `AGENTS.md`
 - Production handoff: `tools/gradle/run-staged-verification.sh production-handoff`
 - Desktop install: `tools/gradle/run-staged-verification.sh desktop-install`

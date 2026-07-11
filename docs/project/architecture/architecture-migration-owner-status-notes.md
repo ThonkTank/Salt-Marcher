@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-10
+Last Reviewed: 2026-07-11
 Source of Truth: German owner-facing status notes for the architecture
 migration governed by `architecture-migration-roadmap.md` and
 `migration-ledger.md`.
@@ -341,3 +341,253 @@ Wiring-Port freigegeben. Es wurde kein CPD-Treffer durch Umformulierung
 umgangen und keine Produktions-Loeschliste vorgezogen. Naechster Schritt ist
 M3.5: Umsetzung des genehmigten Encounter-Target-Designs mit vollstaendiger
 Loeschliste, byte-kompatiblen Seams und eingefrorenen Harness-Orakeln.
+
+### 2026-07-10 M3.7 encounter-close-out
+
+Der Encounter-Zyklus ist abgeschlossen. Referenzstand ist `7ec1f25e3`; die
+61-Datei-Loeschliste ist ausgefuehrt, `PublishedState` wird strukturell geteilt, und `CombatantId` laeuft intern typed statt als umformulierter String-Check. Der retained Static/Harness-Proof, `production-handoff`, Phase 1 und Phase 2 sind gruen; die Metrik liegt bei 140 Dateien / 11.340 LOC unter der genehmigten 11.400-Grenze. Der Owner-Smoke steht in `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`. Naechster Schritt ist M4.1 `dungeon-authored-core` Harness Check/Closure.
+
+### 2026-07-10 M4.1 dungeon-authored-wiring-port
+
+Der Dungeon-Authored-Core-Wiring-Port ist in Commit `bfa974809`
+abgeschlossen. `DungeonAuthoredApplicationService`, `DungeonAuthoredPublication`
+und `DungeonAuthoredPublishedState` bilden jetzt die Kompatibilitaetsgrenze;
+Feature-Runtime, Shell-Binding, Travel/Readback-Helfer und die direkten
+Invariant-Harnesses laufen ueber diese neue Grenze. Die eingefrorenen
+Harness-Szenarien, Proof-Labels, sichtbaren Texte, Fixtures und Assertions
+bleiben unveraendert. Alte Usecase-Dateien bleiben fuer M4.1 Step 5 erhalten;
+nur die nicht-Usecase Legacy-State-Assembly wurde entfernt, weil der neue
+State-Owner sie strukturell ersetzt. Static-Proof, CPD, Dead-Code, alle
+retained Dungeon-Harness-Gruppen, Render-Parity, focused handoff, Phase 1 und
+der unabhaengige Judge sind gruen. Naechster Schritt ist M4.1 Implementation:
+die genehmigte Loeschliste ausfuehren und die Facade intern von den alten
+Wrappern auf direkte authored-core Service-Logik umstellen.
+
+### 2026-07-10 M4.1 dungeon-authored-core-close-out
+
+Der Dungeon-Authored-Core-Zyklus ist abgeschlossen. Referenzstand ist
+`bdb15a2fc`; die Design-Amendment wurde vorher in `f6f5e3b95` festgehalten.
+Die 50-Datei-Loeschliste ist ausgefuehrt, `model/core/usecase` ist leer/gone,
+und alte Runtime-Wrapper sowie die authored Inspector-Projektionshelfer sind
+ohne Stale-References aus `src` und `test` entfernt. Die neue
+`DungeonAuthoredApplicationService`-Grenze traegt Katalog-, Lade-, Preview-,
+Mutation- und Publication-Verhalten direkt; Published-Seams bleiben
+byte-kompatibel. Die Treppenform-/Richtungs-Strings werden an der
+Application-Service-Kante normalisiert und erst danach als typed Core-Specs
+weitergegeben. Static-Proof, eingefrorene Dungeon-Harness-Gruppen,
+Render-Parity, focused handoff, Phase 1 und der unabhaengige Judge sind gruen.
+Die akzeptierte Metrik liegt bei 202 Core-Dateien / 18.260 LOC und 279
+design-sichtbaren Dateien. Der Owner-Smoke steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
+unter `dungeon-authored-core`. Naechster Schritt ist M4.2
+`dungeon-editor-session-runtime` Harness Check/Closure.
+
+### 2026-07-11 M4.2 dungeon-editor-session-runtime-close-out
+
+Der Dungeon-Editor-Session-Runtime-Zyklus ist abgeschlossen. Referenzstand ist
+`30f822765`; die 37-Datei-Loeschliste ist ausgefuehrt und die verschachtelte
+`DungeonAuthoredApplicationService.RuntimeCommands`-Bruecke ist entfernt.
+`DungeonEditorRuntimeApplicationService`, `DungeonEditorRuntimeCommands`,
+`DungeonEditorRuntimeContext` und `DungeonEditorPointerWorkflow` tragen die
+Runtime-Befehle jetzt direkt, ohne neue Forwarding-/Proxy-Schicht. Die
+Editor-Publication laeuft ueber `DungeonEditorPublishedState` und die geteilte
+`PublishedState.retainingDuplicateSubscribers`-Hilfe; der CPD-Treffer wurde
+damit strukturell beseitigt, nicht durch Umformulierung. Static-Proof,
+Architecture-Proof, Focused-Handoff, eingefrorene Dungeon-Harness-Gruppen,
+Production-Handoff, Phase 1 und der unabhaengige Judge sind gruen. Die Metrik
+liegt bei 175 Primaerdateien / 19.236 LOC und 234 design-sichtbaren Dateien /
+24.712 LOC, also unter den genehmigten Grenzen. Der Owner-Smoke steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
+unter `dungeon-editor-session-runtime`. Naechster Schritt ist M4.3
+`dungeon-travel` Harness Check/Closure.
+
+### 2026-07-11 M4.3 dungeon-travel-close-out
+
+Der Dungeon-Travel-Zyklus ist abgeschlossen. Finaler Referenzstand ist
+`540706edd`; die 20-Datei-Loeschliste ist ausgefuehrt, der alte
+`ApplyTravelDungeonSessionCommand`-Pfad ist weg, und geloeschte Travel-
+Usecases, Repositories und Service-Assemblies haben keine Stale-References in
+`src` oder `test`. `DungeonTravelRuntimeApplicationService`,
+`DungeonTravelSurfaceLoader`, `DungeonTravelNavigator`,
+`DungeonTravelPartyGateway`, `DungeonTravelPublishedState` und
+`DungeonTravelPublishedProjection` tragen die direkte Zielstruktur.
+Overlay-Modus, Heading und Action-Kind laufen intern typed; String-Konvertierung
+bleibt nur an der Service-/Published-Seam. Der CPD-/Design-Duplikatfund in der
+Travel-Map-Publication wurde strukturell geschlossen, indem der neue
+Travel-spezifische Projection-Helper geloescht und die Map-Publication direkt
+in `DungeonTravelPublishedProjection` uebernommen wurde, nicht durch
+Umformulierung. Compile, Static inklusive CPD, Architecture-Proof,
+eingefrorene Travel/Core/Render-Harnesses, Focused-Handoff,
+Production-Handoff, Phase 1 und der unabhaengige Judge sind gruen. Die Metrik
+liegt bei 27 Primaerdateien / 2.371 LOC und 54 Produkt-Route-Dateien / 4.902
+LOC, also unter den genehmigten Grenzen. Der Owner-Smoke steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
+unter `dungeon-travel`. Naechster Schritt ist M4.4
+`dungeon-rendering-pipeline` Harness Check/Closure.
+
+### 2026-07-11 M4.4 dungeon-rendering-pipeline-harness-closure
+
+Die Harness-Pruefung fuer die Dungeon-Rendering-Pipeline ist geschlossen. Die
+alte Render-Struktur bleibt noch unveraendert; geprueft wurde nur, ob die
+sichtbaren Render-Routen vor Baseline und Design ausreichend eingefroren sind.
+Die retained Harness-Batches sind gruen: Core 72, Editor-Aggregate 206,
+Route 187, Door 58, Wall 33, Room 64, Cluster 84, Corridor 68, Stair 63,
+Transition 62, Feature 59, Travel 5 sowie Render-Parity 3 mit `DE-IMG-001`,
+`DE-IMG-002` und `DT-IMG-001`. Harness-Topology, Harness-Map und der
+Focused-Handoff fuer `src/view/slotcontent/main/dungeonmap` sind ebenfalls
+gruen. Ein echter Project-Health-Blocker wurde nicht ignoriert: Der zu breite
+PH-20260709-002-Eintrag fuer ContentModel plus Runtime-Hit-Ref-Protokoll ist
+aufgeteilt. M4.4 traegt die Render-ContentModel-Migration jetzt direkt ueber
+Roadmap und Ledger; der verbleibende Runtime-/Editor-Hit-Ref-Protokollrest ist
+als PH-20260711-001 an der Runtime-Auswahlstelle markiert. Phase 1 bestaetigt
+nach Rework: keine offene Render-Harness-Luecke, PH-20260711-001 ist kein
+M4.4-Render-Handoff-Blocker. Naechster Schritt ist M4.4 Baseline-Metriken;
+es wurde noch keine Render-Implementierung begonnen.
+
+### 2026-07-11 M4.4 dungeon-rendering-pipeline-close-out
+
+Die Dungeon-Rendering-Pipeline ist auf dem Branch abgeschlossen. Referenzstand
+ist `e95c907b0`: Die alte `ContentPartModel`-Kaskade im Dungeon-Map-Renderpfad
+ist geloescht, die vorbereiteten Runtime-Frame- und Map-Interaction-Assembler
+sind in echte Runtime-Helfer ueberfuehrt, und `DungeonMapContentModel` ist nur
+noch Koordinator ueber Render-State, Frame-Projektion, Szenenaufbau,
+Hit-Index, Inline-Label-State und Viewport-State. Die byte-kompatiblen
+Editor-/Travel-/Map-Seams bleiben erhalten; der bekannte Hit-Ref-/
+Pointer-Target-Stringrest bleibt absichtlich als PH-20260711-001 fuer M4.5/
+Runtime erhalten. Der vollstaendige Proof ist gruen: Static/CPD/PMD/CKJM,
+alle eingefrorenen Dungeon-Harnessgruppen, Render-Parity mit `DE-IMG-001`,
+`DE-IMG-002` und `DT-IMG-001`, Focused-Handoff, Production-Handoff sowie
+Phase 1 und der unabhaengige Judge. Naechster Schritt ist M4.5
+`dungeon-editor-view` Harness-Check/Closure gegen die aktuelle Struktur.
+
+### 2026-07-11 Harness-Modernisierung-Vorbedingung-nicht-erfuellt
+
+Die Harness-Modernisierung T0-T6 startet noch nicht. Die Vorbedingung aus
+`docs/project/architecture/harness-modernization-roadmap.md` verlangt, dass
+die Architektur-Migration M0-M6 auf `main` abgeschlossen und gemerged ist.
+Das ist aktuell nicht der Fall: `origin/main` steht laut Ledger noch bei
+M3.5 Encounter-Implementation, und der aktive Migrationsbranch steht bei
+M4.4 `dungeon-rendering-pipeline` Target Design. Deshalb wurde kein T0-Pilot
+begonnen und keine Harness-Modernisierungsmechanik geaendert. Naechster
+zulaessiger Schritt bleibt die Fortsetzung der Architektur-Migration bis M6.
+
+### 2026-07-11 Harness-Modernisierung-erneut-gestoppt
+
+Die erneute Vorbedingungspruefung blockiert die Harness-Modernisierung weiter.
+`origin/main` enthaelt laut `migration-ledger.md` noch M3.5
+Encounter-Implementation, nicht den abgeschlossenen M6-Stand. Der aktive
+Branch `codex/architecture-migration-m0-charter` steht laut aktuellem Ledger
+bei M4.4 `dungeon-rendering-pipeline` Target Design. Damit ist die
+Architektur-Migration weder auf `main` abgeschlossen noch gemerged. Es wurde
+kein T0-Pilot, keine JUnit-Konvertierung und keine Cache-/CI-Mechanik der
+Harness-Modernisierung begonnen.
+
+### 2026-07-11 Harness-Modernisierung-weiter-blockiert
+
+Die dritte Vorbedingungspruefung kommt zum selben Ergebnis: Die
+Harness-Modernisierung darf noch nicht starten. `origin/main` weist im
+Architektur-Migrationsledger weiterhin M3.5 Encounter-Implementation aus;
+der aktive Branch steht bei M4.4 `dungeon-rendering-pipeline` Target Design.
+Die geforderte Voraussetzung, dass M0-M6 auf `main` abgeschlossen und gemerged
+sind, ist damit nicht erfuellt. Es wurden weiterhin keine T0-Arbeiten, keine
+Harness-Konvertierung und keine Modernisierungs-Gate-Aenderungen begonnen.
+
+### 2026-07-11 M4.5 dungeon-editor-view-close-out
+
+Der Dungeon-Editor-View-Zyklus ist auf dem Branch abgeschlossen.
+Referenzstand ist `c72637e50`: Die 13-Datei-Loeschliste der alten View-
+ContentModels, InputEvents und des `DungeonEditorIntentHandler` ist
+ausgefuehrt. `DungeonEditorViewModel`, `DungeonEditorControlsPanelModel`,
+`DungeonEditorStatePanelModel`, `DungeonEditorControlsInput` und
+`DungeonEditorStateInput` tragen jetzt die direkte View-Zielstruktur.
+Tool, View-Mode und Overlay laufen typed ueber die Controls-Grenze; die alten
+String-Parser im Input-Record sind weg. Der PH-20260711-001-Hit-Ref-Rest ist
+strukturell geschlossen: Pointer-Auswahl konsumiert typed
+`DungeonEditorRuntimePointerTarget` statt Hit-Ref-Listen. Static-Proof,
+eingefrorene Dungeon-Harness-Gruppen, Render-Parity, Focused-Handoff,
+Production-Handoff, Phase 1 und der unabhaengige Judge sind gruen. Die
+akzeptierte Metrik liegt bei 9 Primaerdateien / 5.758 LOC und 13
+Pointer-Selection-Dateien / 8.036 LOC unter dem Amendment `598b66891`.
+Der Owner-Smoke steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
+unter `dungeon-editor-view`. M4 ist damit auf dem Branch abgeschlossen.
+Naechster Schritt ist M5 `remaining-view-and-shell` Harness Check/Closure.
+
+### 2026-07-11 M5.1 remaining-view-and-shell-harness-closure
+
+Der Harness-Check fuer die verbleibenden View- und Shell-Flaechen ist
+geschlossen. Drei echte Luecken wurden nicht als Component-Fixtures
+stehen gelassen: `catalogCrudControlsHarness` laeuft zusaetzlich ueber
+`HexMapContribution`, `HexMapBinder`, die gerenderten Catalog-CRUD-Controls
+und `HexEditorApplicationService`; `catalogControlsRawInputHarness` laeuft
+zusaetzlich ueber `CatalogContribution`, `CatalogBinder`, `CatalogIntentHandler`
+und die alten Creature-/Encounter-Published-Seams; `searchFilterControlsHarness`
+laeuft zusaetzlich ueber `WorldPlannerContribution`, `WorldPlannerBinder`,
+`SearchFilterControlsView` und die sichtbare World-Planner-Liste. Die alten
+Component-Assertions wurden nicht abgeschwaecht oder entfernt. Der selektive
+Clean-Worktree-Proof fuer nur diese drei Harness-Dateien ist gruen, der
+vollstaendige M5-Harness-Sweep ist in einem sauberen Worktree gruen, und ein
+sauberer Production-Handoff ist gruen. Phase 1 ist PASS; der unabhaengige
+Judge hat nach sauberem Re-Proof APPROVE gegeben. Der temporaere Worktree ist
+entfernt; lokal bleibt nur der Haupt-Worktree auf
+`codex/architecture-migration-m0-charter`. Naechster Schritt ist M5.2:
+Baseline-Metriken fuer `remaining-view-and-shell`.
+
+### 2026-07-12 M5.7 remaining-view-and-shell-close-out
+
+Der M5-Zyklus fuer die verbleibenden View- und Shell-Flaechen ist auf dem
+Branch abgeschlossen. Referenzstand ist `272c0d9c7`: `BootstrapFx`,
+`ShellFx`, die alten Catalog-/Party-/Travel-/Encounter-Binder und die
+reinen Holder-/Intent-Klassen sind geloescht. Die Contribution-Klassen bleiben
+als Shell-Discovery-Seams erhalten, tragen jetzt aber die direkte Komposition.
+`CatalogViewModel` und `TravelStateViewModel` sind echte lokale
+View-/Projektionsowner; die Creature-Inspector-Route ist ueber
+`CreatureDetailsView.openInspector` zusammengefuehrt. Der SpotBugs-Fund an
+`ShellBinding.BasicShellBinding` wurde strukturell mit defensiver Map-Kopie
+geschlossen, und die doppelte Shell-State-Abfrage wurde entfernt, nicht
+umformuliert. Static-Proof, eingefrorene M5-Harnesses, Production-Handoff,
+Phase 1 und der unabhaengige Judge sind gruen. Die akzeptierte Metrik liegt
+bei 74 Primaerdateien / 12.249 LOC unter der genehmigten 75-Datei-/
+12.250-LOC-Grenze. Der Owner-Smoke steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
+unter `remaining-view-and-shell`. M5 ist damit auf dem Branch abgeschlossen.
+Naechster Schritt ist M6.1 Doc-Teardown-Rest.
+
+### 2026-07-12 M6.2 governance-right-sizing
+
+Die Governance-Rechtschneidung ist abgeschlossen. Referenzstand ist
+`cc86ed0e7`: `AGENTS.md` enthaelt keinen selbstreferenziellen
+Migrationsabschluss-Satz mehr und ist von 76 auf 73 Zeilen gesunken. Die
+Dokumentations-Metadaten sind reduziert: verpflichtend bleiben `Status` und
+`Source of Truth`; `Owner` und `Last Reviewed` sind nur noch optionale
+Alt-/Koordinationsfelder und keine Gate-Eingaben. Die oeffentlichen
+Proof-Routen fuer Dokumentations- und Instruktionsaenderungen verwenden
+`git diff --check` plus owner-benannten Proof; entfernte Doc-Gates wurden
+nicht wiederhergestellt. Die alten Dual-Marker-Regeln sind auf
+`PROJECT_HEALTH_DEBT` zusammengefuehrt, inklusive Legacy-Removal-Faellen.
+Proof: `git diff --check 62f9289c9..cc86ed0e7` ist sauber, der gezielte
+Live-Governance-Grep findet keine aktiven `checkDocumentationEnforcement`-,
+`LEGACY_REMOVE_ON_TOUCH`- oder Migration-Regime-Routings, und der
+unabhaengige Judge `Wegener` hat APPROVE ohne Must-Fix gegeben. Naechster
+Schritt ist M6.3 Final Measurement und der deutsche Abschlussbericht.
+
+### 2026-07-12 M6.3 final-measurement-close-out
+
+Die Architektur-Migration M0-M6 ist auf dem Branch technisch abgeschlossen.
+Der Abschlussbericht steht in
+`docs/project/architecture/architecture-migration-final-measurement.md`.
+Gemessen wurde der Vor-Migrationsstand `d2d1cb4b` gegen den finalen
+Governance-Stand `b244aa2d5`: getrackte Dateien 2.017 -> 1.601,
+getrackte Text-LOC 216.768 -> 188.361, Produkt-Java-Dateien 1.496 ->
+1.214, Produkt-Java-LOC 124.831 -> 114.411, Check-/Rule-/Task-Quellen
+128 -> 38, alte Role-Family-Checker/Policy-Quellen 83 -> 0 und die
+durchschnittliche akzeptierte Area-Chain 7,62 -> 4,62. Die
+Dokumentationszeilen steigen 18.489 -> 21.775; das ist offen im Bericht
+markiert und stammt aus behaltenen Migrationsbelegen, nicht aus wiederbelebter
+Strukturdoctrine. `Hilbert` hat den M6.3-Bericht mit reproduzierten Zahlen
+APPROVE gegeben. Der Fresh-Agent-Check `Kepler` fuehrt bei einer kleinen
+hypothetischen Hex-Erweiterung zur direkten `HexEditorApplicationService`-/
+Domain-/Repository-/Published-Route und nicht zur alten UseCase-/Port-/
+IntentHandler-/ContentModel-Rollenfamilie. Es wurde kein Doc-Gate
+ausgefuehrt oder wiederhergestellt. Naechster nicht-migrationstechnischer
+Schritt ist PR/CI/Merge nach `main`.

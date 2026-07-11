@@ -16,7 +16,7 @@ final class DungeonAuthoredMutationProjectionServiceAssembly {
     }
 
     static src.domain.dungeon.published.DungeonAuthoredMutationResult mutation(
-            src.domain.dungeon.model.runtime.repository.DungeonAuthoredPublishedStateRepository.MutationPublication result
+            DungeonAuthoredPublication.Mutation result
     ) {
         return new src.domain.dungeon.published.DungeonAuthoredMutationResult.Operation(
                 new src.domain.dungeon.published.DungeonOperationResult(

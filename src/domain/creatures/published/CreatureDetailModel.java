@@ -4,11 +4,22 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import src.domain.shared.published.PublishedState;
 
 public final class CreatureDetailModel {
 
     private final Supplier<CreatureDetailResult> currentSupplier;
     private final Function<Consumer<CreatureDetailResult>, Runnable> subscribeAction;
+    private PublishedState<CreatureDetailResult> statefulStore;
+
+    public CreatureDetailModel() {
+        this(new PublishedState<>(emptyResult()));
+    }
+
+    private CreatureDetailModel(PublishedState<CreatureDetailResult> store) {
+        this(store::current, store::subscribe);
+        statefulStore = store;
+    }
 
     public CreatureDetailModel(
             Supplier<CreatureDetailResult> currentSupplier,
@@ -28,6 +39,12 @@ public final class CreatureDetailModel {
 
     public Runnable subscribe(Consumer<CreatureDetailResult> listener) {
         return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
+    }
+
+    public void publish(CreatureDetailResult result) {
+        if (statefulStore != null) {
+            statefulStore.publish(result == null ? emptyResult() : result);
+        }
     }
 
     private static CreatureDetailResult emptyResult() {

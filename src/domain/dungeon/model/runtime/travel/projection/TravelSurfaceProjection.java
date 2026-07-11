@@ -10,6 +10,7 @@ import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface.
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface.TransitionDestination;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AreaData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.FeatureData;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.LocationKind;
 
 public final class TravelSurfaceProjection {
 
@@ -101,7 +102,7 @@ public final class TravelSurfaceProjection {
             if (entryTransition != null && entryTransition.anchor() != null) {
                 return new TravelPositionFacts(
                         authoredSurface.header().mapId(),
-                        TravelPositionFacts.LocationKind.TRANSITION,
+                        LocationKind.TRANSITION,
                         entryTransition.transitionId(),
                         entryTransition.anchor(),
                         heading);
@@ -110,7 +111,7 @@ public final class TravelSurfaceProjection {
             Cell resolvedTile = fallback == null ? new Cell(0, 0, 0) : fallback;
             return new TravelPositionFacts(
                     authoredSurface.header().mapId(),
-                    TravelPositionFacts.LocationKind.TILE,
+                    LocationKind.TILE,
                     0L,
                     resolvedTile,
                     heading);
@@ -183,7 +184,7 @@ public final class TravelSurfaceProjection {
                                 : transition.description(),
                         new TravelPositionFacts(
                                 authoredSurface.header().mapId(),
-                                TravelPositionFacts.LocationKind.TRANSITION,
+                                LocationKind.TRANSITION,
                                 transition.transitionId(),
                                 anchor,
                                 position.heading()),

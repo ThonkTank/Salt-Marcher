@@ -5,11 +5,22 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import src.domain.shared.published.PublishedState;
 
 public final class AdventuringDaySummaryModel {
 
     private final Supplier<AdventuringDayResult> currentSupplier;
     private final Function<Consumer<AdventuringDayResult>, Runnable> subscribeAction;
+    private PublishedState<AdventuringDayResult> statefulStore;
+
+    public AdventuringDaySummaryModel() {
+        this(new PublishedState<>(emptyResult()));
+    }
+
+    private AdventuringDaySummaryModel(PublishedState<AdventuringDayResult> store) {
+        this(store::current, store::subscribe);
+        statefulStore = store;
+    }
 
     public AdventuringDaySummaryModel(
             Supplier<AdventuringDayResult> currentSupplier,
@@ -29,6 +40,18 @@ public final class AdventuringDaySummaryModel {
 
     public Runnable subscribe(Consumer<AdventuringDayResult> listener) {
         return subscribeAction.apply(Objects.requireNonNull(listener, "listener"));
+    }
+
+    public void publish(AdventuringDayResult result) {
+        if (statefulStore != null) {
+            statefulStore.publish(result == null ? emptyResult() : result);
+        }
+    }
+
+    public void replace(AdventuringDayResult result) {
+        if (statefulStore != null) {
+            statefulStore.replace(result == null ? emptyResult() : result);
+        }
     }
 
     private static AdventuringDayResult emptyResult() {

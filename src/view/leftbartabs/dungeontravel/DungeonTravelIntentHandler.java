@@ -3,7 +3,6 @@ package src.view.leftbartabs.dungeontravel;
 import java.util.List;
 import java.util.Objects;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
-import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent;
@@ -50,15 +49,14 @@ final class DungeonTravelIntentHandler {
         }
         int projectionLevelShift = event.projectionLevelShift();
         if (projectionLevelShift != 0) {
-            travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.projectionLevelShift(projectionLevelShift));
+            travel.shiftProjectionLevel(projectionLevelShift);
             return;
         }
-        travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.overlay(
-                new DungeonOverlaySettings(
-                        event.overlayModeKey(),
-                        event.overlayRange(),
-                        event.overlayOpacity(),
-                parseLevels(event.overlayLevelsText()))));
+        travel.setOverlay(new DungeonOverlaySettings(
+                event.overlayModeKey(),
+                event.overlayRange(),
+                event.overlayOpacity(),
+                parseLevels(event.overlayLevelsText())));
     }
 
     void consume(CatalogCrudControlsViewInputEvent event) {
@@ -74,7 +72,7 @@ final class DungeonTravelIntentHandler {
         String openItemId = event.openItemId();
         if (!openItemId.isBlank()) {
             catalogContentModel.selectItem(openItemId);
-            travel.applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.selectMap(parseMapId(openItemId)));
+            travel.selectMap(parseMapId(openItemId));
         }
     }
 
@@ -82,8 +80,7 @@ final class DungeonTravelIntentHandler {
         if (event == null) {
             return;
         }
-        travel.applyDungeonTravelSession(
-                ApplyTravelDungeonSessionCommand.action(event.selectedActionRowIndex()));
+        travel.performAction(event.selectedActionRowIndex());
     }
 
     private static List<Integer> parseLevels(String rawLevelsText) {

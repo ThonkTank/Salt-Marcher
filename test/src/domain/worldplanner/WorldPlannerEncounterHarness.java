@@ -1,7 +1,13 @@
 package src.domain.encounter;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import shell.api.ServiceRegistry;
+import src.domain.creatures.model.catalog.CreatureCatalogData;
+import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.model.generation.EncounterCandidateProfile;
 import src.domain.encounter.model.generation.EncounterCreatureFacts;
@@ -10,39 +16,28 @@ import src.domain.encounter.model.generation.EncounterDifficultyThresholds;
 import src.domain.encounter.model.generation.EncounterDraft;
 import src.domain.encounter.model.generation.EncounterDraftEntry;
 import src.domain.encounter.model.generation.EncounterDraftGenerationModel;
-import src.domain.encounter.model.generation.EncounterGenerationInputs;
-import src.domain.encounter.model.generation.EncounterGenerationRequest;
-import src.domain.encounter.model.generation.EncounterRequestedDifficulty;
 import src.domain.encounter.model.generation.EncounterTuningIntent;
-import src.domain.encounter.application.ApplyEncounterStateUseCase;
-import src.domain.encounter.model.plan.EncounterPlan;
-import src.domain.encounter.model.plan.EncounterPlanBudgetLoadResult;
-import src.domain.encounter.model.plan.SavedEncounterPlansLoadResult;
-import src.domain.encounter.model.plan.repository.EncounterPlanPublishedStateRepository;
-import src.domain.encounter.model.plan.usecase.PublishEncounterPlanBudgetUseCase;
-import src.domain.encounter.model.plan.usecase.PublishEncounterSavedPlansUseCase;
-import src.domain.encounter.model.session.AwardXpOutcome;
-import src.domain.encounter.model.session.BudgetData;
-import src.domain.encounter.model.session.CombatCardData;
-import src.domain.encounter.model.session.CreatureDetailData;
-import src.domain.encounter.model.session.EncounterSession;
-import src.domain.encounter.model.session.EncounterSessionPublicationData;
-import src.domain.encounter.model.session.GenerationResultData;
-import src.domain.encounter.model.session.ListPlansOutcome;
-import src.domain.encounter.model.session.PartyMemberData;
-import src.domain.encounter.model.session.PlanOutcome;
-import src.domain.encounter.model.session.ResultEnemyData;
-import src.domain.encounter.model.session.repository.EncounterSessionPublishedStateRepository;
-import src.domain.encounter.model.session.usecase.ApplyEncounterSessionUseCase;
-import src.domain.encounter.model.session.usecase.PublishEncounterSessionUseCase;
-import src.domain.encounter.model.session.usecase.UpdateEncounterBuilderInputsUseCase;
+import src.domain.encounter.published.EncounterBuilderInputs;
+import src.domain.encounter.published.EncounterStateModel;
+import src.domain.encounter.published.EncounterStateSnapshot;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
-import src.domain.worldplanner.published.WorldFactionInventoryLimitSummary;
-import src.domain.worldplanner.published.WorldFactionSummary;
-import src.domain.worldplanner.published.WorldLocationSummary;
-import src.domain.worldplanner.published.WorldNpcLifecycleStatus;
-import src.domain.worldplanner.published.WorldNpcSummary;
-import src.domain.worldplanner.published.WorldPlannerReadStatus;
+import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
+import src.domain.encountertable.model.catalog.EncounterTableCandidateData;
+import src.domain.encountertable.model.catalog.EncounterTableSummaryData;
+import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.published.CalculateAdventuringDayCommand;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.CreateCharacterCommand;
+import src.domain.party.published.MembershipState;
+import src.domain.worldplanner.WorldPlannerApplicationService;
+import src.domain.worldplanner.published.AddWorldFactionNpcCommand;
+import src.domain.worldplanner.published.AddWorldLocationEncounterTableCommand;
+import src.domain.worldplanner.published.AddWorldLocationFactionCommand;
+import src.domain.worldplanner.published.CreateWorldFactionCommand;
+import src.domain.worldplanner.published.CreateWorldLocationCommand;
+import src.domain.worldplanner.published.CreateWorldNpcCommand;
+import src.domain.worldplanner.published.SetWorldFactionInventoryLimitCommand;
 import src.domain.worldplanner.published.WorldPlannerSnapshot;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
@@ -52,39 +47,53 @@ public final class WorldPlannerEncounterHarness {
     }
 
     public static void main(String[] args) {
-        assertLocationLimitsTablesAndFactionStock();
-        assertExplicitTablesAreIntersectedWithWorldSources();
-        assertInvalidWorldSourceBlocksTableMatches();
+        HarnessRuntime runtime = HarnessRuntime.create();
+        assertLocationLimitsTablesAndFactionStock(runtime);
+        assertExplicitTablesAreIntersectedWithWorldSources(runtime);
+        assertInvalidWorldSourceBlocksTableMatches(runtime);
         assertFiniteCapsConstrainDraftEnumeration();
-        assertWorldNpcIdentitySurvivesCombatResults();
+        assertWorldNpcIdentitySurvivesCombatResults(runtime);
     }
 
-    private static void assertLocationLimitsTablesAndFactionStock() {
-        EncounterGenerationRequest resolved = EncounterWorldPlannerSourceServiceAssembly.resolve(
-                request(List.of(), List.of(), 501L),
-                sourcePort());
+    private static void assertLocationLimitsTablesAndFactionStock(HarnessRuntime runtime) {
+        EncounterRoute route = runtime.encounterRoute();
+        route.tables().reset();
 
-        assertEquals(List.of(301L, 302L, 201L), resolved.encounterTableIds(), "location table scope");
-        assertEquals(Map.of(103L, 3), resolved.finiteCreatureStockCaps(), "summed finite caps");
+        EncounterStateSnapshot snapshot = route.generate(inputs(
+                List.of(),
+                List.of(),
+                runtime.seedIds().locationId()));
+
+        assertEquals(List.of(301L, 302L, 201L), route.tables().lastTableIds(), "location table scope");
+        assertRosterAtMost(snapshot.builderPane().rosterCards(), 103L, 3, "summed finite caps");
     }
 
-    private static void assertExplicitTablesAreIntersectedWithWorldSources() {
-        EncounterGenerationRequest resolved = EncounterWorldPlannerSourceServiceAssembly.resolve(
-                request(List.of(302L, 999L), List.of(2L), 0L),
-                sourcePort());
+    private static void assertExplicitTablesAreIntersectedWithWorldSources(HarnessRuntime runtime) {
+        EncounterRoute route = runtime.encounterRoute();
+        route.tables().reset();
 
-        assertEquals(List.of(302L), resolved.encounterTableIds(), "explicit table intersection");
-        assertEquals(Map.of(103L, 2), resolved.finiteCreatureStockCaps(), "finite cap retained beside unlimited statblock");
-        assertEquals(false, resolved.finiteCreatureStockCaps().containsKey(101L), "unlimited statblock has no cap");
+        EncounterStateSnapshot snapshot = route.generate(inputs(
+                List.of(302L, 999L),
+                List.of(runtime.seedIds().cinderCourtId()),
+                0L));
+
+        assertEquals(List.of(302L), route.tables().lastTableIds(), "explicit table intersection");
+        assertRosterAtMost(
+                snapshot.builderPane().rosterCards(),
+                103L,
+                2,
+                "finite cap retained beside unlimited statblock");
+        assertAny(snapshot.builderPane().rosterCards(), 101L, "unlimited statblock has no cap");
     }
 
-    private static void assertInvalidWorldSourceBlocksTableMatches() {
-        EncounterGenerationRequest resolved = EncounterWorldPlannerSourceServiceAssembly.resolve(
-                request(List.of(999L), List.of(404L), 0L),
-                sourcePort());
+    private static void assertInvalidWorldSourceBlocksTableMatches(HarnessRuntime runtime) {
+        EncounterRoute route = runtime.encounterRoute();
+        route.tables().reset();
 
-        assertEquals(List.of(-1L), resolved.encounterTableIds(), "invalid faction source blocks matches");
-        assertEquals(Map.of(), resolved.finiteCreatureStockCaps(), "invalid source publishes no finite caps");
+        EncounterStateSnapshot snapshot = route.generate(inputs(List.of(999L), List.of(404L), 0L));
+
+        assertEquals(List.of(), route.tables().lastTableIds(), "invalid faction source blocks matches");
+        assertEquals(List.of(), snapshot.builderPane().rosterCards(), "invalid source publishes no finite caps");
     }
 
     private static void assertFiniteCapsConstrainDraftEnumeration() {
@@ -116,38 +125,31 @@ public final class WorldPlannerEncounterHarness {
         assertEquals(0, blocked.size(), "zero finite cap blocks only available creature");
     }
 
-    private static void assertWorldNpcIdentitySurvivesCombatResults() {
-        EncounterPublicationSink sink = new EncounterPublicationSink();
-        ApplyEncounterSessionUseCase sessionUseCase = new ApplyEncounterSessionUseCase(new FixtureEncounterRepository());
-        PublishEncounterSessionUseCase publishSession = new PublishEncounterSessionUseCase(sink, null);
-        EncounterApplicationService service = new EncounterApplicationService(
-                new ApplyEncounterStateUseCase(
-                        sessionUseCase,
-                        publishSession,
-                        new PublishEncounterSavedPlansUseCase(new NoopPlanPublicationSink(), null)),
-                new UpdateEncounterBuilderInputsUseCase(sessionUseCase, publishSession),
-                new PublishEncounterPlanBudgetUseCase(new NoopPlanPublicationSink(), null));
+    private static void assertWorldNpcIdentitySurvivesCombatResults(HarnessRuntime runtime) {
+        EncounterRoute route = runtime.encounterRoute();
+        EncounterApplicationService service = route.service();
+        EncounterStateModel state = route.state();
 
         service.applyState(ApplyEncounterStateCommand.addWorldNpcCreature(101L, 7001L));
-        assertEquals(7001L, sink.current.snapshot().builderState().roster().get(0).worldNpcId(), "builder world npc id");
+        assertEquals(7001L, state.current().builderPane().rosterCards().getFirst().worldNpcId(), "builder world npc id");
 
         service.applyState(ApplyEncounterStateCommand.openInitiative());
-        List<String> ids = sink.current.snapshot().initiativeEntries().stream()
-                .map(entry -> entry.id())
+        List<String> ids = state.current().initiativePane().rows().stream()
+                .map(EncounterStateSnapshot.InitiativeRow::combatantId)
                 .toList();
-        List<Integer> initiatives = sink.current.snapshot().initiativeEntries().stream()
+        List<Integer> initiatives = state.current().initiativePane().rows().stream()
                 .map(entry -> 12)
                 .toList();
         service.applyState(ApplyEncounterStateCommand.confirmInitiative(ids, initiatives));
 
-        CombatCardData npcCard = sink.current.snapshot().combatProjection().cards().stream()
+        EncounterStateSnapshot.CombatCard npcCard = state.current().combatPane().combatCards().stream()
                 .filter(card -> card.worldNpcId() == 7001L)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("combat card world npc id missing"));
-        service.applyState(ApplyEncounterStateCommand.mutateHitPoints(npcCard.id(), 999, false));
+        service.applyState(ApplyEncounterStateCommand.mutateHitPoints(npcCard.combatantId(), 999, false));
         service.applyState(ApplyEncounterStateCommand.endCombat());
 
-        ResultEnemyData result = sink.current.snapshot().resultState().enemies().stream()
+        EncounterStateSnapshot.ResultEnemy result = state.current().resolutionPane().enemyResults().stream()
                 .filter(enemy -> enemy.worldNpcId() == 7001L)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("result world npc id missing"));
@@ -155,55 +157,22 @@ public final class WorldPlannerEncounterHarness {
         assertEquals(true, result.defeatedByDefault(), "world npc result defeated");
     }
 
-    private static WorldPlannerSnapshotModel sourcePort() {
-        WorldPlannerSnapshotModel model = new WorldPlannerSnapshotModel(WorldPlannerEncounterHarness::snapshot, listener -> () -> { });
-        return model;
-    }
-
-    private static EncounterGenerationRequest request(List<Long> tableIds, List<Long> factionIds, long locationId) {
-        return new EncounterGenerationRequest(
-                new EncounterGenerationInputs(
-                        List.of(),
-                        List.of(),
-                        List.of(),
-                        EncounterRequestedDifficulty.autoDifficulty(),
-                        EncounterTuningIntent.autoIntent(),
-                        tableIds,
-                        factionIds,
-                        locationId,
-                        Map.of()),
-                5,
-                0L,
+    private static EncounterBuilderInputs inputs(List<Long> tableIds, List<Long> factionIds, long locationId) {
+        return new EncounterBuilderInputs(
                 List.of(),
-                List.of());
-    }
-
-    private static WorldPlannerSnapshot snapshot() {
-        return new WorldPlannerSnapshot(
-                WorldPlannerReadStatus.SUCCESS,
-                List.of(new WorldNpcSummary(1L, "Captain Vale", 101L, "", "", "", "", WorldNpcLifecycleStatus.ACTIVE)),
-                List.of(
-                        new WorldFactionSummary(
-                                1L,
-                                "Ash Guard",
-                                "",
-                                201L,
-                                List.of(1L),
-                                List.of(
-                                        new WorldFactionInventoryLimitSummary(101L, true, 3),
-                                        new WorldFactionInventoryLimitSummary(103L, true, 1),
-                                        new WorldFactionInventoryLimitSummary(102L, false, 0))),
-                        new WorldFactionSummary(
-                                2L,
-                                "Cinder Court",
-                                "",
-                                302L,
-                                List.of(),
-                                List.of(
-                                        new WorldFactionInventoryLimitSummary(101L, false, 0),
-                                        new WorldFactionInventoryLimitSummary(103L, true, 2)))),
-                List.of(new WorldLocationSummary(501L, "Old Gate", "", List.of(1L, 2L), List.of(301L, 302L))),
-                "");
+                List.of(),
+                List.of(),
+                false,
+                4,
+                false,
+                3,
+                false,
+                5.0,
+                false,
+                2,
+                tableIds,
+                factionIds,
+                locationId);
     }
 
     private static EncounterCreatureFacts creature(long id, String name, int xp) {
@@ -245,75 +214,292 @@ public final class WorldPlannerEncounterHarness {
         }
     }
 
+    private static void assertRosterAtMost(
+            List<EncounterStateSnapshot.RosterCard> roster,
+            long creatureId,
+            int expectedMax,
+            String label
+    ) {
+        int actualMax = 0;
+        for (EncounterStateSnapshot.RosterCard card : roster) {
+            if (card.creatureId() == creatureId) {
+                actualMax = Math.max(actualMax, card.count());
+            }
+        }
+        if (actualMax > expectedMax) {
+            throw new AssertionError(label + " expected at most " + expectedMax + " but was " + actualMax);
+        }
+    }
+
+    private static void assertAny(List<EncounterStateSnapshot.RosterCard> roster, long creatureId, String label) {
+        for (EncounterStateSnapshot.RosterCard card : roster) {
+            if (card.creatureId() == creatureId && card.count() > 0) {
+                return;
+            }
+        }
+        throw new AssertionError(label + " expected creature " + creatureId + " in generated roster");
+    }
+
     private static void assertEquals(Object expected, Object actual, String label) {
         if (!java.util.Objects.equals(expected, actual)) {
             throw new AssertionError(label + " expected " + expected + " but was " + actual);
         }
     }
 
-    private static final class EncounterPublicationSink implements EncounterSessionPublishedStateRepository {
+    private record EncounterRoute(
+            EncounterApplicationService service,
+            EncounterStateModel state,
+            RecordingEncounterTableCatalogPort tables
+    ) {
 
-        private EncounterSessionPublicationData current;
-
-        @Override
-        public void publishCurrentSession(EncounterSessionPublicationData publication) {
-            current = publication;
+        EncounterStateSnapshot generate(EncounterBuilderInputs inputs) {
+            service.updateBuilderInputs(new UpdateEncounterBuilderInputsCommand(inputs));
+            service.applyState(ApplyEncounterStateCommand.generate());
+            return state.current();
         }
     }
 
-    private static final class NoopPlanPublicationSink implements EncounterPlanPublishedStateRepository {
+    private record SeedIds(long cinderCourtId, long locationId) {
+    }
 
-        @Override
-        public void publishSavedPlans(SavedEncounterPlansLoadResult result) {
+    private static final class HarnessRuntime {
+
+        private final FixtureCreatureCatalogPort creatures = new FixtureCreatureCatalogPort();
+        private final RecordingEncounterTableCatalogPort encounterTables = new RecordingEncounterTableCatalogPort();
+        private final SeedIds seedIds;
+
+        private HarnessRuntime(SeedIds seedIds) {
+            this.seedIds = Objects.requireNonNull(seedIds, "seedIds");
         }
 
-        @Override
-        public void publishPlanBudget(EncounterPlanBudgetLoadResult result) {
+        static HarnessRuntime create() {
+            return new HarnessRuntime(seedProductionState());
+        }
+
+        SeedIds seedIds() {
+            return seedIds;
+        }
+
+        EncounterRoute encounterRoute() {
+            ServiceRegistry registry = registry();
+            return new EncounterRoute(
+                    registry.require(EncounterApplicationService.class),
+                    registry.require(EncounterStateModel.class),
+                    encounterTables);
+        }
+
+        private ServiceRegistry registry() {
+            ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
+            builder.register(CreatureCatalogPort.class, creatures);
+            builder.register(EncounterTableCatalogPort.class, encounterTables);
+            new src.data.worldplanner.WorldPlannerServiceContribution().register(builder);
+            new src.data.party.PartyServiceContribution().register(builder);
+            new src.data.encounter.EncounterServiceContribution().register(builder);
+            new src.domain.creatures.CreaturesServiceContribution().register(builder);
+            new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
+            new src.domain.party.PartyServiceContribution().register(builder);
+            new src.domain.worldplanner.WorldPlannerServiceContribution().register(builder);
+            new src.domain.encounter.EncounterServiceContribution().register(builder);
+            return builder.build();
+        }
+
+        private static SeedIds seedProductionState() {
+            HarnessRuntime runtime = new HarnessRuntime(new SeedIds(0L, 0L));
+            ServiceRegistry registry = runtime.registry();
+            seedParty(registry.require(PartyApplicationService.class));
+            WorldPlannerApplicationService worlds = registry.require(WorldPlannerApplicationService.class);
+            WorldPlannerSnapshotModel snapshots = registry.require(WorldPlannerSnapshotModel.class);
+
+            worlds.createNpc(new CreateWorldNpcCommand(
+                    "Captain Vale",
+                    101L,
+                    "",
+                    "",
+                    "",
+                    ""));
+            long captainValeId = npcId(snapshots.current(), "Captain Vale");
+            worlds.createFaction(new CreateWorldFactionCommand("Ash Guard", "", 201L));
+            long ashGuardId = factionId(snapshots.current(), "Ash Guard");
+            worlds.addFactionNpc(new AddWorldFactionNpcCommand(ashGuardId, captainValeId));
+            worlds.setFactionInventoryLimit(new SetWorldFactionInventoryLimitCommand(ashGuardId, 101L, true, 3));
+            worlds.setFactionInventoryLimit(new SetWorldFactionInventoryLimitCommand(ashGuardId, 103L, true, 1));
+            worlds.setFactionInventoryLimit(new SetWorldFactionInventoryLimitCommand(ashGuardId, 102L, false, 0));
+
+            worlds.createFaction(new CreateWorldFactionCommand("Cinder Court", "", 302L));
+            long cinderCourtId = factionId(snapshots.current(), "Cinder Court");
+            worlds.setFactionInventoryLimit(new SetWorldFactionInventoryLimitCommand(cinderCourtId, 101L, false, 0));
+            worlds.setFactionInventoryLimit(new SetWorldFactionInventoryLimitCommand(cinderCourtId, 103L, true, 2));
+
+            worlds.createLocation(new CreateWorldLocationCommand("Old Gate", ""));
+            long locationId = locationId(snapshots.current(), "Old Gate");
+            worlds.addLocationFaction(new AddWorldLocationFactionCommand(locationId, ashGuardId));
+            worlds.addLocationFaction(new AddWorldLocationFactionCommand(locationId, cinderCourtId));
+            worlds.addLocationEncounterTable(new AddWorldLocationEncounterTableCommand(locationId, 301L));
+            worlds.addLocationEncounterTable(new AddWorldLocationEncounterTableCommand(locationId, 302L));
+            return new SeedIds(cinderCourtId, locationId);
+        }
+
+        private static void seedParty(PartyApplicationService party) {
+            party.createCharacter(new CreateCharacterCommand(
+                    new CharacterDraft("Asha", "Mira", 3, 12, 16),
+                    MembershipState.ACTIVE));
+            party.calculateAdventuringDay(new CalculateAdventuringDayCommand(List.of(3), 0));
+        }
+
+        private static long npcId(WorldPlannerSnapshot snapshot, String name) {
+            return snapshot.npcs().stream()
+                    .filter(npc -> name.equals(npc.displayName()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError(name + " seed NPC missing"))
+                    .npcId();
+        }
+
+        private static long factionId(WorldPlannerSnapshot snapshot, String name) {
+            return snapshot.factions().stream()
+                    .filter(faction -> name.equals(faction.displayName()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError(name + " seed faction missing"))
+                    .factionId();
+        }
+
+        private static long locationId(WorldPlannerSnapshot snapshot, String name) {
+            return snapshot.locations().stream()
+                    .filter(location -> name.equals(location.displayName()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError(name + " seed location missing"))
+                    .locationId();
         }
     }
 
-    private static final class FixtureEncounterRepository implements EncounterSession.SessionRepository {
+    private static final class FixtureCreatureCatalogPort implements CreatureCatalogPort {
+
+        private final Map<Long, CreatureCatalogData.CreatureProfile> profiles = Map.of(
+                101L, profile(101L, "Ash Guard", 50),
+                102L, profile(102L, "Ash Brute", 75),
+                103L, profile(103L, "Cinder Scout", 10));
 
         @Override
-        public List<PartyMemberData> loadActiveParty() {
-            return List.of(new PartyMemberData("pc-1", 1L, "Asha", 3));
+        public CreatureCatalogData.DistinctFilterValues loadFilterValues() {
+            return CreatureCatalogData.emptyFilterValues();
         }
 
         @Override
-        public java.util.Optional<BudgetData> loadBudget() {
-            return java.util.Optional.empty();
+        public CreatureCatalogData.CatalogPageData searchCatalog(CreatureCatalogData.CatalogSearchSpec spec) {
+            return CreatureCatalogData.emptyCatalogPage(50, 0);
         }
 
         @Override
-        public GenerationResultData generate(EncounterGenerationRequest request) {
-            return new GenerationResultData(false, List.of(), "", java.util.Optional.empty(), false);
+        public CreatureCatalogData.CreatureProfile loadCreatureDetail(long creatureId) {
+            return profiles.get(creatureId);
         }
 
         @Override
-        public PlanOutcome savePlan(EncounterPlan plan) {
-            return new PlanOutcome(java.util.Optional.empty(), "");
+        public List<CreatureCatalogData.EncounterCandidateProfile> loadEncounterCandidates(
+                CreatureCatalogData.EncounterCandidateSpec spec
+        ) {
+            List<CreatureCatalogData.EncounterCandidateProfile> candidates = new ArrayList<>();
+            for (CreatureCatalogData.CreatureProfile profile : profiles.values()) {
+                if (profile.xp() >= spec.minimumXp() && profile.xp() <= spec.maximumXp()) {
+                    candidates.add(candidate(profile));
+                }
+            }
+            return candidates.stream().limit(Math.max(0, spec.limit())).toList();
+        }
+
+        private static CreatureCatalogData.CreatureProfile profile(long id, String name, int xp) {
+            return new CreatureCatalogData.CreatureProfile(
+                    new CreatureCatalogData.CreatureIdentity(
+                            id,
+                            name,
+                            "Medium",
+                            "humanoid",
+                            List.of(),
+                            List.of(),
+                            "neutral",
+                            "1/4",
+                            xp),
+                    new CreatureCatalogData.CreatureVitals(10, null, 1, 8, 0, 12, null, 30, 0, 0, 0, 0),
+                    new CreatureCatalogData.CreatureAbilities(10, 12, 10, 10, 10, 10, 1, 2),
+                    new CreatureCatalogData.CreatureTraits(null, null, null, null, null, null, null, 10, null, 0),
+                    List.of());
+        }
+
+        private static CreatureCatalogData.EncounterCandidateProfile candidate(
+                CreatureCatalogData.CreatureProfile profile
+        ) {
+            return new CreatureCatalogData.EncounterCandidateProfile(
+                    profile.id(),
+                    profile.name(),
+                    profile.creatureType(),
+                    profile.challengeRating(),
+                    profile.xp(),
+                    profile.hitPoints(),
+                    profile.hitDiceCount(),
+                    profile.hitDiceSides(),
+                    profile.hitDiceModifier(),
+                    profile.armorClass(),
+                    profile.initiativeBonus(),
+                    profile.legendaryActionCount());
+        }
+    }
+
+    private static final class RecordingEncounterTableCatalogPort implements EncounterTableCatalogPort {
+
+        private final Map<Long, List<EncounterTableCandidateData>> tableCandidates = new LinkedHashMap<>();
+        private List<Long> lastTableIds = List.of();
+
+        private RecordingEncounterTableCatalogPort() {
+            tableCandidates.put(201L, List.of(tableCandidate(101L, "Ash Guard", 50)));
+            tableCandidates.put(301L, List.of(tableCandidate(103L, "Cinder Scout", 10)));
+            tableCandidates.put(302L, List.of(
+                    tableCandidate(101L, "Ash Guard", 50),
+                    tableCandidate(103L, "Cinder Scout", 10)));
+        }
+
+        void reset() {
+            lastTableIds = List.of();
+        }
+
+        List<Long> lastTableIds() {
+            return lastTableIds;
         }
 
         @Override
-        public PlanOutcome loadPlan(long planId) {
-            return new PlanOutcome(java.util.Optional.empty(), "");
+        public List<EncounterTableSummaryData> loadSummaries() {
+            return tableCandidates.keySet().stream()
+                    .map(id -> new EncounterTableSummaryData(id, "Table " + id, null))
+                    .toList();
         }
 
         @Override
-        public ListPlansOutcome listPlans() {
-            return new ListPlansOutcome(true, List.of(), "");
+        public List<EncounterTableCandidateData> loadGenerationCandidates(List<Long> tableIds, int maximumXp) {
+            lastTableIds = tableIds == null ? List.of() : List.copyOf(tableIds);
+            Map<Long, EncounterTableCandidateData> unique = new LinkedHashMap<>();
+            for (Long tableId : lastTableIds) {
+                for (EncounterTableCandidateData candidate : tableCandidates.getOrDefault(tableId, List.of())) {
+                    if (candidate.xp() <= maximumXp) {
+                        unique.putIfAbsent(candidate.creatureId(), candidate);
+                    }
+                }
+            }
+            return List.copyOf(unique.values());
         }
 
-        @Override
-        public java.util.Optional<CreatureDetailData> loadCreature(long creatureId) {
-            return creatureId == 101L
-                    ? java.util.Optional.of(new CreatureDetailData(101L, "Ash Guard", "1/4", 50, 10, 12, 1, "humanoid"))
-                    : java.util.Optional.empty();
-        }
-
-        @Override
-        public AwardXpOutcome awardXp(List<Long> partyMemberIds, int xpPerCharacter) {
-            return new AwardXpOutcome(true);
+        private static EncounterTableCandidateData tableCandidate(long creatureId, String name, int xp) {
+            return new EncounterTableCandidateData(
+                    creatureId,
+                    name,
+                    "humanoid",
+                    "1/4",
+                    xp,
+                    10,
+                    1,
+                    8,
+                    0,
+                    12,
+                    1,
+                    0,
+                    1);
         }
     }
 }

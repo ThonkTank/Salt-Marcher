@@ -1199,13 +1199,12 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             boolean boundaryPreferred,
             int projectionLevel
     ) {
-        return new HarnessRuntimePointerTarget(PointerInteractionTargets.fromHitTargets(
+        return new HarnessRuntimePointerTarget(PointerInteractionTargets.fromRuntimeTargets(
                 sceneX,
                 sceneY,
                 false,
                 false,
-                mapContentModel.pointerHitRefsAt(sceneX, sceneY),
-                mapContentModel.currentPointerTargetFrames(),
+                mapContentModel.runtimePointerTargetsAt(sceneX, sceneY),
                 projectionLevel).primaryTarget(boundaryPreferred));
     }
 
@@ -1879,7 +1878,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
                 .orElseThrow(() -> new IllegalStateException("Dungeon map canvas not found."));
     }
 
-    private static CanvasSnapshot renderedCanvasSnapshot(DungeonMapView mapView) {
+    static CanvasSnapshot renderedCanvasSnapshot(DungeonMapView mapView) {
         DungeonMapContentModel contentModel = boundContentModel(mapView);
         redrawCanvasFromCurrentState(mapView, contentModel);
         return new CanvasSnapshot(mapCanvas(mapView).snapshot(null, null), contentModel.canvasStateProperty().get().viewport());
@@ -1931,7 +1930,7 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
         return Math.max(0.0, Math.min(1.0, value));
     }
 
-    private record CanvasSnapshot(WritableImage image, DungeonMapContentModel.Viewport viewport) {
+    record CanvasSnapshot(WritableImage image, DungeonMapContentModel.Viewport viewport) {
     }
 
     static void assertEmptyMapSurface(DungeonEditorMapSurfaceSnapshot snapshot, String expectedMapName) {

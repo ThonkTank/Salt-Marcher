@@ -51,11 +51,7 @@ final class ShellSlotContent {
         return nodes.get(ShellSlot.COCKPIT_MAIN);
     }
 
-    @Nullable Node editorState() {
-        return nodes.get(ShellSlot.COCKPIT_STATE);
-    }
-
-    @Nullable Node stateTab() {
+    @Nullable Node stateContent() {
         return nodes.get(ShellSlot.COCKPIT_STATE);
     }
 }

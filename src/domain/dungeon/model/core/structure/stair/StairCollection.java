@@ -6,7 +6,6 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.component.StairExit;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.core.geometry.Direction;
 
 public record StairCollection(List<Stair> stairs) {
     private static final long NO_CORRIDOR_ID = 0L;
@@ -112,19 +111,6 @@ public record StairCollection(List<Stair> stairs) {
         return supportedAuthoredSpec(spec) && spec.avoidsRoomInteriors(roomCells);
     }
 
-    public boolean canCreateAuthoredStairGeometry(
-            @Nullable Cell anchor,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2,
-            @Nullable Set<Cell> roomCells
-    ) {
-        return canCreateAuthoredStairGeometry(
-                editorSpec(anchor, shapeName, directionName, dimension1, dimension2),
-                roomCells);
-    }
-
     public StairCollection withAuthoredStair(
             long stairId,
             long mapId,
@@ -137,23 +123,6 @@ public record StairCollection(List<Stair> stairs) {
         List<Stair> result = new ArrayList<>(stairs);
         result.add(Stair.authored(stairId, mapId, spec));
         return new StairCollection(result);
-    }
-
-    public StairCollection withAuthoredStair(
-            long stairId,
-            long mapId,
-            @Nullable Cell anchor,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2,
-            @Nullable Set<Cell> roomCells
-    ) {
-        return withAuthoredStair(
-                stairId,
-                mapId,
-                editorSpec(anchor, shapeName, directionName, dimension1, dimension2),
-                roomCells);
     }
 
     public boolean canRecomputeStair(
@@ -169,14 +138,10 @@ public record StairCollection(List<Stair> stairs) {
 
     public boolean canRecomputeAuthoredStair(
             long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2,
+            @Nullable StairGeometrySpec spec,
             @Nullable Set<Cell> roomCells
     ) {
-        return canRecomputeStair(stairId, recomputeSpec(stairId, shapeName, directionName, dimension1, dimension2),
-                roomCells);
+        return canRecomputeStair(stairId, spec, roomCells);
     }
 
     public StairCollection withRecomputedStair(
@@ -196,14 +161,10 @@ public record StairCollection(List<Stair> stairs) {
 
     public StairCollection withRecomputedAuthoredStair(
             long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2,
+            @Nullable StairGeometrySpec spec,
             @Nullable Set<Cell> roomCells
     ) {
-        return withRecomputedStair(stairId, recomputeSpec(stairId, shapeName, directionName, dimension1, dimension2),
-                roomCells);
+        return withRecomputedStair(stairId, spec, roomCells);
     }
 
     public StairCollection withMovedHandle(long stairId, int handleIndex, int deltaQ, int deltaR, int deltaLevel) {
@@ -242,30 +203,6 @@ public record StairCollection(List<Stair> stairs) {
 
     private static boolean supportedAuthoredSpec(@Nullable StairGeometrySpec spec) {
         return spec != null && spec.shape().supportsEditorDimensions(spec.dimension1(), spec.dimension2());
-    }
-
-    private @Nullable StairGeometrySpec recomputeSpec(
-            long stairId,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
-    ) {
-        return editorSpec(anchorOf(stairId), shapeName, directionName, dimension1, dimension2);
-    }
-
-    private static @Nullable StairGeometrySpec editorSpec(
-            @Nullable Cell anchor,
-            String shapeName,
-            String directionName,
-            int dimension1,
-            int dimension2
-    ) {
-        StairShape shape = StairShape.supportedEditorShape(shapeName);
-        Direction direction = Direction.supportedCardinal(directionName);
-        return shape == null || direction == null || anchor == null
-                ? null
-                : new StairGeometrySpec(shape, anchor, direction, dimension1, dimension2);
     }
 
     private static boolean canRecompute(@Nullable Stair stair) {

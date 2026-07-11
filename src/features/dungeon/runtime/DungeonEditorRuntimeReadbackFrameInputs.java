@@ -1,6 +1,7 @@
 package src.features.dungeon.runtime;
 
 import java.util.Objects;
+import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
@@ -13,27 +14,13 @@ record DungeonEditorRuntimeReadbackFrameInputs(
         DungeonEditorStateSnapshot state
 ) {
     static DungeonEditorRuntimeReadbackFrameInputs from(
-            DungeonEditorStore store,
+            DungeonEditorControlsModel controlsModel,
             DungeonEditorMapSurfaceModel mapSurfaceModel,
             DungeonEditorStateModel stateModel
     ) {
         return new DungeonEditorRuntimeReadbackFrameInputs(
-                controlsSnapshotFromStore(store),
+                Objects.requireNonNull(controlsModel, "controlsModel").current(),
                 Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel").current(),
                 Objects.requireNonNull(stateModel, "stateModel").current());
-    }
-
-    private static DungeonEditorControlsSnapshot controlsSnapshotFromStore(DungeonEditorStore store) {
-        DungeonEditorStoreState state = Objects.requireNonNull(store, "store").state();
-        return new DungeonEditorControlsSnapshot(
-                state.mapSummaries(),
-                state.selectedMapId(),
-                state.viewMode(),
-                state.selectedTool(),
-                state.projectionLevel(),
-                state.overlaySettings(),
-                state.reachableLevels(),
-                state.surfaceLoaded(),
-                state.statusText());
     }
 }

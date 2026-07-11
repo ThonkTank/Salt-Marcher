@@ -27,7 +27,6 @@ sourceSets["test"].java.setSrcDirs(listOf(layout.projectDirectory.dir("src/test/
 sourceSets["test"].resources.setSrcDirs(emptyList<String>())
 
 dependencies {
-    implementation("saltmarcher.architecture:architecture-policy:1.0-SNAPSHOT")
     compileOnly("com.google.errorprone:error_prone_check_api:2.48.0")
     compileOnly("org.checkerframework:dataflow-nullaway:3.53.0")
     testImplementation("org.checkerframework:dataflow-nullaway:3.53.0")

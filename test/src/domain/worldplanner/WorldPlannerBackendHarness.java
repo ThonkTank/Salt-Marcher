@@ -331,9 +331,11 @@ public final class WorldPlannerBackendHarness {
 
     private static void assertForeignReferencesAreRejectedBeforePersistence() {
         CountingRepository repository = new CountingRepository();
-        WorldPlannerApplicationService service =
-                new WorldPlannerUseCaseServiceAssembly(repository, new RejectingReferenceValidator())
-                        .createApplicationService();
+        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
+        builder.register(WorldPlannerRepository.class, repository);
+        builder.register(WorldPlannerReferencePort.class, new RejectingReferenceValidator());
+        new WorldPlannerServiceContribution().register(builder);
+        WorldPlannerApplicationService service = builder.build().require(WorldPlannerApplicationService.class);
 
         service.createNpc(new CreateWorldNpcCommand("Foreign NPC", 999L, "", "", "", ""));
         service.createFaction(new CreateWorldFactionCommand("Foreign Table", "", 999L));
