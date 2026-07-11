@@ -296,6 +296,31 @@ The target does not count free-form German text, map names, descriptions, or
 numeric draft text as finite-kind String boundary families. Those are user
 input fields and must preserve current incomplete-typing behavior.
 
+### Implementation Metric And PMD Exception Candidate
+
+The implementation pass may exceed the original physical-LOC caps only within
+these reviewed ceilings:
+
+- primary editor-view package: 9 Java files and <= 5,950 physical LOC
+- primary plus pointer-selection route: <= 15 Java files and <= 8,200 physical
+  LOC
+
+Reason: the approved deletion-list execution removes the content-part and
+intent-handler ceremony, but the retained byte-compatible JavaFX view seams
+(`DungeonEditorControlsView`, `DungeonEditorStateView`) and the required typed
+input conversion keep the target package above the optimistic LOC estimate. The
+implementation must not hit these numbers by deleting comments, compressing
+lines, merging unrelated surfaces, or preserving the deleted content-part
+shape under new names.
+
+PMD exceptions are allowed only as explicit class-local annotations on the
+approved aggregation owners when the source shape keeps the deleted
+content-part files deleted: `DungeonEditorViewModel`,
+`DungeonEditorControlsPanelModel`, and `DungeonEditorStatePanelModel`.
+Conformance review must treat those annotations as part of this exception, not
+as proof by themselves, and must still require green PMD/CPD plus structural
+evidence that duplicate helper logic was consolidated instead of rephrased.
+
 ## Wiring Port Boundary
 
 The wiring-port step may:
