@@ -480,3 +480,23 @@ Der Owner-Smoke steht in
 `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
 unter `dungeon-editor-view`. M4 ist damit auf dem Branch abgeschlossen.
 Naechster Schritt ist M5 `remaining-view-and-shell` Harness Check/Closure.
+
+### 2026-07-11 M5.1 remaining-view-and-shell-harness-closure
+
+Der Harness-Check fuer die verbleibenden View- und Shell-Flaechen ist
+geschlossen. Drei echte Luecken wurden nicht als Component-Fixtures
+stehen gelassen: `catalogCrudControlsHarness` laeuft zusaetzlich ueber
+`HexMapContribution`, `HexMapBinder`, die gerenderten Catalog-CRUD-Controls
+und `HexEditorApplicationService`; `catalogControlsRawInputHarness` laeuft
+zusaetzlich ueber `CatalogContribution`, `CatalogBinder`, `CatalogIntentHandler`
+und die alten Creature-/Encounter-Published-Seams; `searchFilterControlsHarness`
+laeuft zusaetzlich ueber `WorldPlannerContribution`, `WorldPlannerBinder`,
+`SearchFilterControlsView` und die sichtbare World-Planner-Liste. Die alten
+Component-Assertions wurden nicht abgeschwaecht oder entfernt. Der selektive
+Clean-Worktree-Proof fuer nur diese drei Harness-Dateien ist gruen, der
+vollstaendige M5-Harness-Sweep ist in einem sauberen Worktree gruen, und ein
+sauberer Production-Handoff ist gruen. Phase 1 ist PASS; der unabhaengige
+Judge hat nach sauberem Re-Proof APPROVE gegeben. Der temporaere Worktree ist
+entfernt; lokal bleibt nur der Haupt-Worktree auf
+`codex/architecture-migration-m0-charter`. Naechster Schritt ist M5.2:
+Baseline-Metriken fuer `remaining-view-and-shell`.
