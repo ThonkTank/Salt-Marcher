@@ -58,24 +58,24 @@ Resolver field transitions are defined by the
 
 ## Active Debt
 
+## Removed Or Closed Debt
+
 ## PH-20260711-001 - Dungeon Runtime Hit-Ref Target Protocol Residual
 
-- Status: Open
+- Status: Removed
 - Resolution Mode: Next Matching Touch
-- Resolver Status: Blocked
-- Marker: src/features/dungeon/runtime/PointerInteractionTargets.java:6
-- Problem: Runtime target selection still consumes map hit-ref strings and prepared pointer-target frames before choosing typed `DungeonEditorRuntimePointerTarget` values, so the runtime target owner is not yet a narrow typed seam.
+- Resolver Status: Resolved
+- Marker: none - removed during M4.5 `dungeon-editor-view` implementation after runtime target selection moved to typed `CanvasHit` payloads in `DungeonMapHitIndex`/`DungeonMapHitAreaIndex`.
+- Problem: Runtime target selection consumed map hit-ref strings and prepared pointer-target frames before choosing typed `DungeonEditorRuntimePointerTarget` values, so the runtime target owner was not yet a narrow typed seam.
 - Owner Areas: feature-runtime, dungeon-editor-view, project-health
-- Affected Paths: src/features/dungeon/runtime/PointerInteractionTargets.java, src/features/dungeon/runtime/DungeonEditorMapHitRefs.java, src/view/leftbartabs/dungeoneditor/DungeonEditorIntentHandler.java
-- Related Symbols: PointerInteractionTargets.fromHitTargets, DungeonEditorMapHitRefs, hit-ref protocol, prepared pointer target frames, DungeonMapContentModel.pointerHitRefsAt, DungeonMapContentModel.currentPointerTargetFrames
+- Affected Paths: src/features/dungeon/runtime/PointerInteractionTargets.java, src/view/slotcontent/main/dungeonmap/DungeonMapContentModel.java, src/view/slotcontent/main/dungeonmap/DungeonMapHitIndex.java, src/view/slotcontent/main/dungeonmap/DungeonMapHitAreaIndex.java
+- Related Symbols: PointerInteractionTargets.fromRuntimeTargets, DungeonMapContentModel.runtimePointerTargetsAt, DungeonMapHitIndex.CanvasHit, typed runtime pointer targets
 - Intake Trigger: src/features/dungeon/runtime/PointerInteractionTargets.java, src/features/dungeon/runtime/DungeonEditorMapHitRefs.java, src/view/leftbartabs/dungeoneditor/DungeonEditorIntentHandler.java, feature-runtime, dungeon-editor-view
-- Required Next Action: When the runtime hit-ref protocol or editor pointer-consumption path is next touched, move hit-ref/target resolution to a typed runtime target-owner seam or replace this entry with narrower synchronized debt for the remaining runtime/editor owner.
+- Required Next Action: none - M4.5 implementation stores typed `DungeonEditorRuntimePointerTarget` payloads on canvas hits at hit-index construction time; `runtimePointerTargetsAt(...)` no longer exposes hit-ref lists or performs a public prepared-frame lookup.
 - Source Evidence: PH-20260709-002 split during M4.4 harness closure; the Phase 1 reviewer found the original cross-owner register entry blocked `src/view/slotcontent/main/dungeonmap` focused handoff even though render harness coverage was sufficient.
-- Decision: Narrowed from PH-20260709-002 so the active M4.4 rendering pipeline owns the map content projection migration through the roadmap/ledger cycle, while the separate runtime hit-ref protocol remains discoverable at its runtime selection point. This is not a M4.4 harness gap and not a render focused-handoff blocker.
-- Remove When: Runtime pointer selection no longer depends on map hit-ref strings plus prepared pointer-target lookup, or a later runtime/editor owner replaces this entry with a narrower synchronized target-protocol debt.
+- Decision: Closed structurally in M4.5 by moving target choice to `PointerInteractionTargets.fromRuntimeTargets(...)` over typed targets and by moving the map-hit bridge into `DungeonMapHitIndex.CanvasHit`; render `hitRef` strings remain internal scene identity/dedupe keys only.
+- Remove When: removed on 2026-07-11 by M4.5 `dungeon-editor-view` implementation.
 - Last Checked: 2026-07-11
-
-## Removed Or Closed Debt
 
 ## PH-20260709-002 - Dungeon Map Content Model And Hit-Ref Target Protocol Residual
 

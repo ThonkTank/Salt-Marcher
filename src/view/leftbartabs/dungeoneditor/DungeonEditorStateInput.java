@@ -25,79 +25,109 @@ record DungeonEditorStateInput(
         stairGeometry = stairGeometry == null ? StairGeometryInput.none() : stairGeometry;
     }
 
-    static DungeonEditorStateInput fromLegacy(DungeonEditorStateViewInputEvent event) {
-        DungeonEditorStateViewInputEvent safeEvent = event == null
-                ? new DungeonEditorStateViewInputEvent(
-                        0L,
-                        "",
-                        List.of(),
-                        false,
-                        "",
-                        false,
-                        false,
-                        "",
-                        "",
-                        false,
-                        false,
-                        0L,
-                        "",
-                        false,
-                        false,
-                        -1,
-                        "",
-                        "",
-                        "",
-                        false,
-                        false,
-                        false,
-                        0L,
-                        "",
-                        "",
-                        "",
-                        "",
-                        false,
-                        false)
-                : event;
+    static DungeonEditorStateInput narration(
+            long roomId,
+            String visualDescription,
+            List<String> exitDescriptions,
+            boolean saveRequested
+    ) {
         return new DungeonEditorStateInput(
-                NarrationInput.fromLegacy(safeEvent),
-                LabelNameInput.fromLegacy(safeEvent),
-                CorridorPointInput.fromLegacy(safeEvent),
-                TransitionDestinationInput.fromLegacy(safeEvent),
-                TransitionDescriptionInput.fromLegacy(safeEvent),
-                StairGeometryInput.fromLegacy(safeEvent));
+                new NarrationInput(roomId, visualDescription, exitDescriptions, saveRequested),
+                LabelNameInput.none(),
+                CorridorPointInput.none(),
+                TransitionDestinationInput.none(),
+                TransitionDescriptionInput.none(),
+                StairGeometryInput.none());
     }
 
-    DungeonEditorStateViewInputEvent toLegacyEvent() {
-        return new DungeonEditorStateViewInputEvent(
-                narration.roomId(),
-                narration.visualDescription(),
-                narration.exitDescriptions(),
-                narration.saveRequested(),
-                labelName.name(),
-                labelName.inputObserved(),
-                labelName.saveRequested(),
-                corridorPoint.q(),
-                corridorPoint.r(),
-                corridorPoint.inputObserved(),
-                corridorPoint.submitRequested(),
-                transitionDescription.transitionId(),
-                transitionDescription.description(),
-                transitionDescription.inputObserved(),
-                transitionDescription.saveRequested(),
-                transitionDestination.destination().legacyOptionIndex(),
-                transitionDestination.mapId(),
-                transitionDestination.tileId(),
-                transitionDestination.transitionId(),
-                transitionDestination.bidirectional(),
-                transitionDestination.inputObserved(),
-                transitionDestination.saveRequested(),
-                stairGeometry.stairId(),
-                stairGeometry.shape().externalName(),
-                stairGeometry.direction().externalName(),
-                stairGeometry.dimension1(),
-                stairGeometry.dimension2(),
-                stairGeometry.inputObserved(),
-                stairGeometry.saveRequested());
+    static DungeonEditorStateInput labelName(
+            String name,
+            boolean inputObserved,
+            boolean saveRequested
+    ) {
+        return new DungeonEditorStateInput(
+                NarrationInput.none(),
+                new LabelNameInput(name, inputObserved, saveRequested),
+                CorridorPointInput.none(),
+                TransitionDestinationInput.none(),
+                TransitionDescriptionInput.none(),
+                StairGeometryInput.none());
+    }
+
+    static DungeonEditorStateInput corridorPoint(
+            String q,
+            String r,
+            boolean submitRequested
+    ) {
+        return new DungeonEditorStateInput(
+                NarrationInput.none(),
+                LabelNameInput.none(),
+                new CorridorPointInput(q, r, true, submitRequested),
+                TransitionDestinationInput.none(),
+                TransitionDescriptionInput.none(),
+                StairGeometryInput.none());
+    }
+
+    static DungeonEditorStateInput transitionDescription(
+            long transitionId,
+            String description,
+            boolean saveRequested
+    ) {
+        return new DungeonEditorStateInput(
+                NarrationInput.none(),
+                LabelNameInput.none(),
+                CorridorPointInput.none(),
+                TransitionDestinationInput.none(),
+                new TransitionDescriptionInput(transitionId, description, true, saveRequested),
+                StairGeometryInput.none());
+    }
+
+    static DungeonEditorStateInput transitionDestination(
+            int destinationOptionIndex,
+            String mapId,
+            String tileId,
+            String transitionId,
+            boolean bidirectional,
+            boolean saveRequested
+    ) {
+        return new DungeonEditorStateInput(
+                NarrationInput.none(),
+                LabelNameInput.none(),
+                CorridorPointInput.none(),
+                new TransitionDestinationInput(
+                        TransitionDestinationOption.fromOptionIndex(destinationOptionIndex),
+                        mapId,
+                        tileId,
+                        transitionId,
+                        bidirectional,
+                        true,
+                        saveRequested),
+                TransitionDescriptionInput.none(),
+                StairGeometryInput.none());
+    }
+
+    static DungeonEditorStateInput stairGeometry(
+            long stairId,
+            String shapeName,
+            String directionName,
+            String dimension1,
+            String dimension2,
+            boolean saveRequested
+    ) {
+        return new DungeonEditorStateInput(
+                NarrationInput.none(),
+                LabelNameInput.none(),
+                CorridorPointInput.none(),
+                TransitionDestinationInput.none(),
+                TransitionDescriptionInput.none(),
+                new StairGeometryInput(
+                        stairId,
+                        StairShapeOption.fromExternalName(shapeName),
+                        DirectionOption.fromExternalName(directionName),
+                        dimension1,
+                        dimension2,
+                        true,
+                        saveRequested));
     }
 
     record NarrationInput(
@@ -118,13 +148,6 @@ record DungeonEditorStateInput(
             return new NarrationInput(0L, "", List.of(), false);
         }
 
-        static NarrationInput fromLegacy(DungeonEditorStateViewInputEvent event) {
-            return new NarrationInput(
-                    event.roomId(),
-                    event.visualDescription(),
-                    event.exitDescriptions(),
-                    event.narrationSaveRequested());
-        }
     }
 
     record LabelNameInput(
@@ -140,12 +163,6 @@ record DungeonEditorStateInput(
             return new LabelNameInput("", false, false);
         }
 
-        static LabelNameInput fromLegacy(DungeonEditorStateViewInputEvent event) {
-            return new LabelNameInput(
-                    event.labelName(),
-                    event.labelNameInputObserved(),
-                    event.labelNameSaveRequested());
-        }
     }
 
     record CorridorPointInput(
@@ -163,13 +180,6 @@ record DungeonEditorStateInput(
             return new CorridorPointInput("", "", false, false);
         }
 
-        static CorridorPointInput fromLegacy(DungeonEditorStateViewInputEvent event) {
-            return new CorridorPointInput(
-                    event.corridorPointQ(),
-                    event.corridorPointR(),
-                    event.corridorPointInputObserved(),
-                    event.corridorPointSubmitRequested());
-        }
     }
 
     record TransitionDestinationInput(
@@ -199,17 +209,6 @@ record DungeonEditorStateInput(
                     false);
         }
 
-        static TransitionDestinationInput fromLegacy(DungeonEditorStateViewInputEvent event) {
-            return new TransitionDestinationInput(
-                    TransitionDestinationOption.fromLegacyOptionIndex(
-                            event.transitionDestinationTypeOptionIndex()),
-                    event.transitionDestinationMapId(),
-                    event.transitionDestinationTileId(),
-                    event.transitionDestinationTransitionId(),
-                    event.transitionDestinationBidirectional(),
-                    event.transitionDestinationInputObserved(),
-                    event.transitionDestinationSaveRequested());
-        }
     }
 
     record TransitionDescriptionInput(
@@ -227,13 +226,6 @@ record DungeonEditorStateInput(
             return new TransitionDescriptionInput(0L, "", false, false);
         }
 
-        static TransitionDescriptionInput fromLegacy(DungeonEditorStateViewInputEvent event) {
-            return new TransitionDescriptionInput(
-                    event.transitionId(),
-                    event.transitionDescription(),
-                    event.transitionDescriptionInputObserved(),
-                    event.transitionDescriptionSaveRequested());
-        }
     }
 
     record StairGeometryInput(
@@ -264,16 +256,6 @@ record DungeonEditorStateInput(
                     false);
         }
 
-        static StairGeometryInput fromLegacy(DungeonEditorStateViewInputEvent event) {
-            return new StairGeometryInput(
-                    event.stairId(),
-                    StairShapeOption.fromExternalName(event.stairShapeName()),
-                    DirectionOption.fromExternalName(event.stairDirectionName()),
-                    event.stairDimension1(),
-                    event.stairDimension2(),
-                    event.stairGeometryInputObserved(),
-                    event.stairGeometrySaveRequested());
-        }
     }
 
     enum TransitionDestinationOption {
@@ -281,19 +263,19 @@ record DungeonEditorStateInput(
         OVERWORLD_TILE(1),
         DUNGEON_MAP(2);
 
-        private final int legacyOptionIndex;
+        private final int optionIndex;
 
-        TransitionDestinationOption(int legacyOptionIndex) {
-            this.legacyOptionIndex = legacyOptionIndex;
+        TransitionDestinationOption(int optionIndex) {
+            this.optionIndex = optionIndex;
         }
 
-        int legacyOptionIndex() {
-            return legacyOptionIndex;
+        int optionIndex() {
+            return optionIndex;
         }
 
-        static TransitionDestinationOption fromLegacyOptionIndex(int optionIndex) {
+        static TransitionDestinationOption fromOptionIndex(int optionIndex) {
             for (TransitionDestinationOption option : values()) {
-                if (option.legacyOptionIndex == optionIndex) {
+                if (option.optionIndex == optionIndex) {
                     return option;
                 }
             }

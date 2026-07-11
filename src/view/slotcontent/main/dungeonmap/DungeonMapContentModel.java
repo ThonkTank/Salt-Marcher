@@ -47,7 +47,6 @@ public final class DungeonMapContentModel {
     private final DungeonMapFrameProjector frameProjector =
             new DungeonMapFrameProjector();
     private DungeonMapRenderState renderState;
-    private Map<String, PreparedPointerTargetFrame> currentPointerTargetFrames = Map.of();
 
     // Public ContentModel API
 
@@ -108,21 +107,9 @@ public final class DungeonMapContentModel {
         refreshCanvasViewport(viewportState.zoomAround(canvasX, canvasY, factor));
     }
 
-    public List<String> pointerHitRefsAt(double sceneX, double sceneY) {
-        return hitsAt(sceneX, sceneY).stream()
-                .map(DungeonMapHitIndex.CanvasHit::hitRef)
-                .toList();
-    }
-
-    public Map<String, PreparedPointerTargetFrame> currentPointerTargetFrames() {
-        return Map.copyOf(currentPointerTargetFrames);
-    }
-
     public List<DungeonEditorRuntimePointerTarget> runtimePointerTargetsAt(double sceneX, double sceneY) {
-        Map<String, PreparedPointerTargetFrame> pointerTargets = currentPointerTargetFrames();
-        return pointerHitRefsAt(sceneX, sceneY).stream()
-                .map(pointerTargets::get)
-                .map(DungeonEditorRuntimePointerTarget::fromPreparedFrame)
+        return hitsAt(sceneX, sceneY).stream()
+                .map(DungeonMapHitIndex.CanvasHit::runtimePointerTarget)
                 .toList();
     }
 
@@ -157,7 +144,6 @@ public final class DungeonMapContentModel {
                 inlineLabelProjection(safeFrame.inlineLabelEditSession()));
         DungeonEditorPreparedFrameFacts facts = safeFrame.preparedFacts();
         DungeonEditorPreparedFrameFacts.MapInteractionFrame interactionFrame = facts.mapInteractionFrame();
-        currentPointerTargetFrames = preparedPointerTargets(interactionFrame.pointerTargets());
         applyEditorSurfaceFrame(
                 facts.mapSurfaceFrame(),
                 mapInteractionFrame(interactionFrame));
@@ -227,8 +213,10 @@ public final class DungeonMapContentModel {
         DungeonEditorPreparedFrameFacts.MapInteractionFrame safeFrame = frame == null
                 ? DungeonEditorPreparedFrameFacts.MapInteractionFrame.empty()
                 : frame;
+        Map<String, PreparedPointerTargetFrame> pointerTargets = preparedPointerTargets(safeFrame.pointerTargets());
         return new MapInteractionFrame(
-                renderPointerTargets(safeFrame.pointerTargets()),
+                renderPointerTargets(pointerTargets),
+                runtimePointerTargets(pointerTargets),
                 safeFrame.previewHandleHitRefs());
     }
 
@@ -249,6 +237,21 @@ public final class DungeonMapContentModel {
             neutralTargets.put(entry.getKey(), renderPointerTarget(entry.getValue()));
         }
         return Map.copyOf(neutralTargets);
+    }
+
+    private static Map<String, DungeonEditorRuntimePointerTarget> runtimePointerTargets(
+            Map<String, PreparedPointerTargetFrame> targets
+    ) {
+        if (targets == null || targets.isEmpty()) {
+            return Map.of();
+        }
+        Map<String, DungeonEditorRuntimePointerTarget> runtimeTargets = new LinkedHashMap<>();
+        for (Map.Entry<String, PreparedPointerTargetFrame> entry : targets.entrySet()) {
+            runtimeTargets.put(
+                    entry.getKey(),
+                    DungeonEditorRuntimePointerTarget.fromPreparedFrame(entry.getValue()));
+        }
+        return Map.copyOf(runtimeTargets);
     }
 
     private static PointerTarget renderPointerTarget(PreparedPointerTargetFrame target) {
@@ -373,7 +376,13 @@ public final class DungeonMapContentModel {
     private void showRenderState(DungeonMapRenderState nextRenderState, MapInteractionFrame interactionFrame) {
         renderState = nextRenderState == null ? renderState : nextRenderState;
         PointerTarget retainedHoverTarget = frameConsumption.consumeRenderFrame(interactionFrame);
-        showRenderScene(rebuildRenderSceneProjection(PointerTarget.empty()), true);
+        MapInteractionFrame safeInteractionFrame = interactionFrame == null
+                ? MapInteractionFrame.empty()
+                : interactionFrame;
+        showRenderScene(
+                rebuildRenderSceneProjection(PointerTarget.empty()),
+                true,
+                safeInteractionFrame.runtimePointerTargets());
         if (!retainedHoverTarget.isEmptyTarget()) {
             showHoverOverlay(retainedHoverTarget);
         }
@@ -389,11 +398,23 @@ public final class DungeonMapContentModel {
             DungeonMapSceneAssembler.RenderSceneProjection projection,
             boolean rebuildHitGeometry
     ) {
+        showRenderScene(projection, rebuildHitGeometry, Map.of());
+    }
+
+    private void showRenderScene(
+            DungeonMapSceneAssembler.RenderSceneProjection projection,
+            boolean rebuildHitGeometry,
+            Map<String, DungeonEditorRuntimePointerTarget> runtimePointerTargets
+    ) {
         RenderScene renderScene = projection == null
                 ? RenderScene.empty(placeholderTitle)
                 : projection.renderScene();
         if (rebuildHitGeometry) {
-            hitIndex.update(projection == null ? null : projection.buckets(), renderState, renderScene);
+            hitIndex.update(
+                    projection == null ? null : projection.buckets(),
+                    renderState,
+                    renderScene,
+                    runtimePointerTargets);
         }
         setCanvasState(canvasState.get().withRenderScene(
                 renderScene,
@@ -1287,17 +1308,19 @@ public final class DungeonMapContentModel {
 
     record MapInteractionFrame(
             Map<String, PointerTarget> pointerTargets,
+            Map<String, DungeonEditorRuntimePointerTarget> runtimePointerTargets,
             List<String> previewHandleHitRefs
     ) {
         MapInteractionFrame {
             pointerTargets = pointerTargets == null ? Map.of() : Map.copyOf(pointerTargets);
+            runtimePointerTargets = runtimePointerTargets == null ? Map.of() : Map.copyOf(runtimePointerTargets);
             previewHandleHitRefs = previewHandleHitRefs == null
                     ? List.of()
                     : List.copyOf(previewHandleHitRefs);
         }
 
         static MapInteractionFrame empty() {
-            return new MapInteractionFrame(Map.of(), List.of());
+            return new MapInteractionFrame(Map.of(), Map.of(), List.of());
         }
     }
 

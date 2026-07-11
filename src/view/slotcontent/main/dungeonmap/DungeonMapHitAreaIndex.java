@@ -6,6 +6,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.MapCanvasPoint;
 
 final class DungeonMapHitAreaIndex {
@@ -20,11 +21,14 @@ final class DungeonMapHitAreaIndex {
         return new DungeonMapHitAreaIndex(Map.of());
     }
 
-    static DungeonMapHitAreaIndex from(List<HitArea> hitAreas) {
+    static DungeonMapHitAreaIndex from(
+            List<HitArea> hitAreas,
+            Map<String, DungeonEditorRuntimePointerTarget> runtimePointerTargets
+    ) {
         if (hitAreas.isEmpty()) {
             return empty();
         }
-        return new DungeonMapHitAreaIndex(HitBuckets.from(hitAreas));
+        return new DungeonMapHitAreaIndex(HitBuckets.from(hitAreas, runtimePointerTargets));
     }
 
     List<DungeonMapHitIndex.CanvasHit> hitsAt(double sceneX, double sceneY, double gridSize) {
@@ -103,10 +107,16 @@ final class DungeonMapHitAreaIndex {
 
     private record HitCandidate(HitArea area, DungeonMapHitIndex.CanvasHit hit, HitBounds bounds) {
 
-        private static HitCandidate from(HitArea area) {
+        private static HitCandidate from(
+                HitArea area,
+                Map<String, DungeonEditorRuntimePointerTarget> runtimePointerTargets
+        ) {
+            Map<String, DungeonEditorRuntimePointerTarget> safeTargets = runtimePointerTargets == null
+                    ? Map.of()
+                    : runtimePointerTargets;
             return new HitCandidate(
                     area,
-                    new DungeonMapHitIndex.CanvasHit(area.hitRef()),
+                    new DungeonMapHitIndex.CanvasHit(area.hitRef(), safeTargets.get(area.hitRef())),
                     area.bounds());
         }
 
@@ -172,13 +182,16 @@ final class DungeonMapHitAreaIndex {
         private static final double HIT_TOLERANCE_PIXELS = 7.0;
         private static final double HIT_BUCKET_SIZE_SCENE = 4.0;
 
-        private static Map<Long, List<HitCandidate>> from(List<HitArea> hitAreas) {
+        private static Map<Long, List<HitCandidate>> from(
+                List<HitArea> hitAreas,
+                Map<String, DungeonEditorRuntimePointerTarget> runtimePointerTargets
+        ) {
             Map<Long, List<HitCandidate>> nextBuckets = new LinkedHashMap<>();
             for (HitArea hitArea : hitAreas) {
                 if (hitArea.hitRef().isBlank()) {
                     continue;
                 }
-                HitCandidate candidate = HitCandidate.from(hitArea);
+                HitCandidate candidate = HitCandidate.from(hitArea, runtimePointerTargets);
                 HitBounds bounds = hitArea.bounds().expand(maximumHitIndexTolerance());
                 int minBucketX = bucket(bounds.minX());
                 int maxBucketX = bucket(bounds.maxX());

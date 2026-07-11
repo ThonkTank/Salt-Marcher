@@ -253,6 +253,7 @@ final class DungeonMapFrameConsumption {
                 MapInteractionFrame second
         ) {
             return Objects.equals(first.pointerTargets(), second.pointerTargets())
+                    && Objects.equals(first.runtimePointerTargets(), second.runtimePointerTargets())
                     && Objects.equals(first.previewHandleHitRefs(), second.previewHandleHitRefs());
         }
     }

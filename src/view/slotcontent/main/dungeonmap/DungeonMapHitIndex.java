@@ -1,7 +1,9 @@
 package src.view.slotcontent.main.dungeonmap;
 
 import java.util.List;
+import java.util.Map;
 import org.jspecify.annotations.Nullable;
+import src.features.dungeon.runtime.DungeonEditorRuntimePointerTarget;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.RenderScene;
 
 final class DungeonMapHitIndex {
@@ -11,10 +13,13 @@ final class DungeonMapHitIndex {
     void update(
             DungeonMapSceneAssembler.SceneBuckets buckets,
             @Nullable DungeonMapRenderState displayModel,
-            RenderScene renderScene
+            RenderScene renderScene,
+            Map<String, DungeonEditorRuntimePointerTarget> runtimePointerTargets
     ) {
         hitIndex = renderScene != null && renderScene.containsRenderablePrimitives() && buckets != null
-                ? DungeonMapHitAreaIndex.from(DungeonMapHitAreaProjector.project(buckets, displayModel))
+                ? DungeonMapHitAreaIndex.from(
+                        DungeonMapHitAreaProjector.project(buckets, displayModel),
+                        runtimePointerTargets)
                 : DungeonMapHitAreaIndex.empty();
     }
 
@@ -23,11 +28,15 @@ final class DungeonMapHitIndex {
     }
 
     record CanvasHit(
-            String hitRef
+            String hitRef,
+            DungeonEditorRuntimePointerTarget runtimePointerTarget
     ) {
 
         CanvasHit {
             hitRef = hitRef == null ? "" : hitRef;
+            runtimePointerTarget = runtimePointerTarget == null
+                    ? DungeonEditorRuntimePointerTarget.empty()
+                    : runtimePointerTarget;
         }
     }
 }

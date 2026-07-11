@@ -1,7 +1,7 @@
 package src.features.dungeon.runtime;
 
 import java.util.List;
-// PROJECT_HEALTH_DEBT[PH-20260711-001]: runtime hit-ref strings still select typed pointer targets through map hit-ref protocol; owner=feature-runtime; remove_when=hit-ref selection uses typed runtime target-owner seam without string hit-ref lookup.
+
 public record PointerInteractionTargets(
         double sceneX,
         double sceneY,
