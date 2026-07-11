@@ -42,7 +42,7 @@ final class ShellWorkspacePane extends SplitPane {
     private @Nullable ShellSlotContent activeSlotContent;
 
     ShellWorkspacePane() {
-        ShellFx.addStyleClass(controlsPanel, "control-panel");
+        controlsPanel.getStyleClass().add("control-panel");
         controlsPanel.setPrefWidth(240);
         controlsPanel.setMinWidth(200);
         controlsPanel.setMaxWidth(Double.MAX_VALUE);
@@ -61,12 +61,12 @@ final class ShellWorkspacePane extends SplitPane {
         ShellContentLayout.makeShrinkable(stateContainer);
         ShellContentLayout.clipToBounds(detailsContainer);
         ShellContentLayout.clipToBounds(stateContainer);
-        ShellFx.addChild(detailsContainer, inspectorPane);
-        ShellFx.addChild(stateContainer, ShellContentLayout.stateScrollable(emptyStateTabPlaceholder));
+        detailsContainer.getChildren().add(inspectorPane);
+        stateContainer.getChildren().add(ShellContentLayout.stateScrollable(emptyStateTabPlaceholder));
 
         rightSplit.setOrientation(Orientation.VERTICAL);
         ShellContentLayout.makeShrinkable(rightSplit);
-        ShellFx.setSplitPaneItems(rightSplit, detailsContainer, stateContainer);
+        rightSplit.getItems().setAll(detailsContainer, stateContainer);
 
         setOrientation(Orientation.HORIZONTAL);
         getItems().addAll(leftColumn, rightSplit);
@@ -85,9 +85,9 @@ final class ShellWorkspacePane extends SplitPane {
         this.activeSlotContent = Objects.requireNonNull(slotContent, "slotContent");
         this.activeTabMode = Objects.requireNonNull(mode, "mode");
         applyControls(slotContent.controls());
-        ShellFx.clearChildren(mainPanel);
-        ShellFx.addChild(mainPanel, ShellContentLayout.shellOwned(Objects.requireNonNull(slotContent.main(), "main")));
-        ShellFx.setChildren(detailsContainer, inspectorPane);
+        mainPanel.getChildren().clear();
+        mainPanel.getChildren().add(ShellContentLayout.shellOwned(Objects.requireNonNull(slotContent.main(), "main")));
+        detailsContainer.getChildren().setAll(inspectorPane);
         refreshStatePanel();
     }
 
@@ -115,13 +115,13 @@ final class ShellWorkspacePane extends SplitPane {
     }
 
     private void applyControls(@Nullable Node controls) {
-        ShellFx.clearChildren(controlsPanel);
+        controlsPanel.getChildren().clear();
         if (controls != null) {
             if (controls instanceof Region region) {
                 region.setMinWidth(0.0);
                 region.setMaxWidth(Double.MAX_VALUE);
             }
-            ShellFx.addChild(controlsPanel, controls);
+            controlsPanel.getChildren().add(controls);
             VBox.setVgrow(controls, Priority.ALWAYS);
         }
         controlsPanel.setVisible(controls != null);
@@ -130,30 +130,30 @@ final class ShellWorkspacePane extends SplitPane {
 
     private void refreshStatePanel() {
         if (activeTabMode == null) {
-            ShellFx.clearChildren(stateContainer);
-            ShellFx.addChild(stateContainer, ShellContentLayout.stateScrollable(emptyStateTabPlaceholder));
+            stateContainer.getChildren().clear();
+            stateContainer.getChildren().add(ShellContentLayout.stateScrollable(emptyStateTabPlaceholder));
             return;
         }
-        Node editorState = activeSlotContent == null ? null : activeSlotContent.editorState();
-        ShellFx.clearChildren(stateContainer);
+        Node editorState = activeSlotContent == null ? null : activeSlotContent.stateContent();
+        stateContainer.getChildren().clear();
         if (editorState != null) {
-            ShellFx.addChild(stateContainer, ShellContentLayout.stateScrollable(editorState));
+            stateContainer.getChildren().add(ShellContentLayout.stateScrollable(editorState));
             return;
         }
         if (stateTabPane.hasTabs()) {
-            ShellFx.addChild(stateContainer, ShellContentLayout.stateScrollable(stateTabPane));
+            stateContainer.getChildren().add(ShellContentLayout.stateScrollable(stateTabPane));
             return;
         }
-        ShellFx.addChild(stateContainer, ShellContentLayout.stateScrollable(
+        stateContainer.getChildren().add(ShellContentLayout.stateScrollable(
                 activeTabMode == ShellLeftBarTabMode.EDITOR ? editorStatePlaceholder : emptyStateTabPlaceholder));
     }
 
     private static Node createPlaceholderPane(String titleText, String bodyText) {
         Label title = new Label(titleText);
-        ShellFx.addStyleClasses(title, "section-header", "text-muted");
+        title.getStyleClass().addAll("section-header", "text-muted");
 
         Label body = new Label(bodyText);
-        ShellFx.addStyleClass(body, "text-muted");
+        body.getStyleClass().add("text-muted");
         body.setWrapText(true);
 
         VBox box = new VBox(8, title, body);

@@ -8,6 +8,7 @@ import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import org.jspecify.annotations.Nullable;
+import src.domain.party.PartyApplicationService;
 import src.domain.party.published.AdjustPartyXpCommand;
 import src.domain.party.published.AdventuringDayResult;
 import src.domain.party.published.AdventuringDaySummary;
@@ -209,13 +210,13 @@ final class PartyTopBarViewModel {
         showEditor(currentEditorPanel().withDeleteConfirmationVisible(false));
     }
 
-    Optional<Object> prepareSubmit(EditorDraft draft) {
+    Optional<SubmitCommand> prepareSubmit(EditorDraft draft) {
         syncDraft(draft);
         EditorPanelModel current = currentEditorPanel();
         if (current.editingExisting()) {
-            return prepareUpdateCharacter(current.memberId(), draft).map(command -> command);
+            return prepareUpdateCharacter(current.memberId(), draft).map(SubmitCommand::update);
         }
-        return prepareCreateCharacter(draft).map(command -> command);
+        return prepareCreateCharacter(draft).map(SubmitCommand::create);
     }
 
     Optional<DeleteCharacterCommand> prepareDeleteConfirmed(EditorDraft draft) {
@@ -441,6 +442,28 @@ final class PartyTopBarViewModel {
             @Nullable MutationResult mutationResult,
             @Nullable PanelData panelData
     ) {
+    }
+
+    record SubmitCommand(
+            @Nullable CreateCharacterCommand createCommand,
+            @Nullable UpdateCharacterCommand updateCommand
+    ) {
+
+        static SubmitCommand create(CreateCharacterCommand command) {
+            return new SubmitCommand(command, null);
+        }
+
+        static SubmitCommand update(UpdateCharacterCommand command) {
+            return new SubmitCommand(null, command);
+        }
+
+        void dispatch(PartyApplicationService partyService) {
+            if (createCommand != null) {
+                partyService.createCharacter(createCommand);
+            } else if (updateCommand != null) {
+                partyService.updateCharacter(updateCommand);
+            }
+        }
     }
 
     record EditorDraft(

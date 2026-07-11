@@ -33,7 +33,7 @@ final class ShellNavigationSvgRenderer {
             return missingGraphic.get();
         }
         addViewBoxTransform(icon, ShellNavigationSvgViewBox.from(root, DEFAULT_SIZE));
-        ShellFx.addChild(pane, icon);
+        pane.getChildren().add(icon);
         return pane;
     }
 
@@ -44,7 +44,7 @@ final class ShellNavigationSvgRenderer {
         }
         String classAttribute = element.getAttribute("class");
         if (classAttribute == null || classAttribute.isBlank()) {
-            ShellFx.addStyleClass(graphic, "nav-icon-stroke");
+            graphic.getStyleClass().add("nav-icon-stroke");
         } else {
             applyStyleClasses(graphic, classAttribute);
         }
@@ -58,7 +58,7 @@ final class ShellNavigationSvgRenderer {
 
     private static StackPane iconPane() {
         StackPane pane = new StackPane();
-        ShellFx.addStyleClass(pane, "nav-icon");
+        pane.getStyleClass().add("nav-icon");
         pane.setMinSize(DEFAULT_SIZE, DEFAULT_SIZE);
         pane.setPrefSize(DEFAULT_SIZE, DEFAULT_SIZE);
         pane.setMaxSize(DEFAULT_SIZE, DEFAULT_SIZE);
@@ -72,7 +72,7 @@ final class ShellNavigationSvgRenderer {
         }
         Arrays.stream(classAttribute.trim().split("\\s+"))
                 .filter(styleClass -> !styleClass.isBlank())
-                .forEach(styleClass -> ShellFx.addStyleClass(node, styleClass));
+                .forEach(styleClass -> node.getStyleClass().add(styleClass));
     }
 
     private static final class SvgIconGroup extends Group {

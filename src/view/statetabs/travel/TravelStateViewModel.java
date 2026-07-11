@@ -4,7 +4,7 @@ import javafx.beans.property.ReadOnlyStringProperty;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import src.domain.hex.published.HexTravelSnapshot;
 
-final class TravelStateContentModel {
+final class TravelStateViewModel {
 
     private final ReadOnlyStringWrapper icon = new ReadOnlyStringWrapper("W");
     private final ReadOnlyStringWrapper location = new ReadOnlyStringWrapper("\u2014 Kein Ort gew\u00e4hlt \u2014");

@@ -65,7 +65,7 @@ public final class SaltMarcherPreloader extends Preloader {
         root.setPadding(new Insets(24));
 
         Scene scene = new Scene(root, 360, 220);
-        BootstrapFx.addStylesheet(scene, SaltMarcherPreloader.class.getResource("/salt-marcher.css").toExternalForm());
+        scene.getStylesheets().add(SaltMarcherPreloader.class.getResource("/salt-marcher.css").toExternalForm());
         return scene;
     }
 

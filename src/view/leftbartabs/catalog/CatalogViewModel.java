@@ -1,6 +1,8 @@
 package src.view.leftbartabs.catalog;
 
 import java.util.Objects;
+import javafx.beans.property.ReadOnlyLongProperty;
+import javafx.beans.property.ReadOnlyLongWrapper;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.RefreshCreatureCatalogCommand;
 import src.domain.creatures.published.RefreshCreatureFilterOptionsCommand;
@@ -12,7 +14,7 @@ import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.RefreshEncounterTableCatalogCommand;
 
-final class CatalogIntentHandler {
+final class CatalogViewModel {
 
     private static final long NO_CREATURE_ID = 0L;
     private static final int MIN_DIFFICULTY_LEVEL = 1;
@@ -20,26 +22,40 @@ final class CatalogIntentHandler {
     private static final int NEUTRAL_DIFFICULTY_LEVEL = 3;
     private static final int MAX_DIFFICULTY_LEVEL = 4;
 
-    private final CatalogContributionModel presentationModel;
-    private final CatalogControlsContentModel controlsModel;
-    private final CatalogMainContentModel mainModel;
+    private final CatalogMainContentModel mainContentModel = new CatalogMainContentModel();
+    private final CatalogControlsContentModel controlsContentModel = new CatalogControlsContentModel();
+    private final ReadOnlyLongWrapper creatureDetailSelection = new ReadOnlyLongWrapper(0L);
     private final CreaturesApplicationService creatures;
     private final EncounterTableApplicationService encounterTables;
     private final EncounterApplicationService encounters;
 
-    CatalogIntentHandler(
-            CatalogContributionModel presentationModel,
+    CatalogViewModel(
             CreaturesApplicationService creatures,
             EncounterTableApplicationService encounterTables,
             EncounterApplicationService encounters
     ) {
-        this.presentationModel = Objects.requireNonNull(presentationModel, "presentationModel");
-        controlsModel = presentationModel.controlsContentModel();
-        mainModel = presentationModel.mainContentModel();
         this.creatures = Objects.requireNonNull(creatures, "creatures");
         this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
-        refreshCatalogSources();
+        creatures.refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
+        encounterTables.refreshCatalog(new RefreshEncounterTableCatalogCommand());
+        refreshCatalog();
+    }
+
+    CatalogMainContentModel mainContentModel() {
+        return mainContentModel;
+    }
+
+    CatalogControlsContentModel controlsContentModel() {
+        return controlsContentModel;
+    }
+
+    ReadOnlyLongProperty creatureDetailSelectionProperty() {
+        return creatureDetailSelection.getReadOnlyProperty();
+    }
+
+    void setCreatureDetailSelection(long creatureId) {
+        creatureDetailSelection.set(Math.max(0L, creatureId));
     }
 
     void consume(CatalogControlsViewInputEvent event) {
@@ -47,12 +63,12 @@ final class CatalogIntentHandler {
             return;
         }
 
-        CatalogControlsContentModel.InteractionState interactionState = controlsModel.interactionState();
+        CatalogControlsContentModel.InteractionState interactionState = controlsContentModel.interactionState();
         CatalogControlsContentModel.LocalFilterState previousLocalFilters = interactionState.localFilters();
         CatalogControlsContentModel.ControlsState previousDraftControls = interactionState.draftControls();
         CatalogControlsContentModel.ControlsState authoritativeControls = interactionState.domainControls();
 
-        controlsModel.applyControlsDraft(new CatalogControlsContentModel.ControlsDraft(
+        controlsContentModel.applyControlsDraft(new CatalogControlsContentModel.ControlsDraft(
                 new CatalogControlsContentModel.LocalFilterState(
                         event.nameQuery(),
                         event.challengeRatingMin(),
@@ -89,9 +105,10 @@ final class CatalogIntentHandler {
                 new CatalogControlsContentModel.FilterDropdownState(event.alignmentPopupOpen(), event.alignmentPopupQuery()),
                 new CatalogControlsContentModel.FilterDropdownState(event.encounterTablePopupOpen(), "")));
 
-        CatalogControlsContentModel.InteractionState currentState = controlsModel.interactionState();
+        CatalogControlsContentModel.InteractionState currentState = controlsContentModel.interactionState();
         if (!previousLocalFilters.equals(currentState.localFilters())) {
-            refreshSearch();
+            mainContentModel.beginSearch();
+            refreshCatalog();
         }
 
         CatalogControlsContentModel.ControlsState currentDraftControls = currentState.draftControls();
@@ -120,37 +137,35 @@ final class CatalogIntentHandler {
             return;
         }
         if (!event.sortKey().isBlank()) {
-            mainModel.selectSort(event.sortKey());
-            refreshSearch();
+            mainContentModel.selectSort(event.sortKey());
+            mainContentModel.beginSearch();
+            refreshCatalog();
             return;
         }
         if (event.pageShift() != 0) {
-            mainModel.shiftPage(event.pageShift());
-            refreshSearch();
+            mainContentModel.shiftPage(event.pageShift());
+            mainContentModel.beginSearch();
+            refreshCatalog();
             return;
         }
         if (event.openedCreatureId() > NO_CREATURE_ID) {
-            openCreatureDetail(event.openedCreatureId());
+            creatures.selectCreatureDetail(new SelectCreatureDetailCommand(event.openedCreatureId()));
+            setCreatureDetailSelection(event.openedCreatureId());
             return;
         }
         if (event.actionCreatureId() > NO_CREATURE_ID) {
-            addCreatureToEncounter(event.actionCreatureId());
+            encounters.applyState(ApplyEncounterStateCommand.addCreature(event.actionCreatureId()));
         }
     }
 
-    private void refreshSearch() {
-        mainModel.beginSearch();
-        refreshCatalog();
-    }
-
     void applyEncounterBuilderInputs(EncounterBuilderInputs builderInputs) {
-        if (controlsModel.applyEncounterBuilderInputs(builderInputs)) {
+        if (controlsContentModel.applyEncounterBuilderInputs(builderInputs)) {
             refreshCatalog();
         }
     }
 
     private void refreshCatalog() {
-        CatalogControlsContentModel.CreatureFilters searchFilters = controlsModel.currentSearchFilters();
+        CatalogControlsContentModel.CreatureFilters searchFilters = controlsContentModel.currentSearchFilters();
         creatures.refreshCatalog(new RefreshCreatureCatalogCommand(
                 searchFilters.nameQuery(),
                 searchFilters.challengeRatingMin(),
@@ -160,29 +175,14 @@ final class CatalogIntentHandler {
                 searchFilters.subtypes(),
                 searchFilters.biomes(),
                 searchFilters.alignments(),
-                mainModel.currentSortFieldName(),
-                mainModel.currentSortDirectionName(),
+                mainContentModel.currentSortFieldName(),
+                mainContentModel.currentSortDirectionName(),
                 50,
-                mainModel.currentPageOffset()));
-    }
-
-    private void refreshCatalogSources() {
-        creatures.refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
-        encounterTables.refreshCatalog(new RefreshEncounterTableCatalogCommand());
-        refreshCatalog();
-    }
-
-    private void openCreatureDetail(long creatureId) {
-        creatures.selectCreatureDetail(new SelectCreatureDetailCommand(creatureId));
-        presentationModel.setCreatureDetailSelection(creatureId);
-    }
-
-    private void addCreatureToEncounter(long creatureId) {
-        encounters.applyState(ApplyEncounterStateCommand.addCreature(creatureId));
+                mainContentModel.currentPageOffset()));
     }
 
     private static int toDifficultyLevel(double value) {
-        int rounded = (int) Math.round(value);
+        int rounded = roundedLevel(value);
         if (rounded <= MIN_DIFFICULTY_LEVEL) {
             return MIN_DIFFICULTY_LEVEL;
         }

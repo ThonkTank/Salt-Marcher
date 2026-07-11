@@ -28,7 +28,7 @@ final class ShellToolbarStrip extends HBox {
         super(8);
         getStyleClass().add("toolbar");
         setAlignment(Pos.CENTER_LEFT);
-        ShellFx.addStyleClass(title, "title-large");
+        title.getStyleClass().add("title-large");
         setHgrow(spacer, Priority.ALWAYS);
         getChildren().addAll(title, spacer);
     }

@@ -65,7 +65,7 @@ final class ShellNavigationGraphicLoader {
 
     private static StackPane iconPane() {
         StackPane pane = new StackPane();
-        ShellFx.addStyleClass(pane, "nav-icon");
+        pane.getStyleClass().add("nav-icon");
         pane.setMinSize(DEFAULT_SIZE, DEFAULT_SIZE);
         pane.setPrefSize(DEFAULT_SIZE, DEFAULT_SIZE);
         pane.setMaxSize(DEFAULT_SIZE, DEFAULT_SIZE);
@@ -75,15 +75,15 @@ final class ShellNavigationGraphicLoader {
 
     private static Node missingGraphic() {
         StackPane pane = iconPane();
-        ShellFx.addStyleClass(pane, "nav-icon-missing");
+        pane.getStyleClass().add("nav-icon-missing");
 
         Rectangle frame = new Rectangle(3.0, 3.0, 12.0, 12.0);
-        ShellFx.addStyleClass(frame, "nav-icon-missing-frame");
+        frame.getStyleClass().add("nav-icon-missing-frame");
         Line slashA = new Line(4.5, 4.5, 13.5, 13.5);
-        ShellFx.addStyleClass(slashA, "nav-icon-missing-stroke");
+        slashA.getStyleClass().add("nav-icon-missing-stroke");
         Line slashB = new Line(13.5, 4.5, 4.5, 13.5);
-        ShellFx.addStyleClass(slashB, "nav-icon-missing-stroke");
-        ShellFx.addChildren(pane, frame, slashA, slashB);
+        slashB.getStyleClass().add("nav-icon-missing-stroke");
+        pane.getChildren().addAll(frame, slashA, slashB);
         return pane;
     }
 

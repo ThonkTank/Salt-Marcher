@@ -22,7 +22,7 @@ final class DesktopWindowIcons {
     static void applyTo(Stage stage) {
         Image icon = loadWindowIcon();
         if (icon != null) {
-            BootstrapFx.setWindowIcon(stage, icon);
+            stage.getIcons().setAll(icon);
         }
     }
 
