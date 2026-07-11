@@ -20,7 +20,7 @@ plugins {
     java
     application
     pmd
-    id("com.github.spotbugs") version "6.5.0"
+    id("com.github.spotbugs") version "6.5.8"
     id("saltmarcher.quality-conventions")
     id("saltmarcher.verification-core")
     id("org.openjfx.javafxplugin") version "0.1.0"
@@ -143,8 +143,8 @@ val worldPlannerUiHarness by sourceSets.creating {
 dependencies {
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.xerial:sqlite-jdbc:3.53.2.0")
-    pmd("net.sourceforge.pmd:pmd-ant:7.23.0")
-    pmd("net.sourceforge.pmd:pmd-java:7.23.0")
+    pmd("net.sourceforge.pmd:pmd-ant:7.26.0")
+    pmd("net.sourceforge.pmd:pmd-java:7.26.0")
     pmd("saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
     spotbugsPlugins("com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0")
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.1")
