@@ -459,3 +459,24 @@ alle eingefrorenen Dungeon-Harnessgruppen, Render-Parity mit `DE-IMG-001`,
 `DE-IMG-002` und `DT-IMG-001`, Focused-Handoff, Production-Handoff sowie
 Phase 1 und der unabhaengige Judge. Naechster Schritt ist M4.5
 `dungeon-editor-view` Harness-Check/Closure gegen die aktuelle Struktur.
+
+### 2026-07-11 M4.5 dungeon-editor-view-close-out
+
+Der Dungeon-Editor-View-Zyklus ist auf dem Branch abgeschlossen.
+Referenzstand ist `c72637e50`: Die 13-Datei-Loeschliste der alten View-
+ContentModels, InputEvents und des `DungeonEditorIntentHandler` ist
+ausgefuehrt. `DungeonEditorViewModel`, `DungeonEditorControlsPanelModel`,
+`DungeonEditorStatePanelModel`, `DungeonEditorControlsInput` und
+`DungeonEditorStateInput` tragen jetzt die direkte View-Zielstruktur.
+Tool, View-Mode und Overlay laufen typed ueber die Controls-Grenze; die alten
+String-Parser im Input-Record sind weg. Der PH-20260711-001-Hit-Ref-Rest ist
+strukturell geschlossen: Pointer-Auswahl konsumiert typed
+`DungeonEditorRuntimePointerTarget` statt Hit-Ref-Listen. Static-Proof,
+eingefrorene Dungeon-Harness-Gruppen, Render-Parity, Focused-Handoff,
+Production-Handoff, Phase 1 und der unabhaengige Judge sind gruen. Die
+akzeptierte Metrik liegt bei 9 Primaerdateien / 5.758 LOC und 13
+Pointer-Selection-Dateien / 8.036 LOC unter dem Amendment `598b66891`.
+Der Owner-Smoke steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
+unter `dungeon-editor-view`. M4 ist damit auf dem Branch abgeschlossen.
+Naechster Schritt ist M5 `remaining-view-and-shell` Harness Check/Closure.
