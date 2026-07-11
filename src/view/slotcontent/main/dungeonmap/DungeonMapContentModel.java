@@ -118,6 +118,14 @@ public final class DungeonMapContentModel {
         return Map.copyOf(currentPointerTargetFrames);
     }
 
+    public List<DungeonEditorRuntimePointerTarget> runtimePointerTargetsAt(double sceneX, double sceneY) {
+        Map<String, PreparedPointerTargetFrame> pointerTargets = currentPointerTargetFrames();
+        return pointerHitRefsAt(sceneX, sceneY).stream()
+                .map(pointerTargets::get)
+                .map(DungeonEditorRuntimePointerTarget::fromPreparedFrame)
+                .toList();
+    }
+
     public void updateHoverTarget(PointerTarget target) {
         if (!frameConsumption.updateHoverTarget(target)) {
             return;

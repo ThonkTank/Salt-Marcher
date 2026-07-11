@@ -516,13 +516,12 @@ final class DungeonEditorIntentHandler {
             double sceneY
     ) {
         int projectionLevel = presentationModel.currentInteractionState().currentProjectionLevel();
-        return PointerInteractionTargets.fromHitTargets(
+        return PointerInteractionTargets.fromRuntimeTargets(
                 sceneX,
                 sceneY,
                 event.buttons().primaryButtonDown(),
                 event.buttons().secondaryButtonDown(),
-                mapContentModel.pointerHitRefsAt(sceneX, sceneY),
-                mapContentModel.currentPointerTargetFrames(),
+                mapContentModel.runtimePointerTargetsAt(sceneX, sceneY),
                 projectionLevel);
     }
 

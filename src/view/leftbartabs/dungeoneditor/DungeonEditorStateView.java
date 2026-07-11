@@ -71,6 +71,18 @@ public final class DungeonEditorStateView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> {} : handler;
     }
 
+    void onStateInput(Consumer<DungeonEditorStateInput> handler) {
+        Consumer<DungeonEditorStateInput> safeHandler = handler == null ? ignored -> {} : handler;
+        onViewInputEvent(event -> safeHandler.accept(DungeonEditorStateInput.fromLegacy(event)));
+    }
+
+    void bind(DungeonEditorStatePanelModel panelModel) {
+        if (panelModel == null) {
+            return;
+        }
+        bind(panelModel.legacyContentModel());
+    }
+
     public void bind(DungeonEditorStateContentModel contentModel) {
         if (contentModel == null) {
             return;

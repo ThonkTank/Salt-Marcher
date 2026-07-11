@@ -1199,13 +1199,12 @@ final class DungeonEditorBehaviorHarnessSupport extends DungeonEditorHarnessPubl
             boolean boundaryPreferred,
             int projectionLevel
     ) {
-        return new HarnessRuntimePointerTarget(PointerInteractionTargets.fromHitTargets(
+        return new HarnessRuntimePointerTarget(PointerInteractionTargets.fromRuntimeTargets(
                 sceneX,
                 sceneY,
                 false,
                 false,
-                mapContentModel.pointerHitRefsAt(sceneX, sceneY),
-                mapContentModel.currentPointerTargetFrames(),
+                mapContentModel.runtimePointerTargetsAt(sceneX, sceneY),
                 projectionLevel).primaryTarget(boundaryPreferred));
     }
 

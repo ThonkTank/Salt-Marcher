@@ -44,6 +44,18 @@ public final class DungeonEditorControlsView extends VBox {
         viewInputEventHandler = handler == null ? ignored -> { } : handler;
     }
 
+    void onControlsInput(Consumer<DungeonEditorControlsInput> handler) {
+        Consumer<DungeonEditorControlsInput> safeHandler = handler == null ? ignored -> { } : handler;
+        onViewInputEvent(event -> safeHandler.accept(DungeonEditorControlsInput.fromLegacy(event)));
+    }
+
+    void bind(DungeonEditorControlsPanelModel panelModel) {
+        if (panelModel == null) {
+            return;
+        }
+        bind(panelModel.legacyContentModel());
+    }
+
     public void bind(DungeonEditorControlsContentModel contentModel) {
         if (contentModel == null) {
             return;
