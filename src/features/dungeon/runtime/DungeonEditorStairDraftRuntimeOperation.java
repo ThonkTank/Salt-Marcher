@@ -1,16 +1,13 @@
 package src.features.dungeon.runtime;
 
 import java.util.Objects;
-import src.domain.dungeon.DungeonAuthoredApplicationService;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.structure.stair.StairGeometryDerivation;
 import src.domain.dungeon.model.core.structure.stair.StairGeometrySpec;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 
 @SuppressWarnings("PMD.TooManyMethods")
@@ -20,49 +17,41 @@ final class DungeonEditorStairDraftRuntimeOperation {
     private static final String ROOM_INTERIOR_STATUS = INVALID_PREFIX + "Pfad kreuzt Rauminneres.";
     private static final DungeonEditorToolRegistry TOOL_REGISTRY = DungeonEditorToolRegistry.current();
 
-    private final DungeonEditorSessionWorkflow workflow;
-    private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
-    private final DungeonAuthoredApplicationService authoredService;
-    private final DungeonAuthoredApplicationService.Session authoredSession;
+    private final DungeonEditorRuntimeContext context;
     private final StairGeometryDerivation derivation = new StairGeometryDerivation();
     private Draft draft = Draft.inactive();
 
-    DungeonEditorStairDraftRuntimeOperation(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
-        DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases safeRuntime =
-                Objects.requireNonNull(runtime, "runtime");
-        workflow = safeRuntime.workflow();
-        effectUseCase = safeRuntime.effectUseCase();
-        authoredService = Objects.requireNonNull(safeRuntime.authoredService(), "authoredService");
-        authoredSession = Objects.requireNonNull(safeRuntime.authored(), "authoredSession");
+    DungeonEditorStairDraftRuntimeOperation(DungeonEditorRuntimeContext context) {
+        this.context = Objects.requireNonNull(context, "context");
     }
 
     static boolean handles(DungeonEditorTool tool) {
         return TOOL_REGISTRY.isStairCreateTool(tool);
     }
 
-    DungeonEditorRuntimeOperationResult apply(
+    DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
             DungeonEditorTool tool,
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        if (!workflow.session().hasSelectedMap()) {
-            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
+        if (!context.hasSelectedMap()) {
+            return context.publishCurrent();
         }
         Cell pointerCell = pointerCell(sample, wallSingleClickMode, transitionDestination);
         return switch (action) {
             case PRESSED -> press(tool, pointerCell);
             case MOVED, DRAGGED -> preview(tool, pointerCell);
-            case RELEASED -> DungeonEditorRuntimeOperationResult.none();
+            case RELEASED -> DungeonEditorRuntimeContext.Result.none();
         };
     }
 
-    DungeonEditorRuntimeOperationResult refreshAfterProjectionLevelChanged() {
+    DungeonEditorRuntimeContext.Result refreshAfterProjectionLevelChanged() {
         if (!draft.active()) {
-            return DungeonEditorRuntimeOperationResult.none();
+            return DungeonEditorRuntimeContext.Result.none();
         }
-        Cell end = new Cell(draft.end().q(), draft.end().r(), workflow.session().projectionLevel());
+        Cell end = new Cell(draft.end().q(), draft.end().r(), context.projectionLevel());
         return preview(draft.tool(), end);
     }
 
@@ -70,7 +59,7 @@ final class DungeonEditorStairDraftRuntimeOperation {
         draft = Draft.inactive();
     }
 
-    private DungeonEditorRuntimeOperationResult press(DungeonEditorTool tool, Cell pointerCell) {
+    private DungeonEditorRuntimeContext.Result press(DungeonEditorTool tool, Cell pointerCell) {
         if (!draft.active() || draft.tool() != tool) {
             StairShape shape = shapeFor(tool);
             draft = new Draft(tool, pointerCell, pointerCell);
@@ -85,14 +74,14 @@ final class DungeonEditorStairDraftRuntimeOperation {
         StairGeometrySpec spec = result.spec();
         DungeonEditorSessionValues.StairCreatePreview preview = stairPreview(shape, result, "");
         draft = Draft.inactive();
-        return DungeonEditorRuntimeResultTranslator.fromPublication(effectUseCase.applyEffect(
+        return context.fromPublication(context.applyEffectPublication(
                 DungeonEditorSessionEffect.apply(preview),
-                mapId -> authoredService.createStair(mapId, spec, authoredSession)));
+                mapId -> context.createStair(mapId, spec)));
     }
 
-    private DungeonEditorRuntimeOperationResult preview(DungeonEditorTool tool, Cell pointerCell) {
+    private DungeonEditorRuntimeContext.Result preview(DungeonEditorTool tool, Cell pointerCell) {
         if (!draft.active()) {
-            return DungeonEditorRuntimeOperationResult.none();
+            return DungeonEditorRuntimeContext.Result.none();
         }
         if (draft.tool() != tool) {
             StairShape shape = shapeFor(tool);
@@ -108,17 +97,17 @@ final class DungeonEditorStairDraftRuntimeOperation {
     private boolean validForCurrentMap(StairGeometryDerivation.Result result) {
         return result != null
                 && result.valid()
-                && authoredService.canCreateStair(workflow.session().selectedMapId(), result.spec(), authoredSession);
+                && context.canCreateStair(context.selectedMapId(), result.spec());
     }
 
-    private DungeonEditorRuntimeOperationResult publishPreview(
+    private DungeonEditorRuntimeContext.Result publishPreview(
             StairShape shape,
             StairGeometryDerivation.Result result,
             String statusText
     ) {
         DungeonEditorSessionValues.StairCreatePreview preview = stairPreview(shape, result, statusText);
-        return DungeonEditorRuntimeResultTranslator.fromPublication(
-                effectUseCase.applyEffect(DungeonEditorSessionEffect.preview(preview), null));
+        return context.fromPublication(
+                context.applyEffectPublication(DungeonEditorSessionEffect.preview(preview), null));
     }
 
     private DungeonEditorSessionValues.StairCreatePreview stairPreview(
@@ -159,7 +148,7 @@ final class DungeonEditorStairDraftRuntimeOperation {
         return new Cell(
                 (int) Math.floor(input.canvasX()),
                 (int) Math.floor(input.canvasY()),
-                workflow.session().projectionLevel());
+                context.projectionLevel());
     }
 
     private static StairShape shapeFor(DungeonEditorTool tool) {

@@ -1,26 +1,24 @@
 package src.features.dungeon.runtime;
 
 import org.jspecify.annotations.Nullable;
+import src.domain.dungeon.DungeonEditorRuntimeApplicationService;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapSnapshot;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.features.dungeon.runtime.DungeonEditorDoorBoundaryDraftInterpretation.DoorBoundaryCommit;
 
 final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
-    private final DungeonEditorDraftRuntimeContext context;
-    private final DungeonEditorDraftAuthoredCommitter authoredCommitter;
+    private final DungeonEditorRuntimeContext context;
 
-    DungeonEditorDoorBoundaryDraftRuntimeOperation(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
-        context = DungeonEditorDraftRuntimeContext.from(runtime);
-        authoredCommitter = DungeonEditorDraftAuthoredCommitter.from(runtime);
+    DungeonEditorDoorBoundaryDraftRuntimeOperation(DungeonEditorRuntimeContext context) {
+        this.context = java.util.Objects.requireNonNull(context, "context");
     }
 
     static boolean handles(DungeonEditorTool tool) {
         return tool == DungeonEditorTool.DOOR_CREATE || tool == DungeonEditorTool.DOOR_DELETE;
     }
 
-    DungeonEditorRuntimeOperationResult apply(
+    DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
             DungeonEditorTool doorTool,
             PointerSample sample,
@@ -41,16 +39,16 @@ final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
         }
     }
 
-    private DungeonEditorRuntimeOperationResult applyWorkflow(
+    private DungeonEditorRuntimeContext.Result applyWorkflow(
             PointerAction action,
             DungeonEditorMainViewInput input,
             DungeonEditorSessionValues.Tool doorTool
     ) {
-        ApplyDungeonEditorSessionEffectUseCase.CurrentGridPublication currentGrid =
+        DungeonEditorRuntimeApplicationService.CurrentGridPublication currentGrid =
                 context.currentGridOrPublishCurrentResult();
         MapSnapshot committedSnapshot = currentGrid.committedSnapshot();
         if (committedSnapshot == null) {
-            return DungeonEditorRuntimeResultTranslator.fromSnapshot(currentGrid.snapshot());
+            return context.fromSnapshot(currentGrid.snapshot());
         }
         PointerAction effectiveAction = DungeonEditorDraftOperationSupport.previewAction(action);
         DungeonEditorDoorBoundaryDraftInterpretation interpretation =
@@ -59,18 +57,22 @@ final class DungeonEditorDoorBoundaryDraftRuntimeOperation {
                         input,
                         committedSnapshot,
                         doorTool);
-        return DungeonEditorRuntimeResultTranslator.fromPublication(
+        return context.fromPublication(
                 currentGrid.snapshot(),
-                context.applyEffect(interpretation.effect(), commitFor(interpretation.commit())));
+                context.applyEffectPublication(interpretation.effect(), commitFor(interpretation.commit())));
     }
 
-    private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit commitFor(
+    private DungeonEditorRuntimeApplicationService.@Nullable AuthoredCommit commitFor(
             @Nullable DoorBoundaryCommit commit
     ) {
         if (commit == null) {
             return null;
         }
-        return mapId -> authoredCommitter.applyDoorBoundary(mapId, commit);
+        return mapId -> context.applyDoorBoundary(
+                mapId,
+                commit.clusterId(),
+                commit.edge().toEdgeRef(),
+                commit.deleteMode());
     }
 
 }

@@ -4,8 +4,7 @@ import shell.api.ServiceRegistry;
 
 final class DungeonServiceAssembly {
 
-    private final DungeonEditorPublishedStateServiceAssembly editorPublishedState =
-            new DungeonEditorPublishedStateServiceAssembly();
+    private final DungeonEditorPublishedState editorPublishedState = new DungeonEditorPublishedState();
     private final DungeonAuthoredPublishedState authoredPublishedState =
             new DungeonAuthoredPublishedState();
     private final DungeonTravelRuntimeServiceAssembly travelRuntime = new DungeonTravelRuntimeServiceAssembly();
@@ -21,8 +20,6 @@ final class DungeonServiceAssembly {
         services.registerFactory(src.domain.dungeon.published.DungeonMapCatalogModel.class,
                 registry -> authoredPublishedState.mapCatalogModel());
         services.registerFactory(src.domain.dungeon.published.TravelDungeonModel.class, travelRuntime::travelModel);
-        services.registerFactory(src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository.class,
-                registry -> editorPublishedState.repository());
         services.registerFactory(src.domain.dungeon.published.DungeonEditorControlsModel.class,
                 registry -> editorPublishedState.controlsModel());
         services.registerFactory(src.domain.dungeon.published.DungeonEditorMapSurfaceModel.class,
@@ -40,6 +37,6 @@ final class DungeonServiceAssembly {
     private DungeonEditorRuntimeApplicationService editorRuntimeApplicationService(ServiceRegistry registry) {
         return new DungeonEditorRuntimeApplicationService(
                 registry.require(DungeonAuthoredApplicationService.class),
-                editorPublishedState.repository());
+                editorPublishedState);
     }
 }

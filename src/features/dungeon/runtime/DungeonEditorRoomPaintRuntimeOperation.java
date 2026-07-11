@@ -2,29 +2,17 @@ package src.features.dungeon.runtime;
 
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import src.domain.dungeon.DungeonAuthoredApplicationService;
 import src.domain.dungeon.model.core.geometry.Cell;
+import src.domain.dungeon.DungeonEditorRuntimeApplicationService;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.features.dungeon.runtime.DungeonEditorMainViewInteractionValues.PaintSession;
 
 final class DungeonEditorRoomPaintRuntimeOperation {
-    private final DungeonEditorSessionWorkflow workflow;
-    private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;
-    private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
-    private final DungeonAuthoredApplicationService authoredService;
-    private final DungeonAuthoredApplicationService.Session authoredSession;
+    private final DungeonEditorRuntimeContext context;
 
-    DungeonEditorRoomPaintRuntimeOperation(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
-        DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases safeRuntime =
-                Objects.requireNonNull(runtime, "runtime");
-        workflow = Objects.requireNonNull(safeRuntime.workflow(), "workflow");
-        mainViewInterpreter = Objects.requireNonNull(safeRuntime.mainViewInterpreter(), "mainViewInterpreter");
-        effectUseCase = Objects.requireNonNull(safeRuntime.effectUseCase(), "effectUseCase");
-        authoredService = Objects.requireNonNull(safeRuntime.authoredService(), "authoredService");
-        authoredSession = Objects.requireNonNull(safeRuntime.authored(), "authoredSession");
+    DungeonEditorRoomPaintRuntimeOperation(DungeonEditorRuntimeContext context) {
+        this.context = Objects.requireNonNull(context, "context");
     }
 
     static DungeonEditorSessionValues.Tool roomTool(DungeonEditorTool tool) {
@@ -37,7 +25,7 @@ final class DungeonEditorRoomPaintRuntimeOperation {
         return null;
     }
 
-    DungeonEditorRuntimeOperationResult apply(
+    DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
             DungeonEditorSessionValues.Tool tool,
             PointerSample sample,
@@ -45,7 +33,7 @@ final class DungeonEditorRoomPaintRuntimeOperation {
             TransitionDestination transitionDestination
     ) {
         if (action == null || tool == null || PointerAction.isMoved(action)) {
-            return DungeonEditorRuntimeOperationResult.none();
+            return DungeonEditorRuntimeContext.Result.none();
         }
         DungeonEditorMainViewInput input = DungeonEditorRuntimeInputTranslator.mainViewInput(
                 sample,
@@ -74,33 +62,31 @@ final class DungeonEditorRoomPaintRuntimeOperation {
         }
     }
 
-    private DungeonEditorRuntimeOperationResult applyRoom(
+    private DungeonEditorRuntimeContext.Result applyRoom(
             InterpretDungeonEditorMainViewInputUseCase.PointerAction action,
             DungeonEditorMainViewInput input,
             DungeonEditorSessionValues.Tool tool
     ) {
-        if (effectUseCase.committedGridOrPublishCurrent() == null) {
-            return DungeonEditorRuntimeOperationResult.none();
+        if (context.currentGridOrPublishCurrentResult().committedSnapshot() == null) {
+            return DungeonEditorRuntimeContext.Result.none();
         }
-        DungeonEditorRoomPaintInterpretation interpretation = mainViewInterpreter.roomPaintOperation(
+        DungeonEditorRoomPaintInterpretation interpretation = context.roomPaintInterpretation(
                 action,
                 input,
-                tool,
-                workflow.session().projectionLevel());
-        return DungeonEditorRuntimeResultTranslator.fromPublication(
-                effectUseCase.applyEffect(interpretation.effect(), commitFor(interpretation.commitSession())));
+                tool);
+        return context.fromPublication(
+                context.applyEffectPublication(interpretation.effect(), commitFor(interpretation.commitSession())));
     }
 
-    private ApplyDungeonEditorSessionEffectUseCase.@Nullable AuthoredCommit commitFor(PaintSession paintSession) {
+    private DungeonEditorRuntimeApplicationService.@Nullable AuthoredCommit commitFor(PaintSession paintSession) {
         if (!paintSession.present()) {
             return null;
         }
-        return mapId -> authoredService.applyRoomRectangle(
+        return mapId -> context.applyRoomRectangle(
                 mapId,
                 startCell(paintSession),
                 endCell(paintSession),
-                paintSession.deleteMode(),
-                authoredSession);
+                paintSession.deleteMode());
     }
 
     private static Cell startCell(PaintSession paintSession) {

@@ -1,7 +1,6 @@
 package src.domain.dungeon;
 
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
-import src.domain.dungeon.model.runtime.repository.DungeonEditorSnapshotPublishedStateRepository;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
@@ -10,7 +9,7 @@ import src.domain.dungeon.published.DungeonEditorStateModel;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.shared.published.PublishedState;
 
-final class DungeonEditorPublishedState implements DungeonEditorSnapshotPublishedStateRepository {
+final class DungeonEditorPublishedState {
 
     private final PublishedState<DungeonEditorControlsSnapshot> controls =
             PublishedState.retainingDuplicateSubscribers(DungeonEditorControlsSnapshot.empty(""));
@@ -37,8 +36,7 @@ final class DungeonEditorPublishedState implements DungeonEditorSnapshotPublishe
         return stateModel;
     }
 
-    @Override
-    public void publishEditorSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
+    void publishEditorSnapshot(DungeonEditorSessionSnapshot.SnapshotData snapshot) {
         DungeonEditorSessionSnapshot.SnapshotData safeSnapshot =
                 snapshot == null ? DungeonEditorSessionSnapshot.empty("") : snapshot;
         DungeonEditorSurfaceContextServiceAssembly.SurfaceContext surfaceContext =
@@ -48,13 +46,11 @@ final class DungeonEditorPublishedState implements DungeonEditorSnapshotPublishe
         state.publish(DungeonEditorStateProjectionServiceAssembly.snapshot(safeSnapshot, surfaceContext.surface()));
     }
 
-    @Override
-    public void publishEditorControls(DungeonEditorSessionSnapshot.ControlsData controlsData) {
+    void publishEditorControls(DungeonEditorSessionSnapshot.ControlsData controlsData) {
         controls.publish(DungeonEditorControlsProjectionServiceAssembly.snapshot(controlsData, controls.current()));
     }
 
-    @Override
-    public void publishEditorSessionFrame(DungeonEditorSessionSnapshot.SessionFrameData frameData) {
+    void publishEditorSessionFrame(DungeonEditorSessionSnapshot.SessionFrameData frameData) {
         DungeonEditorSessionSnapshot.SessionFrameData safeFrameData =
                 frameData == null ? DungeonEditorSessionSnapshot.sessionFrameData(null) : frameData;
         controls.publish(DungeonEditorControlsProjectionServiceAssembly.snapshot(
@@ -64,8 +60,7 @@ final class DungeonEditorPublishedState implements DungeonEditorSnapshotPublishe
         state.publish(DungeonEditorStateProjectionServiceAssembly.snapshot(safeFrameData, state.current()));
     }
 
-    @Override
-    public void publishEditorSessionFramePreservingSurface(DungeonEditorSessionSnapshot.SessionFrameData frameData) {
+    void publishEditorSessionFramePreservingSurface(DungeonEditorSessionSnapshot.SessionFrameData frameData) {
         DungeonEditorSessionSnapshot.SessionFrameData safeFrameData =
                 frameData == null ? DungeonEditorSessionSnapshot.sessionFrameData(null) : frameData;
         controls.publish(DungeonEditorControlsProjectionServiceAssembly.snapshot(

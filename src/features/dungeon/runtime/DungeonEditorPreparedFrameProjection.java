@@ -9,8 +9,8 @@ final class DungeonEditorPreparedFrameProjection {
     private DungeonEditorPreparedFrameProjection() {
     }
 
-    static DungeonEditorSelector<List<DungeonEditorPreparedFrameFacts.MapEntry>> mapEntriesSelector() {
-        return DungeonEditorSelector.of(state -> toPreparedMapEntries(state.mapSummaries()));
+    static List<DungeonEditorPreparedFrameFacts.MapEntry> mapEntries(List<DungeonMapSummary> mapSummaries) {
+        return toPreparedMapEntries(mapSummaries == null ? List.of() : mapSummaries);
     }
 
     static String statusTextFor(

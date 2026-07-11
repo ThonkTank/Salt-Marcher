@@ -5,34 +5,35 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
 import src.domain.dungeon.published.DungeonEditorStateModel;
 
 final class DungeonEditorRuntimeFramePublisher {
-    private static final DungeonEditorSelector<Long> DRAFT_SESSION_REVISION =
-            DungeonEditorSelector.of(DungeonEditorStoreState::draftSessionRevision);
+    private static final long MIN_DRAFT_SESSION_REVISION = 0L;
 
-    private final DungeonEditorStore store;
+    private final DungeonEditorControlsModel controlsModel;
     private final DungeonEditorMapSurfaceModel mapSurfaceModel;
     private final DungeonEditorStateModel stateModel;
     private final DungeonEditorRuntimeDraftSession draftSession;
-    private final DungeonEditorRuntimeFrameFactsAssembler frameFactsAssembler;
+    private final DungeonEditorRuntimeFrameFactsAssembler frameFactsAssembler =
+            new DungeonEditorRuntimeFrameFactsAssembler();
     private final List<Consumer<DungeonEditorRuntimePublication>> subscribers = new ArrayList<>();
     private long runtimeFramePublicationCount;
+    private long draftSessionRevision;
     private int stateModelFrameDeferralDepth;
     private boolean stateModelFrameSuppressedDuringDeferral;
 
     DungeonEditorRuntimeFramePublisher(
-            DungeonEditorStore store,
+            DungeonEditorControlsModel controlsModel,
             DungeonEditorMapSurfaceModel mapSurfaceModel,
             DungeonEditorStateModel stateModel,
             DungeonEditorRuntimeDraftSession draftSession
     ) {
-        this.store = Objects.requireNonNull(store, "store");
+        this.controlsModel = Objects.requireNonNull(controlsModel, "controlsModel");
         this.mapSurfaceModel = Objects.requireNonNull(mapSurfaceModel, "mapSurfaceModel");
         this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
         this.draftSession = Objects.requireNonNull(draftSession, "draftSession");
-        frameFactsAssembler = new DungeonEditorRuntimeFrameFactsAssembler(store);
         this.stateModel.subscribe(ignored -> publishStateModelFrame());
     }
 
@@ -79,7 +80,7 @@ final class DungeonEditorRuntimeFramePublisher {
     }
 
     void markDraftSessionChanged() {
-        store.dispatch(new DungeonEditorAction.MarkDraftSessionChanged());
+        draftSessionRevision++;
     }
 
     void publishDraftSessionChanged() {
@@ -97,22 +98,25 @@ final class DungeonEditorRuntimeFramePublisher {
 
     private DungeonEditorRenderFrame currentFrame() {
         DungeonEditorRuntimeReadbackFrameInputs readbackInputs =
-                DungeonEditorRuntimeReadbackFrameInputs.from(store, mapSurfaceModel, stateModel);
+                DungeonEditorRuntimeReadbackFrameInputs.from(controlsModel, mapSurfaceModel, stateModel);
         verifyCurrentDraftSessionRevision();
         DungeonEditorRuntimeDraftFrame drafts = draftSession.draftFrame(
                 readbackInputs.controls(),
                 readbackInputs.state());
         return new DungeonEditorRenderFrame(
-                frameFactsAssembler.preparedFacts(readbackInputs.mapSurface(), readbackInputs.state(), drafts),
+                frameFactsAssembler.preparedFacts(
+                        readbackInputs.controls(),
+                        readbackInputs.mapSurface(),
+                        readbackInputs.state(),
+                        drafts),
                 drafts.inlineLabelEditSession(),
                 frameFactsAssembler.measurementSnapshot(runtimeFramePublicationCount));
     }
 
     private void verifyCurrentDraftSessionRevision() {
-        DungeonEditorSelectorResult<Long> revision = store.select(DRAFT_SESSION_REVISION);
-        revision.requireFreshAgainst(
-                store.state(),
-                "Dungeon editor draft-session selector result is stale");
+        if (draftSessionRevision < MIN_DRAFT_SESSION_REVISION) {
+            throw new IllegalStateException("Dungeon editor draft-session revision overflow");
+        }
     }
 
     record StateModelFrameDeferral<T>(T result, boolean stateModelFrameSuppressed) {

@@ -43,7 +43,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorRoomNarrationInput;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionSnapshot;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceCoreGeometry;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceHandleMovement;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
@@ -55,14 +54,11 @@ import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceAreaProject
 import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceBoundaryProjectionHelper;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceFeatureProjectionHelper;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorWorkspaceHandleProjectionHelper;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.model.runtime.usecase.AssembleDungeonSnapshotUseCase;
-import src.domain.dungeon.model.runtime.usecase.BuildDungeonEditorSnapshotUseCase;
 import src.domain.dungeon.model.runtime.usecase.InspectDungeonSelectionUseCase;
 import src.domain.dungeon.model.runtime.usecase.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.model.runtime.usecase.PreviewDungeonEditorSurfaceMoveUseCase;
 import src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorHandlesUseCase;
-import src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorSnapshotUseCase;
 
 @SuppressWarnings({
         "PMD.CouplingBetweenObjects",
@@ -1422,293 +1418,6 @@ public final class DungeonAuthoredApplicationService {
         }
     }
 
-    private static final class RuntimeCommandDelegate {
-        private static final String INVALID_STAIR_GEOMETRY_STATUS = "Treppengeometrie ungueltig.";
-
-        private final CatalogOperations catalogOperations;
-        private final DetailSaveOperations detailSaveOperations;
-        private final DungeonEditorDungeonState dungeonState;
-        private final DungeonEditorSessionWorkflow workflow;
-        private final BuildDungeonEditorSnapshotUseCase snapshotBuilder;
-        private final PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase;
-        private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
-
-        private RuntimeCommandDelegate(
-                CatalogOperations catalogOperations,
-                DetailSaveOperations detailSaveOperations,
-                DungeonEditorDungeonState dungeonState,
-                DungeonEditorSessionWorkflow workflow,
-                BuildDungeonEditorSnapshotUseCase snapshotBuilder,
-                PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase,
-                ApplyDungeonEditorSessionEffectUseCase effectUseCase
-        ) {
-            this.catalogOperations = Objects.requireNonNull(catalogOperations, "catalogOperations");
-            this.detailSaveOperations = Objects.requireNonNull(detailSaveOperations, "detailSaveOperations");
-            this.dungeonState = Objects.requireNonNull(dungeonState, "dungeonState");
-            this.workflow = Objects.requireNonNull(workflow, "workflow");
-            this.snapshotBuilder = Objects.requireNonNull(snapshotBuilder, "snapshotBuilder");
-            this.snapshotPublicationUseCase =
-                    Objects.requireNonNull(snapshotPublicationUseCase, "snapshotPublicationUseCase");
-            this.effectUseCase = Objects.requireNonNull(effectUseCase, "effectUseCase");
-        }
-
-        private DungeonEditorSessionSnapshot.SnapshotData selectMap(long mapId) {
-            workflow.selectMap(mapId);
-            snapshotBuilder.refreshAuthoredSnapshot(workflow.session());
-            DungeonEditorSessionSnapshot.SnapshotData snapshot =
-                    workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
-            snapshotPublicationUseCase.execute(snapshot);
-            return snapshot;
-        }
-
-        private DungeonEditorSessionSnapshot.SnapshotData createMap(String mapName) {
-            catalogOperations.createMapCatalog(mapName, dungeonState);
-            DungeonEditorWorkspaceValues.MapId nextMapId = dungeonState.currentFacts(
-                    workflow.session().selectedMapId(),
-                    workflow.session().selection(),
-                    workflow.session().preview()).mutationMapId();
-            workflow.applyMapLifecycle(DungeonEditorSessionWorkflow.MAP_CREATED, nextMapId);
-            return refreshAuthoredSnapshot();
-        }
-
-        private DungeonEditorSessionSnapshot.SnapshotData renameMap(long mapId, String mapName) {
-            if (DungeonEditorWorkspaceValues.hasId(mapId)) {
-                catalogOperations.renameMapCatalog(
-                        new DungeonEditorWorkspaceValues.MapId(mapId),
-                        mapName,
-                        dungeonState);
-            }
-            DungeonEditorWorkspaceValues.MapId nextMapId = dungeonState.currentFacts(
-                    workflow.session().selectedMapId(),
-                    workflow.session().selection(),
-                    workflow.session().preview()).mutationMapId();
-            workflow.applyMapLifecycle(DungeonEditorSessionWorkflow.MAP_RENAMED, nextMapId);
-            return refreshAuthoredSnapshot();
-        }
-
-        private DungeonEditorSessionSnapshot.SnapshotData deleteMap(long mapId) {
-            if (DungeonEditorWorkspaceValues.hasId(mapId)) {
-                catalogOperations.deleteMapCatalog(new DungeonEditorWorkspaceValues.MapId(mapId), dungeonState);
-            }
-            snapshotBuilder.refreshCatalog();
-            DungeonEditorSessionSnapshot.SnapshotData refreshedSnapshot = snapshotBuilder.execute(workflow.session());
-            DungeonEditorWorkspaceValues.MapId nextMapId = firstSnapshotMapId(refreshedSnapshot.maps());
-            workflow.applyMapLifecycle(DungeonEditorSessionWorkflow.MAP_DELETED, nextMapId);
-            return refreshAuthoredSnapshot();
-        }
-
-        private DungeonEditorSessionSnapshot.@Nullable SnapshotData saveRoomNarration(RoomNarrationInput input) {
-            RoomNarrationInput safeInput = input == null ? new RoomNarrationInput(0L, "", List.of()) : input;
-            DungeonEditorRoomNarrationInput roomNarration = roomNarration(safeInput);
-            if (roomNarration == null || !DungeonEditorWorkspaceValues.hasId(roomNarration.roomId())) {
-                return null;
-            }
-            if (workflow.session().selectedMapId() != null) {
-                detailSaveOperations.saveAuthoredRoomNarration(
-                        workflow.session().selectedMapId(),
-                        roomNarration,
-                        dungeonState);
-            }
-            workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-            return effectUseCase.publishCurrent();
-        }
-
-        private DungeonEditorSessionSnapshot.@Nullable SnapshotData saveLabelName(LabelNameInput input) {
-            LabelNameInput safeInput = input == null
-                    ? new LabelNameInput(LabelTargetKind.EMPTY, 0L, "")
-                    : input;
-            if (workflow.session().selectedMapId() != null) {
-                detailSaveOperations.saveAuthoredLabelName(
-                        workflow.session().selectedMapId(),
-                        safeInput.targetType(),
-                        safeInput.targetId(),
-                        safeInput.name(),
-                        dungeonState);
-            }
-            workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-            return effectUseCase.publishCurrent();
-        }
-
-        private DungeonEditorSessionSnapshot.@Nullable SnapshotData saveTransitionDescription(
-                TransitionDescriptionInput input
-        ) {
-            TransitionDescriptionInput safeInput = input == null
-                    ? new TransitionDescriptionInput(0L, "")
-                    : input;
-            if (safeInput.transitionId() <= 0L || !workflow.session().hasSelectedMap()) {
-                return null;
-            }
-            detailSaveOperations.saveAuthoredTransitionDescription(
-                    workflow.session().selectedMapId(),
-                    safeInput.transitionId(),
-                    safeInput.description(),
-                    dungeonState);
-            workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-            return effectUseCase.publishCurrent();
-        }
-
-        private OperationResult saveTransitionLink(TransitionLinkInput input) {
-            TransitionLinkInput safeInput = input == null
-                    ? new TransitionLinkInput(0L, 0L, 0L, false)
-                    : input;
-            if (!workflow.session().hasSelectedMap()) {
-                return OperationResult.fromNullable(null);
-            }
-            boolean result = detailSaveOperations.saveAuthoredTransitionLink(
-                    workflow.session().selectedMapId(),
-                    safeInput.sourceTransitionId(),
-                    safeInput.targetMapId(),
-                    safeInput.targetTransitionId(),
-                    safeInput.bidirectional(),
-                    dungeonState);
-            if (!result) {
-                return OperationResult.fromNullable(null);
-            }
-            workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-            effectUseCase.publishCurrent();
-            return OperationResult.fromNullable(Boolean.TRUE);
-        }
-
-        private DungeonEditorSessionSnapshot.@Nullable SnapshotData saveStairGeometry(StairGeometryInput input) {
-            StairGeometryInput safeInput = input == null
-                    ? new StairGeometryInput(0L, "", "", 0, 0)
-                    : input;
-            StairShape shape = StairShape.supportedEditorShape(safeInput.shapeName());
-            Direction direction = Direction.supportedCardinal(safeInput.directionName());
-            StairGeometrySpec spec = detailSaveOperations.stairGeometrySpec(
-                    workflow.session().selectedMapId(),
-                    safeInput.stairId(),
-                    shape,
-                    direction,
-                    safeInput.dimension1(),
-                    safeInput.dimension2());
-            if (!workflow.session().hasSelectedMap()
-                    || safeInput.stairId() <= 0L
-                    || shape == null
-                    || direction == null
-                    || !shape.supportsEditorDimensions(safeInput.dimension1(), safeInput.dimension2())
-                    || !detailSaveOperations.canSaveStairGeometry(
-                            workflow.session().selectedMapId(),
-                            safeInput.stairId(),
-                            spec)) {
-                workflow.clearPreviewWithStatus(INVALID_STAIR_GEOMETRY_STATUS);
-                return effectUseCase.publishCurrent();
-            }
-            detailSaveOperations.saveAuthoredStairGeometry(
-                    workflow.session().selectedMapId(),
-                    safeInput.stairId(),
-                    spec,
-                    dungeonState);
-            workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
-            return effectUseCase.publishCurrent();
-        }
-
-        private DungeonEditorSessionSnapshot.SnapshotData refreshAuthoredSnapshot() {
-            snapshotBuilder.refreshAuthoredSnapshot(workflow.session());
-            DungeonEditorSessionSnapshot.SnapshotData snapshot =
-                    workflow.reconcileSnapshot(snapshotBuilder.execute(workflow.session()));
-            snapshotPublicationUseCase.execute(snapshot);
-            return snapshot;
-        }
-
-        private static @Nullable MapId firstSnapshotMapId(
-                List<DungeonEditorWorkspaceValues.MapSummary> maps
-        ) {
-            if (maps == null || maps.isEmpty()) {
-                return null;
-            }
-            return maps.stream()
-                    .min(RuntimeCommandDelegate::compareSnapshotMapSummary)
-                    .orElseThrow()
-                    .mapId();
-        }
-
-        private static int compareSnapshotMapSummary(
-                DungeonEditorWorkspaceValues.MapSummary left,
-                DungeonEditorWorkspaceValues.MapSummary right
-        ) {
-            int nameComparison = Comparator.nullsFirst(String.CASE_INSENSITIVE_ORDER)
-                    .compare(left.mapName(), right.mapName());
-            if (nameComparison != 0) {
-                return nameComparison;
-            }
-            return Long.compare(left.mapId().value(), right.mapId().value());
-        }
-
-        private static DungeonEditorRoomNarrationInput roomNarration(RoomNarrationInput input) {
-            List<DungeonEditorWorkspaceValues.RoomExitNarration> exits = new ArrayList<>();
-            for (RoomNarrationExitInput exit : input.exits()) {
-                exits.add(new DungeonEditorWorkspaceValues.RoomExitNarration(
-                        exit.label(),
-                        new DungeonEditorWorkspaceValues.Cell(exit.q(), exit.r(), exit.level()),
-                        exit.direction(),
-                        exit.description()));
-            }
-            return new DungeonEditorRoomNarrationInput(input.roomId(), input.visualDescription(), exits);
-        }
-    }
-
-    public static final class RuntimeCommands {
-        private final RuntimeCommandDelegate delegate;
-
-        private RuntimeCommands(
-                CatalogOperations catalogOperations,
-                DetailSaveOperations detailSaveOperations,
-                DungeonEditorDungeonState dungeonState,
-                DungeonEditorSessionWorkflow workflow,
-                BuildDungeonEditorSnapshotUseCase snapshotBuilder,
-                PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase,
-                ApplyDungeonEditorSessionEffectUseCase effectUseCase
-        ) {
-            this.delegate = new RuntimeCommandDelegate(
-                    catalogOperations,
-                    detailSaveOperations,
-                    dungeonState,
-                    workflow,
-                    snapshotBuilder,
-                    snapshotPublicationUseCase,
-                    effectUseCase);
-        }
-
-        public DungeonEditorSessionSnapshot.SnapshotData selectMap(long mapId) {
-            return delegate.selectMap(mapId);
-        }
-
-        public DungeonEditorSessionSnapshot.SnapshotData createMap(String mapName) {
-            return delegate.createMap(mapName);
-        }
-
-        public DungeonEditorSessionSnapshot.SnapshotData renameMap(long mapId, String mapName) {
-            return delegate.renameMap(mapId, mapName);
-        }
-
-        public DungeonEditorSessionSnapshot.SnapshotData deleteMap(long mapId) {
-            return delegate.deleteMap(mapId);
-        }
-
-        public DungeonEditorSessionSnapshot.@Nullable SnapshotData saveRoomNarration(RoomNarrationInput input) {
-            return delegate.saveRoomNarration(input);
-        }
-
-        public DungeonEditorSessionSnapshot.@Nullable SnapshotData saveLabelName(LabelNameInput input) {
-            return delegate.saveLabelName(input);
-        }
-
-        public DungeonEditorSessionSnapshot.@Nullable SnapshotData saveTransitionDescription(
-                TransitionDescriptionInput input
-        ) {
-            return delegate.saveTransitionDescription(input);
-        }
-
-        public OperationResult saveTransitionLink(TransitionLinkInput input) {
-            return delegate.saveTransitionLink(input);
-        }
-
-        public DungeonEditorSessionSnapshot.@Nullable SnapshotData saveStairGeometry(StairGeometryInput input) {
-            return delegate.saveStairGeometry(input);
-        }
-    }
-
     public static final class Session {
         private final CatalogOperations catalogOperations;
         private final LoadOperations loadOperations;
@@ -1734,21 +1443,69 @@ public final class DungeonAuthoredApplicationService {
             return dungeonState;
         }
 
-        public RuntimeCommands runtimeCommands(
-                DungeonEditorDungeonState dungeonState,
-                DungeonEditorSessionWorkflow workflow,
-                BuildDungeonEditorSnapshotUseCase snapshotBuilder,
-                PublishDungeonEditorSnapshotUseCase snapshotPublicationUseCase,
-                ApplyDungeonEditorSessionEffectUseCase effectUseCase
+        void createMapCatalog(String mapName) {
+            catalogOperations.createMapCatalog(mapName, dungeonState);
+        }
+
+        void renameMapCatalog(MapId mapId, String mapName) {
+            catalogOperations.renameMapCatalog(mapId, mapName, dungeonState);
+        }
+
+        void deleteMapCatalog(MapId mapId) {
+            catalogOperations.deleteMapCatalog(mapId, dungeonState);
+        }
+
+        void saveAuthoredRoomNarration(MapId mapId, DungeonEditorRoomNarrationInput roomNarration) {
+            detailSaveOperations.saveAuthoredRoomNarration(mapId, roomNarration, dungeonState);
+        }
+
+        void saveAuthoredLabelName(MapId mapId, LabelTargetKind targetType, long targetId, String name) {
+            detailSaveOperations.saveAuthoredLabelName(mapId, targetType, targetId, name, dungeonState);
+        }
+
+        void saveAuthoredTransitionDescription(MapId mapId, long transitionId, String description) {
+            detailSaveOperations.saveAuthoredTransitionDescription(mapId, transitionId, description, dungeonState);
+        }
+
+        boolean saveAuthoredTransitionLink(
+                MapId sourceMapId,
+                long sourceTransitionId,
+                long targetMapId,
+                long targetTransitionId,
+                boolean bidirectional
         ) {
-            return new RuntimeCommands(
-                    catalogOperations,
-                    detailSaveOperations,
-                    dungeonState,
-                    workflow,
-                    snapshotBuilder,
-                    snapshotPublicationUseCase,
-                    effectUseCase);
+            return detailSaveOperations.saveAuthoredTransitionLink(
+                    sourceMapId,
+                    sourceTransitionId,
+                    targetMapId,
+                    targetTransitionId,
+                    bidirectional,
+                    dungeonState);
+        }
+
+        void saveAuthoredStairGeometry(MapId mapId, long stairId, StairGeometrySpec spec) {
+            detailSaveOperations.saveAuthoredStairGeometry(mapId, stairId, spec, dungeonState);
+        }
+
+        boolean canSaveStairGeometry(MapId mapId, long stairId, StairGeometrySpec spec) {
+            return detailSaveOperations.canSaveStairGeometry(mapId, stairId, spec);
+        }
+
+        @Nullable StairGeometrySpec stairGeometrySpec(
+                MapId mapId,
+                long stairId,
+                StairShape shape,
+                Direction direction,
+                int dimension1,
+                int dimension2
+        ) {
+            return detailSaveOperations.stairGeometrySpec(
+                    mapId,
+                    stairId,
+                    shape,
+                    direction,
+                    dimension1,
+                    dimension2);
         }
 
         public void searchMaps(String query) {

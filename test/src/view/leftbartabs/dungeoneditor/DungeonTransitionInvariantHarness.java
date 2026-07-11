@@ -27,6 +27,7 @@ import src.domain.dungeon.model.core.structure.transition.TransitionDestinationT
 import src.domain.dungeon.DungeonAuthoredApplicationService;
 import src.domain.dungeon.DungeonEditorRuntimeApplicationService;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
+import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 
 final class DungeonTransitionInvariantHarness {
 
@@ -215,15 +216,13 @@ final class DungeonTransitionInvariantHarness {
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService.OperationResult result = services
                 .require(DungeonEditorRuntimeApplicationService.class)
-                .openSession(dungeonState, (authored, commands, authoredService, runtimeDungeonState, workflow,
-                        snapshotBuilder, snapshotPublicationUseCase, effectUseCase) -> {
-                    workflow.selectMap(sourceMapId);
-                    return commands.saveTransitionLink(new DungeonAuthoredApplicationService.TransitionLinkInput(
-                            sourceTransitionId,
-                            targetMapId,
-                            targetTransitionId,
-                            true));
-                });
+                .openSession(dungeonState, runtimeSession -> runtimeSession.saveTransitionLink(
+                        new MapId(sourceMapId),
+                        new DungeonAuthoredApplicationService.TransitionLinkInput(
+                                sourceTransitionId,
+                                targetMapId,
+                                targetTransitionId,
+                                true)));
 
         assertTrue(result.present(),
                 "transition link use case succeeds when the previous linked map row is missing");

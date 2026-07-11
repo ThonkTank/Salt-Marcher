@@ -1,15 +1,12 @@
 package src.features.dungeon.runtime;
 
 import java.util.Objects;
-import src.domain.dungeon.DungeonAuthoredApplicationService;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.graph.DungeonTopologyElementKind;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.core.structure.feature.FeatureMarkerKind;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionEffect;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValues;
-import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionWorkflow;
-import src.domain.dungeon.model.runtime.usecase.ApplyDungeonEditorSessionEffectUseCase;
 import src.domain.dungeon.published.DungeonEditorTool;
 
 final class DungeonEditorFeatureMarkerRuntimeOperation {
@@ -17,18 +14,10 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
     private static final long NO_MARKER_ID = 0L;
     private static final DungeonEditorToolRegistry TOOL_REGISTRY = DungeonEditorToolRegistry.current();
 
-    private final DungeonEditorSessionWorkflow workflow;
-    private final ApplyDungeonEditorSessionEffectUseCase effectUseCase;
-    private final DungeonAuthoredApplicationService authoredService;
-    private final DungeonAuthoredApplicationService.Session authoredSession;
+    private final DungeonEditorRuntimeContext context;
 
-    DungeonEditorFeatureMarkerRuntimeOperation(DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases runtime) {
-        DungeonEditorAuthoredRuntimeAssembly.RuntimeUseCases safeRuntime =
-                Objects.requireNonNull(runtime, "runtime");
-        workflow = Objects.requireNonNull(safeRuntime.workflow(), "workflow");
-        effectUseCase = Objects.requireNonNull(safeRuntime.effectUseCase(), "effectUseCase");
-        authoredService = Objects.requireNonNull(safeRuntime.authoredService(), "authoredService");
-        authoredSession = Objects.requireNonNull(safeRuntime.authored(), "authoredSession");
+    DungeonEditorFeatureMarkerRuntimeOperation(DungeonEditorRuntimeContext context) {
+        this.context = Objects.requireNonNull(context, "context");
     }
 
     static boolean handles(DungeonEditorTool tool) {
@@ -36,7 +25,7 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
                 || tool == DungeonEditorTool.FEATURE_DELETE;
     }
 
-    DungeonEditorRuntimeOperationResult apply(
+    DungeonEditorRuntimeContext.Result apply(
             PointerAction action,
             DungeonEditorTool tool,
             PointerSample sample,
@@ -44,7 +33,7 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
             TransitionDestination transitionDestination
     ) {
         if (!PointerAction.isPressed(action)) {
-            return DungeonEditorRuntimeOperationResult.none();
+            return DungeonEditorRuntimeContext.Result.none();
         }
         FeatureMarkerKind markerKind = TOOL_REGISTRY.featureMarkerKind(tool);
         if (markerKind != null) {
@@ -52,48 +41,46 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
                     sample,
                     wallSingleClickMode,
                     transitionDestination,
-                    workflow.session().projectionLevel()), markerKind);
+                    context.projectionLevel()), markerKind);
         }
         if (tool == DungeonEditorTool.FEATURE_DELETE) {
             return deleteMarker(sample, wallSingleClickMode, transitionDestination);
         }
-        return DungeonEditorRuntimeOperationResult.none();
+        return DungeonEditorRuntimeContext.Result.none();
     }
 
-    private DungeonEditorRuntimeOperationResult createMarker(Cell anchor, FeatureMarkerKind kind) {
-        if (!workflow.session().hasSelectedMap() || anchor == null) {
-            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
+    private DungeonEditorRuntimeContext.Result createMarker(Cell anchor, FeatureMarkerKind kind) {
+        if (!context.hasSelectedMap() || anchor == null) {
+            return context.publishCurrent();
         }
-        if (!authoredService.canCreateFeatureMarker(
-                workflow.session().selectedMapId(),
+        if (!context.canCreateFeatureMarker(
+                context.selectedMapId(),
                 kind,
-                anchor,
-                authoredSession)) {
-            workflow.clearPreviewWithStatus(INVALID_FEATURE_MARKER_STATUS);
-            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
+                anchor)) {
+            context.clearPreviewWithStatus(INVALID_FEATURE_MARKER_STATUS);
+            return context.publishCurrent();
         }
-        long markerId = authoredService.createFeatureMarker(
-                workflow.session().selectedMapId(),
+        long markerId = context.createFeatureMarker(
+                context.selectedMapId(),
                 kind,
-                anchor,
-                authoredSession);
+                anchor);
         if (markerId <= NO_MARKER_ID) {
-            workflow.clearPreviewWithStatus(INVALID_FEATURE_MARKER_STATUS);
-            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
+            context.clearPreviewWithStatus(INVALID_FEATURE_MARKER_STATUS);
+            return context.publishCurrent();
         }
-        workflow.applyEffect(DungeonEditorSessionEffect.select(
+        context.applySessionEffect(DungeonEditorSessionEffect.select(
                 markerSelection(markerId),
-                effectUseCase.currentFacts().mutationStatusText()));
-        return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
+                context.currentFacts().mutationStatusText()));
+        return context.publishCurrent();
     }
 
-    private DungeonEditorRuntimeOperationResult deleteMarker(
+    private DungeonEditorRuntimeContext.Result deleteMarker(
             PointerSample sample,
             boolean wallSingleClickMode,
             TransitionDestination transitionDestination
     ) {
-        if (!workflow.session().hasSelectedMap()) {
-            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
+        if (!context.hasSelectedMap()) {
+            return context.publishCurrent();
         }
         long markerId = DungeonEditorPointRuntimeTarget.targetId(
                 sample,
@@ -101,17 +88,14 @@ final class DungeonEditorFeatureMarkerRuntimeOperation {
                 transitionDestination,
                 DungeonTopologyElementKind.FEATURE_MARKER);
         if (markerId <= NO_MARKER_ID) {
-            return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
+            return context.publishCurrent();
         }
-        boolean deleted = authoredService.deleteFeatureMarker(
-                workflow.session().selectedMapId(),
-                markerId,
-                authoredSession);
+        boolean deleted = context.deleteFeatureMarker(context.selectedMapId(), markerId);
         if (deleted) {
-            workflow.applyEffect(DungeonEditorSessionEffect.clearedSelection());
-            workflow.clearPreviewWithStatus(effectUseCase.currentFacts().mutationStatusText());
+            context.applySessionEffect(DungeonEditorSessionEffect.clearedSelection());
+            context.clearPreviewWithStatus(context.currentFacts().mutationStatusText());
         }
-        return DungeonEditorRuntimeResultTranslator.fromSnapshot(effectUseCase.publishCurrent());
+        return context.publishCurrent();
     }
 
     private static DungeonEditorSessionValues.Selection markerSelection(long markerId) {
