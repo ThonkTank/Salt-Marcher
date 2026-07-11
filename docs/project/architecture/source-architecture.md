@@ -11,20 +11,21 @@ architecture migration cycles.
 SaltMarcher source architecture is judged by behavior, dependency direction,
 and maintainability outcomes, not by role-family suffixes or form doctrine.
 
-1. **Locality.** A small behavior change should touch the owning feature or
-   shell surface, with few supporting files.
-2. **Short chains.** User intent reaches the first state mutation or readback
-   in as few meaningful class boundaries as the behavior allows.
-3. **Typed boundaries.** Finite product state crosses boundaries as enums,
-   records, ids, or value types, not as String round-trips, unless a retained
-   public seam already requires the String.
-4. **One representation per purpose.** A second state shape exists only when a
-   real consumer needs that shape.
+1. **Locality.** A small behavior change touches few files, ideally one owning
+   area.
+2. **Short chains.** UI intent reaches the first state mutation or readback in
+   at most three meaningful hops. Classes whose only job is forwarding are
+   removed instead of renamed.
+3. **Typed boundaries.** Enums and value types cross boundaries as themselves:
+   no String round-trips, duplicate enum definitions, or stringly typed `kind`
+   constants where a type exists.
+4. **One representation per purpose.** State is reshaped only when a real
+   consumer needs the target shape.
 5. **Logic lives where its data lives.** Behavior belongs with the state and
-   invariants it changes; views bind and publish UI intent, and adapters handle
-   concrete source mechanics.
-6. **Outcome checks decide structure.** Package cycles, layer direction,
-   behavior harnesses, production handoff, and review evidence are binding.
+   invariants it changes; it is not squeezed into view or feature god files.
+6. **Structure is judged by outcomes.** Cycle-free packages, dependency
+   direction, green behavior harnesses, implemented approved designs, and
+   production handoff decide structure.
 
 ## Code Pointers
 
