@@ -32,11 +32,11 @@ migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M6 - Completion |
-| Work item | M6.2 - governance right-sizing |
-| Cycle step | M6.2 - Governance right-sizing |
-| In-flight area | `completion-governance-right-sizing` |
-| Required next proof | Remove the remaining migration-regime instructions from `AGENTS.md`, reduce metadata ceremony, and merge `LEGACY_REMOVE_ON_TOUCH` / `PROJECT_HEALTH_DEBT` marker guidance without restoring removed doc gates. |
-| Last status note | `2026-07-12 M5.7 remaining-view-and-shell-close-out` |
+| Work item | M6.3 - final measurement |
+| Cycle step | M6.3 - Final measurement |
+| In-flight area | `completion-final-measurement` |
+| Required next proof | Measure repo-wide metrics against the pre-migration baseline, verify no live instruction surface teaches or enforces the old role family, and write the German closing report without restoring removed doc gates. |
+| Last status note | `2026-07-12 M6.2 governance-right-sizing` |
 
 ## M0 Step Ledger
 
@@ -231,8 +231,8 @@ migration unless this ledger advances too.
 | Step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
 | M6.1 Doc teardown remainder | Done on branch | `7df621ea9` | Pending | `git diff --check 577f57a60..7df621ea9` passed; code-pointer existence check passed; Phase judge `Halley` returned REWORK for weakened principle wording, then APPROVE after commit `7df621ea9`; no documentation gate was run or required. | Added `docs/project/architecture/source-architecture.md` as the concise source architecture statement with the six roadmap Target Principles and real code pointers; updated `AGENTS.md` to route source architecture work to that statement and to stop requiring removed doc gates as acceptance evidence. `AGENTS.md` stayed at 76 lines; the statement is 69 lines. |
-| M6.2 Governance right-sizing | In Flight | Pending | Pending | Pending | Remove the remaining migration regime from `AGENTS.md`, reduce metadata ceremony, avoid restoring removed documentation gates, and merge the marker systems. |
-| M6.3 Final measurement | Pending | Pending | Pending | Pending | Measure repo-wide metrics against the pre-migration baseline and write the German closing report. |
+| M6.2 Governance right-sizing | Done on branch | `cc86ed0e7` | Pending | `git diff --check 62f9289c9..cc86ed0e7` passed; targeted live-governance grep for `checkDocumentationEnforcement`, `LEGACY_REMOVE_ON_TOUCH`, migration-regime wording, and dedicated documentation gates returned no matches; `AGENTS.md` decreased from 76 to 73 lines; judge `Wegener` returned APPROVE with no blocking findings; no documentation gate was run or required. | Removed the remaining self-referential migration-completion instruction from `AGENTS.md`, reduced required documentation header metadata to `Status` plus `Source of Truth`, routed documentation/instruction proof through `git diff --check` plus owner-named proof, removed `checkDocumentationEnforcement` from live public proof surfaces, and merged legacy-removal guidance into the single `PROJECT_HEALTH_DEBT` marker flow. Historical proof references remain as past records only. |
+| M6.3 Final measurement | In Flight | Pending | Pending | Pending | Measure repo-wide metrics against the pre-migration baseline, verify no live instruction surface teaches or enforces the old role family, and write the German closing report. |
 
 ## Area Ledger
 

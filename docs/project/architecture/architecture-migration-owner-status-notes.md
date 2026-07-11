@@ -520,3 +520,21 @@ bei 74 Primaerdateien / 12.249 LOC unter der genehmigten 75-Datei-/
 `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
 unter `remaining-view-and-shell`. M5 ist damit auf dem Branch abgeschlossen.
 Naechster Schritt ist M6.1 Doc-Teardown-Rest.
+
+### 2026-07-12 M6.2 governance-right-sizing
+
+Die Governance-Rechtschneidung ist abgeschlossen. Referenzstand ist
+`cc86ed0e7`: `AGENTS.md` enthaelt keinen selbstreferenziellen
+Migrationsabschluss-Satz mehr und ist von 76 auf 73 Zeilen gesunken. Die
+Dokumentations-Metadaten sind reduziert: verpflichtend bleiben `Status` und
+`Source of Truth`; `Owner` und `Last Reviewed` sind nur noch optionale
+Alt-/Koordinationsfelder und keine Gate-Eingaben. Die oeffentlichen
+Proof-Routen fuer Dokumentations- und Instruktionsaenderungen verwenden
+`git diff --check` plus owner-benannten Proof; entfernte Doc-Gates wurden
+nicht wiederhergestellt. Die alten Dual-Marker-Regeln sind auf
+`PROJECT_HEALTH_DEBT` zusammengefuehrt, inklusive Legacy-Removal-Faellen.
+Proof: `git diff --check 62f9289c9..cc86ed0e7` ist sauber, der gezielte
+Live-Governance-Grep findet keine aktiven `checkDocumentationEnforcement`-,
+`LEGACY_REMOVE_ON_TOUCH`- oder Migration-Regime-Routings, und der
+unabhaengige Judge `Wegener` hat APPROVE ohne Must-Fix gegeben. Naechster
+Schritt ist M6.3 Final Measurement und der deutsche Abschlussbericht.
