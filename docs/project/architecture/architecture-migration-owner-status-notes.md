@@ -381,3 +381,22 @@ design-sichtbaren Dateien. Der Owner-Smoke steht in
 `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
 unter `dungeon-authored-core`. Naechster Schritt ist M4.2
 `dungeon-editor-session-runtime` Harness Check/Closure.
+
+### 2026-07-11 M4.2 dungeon-editor-session-runtime-close-out
+
+Der Dungeon-Editor-Session-Runtime-Zyklus ist abgeschlossen. Referenzstand ist
+`30f822765`; die 37-Datei-Loeschliste ist ausgefuehrt und die verschachtelte
+`DungeonAuthoredApplicationService.RuntimeCommands`-Bruecke ist entfernt.
+`DungeonEditorRuntimeApplicationService`, `DungeonEditorRuntimeCommands`,
+`DungeonEditorRuntimeContext` und `DungeonEditorPointerWorkflow` tragen die
+Runtime-Befehle jetzt direkt, ohne neue Forwarding-/Proxy-Schicht. Die
+Editor-Publication laeuft ueber `DungeonEditorPublishedState` und die geteilte
+`PublishedState.retainingDuplicateSubscribers`-Hilfe; der CPD-Treffer wurde
+damit strukturell beseitigt, nicht durch Umformulierung. Static-Proof,
+Architecture-Proof, Focused-Handoff, eingefrorene Dungeon-Harness-Gruppen,
+Production-Handoff, Phase 1 und der unabhaengige Judge sind gruen. Die Metrik
+liegt bei 175 Primaerdateien / 19.236 LOC und 234 design-sichtbaren Dateien /
+24.712 LOC, also unter den genehmigten Grenzen. Der Owner-Smoke steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
+unter `dungeon-editor-session-runtime`. Naechster Schritt ist M4.3
+`dungeon-travel` Harness Check/Closure.
