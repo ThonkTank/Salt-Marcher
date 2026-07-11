@@ -39,22 +39,22 @@ final class DungeonTravelRuntimeServiceAssembly {
                 new DungeonTravelPartyStateServiceAssembly().repository(services);
         TravelPartyPositionRepository partyPositionRepository =
                 new DungeonTravelPartyPositionServiceAssembly().repository(services);
-        src.domain.dungeon.model.runtime.usecase.LoadTravelDungeonSessionSurfaceUseCase loadSessionSurfaceUseCase =
-                new src.domain.dungeon.model.runtime.usecase.LoadTravelDungeonSessionSurfaceUseCase(
+        DungeonTravelSurfaceLoader surfaceLoader =
+                new DungeonTravelSurfaceLoader(
                         partyStateRepository,
                         partyPositionRepository,
                         loadSurfaceUseCase);
         src.domain.dungeon.model.runtime.usecase.ApplyTravelDungeonMovementUseCase applyMovementUseCase =
-                new src.domain.dungeon.model.runtime.usecase.ApplyTravelDungeonMovementUseCase(
+                new DungeonTravelNavigator(
                         partyStateRepository,
                         partyPositionRepository,
-                        loadSurfaceUseCase,
-                        moveActionUseCase);
+                        surfaceLoader,
+                        moveActionUseCase).legacyMovementUseCase();
         src.domain.dungeon.model.runtime.usecase.StabilizeTravelDungeonProjectionUseCase stabilizeProjectionUseCase =
                 new src.domain.dungeon.model.runtime.usecase.StabilizeTravelDungeonProjectionUseCase();
         src.domain.dungeon.model.runtime.usecase.ApplyTravelDungeonSessionUseCase applyUseCase =
                 new src.domain.dungeon.model.runtime.usecase.ApplyTravelDungeonSessionUseCase(
-                        loadSessionSurfaceUseCase,
+                        surfaceLoader.legacySessionUseCase(),
                         applyMovementUseCase,
                         stabilizeProjectionUseCase);
         DungeonTravelRuntimePublishedStateServiceAssembly publishedState =

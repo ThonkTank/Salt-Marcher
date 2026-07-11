@@ -14,9 +14,7 @@ import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.domain.dungeon.DungeonServiceContribution;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
-import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
 import src.domain.dungeon.published.DungeonTravelLocationKind;
-import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.TravelDungeonModel;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.domain.party.PartyApplicationService;
@@ -63,12 +61,7 @@ public final class DungeonTravelProjectionLevelHarness {
         movePartyTokenToMap(runtime.party(), mapId);
         PartyTravelPositionsResult partyPositionsBefore = runtime.partyPositions().current();
         runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
-                .applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
-                        ApplyTravelDungeonSessionCommand.Action.REFRESH,
-                        -1,
-                        0L,
-                        0,
-                        DungeonOverlaySettings.defaults()));
+                .refresh();
         long geometryRowsBefore = runtime.database().countAuthoredGeometryRows(mapId);
 
         HarnessBinding binding = bindHarness(runtime);
@@ -109,7 +102,7 @@ public final class DungeonTravelProjectionLevelHarness {
         assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, partyPositionsBefore, "DT-LVL-002");
 
         runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
-                .applyDungeonTravelSession(ApplyTravelDungeonSessionCommand.action(-1));
+                .performAction(-1);
         TravelDungeonSnapshot invalidActionSnapshot = travelModel.current();
         DungeonEditorBehaviorHarnessSupport.assertTrue(
                 invalidActionSnapshot.workspaceState() != null
@@ -137,7 +130,7 @@ public final class DungeonTravelProjectionLevelHarness {
         long targetTransitionId = runtime.database().transitionIdByDescription(targetMapId, "Target transition.");
         movePartyTokenToTransition(runtime.party(), sourceMapId, sourceTransitionId, 5, 2, 0);
         runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
-                .applyDungeonTravelSession(refreshCommand());
+                .refresh();
         long sourceGeometryRowsBefore = runtime.database().countAuthoredGeometryRows(sourceMapId);
         long targetGeometryRowsBefore = runtime.database().countAuthoredGeometryRows(targetMapId);
 
@@ -188,7 +181,7 @@ public final class DungeonTravelProjectionLevelHarness {
                 blockedRuntime.database().transitionIdByDescription(blockedMapId, "Unlinked transition.");
         movePartyTokenToTransition(blockedRuntime.party(), blockedMapId, blockedTransitionId, 5, 2, 0);
         blockedRuntime.context().services().require(DungeonTravelRuntimeApplicationService.class)
-                .applyDungeonTravelSession(refreshCommand());
+                .refresh();
         PartyTravelPositionsResult blockedPartyBefore = blockedRuntime.partyPositions().current();
         long blockedGeometryRowsBefore = blockedRuntime.database().countAuthoredGeometryRows(blockedMapId);
         HarnessBinding blockedBinding = bindHarness(blockedRuntime);
@@ -283,15 +276,6 @@ public final class DungeonTravelProjectionLevelHarness {
                         tile,
                         PartyTravelHeading.SOUTH),
                 true));
-    }
-
-    private static ApplyTravelDungeonSessionCommand refreshCommand() {
-        return new ApplyTravelDungeonSessionCommand(
-                ApplyTravelDungeonSessionCommand.Action.REFRESH,
-                -1,
-                0L,
-                0,
-                DungeonOverlaySettings.defaults());
     }
 
     private static String transitionActionLabel(long transitionId, String destinationLabel) {

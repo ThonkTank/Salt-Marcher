@@ -19,8 +19,6 @@ import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.domain.dungeon.DungeonServiceContribution;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
-import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
-import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.TravelDungeonModel;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.domain.party.PartyApplicationService;
@@ -153,12 +151,7 @@ public final class DungeonMapRenderParitySnapshotHarness {
         runtime.database().seedF1SingleRoom(mapId, "Travel Upper Room", 1, 6, 1);
         movePartyTokenToMap(runtime.party(), mapId);
         runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
-                .applyDungeonTravelSession(new ApplyTravelDungeonSessionCommand(
-                        ApplyTravelDungeonSessionCommand.Action.REFRESH,
-                        -1,
-                        0L,
-                        0,
-                        DungeonOverlaySettings.defaults()));
+                .refresh();
 
         TravelHarnessBinding binding = bindTravelHarness(runtime);
         TravelDungeonModel travelModel = runtime.context().services().require(TravelDungeonModel.class);

@@ -3,6 +3,9 @@ package src.view.leftbartabs.dungeoneditor;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import shell.api.ServiceRegistry;
+import src.domain.dungeon.DungeonServiceContribution;
+import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonTopology;
@@ -27,29 +30,11 @@ import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts.Sele
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionKind;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurfaceProjectionMapper;
-import src.domain.dungeon.model.runtime.travel.projection.TravelDungeonSessionProjectionMapper;
 import src.domain.dungeon.model.runtime.travel.projection.TravelHeading;
 import src.domain.dungeon.model.runtime.travel.projection.TravelPositionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceProjection;
 import src.domain.dungeon.model.runtime.travel.projection.TravelTransitionTarget;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionMovement.MoveResultData;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionCommand;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState.ActiveTravelStateData;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSnapshot.SnapshotData;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.PositionData;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.SurfaceData;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.LocationKind;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.MoveStatus;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.OverworldTarget;
-import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
-import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
-import src.domain.dungeon.model.runtime.usecase.ApplyTravelDungeonMovementUseCase;
-import src.domain.dungeon.model.runtime.usecase.ApplyTravelDungeonSessionUseCase;
-import src.domain.dungeon.model.runtime.usecase.LoadDungeonTravelSurfaceUseCase;
-import src.domain.dungeon.model.runtime.usecase.LoadTravelDungeonSessionSurfaceUseCase;
-import src.domain.dungeon.model.runtime.usecase.MoveDungeonTravelActionUseCase;
-import src.domain.dungeon.model.runtime.usecase.StabilizeTravelDungeonProjectionUseCase;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
 import src.domain.dungeon.model.core.structure.DungeonMap;
@@ -63,6 +48,25 @@ import src.domain.dungeon.model.core.structure.stair.StairCollection;
 import src.domain.dungeon.model.core.structure.topology.SpatialTopology;
 import src.domain.dungeon.model.core.structure.transition.TransitionCatalog;
 import src.domain.dungeon.model.core.structure.transition.TransitionAnchor;
+import src.domain.dungeon.published.DungeonTravelLocationKind;
+import src.domain.dungeon.published.DungeonTravelPosition;
+import src.domain.dungeon.published.TravelDungeonAction;
+import src.domain.dungeon.published.TravelDungeonModel;
+import src.domain.dungeon.published.TravelDungeonSnapshot;
+import src.domain.party.PartyApplicationService;
+import src.domain.party.PartyServiceContribution;
+import src.domain.party.model.roster.PartyRoster;
+import src.domain.party.model.roster.repository.PartyRosterRepository;
+import src.domain.party.published.CharacterDraft;
+import src.domain.party.published.CreateCharacterCommand;
+import src.domain.party.published.MembershipState;
+import src.domain.party.published.MovePartyCharactersCommand;
+import src.domain.party.published.PartyDungeonTravelLocationKind;
+import src.domain.party.published.PartyDungeonTravelLocationSnapshot;
+import src.domain.party.published.PartyTravelHeading;
+import src.domain.party.published.PartyTravelPositionsModel;
+import src.domain.party.published.PartyTravelPositionsResult;
+import src.domain.party.published.PartyTravelTile;
 
 final class DungeonRuntimeProjectionInvariantHarness {
 
@@ -237,11 +241,6 @@ final class DungeonRuntimeProjectionInvariantHarness {
         DungeonMapRepository repository = repositoryOf(
                 unlinkedMap,
                 DungeonMapAuthoring.empty(new DungeonMapIdentity(99L), "Unused Target"));
-        DungeonDerivedStateProjection projector = new DungeonDerivedStateProjection();
-        MoveDungeonTravelActionUseCase moveUseCase = new MoveDungeonTravelActionUseCase(
-                mapId -> loadMap(repository, mapId),
-                repository::findById,
-                projector::project);
         TravelPositionFacts transitionPosition = java.util.Objects.requireNonNull(
                 unlinkedTransition.targetPosition(),
                 "unlinkedTransition.targetPosition");
@@ -252,43 +251,33 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 transitionPosition.tile(),
                 TravelHeading.SOUTH);
 
-        MoveResultData moveResult = moveUseCase.execute(new MoveDungeonTravelActionUseCase.Input(
-                position,
-                selectedAction));
-        assertEquals(MoveStatus.TARGET_UNAVAILABLE, moveResult.status(),
-                "runtime unlinked entrance movement must report missing destination");
-        assertContains(moveResult.surface().statusLabel(), "Übergangsziel ist nicht verfügbar.",
-                "runtime unlinked entrance movement explains missing destination");
-        assertEquals(null, moveResult.externalTarget(),
-                "runtime unlinked entrance movement must not publish an external target");
+        ServiceRegistry registry = travelRegistry(repository);
+        movePartyTokenToTravelPosition(registry.require(PartyApplicationService.class), position);
+        DungeonTravelRuntimeApplicationService travel = registry.require(DungeonTravelRuntimeApplicationService.class);
+        TravelDungeonModel travelModel = registry.require(TravelDungeonModel.class);
+        PartyTravelPositionsModel partyPositions = registry.require(PartyTravelPositionsModel.class);
 
-        CountingTravelPartyPositionRepository partyPositions = new CountingTravelPartyPositionRepository();
-        TravelPartyStateRepository partyStateRepository =
-                () -> new ActiveTravelStateData(List.of(12L), null);
-        LoadDungeonTravelSurfaceUseCase loadSurfaceUseCase = new LoadDungeonTravelSurfaceUseCase(
-                mapId -> loadMap(repository, mapId),
-                projector::project);
-        ApplyTravelDungeonMovementUseCase applyUseCase = new ApplyTravelDungeonMovementUseCase(
-                partyStateRepository,
-                partyPositions,
-                loadSurfaceUseCase,
-                moveUseCase);
-        SurfaceData currentSurface = TravelDungeonSessionProjectionMapper.toRuntimeSurface(
-                new TravelSurfaceProjection().project(
-                        TravelAuthoredSurfaceProjectionMapper.from(
-                                unlinkedMap,
-                                projector.project(unlinkedMap)),
-                        position,
-                        ""));
-        SurfaceData applied = applyUseCase.move(
-                currentSurface.position(),
-                currentSurface,
-                selectedAction);
-        assertContains(applied.statusLabel(), "Übergangsziel ist nicht verfügbar.",
+        travel.refresh();
+        TravelDungeonSnapshot beforeSnapshot = travelModel.current();
+        TravelDungeonAction publishedAction = publishedActionAt(
+                beforeSnapshot,
+                selectedAction.rowIndex(),
+                "runtime unlinked entrance public route exposes selected transition action");
+        assertContains(publishedAction.label(), "Kein Ziel verknuepft",
+                "runtime unlinked entrance movement must report missing destination");
+        PartyTravelPositionsResult partyBefore = partyPositions.current();
+
+        travel.performAction(selectedAction.rowIndex());
+
+        TravelDungeonSnapshot afterSnapshot = travelModel.current();
+        assertContains(afterSnapshot.workspaceState().statusLabel(), "Übergangsziel ist nicht verfügbar.",
                 "runtime unlinked entrance apply path explains missing destination");
-        assertEquals(0, partyPositions.savedDungeonPositions(),
+        assertEquals(beforeSnapshot.travelSurface().position(), afterSnapshot.travelSurface().position(),
+                "runtime unlinked entrance movement must not publish an external target");
+        PartyTravelPositionsResult partyAfter = partyPositions.current();
+        assertEquals(partyBefore.partyTokenLocation(), partyAfter.partyTokenLocation(),
                 "runtime unlinked entrance must not save dungeon movement");
-        assertEquals(0, partyPositions.savedOverworldPositions(),
+        assertEquals(partyBefore.partyTokenCharacterIds(), partyAfter.partyTokenCharacterIds(),
                 "runtime unlinked entrance must not save overworld movement");
     }
 
@@ -461,52 +450,22 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 0L,
                 null);
         DungeonMapRepository repository = repositoryOf(firstMap, selectedMap);
-        DungeonDerivedStateProjection projector = new DungeonDerivedStateProjection();
-        LoadDungeonTravelSurfaceUseCase loadDungeonTravelSurfaceUseCase =
-                new LoadDungeonTravelSurfaceUseCase(
-                        mapId -> loadMap(repository, mapId),
-                        projector::project);
-        TravelPartyStateRepository partyStateRepository = () -> new ActiveTravelStateData(List.of(), null);
-        TravelPartyPositionRepository partyPositionRepository = new TravelPartyPositionRepository() {
-            @Override
-            public boolean saveDungeonPosition(PositionData position, List<Long> characterIds) {
-                return true;
-            }
+        ServiceRegistry registry = travelRegistry(repository);
+        DungeonTravelRuntimeApplicationService travel = registry.require(DungeonTravelRuntimeApplicationService.class);
 
-            @Override
-            public boolean saveOverworldPosition(
-                    src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.OverworldTarget target,
-                    List<Long> characterIds
-            ) {
-                return true;
-            }
-        };
-        ApplyTravelDungeonSessionUseCase useCase = new ApplyTravelDungeonSessionUseCase(
-                new LoadTravelDungeonSessionSurfaceUseCase(
-                        partyStateRepository,
-                        partyPositionRepository,
-                        loadDungeonTravelSurfaceUseCase),
-                new ApplyTravelDungeonMovementUseCase(
-                        partyStateRepository,
-                        partyPositionRepository,
-                        loadDungeonTravelSurfaceUseCase,
-                        new MoveDungeonTravelActionUseCase(
-                                mapId -> loadMap(repository, mapId),
-                                repository::findById,
-                                projector::project)),
-                new StabilizeTravelDungeonProjectionUseCase());
+        travel.selectMap(selectedMapId);
 
-        SnapshotData snapshot = useCase.applyCommand(
-                TravelDungeonSessionCommand.selectMap(Long.toString(selectedMapId)));
-        PositionData position = snapshot.surface() == null ? null : snapshot.surface().position();
-
-        assertEquals(new PositionData(
-                        selectedMapId,
-                        LocationKind.TRANSITION,
-                        entryTransitionId,
-                        entryAnchor,
-                        "SOUTH"),
-                position,
+        TravelDungeonSnapshot snapshot = registry.require(TravelDungeonModel.class).current();
+        DungeonTravelPosition position = snapshot.travelSurface() == null ? null : snapshot.travelSurface().position();
+        assertTrue(position != null,
+                "selected-map bootstrap must use the authored transition entry even when (0,0,0) is a valid cell");
+        assertEquals(selectedMapId, position.mapId().value(),
+                "selected-map bootstrap must use the authored transition entry even when (0,0,0) is a valid cell");
+        assertEquals(DungeonTravelLocationKind.TRANSITION, position.locationKind(),
+                "selected-map bootstrap must use the authored transition entry even when (0,0,0) is a valid cell");
+        assertEquals(entryTransitionId, position.ownerId(),
+                "selected-map bootstrap must use the authored transition entry even when (0,0,0) is a valid cell");
+        assertEquals(entryAnchor, new Cell(position.tile().q(), position.tile().r(), position.tile().level()),
                 "selected-map bootstrap must use the authored transition entry even when (0,0,0) is a valid cell");
     }
 
@@ -706,6 +665,56 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 .orElse(DungeonMapAuthoring.empty(new DungeonMapIdentity(1L), "Dungeon Map"));
     }
 
+    private static ServiceRegistry travelRegistry(DungeonMapRepository repository) {
+        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
+        builder.register(DungeonMapRepository.class, repository);
+        builder.register(PartyRosterRepository.class, new InMemoryPartyRosterRepository());
+        new PartyServiceContribution().register(builder);
+        new DungeonServiceContribution().register(builder);
+        return builder.build();
+    }
+
+    private static void movePartyTokenToTravelPosition(
+            PartyApplicationService party,
+            TravelPositionFacts position
+    ) {
+        party.createCharacter(new CreateCharacterCommand(
+                new CharacterDraft("Runtime Guide", "Harness", 3, 12, 14),
+                MembershipState.ACTIVE));
+        party.moveCharacters(new MovePartyCharactersCommand(
+                List.of(1L),
+                new PartyDungeonTravelLocationSnapshot(
+                        position.mapId(),
+                        position.locationKind() == TravelPositionFacts.LocationKind.TRANSITION
+                                ? PartyDungeonTravelLocationKind.TRANSITION
+                                : PartyDungeonTravelLocationKind.TILE,
+                        position.ownerId(),
+                        new PartyTravelTile(position.tile().q(), position.tile().r(), position.tile().level()),
+                        partyTravelHeading(position.heading())),
+                true));
+    }
+
+    private static PartyTravelHeading partyTravelHeading(TravelHeading heading) {
+        return switch (heading == null ? "" : heading.name()) {
+            case "NORTH" -> PartyTravelHeading.NORTH;
+            case "EAST" -> PartyTravelHeading.EAST;
+            case "WEST" -> PartyTravelHeading.WEST;
+            default -> PartyTravelHeading.SOUTH;
+        };
+    }
+
+    private static TravelDungeonAction publishedActionAt(
+            TravelDungeonSnapshot snapshot,
+            int rowIndex,
+            String message
+    ) {
+        List<TravelDungeonAction> actions = snapshot == null || snapshot.workspaceState() == null
+                ? List.of()
+                : snapshot.workspaceState().actions();
+        assertTrue(rowIndex >= 0 && rowIndex < actions.size(), message);
+        return actions.get(rowIndex);
+    }
+
     private static void assertEquals(Object expected, Object actual, String message) {
         if (!java.util.Objects.equals(expected, actual)) {
             throw new IllegalStateException(message + " expected=" + expected + " actual=" + actual);
@@ -725,29 +734,18 @@ final class DungeonRuntimeProjectionInvariantHarness {
         }
     }
 
-    private static final class CountingTravelPartyPositionRepository implements TravelPartyPositionRepository {
+    private static final class InMemoryPartyRosterRepository implements PartyRosterRepository {
 
-        private int savedDungeonPositions;
-        private int savedOverworldPositions;
+        private PartyRoster roster = new PartyRoster(1L, List.of());
 
         @Override
-        public boolean saveDungeonPosition(PositionData position, List<Long> characterIds) {
-            savedDungeonPositions++;
-            return true;
+        public PartyRoster load() {
+            return roster;
         }
 
         @Override
-        public boolean saveOverworldPosition(OverworldTarget target, List<Long> characterIds) {
-            savedOverworldPositions++;
-            return true;
-        }
-
-        private int savedDungeonPositions() {
-            return savedDungeonPositions;
-        }
-
-        private int savedOverworldPositions() {
-            return savedOverworldPositions;
+        public void save(PartyRoster roster) {
+            this.roster = roster == null ? new PartyRoster(1L, List.of()) : roster;
         }
     }
 }

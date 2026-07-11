@@ -51,3 +51,11 @@
     public boolean isOverworld();
     public long overworldTileId();
 }
+
+# M4.3 Dungeon Travel migration: keep the direct refresh service entry named by
+# docs/project/architecture/architecture-migration-dungeon-travel-target-design.md.
+# It is a production service seam used by startup/harness proof without forcing
+# a visible Travel-tab refresh during the wiring port.
+-keepclassmembers class src.domain.dungeon.DungeonTravelRuntimeApplicationService {
+    public void refresh();
+}

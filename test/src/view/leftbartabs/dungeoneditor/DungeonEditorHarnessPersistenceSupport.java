@@ -23,11 +23,6 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
-import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
-import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.published.DungeonEditorControlsModel;
 import src.domain.dungeon.published.DungeonEditorMapSurfaceModel;
@@ -66,8 +61,6 @@ class DungeonEditorHarnessPersistenceSupport {
             database.clearDungeonData();
             ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
             builder.register(DungeonMapRepository.class, new SqliteDungeonMapRepository());
-            builder.register(TravelPartyStateRepository.class, new EmptyTravelPartyStateRepository());
-            builder.register(TravelPartyPositionRepository.class, new EmptyTravelPartyPositionRepository());
             new DungeonServiceContribution().register(builder);
             ServiceRegistry registry = builder.build();
             return new HarnessRuntime(
@@ -92,31 +85,6 @@ class DungeonEditorHarnessPersistenceSupport {
 
         @Override
         public boolean isShowing(Object entryKey) {
-            return false;
-        }
-    }
-
-    static final class EmptyTravelPartyStateRepository implements TravelPartyStateRepository {
-        @Override
-        public TravelDungeonActiveState.ActiveTravelStateData loadActiveTravelState() {
-            return new TravelDungeonActiveState.ActiveTravelStateData(List.of(), null);
-        }
-    }
-
-    static final class EmptyTravelPartyPositionRepository implements TravelPartyPositionRepository {
-        @Override
-        public boolean saveDungeonPosition(
-                TravelDungeonSessionSurface.PositionData position,
-                List<Long> characterIds
-        ) {
-            return false;
-        }
-
-        @Override
-        public boolean saveOverworldPosition(
-                TravelDungeonSessionValues.OverworldTarget target,
-                List<Long> characterIds
-        ) {
             return false;
         }
     }
