@@ -6,7 +6,7 @@ Always run verification from the repository root.
 
 - Production-code changes: `tools/gradle/run-staged-verification.sh production-handoff`
 - Package-limited check/enforcement work: `tools/gradle/run-staged-verification.sh focused-handoff --path <pkg> [--area <area>]`
-- Documentation-only changes (`AGENTS.md`, `docs/**`, `src/domain/**/DOMAIN.md`, Markdown under `tools/quality/**`): `./gradlew checkDocumentationEnforcement --console=plain`
+- Documentation-only changes (`AGENTS.md`, `docs/**`, `src/domain/**/DOMAIN.md`, Markdown under `tools/quality/**`): `git diff --check` plus any owner-named proof; do not use removed doc gates as acceptance evidence
 - Desktop manual-test surface: `tools/gradle/run-staged-verification.sh desktop-install` after a green production-handoff
 - Long runs: `tools/gradle/run-observable-gradle.sh <task>`; do not loop many separate `./gradlew` calls
 
@@ -14,7 +14,7 @@ Always run verification from the repository root.
 
 1. Work on a feature branch. Do not commit to `main`; merge through a PR with green CI.
 2. A pass whose required verify command has not literally passed is WIP. Report the literal result at handoff.
-3. Outcome checks stay binding: cycles, layer direction, behavior harnesses, and doc link/placement basics. Do not weaken, suppress, or bypass them; architecture-migration form checks are removed under `docs/project/architecture/architecture-migration-roadmap.md` instead of treated as architecture truth.
+3. Outcome checks stay binding: cycles, layer direction, behavior harnesses, and owner-named proof. Do not weaken, suppress, or bypass them; removed doc gates and role-family form checks are not architecture truth.
 4. Transitional or superseded support you knowingly leave behind gets a `LEGACY_REMOVE_ON_TOUCH` marker plus a concrete removal condition. When your write set contains such a marker, remove the marked support in the same pass or record a concrete repair target.
 5. Structural findings you cannot fix in the same pass get a `PROJECT_HEALTH_DEBT` marker at the primary cause and an entry in `docs/project/architecture/project-health-debt.md`.
 6. Before editing a surface, read its owner doc and skill from the table below. If a surface has no clear owner, create a narrow documentation repair target instead of creating a second source of truth.
@@ -40,18 +40,18 @@ Always run verification from the repository root.
 
 ## Risk Classes
 
-- `R0`: docs/comments/small reversible refactor; doc gate or production-handoff; auto-promote.
+- `R0`: docs/comments/small reversible refactor; owner-named proof or production-handoff; auto-promote.
 - `R1`: behavior-neutral structure, architecture, dependency, or tooling; R0 plus touched behavior harnesses and judge review; auto-promote.
 - `R2`: visible behavior; R1 plus German release note and acceptance checklist; auto-promote as provisional next/main work, promote to stable only after owner acceptance.
 - `R3a`: real local data migration; verified restore-tested backup and copy dry run; auto-promote after backup proof.
 - `R3b`: external service, cost, account, or data egress; must fit `docs/project/policies/resource-policy.md`; outside-policy work creates a policy/no-action PR instead of blocking in chat.
-- `R3c`: frozen gate surface; requires R3c label and the full required gate set; auto-promote after merge. Roadmap-governed migration passes are R1; the R3c freeze does not apply to required doctrine-gate removal.
+- `R3c`: frozen gate surface; requires R3c label and the full required gate set; auto-promote after merge.
 
 ## Surface Owners
 
 | Surface | Owner doc | Mandatory skill |
 | --- | --- | --- |
-| Migration source areas (`src/domain/**`, `src/features/**`, `src/view/**`) | `docs/project/architecture/architecture-migration-roadmap.md`; `docs/project/architecture/migration-ledger.md` | - |
+| Source architecture (`bootstrap/**`, `shell/**`, `src/**`, `src/data/**`) | `docs/project/architecture/source-architecture.md`; `docs/project/architecture/overview.md` | - |
 | `src/domain/dungeon/**`, `docs/dungeon/**` | `docs/dungeon/README.md` | - |
 | Documentation placement | `docs/project/architecture/documentation.md` | - |
 | Verification policy | `docs/project/verification/quality-platforms.md` | - |
@@ -61,16 +61,16 @@ Always run verification from the repository root.
 | External-source-backed decisions | `docs/project/verification/source-references.md` | `source-references` |
 | Resource policy and operating model | `docs/project/policies/resource-policy.md`, `docs/project/decisions/**` | - |
 
-Legacy migration areas match surrounding code; migrated areas match the pilot reference named in the ledger. Harness Gap repair targets reference `docs/project/verification/harness-gaps.md`. Autonomous decision boundaries are defined in `docs/project/architecture/autonomy-boundaries.md`.
+Harness Gap repair targets reference `docs/project/verification/harness-gaps.md`. Autonomous decision boundaries are defined in `docs/project/architecture/autonomy-boundaries.md`. M6 migration state remains in `docs/project/architecture/migration-ledger.md`.
 
 ## Workflow
 
 Classify each task by tier as defined in `docs/project/architecture/agent-instructions.md`:
 
-- **S**: docs-only or trivial mechanical fix. Edit directly and run the matching gate.
+- **S**: docs-only or trivial mechanical fix. Edit directly and run the owner-named proof.
 - **M**: standard code change. State a short plan in the PR or log, implement, run proof, get one judge review, and merge on green CI.
 - **L**: architecture, governance, cross-cutting, or dependency change. Write a one-page journal design note first, unless the user explicitly waives it, then proceed as M.
 
-Architecture migration passes follow `docs/project/architecture/architecture-migration-roadmap.md`; the roadmap wins, carries the migration design obligation, and requires behavior parity, no owner questions, no security analysis, no pause/throttle/stop mechanisms, and frozen harness scenarios/assertions except separate wiring ports.
+Architecture migration completion follows `docs/project/architecture/architecture-migration-roadmap.md` and `docs/project/architecture/migration-ledger.md`; do not restore removed doc gates or role-family form checks.
 
 Skills live in `tools/quality/skills/<name>/SKILL.md`. Read a skill when this file, an owner doc, or the task surface names it, not speculatively.
