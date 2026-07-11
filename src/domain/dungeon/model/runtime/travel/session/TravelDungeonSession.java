@@ -3,10 +3,11 @@ package src.domain.dungeon.model.runtime.travel.session;
 import java.util.List;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSnapshot.SnapshotData;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.ContextKind;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.MapData;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.OverlayState;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.PositionData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.SurfaceData;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.ContextKind;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.TravelOverlayState;
 
 public final class TravelDungeonSession {
 
@@ -32,10 +33,6 @@ public final class TravelDungeonSession {
         return state.projectionLevel;
     }
 
-    public boolean projectionLevelInitialized() {
-        return state.projectionLevelInitialized;
-    }
-
     public void setProjectionLevel(int nextProjectionLevel) {
         state.projectionLevel = nextProjectionLevel;
     }
@@ -44,9 +41,8 @@ public final class TravelDungeonSession {
         state.configureOverlay(modeKey, levelRange, opacity, selectedLevels);
     }
 
-    public void stabilizeProjectionLevel(int nextProjectionLevel, boolean initialized) {
-        state.projectionLevel = nextProjectionLevel;
-        state.projectionLevelInitialized = initialized;
+    public void stabilizeProjectionLevel() {
+        state.stabilizeProjectionLevel();
     }
 
     public SnapshotData snapshot() {
@@ -55,7 +51,7 @@ public final class TravelDungeonSession {
 
     private static final class MutableTravelSessionState {
 
-        private TravelOverlayState overlayState = TravelOverlayState.defaults();
+        private OverlayState overlayState = OverlayState.defaults();
         private int projectionLevel;
         private boolean projectionLevelInitialized;
         private @Nullable SurfaceData currentSurface;
@@ -82,11 +78,55 @@ public final class TravelDungeonSession {
         }
 
         private void configureOverlay(String modeKey, int levelRange, double opacity, List<Integer> selectedLevels) {
-            overlayState = TravelOverlayState.of(modeKey, levelRange, opacity, selectedLevels);
+            overlayState = OverlayState.of(modeKey, levelRange, opacity, selectedLevels);
+        }
+
+        private void stabilizeProjectionLevel() {
+            if (currentSurface == null) {
+                return;
+            }
+            if (!projectionLevelInitialized) {
+                projectionLevel = defaultProjectionLevel(currentSurface, projectionLevel);
+                projectionLevelInitialized = true;
+            }
+            projectionLevel = clampProjectionLevel(currentSurface, projectionLevel);
         }
 
         private SnapshotData snapshot() {
             return TravelDungeonSessionSnapshot.snapshot(currentSurface, overlayState, projectionLevel);
+        }
+
+        private static int defaultProjectionLevel(SurfaceData surface, int fallbackLevel) {
+            return surface.contextKind() == ContextKind.DUNGEON
+                    ? surface.position().tile().level()
+                    : fallbackLevel;
+        }
+
+        private static int clampProjectionLevel(SurfaceData surface, int fallbackLevel) {
+            List<Integer> levels = levelsFrom(surface, fallbackLevel);
+            if (levels.isEmpty()) {
+                return fallbackLevel;
+            }
+            return Math.max(levels.getFirst(), Math.min(levels.getLast(), fallbackLevel));
+        }
+
+        private static List<Integer> levelsFrom(SurfaceData surface, int fallbackLevel) {
+            java.util.SortedSet<Integer> levels = new java.util.TreeSet<>();
+            MapData map = surface.map();
+            for (var area : map.areas()) {
+                for (var cell : area.cells()) {
+                    levels.add(cell.level());
+                }
+            }
+            for (var feature : map.features()) {
+                for (var cell : feature.cells()) {
+                    levels.add(cell.level());
+                }
+            }
+            if (levels.isEmpty()) {
+                levels.add(fallbackLevel);
+            }
+            return List.copyOf(levels);
         }
     }
 }

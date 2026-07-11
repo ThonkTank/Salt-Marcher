@@ -52,10 +52,9 @@
     public long overworldTileId();
 }
 
-# M4.3 Dungeon Travel migration: keep the direct refresh service entry named by
-# docs/project/architecture/architecture-migration-dungeon-travel-target-design.md.
-# It is a production service seam used by startup/harness proof without forcing
-# a visible Travel-tab refresh during the wiring port.
+# M4.3 Dungeon Travel migration: direct refresh is the behavior-parity service
+# seam used by harnesses. The Travel tab must not auto-refresh during migration,
+# because that would change the existing first-bind visible state.
 -keepclassmembers class src.domain.dungeon.DungeonTravelRuntimeApplicationService {
     public void refresh();
 }

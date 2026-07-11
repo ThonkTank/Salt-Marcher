@@ -1,12 +1,11 @@
 package src.domain.dungeon;
 
-import src.domain.dungeon.model.runtime.repository.TravelDungeonSessionPublishedStateRepository;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSnapshot;
 import src.domain.dungeon.published.TravelDungeonModel;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.domain.shared.published.PublishedState;
 
-final class DungeonTravelPublishedState implements TravelDungeonSessionPublishedStateRepository {
+final class DungeonTravelPublishedState {
 
     private final PublishedState<TravelDungeonSnapshot> snapshots =
             PublishedState.retainingDuplicateSubscribers(TravelDungeonSnapshot.empty());
@@ -17,8 +16,7 @@ final class DungeonTravelPublishedState implements TravelDungeonSessionPublished
         return travelModel;
     }
 
-    @Override
-    public void publishCurrentSession(TravelDungeonSessionSnapshot.SnapshotData snapshot) {
+    void publish(TravelDungeonSessionSnapshot.SnapshotData snapshot) {
         snapshots.publish(DungeonTravelPublishedProjection.snapshot(snapshot));
     }
 }

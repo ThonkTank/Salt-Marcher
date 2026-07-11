@@ -6,16 +6,135 @@ import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Edge;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.ActionKind;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.AreaKind;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.ContextKind;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.FeatureKind;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.LocationKind;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.TopologyKind;
 
 public final class TravelDungeonSessionSurface {
 
     private TravelDungeonSessionSurface() {
+    }
+
+    public enum ContextKind {
+        DUNGEON,
+        OVERWORLD;
+
+        public boolean isOverworld() {
+            return this == OVERWORLD;
+        }
+    }
+
+    public enum LocationKind {
+        TILE,
+        STAIR_EXIT,
+        TRANSITION;
+
+        public static LocationKind defaultKind() {
+            return TILE;
+        }
+
+        public static LocationKind fromName(@Nullable String name) {
+            return switch (normalizeName(name)) {
+                case "TRANSITION" -> TRANSITION;
+                case "STAIR_EXIT" -> STAIR_EXIT;
+                default -> TILE;
+            };
+        }
+    }
+
+    public enum TopologyKind {
+        SQUARE,
+        HEX;
+
+        public static TopologyKind defaultKind() {
+            return SQUARE;
+        }
+
+        public static TopologyKind fromName(@Nullable String name) {
+            return "HEX".equals(normalizeName(name)) ? HEX : SQUARE;
+        }
+    }
+
+    public enum AreaKind {
+        ROOM,
+        CORRIDOR;
+
+        public static AreaKind defaultKind() {
+            return ROOM;
+        }
+
+        public static AreaKind fromName(@Nullable String name) {
+            return "CORRIDOR".equals(normalizeName(name)) ? CORRIDOR : ROOM;
+        }
+
+        public String defaultLabel() {
+            return name();
+        }
+    }
+
+    public enum FeatureKind {
+        STAIR,
+        TRANSITION;
+
+        public static FeatureKind defaultKind() {
+            return STAIR;
+        }
+
+        public static FeatureKind fromName(@Nullable String name) {
+            return "TRANSITION".equals(normalizeName(name)) ? TRANSITION : STAIR;
+        }
+    }
+
+    public enum ActionKind {
+        TRAVERSAL,
+        TRANSITION;
+
+        public static ActionKind defaultKind() {
+            return TRAVERSAL;
+        }
+
+        public static ActionKind fromName(@Nullable String name) {
+            return "TRANSITION".equals(normalizeName(name)) ? TRANSITION : TRAVERSAL;
+        }
+    }
+
+    public record OverlayState(
+            String modeKey,
+            int levelRange,
+            double opacity,
+            List<Integer> selectedLevels
+    ) {
+        public OverlayState {
+            modeKey = modeKey == null || modeKey.isBlank() ? "OFF" : modeKey.trim();
+            levelRange = Math.max(0, levelRange);
+            opacity = Math.max(0.0, Math.min(1.0, opacity));
+            selectedLevels = selectedLevels == null ? List.of() : List.copyOf(selectedLevels);
+        }
+
+        public static OverlayState defaults() {
+            return new OverlayState("OFF", 2, 0.35, List.of());
+        }
+
+        public static OverlayState of(
+                String modeKey,
+                int levelRange,
+                double opacity,
+                List<Integer> selectedLevels
+        ) {
+            return new OverlayState(modeKey, levelRange, opacity, selectedLevels);
+        }
+
+        @Override
+        public List<Integer> selectedLevels() {
+            return List.copyOf(selectedLevels);
+        }
+    }
+
+    public record OverworldTarget(
+            long mapId,
+            long tileId
+    ) {
+        public OverworldTarget {
+            mapId = Math.max(1L, mapId);
+            tileId = Math.max(0L, tileId);
+        }
     }
 
     public static SurfaceData outsideDungeonSurface(long tileId) {
@@ -221,4 +340,7 @@ public final class TravelDungeonSessionSurface {
         }
     }
 
+    private static String normalizeName(@Nullable String name) {
+        return name == null ? "" : name.trim().toUpperCase(Locale.ROOT);
+    }
 }

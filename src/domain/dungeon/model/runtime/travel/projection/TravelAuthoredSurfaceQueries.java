@@ -9,10 +9,10 @@ import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.graph.DungeonTopologyRef;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface.CorridorConnection;
 import src.domain.dungeon.model.runtime.travel.projection.TravelAuthoredSurface.RoomNarration;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AreaKind;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AreaData;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.FeatureKind;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.FeatureData;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.AreaKind;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.FeatureKind;
 
 final class TravelAuthoredSurfaceQueries {
 

@@ -3,15 +3,12 @@ package src.domain.dungeon;
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
-import shell.api.ServiceRegistry;
 import src.domain.dungeon.model.core.geometry.Cell;
-import src.domain.dungeon.model.runtime.repository.TravelPartyPositionRepository;
-import src.domain.dungeon.model.runtime.repository.TravelPartyStateRepository;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState.ActiveTravelStateData;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonActiveState.PartyLocationData;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.LocationKind;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.OverworldTarget;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.PositionData;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.LocationKind;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.OverworldTarget;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.ActivePartyResult;
@@ -28,14 +25,14 @@ import src.domain.party.published.PartyTravelPositionsResult;
 import src.domain.party.published.PartyTravelTile;
 import src.domain.party.published.ReadStatus;
 
-final class DungeonTravelPartyGateway implements TravelPartyStateRepository, TravelPartyPositionRepository {
+final class DungeonTravelPartyGateway {
 
     private final ActivePartyModel activePartyModel;
     private final PartyTravelPositionsModel partyTravelPositionsModel;
     private final PartyApplicationService party;
     private final PartyMutationModel partyMutationModel;
 
-    private DungeonTravelPartyGateway(
+    DungeonTravelPartyGateway(
             ActivePartyModel activePartyModel,
             PartyTravelPositionsModel partyTravelPositionsModel,
             PartyApplicationService party,
@@ -49,17 +46,7 @@ final class DungeonTravelPartyGateway implements TravelPartyStateRepository, Tra
         this.partyMutationModel = Objects.requireNonNull(partyMutationModel, "partyMutationModel");
     }
 
-    static DungeonTravelPartyGateway from(ServiceRegistry registry) {
-        ServiceRegistry services = Objects.requireNonNull(registry, "registry");
-        return new DungeonTravelPartyGateway(
-                services.require(ActivePartyModel.class),
-                services.require(PartyTravelPositionsModel.class),
-                services.require(PartyApplicationService.class),
-                services.require(PartyMutationModel.class));
-    }
-
-    @Override
-    public ActiveTravelStateData loadActiveTravelState() {
+    ActiveTravelStateData loadActiveTravelState() {
         ActivePartyResult activeParty = activePartyModel.current();
         List<Long> activeCharacterIds = activeParty.status() == ReadStatus.SUCCESS
                 ? activeParty.memberIds()
@@ -73,8 +60,7 @@ final class DungeonTravelPartyGateway implements TravelPartyStateRepository, Tra
                 toInternalPartyLocation(travelPositions.partyTokenLocation()));
     }
 
-    @Override
-    public boolean saveDungeonPosition(PositionData position, List<Long> characterIds) {
+    boolean saveDungeonPosition(PositionData position, List<Long> characterIds) {
         if (position == null || characterIds == null || characterIds.isEmpty()) {
             return false;
         }
@@ -95,8 +81,7 @@ final class DungeonTravelPartyGateway implements TravelPartyStateRepository, Tra
         return partyMutationModel.current().status() == MutationStatus.SUCCESS;
     }
 
-    @Override
-    public boolean saveOverworldPosition(OverworldTarget target, List<Long> characterIds) {
+    boolean saveOverworldPosition(OverworldTarget target, List<Long> characterIds) {
         if (target == null || characterIds == null || characterIds.isEmpty()) {
             return false;
         }
@@ -124,7 +109,7 @@ final class DungeonTravelPartyGateway implements TravelPartyStateRepository, Tra
             return new PartyLocationData(
                     new PositionData(
                             dungeonLocation.mapId(),
-                            LocationKind.valueOf(dungeonLocation.locationKind().name()),
+                            LocationKind.fromName(dungeonLocation.locationKind().name()),
                             dungeonLocation.ownerId(),
                             new Cell(
                                     dungeonLocation.tile().q(),

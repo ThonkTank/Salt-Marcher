@@ -7,8 +7,9 @@ import java.util.Set;
 import org.jspecify.annotations.Nullable;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AreaKind;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.AreaData;
-import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionValues.AreaKind;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.LocationKind;
 
 final class TraversalActionCatalog {
 
@@ -67,7 +68,7 @@ final class TraversalActionCatalog {
                                 destinationLabel),
                         new TravelPositionFacts(
                                 authoredSurface.header().mapId(),
-                                TravelPositionFacts.LocationKind.TILE,
+                                LocationKind.TILE,
                                 candidate.target().areaId(),
                                 candidate.target().tile(),
                                 candidate.link().headingFrom(candidate.source().tile(), position.heading())),

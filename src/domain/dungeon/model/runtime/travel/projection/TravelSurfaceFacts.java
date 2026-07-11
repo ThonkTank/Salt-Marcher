@@ -6,6 +6,7 @@ import java.util.Optional;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts.SelectedAction;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.LocationKind;
 
 public record TravelSurfaceFacts(
         long mapId,
@@ -61,7 +62,7 @@ public record TravelSurfaceFacts(
         return position == null
                 ? new TravelPositionFacts(
                         mapId,
-                        TravelPositionFacts.LocationKind.TILE,
+                        LocationKind.TILE,
                         0L,
                         new Cell(0, 0, 0),
                         TravelHeading.defaultHeading())

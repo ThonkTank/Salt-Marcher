@@ -35,6 +35,7 @@ import src.domain.dungeon.model.runtime.travel.projection.TravelPositionFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceFacts;
 import src.domain.dungeon.model.runtime.travel.projection.TravelSurfaceProjection;
 import src.domain.dungeon.model.runtime.travel.projection.TravelTransitionTarget;
+import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.LocationKind;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.model.core.structure.DungeonMapMetadata;
 import src.domain.dungeon.model.core.structure.DungeonMap;
@@ -205,7 +206,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
         assertTrue(transition != null, "runtime transition projection publishes transition action");
         assertEquals(new TravelPositionFacts(
                         4L,
-                        TravelPositionFacts.LocationKind.TRANSITION,
+                        LocationKind.TRANSITION,
                         40L,
                         new Cell(2, 0, 0),
                         TravelHeading.SOUTH),
@@ -246,7 +247,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 "unlinkedTransition.targetPosition");
         TravelPositionFacts position = new TravelPositionFacts(
                 unlinkedMap.metadata().mapId().value(),
-                TravelPositionFacts.LocationKind.TILE,
+                LocationKind.TILE,
                 0L,
                 transitionPosition.tile(),
                 TravelHeading.SOUTH);
@@ -308,14 +309,14 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 authoredSurface,
                 new TravelPositionFacts(
                         5L,
-                        TravelPositionFacts.LocationKind.TILE,
+                        LocationKind.TILE,
                         0L,
                         preferredTile,
                         TravelHeading.WEST));
 
         assertEquals(new TravelPositionFacts(
                         5L,
-                        TravelPositionFacts.LocationKind.TILE,
+                        LocationKind.TILE,
                         0L,
                         preferredTile,
                         TravelHeading.WEST),
@@ -359,7 +360,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 authoredSurface,
                 new TravelPositionFacts(
                         6L,
-                        TravelPositionFacts.LocationKind.TILE,
+                        LocationKind.TILE,
                         0L,
                         new Cell(99, 99, 0),
                         TravelHeading.EAST));
@@ -367,7 +368,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
 
         assertEquals(new TravelPositionFacts(
                         6L,
-                        TravelPositionFacts.LocationKind.TRANSITION,
+                        LocationKind.TRANSITION,
                         80L,
                         lowerIdAnchor,
                         TravelHeading.EAST),
@@ -375,7 +376,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 "invalid preferred runtime tile must fall back to the lowest-id placed transition anchor");
         assertEquals(new TravelPositionFacts(
                         6L,
-                        TravelPositionFacts.LocationKind.TRANSITION,
+                        LocationKind.TRANSITION,
                         80L,
                         lowerIdAnchor,
                         TravelHeading.defaultHeading()),
@@ -403,14 +404,14 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 authoredSurface,
                 new TravelPositionFacts(
                         7L,
-                        TravelPositionFacts.LocationKind.TILE,
+                        LocationKind.TILE,
                         0L,
                         new Cell(99, 99, 0),
                         TravelHeading.NORTH));
 
         assertEquals(new TravelPositionFacts(
                         7L,
-                        TravelPositionFacts.LocationKind.TILE,
+                        LocationKind.TILE,
                         0L,
                         expected,
                         TravelHeading.NORTH),
@@ -425,7 +426,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
 
         assertEquals(new TravelPositionFacts(
                         1L,
-                        TravelPositionFacts.LocationKind.TILE,
+                        LocationKind.TILE,
                         0L,
                         new Cell(0, 0, 0),
                         TravelHeading.defaultHeading()),
@@ -475,7 +476,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 authoredSurface,
                 new TravelPositionFacts(
                         map.metadata().mapId().value(),
-                        TravelPositionFacts.LocationKind.TILE,
+                        LocationKind.TILE,
                         0L,
                         activeTile,
                         TravelHeading.SOUTH),
@@ -685,7 +686,7 @@ final class DungeonRuntimeProjectionInvariantHarness {
                 List.of(1L),
                 new PartyDungeonTravelLocationSnapshot(
                         position.mapId(),
-                        position.locationKind() == TravelPositionFacts.LocationKind.TRANSITION
+                        position.locationKind() == LocationKind.TRANSITION
                                 ? PartyDungeonTravelLocationKind.TRANSITION
                                 : PartyDungeonTravelLocationKind.TILE,
                         position.ownerId(),
