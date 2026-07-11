@@ -15,6 +15,7 @@ import src.domain.dungeon.DungeonServiceContribution;
 import src.domain.dungeon.DungeonTravelRuntimeApplicationService;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
 import src.domain.dungeon.published.ApplyTravelDungeonSessionCommand;
+import src.domain.dungeon.published.DungeonTravelLocationKind;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.TravelDungeonModel;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
@@ -48,7 +49,10 @@ public final class DungeonTravelProjectionLevelHarness {
     }
 
     static void run(List<String> results) throws Exception {
-        DungeonEditorHarnessPublicationSupport.runOnFxThread(() -> verifyProjectionLevelControls(results));
+        DungeonEditorHarnessPublicationSupport.runOnFxThread(() -> {
+            verifyProjectionLevelControls(results);
+            verifyRenderedTransitionActions(results);
+        });
     }
 
     private static void verifyProjectionLevelControls(List<String> results) {
@@ -124,6 +128,103 @@ public final class DungeonTravelProjectionLevelHarness {
                 + " -> INVALID_ACTION status -> SQLite/party unchanged");
     }
 
+    private static void verifyRenderedTransitionActions(List<String> results) {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        long sourceMapId = runtime.database().createPersistedMap("Travel Action Source Map");
+        long targetMapId = runtime.database().createPersistedMap("Travel Action Target Map");
+        runtime.database().seedResolvedTransitionLinkFixture(sourceMapId, targetMapId);
+        long sourceTransitionId = runtime.database().transitionIdByDescription(sourceMapId, "Source transition.");
+        long targetTransitionId = runtime.database().transitionIdByDescription(targetMapId, "Target transition.");
+        movePartyTokenToTransition(runtime.party(), sourceMapId, sourceTransitionId, 5, 2, 0);
+        runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
+                .applyDungeonTravelSession(refreshCommand());
+        long sourceGeometryRowsBefore = runtime.database().countAuthoredGeometryRows(sourceMapId);
+        long targetGeometryRowsBefore = runtime.database().countAuthoredGeometryRows(targetMapId);
+
+        HarnessBinding binding = bindHarness(runtime);
+        TravelDungeonModel travelModel = runtime.context().services().require(TravelDungeonModel.class);
+        String linkedActionLabel = transitionActionLabel(
+                sourceTransitionId,
+                "Dungeon " + targetMapId + " / Übergang " + targetTransitionId);
+
+        DungeonEditorBehaviorHarnessSupport.assertTrue(
+                DungeonEditorBehaviorHarnessSupport.button(binding.stateRoot(), linkedActionLabel) != null,
+                "DT-ACT-001 visible linked transition action is rendered");
+        DungeonEditorBehaviorHarnessSupport.click(
+                DungeonEditorBehaviorHarnessSupport.button(binding.stateRoot(), linkedActionLabel));
+
+        TravelDungeonSnapshot afterLinkedAction = travelModel.current();
+        assertTravelSnapshotPosition(
+                afterLinkedAction,
+                targetMapId,
+                DungeonTravelLocationKind.TRANSITION,
+                targetTransitionId,
+                6,
+                2,
+                0,
+                "DT-ACT-001 travel snapshot moves to target transition");
+        assertPartyTokenLocation(
+                runtime.partyPositions().current(),
+                targetMapId,
+                PartyDungeonTravelLocationKind.TRANSITION,
+                targetTransitionId,
+                new PartyTravelTile(6, 2, 0),
+                "DT-ACT-001 party token persists target transition");
+        assertAuthoredGeometryUnchanged(
+                runtime,
+                sourceMapId,
+                sourceGeometryRowsBefore,
+                "DT-ACT-001 source authored geometry unchanged");
+        assertAuthoredGeometryUnchanged(
+                runtime,
+                targetMapId,
+                targetGeometryRowsBefore,
+                "DT-ACT-001 target authored geometry unchanged");
+
+        HarnessRuntime blockedRuntime = HarnessRuntime.create();
+        long blockedMapId = blockedRuntime.database().createPersistedMap("Travel Action Unlinked Map");
+        blockedRuntime.database().seedUnlinkedTransitionFixture(blockedMapId);
+        long blockedTransitionId =
+                blockedRuntime.database().transitionIdByDescription(blockedMapId, "Unlinked transition.");
+        movePartyTokenToTransition(blockedRuntime.party(), blockedMapId, blockedTransitionId, 5, 2, 0);
+        blockedRuntime.context().services().require(DungeonTravelRuntimeApplicationService.class)
+                .applyDungeonTravelSession(refreshCommand());
+        PartyTravelPositionsResult blockedPartyBefore = blockedRuntime.partyPositions().current();
+        long blockedGeometryRowsBefore = blockedRuntime.database().countAuthoredGeometryRows(blockedMapId);
+        HarnessBinding blockedBinding = bindHarness(blockedRuntime);
+        TravelDungeonModel blockedTravelModel =
+                blockedRuntime.context().services().require(TravelDungeonModel.class);
+        String blockedActionLabel = transitionActionLabel(blockedTransitionId, "Kein Ziel verknuepft");
+
+        DungeonEditorBehaviorHarnessSupport.assertTrue(
+                DungeonEditorBehaviorHarnessSupport.button(blockedBinding.stateRoot(), blockedActionLabel) != null,
+                "DT-ACT-002 visible unlinked transition action is rendered");
+        DungeonEditorBehaviorHarnessSupport.click(
+                DungeonEditorBehaviorHarnessSupport.button(blockedBinding.stateRoot(), blockedActionLabel));
+
+        TravelDungeonSnapshot afterBlockedAction = blockedTravelModel.current();
+        DungeonEditorBehaviorHarnessSupport.assertTrue(
+                afterBlockedAction.workspaceState() != null
+                        && afterBlockedAction.workspaceState().statusLabel()
+                                .contains("Übergangsziel ist nicht verfügbar."),
+                "DT-ACT-002 rendered unlinked action reports missing target");
+        assertNoTravelTruthMutation(
+                blockedRuntime,
+                blockedMapId,
+                blockedGeometryRowsBefore,
+                blockedPartyBefore,
+                "DT-ACT-002");
+
+        results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
+                + "DT-ACT-001 Ready: DungeonTravelStateView linked transition button"
+                + " -> ApplicationService -> party runtime position target transition"
+                + " -> SQLite authored geometry unchanged");
+        results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
+                + "DT-ACT-002 Ready: DungeonTravelStateView unlinked transition button"
+                + " -> ApplicationService -> missing-target status"
+                + " -> SQLite authored geometry unchanged");
+    }
+
     private static HarnessBinding bindHarness(HarnessRuntime runtime) {
         ShellBinding shellBinding = new DungeonTravelContribution().bind(runtime.context());
         Parent controlsRoot = DungeonEditorBehaviorHarnessSupport.slot(shellBinding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
@@ -135,10 +236,41 @@ public final class DungeonTravelProjectionLevelHarness {
         stage.show();
         root.applyCss();
         root.layout();
-        return new HarnessBinding(controlsRoot, DungeonEditorBehaviorHarnessSupport.boundContentModel(mapView));
+        return new HarnessBinding(controlsRoot, stateRoot, DungeonEditorBehaviorHarnessSupport.boundContentModel(mapView));
     }
 
     private static void movePartyTokenToMap(PartyApplicationService party, long mapId) {
+        movePartyToken(
+                party,
+                mapId,
+                PartyDungeonTravelLocationKind.TILE,
+                0L,
+                new PartyTravelTile(1, 1, 0));
+    }
+
+    private static void movePartyTokenToTransition(
+            PartyApplicationService party,
+            long mapId,
+            long transitionId,
+            int q,
+            int r,
+            int level
+    ) {
+        movePartyToken(
+                party,
+                mapId,
+                PartyDungeonTravelLocationKind.TRANSITION,
+                transitionId,
+                new PartyTravelTile(q, r, level));
+    }
+
+    private static void movePartyToken(
+            PartyApplicationService party,
+            long mapId,
+            PartyDungeonTravelLocationKind locationKind,
+            long ownerId,
+            PartyTravelTile tile
+    ) {
         party.createCharacter(new CreateCharacterCommand(
                 new CharacterDraft("Dungeon Guide", "Harness", 3, 12, 14),
                 MembershipState.ACTIVE));
@@ -146,15 +278,68 @@ public final class DungeonTravelProjectionLevelHarness {
                 List.of(1L),
                 new PartyDungeonTravelLocationSnapshot(
                         mapId,
-                        PartyDungeonTravelLocationKind.TILE,
-                        0L,
-                        new PartyTravelTile(1, 1, 0),
+                        locationKind,
+                        ownerId,
+                        tile,
                         PartyTravelHeading.SOUTH),
                 true));
     }
 
+    private static ApplyTravelDungeonSessionCommand refreshCommand() {
+        return new ApplyTravelDungeonSessionCommand(
+                ApplyTravelDungeonSessionCommand.Action.REFRESH,
+                -1,
+                0L,
+                0,
+                DungeonOverlaySettings.defaults());
+    }
+
+    private static String transitionActionLabel(long transitionId, String destinationLabel) {
+        return "Übergang " + transitionId + ": " + destinationLabel;
+    }
+
     private static void assertProjectionLevel(TravelDungeonSnapshot snapshot, int expectedLevel, String message) {
         DungeonEditorBehaviorHarnessSupport.assertEquals(expectedLevel, snapshot.projectionLevel(), message);
+    }
+
+    private static void assertTravelSnapshotPosition(
+            TravelDungeonSnapshot snapshot,
+            long expectedMapId,
+            DungeonTravelLocationKind expectedLocationKind,
+            long expectedOwnerId,
+            int expectedQ,
+            int expectedR,
+            int expectedLevel,
+            String message
+    ) {
+        DungeonEditorBehaviorHarnessSupport.assertTrue(
+                snapshot != null && snapshot.travelSurface() != null,
+                message + " has travel surface");
+        src.domain.dungeon.published.DungeonTravelPosition position = snapshot.travelSurface().position();
+        DungeonEditorBehaviorHarnessSupport.assertEquals(
+                expectedMapId,
+                position.mapId().value(),
+                message + " map id");
+        DungeonEditorBehaviorHarnessSupport.assertEquals(
+                expectedLocationKind,
+                position.locationKind(),
+                message + " location kind");
+        DungeonEditorBehaviorHarnessSupport.assertEquals(
+                expectedOwnerId,
+                position.ownerId(),
+                message + " owner id");
+        DungeonEditorBehaviorHarnessSupport.assertEquals(
+                expectedQ,
+                position.tile().q(),
+                message + " tile q");
+        DungeonEditorBehaviorHarnessSupport.assertEquals(
+                expectedR,
+                position.tile().r(),
+                message + " tile r");
+        DungeonEditorBehaviorHarnessSupport.assertEquals(
+                expectedLevel,
+                position.tile().level(),
+                message + " tile level");
     }
 
     private static void assertRenderedLevel(DungeonMapContentModel mapContentModel, int expectedLevel, String message) {
@@ -176,6 +361,43 @@ public final class DungeonTravelProjectionLevelHarness {
         DungeonEditorBehaviorHarnessSupport.assertTrue(
                 mapContentModel.canvasStateProperty().get().renderScene().glyphs().stream()
                         .anyMatch(glyph -> selectionRef.equals(glyph.selectionRef())),
+                message);
+    }
+
+    private static void assertPartyTokenLocation(
+            PartyTravelPositionsResult result,
+            long expectedMapId,
+            PartyDungeonTravelLocationKind expectedLocationKind,
+            long expectedOwnerId,
+            PartyTravelTile expectedTile,
+            String message
+    ) {
+        PartyTravelLocationSnapshot location = result.partyTokenLocation();
+        DungeonEditorBehaviorHarnessSupport.assertTrue(
+                location instanceof PartyDungeonTravelLocationSnapshot,
+                message + " is dungeon location");
+        PartyDungeonTravelLocationSnapshot dungeonLocation = (PartyDungeonTravelLocationSnapshot) location;
+        DungeonEditorBehaviorHarnessSupport.assertEquals(expectedMapId, dungeonLocation.mapId(), message + " map id");
+        DungeonEditorBehaviorHarnessSupport.assertEquals(
+                expectedLocationKind,
+                dungeonLocation.locationKind(),
+                message + " location kind");
+        DungeonEditorBehaviorHarnessSupport.assertEquals(
+                expectedOwnerId,
+                dungeonLocation.ownerId(),
+                message + " owner id");
+        DungeonEditorBehaviorHarnessSupport.assertEquals(expectedTile, dungeonLocation.tile(), message + " tile");
+    }
+
+    private static void assertAuthoredGeometryUnchanged(
+            HarnessRuntime runtime,
+            long mapId,
+            long geometryRowsBefore,
+            String message
+    ) {
+        DungeonEditorBehaviorHarnessSupport.assertEquals(
+                geometryRowsBefore,
+                runtime.database().countAuthoredGeometryRows(mapId),
                 message);
     }
 
@@ -204,6 +426,7 @@ public final class DungeonTravelProjectionLevelHarness {
 
     private record HarnessBinding(
             Parent controlsRoot,
+            Parent stateRoot,
             DungeonMapContentModel mapContentModel
     ) {
     }

@@ -1376,6 +1376,49 @@ class DungeonEditorHarnessPersistenceSupport {
             }
         }
 
+        void seedResolvedTransitionLinkFixture(long sourceMapId, long targetMapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, sourceMapId, "R1", 0, 1, 1);
+                insertRectangularRoom(connection, sourceMapId, "R2", 1, 1, 1);
+                insertRectangularRoom(connection, sourceMapId, "R3", 2, 1, 1);
+                long sourceTransitionId = insertTransition(connection, sourceMapId, "Source transition.", 5, 2, 0);
+                insertRectangularRoom(connection, targetMapId, "R1", 0, 1, 1);
+                long targetTransitionId = insertTransition(connection, targetMapId, "Target transition.", 6, 2, 0);
+                updateDungeonMapDestination(connection, sourceTransitionId, targetMapId, targetTransitionId);
+                updateLinkedTransition(connection, targetTransitionId, sourceTransitionId);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed resolved transition link fixture.", exception);
+            }
+        }
+
+        void seedUnlinkedTransitionFixture(long mapId) {
+            try (Connection connection = open()) {
+                connection.setAutoCommit(false);
+                insertRectangularRoom(connection, mapId, "R1", 0, 1, 1);
+                insertRectangularRoom(connection, mapId, "R2", 1, 1, 1);
+                insertRectangularRoom(connection, mapId, "R3", 2, 1, 1);
+                insertTransitionWithAnchor(
+                        connection,
+                        mapId,
+                        "Unlinked transition.",
+                        5,
+                        2,
+                        0,
+                        "CELL",
+                        null,
+                        "UNLINKED_ENTRANCE",
+                        null,
+                        null,
+                        null,
+                        null);
+                connection.commit();
+            } catch (SQLException exception) {
+                throw new IllegalStateException("Failed to seed unlinked transition fixture.", exception);
+            }
+        }
+
         void seedTransitionAnchorRoundtripFixture(long mapId) {
             try (Connection connection = open()) {
                 connection.setAutoCommit(false);
