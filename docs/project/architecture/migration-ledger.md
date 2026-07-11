@@ -32,10 +32,10 @@ migration unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/architecture-migration-m0-charter` |
 | Milestone | M6 - Completion |
-| Work item | M6.1 - doc teardown remainder |
-| Cycle step | M6.1 - Doc teardown remainder |
-| In-flight area | `completion-doc-teardown` |
-| Required next proof | Replace remaining structure doctrine with one short architecture statement, update `AGENTS.md` accordingly, and verify that no old role-family teaching/enforcement remains in the touched surfaces before M6.2. |
+| Work item | M6.2 - governance right-sizing |
+| Cycle step | M6.2 - Governance right-sizing |
+| In-flight area | `completion-governance-right-sizing` |
+| Required next proof | Remove the remaining migration-regime instructions from `AGENTS.md`, reduce metadata ceremony, and merge `LEGACY_REMOVE_ON_TOUCH` / `PROJECT_HEALTH_DEBT` marker guidance without restoring removed doc gates. |
 | Last status note | `2026-07-12 M5.7 remaining-view-and-shell-close-out` |
 
 ## M0 Step Ledger
@@ -230,8 +230,8 @@ migration unless this ledger advances too.
 
 | Step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
-| M6.1 Doc teardown remainder | In Flight | Pending | Pending | Pending | Replace remaining structure doctrine with one concise architecture statement, update `AGENTS.md`, and verify old role-family teaching/enforcement is gone from the touched surfaces. |
-| M6.2 Governance right-sizing | Pending | Pending | Pending | Pending | Remove the migration regime from `AGENTS.md`, reduce metadata ceremony, scope documentation integrity appropriately, and merge the marker systems. |
+| M6.1 Doc teardown remainder | Done on branch | `7df621ea9` | Pending | `git diff --check 577f57a60..7df621ea9` passed; code-pointer existence check passed; Phase judge `Halley` returned REWORK for weakened principle wording, then APPROVE after commit `7df621ea9`; no documentation gate was run or required. | Added `docs/project/architecture/source-architecture.md` as the concise source architecture statement with the six roadmap Target Principles and real code pointers; updated `AGENTS.md` to route source architecture work to that statement and to stop requiring removed doc gates as acceptance evidence. `AGENTS.md` stayed at 76 lines; the statement is 69 lines. |
+| M6.2 Governance right-sizing | In Flight | Pending | Pending | Pending | Remove the remaining migration regime from `AGENTS.md`, reduce metadata ceremony, avoid restoring removed documentation gates, and merge the marker systems. |
 | M6.3 Final measurement | Pending | Pending | Pending | Pending | Measure repo-wide metrics against the pre-migration baseline and write the German closing report. |
 
 ## Area Ledger
