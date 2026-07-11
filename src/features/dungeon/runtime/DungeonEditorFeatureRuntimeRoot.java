@@ -118,11 +118,11 @@ public final class DungeonEditorFeatureRuntimeRoot
         return this;
     }
 
-    public DungeonEditorRuntimePublication currentPublication() {
-        return framePublisher.currentPublication();
+    public DungeonEditorRenderFrame currentFrame() {
+        return framePublisher.currentFrame();
     }
 
-    public Runnable subscribe(Consumer<DungeonEditorRuntimePublication> subscriber) {
+    public Runnable subscribe(Consumer<DungeonEditorRenderFrame> subscriber) {
         return framePublisher.subscribe(subscriber);
     }
 

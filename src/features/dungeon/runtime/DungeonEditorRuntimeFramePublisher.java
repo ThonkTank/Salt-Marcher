@@ -18,7 +18,7 @@ final class DungeonEditorRuntimeFramePublisher {
     private final DungeonEditorRuntimeDraftSession draftSession;
     private final DungeonEditorRuntimeFrameFactsAssembler frameFactsAssembler =
             new DungeonEditorRuntimeFrameFactsAssembler();
-    private final List<Consumer<DungeonEditorRuntimePublication>> subscribers = new ArrayList<>();
+    private final List<Consumer<DungeonEditorRenderFrame>> subscribers = new ArrayList<>();
     private long runtimeFramePublicationCount;
     private long draftSessionRevision;
     private int stateModelFrameDeferralDepth;
@@ -37,12 +37,8 @@ final class DungeonEditorRuntimeFramePublisher {
         this.stateModel.subscribe(ignored -> publishStateModelFrame());
     }
 
-    DungeonEditorRuntimePublication currentPublication() {
-        return DungeonEditorRuntimePublication.published(currentFrame());
-    }
-
-    Runnable subscribe(Consumer<DungeonEditorRuntimePublication> subscriber) {
-        Consumer<DungeonEditorRuntimePublication> safeSubscriber =
+    Runnable subscribe(Consumer<DungeonEditorRenderFrame> subscriber) {
+        Consumer<DungeonEditorRenderFrame> safeSubscriber =
                 Objects.requireNonNull(subscriber, "subscriber");
         subscribers.add(safeSubscriber);
         return () -> subscribers.remove(safeSubscriber);
@@ -55,9 +51,9 @@ final class DungeonEditorRuntimeFramePublisher {
      */
     void publishCurrentToSubscribers() {
         runtimeFramePublicationCount++;
-        DungeonEditorRuntimePublication publication = currentPublication();
-        for (Consumer<DungeonEditorRuntimePublication> subscriber : List.copyOf(subscribers)) {
-            subscriber.accept(publication);
+        DungeonEditorRenderFrame frame = currentFrame();
+        for (Consumer<DungeonEditorRenderFrame> subscriber : List.copyOf(subscribers)) {
+            subscriber.accept(frame);
         }
     }
 
@@ -96,7 +92,7 @@ final class DungeonEditorRuntimeFramePublisher {
         publishCurrentToSubscribers();
     }
 
-    private DungeonEditorRenderFrame currentFrame() {
+    DungeonEditorRenderFrame currentFrame() {
         DungeonEditorRuntimeReadbackFrameInputs readbackInputs =
                 DungeonEditorRuntimeReadbackFrameInputs.from(controlsModel, mapSurfaceModel, stateModel);
         verifyCurrentDraftSessionRevision();

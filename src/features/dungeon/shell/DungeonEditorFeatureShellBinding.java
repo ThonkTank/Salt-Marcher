@@ -29,7 +29,7 @@ public final class DungeonEditorFeatureShellBinding {
     public Runnable subscribe(PublicationSink sink) {
         PublicationSink safeSink = Objects.requireNonNull(sink, "sink");
         JavaFxPublicationDelivery delivery = new JavaFxPublicationDelivery(safeSink);
-        Runnable unsubscribeRuntime = runtimeRoot.subscribe(publication -> delivery.deliver(publication.frame()));
+        Runnable unsubscribeRuntime = runtimeRoot.subscribe(delivery::deliver);
         return () -> {
             delivery.close();
             unsubscribeRuntime.run();
@@ -39,7 +39,7 @@ public final class DungeonEditorFeatureShellBinding {
     public void publishCurrent(PublicationSink sink) {
         JavaFxPublicationDelivery delivery =
                 new JavaFxPublicationDelivery(Objects.requireNonNull(sink, "sink"));
-        delivery.deliver(runtimeRoot.currentPublication().frame());
+        delivery.deliver(runtimeRoot.currentFrame());
     }
 
     private static DungeonEditorRuntimeDependencies dependencies(ServiceRegistry registry) {
