@@ -11,7 +11,8 @@ surfaces are edited.
 ## Rules
 
 1. Identify the cleanup naturally inside the current write set.
-2. Remove `LEGACY_REMOVE_ON_TOUCH` support you touch, or report a blocker.
+2. Resolve `PROJECT_HEALTH_DEBT` support you touch, including legacy-removal
+   entries, or report a blocker.
 3. Prefer small local simplification that reduces the current change's risk.
 4. Do not create broad cleanup waves, new gates, or speculative abstractions
    without explicit user scope.

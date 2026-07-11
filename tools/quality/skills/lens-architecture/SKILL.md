@@ -41,8 +41,7 @@ Choose the mode from the assignment and evidence before judging findings:
   churn is driven mainly by harness blockers, quality gates, or rule compliance.
   Also use it when the reviewed surface contains adapter-on-adapter stacks,
   ownership subversion, self-confirming harness behavior, temporary
-  compatibility seams, or explicit delete markers such as
-  `LEGACY_REMOVE_ON_TOUCH`.
+  compatibility seams, or explicit project-health removal markers.
 
 In Architecture Question Review, do not stop at "the current solution fits or
 does not fit the current architecture." Evaluate the architecture and

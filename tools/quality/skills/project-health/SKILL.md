@@ -23,7 +23,7 @@ Before planning, implementing, refactoring, or reviewing covered work:
 2. Identify the owner areas affected by the work and read their operative
    skills or owner documents.
 3. Search the planned scope for `PROJECT_HEALTH_DEBT`,
-   `LEGACY_REMOVE_ON_TOUCH`, `temporary compatibility`,
+   `legacy removal`, `temporary compatibility`,
    `retained compatibility`, `stale`, `deferred`, `review-owned`, and
    `outside write set`, `proof oracle`, `self-confirming harness`,
    `missing negative assertion`, `gate-shaped workaround`,

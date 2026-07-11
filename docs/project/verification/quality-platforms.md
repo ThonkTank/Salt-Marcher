@@ -24,8 +24,9 @@ architecture migration.
   <repo-package-or-resource-dir> [--area <area>]`
   is the scoped local route for narrow package/resource work when the selected
   surface actually consumes that scope.
-- `./gradlew checkDocumentationEnforcement --console=plain`
-  is the documentation-only route.
+- Documentation-only and instruction-surface changes use `git diff --check`
+  plus any owner-named proof from `AGENTS.md`; removed documentation gates are
+  not public proof routes.
 - Focused behavior harness tasks remain the proof owner for behavior
   scenarios. They are not replaced by compile, PMD, or architecture structure
   checks.
@@ -41,7 +42,7 @@ The migration keeps outcome checks binding:
 - Java compilation and included-build integrity
 - package cycles and layer dependency direction
 - behavior-harness registration and map consistency
-- documentation metadata, placement, line caps, and DOMAIN.md consistency
+- owner-named documentation proof for changed documentation surfaces
 - quality hygiene gates such as PMD, SpotBugs, CPD, Lizard, near-miss checks,
   compiled-artifact hygiene, packaging-resource checks, and dead-code
   reachability
@@ -68,8 +69,7 @@ Standard tools are the default home for quality and architecture rules:
 - SpotBugs for bytecode bug and security-smell discovery
 - ArchUnit for dependency, module, boundary, and cycle rules
 - Error Prone for compiler-local symbol, method-call, signature, and AST rules
-- build-harness for source-tree topology, documentation checks, and repository
-  file/resource policy
+- build-harness for source-tree topology and repository file/resource policy
 
 New first-party checkers must name the gap that standard tools cannot express,
 the public proof route that exposes the result, and the retirement condition.

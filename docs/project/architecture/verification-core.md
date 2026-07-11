@@ -15,9 +15,8 @@ surfaces, not through role-family enforcement inventories.
 
 ## Public Surfaces
 
-The verification core owns three public verification surfaces:
+The verification core owns two public verification surfaces:
 
-- `checkDocumentationEnforcement`
 - `production-handoff`
 - `focused-handoff`
 
@@ -40,8 +39,6 @@ classes, private Gradle dependencies, or proof strength from package names.
 
 `tools/gradle/build-logic` owns the public Gradle task graph:
 
-- documentation enforcement through the included build-harness documentation
-  check
 - production handoff through compile integrity, retained structure checks, and
   hygiene gates
 - focused handoff through validated focused path and area properties
@@ -60,9 +57,10 @@ routing or public proof policy.
 
 After the form-enforcement removal, retained structure checks include package
 cycles, layer dependency direction, build-harness source-layout basics,
-documentation hygiene, behavior-harness registration/map consistency, and
-quality-hygiene gates. Role-family topology and naming-taxonomy checks are not
-public verification truth.
+behavior-harness registration/map consistency, and quality-hygiene gates.
+Documentation proof is owner-named, not a standing public Gradle surface.
+Role-family topology and naming-taxonomy checks are not public verification
+truth.
 
 ## Focused Surface Rules
 
