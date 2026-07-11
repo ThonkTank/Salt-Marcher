@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-10
+Last Reviewed: 2026-07-11
 Source of Truth: German owner-facing status notes for the architecture
 migration governed by `architecture-migration-roadmap.md` and
 `migration-ledger.md`.
@@ -400,3 +400,27 @@ liegt bei 175 Primaerdateien / 19.236 LOC und 234 design-sichtbaren Dateien /
 `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
 unter `dungeon-editor-session-runtime`. Naechster Schritt ist M4.3
 `dungeon-travel` Harness Check/Closure.
+
+### 2026-07-11 M4.3 dungeon-travel-close-out
+
+Der Dungeon-Travel-Zyklus ist abgeschlossen. Finaler Referenzstand ist
+`540706edd`; die 20-Datei-Loeschliste ist ausgefuehrt, der alte
+`ApplyTravelDungeonSessionCommand`-Pfad ist weg, und geloeschte Travel-
+Usecases, Repositories und Service-Assemblies haben keine Stale-References in
+`src` oder `test`. `DungeonTravelRuntimeApplicationService`,
+`DungeonTravelSurfaceLoader`, `DungeonTravelNavigator`,
+`DungeonTravelPartyGateway`, `DungeonTravelPublishedState` und
+`DungeonTravelPublishedProjection` tragen die direkte Zielstruktur.
+Overlay-Modus, Heading und Action-Kind laufen intern typed; String-Konvertierung
+bleibt nur an der Service-/Published-Seam. Der CPD-/Design-Duplikatfund in der
+Travel-Map-Publication wurde strukturell geschlossen, indem der neue
+Travel-spezifische Projection-Helper geloescht und die Map-Publication direkt
+in `DungeonTravelPublishedProjection` uebernommen wurde, nicht durch
+Umformulierung. Compile, Static inklusive CPD, Architecture-Proof,
+eingefrorene Travel/Core/Render-Harnesses, Focused-Handoff,
+Production-Handoff, Phase 1 und der unabhaengige Judge sind gruen. Die Metrik
+liegt bei 27 Primaerdateien / 2.371 LOC und 54 Produkt-Route-Dateien / 4.902
+LOC, also unter den genehmigten Grenzen. Der Owner-Smoke steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
+unter `dungeon-travel`. Naechster Schritt ist M4.4
+`dungeon-rendering-pipeline` Harness Check/Closure.
