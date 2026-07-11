@@ -500,3 +500,23 @@ Judge hat nach sauberem Re-Proof APPROVE gegeben. Der temporaere Worktree ist
 entfernt; lokal bleibt nur der Haupt-Worktree auf
 `codex/architecture-migration-m0-charter`. Naechster Schritt ist M5.2:
 Baseline-Metriken fuer `remaining-view-and-shell`.
+
+### 2026-07-12 M5.7 remaining-view-and-shell-close-out
+
+Der M5-Zyklus fuer die verbleibenden View- und Shell-Flaechen ist auf dem
+Branch abgeschlossen. Referenzstand ist `272c0d9c7`: `BootstrapFx`,
+`ShellFx`, die alten Catalog-/Party-/Travel-/Encounter-Binder und die
+reinen Holder-/Intent-Klassen sind geloescht. Die Contribution-Klassen bleiben
+als Shell-Discovery-Seams erhalten, tragen jetzt aber die direkte Komposition.
+`CatalogViewModel` und `TravelStateViewModel` sind echte lokale
+View-/Projektionsowner; die Creature-Inspector-Route ist ueber
+`CreatureDetailsView.openInspector` zusammengefuehrt. Der SpotBugs-Fund an
+`ShellBinding.BasicShellBinding` wurde strukturell mit defensiver Map-Kopie
+geschlossen, und die doppelte Shell-State-Abfrage wurde entfernt, nicht
+umformuliert. Static-Proof, eingefrorene M5-Harnesses, Production-Handoff,
+Phase 1 und der unabhaengige Judge sind gruen. Die akzeptierte Metrik liegt
+bei 74 Primaerdateien / 12.249 LOC unter der genehmigten 75-Datei-/
+12.250-LOC-Grenze. Der Owner-Smoke steht in
+`docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
+unter `remaining-view-and-shell`. M5 ist damit auf dem Branch abgeschlossen.
+Naechster Schritt ist M6.1 Doc-Teardown-Rest.
