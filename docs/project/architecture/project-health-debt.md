@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-07
+Last Reviewed: 2026-07-11
 Source of Truth: Central register for known project-health debt IDs,
 marker synchronization, removal conditions, and current disposition.
 
@@ -58,24 +58,41 @@ Resolver field transitions are defined by the
 
 ## Active Debt
 
-## PH-20260709-002 - Dungeon Map Content Model And Hit-Ref Target Protocol Residual
+## PH-20260711-001 - Dungeon Runtime Hit-Ref Target Protocol Residual
 
 - Status: Open
 - Resolution Mode: Next Matching Touch
 - Resolver Status: Blocked
-- Marker: src/view/slotcontent/main/dungeonmap/DungeonMapContentModel.java:34
-- Problem: The accepted Dungeon map residual still couples the reusable map ContentModel, prepared pointer-target frames, string hit-ref lookup, placeholder target kinds, and runtime target selection protocol instead of a narrower target model where map content projection and runtime hit/target resolution have explicit owners and typed boundaries.
-- Owner Areas: view-layer, feature-runtime, project-health
-- Affected Paths: src/view/slotcontent/main/dungeonmap/DungeonMapContentModel.java, src/features/dungeon/runtime/PointerInteractionTargets.java, src/features/dungeon/runtime/DungeonEditorMapHitRefs.java
-- Related Symbols: DungeonMapContentModel, PointerTarget, pointerHitRefsAt, currentPointerTargetFrames, PointerInteractionTargets.fromHitTargets, DungeonEditorMapHitRefs, hit-ref protocol, prepared pointer target frames
-- Intake Trigger: src/view/slotcontent/main/dungeonmap, src/features/dungeon/runtime/PointerInteractionTargets.java, src/features/dungeon/runtime/DungeonEditorMapHitRefs.java, view-layer, feature-runtime
-- Required Next Action: When the Dungeon map content model or runtime hit-ref protocol is next touched, either move hit-ref/target resolution to typed target-owner seams with a smaller map content projection model or replace this entry with narrower synchronized debt entries for the remaining content-model and protocol owners.
-- Source Evidence: build/agent-pass-logs/2026-07-09-architecture-goal-completion-audit/final-h01-h18-completion-audit.md identified F2 as accepted but unmaterialized debt keeping H05, H16, and H17 open on c53a853c201cf12fe17f801df1f911256cb29da0.
-- Decision: Materialized as active project-health debt because the final audit accepted F2 as large residual debt outside this materialization pass, but leaving it only in pass logs would hide the cross-owner content-model and hit-ref protocol blocker from future intake.
-- Remove When: Dungeon map content projection and runtime hit/target resolution no longer depend on the broad ContentModel plus string hit-ref/prepared-target protocol, or a later view-layer and feature-runtime owner replaces this broad family with synchronized narrower debt entries.
-- Last Checked: 2026-07-09
+- Marker: src/features/dungeon/runtime/PointerInteractionTargets.java:6
+- Problem: Runtime target selection still consumes map hit-ref strings and prepared pointer-target frames before choosing typed `DungeonEditorRuntimePointerTarget` values, so the runtime target owner is not yet a narrow typed seam.
+- Owner Areas: feature-runtime, dungeon-editor-view, project-health
+- Affected Paths: src/features/dungeon/runtime/PointerInteractionTargets.java, src/features/dungeon/runtime/DungeonEditorMapHitRefs.java, src/view/leftbartabs/dungeoneditor/DungeonEditorIntentHandler.java
+- Related Symbols: PointerInteractionTargets.fromHitTargets, DungeonEditorMapHitRefs, hit-ref protocol, prepared pointer target frames, DungeonMapContentModel.pointerHitRefsAt, DungeonMapContentModel.currentPointerTargetFrames
+- Intake Trigger: src/features/dungeon/runtime/PointerInteractionTargets.java, src/features/dungeon/runtime/DungeonEditorMapHitRefs.java, src/view/leftbartabs/dungeoneditor/DungeonEditorIntentHandler.java, feature-runtime, dungeon-editor-view
+- Required Next Action: When the runtime hit-ref protocol or editor pointer-consumption path is next touched, move hit-ref/target resolution to a typed runtime target-owner seam or replace this entry with narrower synchronized debt for the remaining runtime/editor owner.
+- Source Evidence: PH-20260709-002 split during M4.4 harness closure; the Phase 1 reviewer found the original cross-owner register entry blocked `src/view/slotcontent/main/dungeonmap` focused handoff even though render harness coverage was sufficient.
+- Decision: Narrowed from PH-20260709-002 so the active M4.4 rendering pipeline owns the map content projection migration through the roadmap/ledger cycle, while the separate runtime hit-ref protocol remains discoverable at its runtime selection point. This is not a M4.4 harness gap and not a render focused-handoff blocker.
+- Remove When: Runtime pointer selection no longer depends on map hit-ref strings plus prepared pointer-target lookup, or a later runtime/editor owner replaces this entry with a narrower synchronized target-protocol debt.
+- Last Checked: 2026-07-11
 
 ## Removed Or Closed Debt
+
+## PH-20260709-002 - Dungeon Map Content Model And Hit-Ref Target Protocol Residual
+
+- Status: Superseded
+- Resolution Mode: Next Matching Touch
+- Resolver Status: Superseded
+- Marker: none - marker removed from `src/view/slotcontent/main/dungeonmap/DungeonMapContentModel.java` during M4.4 harness closure because the broad cross-owner entry was split: the active M4.4 roadmap/ledger owns the render content-model migration, and PH-20260711-001 owns the remaining runtime hit-ref protocol debt.
+- Problem: The accepted Dungeon map residual coupled the reusable map ContentModel, prepared pointer-target frames, string hit-ref lookup, placeholder target kinds, and runtime target selection protocol instead of a narrower target model where map content projection and runtime hit/target resolution have explicit owners and typed boundaries.
+- Owner Areas: view-layer, feature-runtime, project-health
+- Affected Paths: docs/project/architecture/migration-ledger.md, docs/project/architecture/project-health-debt.md, src/features/dungeon/runtime/PointerInteractionTargets.java
+- Related Symbols: DungeonMapContentModel, PointerTarget, pointerHitRefsAt, currentPointerTargetFrames, PointerInteractionTargets.fromHitTargets, DungeonEditorMapHitRefs, hit-ref protocol, prepared pointer target frames
+- Intake Trigger: architecture-migration
+- Required Next Action: none - M4.4 now tracks the render content-model migration through the per-area cycle, and PH-20260711-001 tracks the remaining runtime hit-ref protocol owner.
+- Source Evidence: build/agent-pass-logs/2026-07-09-architecture-goal-completion-audit/final-h01-h18-completion-audit.md identified F2 as accepted but unmaterialized debt keeping H05, H16, and H17 open on c53a853c201cf12fe17f801df1f911256cb29da0; M4.4 harness closure Phase 1 classified the broad entry as a focused-handoff blocker after all render harnesses passed.
+- Decision: Superseded by a narrower synchronized disposition rather than hidden as baseline. The current ledger names `dungeon-rendering-pipeline` as in flight and requires render parity plus the full indirect render-consumer harness set before baseline/design; the runtime hit-ref protocol part remains active under PH-20260711-001.
+- Remove When: superseded on 2026-07-11 by M4.4 ledger ownership and PH-20260711-001.
+- Last Checked: 2026-07-11
 
 ## PH-20260709-001 - Dungeon Editor Feature Runtime Migration Residual
 

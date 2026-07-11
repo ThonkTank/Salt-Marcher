@@ -3,7 +3,7 @@ package src.features.dungeon.runtime;
 import java.util.List;
 import java.util.Map;
 
-// Project-health debt PH-20260709-002 satellite: current hit-ref-to-runtime-target selection protocol is listed in the register.
+// PROJECT_HEALTH_DEBT[PH-20260711-001]: runtime hit-ref strings still select typed pointer targets through map hit-ref protocol; owner=feature-runtime; remove_when=hit-ref selection uses typed runtime target-owner seam without string hit-ref lookup.
 public record PointerInteractionTargets(
         double sceneX,
         double sceneY,

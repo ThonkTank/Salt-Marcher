@@ -424,3 +424,22 @@ LOC, also unter den genehmigten Grenzen. Der Owner-Smoke steht in
 `docs/project/architecture/architecture-migration-owner-smoke-checklists.md`
 unter `dungeon-travel`. Naechster Schritt ist M4.4
 `dungeon-rendering-pipeline` Harness Check/Closure.
+
+### 2026-07-11 M4.4 dungeon-rendering-pipeline-harness-closure
+
+Die Harness-Pruefung fuer die Dungeon-Rendering-Pipeline ist geschlossen. Die
+alte Render-Struktur bleibt noch unveraendert; geprueft wurde nur, ob die
+sichtbaren Render-Routen vor Baseline und Design ausreichend eingefroren sind.
+Die retained Harness-Batches sind gruen: Core 72, Editor-Aggregate 206,
+Route 187, Door 58, Wall 33, Room 64, Cluster 84, Corridor 68, Stair 63,
+Transition 62, Feature 59, Travel 5 sowie Render-Parity 3 mit `DE-IMG-001`,
+`DE-IMG-002` und `DT-IMG-001`. Harness-Topology, Harness-Map und der
+Focused-Handoff fuer `src/view/slotcontent/main/dungeonmap` sind ebenfalls
+gruen. Ein echter Project-Health-Blocker wurde nicht ignoriert: Der zu breite
+PH-20260709-002-Eintrag fuer ContentModel plus Runtime-Hit-Ref-Protokoll ist
+aufgeteilt. M4.4 traegt die Render-ContentModel-Migration jetzt direkt ueber
+Roadmap und Ledger; der verbleibende Runtime-/Editor-Hit-Ref-Protokollrest ist
+als PH-20260711-001 an der Runtime-Auswahlstelle markiert. Phase 1 bestaetigt
+nach Rework: keine offene Render-Harness-Luecke, PH-20260711-001 ist kein
+M4.4-Render-Handoff-Blocker. Naechster Schritt ist M4.4 Baseline-Metriken;
+es wurde noch keine Render-Implementierung begonnen.
