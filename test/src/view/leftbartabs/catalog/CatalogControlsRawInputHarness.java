@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -17,6 +18,18 @@ import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
+import shell.api.ServiceRegistry;
+import shell.api.ShellBinding;
+import shell.api.ShellRuntimeContext;
+import shell.api.ShellSlot;
+import src.domain.creatures.model.catalog.CreatureCatalogData;
+import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
+import src.domain.encounter.published.EncounterBuilderInputsModel;
+import src.domain.encountertable.model.catalog.EncounterTableCandidateData;
+import src.domain.encountertable.model.catalog.EncounterTableSummaryData;
+import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
 import src.domain.creatures.published.CreatureFilterOptions;
 import src.domain.creatures.published.CreatureFilterOptionsResult;
 import src.domain.creatures.published.CreatureReadStatus;
@@ -57,6 +70,7 @@ public final class CatalogControlsRawInputHarness {
             runOnFxThread(harness::assertEncounterTableChipRemovePublishesOneFinalInput);
             runOnFxThread(harness::toggleDifficultyAutoAndSlide);
             runOnFxThread(harness::assertDifficultyTuningPublishesRawInput);
+            runOnFxThread(CatalogControlsRawInputHarness::assertProductionRoutePublishesSearchAndBuilderInputs);
             shutdownFx();
             System.out.println("Catalog controls raw-input harness passed.");
         } catch (Throwable throwable) {
@@ -171,6 +185,45 @@ public final class CatalogControlsRawInputHarness {
         assertTrue(!event.difficultyAuto(), "difficulty auto toggle must publish visible toggle state");
         assertEquals(4.0, event.difficultyValue(), "difficulty slider must publish visible slider value");
         assertEquals("aboleth", event.nameQuery(), "difficulty tuning must preserve search query");
+    }
+
+    private static void assertProductionRoutePublishesSearchAndBuilderInputs() {
+        CapturingCreatureCatalogPort creatureCatalog = new CapturingCreatureCatalogPort();
+        ServiceRegistry registry = productionCatalogServices(creatureCatalog);
+        ShellBinding binding = new CatalogContribution().bind(
+                new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, registry));
+        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+        Stage stage = new Stage();
+        stage.setScene(new Scene(controls, 760.0, 520.0));
+        stage.show();
+        layoutOpenWindows();
+
+        descendant(controls, TextField.class).setText("lich");
+        CreatureCatalogData.CatalogSearchSpec searchSpec = creatureCatalog.lastSearchSpec();
+        assertEquals("lich", searchSpec.nameQuery(),
+                "CatalogContribution production route forwards search text into creature catalog query");
+
+        button(controls, "Typ ▾").fire();
+        layoutOpenWindows();
+        popupDescendant(CheckBox.class, "Undead").fire();
+        layoutOpenWindows();
+        EncounterBuilderInputsModel builderInputs = registry.require(EncounterBuilderInputsModel.class);
+        assertEquals(List.of("Undead"), builderInputs.current().creatureTypes(),
+                "CatalogContribution production route forwards selected type into Encounter builder inputs");
+        stage.close();
+    }
+
+    private static ServiceRegistry productionCatalogServices(CapturingCreatureCatalogPort creatureCatalog) {
+        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
+        builder.register(CreatureCatalogPort.class, creatureCatalog);
+        builder.register(EncounterTableCatalogPort.class, new EmptyEncounterTableCatalogPort());
+        new src.data.encounter.EncounterServiceContribution().register(builder);
+        new src.data.party.PartyServiceContribution().register(builder);
+        new src.domain.creatures.CreaturesServiceContribution().register(builder);
+        new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
+        new src.domain.party.PartyServiceContribution().register(builder);
+        new src.domain.encounter.EncounterServiceContribution().register(builder);
+        return builder.build();
     }
 
     private void applySelectedProjection() {
@@ -325,6 +378,14 @@ public final class CatalogControlsRawInputHarness {
         throw new AssertionError("Popup descendant not found: " + text);
     }
 
+    private static <T extends Node> T slot(ShellBinding binding, ShellSlot slot, Class<T> type) {
+        Node node = binding.slotContent().get(slot);
+        if (type.isInstance(node)) {
+            return type.cast(node);
+        }
+        throw new AssertionError("Shell slot not found: " + slot);
+    }
+
     private static String textValue(Node node) {
         if (node instanceof Button button) {
             return button.getText();
@@ -372,6 +433,16 @@ public final class CatalogControlsRawInputHarness {
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 collect(child, nodes);
+            }
+        }
+    }
+
+    private static void layoutOpenWindows() {
+        for (Window window : Window.getWindows()) {
+            Scene scene = window.getScene();
+            if (scene != null && scene.getRoot() != null) {
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
             }
         }
     }
@@ -428,5 +499,85 @@ public final class CatalogControlsRawInputHarness {
     @FunctionalInterface
     private interface ThrowingRunnable {
         void run() throws Exception;
+    }
+
+    private static final class CapturingCreatureCatalogPort implements CreatureCatalogPort {
+
+        private final AtomicReference<CreatureCatalogData.CatalogSearchSpec> lastSearchSpec =
+                new AtomicReference<>(new CreatureCatalogData.CatalogSearchSpec(
+                        "",
+                        null,
+                        null,
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        List.of(),
+                        "NAME",
+                        true,
+                        50,
+                        0));
+
+        @Override
+        public CreatureCatalogData.DistinctFilterValues loadFilterValues() {
+            return new CreatureCatalogData.DistinctFilterValues(
+                    List.of("Large"),
+                    List.of("Undead", "Beast"),
+                    List.of(),
+                    List.of(),
+                    List.of());
+        }
+
+        @Override
+        public CreatureCatalogData.CatalogPageData searchCatalog(CreatureCatalogData.CatalogSearchSpec spec) {
+            lastSearchSpec.set(spec);
+            return CreatureCatalogData.emptyCatalogPage(spec.pageSize(), spec.pageOffset());
+        }
+
+        @Override
+        public CreatureCatalogData.CreatureProfile loadCreatureDetail(long creatureId) {
+            return null;
+        }
+
+        @Override
+        public List<CreatureCatalogData.EncounterCandidateProfile> loadEncounterCandidates(
+                CreatureCatalogData.EncounterCandidateSpec spec
+        ) {
+            return List.of();
+        }
+
+        CreatureCatalogData.CatalogSearchSpec lastSearchSpec() {
+            return lastSearchSpec.get();
+        }
+    }
+
+    private static final class EmptyEncounterTableCatalogPort implements EncounterTableCatalogPort {
+
+        @Override
+        public List<EncounterTableSummaryData> loadSummaries() {
+            return List.of();
+        }
+
+        @Override
+        public List<EncounterTableCandidateData> loadGenerationCandidates(List<Long> tableIds, int maximumXp) {
+            return List.of();
+        }
+    }
+
+    private enum EmptyInspectorSink implements InspectorSink {
+        INSTANCE;
+
+        @Override
+        public void push(InspectorEntrySpec entry) {
+        }
+
+        @Override
+        public void clear() {
+        }
+
+        @Override
+        public boolean isShowing(Object entryKey) {
+            return false;
+        }
     }
 }

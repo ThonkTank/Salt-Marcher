@@ -11,9 +11,20 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import shell.api.InspectorEntrySpec;
+import shell.api.InspectorSink;
+import shell.api.ServiceRegistry;
+import shell.api.ShellBinding;
+import shell.api.ShellRuntimeContext;
+import shell.api.ShellSlot;
+import src.domain.worldplanner.WorldPlannerApplicationService;
+import src.domain.worldplanner.model.world.port.WorldPlannerReferencePort;
+import src.domain.worldplanner.published.CreateWorldNpcCommand;
+import src.view.leftbartabs.worldplanner.WorldPlannerContribution;
 
 public final class SearchFilterControlsHarness {
 
@@ -26,6 +37,7 @@ public final class SearchFilterControlsHarness {
     public static void main(String[] args) throws Exception {
         try {
             runOnFxThread(SearchFilterControlsHarness::runHarness);
+            runOnFxThread(SearchFilterControlsHarness::assertWorldPlannerProductionRoute);
             shutdownFx();
             System.out.println("Search filter controls harness passed.");
         } catch (Throwable throwable) {
@@ -81,6 +93,46 @@ public final class SearchFilterControlsHarness {
                 List.of(new SearchFilterControlsViewInputEvent.SelectedFilter("type", "beast")),
                 event.selectedFilters(),
                 "chip removal clears only the matching filter");
+    }
+
+    private static void assertWorldPlannerProductionRoute() {
+        ServiceRegistry services = worldPlannerServices();
+        ShellBinding binding = new WorldPlannerContribution().bind(
+                new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, services));
+        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+        Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
+        Stage stage = new Stage();
+        stage.setScene(new Scene(new javafx.scene.layout.HBox(controls, main), 1_120.0, 620.0));
+        stage.show();
+        layoutOpenWindows();
+
+        services.require(WorldPlannerApplicationService.class).createNpc(new CreateWorldNpcCommand(
+                "Captain Vale",
+                101L,
+                "scarred",
+                "watchful",
+                "former scout",
+                "knows the pass"));
+        layoutOpenWindows();
+
+        TextField search = descendant(descendant(controls, SearchFilterControlsView.class), TextField.class);
+        search.setText("Captain");
+        layoutOpenWindows();
+        assertTrue(listView(main).getItems().stream().anyMatch(item -> item.toString().contains("Captain Vale")),
+                "WorldPlannerContribution production route keeps matching row through SearchFilter controls");
+        search.setText("missing");
+        layoutOpenWindows();
+        assertTrue(listView(main).getItems().isEmpty(),
+                "WorldPlannerContribution production route filters nonmatching rows through SearchFilter controls");
+        stage.close();
+    }
+
+    private static ServiceRegistry worldPlannerServices() {
+        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
+        builder.register(WorldPlannerReferencePort.class, new PositiveReferencePort());
+        new src.data.worldplanner.WorldPlannerServiceContribution().register(builder);
+        new src.domain.worldplanner.WorldPlannerServiceContribution().register(builder);
+        return builder.build();
     }
 
     private static SearchFilterControlsContentModel.Projection projection(
@@ -148,6 +200,23 @@ public final class SearchFilterControlsHarness {
                 .orElseThrow(() -> new AssertionError("Descendant not found: " + type.getSimpleName()));
     }
 
+    private static <T extends Node> T slot(ShellBinding binding, ShellSlot slot, Class<T> type) {
+        Node node = binding.slotContent().get(slot);
+        if (type.isInstance(node)) {
+            return type.cast(node);
+        }
+        throw new AssertionError("Shell slot not found: " + slot);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static ListView<Object> listView(Parent parent) {
+        return descendants(parent).stream()
+                .filter(ListView.class::isInstance)
+                .map(node -> (ListView<Object>) node)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("ListView not found."));
+    }
+
     private static List<Node> descendants(Node node) {
         ArrayList<Node> nodes = new ArrayList<>();
         collect(node, nodes);
@@ -159,6 +228,16 @@ public final class SearchFilterControlsHarness {
         if (node instanceof Parent parent) {
             for (Node child : parent.getChildrenUnmodifiable()) {
                 collect(child, nodes);
+            }
+        }
+    }
+
+    private static void layoutOpenWindows() {
+        for (Window window : Window.getWindows()) {
+            Scene scene = window.getScene();
+            if (scene != null && scene.getRoot() != null) {
+                scene.getRoot().applyCss();
+                scene.getRoot().layout();
             }
         }
     }
@@ -215,5 +294,35 @@ public final class SearchFilterControlsHarness {
     @FunctionalInterface
     private interface ThrowingRunnable {
         void run() throws Exception;
+    }
+
+    private static final class PositiveReferencePort implements WorldPlannerReferencePort {
+
+        @Override
+        public boolean creatureStatblockExists(long creatureStatblockId) {
+            return creatureStatblockId > 0L;
+        }
+
+        @Override
+        public boolean encounterTableExists(long encounterTableId) {
+            return encounterTableId > 0L;
+        }
+    }
+
+    private enum EmptyInspectorSink implements InspectorSink {
+        INSTANCE;
+
+        @Override
+        public void push(InspectorEntrySpec entry) {
+        }
+
+        @Override
+        public void clear() {
+        }
+
+        @Override
+        public boolean isShowing(Object entryKey) {
+            return false;
+        }
     }
 }
