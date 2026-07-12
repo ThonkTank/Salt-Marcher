@@ -502,7 +502,6 @@ tasks.named("check") {
     dependsOn(dungeonMapRenderParityHarnessTask)
 }
 
-val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
 val worldPlannerBackendHarnessDataDir = layout.buildDirectory.dir("world-planner-backend-data")
 val worldPlannerEncounterHarnessDataDir = layout.buildDirectory.dir("world-planner-encounter-data")
 val worldPlannerControlsRawInputHarnessDataDir = layout.buildDirectory.dir("world-planner-controls-raw-input-data")
@@ -787,24 +786,30 @@ tasks.named("check") {
     dependsOn(sessionPlannerCatalogHarnessTask)
 }
 
-behaviorHarnesses.javaExec("sessionPlannerShellLayoutHarness") {
+val sessionPlannerShellLayoutHarnessTask = behaviorHarnesses.junitTest("sessionPlannerShellLayoutHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("session-planner-shell-layout"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the Session Planner shell controls layout behavior harness."
         dependsOn(tasks.named("testClasses"))
+        testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
-        mainClass.set("shell.host.SessionPlannerShellLayoutHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        include("shell/host/SessionPlannerShellLayoutHarness.class")
+        inputs.property("sessionPlannerShellLayoutDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = sessionPlannerShellLayoutHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn(sessionPlannerShellLayoutHarnessTask)
 }
 
 behaviorHarnesses.javaExec("worldPlannerBackendHarness") {
