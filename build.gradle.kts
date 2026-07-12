@@ -711,17 +711,22 @@ tasks.named("check") {
     dependsOn(encounterTableReadbackHarnessTask)
 }
 
-behaviorHarnesses.javaExec("creatureCatalogHarness") {
+val creatureCatalogHarnessTask = behaviorHarnesses.junitTest("creatureCatalogHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("creature-catalog"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the focused Creature catalog domain behavior harness."
         dependsOn(tasks.named("testClasses"))
+        testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
-        mainClass.set("src.domain.creatures.CreatureCatalogHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        include("src/domain/creatures/CreatureCatalogHarness.class")
     }
+}
+
+tasks.named("check") {
+    dependsOn(creatureCatalogHarnessTask)
 }
 
 behaviorHarnesses.javaExec("sessionPlannerCatalogHarness") {

@@ -276,3 +276,59 @@ JUnit test methods, with hyphens converted to underscores:
   result. Rework now establishes and asserts that prior non-empty candidate
   state before dropping the `creatures` table. Phase 1 re-review approved.
   Phase 2 approved.
+
+## T1 Batch Evidence - `creatureCatalogHarness`
+
+- Batch started after `encounterTableReadbackHarness` close-out. Scope is
+  limited to `creatureCatalogHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("creatureCatalogHarness")` registration,
+  `mainClass.set("src.domain.creatures.CreatureCatalogHarness")`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("creatureCatalogHarness")`, includes only
+  `src/domain/creatures/CreatureCatalogHarness.class`, and is wired into
+  `check`.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item      junit method
+  CREATURE-CATALOG-001 CREATURE_CATALOG_001
+  CREATURE-CATALOG-002 CREATURE_CATALOG_002
+  CREATURE-CATALOG-003 CREATURE_CATALOG_003
+  CREATURE-CATALOG-004 CREATURE_CATALOG_004
+  CREATURE-CATALOG-005 CREATURE_CATALOG_005
+  CREATURE-CATALOG-006 CREATURE_CATALOG_006
+  CREATURE-CATALOG-007 CREATURE_CATALOG_007
+  CREATURE-CATALOG-008 CREATURE_CATALOG_008
+  CREATURE-CATALOG-009 CREATURE_CATALOG_009
+  result: 9 old proof item(s), 9 junit method(s), 9 exact normalized matches
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-creature-rework-focused tools/gradle/run-observable-gradle.sh --fail-fast creatureCatalogHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T060618312350400-pid1052681-creatureCatalogHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 16s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-creature-rework-forced tools/gradle/run-observable-gradle.sh --fail-fast creatureCatalogHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T060641091195281-pid1053141-creatureCatalogHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 52s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced run:
+  `build/test-results/creatureCatalogHarness/TEST-src.domain.creatures.CreatureCatalogHarness.xml`
+  records `tests="9"`, `failures="0"`, `errors="0"` and contains
+  `CREATURE_CATALOG_001` through `CREATURE_CATALOG_009`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-creature-rework-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T060750183361284-pid1054159-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 8m 18s`,
+  `46 actionable tasks: 46 executed`.
+- Review state: Phase 1 first found two parity gaps: `CREATURE_CATALOG_005`
+  did not enter the invalid catalog query from the old edited catalog
+  publication, and `CREATURE_CATALOG_006` did not enter missing/broken detail
+  checks from the old selected edited detail publication. Rework now rebuilds
+  those prior states with setup-only labels before the proof-item assertions.
+  Phase 1 re-review approved. Phase 2 approved.
