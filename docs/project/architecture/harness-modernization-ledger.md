@@ -26,9 +26,9 @@ modernization unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/harness-modernization-t0` |
 | Milestone | T1 - Fleet conversion |
-| Conversion batch | `worldPlannerUiHarness` |
+| Conversion batch | `smokeStartupHarness` |
 | Status | In Flight |
-| Required next proof | Convert `worldPlannerUiHarness` to a JUnit `Test` task, remove its JavaExec registration, and produce scripted 1:1 scenario parity output for its frozen World Planner UI production-route proof claim. |
+| Required next proof | Convert `smokeStartupHarness` to a JUnit `Test` task, remove its JavaExec registration, and produce scripted 1:1 scenario parity output for its frozen startup smoke proof claim. |
 | Last status note | `2026-07-12 T0-close-out` |
 
 ## Milestone Ledger
@@ -1036,4 +1036,50 @@ JUnit test methods, with hyphens converted to underscores:
   `build/gradle-run-logs/20260712T113815085587882-pid1454705-check.log`.
   Literal result: `BUILD SUCCESSFUL in 11m 47s`,
   `62 actionable tasks: 62 executed`.
+- Review state: Phase 1 approved; Phase 2 approved.
+
+## T1 Batch Evidence - `smokeStartupHarness`
+
+- Batch started after `worldPlannerUiHarness` close-out. Scope is limited to
+  `smokeStartupHarness`.
+- Registration: the old `behaviorHarnesses.javaExec("smokeStartupHarness")`
+  registration, `mainClass.set("bootstrap.SmokeStartupHarness")`,
+  `smokeStartupHarnessDataDir`, and its `outputs.upToDateWhen { false }`
+  entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("smokeStartupHarness")`, includes only
+  `bootstrap/SmokeStartupHarness.class`, and is wired into `check`.
+- Frozen proof-item name is derived from the single pre-conversion top-level
+  startup smoke flow: JavaFX startup, shell contribution discovery, shell
+  creation, temporary SQLite connection, integrity check, and timeout guard.
+  Assertions and fixture values remain unchanged.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item        junit method
+  SMOKE-STARTUP-001     SMOKE_STARTUP_001
+  result: 1 old proof item(s), 1 junit method(s), 1 exact normalized match
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-smoke-focused tools/gradle/run-observable-gradle.sh --fail-fast smokeStartupHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T115747820068290-pid1475959-smokeStartupHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 5s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-smoke-forced tools/gradle/run-observable-gradle.sh --fail-fast smokeStartupHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T115914500454559-pid1476523-smokeStartupHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 8s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced proof:
+  `build/test-results/smokeStartupHarness/TEST-bootstrap.SmokeStartupHarness.xml`
+  records `tests="1"`, `failures="0"`, `errors="0"` and contains
+  `SMOKE_STARTUP_001`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-smoke-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T120104256353183-pid1477644-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 12m 49s`,
+  `63 actionable tasks: 63 executed`.
 - Review state: Phase 1 approved; Phase 2 approved.

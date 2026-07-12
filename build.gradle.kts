@@ -508,8 +508,6 @@ tasks.named("check") {
     dependsOn(dungeonMapRenderParityHarnessTask)
 }
 
-val smokeStartupHarnessDataDir = layout.buildDirectory.dir("smoke-startup-data")
-
 val catalogInitialLoadHarnessTask = behaviorHarnesses.junitTest("catalogInitialLoadHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("catalog-initial-load"))
@@ -918,24 +916,30 @@ tasks.named("check") {
     dependsOn(worldPlannerUiHarnessTask)
 }
 
-behaviorHarnesses.javaExec("smokeStartupHarness") {
+val smokeStartupHarnessTask = behaviorHarnesses.junitTest("smokeStartupHarness") {
     classification.set(BehaviorHarnessClassification.UTILITY)
     suiteIds.set(listOf("startup-smoke"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the app bootstrap and SQLite startup smoke harness."
         dependsOn(tasks.named("testClasses"))
+        testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
-        mainClass.set("bootstrap.SmokeStartupHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        include("bootstrap/SmokeStartupHarness.class")
+        inputs.property("smokeStartupDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = smokeStartupHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn(smokeStartupHarnessTask)
 }
 
 val mainJavaClassesDir = layout.buildDirectory.dir("classes/java/main")
