@@ -26,9 +26,9 @@ modernization unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/harness-modernization-t0` |
 | Milestone | T1 - Fleet conversion |
-| Conversion batch | `worldPlannerControlsRawInputHarness` |
+| Conversion batch | `worldPlannerUiHarness` |
 | Status | In Flight |
-| Required next proof | Convert `worldPlannerControlsRawInputHarness` to a JUnit `Test` task, remove its JavaExec registration, and produce scripted 1:1 scenario parity output for its frozen controls raw-input proof claims. |
+| Required next proof | Convert `worldPlannerUiHarness` to a JUnit `Test` task, remove its JavaExec registration, and produce scripted 1:1 scenario parity output for its frozen World Planner UI production-route proof claim. |
 | Last status note | `2026-07-12 T0-close-out` |
 
 ## Milestone Ledger
@@ -987,4 +987,53 @@ JUnit test methods, with hyphens converted to underscores:
   `build/gradle-run-logs/20260712T111556821574554-pid1437084-check.log`.
   Literal result: `BUILD SUCCESSFUL in 12m 5s`,
   `61 actionable tasks: 61 executed`.
+- Review state: Phase 1 approved; Phase 2 approved.
+
+## T1 Batch Evidence - `worldPlannerUiHarness`
+
+- Batch started after `worldPlannerControlsRawInputHarness` close-out. Scope is
+  limited to `worldPlannerUiHarness`.
+- Registration: the old `behaviorHarnesses.javaExec("worldPlannerUiHarness")`
+  registration,
+  `mainClass.set("src.view.leftbartabs.worldplanner.WorldPlannerUiHarness")`,
+  `worldPlannerUiHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("worldPlannerUiHarness")`, includes only
+  `src/view/leftbartabs/worldplanner/WorldPlannerUiHarness.class`, and is
+  wired into `check`.
+- Frozen proof-item name is derived from the single pre-conversion top-level
+  `runHarness` flow: shell slots, removed old labels, NPC/faction/location UI
+  mutations, selected-NPC Encounter handoff, filtering, inspector behavior,
+  source module, and readback lists. Assertions and fixture values remain
+  unchanged.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item        junit method
+  WORLD-PLANNER-UI-001  WORLD_PLANNER_UI_001
+  result: 1 old proof item(s), 1 junit method(s), 1 exact normalized match
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-ui-focused tools/gradle/run-observable-gradle.sh --fail-fast worldPlannerUiHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T113519313103188-pid1452976-worldPlannerUiHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 53s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-ui-forced tools/gradle/run-observable-gradle.sh --fail-fast worldPlannerUiHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T113630515244432-pid1453573-worldPlannerUiHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 5s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced proof:
+  `build/test-results/worldPlannerUiHarness/TEST-src.view.leftbartabs.worldplanner.WorldPlannerUiHarness.xml`
+  records `tests="1"`, `failures="0"`, `errors="0"` and contains
+  `WORLD_PLANNER_UI_001`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-ui-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T113815085587882-pid1454705-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 11m 47s`,
+  `62 actionable tasks: 62 executed`.
 - Review state: Phase 1 approved; Phase 2 approved.

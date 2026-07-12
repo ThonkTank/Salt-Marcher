@@ -508,7 +508,6 @@ tasks.named("check") {
     dependsOn(dungeonMapRenderParityHarnessTask)
 }
 
-val worldPlannerUiHarnessDataDir = layout.buildDirectory.dir("world-planner-ui-data")
 val smokeStartupHarnessDataDir = layout.buildDirectory.dir("smoke-startup-data")
 
 val catalogInitialLoadHarnessTask = behaviorHarnesses.junitTest("catalogInitialLoadHarness") {
@@ -893,24 +892,30 @@ tasks.named("check") {
     dependsOn(worldPlannerControlsRawInputHarnessTask)
 }
 
-behaviorHarnesses.javaExec("worldPlannerUiHarness") {
+val worldPlannerUiHarnessTask = behaviorHarnesses.junitTest("worldPlannerUiHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("world-planner-ui"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the World Planner left-bar UI production-route behavior harness."
         dependsOn(tasks.named(worldPlannerUiHarness.classesTaskName))
+        testClassesDirs = worldPlannerUiHarness.output.classesDirs
         classpath = worldPlannerUiHarness.runtimeClasspath
-        mainClass.set("src.view.leftbartabs.worldplanner.WorldPlannerUiHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        include("src/view/leftbartabs/worldplanner/WorldPlannerUiHarness.class")
+        inputs.property("worldPlannerUiDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = worldPlannerUiHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn(worldPlannerUiHarnessTask)
 }
 
 behaviorHarnesses.javaExec("smokeStartupHarness") {
