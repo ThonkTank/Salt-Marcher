@@ -505,7 +505,6 @@ tasks.named("check") {
     dependsOn(dungeonMapRenderParityHarnessTask)
 }
 
-val worldPlannerEncounterHarnessDataDir = layout.buildDirectory.dir("world-planner-encounter-data")
 val worldPlannerControlsRawInputHarnessDataDir = layout.buildDirectory.dir("world-planner-controls-raw-input-data")
 val worldPlannerUiHarnessDataDir = layout.buildDirectory.dir("world-planner-ui-data")
 val smokeStartupHarnessDataDir = layout.buildDirectory.dir("smoke-startup-data")
@@ -840,24 +839,30 @@ tasks.named("check") {
     dependsOn(worldPlannerBackendHarnessTask)
 }
 
-behaviorHarnesses.javaExec("worldPlannerEncounterHarness") {
+val worldPlannerEncounterHarnessTask = behaviorHarnesses.junitTest("worldPlannerEncounterHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("world-planner-encounter"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the World Planner encounter source and finite stock behavior harness."
         dependsOn(tasks.named(worldPlannerBackendHarness.classesTaskName))
+        testClassesDirs = worldPlannerBackendHarness.output.classesDirs
         classpath = worldPlannerBackendHarness.runtimeClasspath
-        mainClass.set("src.domain.encounter.WorldPlannerEncounterHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        include("src/domain/encounter/WorldPlannerEncounterHarness.class")
+        inputs.property("worldPlannerEncounterDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = worldPlannerEncounterHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn(worldPlannerEncounterHarnessTask)
 }
 
 behaviorHarnesses.javaExec("worldPlannerControlsRawInputHarness") {

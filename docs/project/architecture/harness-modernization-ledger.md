@@ -26,9 +26,9 @@ modernization unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/harness-modernization-t0` |
 | Milestone | T1 - Fleet conversion |
-| Conversion batch | `worldPlannerBackendHarness` |
+| Conversion batch | `worldPlannerEncounterHarness` |
 | Status | In Flight |
-| Required next proof | Convert `worldPlannerBackendHarness` to a JUnit `Test` task, remove its JavaExec registration, and produce scripted 1:1 scenario parity output for its frozen backend persistence proof claim. |
+| Required next proof | Convert `worldPlannerEncounterHarness` to a JUnit `Test` task, remove its JavaExec registration, and produce scripted 1:1 scenario parity output for its frozen world-source and finite-stock encounter proof claims. |
 | Last status note | `2026-07-12 T0-close-out` |
 
 ## Milestone Ledger
@@ -880,4 +880,57 @@ JUnit test methods, with hyphens converted to underscores:
   `build/gradle-run-logs/20260712T102746095894754-pid1382757-check.log`.
   Literal result: `BUILD SUCCESSFUL in 11m 46s`,
   `58 actionable tasks: 58 executed`.
+- Review state: Phase 1 approved; Phase 2 approved.
+
+## T1 Batch Evidence - `worldPlannerEncounterHarness`
+
+- Batch started after `worldPlannerBackendHarness` close-out. Scope is limited
+  to `worldPlannerEncounterHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("worldPlannerEncounterHarness")` registration,
+  `mainClass.set("src.domain.encounter.WorldPlannerEncounterHarness")`,
+  `worldPlannerEncounterHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("worldPlannerEncounterHarness")`, includes only
+  `src/domain/encounter/WorldPlannerEncounterHarness.class`, and is wired into
+  `check`.
+- Frozen proof-item names are derived from the five pre-conversion scenario
+  calls in `main`: location source limits, explicit-table intersection,
+  invalid-source blocking, finite-cap draft enumeration, and World NPC identity
+  through Encounter result state. Assertions and fixture values remain
+  unchanged.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item                 junit method
+  WORLD-PLANNER-ENCOUNTER-001    WORLD_PLANNER_ENCOUNTER_001
+  WORLD-PLANNER-ENCOUNTER-002    WORLD_PLANNER_ENCOUNTER_002
+  WORLD-PLANNER-ENCOUNTER-003    WORLD_PLANNER_ENCOUNTER_003
+  WORLD-PLANNER-ENCOUNTER-004    WORLD_PLANNER_ENCOUNTER_004
+  WORLD-PLANNER-ENCOUNTER-005    WORLD_PLANNER_ENCOUNTER_005
+  result: 5 old proof item(s), 5 junit method(s), 5 exact normalized matches
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-encounter-focused tools/gradle/run-observable-gradle.sh --fail-fast worldPlannerEncounterHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T104932863812569-pid1411652-worldPlannerEncounterHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 56s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-encounter-forced tools/gradle/run-observable-gradle.sh --fail-fast worldPlannerEncounterHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T105048209371154-pid1412183-worldPlannerEncounterHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 4s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced proof:
+  `build/test-results/worldPlannerEncounterHarness/TEST-src.domain.encounter.WorldPlannerEncounterHarness.xml`
+  records `tests="5"`, `failures="0"`, `errors="0"` and contains
+  `WORLD_PLANNER_ENCOUNTER_001` through `WORLD_PLANNER_ENCOUNTER_005`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-encounter-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T105225743907333-pid1413261-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 11m 59s`,
+  `59 actionable tasks: 59 executed`.
 - Review state: Phase 1 approved; Phase 2 approved.

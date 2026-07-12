@@ -5,6 +5,11 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import shell.api.ServiceRegistry;
 import src.domain.creatures.model.catalog.CreatureCatalogData;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
@@ -41,17 +46,46 @@ import src.domain.worldplanner.published.SetWorldFactionInventoryLimitCommand;
 import src.domain.worldplanner.published.WorldPlannerSnapshot;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
+@TestMethodOrder(OrderAnnotation.class)
 public final class WorldPlannerEncounterHarness {
+
+    private static HarnessRuntime runtime;
 
     private WorldPlannerEncounterHarness() {
     }
 
-    public static void main(String[] args) {
-        HarnessRuntime runtime = HarnessRuntime.create();
+    @BeforeAll
+    static void createRuntime() {
+        runtime = HarnessRuntime.create();
+    }
+
+    @Test
+    @Order(1)
+    void WORLD_PLANNER_ENCOUNTER_001() {
         assertLocationLimitsTablesAndFactionStock(runtime);
+    }
+
+    @Test
+    @Order(2)
+    void WORLD_PLANNER_ENCOUNTER_002() {
         assertExplicitTablesAreIntersectedWithWorldSources(runtime);
+    }
+
+    @Test
+    @Order(3)
+    void WORLD_PLANNER_ENCOUNTER_003() {
         assertInvalidWorldSourceBlocksTableMatches(runtime);
+    }
+
+    @Test
+    @Order(4)
+    void WORLD_PLANNER_ENCOUNTER_004() {
         assertFiniteCapsConstrainDraftEnumeration();
+    }
+
+    @Test
+    @Order(5)
+    void WORLD_PLANNER_ENCOUNTER_005() {
         assertWorldNpcIdentitySurvivesCombatResults(runtime);
     }
 
