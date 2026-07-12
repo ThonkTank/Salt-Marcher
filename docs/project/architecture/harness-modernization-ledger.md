@@ -451,3 +451,61 @@ JUnit test methods, with hyphens converted to underscores:
   isolation, JavaExec deletion, Gradle/JUnit task wiring, proof freshness, and
   JUnit XML were otherwise reviewed without a supported blocker. Phase 1
   re-review approved after this ledger section was added. Phase 2 approved.
+
+## T1 Batch Evidence - `catalogInitialLoadHarness`
+
+- Batch started after `dungeonTravelProjectionLevelHarness` close-out. Scope is
+  limited to `catalogInitialLoadHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("catalogInitialLoadHarness")` registration,
+  `mainClass.set("src.view.leftbartabs.catalog.CatalogInitialLoadHarness")`,
+  `catalogInitialLoadHarnessDataDir`, and its `outputs.upToDateWhen { false }`
+  entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("catalogInitialLoadHarness")`, includes only
+  `src/view/leftbartabs/catalog/CatalogInitialLoadHarness.class`, and is wired
+  into `check`.
+- Frozen proof-item names for this legacy harness are derived from the two
+  pre-conversion assertion groups in `CatalogInitialLoadHarness`: DB-backed
+  initial catalog load and World Planner source-control forwarding. Assertions
+  and fixture values remain unchanged; the second test replays the initial-load
+  readback as setup before exercising the old source-control claim.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item            junit method
+  CATALOG-INITIAL-LOAD-001  CATALOG_INITIAL_LOAD_001
+  CATALOG-INITIAL-LOAD-002  CATALOG_INITIAL_LOAD_002
+  result: 2 old proof item(s), 2 junit method(s), 2 exact normalized matches
+  ```
+
+- Initial focused run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-catalog-initial-focused tools/gradle/run-observable-gradle.sh --fail-fast catalogInitialLoadHarness`
+  failed before harness execution because a new helper parameter name collided
+  with a lambda variable in `assertInitialCatalogRows`. Retained log:
+  `build/gradle-run-logs/20260712T073949513717002-pid1166766-catalogInitialLoadHarness.log`.
+  Rework renamed only the lambda variable; no harness assertion, input, fixture,
+  or production code changed.
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-catalog-initial-focused-2 tools/gradle/run-observable-gradle.sh --fail-fast catalogInitialLoadHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T074042023510623-pid1167273-catalogInitialLoadHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 24s`,
+  `13 actionable tasks: 2 executed, 11 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-catalog-initial-forced tools/gradle/run-observable-gradle.sh --fail-fast catalogInitialLoadHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T074139829326544-pid1168759-catalogInitialLoadHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced run:
+  `build/test-results/catalogInitialLoadHarness/TEST-src.view.leftbartabs.catalog.CatalogInitialLoadHarness.xml`
+  records `tests="2"`, `failures="0"`, `errors="0"` and contains
+  `CATALOG_INITIAL_LOAD_001` and `CATALOG_INITIAL_LOAD_002`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-catalog-initial-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T074247103401017-pid1169336-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 10m 2s`,
+  `50 actionable tasks: 50 executed`.
+- Review state: Phase 1 approved; Phase 2 first found a ledger-only stale
+  review-state blocker after Phase 1 approval. Phase 2 re-review approved.
