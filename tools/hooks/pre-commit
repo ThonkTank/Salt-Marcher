@@ -39,7 +39,7 @@ echo "pre-commit: log: $log_file"
 set +e
 (
     cd "$gate_worktree"
-    ./gradlew check --console=plain
+    SALTMARCHER_PRE_COMMIT_GATE=1 ./gradlew check --console=plain
 ) >"$log_file" 2>&1
 gradle_status=$?
 set -e

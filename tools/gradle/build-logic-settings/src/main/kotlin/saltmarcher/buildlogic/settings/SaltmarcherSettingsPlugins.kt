@@ -1,6 +1,7 @@
 package saltmarcher.buildlogic.settings
 
 import java.io.File
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
 import saltmarcher.buildlogic.shared.CheckTaskName
@@ -16,7 +17,9 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
         val repoRootDir = configuredRepositoryRoot(settings.settingsDir)
             ?: discoveredRepoRootDir
         System.setProperty("saltmarcher.repoRootDir", repoRootDir.absolutePath)
-        configureVersionedHooks(repoRootDir)
+        if (System.getenv("SALTMARCHER_PRE_COMMIT_GATE") != "1") {
+            configureVersionedHooks(repoRootDir)
+        }
 
         val requestedTaskNames = settings.gradle.startParameter.taskNames
             .map { taskName -> taskName.substringAfterLast(":") }
@@ -71,26 +74,41 @@ private fun configureVersionedHooks(repoRootDir: File) {
     }
 
     val expectedHooksPath = "tools/hooks"
-    val currentHooksPath = gitConfig(repoRootDir, "--get", "core.hooksPath")
+    val currentHooksPath = readGitConfig(repoRootDir, "--get", "core.hooksPath")
         ?.trim()
         ?.replace(File.separatorChar, '/')
     if (currentHooksPath == expectedHooksPath) {
         return
     }
 
-    gitConfig(repoRootDir, "core.hooksPath", expectedHooksPath)
+    writeGitConfig(repoRootDir, "core.hooksPath", expectedHooksPath)
 }
 
-private fun gitConfig(repoRootDir: File, vararg args: String): String? {
+private fun readGitConfig(repoRootDir: File, vararg args: String): String? {
     return runCatching {
-        val process = ProcessBuilder(listOf("git", "config", "--local") + args)
-            .directory(repoRootDir)
-            .redirectErrorStream(true)
-            .start()
-        val output = process.inputStream.bufferedReader().use { reader -> reader.readText() }
-        val exitCode = process.waitFor()
-        if (exitCode == 0) output else null
+        val result = runGitConfig(repoRootDir, *args)
+        if (result.exitCode == 0) result.output else null
     }.getOrNull()
+}
+
+private fun writeGitConfig(repoRootDir: File, vararg args: String) {
+    val result = runGitConfig(repoRootDir, *args)
+    if (result.exitCode != 0) {
+        throw GradleException(
+            "Failed to configure SaltMarcher versioned hooks in ${repoRootDir.path}: ${result.output.trim()}"
+        )
+    }
+}
+
+private data class GitConfigResult(val exitCode: Int, val output: String)
+
+private fun runGitConfig(repoRootDir: File, vararg args: String): GitConfigResult {
+    val process = ProcessBuilder(listOf("git", "config", "--local") + args)
+        .directory(repoRootDir)
+        .redirectErrorStream(true)
+        .start()
+    val output = process.inputStream.bufferedReader().use { reader -> reader.readText() }
+    return GitConfigResult(process.waitFor(), output)
 }
 
 private data class VerificationRequestScope(
