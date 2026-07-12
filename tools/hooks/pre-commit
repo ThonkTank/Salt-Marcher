@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+if git diff --cached --quiet --exit-code; then
+    echo "pre-commit: no staged changes; skipping SaltMarcher check gate."
+    exit 0
+fi
+
+tree_id="$(git write-tree)"
+parent_args=()
+if git rev-parse --verify --quiet HEAD >/dev/null; then
+    parent_args=(-p HEAD)
+fi
+
+export GIT_AUTHOR_NAME="SaltMarcher Pre-Commit Gate"
+export GIT_AUTHOR_EMAIL="saltmarcher-pre-commit@example.invalid"
+export GIT_COMMITTER_NAME="$GIT_AUTHOR_NAME"
+export GIT_COMMITTER_EMAIL="$GIT_AUTHOR_EMAIL"
+
+commit_id="$(printf 'SaltMarcher pre-commit verification\n' | git commit-tree "$tree_id" "${parent_args[@]}")"
+gate_worktree="$(mktemp -d "${TMPDIR:-/tmp}/saltmarcher-pre-commit.XXXXXX")"
+log_dir="$repo_root/build/pre-commit-gate"
+log_file="$log_dir/${commit_id}.log"
+
+cleanup() {
+    git -C "$repo_root" worktree remove --force "$gate_worktree" >/dev/null 2>&1 || rm -rf "$gate_worktree"
+}
+trap cleanup EXIT
+
+mkdir -p "$log_dir"
+git worktree add --detach --quiet "$gate_worktree" "$commit_id"
+
+echo "pre-commit: verifying staged tree $commit_id in clean worktree."
+echo "pre-commit: log: $log_file"
+
+set +e
+(
+    cd "$gate_worktree"
+    ./gradlew check --console=plain
+) >"$log_file" 2>&1
+gradle_status=$?
+set -e
+
+if [[ $gradle_status -ne 0 ]]; then
+    failed_tasks="$(
+        grep -E '^> Task :[^ ]+ FAILED$' "$log_file" |
+            sed -E 's/^> Task (:[^ ]+) FAILED$/\1/' |
+            tr '\n' ' ' |
+            sed 's/[[:space:]]*$//' ||
+            true
+    )"
+    if [[ -z "$failed_tasks" ]]; then
+        failed_tasks=":check"
+    fi
+    echo "pre-commit: rejected; failing tasks: $failed_tasks" >&2
+    echo "pre-commit: see $log_file" >&2
+    exit "$gradle_status"
+fi
+
+if ! grep -Eq '^> Task :check( |$)' "$log_file"; then
+    echo "pre-commit: rejected; stale/non-executed tasks: :check" >&2
+    echo "pre-commit: see $log_file" >&2
+    exit 1
+fi
+
+if ! grep -q '^BUILD SUCCESSFUL' "$log_file"; then
+    echo "pre-commit: rejected; stale/non-executed tasks: :check" >&2
+    echo "pre-commit: see $log_file" >&2
+    exit 1
+fi
+
+echo "pre-commit: accepted; staged tree passed ./gradlew check."
+echo "pre-commit: see $log_file"

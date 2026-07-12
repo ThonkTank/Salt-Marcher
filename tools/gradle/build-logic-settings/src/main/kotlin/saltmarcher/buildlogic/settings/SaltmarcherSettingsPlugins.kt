@@ -19,6 +19,7 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
             ?.canonicalFile
             ?: findRepositoryRoot(settings.settingsDir)
         System.setProperty("saltmarcher.repoRootDir", repoRootDir.absolutePath)
+        configureVersionedHooks(repoRootDir)
 
         val requestedTaskNames = settings.gradle.startParameter.taskNames
             .map { taskName -> taskName.substringAfterLast(":") }
@@ -47,6 +48,36 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
 }
 
 private fun includeSaltmarcherBuild(settings: Settings, relativePath: String) = settings.includeBuild(relativePath)
+
+private fun configureVersionedHooks(repoRootDir: File) {
+    val hooksDir = File(repoRootDir, "tools/hooks")
+    val gitEntry = File(repoRootDir, ".git")
+    if (!hooksDir.isDirectory || !gitEntry.exists()) {
+        return
+    }
+
+    val expectedHooksPath = "tools/hooks"
+    val currentHooksPath = gitConfig(repoRootDir, "--get", "core.hooksPath")
+        ?.trim()
+        ?.replace(File.separatorChar, '/')
+    if (currentHooksPath == expectedHooksPath) {
+        return
+    }
+
+    gitConfig(repoRootDir, "core.hooksPath", expectedHooksPath)
+}
+
+private fun gitConfig(repoRootDir: File, vararg args: String): String? {
+    return runCatching {
+        val process = ProcessBuilder(listOf("git", "config", "--local") + args)
+            .directory(repoRootDir)
+            .redirectErrorStream(true)
+            .start()
+        val output = process.inputStream.bufferedReader().use { reader -> reader.readText() }
+        val exitCode = process.waitFor()
+        if (exitCode == 0) output else null
+    }.getOrNull()
+}
 
 private data class VerificationRequestScope(
     val includeBuildHarness: Boolean,
