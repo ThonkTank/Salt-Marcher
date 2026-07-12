@@ -27,11 +27,11 @@ modernization unless this ledger advances too.
 | Field | Value |
 | --- | --- |
 | Branch | `codex/harness-modernization-t0` |
-| Milestone | T2 - Cache correctness and hermeticity |
+| Milestone | T3 - Commit gate via versioned hooks |
 | Conversion batch | None |
 | Status | In Flight |
-| Required next proof | Enable and rehearse honest local build-cache behavior for the converted harness tasks: unrelated change gives a cache hit, in-classpath and resource changes re-run, and two consecutive full `--rerun-tasks` runs agree with cached verdicts. |
-| Last status note | `2026-07-12 T1-close-out` |
+| Required next proof | Implement the versioned pre-commit gate and rehearse the literal T3 done-when: deliberately untested change rejected with stale tasks named, tested change passes, gate works on a fresh clone, and dirty worktree edits cannot leak into the gate. |
+| Last status note | `2026-07-12 T2-close-out` |
 
 ## Milestone Ledger
 
@@ -39,8 +39,8 @@ modernization unless this ledger advances too.
 | --- | --- | --- | --- | --- | --- |
 | T0 Pilot conversion and pattern | Done on branch | Pending | Pending | Forced pilot run, UP-TO-DATE run, classpath re-run, failure isolation, final JUnit XML, `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | `hexMapEditorBehaviorHarness` is the only pilot. Build logic gains a reusable `junitTest` behavior-harness registration template. |
 | T1 Fleet conversion | Done on branch | Pending | Pending | Per-batch focused run, forced run, JUnit XML, final `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | All registered behavior harness tasks are JUnit `Test` tasks; no JavaExec behavior harness registration, silent Dungeon Editor direct-main entrypoint, or harness-level `outputs.upToDateWhen { false }` remains. |
-| T2 Cache correctness and hermeticity | In Flight | Pending | Pending | Pending | Local build cache behavior and rerun honesty checks start after T1 close-out. |
-| T3 Commit gate via versioned hooks | Pending | Pending | Pending | Pending | No hook wiring before T3. |
+| T2 Cache correctness and hermeticity | Done on branch | Pending | Pending | Dungeon Editor and Render Parity cache-hit, classpath re-run, resource re-run, final consecutive `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | Relative result paths replace absolute Test system-property result paths for the reviewed converted check-participating Dungeon Editor surfaces. |
+| T3 Commit gate via versioned hooks | In Flight | Pending | Pending | Pending | T3 starts after T2 close-out. |
 | T4 CI authority and bespoke-layer deletion | Pending | Pending | Pending | Pending | `harness-map.json`, `select_harnesses.py`, and `behavior-gate` stay until T4. |
 | T5 Resolution report and honesty reviewer | Pending | Pending | Pending | Pending | Resource policy amendment must precede reviewer calls. |
 | T6 Governance consolidation | Pending | Pending | Pending | Pending | AGENTS/check-entrypoint consolidation waits until the system exists. |
@@ -1226,3 +1226,140 @@ JUnit test methods, with hyphens converted to underscores:
   the ledger keeps the roadmap-required evidence rather than omitting or
   scattering facts during close-out. This check is recorded as red and is not
   used as T1 acceptance proof.
+
+## T2 Evidence - Dungeon Editor Cache Hermeticity
+
+- Scope: start T2 on the highest-risk converted harness surface, the Dungeon
+  Editor aggregate, because it has custom published summary output in addition
+  to the standard JUnit outputs.
+- Hermeticity change: each registered Dungeon Editor behavior `Test` task now
+  writes its published summary under
+  `build/dungeon-editor-behavior-results/<taskName>/summary.txt` instead of
+  sharing one declared output directory. Per-run `XDG_DATA_HOME` directories
+  still live under the task action's run-data root and are not declared
+  outputs.
+- Phase 1 first pass found that the initial output split still passed an
+  absolute `saltmarcher.dungeonEditorBehavior.resultsDir` system property into
+  the cacheable `Test` task. That was rejected because `Test` system
+  properties are task inputs and absolute worktree paths are not relocatable.
+  The task now keeps the declared output provider but passes the relative
+  `build/dungeon-editor-behavior-results/<taskName>` path to the test JVM.
+- Phase 2 first pass found the same absolute system-property pattern in the
+  converted `dungeonMapRenderParityHarness`, which also participates in
+  `check`. That harness now keeps its declared output provider and passes the
+  relative `build/dungeon-map-render-parity-results` path to the test JVM.
+- Focused validation after the relative output path fix:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t2-dungeon-editor-output-relative tools/gradle/run-observable-gradle.sh --fail-fast dungeonEditorBehaviorHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T160202623725154-pid1635647-dungeonEditorBehaviorHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 3m 41s`,
+  `13 actionable tasks: 1 executed, 1 from cache, 11 up-to-date`.
+- Cache-hit rehearsal with an unrelated changed file:
+  `docs/project/journal/README.md` carried a temporary marker outside the
+  Dungeon Editor task inputs. The first clean-and-run populated the cache for
+  the current key and is not counted as the cache-hit proof. The second
+  clean-and-run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t2-dungeon-editor-relative-cache-hit tools/gradle/run-observable-gradle.sh --fail-fast cleanDungeonEditorBehaviorHarness dungeonEditorBehaviorHarness`
+  passed with `:dungeonEditorBehaviorHarness FROM-CACHE`. Retained log:
+  `build/gradle-run-logs/20260712T160555789968386-pid1637121-cleanDungeonEditorBehaviorHarness__dungeonEditorBehaviorHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 8s`,
+  `14 actionable tasks: 1 executed, 1 from cache, 12 up-to-date`.
+  The temporary marker was removed after the rehearsal.
+- In-classpath change rehearsal:
+  a temporary bytecode-affecting constant in
+  `DungeonEditorBehaviorSuiteHarness` forced recompilation and task execution.
+  The temporary constant was removed after the rehearsal. Command:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t2-dungeon-editor-relative-classpath-rerun tools/gradle/run-observable-gradle.sh --fail-fast dungeonEditorBehaviorHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T163343244622176-pid1648358-dungeonEditorBehaviorHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 2m 32s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Resource change rehearsal:
+  a temporary marker in
+  `docs/dungeon/verification/verification-dungeon-editor-stairs.md`, which is
+  covered by the Dungeon Editor behavior catalog input declaration, forced task
+  execution. The marker was removed after the rehearsal. Command:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t2-dungeon-editor-relative-resource-rerun tools/gradle/run-observable-gradle.sh --fail-fast dungeonEditorBehaviorHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T163636144610203-pid1649449-dungeonEditorBehaviorHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 2m 23s`,
+  `13 actionable tasks: 1 executed, 1 from cache, 11 up-to-date`.
+- Render parity focused validation after the relative output path fix:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t2-render-parity-relative-focused tools/gradle/run-observable-gradle.sh --fail-fast dungeonMapRenderParityHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T173621096971634-pid1682651-dungeonMapRenderParityHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 28s`,
+  `13 actionable tasks: 1 executed, 2 from cache, 10 up-to-date`.
+- Render parity cache-hit rehearsal with an unrelated changed file:
+  `docs/project/journal/README.md` carried a temporary marker outside the
+  Render Parity task inputs. Command:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t2-render-parity-unrelated-cache-hit tools/gradle/run-observable-gradle.sh --fail-fast cleanDungeonMapRenderParityHarness dungeonMapRenderParityHarness`
+  passed with `:dungeonMapRenderParityHarness FROM-CACHE`. Retained log:
+  `build/gradle-run-logs/20260712T173821638672040-pid1683737-cleanDungeonMapRenderParityHarness__dungeonMapRenderParityHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 12s`,
+  `14 actionable tasks: 1 executed, 1 from cache, 12 up-to-date`.
+  The temporary marker was removed after the rehearsal.
+- Render parity in-classpath change rehearsal:
+  a temporary bytecode-affecting constant in
+  `DungeonMapRenderParitySnapshotHarness` forced recompilation and task
+  execution. The temporary constant was removed after the rehearsal. Command:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t2-render-parity-classpath-rerun tools/gradle/run-observable-gradle.sh --fail-fast dungeonMapRenderParityHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T173907686552882-pid1684548-dungeonMapRenderParityHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 32s`,
+  `13 actionable tasks: 2 executed, 11 up-to-date`.
+- Render parity resource change rehearsal:
+  a temporary marker in
+  `docs/dungeon/verification/verification-dungeon-render-snapshot-parity.md`,
+  which is covered by the Render Parity catalog input declaration, forced task
+  execution. The marker was removed after the rehearsal. Command:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t2-render-parity-resource-rerun tools/gradle/run-observable-gradle.sh --fail-fast dungeonMapRenderParityHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T174019778943027-pid1685439-dungeonMapRenderParityHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 27s`,
+  `13 actionable tasks: 1 executed, 1 from cache, 11 up-to-date`.
+- Consecutive full forced rerun A:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t2-check-render-parity-final-rerun-a tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T174125645896677-pid1686832-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 26m 8s`,
+  `75 actionable tasks: 75 executed`.
+- Consecutive full forced rerun B:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t2-check-render-parity-final-rerun-b tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T180742922646191-pid1694629-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 26m 17s`,
+  `75 actionable tasks: 75 executed`.
+- Review state: Phase 1 first pass approved. Phase 2 first pass blocked on
+  the remaining absolute Render Parity results-dir system property; that
+  finding is fixed and proof above was repeated. Phase 1 re-review approved.
+  Phase 2 re-review approved.
+
+## T2 Close-Out Evidence
+
+- Unrelated change cache-hit rehearsals passed for the Dungeon Editor aggregate
+  helper and Render Parity converted harness:
+  `:dungeonEditorBehaviorHarness FROM-CACHE` in
+  `build/gradle-run-logs/20260712T160555789968386-pid1637121-cleanDungeonEditorBehaviorHarness__dungeonEditorBehaviorHarness.log`
+  and `:dungeonMapRenderParityHarness FROM-CACHE` in
+  `build/gradle-run-logs/20260712T173821638672040-pid1683737-cleanDungeonMapRenderParityHarness__dungeonMapRenderParityHarness.log`.
+- In-classpath rehearsals re-ran the affected compile and harness tasks:
+  Dungeon Editor
+  `build/gradle-run-logs/20260712T163343244622176-pid1648358-dungeonEditorBehaviorHarness.log`
+  and Render Parity
+  `build/gradle-run-logs/20260712T173907686552882-pid1684548-dungeonMapRenderParityHarness.log`.
+- Resource rehearsals re-ran the affected harness tasks:
+  Dungeon Editor
+  `build/gradle-run-logs/20260712T163636144610203-pid1649449-dungeonEditorBehaviorHarness.log`
+  and Render Parity
+  `build/gradle-run-logs/20260712T174019778943027-pid1685439-dungeonMapRenderParityHarness.log`.
+- Consecutive final full forced runs after all T2 fixes both passed:
+  `build/gradle-run-logs/20260712T174125645896677-pid1686832-check.log`
+  with `BUILD SUCCESSFUL in 26m 8s`,
+  `75 actionable tasks: 75 executed`, and
+  `build/gradle-run-logs/20260712T180742922646191-pid1694629-check.log`
+  with `BUILD SUCCESSFUL in 26m 17s`,
+  `75 actionable tasks: 75 executed`.
+- Same-pattern scan found no remaining `resultsDir` assignment using
+  `.get().asFile.absolutePath` in `build.gradle.kts`.
+- Phase 1 and Phase 2 approved after the Render Parity blocker was fixed.

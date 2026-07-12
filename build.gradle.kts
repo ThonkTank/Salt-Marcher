@@ -271,6 +271,8 @@ fun registerDungeonEditorBehaviorHarnessTask(
         this.behaviorDependencies.set(behaviorDependencies)
         this.aggregateOf.set(aggregateOf)
         task {
+            val taskResultsDir = dungeonEditorBehaviorHarnessResultsDir.map { it.dir(taskName) }
+            val taskResultsPath = "build/dungeon-editor-behavior-results/$taskName"
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = taskDescription
             dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
@@ -288,18 +290,18 @@ fun registerDungeonEditorBehaviorHarnessTask(
                 .withPropertyName("dungeonEditorBehaviorCatalogs")
                 .withPathSensitivity(PathSensitivity.RELATIVE)
             inputs.property("dungeonEditorBehaviorSuites", suiteIds.joinToString(","))
-            outputs.dir(dungeonEditorBehaviorHarnessResultsDir)
+            outputs.dir(taskResultsDir)
             doFirst {
                 val runDataDir = dungeonEditorBehaviorHarnessDataDir.get()
                     .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
                 mkdir(runDataDir)
                 mkdir(runDataDir.dir("salt-marcher"))
-                mkdir(dungeonEditorBehaviorHarnessResultsDir)
+                mkdir(taskResultsDir)
                 environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
             }
             systemProperty(
                 "saltmarcher.dungeonEditorBehavior.resultsDir",
-                dungeonEditorBehaviorHarnessResultsDir.get().asFile.absolutePath
+                taskResultsPath
             )
         }
 }
@@ -508,6 +510,7 @@ val dungeonMapRenderParityHarnessTask = behaviorHarnesses.junitTest("dungeonMapR
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("dungeon-map-render-parity"))
     task {
+        val taskResultsPath = "build/dungeon-map-render-parity-results"
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the focused Dungeon map render image snapshot parity harness."
         dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
@@ -537,7 +540,7 @@ val dungeonMapRenderParityHarnessTask = behaviorHarnesses.junitTest("dungeonMapR
         }
         systemProperty(
             "saltmarcher.dungeonEditorBehavior.resultsDir",
-            dungeonMapRenderParityHarnessResultsDir.get().asFile.absolutePath
+            taskResultsPath
         )
     }
 }
