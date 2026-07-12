@@ -11,6 +11,12 @@ import javafx.scene.image.PixelReader;
 import javafx.scene.image.WritableImage;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
@@ -42,25 +48,52 @@ import static src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorHarnessSup
 import static src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorHarnessSupport.renderSurfaceCellOriginsWithZ;
 import static src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorHarnessSupport.selectMap;
 
+@TestMethodOrder(MethodOrderer.MethodName.class)
 public final class DungeonMapRenderParitySnapshotHarness {
 
     private static final String OWNER = "DungeonMapRenderParitySnapshotHarness";
+    private static final List<String> RESULTS = new java.util.ArrayList<>();
+    private static DungeonEditorHarnessPublicationSupport.ResultPublicationLock resultLock;
 
-    private DungeonMapRenderParitySnapshotHarness() {
+    @BeforeAll
+    static void clearResults() throws Exception {
+        resultLock = DungeonEditorHarnessPublicationSupport.lockResults();
+        DungeonEditorHarnessPublicationSupport.clearResults();
     }
 
-    public static void main(String[] args) throws Exception {
-        DungeonEditorBehaviorHarnessSupport.runPublishedHarness(
-                "Dungeon render snapshot parity harness",
-                DungeonMapRenderParitySnapshotHarness::run);
+    @AfterEach
+    void cleanupWindows() throws Exception {
+        DungeonEditorHarnessPublicationSupport.cleanupRouteProofWindows();
     }
 
-    static void run(List<String> results) throws Exception {
-        DungeonEditorHarnessPublicationSupport.runOnFxThread(() -> verifyEditorRenderSnapshotParity(results));
-        DungeonEditorHarnessPublicationSupport.cleanupRouteProofWindows();
-        DungeonEditorHarnessPublicationSupport.runOnFxThread(() -> verifyEditorPreviewRenderSnapshotParity(results));
-        DungeonEditorHarnessPublicationSupport.cleanupRouteProofWindows();
-        DungeonEditorHarnessPublicationSupport.runOnFxThread(() -> verifyTravelRenderSnapshotParity(results));
+    @AfterAll
+    static void writeResults() throws Exception {
+        try {
+            DungeonEditorHarnessPublicationSupport.writeResults(RESULTS);
+            DungeonEditorHarnessPublicationSupport.shutdownFx();
+        } finally {
+            if (resultLock != null) {
+                resultLock.close();
+            }
+        }
+    }
+
+    @Test
+    void DE_IMG_001() throws Exception {
+        DungeonEditorHarnessPublicationSupport.runOnFxThread(
+                () -> verifyEditorRenderSnapshotParity(RESULTS));
+    }
+
+    @Test
+    void DE_IMG_002() throws Exception {
+        DungeonEditorHarnessPublicationSupport.runOnFxThread(
+                () -> verifyEditorPreviewRenderSnapshotParity(RESULTS));
+    }
+
+    @Test
+    void DT_IMG_001() throws Exception {
+        DungeonEditorHarnessPublicationSupport.runOnFxThread(
+                () -> verifyTravelRenderSnapshotParity(RESULTS));
     }
 
     private static void verifyEditorRenderSnapshotParity(List<String> results) throws Exception {

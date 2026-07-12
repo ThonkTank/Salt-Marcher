@@ -673,3 +673,60 @@ JUnit test methods, with hyphens converted to underscores:
   Literal result: `BUILD SUCCESSFUL in 11m 3s`,
   `53 actionable tasks: 53 executed`.
 - Review state: Phase 1 approved; Phase 2 approved.
+
+## T1 Batch Evidence - `dungeonMapRenderParityHarness`
+
+- Batch started after `catalogCrudControlsHarness` close-out. Scope is limited
+  to `dungeonMapRenderParityHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("dungeonMapRenderParityHarness")` registration,
+  `mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonMapRenderParitySnapshotHarness")`,
+  `dungeonMapRenderParityHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("dungeonMapRenderParityHarness")`, includes only
+  `src/view/leftbartabs/dungeoneditor/DungeonMapRenderParitySnapshotHarness.class`,
+  publishes the same `dungeon-map-render-parity-results` proof artifacts, and
+  is wired into `check`.
+- Frozen proof-item names come from the pre-conversion OwnerSuite rows:
+  `DE-IMG-001`, `DE-IMG-002`, and `DT-IMG-001`. Assertions, fixture values,
+  summary text, checksum publication, and image artifact publication remain
+  unchanged; the conversion changes only the runner frame.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item  junit method
+  DE-IMG-001      DE_IMG_001
+  DE-IMG-002      DE_IMG_002
+  DT-IMG-001      DT_IMG_001
+  result: 3 old proof item(s), 3 junit method(s), 3 exact normalized matches
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-map-render-focused tools/gradle/run-observable-gradle.sh --fail-fast dungeonMapRenderParityHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T091528206426218-pid1292271-dungeonMapRenderParityHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 3s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-map-render-forced tools/gradle/run-observable-gradle.sh --fail-fast dungeonMapRenderParityHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T091651657563113-pid1293857-dungeonMapRenderParityHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 9s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced/full proof:
+  `build/test-results/dungeonMapRenderParityHarness/TEST-src.view.leftbartabs.dungeoneditor.DungeonMapRenderParitySnapshotHarness.xml`
+  records `tests="3"`, `failures="0"`, `errors="0"` and contains
+  `DE_IMG_001`, `DE_IMG_002`, and `DT_IMG_001`.
+- Published summary after the final full check:
+  `build/dungeon-map-render-parity-results/summary.txt` contains the three
+  OwnerSuite rows for `DE-IMG-001`, `DE-IMG-002`, and `DT-IMG-001`; each row
+  reports same-frame `changedPixels=0` and references the matching
+  `build/dungeon-map-render-parity-results/render-snapshots/<proof-id>`
+  artifact directory.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-map-render-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T091808680129923-pid1294488-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 11m 36s`,
+  `54 actionable tasks: 54 executed`.
+- Review state: Phase 1 approved; Phase 2 approved.
