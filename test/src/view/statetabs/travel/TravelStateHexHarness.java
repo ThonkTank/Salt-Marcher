@@ -27,42 +27,48 @@ import src.domain.party.published.MembershipState;
 import src.domain.party.published.MovePartyCharactersCommand;
 import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
 import src.domain.party.published.PartySnapshotModel;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public final class TravelStateHexHarness {
 
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
     private static final int AWAIT_SECONDS = 10;
 
-    private TravelStateHexHarness() {
+    @BeforeAll
+    static void startJavaFx() throws InterruptedException {
+        startFx();
     }
 
-    public static void main(String[] args) {
-        try {
-            startFx();
-            runOnFxThread(TravelStateHexHarness::run);
-            shutdownFx();
-            System.out.println("Travel state Hex harness passed: 2 proof item(s).");
-            System.out.println("HEX-TRAVEL-STATE-001 Ready: Reise state tab shows explicit empty Hex travel state");
-            System.out.println("HEX-TRAVEL-STATE-002 Ready: Reise state tab binds compact Hex travel readback");
-        } catch (Throwable throwable) {
-            throwable.printStackTrace(System.err);
-            try {
-                shutdownFx();
-            } catch (Exception shutdownFailure) {
-                shutdownFailure.printStackTrace(System.err);
-            }
-            System.exit(1);
-        }
+    @AfterAll
+    static void stopJavaFx() throws InterruptedException {
+        shutdownFx();
     }
 
-    private static void run() {
+    @Test
+    void HEX_TRAVEL_STATE_001() throws Exception {
+        runOnFxThread(TravelStateHexHarness::assertEmptyHexTravelState);
+    }
+
+    @Test
+    void HEX_TRAVEL_STATE_002() throws Exception {
+        runOnFxThread(TravelStateHexHarness::assertCompactHexTravelReadback);
+    }
+
+    private static void assertEmptyHexTravelState() {
         ServiceRegistry services = productionServices();
         ShellBinding binding = new TravelStateContribution().bind(runtimeContext(services));
         TravelStateView view = travelStateView(binding);
         assertTextPresent(view, "W", "HEX-TRAVEL-STATE-001 empty icon");
         assertTextPresent(view, "Kein Hex-Ort gewaehlt", "HEX-TRAVEL-STATE-001 empty location");
         assertTextPresent(view, "\u2014", "HEX-TRAVEL-STATE-001 empty context");
+    }
 
+    private static void assertCompactHexTravelReadback() {
+        ServiceRegistry services = productionServices();
+        ShellBinding binding = new TravelStateContribution().bind(runtimeContext(services));
+        TravelStateView view = travelStateView(binding);
         HexEditorApplicationService editor = services.require(HexEditorApplicationService.class);
         editor.createMap(new CreateHexMapCommand("Westmark", 2));
         long mapId = services.require(HexEditorModel.class).current().selectedMap()

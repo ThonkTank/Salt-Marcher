@@ -28,7 +28,7 @@ modernization unless this ledger advances too.
 | Milestone | T1 - Fleet conversion |
 | Conversion batch | Pending selection |
 | Status | Pending |
-| Required next proof | Start the first T1 area conversion batch, update this ledger to `In Flight`, and produce scripted 1:1 scenario parity output for that batch. |
+| Required next proof | Select the next T1 conversion batch, update this ledger to `In Flight`, and produce scripted 1:1 scenario parity output for that batch. |
 | Last status note | `2026-07-12 T0-close-out` |
 
 ## Milestone Ledger
@@ -119,3 +119,53 @@ JUnit test methods, with hyphens converted to underscores:
   `@BeforeAll`/`@AfterAll` pattern. Phase 1 re-review approved. Phase 2 first
   found a proof-only blocker because the final full `check` used two local cache
   hits; after `check --rerun-tasks`, Phase 2 re-review approved.
+
+## T1 Batch Evidence - `hexTravelStateBehaviorHarness`
+
+- Batch started after T0 close-out. Scope is limited to
+  `hexTravelStateBehaviorHarness` and the shared Hex harness source set task
+  filtering required because `hexMapEditorBehaviorHarness` and
+  `TravelStateHexHarness` compile into the same source set.
+- Registration: the old
+  `behaviorHarnesses.javaExec("hexTravelStateBehaviorHarness")` registration,
+  `mainClass.set("src.view.statetabs.travel.TravelStateHexHarness")`,
+  `hexTravelStateBehaviorHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("hexTravelStateBehaviorHarness")`, includes only
+  `src/view/statetabs/travel/TravelStateHexHarness.class`, and is wired into
+  `check`.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item       junit method
+  HEX-TRAVEL-STATE-001 HEX_TRAVEL_STATE_001
+  HEX-TRAVEL-STATE-002 HEX_TRAVEL_STATE_002
+  result: 2 old proof item(s), 2 junit method(s), 2 exact normalized matches
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-hextravel-green tools/gradle/run-observable-gradle.sh --fail-fast hexTravelStateBehaviorHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T043911411259250-pid951960-hexTravelStateBehaviorHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 25s`,
+  `13 actionable tasks: 1 executed, 12 up-to-date`.
+- Forced Hex pair run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-hextravel-forced tools/gradle/run-observable-gradle.sh --fail-fast hexMapEditorBehaviorHarness hexTravelStateBehaviorHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T044036955964736-pid953478-hexMapEditorBehaviorHarness__hexTravelStateBehaviorHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 20s`,
+  `14 actionable tasks: 14 executed`.
+- JUnit XML after the forced run:
+  `build/test-results/hexTravelStateBehaviorHarness/TEST-src.view.statetabs.travel.TravelStateHexHarness.xml`
+  records `tests="2"`, `failures="0"`, `errors="0"` and contains
+  `HEX_TRAVEL_STATE_001` and `HEX_TRAVEL_STATE_002`. The pilot XML still
+  records `tests="21"`, `failures="0"`, `errors="0"` after task filtering.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-hextravel-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T044258178396794-pid955715-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 8m 33s`,
+  `43 actionable tasks: 43 executed`.
+- Review state: Phase 1 approved. Phase 2 first found a ledger-only parity
+  formatting mismatch; after the explicit old-ID to JUnit-method mapping fix,
+  Phase 2 re-review approved.
