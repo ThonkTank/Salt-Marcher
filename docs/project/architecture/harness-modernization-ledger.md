@@ -564,3 +564,62 @@ JUnit test methods, with hyphens converted to underscores:
   `51 actionable tasks: 51 executed`.
 - Review state: Phase 1 approved; Phase 2 first found a ledger-only stale
   review-state blocker after Phase 1 approval. Phase 2 re-review approved.
+
+## T1 Batch Evidence - `catalogControlsRawInputHarness`
+
+- Batch started after `searchFilterControlsHarness` close-out. Scope is limited
+  to `catalogControlsRawInputHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("catalogControlsRawInputHarness")` registration,
+  `mainClass.set("src.view.leftbartabs.catalog.CatalogControlsRawInputHarness")`,
+  `catalogControlsRawInputHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("catalogControlsRawInputHarness")`, includes
+  only `src/view/leftbartabs/catalog/CatalogControlsRawInputHarness.class`, and
+  is wired into `check`.
+- Frozen proof-item names for this legacy harness are derived from the eight
+  pre-conversion assertion groups in `CatalogControlsRawInputHarness`:
+  projection render silence, search raw-input publishing, clear-all final input,
+  world-source typed input, type-chip removal, encounter-table chip removal,
+  difficulty raw tuning, and production-route search/builder publishing.
+  Assertions and fixture values remain unchanged; split tests replay the setup
+  required for their frozen claim before exercising that claim.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item                    junit method
+  CATALOG-CONTROLS-RAW-INPUT-001    CATALOG_CONTROLS_RAW_INPUT_001
+  CATALOG-CONTROLS-RAW-INPUT-002    CATALOG_CONTROLS_RAW_INPUT_002
+  CATALOG-CONTROLS-RAW-INPUT-003    CATALOG_CONTROLS_RAW_INPUT_003
+  CATALOG-CONTROLS-RAW-INPUT-004    CATALOG_CONTROLS_RAW_INPUT_004
+  CATALOG-CONTROLS-RAW-INPUT-005    CATALOG_CONTROLS_RAW_INPUT_005
+  CATALOG-CONTROLS-RAW-INPUT-006    CATALOG_CONTROLS_RAW_INPUT_006
+  CATALOG-CONTROLS-RAW-INPUT-007    CATALOG_CONTROLS_RAW_INPUT_007
+  CATALOG-CONTROLS-RAW-INPUT-008    CATALOG_CONTROLS_RAW_INPUT_008
+  result: 8 old proof item(s), 8 junit method(s), 8 exact normalized matches
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-catalog-raw-focused tools/gradle/run-observable-gradle.sh --fail-fast catalogControlsRawInputHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T082758066377442-pid1233306-catalogControlsRawInputHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 10s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-catalog-raw-forced tools/gradle/run-observable-gradle.sh --fail-fast catalogControlsRawInputHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T083058404642368-pid1234936-catalogControlsRawInputHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 6s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced run:
+  `build/test-results/catalogControlsRawInputHarness/TEST-src.view.leftbartabs.catalog.CatalogControlsRawInputHarness.xml`
+  records `tests="8"`, `failures="0"`, `errors="0"` and contains
+  `CATALOG_CONTROLS_RAW_INPUT_001` through
+  `CATALOG_CONTROLS_RAW_INPUT_008`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-catalog-raw-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T083211805679028-pid1235566-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 10m 18s`,
+  `52 actionable tasks: 52 executed`.
+- Review state: Phase 1 approved; Phase 2 approved.
