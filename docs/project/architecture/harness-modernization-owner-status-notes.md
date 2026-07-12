@@ -88,3 +88,28 @@ Produktionsverhalten wurde nicht geaendert. T3 ist jetzt aktiv: der
 versionierte Pre-Commit-Gate muss als naechstes implementiert und mit den
 Roadmap-Proben abgelehnt/bestanden/fresh-clone/dirty-worktree nachgewiesen
 werden.
+
+## 2026-07-12 T3-close-out
+
+T3 ist auf dem Branch `codex/harness-modernization-t0` abgeschlossen. Der
+versionierte Hook `tools/hooks/pre-commit` prueft jetzt den gestagten Baum,
+nicht den verschmutzten Arbeitsbaum: er erzeugt aus dem Index einen
+temporaeren Commit, checkt diesen in einem detached clean Worktree aus und
+laesst dort `./gradlew check --console=plain` laufen. Fehlende `:check`-
+Ausfuehrung, fehlendes `BUILD SUCCESSFUL` oder rote Gradle-Tasks lehnen den
+Commit ab.
+
+Die woertlichen T3-Proben sind dokumentiert. Ein bewusst fehlerhafter,
+gestagter `SmokeStartupHarness` wurde abgelehnt und nannte
+`:compileTestJava`. Ein sauber getesteter gestagter Baum bestand den Hook mit
+`BUILD SUCCESSFUL in 19m 5s`, `75 actionable tasks: 54 executed, 20 from
+cache, 1 up-to-date`. Ein ungestagter kaputter `SmokeStartupHarness` leakte
+nicht in den Gate-Worktree; der gestagte Baum lief gruen. Ein frischer lokaler
+Clone bootstrappte nach `./gradlew help --task check --console=plain`
+`core.hooksPath=tools/hooks`, und der versionierte Hook war dort ausfuehrbar.
+
+Phase 1 und Phase 2 haben die finale T3-Diff approved. Produktionsverhalten
+wurde nicht geaendert. T4 ist jetzt aktiv: CI muss die Autoritaet fuer
+`check` und den CI-eigenen Cache uebernehmen; der nightly `--rerun-tasks`-
+Safety-Run und die Loeschung von `harness-map.json`,
+`select_harnesses.py` und `behavior-gate` stehen als naechstes an.

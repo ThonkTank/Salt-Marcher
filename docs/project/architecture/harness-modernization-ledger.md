@@ -27,11 +27,11 @@ modernization unless this ledger advances too.
 | Field | Value |
 | --- | --- |
 | Branch | `codex/harness-modernization-t0` |
-| Milestone | T3 - Commit gate via versioned hooks |
+| Milestone | T4 - CI authority and bespoke-layer deletion |
 | Conversion batch | None |
 | Status | In Flight |
-| Required next proof | Implement the versioned pre-commit gate and rehearse the literal T3 done-when: deliberately untested change rejected with stale tasks named, tested change passes, gate works on a fresh clone, and dirty worktree edits cannot leak into the gate. |
-| Last status note | `2026-07-12 T2-close-out` |
+| Required next proof | Move CI to authoritative `check` with CI-owned cache, add the nightly `--rerun-tasks` honesty run, delete `harness-map.json`, `select_harnesses.py`, and `behavior-gate`, update required checks and governance surfaces, then rehearse the literal T4 done-when. |
+| Last status note | `2026-07-12 T3-close-out` |
 
 ## Milestone Ledger
 
@@ -40,8 +40,8 @@ modernization unless this ledger advances too.
 | T0 Pilot conversion and pattern | Done on branch | Pending | Pending | Forced pilot run, UP-TO-DATE run, classpath re-run, failure isolation, final JUnit XML, `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | `hexMapEditorBehaviorHarness` is the only pilot. Build logic gains a reusable `junitTest` behavior-harness registration template. |
 | T1 Fleet conversion | Done on branch | Pending | Pending | Per-batch focused run, forced run, JUnit XML, final `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | All registered behavior harness tasks are JUnit `Test` tasks; no JavaExec behavior harness registration, silent Dungeon Editor direct-main entrypoint, or harness-level `outputs.upToDateWhen { false }` remains. |
 | T2 Cache correctness and hermeticity | Done on branch | Pending | Pending | Dungeon Editor and Render Parity cache-hit, classpath re-run, resource re-run, final consecutive `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | Relative result paths replace absolute Test system-property result paths for the reviewed converted check-participating Dungeon Editor surfaces. |
-| T3 Commit gate via versioned hooks | In Flight | Pending | Pending | Pending | T3 starts after T2 close-out. |
-| T4 CI authority and bespoke-layer deletion | Pending | Pending | Pending | Pending | `harness-map.json`, `select_harnesses.py`, and `behavior-gate` stay until T4. |
+| T3 Commit gate via versioned hooks | Done on branch | Pending | Pending | Rejected untested change naming `:compileTestJava`, accepted tested staged trees through clean worktree `check`, fresh-clone bootstrap set `core.hooksPath=tools/hooks`, dirty worktree isolation passed, Phase 1 Approved, Phase 2 Approved | Versioned `tools/hooks/pre-commit` now verifies the staged tree through a detached clean worktree. |
+| T4 CI authority and bespoke-layer deletion | In Flight | Pending | Pending | Pending | `harness-map.json`, `select_harnesses.py`, and `behavior-gate` deletion starts now. |
 | T5 Resolution report and honesty reviewer | Pending | Pending | Pending | Pending | Resource policy amendment must precede reviewer calls. |
 | T6 Governance consolidation | Pending | Pending | Pending | Pending | AGENTS/check-entrypoint consolidation waits until the system exists. |
 
@@ -1363,3 +1363,66 @@ JUnit test methods, with hyphens converted to underscores:
 - Same-pattern scan found no remaining `resultsDir` assignment using
   `.get().asFile.absolutePath` in `build.gradle.kts`.
 - Phase 1 and Phase 2 approved after the Render Parity blocker was fixed.
+
+## T3 Evidence - Versioned Commit Gate
+
+- Design note: `docs/project/journal/2026-07.md` records the L-tier T3 target
+  state, rejected alternatives, scope boundary, and done-when facts under
+  `2026-07-12 harness-modernization-t3-gate-design`.
+- Implementation commits:
+  `08e374f42` added the versioned `tools/hooks/pre-commit`;
+  `ebf413913`, `e156c3b37`, and `980e9f963` hardened repo-root discovery,
+  skipped hook bootstrap inside gate worktrees, and made bootstrap Git config
+  robust with `git -C` plus Git environment cleanup.
+- Tested-change pass rehearsal:
+  `tools/hooks/pre-commit` accepted staged tree
+  `67b6becbd9d6557f99c7663893163df5a4f3f67e` through a detached clean
+  worktree. Retained log:
+  `build/pre-commit-gate/67b6becbd9d6557f99c7663893163df5a4f3f67e.log`.
+  Literal result in the hook output:
+  `pre-commit: accepted; staged tree passed ./gradlew check.`
+- Final tested-change pass after robust Git-config hardening:
+  `tools/hooks/pre-commit` accepted staged tree
+  `6ef614b646f0c5e0249d0c63c62705e7688b1018`. Retained log:
+  `build/pre-commit-gate/6ef614b646f0c5e0249d0c63c62705e7688b1018.log`.
+  Literal log result: `BUILD SUCCESSFUL in 19m 5s`,
+  `75 actionable tasks: 54 executed, 20 from cache, 1 up-to-date`.
+- Deliberately untested change rejection rehearsal:
+  a temporary staged syntax regression in
+  `test/src/bootstrap/SmokeStartupHarness.java` made the staged tree
+  `4d807eaa8e7a1c033dff3c0188fbc8045e9a48ee` fail. The hook rejected it
+  with `pre-commit: rejected; failing tasks: :compileTestJava`. Retained log:
+  `build/pre-commit-gate/4d807eaa8e7a1c033dff3c0188fbc8045e9a48ee.log`.
+  The temporary regression was removed after the rehearsal.
+- Dirty-worktree isolation rehearsal:
+  an unstaged syntax regression in `SmokeStartupHarness.java` was left in the
+  shared checkout while the staged tree remained clean. The hook accepted
+  staged tree `eb8b60e498c750f2bb647c719eac22a8cfdc0d43` through the detached
+  clean worktree. Retained log:
+  `build/pre-commit-gate/eb8b60e498c750f2bb647c719eac22a8cfdc0d43.log`.
+  Literal log result: `BUILD SUCCESSFUL in 18m 24s`, and
+  `:compileTestJava FROM-CACHE`, proving the uncommitted broken file did not
+  leak into the gate tree. The temporary regression was removed after the
+  rehearsal.
+- Fresh clone rehearsal:
+  local clone `/tmp/saltmarcher-t3-fresh-pass.ZUjR0v/repo` at `980e9f963`
+  started with no local `core.hooksPath`. The versioned hook was executable.
+  `./gradlew help --task check --console=plain` passed in 9s and bootstrapped
+  `core.hooksPath=tools/hooks`. Running `tools/hooks/pre-commit` with an empty
+  index printed `pre-commit: no staged changes; skipping SaltMarcher check
+  gate.`
+- Phase 1 review approved. Phase 2 independent judge approved.
+
+## T3 Close-Out Evidence
+
+- T3 roadmap done-when rehearsed literally:
+  deliberately untested staged change rejected and named `:compileTestJava`;
+  tested staged trees passed through `./gradlew check` in clean detached
+  worktrees; fresh clone bootstrap set `core.hooksPath=tools/hooks`; dirty
+  worktree edits did not leak into the gate tree.
+- Final committed gate implementation is at `980e9f963` on branch
+  `codex/harness-modernization-t0`.
+- T4 is now the active milestone. CI cache authority, nightly forced runs,
+  required-check changes, and deletion of `harness-map.json`,
+  `select_harnesses.py`, and `behavior-gate` were deliberately not performed
+  in T3.
