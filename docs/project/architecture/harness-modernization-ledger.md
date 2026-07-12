@@ -223,3 +223,56 @@ JUnit test methods, with hyphens converted to underscores:
   owner note record that the old production projection is `xp * count` for two
   50-XP goblins. This T1 batch does not rewrite the historical architecture
   migration artifact.
+
+## T1 Batch Evidence - `encounterTableReadbackHarness`
+
+- Batch started after `encounterStateTabHarness` close-out. Scope is limited to
+  `encounterTableReadbackHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("encounterTableReadbackHarness")` registration,
+  `mainClass.set("src.domain.encountertable.EncounterTableReadbackHarness")`,
+  `encounterTableReadbackHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("encounterTableReadbackHarness")`, includes only
+  `src/domain/encountertable/EncounterTableReadbackHarness.class`, and is wired
+  into `check`.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item      junit method
+  ENCOUNTER-TABLE-001 ENCOUNTER_TABLE_001
+  ENCOUNTER-TABLE-002 ENCOUNTER_TABLE_002
+  ENCOUNTER-TABLE-003 ENCOUNTER_TABLE_003
+  ENCOUNTER-TABLE-004 ENCOUNTER_TABLE_004
+  ENCOUNTER-TABLE-005 ENCOUNTER_TABLE_005
+  result: 5 old proof item(s), 5 junit method(s), 5 exact normalized matches
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-encounter-table-fix-focused tools/gradle/run-observable-gradle.sh --fail-fast encounterTableReadbackHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T053220600005426-pid1018245-encounterTableReadbackHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 17s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-encounter-table-fix-forced tools/gradle/run-observable-gradle.sh --fail-fast encounterTableReadbackHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T053244759728799-pid1018678-encounterTableReadbackHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 50s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the focused run:
+  `build/test-results/encounterTableReadbackHarness/TEST-src.domain.encountertable.EncounterTableReadbackHarness.xml`
+  records `tests="5"`, `failures="0"`, `errors="0"` and contains
+  `ENCOUNTER_TABLE_001` through `ENCOUNTER_TABLE_005`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-encounter-table-fix-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T053426074250896-pid1019645-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 8m 21s`,
+  `45 actionable tasks: 45 executed`.
+- Review state: Phase 1 first found a real parity bug: `ENCOUNTER_TABLE_005`
+  initially started from a fresh empty candidate model before the storage-error
+  check, while the old JavaExec flow first published the non-empty unbounded
+  result. Rework now establishes and asserts that prior non-empty candidate
+  state before dropping the `creatures` table. Phase 1 re-review approved.
+  Phase 2 approved.
