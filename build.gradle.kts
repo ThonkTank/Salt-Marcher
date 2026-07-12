@@ -498,7 +498,6 @@ val catalogInitialLoadHarnessDataDir = layout.buildDirectory.dir("catalog-initia
 val catalogCrudControlsHarnessDataDir = layout.buildDirectory.dir("catalog-crud-controls-data")
 val catalogControlsRawInputHarnessDataDir = layout.buildDirectory.dir("catalog-controls-raw-input-data")
 val searchFilterControlsHarnessDataDir = layout.buildDirectory.dir("search-filter-controls-data")
-val partyDropdownHarnessDataDir = layout.buildDirectory.dir("party-dropdown-data")
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
 val worldPlannerBackendHarnessDataDir = layout.buildDirectory.dir("world-planner-backend-data")
@@ -587,24 +586,30 @@ behaviorHarnesses.javaExec("searchFilterControlsHarness") {
     }
 }
 
-behaviorHarnesses.javaExec("partyDropdownHarness") {
+val partyDropdownHarnessTask = behaviorHarnesses.junitTest("partyDropdownHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("party-dropdown"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the Party dropdown active-party behavior harness."
         dependsOn(tasks.named("testClasses"))
+        testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
-        mainClass.set("src.view.dropdowns.party.PartyDropdownHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        include("src/view/dropdowns/party/PartyDropdownHarness.class")
+        inputs.property("partyDropdownDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = partyDropdownHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn(partyDropdownHarnessTask)
 }
 
 val hexMapEditorBehaviorHarnessTask = behaviorHarnesses.junitTest("hexMapEditorBehaviorHarness") {

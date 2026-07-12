@@ -332,3 +332,54 @@ JUnit test methods, with hyphens converted to underscores:
   checks from the old selected edited detail publication. Rework now rebuilds
   those prior states with setup-only labels before the proof-item assertions.
   Phase 1 re-review approved. Phase 2 approved.
+
+## T1 Batch Evidence - `partyDropdownHarness`
+
+- Batch started after `creatureCatalogHarness` close-out. Scope is limited to
+  `partyDropdownHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("partyDropdownHarness")` registration,
+  `mainClass.set("src.view.dropdowns.party.PartyDropdownHarness")`,
+  `partyDropdownHarnessDataDir`, and its `outputs.upToDateWhen { false }`
+  entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("partyDropdownHarness")`, includes only
+  `src/view/dropdowns/party/PartyDropdownHarness.class`, and is wired into
+  `check`.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item      junit method
+  PARTY-DROPDOWN-001  PARTY_DROPDOWN_001
+  PARTY-DROPDOWN-002  PARTY_DROPDOWN_002
+  PARTY-DROPDOWN-003  PARTY_DROPDOWN_003
+  PARTY-DROPDOWN-004  PARTY_DROPDOWN_004
+  result: 4 old proof item(s), 4 junit method(s), 4 exact normalized matches
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-party-rework-focused tools/gradle/run-observable-gradle.sh --fail-fast partyDropdownHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T064800753743514-pid1092576-partyDropdownHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 32s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-party-rework-forced tools/gradle/run-observable-gradle.sh --fail-fast partyDropdownHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T064840569185133-pid1093327-partyDropdownHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 7s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced run:
+  `build/test-results/partyDropdownHarness/TEST-src.view.dropdowns.party.PartyDropdownHarness.xml`
+  records `tests="4"`, `failures="0"`, `errors="0"` and contains
+  `PARTY_DROPDOWN_001` through `PARTY_DROPDOWN_004`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-party-rework-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T065006068242308-pid1094476-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 8m 35s`,
+  `47 actionable tasks: 47 executed`.
+- Review state: Phase 1 first found an assertion-order parity gap:
+  `PARTY_DROPDOWN_001` checked the initial trigger text only after opening the
+  popup. Rework now checks `Keine _Party ▼` before `trigger.fire()`, then
+  checks accessible open state and empty roster after the same popup-opening
+  input. Phase 1 re-review approved. Phase 2 approved.

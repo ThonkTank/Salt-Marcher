@@ -1,5 +1,7 @@
 package src.view.dropdowns.party;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,33 +23,94 @@ import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.data.party.model.PartyPersistenceSchema;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;
 import src.domain.party.published.PartyMemberDetails;
 import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.ReadStatus;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public final class PartyDropdownHarness {
 
     private static final int AWAIT_SECONDS = 30;
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
 
-    private PartyDropdownHarness() {
+    @BeforeAll
+    static void startJavaFx() throws Exception {
+        startFx();
     }
 
-    public static void main(String[] args) throws Exception {
-        try {
-            runOnFxThread(PartyDropdownHarness::runHarness);
-            shutdownFx();
-            System.out.println("Party dropdown harness passed.");
-        } catch (Throwable throwable) {
-            throwable.printStackTrace(System.err);
-            shutdownFx();
-            System.exit(1);
-        }
+    @AfterEach
+    void hideWindows() throws Exception {
+        runOnFxThread(PartyDropdownHarness::hideOpenWindows);
     }
 
-    private static void runHarness() {
+    @AfterAll
+    static void stopJavaFx() throws Exception {
+        shutdownFx();
+    }
+
+    @Test
+    void PARTY_DROPDOWN_001() throws Exception {
+        resetDatabase();
+        runOnFxThread(() -> {
+            PartyDropdownFixture fixture = setupDropdown();
+            assertInitialTrigger(fixture, "PARTY-DROPDOWN-001");
+            openDropdown(fixture);
+            assertOpenedEmptyDropdown(fixture, "PARTY-DROPDOWN-001");
+        });
+    }
+
+    @Test
+    void PARTY_DROPDOWN_002() throws Exception {
+        resetDatabase();
+        runOnFxThread(() -> {
+            PartyDropdownFixture fixture = setupDropdown();
+            assertInitialTrigger(fixture, "setup initial dropdown");
+            openDropdown(fixture);
+            assertOpenedEmptyDropdown(fixture, "setup initial dropdown");
+            PartyMemberDetails aria = createAria(fixture);
+            assertEquals("Aria", aria.name(), "created character name");
+            assertCreatedActiveParty(fixture, aria, "PARTY-DROPDOWN-002");
+        });
+    }
+
+    @Test
+    void PARTY_DROPDOWN_003() throws Exception {
+        resetDatabase();
+        runOnFxThread(() -> {
+            PartyDropdownFixture fixture = openedDropdown();
+            PartyMemberDetails aria = createAria(fixture);
+            assertCreatedActiveParty(fixture, aria, "setup created active party");
+            moveAriaToReserve(fixture);
+            assertRemovedToReserve(fixture, "PARTY-DROPDOWN-003");
+        });
+    }
+
+    @Test
+    void PARTY_DROPDOWN_004() throws Exception {
+        resetDatabase();
+        runOnFxThread(() -> {
+            PartyDropdownFixture fixture = openedDropdown();
+            PartyMemberDetails aria = createAria(fixture);
+            moveAriaToReserve(fixture);
+            assertRemovedToReserve(fixture, "setup removed to reserve");
+            restoreAriaToActive(fixture);
+            assertRestoredActiveParty(fixture, aria, "PARTY-DROPDOWN-004");
+        });
+    }
+
+    private static PartyDropdownFixture openedDropdown() {
+        PartyDropdownFixture fixture = setupDropdown();
+        openDropdown(fixture);
+        return fixture;
+    }
+
+    private static PartyDropdownFixture setupDropdown() {
         ServiceRegistry services = services();
         PartySnapshotModel snapshots = services.require(PartySnapshotModel.class);
         ActivePartyModel activeParty = services.require(ActivePartyModel.class);
@@ -62,42 +125,65 @@ public final class PartyDropdownHarness {
         layout(root);
 
         Button trigger = descendant(topBar, Button.class);
-        assertEquals("Keine _Party ▼", trigger.getText(), "PARTY-DROPDOWN-001 initial trigger readback");
-        trigger.fire();
-        layoutOpenWindows();
-        assertEquals(PartyTopBarView.OPEN_ACCESSIBLE_TEXT, trigger.getAccessibleText(),
-                "PARTY-DROPDOWN-001 trigger exposes open popup state");
-        Parent popup = partyPopupRoot();
-        assertRosterCounts(popup, 0, 0, "PARTY-DROPDOWN-001 initial empty roster");
+        return new PartyDropdownFixture(snapshots, activeParty, activeComposition, trigger, null);
+    }
 
-        button(popup, "+ Neuer Charakter").fire();
+    private static void openDropdown(PartyDropdownFixture fixture) {
+        fixture.trigger().fire();
         layoutOpenWindows();
-        setText(popup, "Charaktername", "Aria");
-        setText(popup, "Spielername", "Mira");
-        setText(popup, "Level", "3");
-        setText(popup, "Passive Perception", "14");
-        setText(popup, "AC", "16");
-        button(popup, "Erstellen").fire();
-        layoutOpenWindows();
+        fixture.popup(partyPopupRoot());
+    }
 
-        PartyMemberDetails aria = onlyActiveMember(snapshots);
-        assertEquals("Aria", aria.name(), "created character name");
-        assertRosterCounts(popup, 1, 0, "PARTY-DROPDOWN-002 created character is active");
-        assertActivePublication(activeParty, activeComposition, List.of(aria.id()), List.of(3));
-        assertEquals("1 Charaktere, Ø Lv 3 ▼", trigger.getText(),
-                "PARTY-DROPDOWN-002 top-bar trigger reflects active published party");
+    private static void assertInitialTrigger(PartyDropdownFixture fixture, String label) {
+        assertEquals("Keine _Party ▼", fixture.trigger().getText(), label + " initial trigger readback");
+    }
 
-        buttonByAccessibleText(popup, "Entfernen, aus aktiver Party entfernen: Aria").fire();
-        layoutOpenWindows();
-        assertRosterCounts(popup, 0, 1, "PARTY-DROPDOWN-003 remove moves character to reserve");
-        assertActivePublication(activeParty, activeComposition, List.of(), List.of());
+    private static void assertOpenedEmptyDropdown(PartyDropdownFixture fixture, String label) {
+        assertEquals(PartyTopBarView.OPEN_ACCESSIBLE_TEXT, fixture.trigger().getAccessibleText(),
+                label + " trigger exposes open popup state");
+        assertRosterCounts(fixture.popup(), 0, 0, label + " initial empty roster");
+    }
 
-        buttonByAccessibleText(popup, "Aria (Lv 3), zur aktiven Party hinzufuegen").fire();
+    private static PartyMemberDetails createAria(PartyDropdownFixture fixture) {
+        button(fixture.popup(), "+ Neuer Charakter").fire();
         layoutOpenWindows();
-        assertRosterCounts(popup, 1, 0, "PARTY-DROPDOWN-004 add existing restores active party selection");
-        assertActivePublication(activeParty, activeComposition, List.of(aria.id()), List.of(3));
-        assertEquals("1 Charaktere, Ø Lv 3 ▼", trigger.getText(),
-                "PARTY-DROPDOWN-004 top-bar trigger reflects restored active party");
+        setText(fixture.popup(), "Charaktername", "Aria");
+        setText(fixture.popup(), "Spielername", "Mira");
+        setText(fixture.popup(), "Level", "3");
+        setText(fixture.popup(), "Passive Perception", "14");
+        setText(fixture.popup(), "AC", "16");
+        button(fixture.popup(), "Erstellen").fire();
+        layoutOpenWindows();
+        return onlyActiveMember(fixture.snapshots());
+    }
+
+    private static void assertCreatedActiveParty(PartyDropdownFixture fixture, PartyMemberDetails aria, String label) {
+        assertRosterCounts(fixture.popup(), 1, 0, label + " created character is active");
+        assertActivePublication(fixture.activeParty(), fixture.activeComposition(), List.of(aria.id()), List.of(3));
+        assertEquals("1 Charaktere, Ø Lv 3 ▼", fixture.trigger().getText(),
+                label + " top-bar trigger reflects active published party");
+    }
+
+    private static void moveAriaToReserve(PartyDropdownFixture fixture) {
+        buttonByAccessibleText(fixture.popup(), "Entfernen, aus aktiver Party entfernen: Aria").fire();
+        layoutOpenWindows();
+    }
+
+    private static void assertRemovedToReserve(PartyDropdownFixture fixture, String label) {
+        assertRosterCounts(fixture.popup(), 0, 1, label + " remove moves character to reserve");
+        assertActivePublication(fixture.activeParty(), fixture.activeComposition(), List.of(), List.of());
+    }
+
+    private static void restoreAriaToActive(PartyDropdownFixture fixture) {
+        buttonByAccessibleText(fixture.popup(), "Aria (Lv 3), zur aktiven Party hinzufuegen").fire();
+        layoutOpenWindows();
+    }
+
+    private static void assertRestoredActiveParty(PartyDropdownFixture fixture, PartyMemberDetails aria, String label) {
+        assertRosterCounts(fixture.popup(), 1, 0, label + " add existing restores active party selection");
+        assertActivePublication(fixture.activeParty(), fixture.activeComposition(), List.of(aria.id()), List.of(3));
+        assertEquals("1 Charaktere, Ø Lv 3 ▼", fixture.trigger().getText(),
+                label + " top-bar trigger reflects restored active party");
     }
 
     private static ServiceRegistry services() {
@@ -281,6 +367,37 @@ public final class PartyDropdownHarness {
         }
     }
 
+    private static void resetDatabase() throws Exception {
+        Path database = databasePath();
+        Files.createDirectories(database.getParent());
+        Files.deleteIfExists(database);
+    }
+
+    private static Path databasePath() {
+        String dataHome = System.getenv("XDG_DATA_HOME");
+        if (dataHome == null || dataHome.isBlank()) {
+            throw new IllegalStateException("XDG_DATA_HOME must isolate the Party dropdown DB.");
+        }
+        return Path.of(dataHome, "salt-marcher", PartyPersistenceSchema.DATABASE_FILE_NAME)
+                .toAbsolutePath()
+                .normalize();
+    }
+
+    private static void startFx() throws Exception {
+        if (FX_STARTED.compareAndSet(false, true)) {
+            CountDownLatch started = new CountDownLatch(1);
+            Platform.startup(started::countDown);
+            await(started, "JavaFX startup");
+            Platform.setImplicitExit(false);
+        }
+    }
+
+    private static void hideOpenWindows() {
+        for (Window window : List.copyOf(Window.getWindows())) {
+            window.hide();
+        }
+    }
+
     private static void runOnFxThread(ThrowingRunnable action) throws Exception {
         CountDownLatch latch = new CountDownLatch(1);
         Throwable[] failure = new Throwable[1];
@@ -306,6 +423,12 @@ public final class PartyDropdownHarness {
         }
     }
 
+    private static void await(CountDownLatch latch, String operation) throws InterruptedException {
+        if (!latch.await(AWAIT_SECONDS, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("Timed out waiting for " + operation + ".");
+        }
+    }
+
     private static void shutdownFx() throws Exception {
         if (!FX_STARTED.get()) {
             return;
@@ -316,6 +439,53 @@ public final class PartyDropdownHarness {
             }
             Platform.exit();
         });
+    }
+
+    private static final class PartyDropdownFixture {
+
+        private final PartySnapshotModel snapshots;
+        private final ActivePartyModel activeParty;
+        private final ActivePartyCompositionModel activeComposition;
+        private final Button trigger;
+        private Parent popup;
+
+        private PartyDropdownFixture(
+                PartySnapshotModel snapshots,
+                ActivePartyModel activeParty,
+                ActivePartyCompositionModel activeComposition,
+                Button trigger,
+                Parent popup
+        ) {
+            this.snapshots = snapshots;
+            this.activeParty = activeParty;
+            this.activeComposition = activeComposition;
+            this.trigger = trigger;
+            this.popup = popup;
+        }
+
+        private PartySnapshotModel snapshots() {
+            return snapshots;
+        }
+
+        private ActivePartyModel activeParty() {
+            return activeParty;
+        }
+
+        private ActivePartyCompositionModel activeComposition() {
+            return activeComposition;
+        }
+
+        private Button trigger() {
+            return trigger;
+        }
+
+        private Parent popup() {
+            return popup;
+        }
+
+        private void popup(Parent popup) {
+            this.popup = popup;
+        }
     }
 
     @FunctionalInterface
