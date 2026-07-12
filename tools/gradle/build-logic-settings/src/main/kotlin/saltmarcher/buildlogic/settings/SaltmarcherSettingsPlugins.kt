@@ -103,10 +103,13 @@ private fun writeGitConfig(repoRootDir: File, vararg args: String) {
 private data class GitConfigResult(val exitCode: Int, val output: String)
 
 private fun runGitConfig(repoRootDir: File, vararg args: String): GitConfigResult {
-    val process = ProcessBuilder(listOf("git", "config", "--local") + args)
+    val processBuilder = ProcessBuilder(listOf("git", "-C", repoRootDir.path, "config", "--local") + args)
         .directory(repoRootDir)
         .redirectErrorStream(true)
-        .start()
+    processBuilder.environment().remove("GIT_DIR")
+    processBuilder.environment().remove("GIT_WORK_TREE")
+    processBuilder.environment().remove("GIT_INDEX_FILE")
+    val process = processBuilder.start()
     val output = process.inputStream.bufferedReader().use { reader -> reader.readText() }
     return GitConfigResult(process.waitFor(), output)
 }
