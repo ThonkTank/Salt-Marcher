@@ -16,11 +16,19 @@ import javafx.scene.control.Button;
 import javafx.scene.control.ToggleButton;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
+@TestMethodOrder(OrderAnnotation.class)
 public final class WorldPlannerControlsRawInputHarness {
 
     private static final int AWAIT_SECONDS = 30;
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
+    private static WorldPlannerControlsRawInputHarness harness;
 
     private final WorldPlannerViewModel viewModel = new WorldPlannerViewModel(false);
     private final List<ControlsInput> events = new ArrayList<>();
@@ -29,21 +37,39 @@ public final class WorldPlannerControlsRawInputHarness {
     private WorldPlannerControlsRawInputHarness() {
     }
 
-    public static void main(String[] args) throws Exception {
-        WorldPlannerControlsRawInputHarness harness = new WorldPlannerControlsRawInputHarness();
-        try {
-            runOnFxThread(harness::start);
-            runOnFxThread(harness::assertProjectionRenderDoesNotPublishInput);
-            runOnFxThread(harness::assertUserModuleSwitchesPublishOneInput);
-            runOnFxThread(harness::assertUserRefreshPublishesRefreshInput);
-            assertStartupRefreshOwnedByViewModel();
-            shutdownFx();
-            System.out.println("World Planner controls raw-input harness passed.");
-        } catch (Throwable throwable) {
-            throwable.printStackTrace(System.err);
-            shutdownFx();
-            System.exit(1);
-        }
+    @BeforeAll
+    static void startHarness() throws Exception {
+        harness = new WorldPlannerControlsRawInputHarness();
+        runOnFxThread(harness::start);
+    }
+
+    @AfterAll
+    static void stopHarness() throws Exception {
+        shutdownFx();
+    }
+
+    @Test
+    @Order(1)
+    void WORLD_PLANNER_CONTROLS_RAW_INPUT_001() throws Exception {
+        runOnFxThread(harness::assertProjectionRenderDoesNotPublishInput);
+    }
+
+    @Test
+    @Order(2)
+    void WORLD_PLANNER_CONTROLS_RAW_INPUT_002() throws Exception {
+        runOnFxThread(harness::assertUserModuleSwitchesPublishOneInput);
+    }
+
+    @Test
+    @Order(3)
+    void WORLD_PLANNER_CONTROLS_RAW_INPUT_003() throws Exception {
+        runOnFxThread(harness::assertUserRefreshPublishesRefreshInput);
+    }
+
+    @Test
+    @Order(4)
+    void WORLD_PLANNER_CONTROLS_RAW_INPUT_004() throws IOException {
+        assertStartupRefreshOwnedByViewModel();
     }
 
     private void start() {

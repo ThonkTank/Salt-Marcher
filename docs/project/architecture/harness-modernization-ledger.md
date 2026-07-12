@@ -26,9 +26,9 @@ modernization unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/harness-modernization-t0` |
 | Milestone | T1 - Fleet conversion |
-| Conversion batch | `worldPlannerEncounterHarness` |
+| Conversion batch | `worldPlannerControlsRawInputHarness` |
 | Status | In Flight |
-| Required next proof | Convert `worldPlannerEncounterHarness` to a JUnit `Test` task, remove its JavaExec registration, and produce scripted 1:1 scenario parity output for its frozen world-source and finite-stock encounter proof claims. |
+| Required next proof | Convert `worldPlannerControlsRawInputHarness` to a JUnit `Test` task, remove its JavaExec registration, and produce scripted 1:1 scenario parity output for its frozen controls raw-input proof claims. |
 | Last status note | `2026-07-12 T0-close-out` |
 
 ## Milestone Ledger
@@ -933,4 +933,58 @@ JUnit test methods, with hyphens converted to underscores:
   `build/gradle-run-logs/20260712T105225743907333-pid1413261-check.log`.
   Literal result: `BUILD SUCCESSFUL in 11m 59s`,
   `59 actionable tasks: 59 executed`.
+- Review state: Phase 1 approved; Phase 2 approved.
+
+## T1 Batch Evidence - `worldPlannerControlsRawInputHarness`
+
+- Batch started after `worldPlannerEncounterHarness` close-out. Scope is
+  limited to `worldPlannerControlsRawInputHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("worldPlannerControlsRawInputHarness")`
+  registration,
+  `mainClass.set("src.view.leftbartabs.worldplanner.WorldPlannerControlsRawInputHarness")`,
+  `worldPlannerControlsRawInputHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("worldPlannerControlsRawInputHarness")`,
+  includes only
+  `src/view/leftbartabs/worldplanner/WorldPlannerControlsRawInputHarness.class`,
+  and is wired into `check`.
+- Frozen proof-item names are derived from the four pre-conversion scenario
+  calls after view startup: projection render silence, user module-switch raw
+  input, user refresh raw input, and startup refresh ownership. Assertions and
+  fixture values remain unchanged.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item                         junit method
+  WORLD-PLANNER-CONTROLS-RAW-INPUT-001   WORLD_PLANNER_CONTROLS_RAW_INPUT_001
+  WORLD-PLANNER-CONTROLS-RAW-INPUT-002   WORLD_PLANNER_CONTROLS_RAW_INPUT_002
+  WORLD-PLANNER-CONTROLS-RAW-INPUT-003   WORLD_PLANNER_CONTROLS_RAW_INPUT_003
+  WORLD-PLANNER-CONTROLS-RAW-INPUT-004   WORLD_PLANNER_CONTROLS_RAW_INPUT_004
+  result: 4 old proof item(s), 4 junit method(s), 4 exact normalized matches
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-controls-focused tools/gradle/run-observable-gradle.sh --fail-fast worldPlannerControlsRawInputHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T111317435274300-pid1435091-worldPlannerControlsRawInputHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 51s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-controls-forced tools/gradle/run-observable-gradle.sh --fail-fast worldPlannerControlsRawInputHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T111426301758034-pid1435837-worldPlannerControlsRawInputHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 3s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced proof:
+  `build/test-results/worldPlannerControlsRawInputHarness/TEST-src.view.leftbartabs.worldplanner.WorldPlannerControlsRawInputHarness.xml`
+  records `tests="4"`, `failures="0"`, `errors="0"` and contains
+  `WORLD_PLANNER_CONTROLS_RAW_INPUT_001` through
+  `WORLD_PLANNER_CONTROLS_RAW_INPUT_004`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-controls-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T111556821574554-pid1437084-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 12m 5s`,
+  `61 actionable tasks: 61 executed`.
 - Review state: Phase 1 approved; Phase 2 approved.

@@ -160,6 +160,9 @@ dependencies {
     add("worldPlannerBackendHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
     add("worldPlannerBackendHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     add("worldPlannerBackendHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
+    add("worldPlannerUiHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    add("worldPlannerUiHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
+    add("worldPlannerUiHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
 }
 
 pmd {
@@ -505,7 +508,6 @@ tasks.named("check") {
     dependsOn(dungeonMapRenderParityHarnessTask)
 }
 
-val worldPlannerControlsRawInputHarnessDataDir = layout.buildDirectory.dir("world-planner-controls-raw-input-data")
 val worldPlannerUiHarnessDataDir = layout.buildDirectory.dir("world-planner-ui-data")
 val smokeStartupHarnessDataDir = layout.buildDirectory.dir("smoke-startup-data")
 
@@ -865,24 +867,30 @@ tasks.named("check") {
     dependsOn(worldPlannerEncounterHarnessTask)
 }
 
-behaviorHarnesses.javaExec("worldPlannerControlsRawInputHarness") {
+val worldPlannerControlsRawInputHarnessTask = behaviorHarnesses.junitTest("worldPlannerControlsRawInputHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("world-planner-controls-raw-input"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the World Planner controls raw-input behavior harness."
         dependsOn(tasks.named(worldPlannerUiHarness.classesTaskName))
+        testClassesDirs = worldPlannerUiHarness.output.classesDirs
         classpath = worldPlannerUiHarness.runtimeClasspath
-        mainClass.set("src.view.leftbartabs.worldplanner.WorldPlannerControlsRawInputHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        include("src/view/leftbartabs/worldplanner/WorldPlannerControlsRawInputHarness.class")
+        inputs.property("worldPlannerControlsRawInputDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = worldPlannerControlsRawInputHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn(worldPlannerControlsRawInputHarnessTask)
 }
 
 behaviorHarnesses.javaExec("worldPlannerUiHarness") {
