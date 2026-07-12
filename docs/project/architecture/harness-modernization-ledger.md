@@ -383,3 +383,71 @@ JUnit test methods, with hyphens converted to underscores:
   popup. Rework now checks `Keine _Party ▼` before `trigger.fire()`, then
   checks accessible open state and empty roster after the same popup-opening
   input. Phase 1 re-review approved. Phase 2 approved.
+
+## T1 Batch Evidence - `dungeonTravelProjectionLevelHarness`
+
+- Batch started after `partyDropdownHarness` close-out. Scope is limited to
+  `dungeonTravelProjectionLevelHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("dungeonTravelProjectionLevelHarness")`
+  registration,
+  `mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonTravelProjectionLevelHarness")`,
+  `dungeonTravelProjectionLevelHarnessDataDir`,
+  `dungeonTravelProjectionLevelHarnessResultsDir`, its summary-results system
+  property, and its `outputs.upToDateWhen { false }` entry are removed. The
+  batch now uses
+  `behaviorHarnesses.junitTest("dungeonTravelProjectionLevelHarness")`,
+  includes only
+  `src/view/leftbartabs/dungeoneditor/DungeonTravelProjectionLevelHarness.class`,
+  keeps the existing `verification-dungeon-travel-*.md` input catalog, and is
+  wired into `check`. The `dungeonEditorBehaviorHarness` source set now has the
+  same JUnit Jupiter compile/runtime dependencies required by its converted
+  JUnit harness task.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item       junit method
+  DT-LVL-001           DT_LVL_001
+  DT-LVL-002           DT_LVL_002
+  DT-ACT-INVALID       DT_ACT_INVALID
+  DT-ACT-001           DT_ACT_001
+  DT-ACT-002           DT_ACT_002
+  result: 5 old proof item(s), 5 junit method(s), 5 exact normalized matches
+  ```
+
+- Initial focused run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-travel-focused tools/gradle/run-observable-gradle.sh --fail-fast dungeonTravelProjectionLevelHarness`
+  failed before harness execution because the custom
+  `dungeonEditorBehaviorHarness` source set did not yet have JUnit API
+  dependencies. Retained log:
+  `build/gradle-run-logs/20260712T071159888222869-pid1125825-dungeonTravelProjectionLevelHarness.log`.
+  Rework added the required source-set JUnit dependencies; no production code
+  or harness semantics changed for this compile fix.
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-travel-focused-2 tools/gradle/run-observable-gradle.sh --fail-fast dungeonTravelProjectionLevelHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T071320878570425-pid1127357-dungeonTravelProjectionLevelHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 56s`,
+  `13 actionable tasks: 2 executed, 11 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-travel-forced tools/gradle/run-observable-gradle.sh --fail-fast dungeonTravelProjectionLevelHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T071507384514223-pid1129950-dungeonTravelProjectionLevelHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 12s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced run:
+  `build/test-results/dungeonTravelProjectionLevelHarness/TEST-src.view.leftbartabs.dungeoneditor.DungeonTravelProjectionLevelHarness.xml`
+  records `tests="5"`, `failures="0"`, `errors="0"` and contains
+  `DT_LVL_001`, `DT_LVL_002`, `DT_ACT_INVALID`, `DT_ACT_001`, and
+  `DT_ACT_002`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-travel-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T071630742711503-pid1130595-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 9m 57s`,
+  `49 actionable tasks: 49 executed`.
+- Review state: Phase 1 first found a ledger-only blocker because the batch
+  proof was not yet recorded in this ledger. Code parity, production-behavior
+  isolation, JavaExec deletion, Gradle/JUnit task wiring, proof freshness, and
+  JUnit XML were otherwise reviewed without a supported blocker. Phase 1
+  re-review approved after this ledger section was added. Phase 2 approved.

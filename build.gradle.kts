@@ -151,6 +151,9 @@ dependencies {
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
+    add("dungeonEditorBehaviorHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    add("dungeonEditorBehaviorHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
+    add("dungeonEditorBehaviorHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
     add("hexMapEditorBehaviorHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
     add("hexMapEditorBehaviorHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     add("hexMapEditorBehaviorHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
@@ -241,8 +244,6 @@ tasks.test {
 
 val dungeonEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("dungeon-editor-behavior-data")
 val dungeonEditorBehaviorHarnessResultsDir = layout.buildDirectory.dir("dungeon-editor-behavior-results")
-val dungeonTravelProjectionLevelHarnessDataDir = layout.buildDirectory.dir("dungeon-travel-projection-level-data")
-val dungeonTravelProjectionLevelHarnessResultsDir = layout.buildDirectory.dir("dungeon-travel-projection-level-results")
 val dungeonMapRenderParityHarnessDataDir = layout.buildDirectory.dir("dungeon-map-render-parity-data")
 val dungeonMapRenderParityHarnessResultsDir = layout.buildDirectory.dir("dungeon-map-render-parity-results")
 val behaviorHarnesses = extensions.getByType<BehaviorHarnessRegistry>()
@@ -429,34 +430,35 @@ behaviorHarnesses.javaExec("dungeonEditorBehaviorHarnessSuites") {
     }
 }
 
-behaviorHarnesses.javaExec("dungeonTravelProjectionLevelHarness") {
+val dungeonTravelProjectionLevelHarnessTask = behaviorHarnesses.junitTest("dungeonTravelProjectionLevelHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("dungeon-travel-projection-level"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the focused Dungeon Travel projection-level behavior harness."
         dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
+        testClassesDirs = dungeonEditorBehaviorHarness.output.classesDirs
         classpath = dungeonEditorBehaviorHarness.runtimeClasspath
-        mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonTravelProjectionLevelHarness")
+        useJUnitPlatform()
+        include("src/view/leftbartabs/dungeoneditor/DungeonTravelProjectionLevelHarness.class")
         inputs.files(fileTree("docs/dungeon/verification") {
             include("verification-dungeon-travel-*.md")
         })
             .withPropertyName("dungeonTravelBehaviorCatalogs")
             .withPathSensitivity(PathSensitivity.RELATIVE)
-        outputs.upToDateWhen { false }
+        inputs.property("dungeonTravelProjectionLevelDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = dungeonTravelProjectionLevelHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            mkdir(dungeonTravelProjectionLevelHarnessResultsDir)
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
-        systemProperty(
-            "saltmarcher.dungeonEditorBehavior.resultsDir",
-            dungeonTravelProjectionLevelHarnessResultsDir.get().asFile.absolutePath
-        )
     }
+}
+
+tasks.named("check") {
+    dependsOn(dungeonTravelProjectionLevelHarnessTask)
 }
 
 behaviorHarnesses.javaExec("dungeonMapRenderParityHarness") {

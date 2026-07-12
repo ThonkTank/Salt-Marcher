@@ -32,28 +32,121 @@ import src.domain.party.published.PartyTravelTile;
 import src.view.leftbartabs.dungeontravel.DungeonTravelContribution;
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel;
 import src.view.slotcontent.main.dungeonmap.DungeonMapView;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 public final class DungeonTravelProjectionLevelHarness {
 
-    private static final String OWNER = "DungeonTravelProjectionLevelHarness";
-
-    private DungeonTravelProjectionLevelHarness() {
+    @AfterEach
+    void hideWindows() throws Exception {
+        DungeonEditorHarnessPublicationSupport.cleanupRouteProofWindows();
     }
 
-    public static void main(String[] args) throws Exception {
-        DungeonEditorBehaviorHarnessSupport.runPublishedHarness(
-                "Dungeon Travel projection-level behavior harness",
-                DungeonTravelProjectionLevelHarness::run);
+    @AfterAll
+    static void shutdownJavaFx() throws Exception {
+        DungeonEditorHarnessPublicationSupport.shutdownFx();
     }
 
-    static void run(List<String> results) throws Exception {
+    @Test
+    void DT_LVL_001() throws Exception {
         DungeonEditorHarnessPublicationSupport.runOnFxThread(() -> {
-            verifyProjectionLevelControls(results);
-            verifyRenderedTransitionActions(results);
+            ProjectionLevelFixture fixture = projectionLevelFixture();
+
+            TravelDungeonSnapshot initialSnapshot = fixture.travelModel().current();
+            assertProjectionLevel(initialSnapshot, 0, "DT-LVL-001 starts on party tile level");
+            DungeonEditorBehaviorHarnessSupport.assertTrue(
+                    DungeonEditorBehaviorHarnessSupport.labelVisible(fixture.binding().controlsRoot(), "Ebene z=0"),
+                    "DT-LVL-001 visible travel level label starts at z=0");
+            assertRenderedLevel(fixture.binding().mapContentModel(), 0, "DT-LVL-001 renders level 0");
+            assertTravelTransitionMarkerTopologyRef(
+                    fixture.binding().mapContentModel(),
+                    fixture.transitionId(),
+                    "DT-LVL-001 travel transition marker carries topology ref");
+            DungeonEditorBehaviorHarnessSupport.assertTrue(
+                    !fixture.binding().mapContentModel().canvasStateProperty().get()
+                            .baseRenderScene().actors().isEmpty(),
+                    "DT-LVL-001 travel map keeps the party token in the actor layer");
+
+            DungeonEditorBehaviorHarnessSupport.click(
+                    DungeonEditorBehaviorHarnessSupport.button(fixture.binding().controlsRoot(), "+"));
+
+            TravelDungeonSnapshot afterPlusSnapshot = fixture.travelModel().current();
+            assertProjectionLevel(afterPlusSnapshot, 1, "DT-LVL-001 travel snapshot projection level increments");
+            DungeonEditorBehaviorHarnessSupport.assertTrue(
+                    DungeonEditorBehaviorHarnessSupport.labelVisible(fixture.binding().controlsRoot(), "Ebene z=1"),
+                    "DT-LVL-001 visible travel level label updates");
+            assertRenderedLevel(fixture.binding().mapContentModel(), 1, "DT-LVL-001 renders level 1");
+            assertNoTravelTruthMutation(
+                    fixture.runtime(),
+                    fixture.mapId(),
+                    fixture.geometryRowsBefore(),
+                    fixture.partyPositionsBefore(),
+                    "DT-LVL-001");
         });
     }
 
-    private static void verifyProjectionLevelControls(List<String> results) {
+    @Test
+    void DT_LVL_002() throws Exception {
+        DungeonEditorHarnessPublicationSupport.runOnFxThread(() -> {
+            ProjectionLevelFixture fixture = projectionLevelFixture();
+            DungeonEditorBehaviorHarnessSupport.click(
+                    DungeonEditorBehaviorHarnessSupport.button(fixture.binding().controlsRoot(), "+"));
+
+            DungeonEditorBehaviorHarnessSupport.click(
+                    DungeonEditorBehaviorHarnessSupport.button(fixture.binding().controlsRoot(), "-"));
+
+            TravelDungeonSnapshot afterMinusSnapshot = fixture.travelModel().current();
+            assertProjectionLevel(afterMinusSnapshot, 0, "DT-LVL-002 travel snapshot projection level decrements");
+            DungeonEditorBehaviorHarnessSupport.assertTrue(
+                    DungeonEditorBehaviorHarnessSupport.labelVisible(fixture.binding().controlsRoot(), "Ebene z=0"),
+                    "DT-LVL-002 visible travel level label updates");
+            assertRenderedLevel(fixture.binding().mapContentModel(), 0, "DT-LVL-002 renders level 0");
+            assertNoTravelTruthMutation(
+                    fixture.runtime(),
+                    fixture.mapId(),
+                    fixture.geometryRowsBefore(),
+                    fixture.partyPositionsBefore(),
+                    "DT-LVL-002");
+        });
+    }
+
+    @Test
+    void DT_ACT_INVALID() throws Exception {
+        DungeonEditorHarnessPublicationSupport.runOnFxThread(() -> {
+            ProjectionLevelFixture fixture = projectionLevelFixture();
+            DungeonEditorBehaviorHarnessSupport.click(
+                    DungeonEditorBehaviorHarnessSupport.button(fixture.binding().controlsRoot(), "+"));
+            DungeonEditorBehaviorHarnessSupport.click(
+                    DungeonEditorBehaviorHarnessSupport.button(fixture.binding().controlsRoot(), "-"));
+
+            fixture.runtime().context().services().require(DungeonTravelRuntimeApplicationService.class)
+                    .performAction(-1);
+            TravelDungeonSnapshot invalidActionSnapshot = fixture.travelModel().current();
+            DungeonEditorBehaviorHarnessSupport.assertTrue(
+                    invalidActionSnapshot.workspaceState() != null
+                            && invalidActionSnapshot.workspaceState().statusLabel().contains("Aktion ist nicht verfügbar."),
+                    "DT-ACT-INVALID typed invalid selected action reports invalid action");
+            assertNoTravelTruthMutation(
+                    fixture.runtime(),
+                    fixture.mapId(),
+                    fixture.geometryRowsBefore(),
+                    fixture.partyPositionsBefore(),
+                    "DT-ACT-INVALID");
+        });
+    }
+
+    @Test
+    void DT_ACT_001() throws Exception {
+        DungeonEditorHarnessPublicationSupport.runOnFxThread(DungeonTravelProjectionLevelHarness::verifyLinkedTransitionAction);
+    }
+
+    @Test
+    void DT_ACT_002() throws Exception {
+        DungeonEditorHarnessPublicationSupport.runOnFxThread(DungeonTravelProjectionLevelHarness::verifyUnlinkedTransitionAction);
+    }
+
+    private static ProjectionLevelFixture projectionLevelFixture() {
         HarnessRuntime runtime = HarnessRuntime.create();
         long mapId = runtime.database().createPersistedMap("Travel Visible Level Controls Map");
         runtime.database().seedTransitionDescriptionFixture(mapId);
@@ -66,62 +159,17 @@ public final class DungeonTravelProjectionLevelHarness {
 
         HarnessBinding binding = bindHarness(runtime);
         TravelDungeonModel travelModel = runtime.context().services().require(TravelDungeonModel.class);
-
-        TravelDungeonSnapshot initialSnapshot = travelModel.current();
-        assertProjectionLevel(initialSnapshot, 0, "DT-LVL-001 starts on party tile level");
-        DungeonEditorBehaviorHarnessSupport.assertTrue(
-                DungeonEditorBehaviorHarnessSupport.labelVisible(binding.controlsRoot(), "Ebene z=0"),
-                "DT-LVL-001 visible travel level label starts at z=0");
-        assertRenderedLevel(binding.mapContentModel(), 0, "DT-LVL-001 renders level 0");
-        assertTravelTransitionMarkerTopologyRef(
-                binding.mapContentModel(),
+        return new ProjectionLevelFixture(
+                runtime,
+                mapId,
                 transitionId,
-                "DT-LVL-001 travel transition marker carries topology ref");
-        DungeonEditorBehaviorHarnessSupport.assertTrue(
-                !binding.mapContentModel().canvasStateProperty().get().baseRenderScene().actors().isEmpty(),
-                "DT-LVL-001 travel map keeps the party token in the actor layer");
-
-        DungeonEditorBehaviorHarnessSupport.click(DungeonEditorBehaviorHarnessSupport.button(binding.controlsRoot(), "+"));
-
-        TravelDungeonSnapshot afterPlusSnapshot = travelModel.current();
-        assertProjectionLevel(afterPlusSnapshot, 1, "DT-LVL-001 travel snapshot projection level increments");
-        DungeonEditorBehaviorHarnessSupport.assertTrue(
-                DungeonEditorBehaviorHarnessSupport.labelVisible(binding.controlsRoot(), "Ebene z=1"),
-                "DT-LVL-001 visible travel level label updates");
-        assertRenderedLevel(binding.mapContentModel(), 1, "DT-LVL-001 renders level 1");
-        assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, partyPositionsBefore, "DT-LVL-001");
-
-        DungeonEditorBehaviorHarnessSupport.click(DungeonEditorBehaviorHarnessSupport.button(binding.controlsRoot(), "-"));
-
-        TravelDungeonSnapshot afterMinusSnapshot = travelModel.current();
-        assertProjectionLevel(afterMinusSnapshot, 0, "DT-LVL-002 travel snapshot projection level decrements");
-        DungeonEditorBehaviorHarnessSupport.assertTrue(
-                DungeonEditorBehaviorHarnessSupport.labelVisible(binding.controlsRoot(), "Ebene z=0"),
-                "DT-LVL-002 visible travel level label updates");
-        assertRenderedLevel(binding.mapContentModel(), 0, "DT-LVL-002 renders level 0");
-        assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, partyPositionsBefore, "DT-LVL-002");
-
-        runtime.context().services().require(DungeonTravelRuntimeApplicationService.class)
-                .performAction(-1);
-        TravelDungeonSnapshot invalidActionSnapshot = travelModel.current();
-        DungeonEditorBehaviorHarnessSupport.assertTrue(
-                invalidActionSnapshot.workspaceState() != null
-                        && invalidActionSnapshot.workspaceState().statusLabel().contains("Aktion ist nicht verfügbar."),
-                "DT-ACT-INVALID typed invalid selected action reports invalid action");
-        assertNoTravelTruthMutation(runtime, mapId, geometryRowsBefore, partyPositionsBefore, "DT-ACT-INVALID");
-
-        results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
-                + "DT-LVL-001 Ready: DungeonTravelControlsView + button -> SQLite/party unchanged"
-                + " -> published projection z=1 -> rendered level 1");
-        results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
-                + "DT-LVL-002 Ready: DungeonTravelControlsView - button -> SQLite/party unchanged"
-                + " -> published projection z=0 -> rendered level 0");
-        results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
-                + "DT-ACT-INVALID Ready: typed invalid selected action -> ApplicationService"
-                + " -> INVALID_ACTION status -> SQLite/party unchanged");
+                partyPositionsBefore,
+                geometryRowsBefore,
+                binding,
+                travelModel);
     }
 
-    private static void verifyRenderedTransitionActions(List<String> results) {
+    private static void verifyLinkedTransitionAction() {
         HarnessRuntime runtime = HarnessRuntime.create();
         long sourceMapId = runtime.database().createPersistedMap("Travel Action Source Map");
         long targetMapId = runtime.database().createPersistedMap("Travel Action Target Map");
@@ -173,7 +221,9 @@ public final class DungeonTravelProjectionLevelHarness {
                 targetMapId,
                 targetGeometryRowsBefore,
                 "DT-ACT-001 target authored geometry unchanged");
+    }
 
+    private static void verifyUnlinkedTransitionAction() {
         HarnessRuntime blockedRuntime = HarnessRuntime.create();
         long blockedMapId = blockedRuntime.database().createPersistedMap("Travel Action Unlinked Map");
         blockedRuntime.database().seedUnlinkedTransitionFixture(blockedMapId);
@@ -207,15 +257,6 @@ public final class DungeonTravelProjectionLevelHarness {
                 blockedGeometryRowsBefore,
                 blockedPartyBefore,
                 "DT-ACT-002");
-
-        results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
-                + "DT-ACT-001 Ready: DungeonTravelStateView linked transition button"
-                + " -> ApplicationService -> party runtime position target transition"
-                + " -> SQLite authored geometry unchanged");
-        results.add("OwnerSuite=" + OWNER + "; ProofType=RealRoute; "
-                + "DT-ACT-002 Ready: DungeonTravelStateView unlinked transition button"
-                + " -> ApplicationService -> missing-target status"
-                + " -> SQLite authored geometry unchanged");
     }
 
     private static HarnessBinding bindHarness(HarnessRuntime runtime) {
@@ -412,6 +453,17 @@ public final class DungeonTravelProjectionLevelHarness {
             Parent controlsRoot,
             Parent stateRoot,
             DungeonMapContentModel mapContentModel
+    ) {
+    }
+
+    private record ProjectionLevelFixture(
+            HarnessRuntime runtime,
+            long mapId,
+            long transitionId,
+            PartyTravelPositionsResult partyPositionsBefore,
+            long geometryRowsBefore,
+            HarnessBinding binding,
+            TravelDungeonModel travelModel
     ) {
     }
 
