@@ -169,3 +169,57 @@ JUnit test methods, with hyphens converted to underscores:
 - Review state: Phase 1 approved. Phase 2 first found a ledger-only parity
   formatting mismatch; after the explicit old-ID to JUnit-method mapping fix,
   Phase 2 re-review approved.
+
+## T1 Batch Evidence - `encounterStateTabHarness`
+
+- Batch started after `hexTravelStateBehaviorHarness` close-out. Scope is
+  limited to `encounterStateTabHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("encounterStateTabHarness")` registration,
+  `mainClass.set("src.view.statetabs.encounter.EncounterStateTabHarness")`,
+  `encounterStateTabHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("encounterStateTabHarness")`, includes only
+  `src/view/statetabs/encounter/EncounterStateTabHarness.class`, and is wired
+  into `check`.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item          junit method
+  ENCOUNTER-STATE-TAB-001 ENCOUNTER_STATE_TAB_001
+  ENCOUNTER-STATE-TAB-002 ENCOUNTER_STATE_TAB_002
+  result: 2 old proof item(s), 2 junit method(s), 2 exact normalized matches
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-encounter-state-green tools/gradle/run-observable-gradle.sh --fail-fast encounterStateTabHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T050240156879843-pid982878-encounterStateTabHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 18s`,
+  `13 actionable tasks: 2 executed, 11 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-encounter-state-forced tools/gradle/run-observable-gradle.sh --fail-fast encounterStateTabHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T050328976663039-pid984383-encounterStateTabHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 58s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the focused run:
+  `build/test-results/encounterStateTabHarness/TEST-src.view.statetabs.encounter.EncounterStateTabHarness.xml`
+  records `tests="2"`, `failures="0"`, `errors="0"` and contains
+  `ENCOUNTER_STATE_TAB_001` and `ENCOUNTER_STATE_TAB_002`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-encounter-state-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T050508383852406-pid985087-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 8m 29s`,
+  `44 actionable tasks: 44 executed`.
+- Review state: Phase 1 approved. Phase 2 approved.
+- Drift note: Phase 2 observed that
+  `docs/project/architecture/architecture-migration-creatures-target-design.md`
+  still contains an older adjacent-inventory `50 XP` facts string. The
+  conversion preserves the current frozen harness behavior: `origin/main`
+  already asserts `CR 1/4  |  100 XP  |  humanoid`, and
+  `docs/project/architecture/migration-ledger.md` plus the German migration
+  owner note record that the old production projection is `xp * count` for two
+  50-XP goblins. This T1 batch does not rewrite the historical architecture
+  migration artifact.

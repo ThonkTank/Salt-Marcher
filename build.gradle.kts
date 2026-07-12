@@ -499,7 +499,6 @@ val catalogCrudControlsHarnessDataDir = layout.buildDirectory.dir("catalog-crud-
 val catalogControlsRawInputHarnessDataDir = layout.buildDirectory.dir("catalog-controls-raw-input-data")
 val searchFilterControlsHarnessDataDir = layout.buildDirectory.dir("search-filter-controls-data")
 val partyDropdownHarnessDataDir = layout.buildDirectory.dir("party-dropdown-data")
-val encounterStateTabHarnessDataDir = layout.buildDirectory.dir("encounter-state-tab-data")
 val encounterTableReadbackHarnessDataDir = layout.buildDirectory.dir("encounter-table-readback-data")
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
@@ -661,24 +660,30 @@ tasks.named("check") {
     dependsOn(hexTravelStateBehaviorHarnessTask)
 }
 
-behaviorHarnesses.javaExec("encounterStateTabHarness") {
+val encounterStateTabHarnessTask = behaviorHarnesses.junitTest("encounterStateTabHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("encounter-state-tab"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the focused Encounter state-tab behavior harness."
         dependsOn(tasks.named("testClasses"))
+        testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
-        mainClass.set("src.view.statetabs.encounter.EncounterStateTabHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        include("src/view/statetabs/encounter/EncounterStateTabHarness.class")
+        inputs.property("encounterStateTabDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = encounterStateTabHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn(encounterStateTabHarnessTask)
 }
 
 behaviorHarnesses.javaExec("encounterTableReadbackHarness") {
