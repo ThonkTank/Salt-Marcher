@@ -730,3 +730,51 @@ JUnit test methods, with hyphens converted to underscores:
   Literal result: `BUILD SUCCESSFUL in 11m 36s`,
   `54 actionable tasks: 54 executed`.
 - Review state: Phase 1 approved; Phase 2 approved.
+
+## T1 Batch Evidence - `sessionPlannerCatalogHarness`
+
+- Batch started after `dungeonMapRenderParityHarness` close-out. Scope is
+  limited to `sessionPlannerCatalogHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("sessionPlannerCatalogHarness")` registration,
+  `mainClass.set("src.view.leftbartabs.sessionplanner.SessionPlannerCatalogHarness")`,
+  `sessionPlannerCatalogHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("sessionPlannerCatalogHarness")`, includes only
+  `src/view/leftbartabs/sessionplanner/SessionPlannerCatalogHarness.class`, and
+  is wired into `check`.
+- Frozen proof-item name for this legacy harness is derived from its single
+  pre-conversion top-level execution: the Session Planner catalog CRUD and
+  timeline production-route flow. Assertions and fixture values remain
+  unchanged.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item                junit method
+  SESSION-PLANNER-CATALOG-001   SESSION_PLANNER_CATALOG_001
+  result: 1 old proof item(s), 1 junit method(s), 1 exact normalized match
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-session-catalog-focused tools/gradle/run-observable-gradle.sh --fail-fast sessionPlannerCatalogHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T093834737998875-pid1323966-sessionPlannerCatalogHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 2s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-session-catalog-forced tools/gradle/run-observable-gradle.sh --fail-fast sessionPlannerCatalogHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T094001684595193-pid1325311-sessionPlannerCatalogHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 7s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced/full proof:
+  `build/test-results/sessionPlannerCatalogHarness/TEST-src.view.leftbartabs.sessionplanner.SessionPlannerCatalogHarness.xml`
+  records `tests="1"`, `failures="0"`, `errors="0"` and contains
+  `SESSION_PLANNER_CATALOG_001`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-session-catalog-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T094123241524750-pid1325942-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 11m 23s`,
+  `55 actionable tasks: 55 executed`.
+- Review state: Phase 1 approved; Phase 2 approved.
