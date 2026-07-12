@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-05
+Last Reviewed: 2026-07-12
 Source of Truth: Target operating model decision for autonomous SaltMarcher delivery.
 
 # 0001 Target Operating Model
@@ -45,8 +45,8 @@ qualification remains not qualified.
 
 ## Validation
 
-Required GitHub check contexts are `production-handoff`, `warden-freeze`,
-`behavior-gate`, and `judge-review`. GitHub's UI displays them under the
+Required GitHub check contexts are `check`, `warden-freeze`, and
+`judge-review`. GitHub's UI displays them under the
 `quality-platforms / ...` workflow labels, but branch protection must require
 the job context names that the Checks API reports. Branch-protection readback
 must report `Qualified`.

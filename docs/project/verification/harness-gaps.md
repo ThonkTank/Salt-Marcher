@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-10
+Last Reviewed: 2026-07-12
 Source of Truth: Behavior-harness coverage gaps that must be closed before touched areas change.
 
 # Harness Gaps
@@ -26,7 +26,7 @@ filing a Harness Gap blocker that references this register.
 
 ## Evidence Owner
 
-`checkHarnessMapConsistency` proves mapped harness task names exist and all
-registered FOCUSED/AGGREGATE harnesses are mapped. It does not prove that gap
-areas are covered; this register is review-owned until the named harnesses
-exist.
+`checkBehaviorHarnessTopology` proves behavior-harness task registration shape,
+and the converted JUnit `Test` tasks prove their declared Gradle inputs through
+`check`. Those gates do not prove that gap areas are covered; this register is
+review-owned until the named harnesses exist.

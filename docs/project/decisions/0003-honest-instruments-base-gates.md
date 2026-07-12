@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-05
+Last Reviewed: 2026-07-12
 Source of Truth: Trusted-ref execution model for frozen measurement instruments.
 
 # 0003 Honest Instruments Base Gates
@@ -9,19 +9,21 @@ Source of Truth: Trusted-ref execution model for frozen measurement instruments.
 
 The required gate jobs checked out PR head and ran their gate scripts from that
 same PR. A PR could therefore edit the script that judged the PR: weaken the
-warden matcher, accept any judge verdict, or shrink behavior-harness selection.
+warden matcher or accept any judge verdict.
 
 ## Alternatives
 
-- Use `pull_request_target` for all gates. Rejected for `behavior-gate`
-  because that job executes PR code through behavior harnesses.
+- Use `pull_request_target` for all gates. Rejected because required checks
+  still build and review PR code, and the repository keeps normal
+  `pull_request` isolation.
 - Keep `pull_request` and restore only measurement scripts from the base ref.
   Chosen because it preserves normal PR isolation while making the instruments
   evaluate a diff with trusted code.
 
 ## Decision
 
-`quality-platforms.yml` keeps `pull_request`, `merge_group`, and `push`.
+`quality-platforms.yml` keeps `pull_request`, `merge_group`, `push`, and the
+nightly `schedule`.
 For pull-request and merge-queue events, the measuring scripts are restored
 from `origin/<base>` before they run:
 
@@ -29,10 +31,6 @@ from `origin/<base>` before they run:
   against the PR's file list and proposed freeze configuration.
 - `judge-review` runs the base `tools/agents/judge_review.py` against the PR
   title, body, labels, and diff.
-- `behavior-gate` runs the base
-  `tools/quality/scripts/select_harnesses.py` to select harnesses, then runs
-  the selected harnesses against the PR checkout.
-
 The PR's code is never executed under `pull_request_target`.
 
 ## Rationale
@@ -42,8 +40,9 @@ the few signals that say whether autonomy still works. Running measurement
 scripts from the base ref prevents a PR from grading itself while still letting
 ordinary PR code be built, tested, reviewed, and reverted.
 
-The behavior split is deliberate: selector logic is an instrument, but behavior
-harness execution must exercise the proposed PR code.
+Behavior harness execution is now owned by the required `check` job and
+Gradle's content-addressed inputs, so there is no base-ref selector script to
+restore.
 
 R3c is a transparency and routing label, not an owner key turn. During this
 implementation the owner explicitly rejected the symbolic key-turn label as
@@ -53,8 +52,9 @@ base-ref execution plus required checks, not symbolic human approval.
 ## Risks
 
 This PR's own workflow run still uses the previous base scripts until the PR is
-merged. The required proof is therefore follow-up review-test PRs after merge:
-warden targeted bypass, judge always-PASS, and harness-map shrink must go red.
+merged. The required proof is therefore follow-up review-test PRs after merge
+for warden targeted bypass and judge always-PASS, plus the harness
+modernization T4 CI/cache rehearsals.
 
 Claude Code CLI does not expose a temperature flag in the installed help. The
 judge now prefers the Anthropic Messages API when `ANTHROPIC_API_KEY` is
@@ -63,10 +63,10 @@ when the subscription route is the available judge credential.
 
 ## Validation
 
-Local validation must include Python compilation, warden self-test,
-`checkHarnessMapConsistency`, documentation enforcement, and
-`production-handoff`. Live validation is the three red review-test PRs after
-merge, recorded in the July journal.
+Local validation must include Python compilation, warden self-test, `check`,
+and the roadmap-owned T4 deletion/readback checks. Live validation is the two
+red review-test PRs after merge plus the T4 CI/cache readbacks, recorded in
+the July journal.
 
 ## Rollback
 

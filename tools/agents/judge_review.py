@@ -21,7 +21,7 @@ JUDGE_INSTRUCTIONS = (
     "The implementer is a different model. Verdict PASS only if: no gate "
     "weakening, no silent behavior change relative to the declared risk class, "
     "no forbidden action, harness/proof claims are plausible against the diff, "
-    "and harness-map.json coverage never shrinks. Output exactly one line "
+    "and content-addressed check coverage is not weakened. Output exactly one line "
     "`VERDICT: PASS` or `VERDICT: FAIL - <reason>` followed by <=10 bullet findings."
 )
 LENS_FILES = [

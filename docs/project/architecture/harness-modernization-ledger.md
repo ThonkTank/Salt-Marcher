@@ -30,7 +30,7 @@ modernization unless this ledger advances too.
 | Milestone | T4 - CI authority and bespoke-layer deletion |
 | Conversion batch | None |
 | Status | In Flight |
-| Required next proof | Move CI to authoritative `check` with CI-owned cache, add the nightly `--rerun-tasks` honesty run, delete `harness-map.json`, `select_harnesses.py`, and `behavior-gate`, update required checks and governance surfaces, then rehearse the literal T4 done-when. |
+| Required next proof | Run Phase 1 and Phase 2 review for the local T4 CI/deletion patch, publish the PR, then rehearse the literal T4 CI done-when: area-touch cache behavior, build-wiring full re-run, deleted files gone from `main`, required checks green/enforced, and one green nightly `--rerun-tasks` run. |
 | Last status note | `2026-07-12 T3-close-out` |
 
 ## Milestone Ledger
@@ -41,7 +41,7 @@ modernization unless this ledger advances too.
 | T1 Fleet conversion | Done on branch | Pending | Pending | Per-batch focused run, forced run, JUnit XML, final `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | All registered behavior harness tasks are JUnit `Test` tasks; no JavaExec behavior harness registration, silent Dungeon Editor direct-main entrypoint, or harness-level `outputs.upToDateWhen { false }` remains. |
 | T2 Cache correctness and hermeticity | Done on branch | Pending | Pending | Dungeon Editor and Render Parity cache-hit, classpath re-run, resource re-run, final consecutive `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | Relative result paths replace absolute Test system-property result paths for the reviewed converted check-participating Dungeon Editor surfaces. |
 | T3 Commit gate via versioned hooks | Done on branch | Pending | Pending | Rejected untested change naming `:compileTestJava`, accepted tested staged trees through clean worktree `check`, fresh-clone bootstrap set `core.hooksPath=tools/hooks`, dirty worktree isolation passed, Phase 1 Approved, Phase 2 Approved | Versioned `tools/hooks/pre-commit` now verifies the staged tree through a detached clean worktree. |
-| T4 CI authority and bespoke-layer deletion | In Flight | Pending | Pending | Pending | `harness-map.json`, `select_harnesses.py`, and `behavior-gate` deletion starts now. |
+| T4 CI authority and bespoke-layer deletion | In Flight | Pending | Pending | Local structural proof in progress | Local patch replaces the required CI surface with `check`, adds scheduled `nightly-rerun-tasks`, deletes `harness-map.json`, `select_harnesses.py`, and `behavior-gate`, removes `checkHarnessMapConsistency`, and updates required-check/frozen/governance surfaces. CI done-when remains pending. |
 | T5 Resolution report and honesty reviewer | Pending | Pending | Pending | Pending | Resource policy amendment must precede reviewer calls. |
 | T6 Governance consolidation | Pending | Pending | Pending | Pending | AGENTS/check-entrypoint consolidation waits until the system exists. |
 
@@ -1426,3 +1426,151 @@ JUnit test methods, with hyphens converted to underscores:
   required-check changes, and deletion of `harness-map.json`,
   `select_harnesses.py`, and `behavior-gate` were deliberately not performed
   in T3.
+
+## T4 Local Implementation Evidence
+
+- Workflow patch:
+  `.github/workflows/quality-platforms.yml` now defines required `check`,
+  required `warden-freeze`, required `judge-review`, informational
+  `ckjm-report`, `sonarcloud`, and `codescene` jobs for PR/main events, plus
+  scheduled `nightly-rerun-tasks`. The old `behavior-gate` job and
+  `SALT_MARCHER_HARNESS_MAP_BASE_REF` selector environment are removed.
+  Pull requests and merge-queue runs use the GitHub Actions Gradle cache
+  read-only; pushes to `main` own cache writes. The required `check` run and
+  nightly forced run both execute under `xvfb-run -a` for JavaFX harnesses.
+  The nightly forced run uses `tools/gradle/run-observable-gradle.sh check --
+  --rerun-tasks` and reads the CI cache without writing it.
+- Deletion patch:
+  `tools/quality/config/harness-map.json` and
+  `tools/quality/scripts/select_harnesses.py` are deleted in the worktree.
+  `tools/quality/config/frozen-surfaces.txt` and
+  `tools/quality/scripts/warden_freeze.py` no longer list those deleted
+  selector files as frozen representatives.
+- Build-logic patch:
+  `CheckHarnessMapConsistencyTask`, the harness-map JSON parser, and
+  `checkHarnessMapConsistency` wiring are removed from the verification core.
+  `checkBehaviorHarnessTopology` remains wired into `check` and
+  `production-handoff`.
+- Governance patch:
+  ADR 0001, ADR 0002, ADR 0003,
+  `docs/project/verification/quality-platforms-ci-and-branch-protection.md`,
+  `docs/project/verification/quality-platforms.md`,
+  `docs/project/verification/harness-gaps.md`, the branch-protection readback
+  script, the status-issue updater, and judge wording now name `check`,
+  `warden-freeze`, and `judge-review` as required contexts and no longer treat
+  the deleted selector as live machinery. The branch-protection readback
+  script now reads classic protection, paginated branch rules, and paginated
+  branch-targeted rulesets before qualifying the intended contexts.
+- Local proof so far:
+  `PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile
+  tools/quality/scripts/branch_protection_readback.py
+  tools/quality/scripts/update_status_issue.py
+  tools/quality/scripts/warden_freeze.py tools/agents/judge_review.py`
+  passed with no output. `python3 tools/quality/scripts/warden_freeze.py
+  --self-test` passed with `warden-freeze: self-test passed`.
+  `./gradlew compileJava --console=plain` passed with
+  `BUILD SUCCESSFUL in 1m 23s`. `./gradlew help --task
+  checkHarnessMapConsistency --console=plain` failed as expected with
+  `Task 'checkHarnessMapConsistency' not found in root project 'SaltMarcher'`.
+  `./gradlew checkBehaviorHarnessTopology --console=plain` passed with
+  `BUILD SUCCESSFUL in 8s`. Workflow YAML parsed with `yaml ok`, both deleted
+  selector files are absent from the worktree, and `git diff --check` passed.
+  Full local `check` passed:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t4-local-check
+  tools/gradle/run-observable-gradle.sh --fail-fast check`. Retained log:
+  `build/gradle-run-logs/20260712T231702365402679-pid1862628-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 27m 4s`,
+  `74 actionable tasks: 59 executed, 15 up-to-date`. Reviews, PR CI,
+  branch-protection readback, and nightly readback are still pending.
+
+## T4 Phase 1 Rework Evidence
+
+- Phase 1 found two Must Fix items before handoff:
+  CI `check`/nightly `check --rerun-tasks` lacked the `xvfb-run` display setup
+  that the old `behavior-gate` used for JavaFX harness execution, and
+  `tools/quality/scripts/branch_protection_readback.py` still qualified only
+  the classic branch-protection endpoint while the owner doc requires classic
+  protection, branch rules, and branch-targeted rulesets.
+- Rework:
+  `.github/workflows/quality-platforms.yml` now runs both authoritative
+  `check` invocations through `xvfb-run -a`. The CI/branch-protection
+  verification document names the same Xvfb-wrapped commands. The
+  `warden-freeze` job now runs the trusted base-ref Warden self-test against
+  the base-ref frozen-surface list, then restores the PR frozen-surface list
+  before enforcement so T4 can delete superseded frozen representatives without
+  self-test failure from the previous inventory.
+  `branch_protection_readback.py` now reads
+  `repos/<repo>/branches/<branch>/protection`,
+  paginated `repos/<repo>/rules/branches/<branch>?per_page=100`, and
+  paginated `repos/<repo>/rulesets?targets=branch&per_page=100`; branch
+  ruleset details are fetched by id when available. Qualification is
+  conservative: failed classic protection reads return `Not Qualified` unless
+  the classic endpoint returns `404`, failed paginated rule reads or failed
+  active ruleset detail reads return `Not Qualified`; exact intended contexts
+  return `Qualified`; extra blocking contexts return `Stricter Drift`.
+- Second Phase 1 rework:
+  The `warden-freeze` workflow transition was adjusted after re-review found
+  that PR CI would otherwise run the trusted base-ref Warden self-test against
+  the PR's post-T4 frozen list. The workflow now preserves the PR frozen list,
+  checks out the base-ref Warden script and base-ref frozen list, runs the
+  trusted self-test, then restores the PR frozen list before enforcement. The
+  readback qualification now also treats a failed classic protection endpoint
+  as `Not Qualified` unless the detail is the accepted classic-protection
+  `HTTP 404` absence case.
+- Rework proof:
+  Python source compilation via in-memory `compile(...)` passed with
+  `python syntax ok`; no bytecode files were written. `python3
+  tools/quality/scripts/warden_freeze.py --self-test` passed with
+  `warden-freeze: self-test passed`. Workflow YAML parsed with `yaml ok`.
+  `git diff --check` passed. A quick post-fix `check` passed with
+  `BUILD SUCCESSFUL in 14s`, `74 actionable tasks: 6 executed, 1 from cache,
+  67 up-to-date`, retained log
+  `build/gradle-run-logs/20260712T235124427753965-pid1882587-check.log`.
+  Because local cache is not proof, the final post-fix local proof was forced:
+  `env -u CODEX_THREAD_ID
+  SALTMARCHER_GRADLE_ISOLATION_ID=t4-phase1-fix-rerun
+  tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T235158265406245-pid1883014-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 25m 51s`,
+  `74 actionable tasks: 74 executed`.
+  After the second rework, Python source compilation passed with
+  `python syntax ok`; readback qualification assertions for `HTTP 401`,
+  accepted classic `HTTP 404`, and `Stricter Drift` passed with
+  `readback qualification ok`; workflow YAML parsed with `yaml ok`;
+  `git diff --check` passed; current Warden self-test passed with
+  `warden-freeze: self-test passed`; and an exact local simulation of the
+  PR Warden self-test transition passed with `warden transition path ok`.
+  The final post-rework forced proof passed:
+  `env -u CODEX_THREAD_ID
+  SALTMARCHER_GRADLE_ISOLATION_ID=t4-warden-readback-fix-rerun
+  tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`.
+  Retained log:
+  `build/gradle-run-logs/20260713T002544416408400-pid1901946-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 27m 4s`,
+  `74 actionable tasks: 74 executed`.
+- Third Phase 1 rework:
+  Phase 1 found that ruleset branch applicability was checked before fetching
+  detailed ruleset payloads, but not after a detail payload replaced a summary
+  payload. The readback now re-runs `ruleset_applies_to_branch(...)` after a
+  successful ruleset detail fetch before extracting required checks.
+  Python source compilation passed with `python syntax ok`; readback
+  qualification assertions now also cover a fetched detail payload that applies
+  only to `refs/heads/release/*`, and passed with `readback qualification ok`;
+  workflow YAML parsed with `yaml ok`; `git diff --check` passed. The final
+  forced proof after this fix passed:
+  `env -u CODEX_THREAD_ID
+  SALTMARCHER_GRADLE_ISOLATION_ID=t4-ruleset-detail-fix-rerun
+  tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`.
+  Retained log:
+  `build/gradle-run-logs/20260713T005829240561482-pid1918958-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 26m 55s`,
+  `74 actionable tasks: 74 executed`.
+- Phase 1 re-review approved after the third rework with no Must Fix findings.
+  Residual risks are the T4 publication-side done-when items: PR CI cache
+  readbacks, build-wiring full rerun behavior, deleted files gone from `main`,
+  live branch-protection enforcement readback, and one green nightly
+  `--rerun-tasks` run.
+- Phase 2 independent judge review approved the local patch readiness with no
+  Must Fix findings. The same publication-side T4 done-when items remain
+  pending and are not claimed complete.

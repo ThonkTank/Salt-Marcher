@@ -13,9 +13,8 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parents[3]
 TITLE = "SaltMarcher Statusbericht"
 REQUIRED_CHECKS = [
-    "production-handoff",
+    "check",
     "warden-freeze",
-    "behavior-gate",
     "judge-review",
 ]
 ISSUE_TEMPLATE_FILES = [
