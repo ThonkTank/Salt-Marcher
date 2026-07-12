@@ -22,6 +22,9 @@ import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 import javafx.stage.WindowEvent;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ServiceRegistry;
@@ -36,20 +39,24 @@ public final class CatalogCrudControlsHarness {
     private static final int AWAIT_SECONDS = 30;
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
 
-    private CatalogCrudControlsHarness() {
+    @AfterEach
+    void hideWindows() throws Exception {
+        runOnFxThread(CatalogCrudControlsHarness::hideOpenWindows);
     }
 
-    public static void main(String[] args) throws Exception {
-        try {
-            runOnFxThread(CatalogCrudControlsHarness::runHarness);
-            runOnFxThread(CatalogCrudControlsHarness::assertHexMapProductionCatalogRoute);
-            shutdownFx();
-            System.out.println("Catalog CRUD controls harness passed.");
-        } catch (Throwable throwable) {
-            throwable.printStackTrace(System.err);
-            shutdownFx();
-            System.exit(1);
-        }
+    @AfterAll
+    static void shutdownJavaFx() throws Exception {
+        shutdownFx();
+    }
+
+    @Test
+    void CATALOG_CRUD_CONTROLS_001() throws Exception {
+        runOnFxThread(CatalogCrudControlsHarness::runHarness);
+    }
+
+    @Test
+    void CATALOG_CRUD_CONTROLS_002() throws Exception {
+        runOnFxThread(CatalogCrudControlsHarness::assertHexMapProductionCatalogRoute);
     }
 
     private static void runHarness() {
@@ -712,6 +719,7 @@ public final class CatalogCrudControlsHarness {
         Throwable[] failure = new Throwable[1];
         Runnable wrappedAction = () -> {
             try {
+                Platform.setImplicitExit(false);
                 action.run();
             } catch (Throwable throwable) {
                 failure[0] = throwable;
@@ -737,11 +745,16 @@ public final class CatalogCrudControlsHarness {
             return;
         }
         runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                window.hide();
-            }
+            hideOpenWindows();
             Platform.exit();
         });
+    }
+
+    private static void hideOpenWindows() {
+        Platform.setImplicitExit(false);
+        for (Window window : List.copyOf(Window.getWindows())) {
+            window.hide();
+        }
     }
 
     @FunctionalInterface

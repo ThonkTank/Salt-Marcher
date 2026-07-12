@@ -496,7 +496,6 @@ behaviorHarnesses.javaExec("dungeonMapRenderParityHarness") {
     }
 }
 
-val catalogCrudControlsHarnessDataDir = layout.buildDirectory.dir("catalog-crud-controls-data")
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
 val worldPlannerBackendHarnessDataDir = layout.buildDirectory.dir("world-planner-backend-data")
@@ -531,24 +530,30 @@ tasks.named("check") {
     dependsOn(catalogInitialLoadHarnessTask)
 }
 
-behaviorHarnesses.javaExec("catalogCrudControlsHarness") {
+val catalogCrudControlsHarnessTask = behaviorHarnesses.junitTest("catalogCrudControlsHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("catalog-crud-controls"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the shared Catalog CRUD controls behavior harness."
         dependsOn(tasks.named("testClasses"))
+        testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
-        mainClass.set("src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        include("src/view/slotcontent/controls/catalogcrud/CatalogCrudControlsHarness.class")
+        inputs.property("catalogCrudControlsDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = catalogCrudControlsHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn(catalogCrudControlsHarnessTask)
 }
 
 val catalogControlsRawInputHarnessTask = behaviorHarnesses.junitTest("catalogControlsRawInputHarness") {

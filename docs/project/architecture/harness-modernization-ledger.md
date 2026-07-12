@@ -623,3 +623,53 @@ JUnit test methods, with hyphens converted to underscores:
   Literal result: `BUILD SUCCESSFUL in 10m 18s`,
   `52 actionable tasks: 52 executed`.
 - Review state: Phase 1 approved; Phase 2 approved.
+
+## T1 Batch Evidence - `catalogCrudControlsHarness`
+
+- Batch started after `catalogControlsRawInputHarness` close-out. Scope is
+  limited to `catalogCrudControlsHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("catalogCrudControlsHarness")` registration,
+  `mainClass.set("src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsHarness")`,
+  `catalogCrudControlsHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("catalogCrudControlsHarness")`, includes only
+  `src/view/slotcontent/controls/catalogcrud/CatalogCrudControlsHarness.class`,
+  and is wired into `check`.
+- Frozen proof-item names for this legacy harness are derived from the two
+  pre-conversion top-level proof executions in `CatalogCrudControlsHarness`:
+  the shared Catalog CRUD controls flow and the HexMap production-route create
+  flow. Assertions and fixture values remain unchanged; the first JUnit method
+  preserves the old full CRUD UI/event sequence as one proof execution.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item              junit method
+  CATALOG-CRUD-CONTROLS-001   CATALOG_CRUD_CONTROLS_001
+  CATALOG-CRUD-CONTROLS-002   CATALOG_CRUD_CONTROLS_002
+  result: 2 old proof item(s), 2 junit method(s), 2 exact normalized matches
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-catalog-crud-focused tools/gradle/run-observable-gradle.sh --fail-fast catalogCrudControlsHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T085153847137613-pid1260354-catalogCrudControlsHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 3s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-catalog-crud-forced tools/gradle/run-observable-gradle.sh --fail-fast catalogCrudControlsHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T085315928515663-pid1261687-catalogCrudControlsHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m 8s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced/full proof:
+  `build/test-results/catalogCrudControlsHarness/TEST-src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsHarness.xml`
+  records `tests="2"`, `failures="0"`, `errors="0"` and contains
+  `CATALOG_CRUD_CONTROLS_001` and `CATALOG_CRUD_CONTROLS_002`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-catalog-crud-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T085431410970818-pid1262293-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 11m 3s`,
+  `53 actionable tasks: 53 executed`.
+- Review state: Phase 1 approved; Phase 2 approved.
