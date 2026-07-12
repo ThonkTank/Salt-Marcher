@@ -498,7 +498,6 @@ behaviorHarnesses.javaExec("dungeonMapRenderParityHarness") {
 
 val catalogCrudControlsHarnessDataDir = layout.buildDirectory.dir("catalog-crud-controls-data")
 val catalogControlsRawInputHarnessDataDir = layout.buildDirectory.dir("catalog-controls-raw-input-data")
-val searchFilterControlsHarnessDataDir = layout.buildDirectory.dir("search-filter-controls-data")
 val sessionPlannerCatalogHarnessDataDir = layout.buildDirectory.dir("session-planner-catalog-data")
 val sessionPlannerShellLayoutHarnessDataDir = layout.buildDirectory.dir("session-planner-shell-layout-data")
 val worldPlannerBackendHarnessDataDir = layout.buildDirectory.dir("world-planner-backend-data")
@@ -573,24 +572,30 @@ behaviorHarnesses.javaExec("catalogControlsRawInputHarness") {
     }
 }
 
-behaviorHarnesses.javaExec("searchFilterControlsHarness") {
+val searchFilterControlsHarnessTask = behaviorHarnesses.junitTest("searchFilterControlsHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("search-filter-controls"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the shared search/filter controls behavior harness."
         dependsOn(tasks.named("testClasses"))
+        testClassesDirs = sourceSets["test"].output.classesDirs
         classpath = sourceSets["test"].runtimeClasspath
-        mainClass.set("src.view.slotcontent.controls.searchfilter.SearchFilterControlsHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        include("src/view/slotcontent/controls/searchfilter/SearchFilterControlsHarness.class")
+        inputs.property("searchFilterControlsDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = searchFilterControlsHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn(searchFilterControlsHarnessTask)
 }
 
 val partyDropdownHarnessTask = behaviorHarnesses.junitTest("partyDropdownHarness") {

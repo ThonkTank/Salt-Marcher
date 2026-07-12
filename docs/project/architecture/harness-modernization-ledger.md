@@ -509,3 +509,58 @@ JUnit test methods, with hyphens converted to underscores:
   `50 actionable tasks: 50 executed`.
 - Review state: Phase 1 approved; Phase 2 first found a ledger-only stale
   review-state blocker after Phase 1 approval. Phase 2 re-review approved.
+
+## T1 Batch Evidence - `searchFilterControlsHarness`
+
+- Batch started after `catalogInitialLoadHarness` close-out. Scope is limited to
+  `searchFilterControlsHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("searchFilterControlsHarness")` registration,
+  `mainClass.set("src.view.slotcontent.controls.searchfilter.SearchFilterControlsHarness")`,
+  `searchFilterControlsHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("searchFilterControlsHarness")`, includes only
+  `src/view/slotcontent/controls/searchfilter/SearchFilterControlsHarness.class`,
+  and is wired into `check`.
+- Frozen proof-item names for this legacy harness are derived from the five
+  pre-conversion assertion groups in `SearchFilterControlsHarness`: projection
+  render does not emit input, search edit emits raw query, clear-all emits final
+  cleared input, chip removal preserves unrelated state while removing one
+  filter, and World Planner production-route filtering. Assertions and fixture
+  values remain unchanged.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item              junit method
+  SEARCH-FILTER-CONTROLS-001  SEARCH_FILTER_CONTROLS_001
+  SEARCH-FILTER-CONTROLS-002  SEARCH_FILTER_CONTROLS_002
+  SEARCH-FILTER-CONTROLS-003  SEARCH_FILTER_CONTROLS_003
+  SEARCH-FILTER-CONTROLS-004  SEARCH_FILTER_CONTROLS_004
+  SEARCH-FILTER-CONTROLS-005  SEARCH_FILTER_CONTROLS_005
+  result: 5 old proof item(s), 5 junit method(s), 5 exact normalized matches
+  ```
+
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-search-filter-focused tools/gradle/run-observable-gradle.sh --fail-fast searchFilterControlsHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T080439267662006-pid1199300-searchFilterControlsHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 44s`,
+  `13 actionable tasks: 2 executed, 1 from cache, 10 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-search-filter-forced tools/gradle/run-observable-gradle.sh --fail-fast searchFilterControlsHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T080544238867783-pid1200568-searchFilterControlsHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 58s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced run:
+  `build/test-results/searchFilterControlsHarness/TEST-src.view.slotcontent.controls.searchfilter.SearchFilterControlsHarness.xml`
+  records `tests="5"`, `failures="0"`, `errors="0"` and contains
+  `SEARCH_FILTER_CONTROLS_001` through `SEARCH_FILTER_CONTROLS_005`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-search-filter-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T080651427956237-pid1201368-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 9m 51s`,
+  `51 actionable tasks: 51 executed`.
+- Review state: Phase 1 approved; Phase 2 first found a ledger-only stale
+  review-state blocker after Phase 1 approval. Phase 2 re-review approved.

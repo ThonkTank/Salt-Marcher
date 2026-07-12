@@ -25,29 +25,106 @@ import src.domain.worldplanner.WorldPlannerApplicationService;
 import src.domain.worldplanner.model.world.port.WorldPlannerReferencePort;
 import src.domain.worldplanner.published.CreateWorldNpcCommand;
 import src.view.leftbartabs.worldplanner.WorldPlannerContribution;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 public final class SearchFilterControlsHarness {
 
     private static final int AWAIT_SECONDS = 30;
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
 
-    private SearchFilterControlsHarness() {
+    @AfterEach
+    void hideWindows() throws Exception {
+        runOnFxThread(SearchFilterControlsHarness::hideOpenWindows);
     }
 
-    public static void main(String[] args) throws Exception {
-        try {
-            runOnFxThread(SearchFilterControlsHarness::runHarness);
-            runOnFxThread(SearchFilterControlsHarness::assertWorldPlannerProductionRoute);
-            shutdownFx();
-            System.out.println("Search filter controls harness passed.");
-        } catch (Throwable throwable) {
-            throwable.printStackTrace(System.err);
-            shutdownFx();
-            System.exit(1);
-        }
+    @AfterAll
+    static void shutdownJavaFx() throws Exception {
+        shutdownFx();
     }
 
-    private static void runHarness() {
+    @Test
+    void SEARCH_FILTER_CONTROLS_001() throws Exception {
+        runOnFxThread(() -> {
+            SearchFilterFixture fixture = setupSearchFilterFixture();
+            applyInitialProjection(fixture);
+            assertTrue(fixture.events().isEmpty(),
+                    "SEARCH-FILTER-CONTROLS-001 projection render does not emit input");
+        });
+    }
+
+    @Test
+    void SEARCH_FILTER_CONTROLS_002() throws Exception {
+        runOnFxThread(() -> {
+            SearchFilterFixture fixture = setupSearchFilterFixture();
+            applyInitialProjection(fixture);
+            assertProjectionRenderDoesNotEmitInput(fixture, "setup projection render");
+
+            TextField search = descendant(fixture.view(), TextField.class);
+            search.setText("acolyte");
+            fixture.view().applyCss();
+            fixture.view().layout();
+            assertEquals(1, fixture.events().size(),
+                    "SEARCH-FILTER-CONTROLS-002 user search edit emits one input event");
+            assertEquals("acolyte", fixture.events().getLast().searchQuery(),
+                    "SEARCH-FILTER-CONTROLS-002 user search event carries raw query");
+        });
+    }
+
+    @Test
+    void SEARCH_FILTER_CONTROLS_003() throws Exception {
+        runOnFxThread(() -> {
+            SearchFilterFixture fixture = setupSearchFilterFixture();
+            applyInitialProjection(fixture);
+            TextField search = descendant(fixture.view(), TextField.class);
+            search.setText("acolyte");
+            fixture.view().applyCss();
+            fixture.view().layout();
+            fixture.events().clear();
+
+            button(fixture.view(), "Leeren").fire();
+            fixture.view().applyCss();
+            fixture.view().layout();
+            assertEquals(1, fixture.events().size(),
+                    "SEARCH-FILTER-CONTROLS-003 clear-all emits one final input event");
+            assertEquals("", fixture.events().getLast().searchQuery(),
+                    "SEARCH-FILTER-CONTROLS-003 clear-all clears query");
+            assertTrue(fixture.events().getLast().selectedFilters().isEmpty(),
+                    "SEARCH-FILTER-CONTROLS-003 clear-all clears selected filters");
+        });
+    }
+
+    @Test
+    void SEARCH_FILTER_CONTROLS_004() throws Exception {
+        runOnFxThread(() -> {
+            SearchFilterFixture fixture = setupSearchFilterFixture();
+            fixture.model().applyProjection(projection("beast", List.of("undead", "beast")));
+            fixture.view().applyCss();
+            fixture.view().layout();
+            fixture.events().clear();
+
+            buttonByAccessibleText(fixture.view(), "Filter entfernen: Undead").fire();
+            fixture.view().applyCss();
+            fixture.view().layout();
+            assertEquals(1, fixture.events().size(),
+                    "SEARCH-FILTER-CONTROLS-004 chip removal emits one final input event");
+            SearchFilterControlsViewInputEvent event = fixture.events().getLast();
+            assertEquals("beast", event.searchQuery(),
+                    "SEARCH-FILTER-CONTROLS-004 chip removal preserves query");
+            assertEquals(
+                    List.of(new SearchFilterControlsViewInputEvent.SelectedFilter("type", "beast")),
+                    event.selectedFilters(),
+                    "SEARCH-FILTER-CONTROLS-004 chip removal clears only the matching filter");
+        });
+    }
+
+    @Test
+    void SEARCH_FILTER_CONTROLS_005() throws Exception {
+        runOnFxThread(SearchFilterControlsHarness::assertWorldPlannerProductionRoute);
+    }
+
+    private static SearchFilterFixture setupSearchFilterFixture() {
         SearchFilterControlsContentModel model = new SearchFilterControlsContentModel();
         SearchFilterControlsView view = new SearchFilterControlsView();
         List<SearchFilterControlsViewInputEvent> events = new ArrayList<>();
@@ -58,41 +135,17 @@ public final class SearchFilterControlsHarness {
         stage.show();
         view.applyCss();
         view.layout();
+        return new SearchFilterFixture(model, view, events);
+    }
 
-        model.applyProjection(projection("abo", List.of("undead", "beast")));
-        view.applyCss();
-        view.layout();
-        assertTrue(events.isEmpty(), "projection render does not emit input");
+    private static void applyInitialProjection(SearchFilterFixture fixture) {
+        fixture.model().applyProjection(projection("abo", List.of("undead", "beast")));
+        fixture.view().applyCss();
+        fixture.view().layout();
+    }
 
-        TextField search = descendant(view, TextField.class);
-        search.setText("acolyte");
-        view.applyCss();
-        view.layout();
-        assertEquals(1, events.size(), "user search edit emits one input event");
-        assertEquals("acolyte", events.getLast().searchQuery(), "user search event carries raw query");
-
-        events.clear();
-        button(view, "Leeren").fire();
-        view.applyCss();
-        view.layout();
-        assertEquals(1, events.size(), "clear-all emits one final input event");
-        assertEquals("", events.getLast().searchQuery(), "clear-all clears query");
-        assertTrue(events.getLast().selectedFilters().isEmpty(), "clear-all clears selected filters");
-
-        model.applyProjection(projection("beast", List.of("undead", "beast")));
-        view.applyCss();
-        view.layout();
-        events.clear();
-        buttonByAccessibleText(view, "Filter entfernen: Undead").fire();
-        view.applyCss();
-        view.layout();
-        assertEquals(1, events.size(), "chip removal emits one final input event");
-        SearchFilterControlsViewInputEvent event = events.getLast();
-        assertEquals("beast", event.searchQuery(), "chip removal preserves query");
-        assertEquals(
-                List.of(new SearchFilterControlsViewInputEvent.SelectedFilter("type", "beast")),
-                event.selectedFilters(),
-                "chip removal clears only the matching filter");
+    private static void assertProjectionRenderDoesNotEmitInput(SearchFilterFixture fixture, String label) {
+        assertTrue(fixture.events().isEmpty(), label + " projection render does not emit input");
     }
 
     private static void assertWorldPlannerProductionRoute() {
@@ -259,6 +312,7 @@ public final class SearchFilterControlsHarness {
         Throwable[] failure = new Throwable[1];
         Runnable wrappedAction = () -> {
             try {
+                Platform.setImplicitExit(false);
                 action.run();
             } catch (Throwable throwable) {
                 failure[0] = throwable;
@@ -284,11 +338,23 @@ public final class SearchFilterControlsHarness {
             return;
         }
         runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                window.hide();
-            }
+            hideOpenWindows();
             Platform.exit();
         });
+    }
+
+    private static void hideOpenWindows() {
+        Platform.setImplicitExit(false);
+        for (Window window : List.copyOf(Window.getWindows())) {
+            window.hide();
+        }
+    }
+
+    private record SearchFilterFixture(
+            SearchFilterControlsContentModel model,
+            SearchFilterControlsView view,
+            List<SearchFilterControlsViewInputEvent> events
+    ) {
     }
 
     @FunctionalInterface
