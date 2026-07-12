@@ -41,7 +41,7 @@ modernization unless this ledger advances too.
 | T1 Fleet conversion | Done on branch | Pending | Pending | Per-batch focused run, forced run, JUnit XML, final `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | All registered behavior harness tasks are JUnit `Test` tasks; no JavaExec behavior harness registration, silent Dungeon Editor direct-main entrypoint, or harness-level `outputs.upToDateWhen { false }` remains. |
 | T2 Cache correctness and hermeticity | Done on branch | Pending | Pending | Dungeon Editor and Render Parity cache-hit, classpath re-run, resource re-run, final consecutive `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | Relative result paths replace absolute Test system-property result paths for the reviewed converted check-participating Dungeon Editor surfaces. |
 | T3 Commit gate via versioned hooks | Done on branch | Pending | Pending | Rejected untested change naming `:compileTestJava`, accepted tested staged trees through clean worktree `check`, fresh-clone bootstrap set `core.hooksPath=tools/hooks`, dirty worktree isolation passed, Phase 1 Approved, Phase 2 Approved | Versioned `tools/hooks/pre-commit` now verifies the staged tree through a detached clean worktree. |
-| T4 CI authority and bespoke-layer deletion | In Flight | Pending | Pending | Local structural proof in progress | Local patch replaces the required CI surface with `check`, adds scheduled `nightly-rerun-tasks`, deletes `harness-map.json`, `select_harnesses.py`, and `behavior-gate`, removes `checkHarnessMapConsistency`, and updates required-check/frozen/governance surfaces. CI done-when remains pending. |
+| T4 CI authority and bespoke-layer deletion | In Flight | `4946450b3` | Pending | Local structural proof and Phase 1/Phase 2 approved; PR CI proof pending | Local patch replaces the required CI surface with `check`, adds scheduled `nightly-rerun-tasks`, deletes `harness-map.json`, `select_harnesses.py`, and `behavior-gate`, removes `checkHarnessMapConsistency`, and updates required-check/frozen/governance surfaces. CI done-when remains pending. |
 | T5 Resolution report and honesty reviewer | Pending | Pending | Pending | Pending | Resource policy amendment must precede reviewer calls. |
 | T6 Governance consolidation | Pending | Pending | Pending | Pending | AGENTS/check-entrypoint consolidation waits until the system exists. |
 
@@ -1574,3 +1574,10 @@ JUnit test methods, with hyphens converted to underscores:
 - Phase 2 independent judge review approved the local patch readiness with no
   Must Fix findings. The same publication-side T4 done-when items remain
   pending and are not claimed complete.
+- Local T4 implementation commit:
+  `4946450b3 ci: replace behavior gate with check`. The versioned
+  pre-commit gate accepted staged tree
+  `74a6b458517fc6492390892c2e6aeb0f05ff2378`; retained log
+  `build/pre-commit-gate/74a6b458517fc6492390892c2e6aeb0f05ff2378.log`
+  ends with `BUILD SUCCESSFUL in 18m 37s`,
+  `74 actionable tasks: 53 executed, 20 from cache, 1 up-to-date`.
