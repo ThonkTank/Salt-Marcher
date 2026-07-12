@@ -1,4 +1,6 @@
 Status: Active
+Owner: SaltMarcher Team
+Last Reviewed: 2026-07-12
 Source of Truth: Decision record for replacing bespoke behavior-harness
 selection with content-addressed JUnit harness verification.
 

@@ -56,8 +56,9 @@ and the catalog `DE-*` row id. Model invariant rows must include `OwnerSuite`,
 Dungeon Editor behavior proof is addressed through
 `DungeonEditorBehaviorSuiteHarness`. The harness owns the runnable suite graph:
 atomic suites declare their prerequisite suites, while `core`, `routes`, and
-`all` are aliases only. The registry is the only ordering source; legacy
-entrypoints delegate to it instead of keeping separate proof order.
+`all` are aliases only. The registry is the only ordering source; Gradle
+entrypoints select JUnit methods that run the matching registry suite scope
+instead of keeping separate proof order.
 
 Use these focused Gradle entrypoints during investigation:
 
@@ -75,10 +76,10 @@ Use these focused Gradle entrypoints during investigation:
 | `dungeonEditorRouteBehaviorHarness` | All editor real-route suites through the same registry. |
 | `dungeonEditorBehaviorHarness` | Complete Dungeon Editor behavior proof aggregate. |
 
-`dungeonEditorBehaviorHarnessSuites` prints the current suite IDs. A focused
-task must not manually construct expected behavior or bypass production routes;
-it only selects which existing production-route proofs and declared dependencies
-run.
+`dungeonEditorBehaviorHarnessSuites` reports the current suite IDs through a
+JUnit task. A focused task must not manually construct expected behavior or
+bypass production routes; it only selects which existing production-route proofs
+and declared dependencies run.
 
 ## Status Vocabulary
 

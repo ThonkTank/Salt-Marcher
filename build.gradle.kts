@@ -257,13 +257,13 @@ fun registerDungeonEditorBehaviorHarnessTask(
     taskName: String,
     taskDescription: String,
     suiteIds: List<String>,
+    testMethodName: String,
     classification: BehaviorHarnessClassification,
     conceptIds: List<String> = emptyList(),
     setupDependencies: List<String> = emptyList(),
     behaviorDependencies: List<String> = emptyList(),
     aggregateOf: List<String> = emptyList()
-) {
-    behaviorHarnesses.javaExec(taskName) {
+) = behaviorHarnesses.junitTest(taskName) {
         this.classification.set(classification)
         this.conceptIds.set(conceptIds)
         this.suiteIds.set(suiteIds)
@@ -274,9 +274,13 @@ fun registerDungeonEditorBehaviorHarnessTask(
             group = LifecycleBasePlugin.VERIFICATION_GROUP
             description = taskDescription
             dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
+            testClassesDirs = dungeonEditorBehaviorHarness.output.classesDirs
             classpath = dungeonEditorBehaviorHarness.runtimeClasspath
-            mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorSuiteHarness")
-            args(suiteIds)
+            useJUnitPlatform()
+            include("src/view/leftbartabs/dungeoneditor/DungeonEditorBehaviorSuiteHarness.class")
+            filter {
+                includeTestsMatching("src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorSuiteHarness.$testMethodName")
+            }
             inputs.files(fileTree("docs/dungeon/verification") {
                 include("verification-dungeon-*-invariants.md")
                 include("verification-dungeon-editor-*.md")
@@ -285,7 +289,6 @@ fun registerDungeonEditorBehaviorHarnessTask(
                 .withPathSensitivity(PathSensitivity.RELATIVE)
             inputs.property("dungeonEditorBehaviorSuites", suiteIds.joinToString(","))
             outputs.dir(dungeonEditorBehaviorHarnessResultsDir)
-            outputs.upToDateWhen { false }
             doFirst {
                 val runDataDir = dungeonEditorBehaviorHarnessDataDir.get()
                     .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
@@ -299,21 +302,22 @@ fun registerDungeonEditorBehaviorHarnessTask(
                 dungeonEditorBehaviorHarnessResultsDir.get().asFile.absolutePath
             )
         }
-    }
 }
 
-registerDungeonEditorBehaviorHarnessTask(
+val dungeonEditorBehaviorHarnessTask = registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorBehaviorHarness",
     "Run all focused view-driven Dungeon Editor behavior suites.",
     listOf("all"),
+    "DUNGEON_EDITOR_BEHAVIOR_001",
     BehaviorHarnessClassification.AGGREGATE,
     aggregateOf = listOf("core", "routes")
 )
 
-registerDungeonEditorBehaviorHarnessTask(
+val dungeonEditorCoreBehaviorHarnessTask = registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorCoreBehaviorHarness",
     "Run Dungeon Editor core model invariant suites.",
     listOf("core"),
+    "DUNGEON_EDITOR_CORE_BEHAVIOR_001",
     BehaviorHarnessClassification.AGGREGATE,
     aggregateOf = listOf(
         "geometry",
@@ -333,10 +337,11 @@ registerDungeonEditorBehaviorHarnessTask(
     )
 )
 
-registerDungeonEditorBehaviorHarnessTask(
+val dungeonEditorRouteBehaviorHarnessTask = registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorRouteBehaviorHarness",
     "Run Dungeon Editor route behavior suites.",
     listOf("routes"),
+    "DUNGEON_EDITOR_ROUTE_BEHAVIOR_001",
     BehaviorHarnessClassification.AGGREGATE,
     aggregateOf = listOf(
         "map-catalog",
@@ -358,81 +363,114 @@ registerDungeonEditorBehaviorHarnessTask(
     )
 )
 
-registerDungeonEditorBehaviorHarnessTask(
+val dungeonEditorDoorBehaviorHarnessTask = registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorDoorBehaviorHarness",
     "Run Door behavior plus declared geometry/domain dependencies.",
     listOf("doors"),
+    "DUNGEON_EDITOR_DOOR_BEHAVIOR_001",
     BehaviorHarnessClassification.AGGREGATE,
     aggregateOf = listOf("selection", "door-core", "door-handles", "doors")
 )
 
-registerDungeonEditorBehaviorHarnessTask(
+val dungeonEditorWallBehaviorHarnessTask = registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorWallBehaviorHarness",
     "Run Wall behavior plus declared geometry/domain dependencies.",
     listOf("walls"),
+    "DUNGEON_EDITOR_WALL_BEHAVIOR_001",
     BehaviorHarnessClassification.FOCUSED,
     conceptIds = listOf("walls"),
     setupDependencies = listOf("wall-core")
 )
 
-registerDungeonEditorBehaviorHarnessTask(
+val dungeonEditorRoomBehaviorHarnessTask = registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorRoomBehaviorHarness",
     "Run Room behavior plus declared geometry/domain dependencies.",
     listOf("rooms"),
+    "DUNGEON_EDITOR_ROOM_BEHAVIOR_001",
     BehaviorHarnessClassification.AGGREGATE,
     aggregateOf = listOf("selection", "room-core", "rooms")
 )
 
-registerDungeonEditorBehaviorHarnessTask(
+val dungeonEditorClusterBehaviorHarnessTask = registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorClusterBehaviorHarness",
     "Run Cluster behavior plus declared geometry/domain dependencies.",
     listOf("labels", "cluster-handles", "cluster-routes"),
+    "DUNGEON_EDITOR_CLUSTER_BEHAVIOR_001",
     BehaviorHarnessClassification.AGGREGATE,
     aggregateOf = listOf("selection", "cluster-core", "labels", "cluster-handles", "cluster-routes")
 )
 
-registerDungeonEditorBehaviorHarnessTask(
+val dungeonEditorCorridorBehaviorHarnessTask = registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorCorridorBehaviorHarness",
     "Run Corridor behavior plus declared geometry/domain dependencies.",
     listOf("corridors"),
+    "DUNGEON_EDITOR_CORRIDOR_BEHAVIOR_001",
     BehaviorHarnessClassification.AGGREGATE,
     aggregateOf = listOf("selection", "corridor-core", "corridors")
 )
 
-registerDungeonEditorBehaviorHarnessTask(
+val dungeonEditorStairBehaviorHarnessTask = registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorStairBehaviorHarness",
     "Run Stair behavior plus declared geometry/domain dependencies.",
     listOf("stairs"),
+    "DUNGEON_EDITOR_STAIR_BEHAVIOR_001",
     BehaviorHarnessClassification.AGGREGATE,
     aggregateOf = listOf("selection", "stair-core", "stairs")
 )
 
-registerDungeonEditorBehaviorHarnessTask(
+val dungeonEditorTransitionBehaviorHarnessTask = registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorTransitionBehaviorHarness",
     "Run Transition behavior plus declared geometry/domain dependencies.",
     listOf("transitions"),
+    "DUNGEON_EDITOR_TRANSITION_BEHAVIOR_001",
     BehaviorHarnessClassification.AGGREGATE,
     aggregateOf = listOf("selection", "transition-core", "transitions")
 )
 
-registerDungeonEditorBehaviorHarnessTask(
+val dungeonEditorFeatureBehaviorHarnessTask = registerDungeonEditorBehaviorHarnessTask(
     "dungeonEditorFeatureBehaviorHarness",
     "Run Feature-marker behavior plus declared editor-route dependencies.",
     listOf("features"),
+    "DUNGEON_EDITOR_FEATURE_BEHAVIOR_001",
     BehaviorHarnessClassification.AGGREGATE,
     aggregateOf = listOf("selection", "features")
 )
 
-behaviorHarnesses.javaExec("dungeonEditorBehaviorHarnessSuites") {
+val dungeonEditorBehaviorHarnessSuitesTask = behaviorHarnesses.junitTest("dungeonEditorBehaviorHarnessSuites") {
     classification.set(BehaviorHarnessClassification.UTILITY)
+    suiteIds.set(listOf("suite-inventory"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
-        description = "Print the available Dungeon Editor behavior suite ids."
+        description = "Report the available Dungeon Editor behavior suite ids through JUnit."
         dependsOn(tasks.named(dungeonEditorBehaviorHarness.classesTaskName))
+        testClassesDirs = dungeonEditorBehaviorHarness.output.classesDirs
         classpath = dungeonEditorBehaviorHarness.runtimeClasspath
-        mainClass.set("src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorSuiteHarness")
-        args("--list")
+        useJUnitPlatform()
+        include("src/view/leftbartabs/dungeoneditor/DungeonEditorBehaviorSuiteHarness.class")
+        filter {
+            includeTestsMatching(
+                "src.view.leftbartabs.dungeoneditor.DungeonEditorBehaviorSuiteHarness." +
+                    "DUNGEON_EDITOR_BEHAVIOR_SUITES_001"
+            )
+        }
     }
+}
+
+tasks.named("check") {
+    dependsOn(
+        dungeonEditorBehaviorHarnessTask,
+        dungeonEditorCoreBehaviorHarnessTask,
+        dungeonEditorRouteBehaviorHarnessTask,
+        dungeonEditorDoorBehaviorHarnessTask,
+        dungeonEditorWallBehaviorHarnessTask,
+        dungeonEditorRoomBehaviorHarnessTask,
+        dungeonEditorClusterBehaviorHarnessTask,
+        dungeonEditorCorridorBehaviorHarnessTask,
+        dungeonEditorStairBehaviorHarnessTask,
+        dungeonEditorTransitionBehaviorHarnessTask,
+        dungeonEditorFeatureBehaviorHarnessTask,
+        dungeonEditorBehaviorHarnessSuitesTask
+    )
 }
 
 val dungeonTravelProjectionLevelHarnessTask = behaviorHarnesses.junitTest("dungeonTravelProjectionLevelHarness") {

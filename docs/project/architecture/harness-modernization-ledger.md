@@ -1,4 +1,6 @@
 Status: Active
+Owner: SaltMarcher Team
+Last Reviewed: 2026-07-12
 Source of Truth: Current harness-modernization position, in-flight conversion
 batch, proof status, and close-out state for
 `docs/project/architecture/harness-modernization-roadmap.md`.
@@ -25,19 +27,19 @@ modernization unless this ledger advances too.
 | Field | Value |
 | --- | --- |
 | Branch | `codex/harness-modernization-t0` |
-| Milestone | T1 - Fleet conversion |
-| Conversion batch | `smokeStartupHarness` |
+| Milestone | T2 - Cache correctness and hermeticity |
+| Conversion batch | None |
 | Status | In Flight |
-| Required next proof | Convert `smokeStartupHarness` to a JUnit `Test` task, remove its JavaExec registration, and produce scripted 1:1 scenario parity output for its frozen startup smoke proof claim. |
-| Last status note | `2026-07-12 T0-close-out` |
+| Required next proof | Enable and rehearse honest local build-cache behavior for the converted harness tasks: unrelated change gives a cache hit, in-classpath and resource changes re-run, and two consecutive full `--rerun-tasks` runs agree with cached verdicts. |
+| Last status note | `2026-07-12 T1-close-out` |
 
 ## Milestone Ledger
 
 | Milestone | Status | Branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
 | T0 Pilot conversion and pattern | Done on branch | Pending | Pending | Forced pilot run, UP-TO-DATE run, classpath re-run, failure isolation, final JUnit XML, `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | `hexMapEditorBehaviorHarness` is the only pilot. Build logic gains a reusable `junitTest` behavior-harness registration template. |
-| T1 Fleet conversion | Pending | Pending | Pending | Pending | One area conversion batch at a time after T0 close-out. |
-| T2 Cache correctness and hermeticity | Pending | Pending | Pending | Pending | Local build cache behavior and rerun honesty checks are not active until T2. |
+| T1 Fleet conversion | Done on branch | Pending | Pending | Per-batch focused run, forced run, JUnit XML, final `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | All registered behavior harness tasks are JUnit `Test` tasks; no JavaExec behavior harness registration, silent Dungeon Editor direct-main entrypoint, or harness-level `outputs.upToDateWhen { false }` remains. |
+| T2 Cache correctness and hermeticity | In Flight | Pending | Pending | Pending | Local build cache behavior and rerun honesty checks start after T1 close-out. |
 | T3 Commit gate via versioned hooks | Pending | Pending | Pending | Pending | No hook wiring before T3. |
 | T4 CI authority and bespoke-layer deletion | Pending | Pending | Pending | Pending | `harness-map.json`, `select_harnesses.py`, and `behavior-gate` stay until T4. |
 | T5 Resolution report and honesty reviewer | Pending | Pending | Pending | Pending | Resource policy amendment must precede reviewer calls. |
@@ -1083,3 +1085,144 @@ JUnit test methods, with hyphens converted to underscores:
   Literal result: `BUILD SUCCESSFUL in 12m 49s`,
   `63 actionable tasks: 63 executed`.
 - Review state: Phase 1 approved; Phase 2 approved.
+
+## T1 Batch Evidence - `dungeonEditorBehaviorHarness` fleet
+
+- Batch started after `smokeStartupHarness` close-out. Scope is limited to the
+  registered Dungeon Editor behavior harness task fleet and its suite inventory
+  utility.
+- Registration: the old `registerDungeonEditorBehaviorHarnessTask` helper now
+  calls `behaviorHarnesses.junitTest(...)` instead of
+  `behaviorHarnesses.javaExec(...)`. The old
+  `behaviorHarnesses.javaExec("dungeonEditorBehaviorHarnessSuites")` utility is
+  replaced by `behaviorHarnesses.junitTest("dungeonEditorBehaviorHarnessSuites")`.
+  The 12 Dungeon Editor tasks are wired into `check`, filter to one method on
+  `DungeonEditorBehaviorSuiteHarness`, and retain the old suite selections,
+  metadata, documentation inputs, results directory, and temporary
+  `XDG_DATA_HOME` isolation.
+- Deletion: the old silent `main` entrypoint on
+  `DungeonEditorBehaviorSuiteHarness` is removed. Superseded direct-main wrapper
+  entrypoints with no remaining references are deleted:
+  `DungeonCoreModelInvariantHarness`, `DungeonEditorRouteBehaviorHarness`, and
+  `DungeonEditorToolBehaviorHarness`. `DungeonEditorHarnessPublicationSupport`
+  no longer calls `System.exit(...)`, so JUnit records executed tests instead
+  of skipped tests.
+- Documentation: `verification-dungeon-editor-wide-invariants.md` now states
+  that `dungeonEditorBehaviorHarnessSuites` reports suite IDs through JUnit.
+- Frozen proof-item names are derived from the pre-conversion registered
+  Dungeon Editor Gradle tasks and their suite selections. Assertions, inputs,
+  suite graph, proof rows, and behavior claims remain unchanged.
+- Scripted parity mapping output after the final full check:
+
+  ```text
+  old task / proof item                      junit method
+  dungeonEditorBehaviorHarness               DUNGEON_EDITOR_BEHAVIOR_001
+  dungeonEditorCoreBehaviorHarness           DUNGEON_EDITOR_CORE_BEHAVIOR_001
+  dungeonEditorRouteBehaviorHarness          DUNGEON_EDITOR_ROUTE_BEHAVIOR_001
+  dungeonEditorDoorBehaviorHarness           DUNGEON_EDITOR_DOOR_BEHAVIOR_001
+  dungeonEditorWallBehaviorHarness           DUNGEON_EDITOR_WALL_BEHAVIOR_001
+  dungeonEditorRoomBehaviorHarness           DUNGEON_EDITOR_ROOM_BEHAVIOR_001
+  dungeonEditorClusterBehaviorHarness        DUNGEON_EDITOR_CLUSTER_BEHAVIOR_001
+  dungeonEditorCorridorBehaviorHarness       DUNGEON_EDITOR_CORRIDOR_BEHAVIOR_001
+  dungeonEditorStairBehaviorHarness          DUNGEON_EDITOR_STAIR_BEHAVIOR_001
+  dungeonEditorTransitionBehaviorHarness     DUNGEON_EDITOR_TRANSITION_BEHAVIOR_001
+  dungeonEditorFeatureBehaviorHarness        DUNGEON_EDITOR_FEATURE_BEHAVIOR_001
+  dungeonEditorBehaviorHarnessSuites         DUNGEON_EDITOR_BEHAVIOR_SUITES_001
+  result: 12 old task proof item(s), 12 junit method(s), 12 XML-confirmed exact unskipped match(es)
+  ```
+
+- Infrastructure incident: an attempted one-command focused run of all 12
+  Dungeon Editor tasks failed before Gradle execution because
+  `run-observable-gradle.sh` derived a log filename longer than the filesystem
+  limit. Literal shell result:
+  `File name too long`. This produced no harness result and is not counted as
+  proof.
+- Harness-frame incident: the first JUnit conversion retained the old
+  JavaExec-oriented `System.exit(0)` publication path. Gradle returned green
+  but the behavior test XMLs recorded `skipped="1"`. This was rejected as
+  invalid proof and fixed in the same batch by returning normally to JUnit.
+- Task-cache-frame incident: a post-review T1 done-when scan found the old
+  `outputs.upToDateWhen { false }` predicate still present in the new Dungeon
+  Editor `Test` helper. This was rejected as an incomplete frame conversion and
+  removed before final proof.
+- R2 flake incident: the first focused aggregate rerun after removing that
+  predicate failed in the existing `DE-STAIR-001` preview-latency assertion:
+  283 ms observed against the 250 ms budget. The same focused task passed on an
+  immediate repeat. The failed run is not counted as proof and is filed in
+  `docs/project/journal/2026-07-harness-modernization-r2-issues.md`.
+- Final focused aggregate run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-editor-aggregate-focused-4 tools/gradle/run-observable-gradle.sh --fail-fast dungeonEditorBehaviorHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T141010401983124-pid1572658-dungeonEditorBehaviorHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 2m 12s`,
+  `13 actionable tasks: 1 executed, 12 up-to-date`.
+- Focused suite-inventory run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-editor-suites-focused tools/gradle/run-observable-gradle.sh --fail-fast dungeonEditorBehaviorHarnessSuites`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T123023275794971-pid1510331-dungeonEditorBehaviorHarnessSuites.log`.
+  Literal result: `BUILD SUCCESSFUL in 17s`,
+  `13 actionable tasks: 1 executed, 12 up-to-date`.
+- Final forced aggregate run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-editor-aggregate-forced-3 tools/gradle/run-observable-gradle.sh --fail-fast dungeonEditorBehaviorHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T141303396799336-pid1573796-dungeonEditorBehaviorHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 3m 9s`,
+  `13 actionable tasks: 13 executed`.
+- Forced suite-inventory run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-editor-suites-forced tools/gradle/run-observable-gradle.sh --fail-fast dungeonEditorBehaviorHarnessSuites -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T123407657229310-pid1512252-dungeonEditorBehaviorHarnessSuites.log`.
+  Literal result: `BUILD SUCCESSFUL in 58s`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the final full check:
+  each file under
+  `build/test-results/dungeonEditor*/*DungeonEditorBehaviorSuiteHarness.xml`
+  records `tests="1"`, `skipped="0"`, `failures="0"`, and `errors="0"` for
+  its mapped `DUNGEON_EDITOR_*` method.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-dungeon-editor-check-4 tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T141619858327773-pid1575173-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 24m 6s`,
+  `75 actionable tasks: 75 executed`.
+- Static deletion proof: `rg -n "behaviorHarnesses\.javaExec\(" build.gradle.kts`
+  and `rg -n "public static void main" test/src/view/leftbartabs/dungeoneditor`
+  both returned no matches.
+- Review state: Phase 1 first pass blocked on stale documentation wording that
+  still said legacy entrypoints delegate to the suite registry after the direct
+  `main` wrappers were deleted. The wording was repaired in
+  `verification-dungeon-editor-wide-invariants.md`, followed by the final full
+  `check --rerun-tasks` above. A later T1 done-when scan found and removed the
+  stale Dungeon Editor `outputs.upToDateWhen { false }`; proof and both reviews
+  were repeated after that code change. Phase 1 final re-review approved.
+  Phase 2 final judge approved.
+
+## T1 Close-Out Evidence
+
+- Zero JavaExec behavior harness registrations remain:
+  `rg -n "behaviorHarnesses\.javaExec\(" build.gradle.kts` returned no
+  matches.
+- No Dungeon Editor silent direct-main harness entrypoint remains:
+  `rg -n "public static void main" test/src/view/leftbartabs/dungeoneditor`
+  returned no matches.
+- No harness-level `outputs.upToDateWhen { false }` remains in
+  `build.gradle.kts` or the converted Dungeon Editor harness surface:
+  `rg -n "outputs\.upToDateWhen" build.gradle.kts test/src/view/leftbartabs/dungeoneditor`
+  returned no matches.
+- `check` executes the converted harness fleet. Final retained proof:
+  `build/gradle-run-logs/20260712T141619858327773-pid1575173-check.log`,
+  `BUILD SUCCESSFUL in 24m 6s`, `75 actionable tasks: 75 executed`.
+- Scripted parity output is recorded in each T1 batch section. The final
+  Dungeon Editor batch records the last JavaExec fleet replacement and the
+  suite-inventory utility replacement.
+- Phase 1 and Phase 2 approved the final T1 diff after the stale doc wording,
+  stale `outputs.upToDateWhen { false }`, and `DE-STAIR-001` flake filing were
+  handled.
+- Documentation enforcement follow-up: after T1 close-out metadata repairs,
+  `./gradlew checkDocumentationEnforcement --console=plain` still failed with
+  11 documentation-governance violations. Ten are architecture-migration or
+  legacy documentation findings outside the T1 harness conversion. The
+  remaining finding is the known `harness-modernization-ledger.md` line count;
+  the ledger keeps the roadmap-required evidence rather than omitting or
+  scattering facts during close-out. This check is recorded as red and is not
+  used as T1 acceptance proof.

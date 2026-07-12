@@ -1,4 +1,6 @@
 Status: Active
+Owner: SaltMarcher Team
+Last Reviewed: 2026-07-12
 Source of Truth: German owner-facing status notes for harness modernization.
 
 # Harness Modernization Owner Status Notes
@@ -35,3 +37,28 @@ ohne Fehler. Der finale Abschluss-Check wurde nach Judge-Hinweis mit
 
 Es wurden keine Produktionsverhaltenspfade geaendert. T1 ist der naechste
 Schritt; die erste Fleet-Konvertierungscharge ist noch nicht ausgewaehlt.
+
+## 2026-07-12 T1-close-out
+
+T1 ist auf dem Branch `codex/harness-modernization-t0` abgeschlossen. Die
+Behavior-Harness-Flotte ist von JavaExec auf JUnit-`Test`-Tasks umgestellt:
+Hex, Travel, Encounter, Catalog, Party, Dungeon, Session Planner, World
+Planner, Smoke und die Dungeon-Editor-Suite laufen jetzt ueber Gradle-Testtasks
+und sind in `check` verdrahtet. Die alten JavaExec-Behavior-Registrierungen,
+die Dungeon-Editor-`main`-Entrypoints und die alte
+`outputs.upToDateWhen { false }`-Sperre sind entfernt.
+
+Die letzte Charge war die Dungeon-Editor-Flotte. Der finale forced Aggregate-
+Proof war gruen: `BUILD SUCCESSFUL in 3m 9s`, `13 actionable tasks: 13
+executed`. Der finale volle Safety-Run war ebenfalls gruen:
+`BUILD SUCCESSFUL in 24m 6s`, `75 actionable tasks: 75 executed`. Die
+JUnit-XMLs der Dungeon-Editor-Tasks melden je `tests="1"`, `skipped="0"`,
+`failures="0"` und `errors="0"`. Phase 1 und der unabhaengige Judge haben die
+finale T1-Diff approved.
+
+Ein bestehender zeitbasierter Dungeon-Editor-Proof blieb unveraendert und ist
+als R2-Folgeeintrag abgelegt: `DE-STAIR-001` hat in einem nicht gezaehlten
+Fokuslauf einmal 283 ms statt des 250-ms-Budgets gemessen; die direkte
+Wiederholung, der forced Aggregate-Run und der volle forced Check waren gruen.
+Produktionsverhalten wurde nicht geaendert. T2 ist jetzt der aktive Schritt:
+Cache-Korrektheit und Hermetik muessen als naechstes woertlich geprobt werden.

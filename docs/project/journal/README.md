@@ -18,6 +18,7 @@ closures, and harness gaps. Format and trigger rules live in
 - [Continuous Autonomous Operation](2026-07-continuous-autonomous-operation.md)
 - [Dependabot Maintenance](2026-07-dependabot-maintenance.md)
 - [Harness Gaps](2026-07-harness-gaps.md)
+- [Harness Modernization R2 Issues](2026-07-harness-modernization-r2-issues.md)
 - [Maintenance](2026-07-maintenance.md)
 - [Migration R2 Issues](2026-07-migration-r2-issues.md)
 - [Nightshift Metrics](2026-07-nightshift-metrics.md)

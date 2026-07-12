@@ -1,4 +1,6 @@
 Status: Active
+Owner: SaltMarcher Team
+Last Reviewed: 2026-07-12
 Source of Truth: Harness modernization target state, milestone order, cache
 trust rules, and deletion requirements for content-addressed verification.
 

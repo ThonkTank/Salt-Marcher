@@ -81,11 +81,16 @@ class DungeonEditorHarnessPublicationSupport extends DungeonEditorHarnessPersist
                     System.out.println(result);
                 }
                 shutdownFx();
-                System.exit(0);
             } catch (Throwable throwable) {
                 clearResults();
                 throwable.printStackTrace(System.err);
-                System.exit(1);
+                if (throwable instanceof Exception exception) {
+                    throw exception;
+                }
+                if (throwable instanceof Error error) {
+                    throw error;
+                }
+                throw new RuntimeException(throwable);
             }
         }
     }
