@@ -151,6 +151,9 @@ dependencies {
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
+    add("hexMapEditorBehaviorHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    add("hexMapEditorBehaviorHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
+    add("hexMapEditorBehaviorHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
 }
 
 pmd {
@@ -496,7 +499,6 @@ val catalogCrudControlsHarnessDataDir = layout.buildDirectory.dir("catalog-crud-
 val catalogControlsRawInputHarnessDataDir = layout.buildDirectory.dir("catalog-controls-raw-input-data")
 val searchFilterControlsHarnessDataDir = layout.buildDirectory.dir("search-filter-controls-data")
 val partyDropdownHarnessDataDir = layout.buildDirectory.dir("party-dropdown-data")
-val hexMapEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-map-editor-behavior-data")
 val hexTravelStateBehaviorHarnessDataDir = layout.buildDirectory.dir("hex-travel-state-behavior-data")
 val encounterStateTabHarnessDataDir = layout.buildDirectory.dir("encounter-state-tab-data")
 val encounterTableReadbackHarnessDataDir = layout.buildDirectory.dir("encounter-table-readback-data")
@@ -608,24 +610,29 @@ behaviorHarnesses.javaExec("partyDropdownHarness") {
     }
 }
 
-behaviorHarnesses.javaExec("hexMapEditorBehaviorHarness") {
+val hexMapEditorBehaviorHarnessTask = behaviorHarnesses.junitTest("hexMapEditorBehaviorHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("hex-map-editor"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the focused Hex Map editor behavior harness."
         dependsOn(tasks.named(hexMapEditorBehaviorHarness.classesTaskName))
+        testClassesDirs = hexMapEditorBehaviorHarness.output.classesDirs
         classpath = hexMapEditorBehaviorHarness.runtimeClasspath
-        mainClass.set("src.view.leftbartabs.hexmap.HexMapEditorBehaviorHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        inputs.property("hexMapEditorBehaviorDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = hexMapEditorBehaviorHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn(hexMapEditorBehaviorHarnessTask)
 }
 
 behaviorHarnesses.javaExec("hexTravelStateBehaviorHarness") {

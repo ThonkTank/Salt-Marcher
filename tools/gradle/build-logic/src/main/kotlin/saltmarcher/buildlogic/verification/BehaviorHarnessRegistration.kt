@@ -18,6 +18,7 @@ import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.register
 import org.gradle.work.DisableCachingByDefault
 import java.io.ByteArrayOutputStream
@@ -70,6 +71,38 @@ open class BehaviorHarnessRegistrationSpec(objects: ObjectFactory) {
         )
 }
 
+open class BehaviorHarnessTestRegistrationSpec(objects: ObjectFactory) {
+    val classification: Property<BehaviorHarnessClassification> =
+        objects.property(BehaviorHarnessClassification::class.java)
+    val conceptIds: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+    val suiteIds: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+    val setupDependencies: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+    val behaviorDependencies: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+    val aggregateOf: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+
+    private val taskActions = mutableListOf<Action<Test>>()
+
+    fun task(action: Action<Test>) {
+        taskActions += action
+    }
+
+    internal fun configure(task: Test) {
+        taskActions.forEach { action -> action.execute(task) }
+    }
+
+    internal fun snapshot(taskName: String): BehaviorHarnessRegistration =
+        BehaviorHarnessRegistration(
+            taskName = taskName,
+            classification = classification.orNull
+                ?: throw GradleException("Behavior harness '$taskName' must declare a classification."),
+            conceptIds = conceptIds.get(),
+            suiteIds = suiteIds.get(),
+            setupDependencies = setupDependencies.get(),
+            behaviorDependencies = behaviorDependencies.get(),
+            aggregateOf = aggregateOf.get()
+        )
+}
+
 open class BehaviorHarnessRegistry(
     private val tasks: TaskContainer,
     private val objects: ObjectFactory
@@ -89,6 +122,20 @@ open class BehaviorHarnessRegistry(
         validate(registration)
         registeredHarnesses += registration
         return tasks.register<JavaExec>(taskName) {
+            spec.configure(this)
+        }
+    }
+
+    fun junitTest(
+        taskName: String,
+        action: Action<BehaviorHarnessTestRegistrationSpec>
+    ): TaskProvider<Test> {
+        val spec = BehaviorHarnessTestRegistrationSpec(objects)
+        action.execute(spec)
+        val registration = spec.snapshot(taskName)
+        validate(registration)
+        registeredHarnesses += registration
+        return tasks.register<Test>(taskName) {
             spec.configure(this)
         }
     }
