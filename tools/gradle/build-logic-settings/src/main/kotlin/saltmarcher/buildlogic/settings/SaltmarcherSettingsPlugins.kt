@@ -12,12 +12,9 @@ import saltmarcher.buildlogic.shared.ProductionHandoffTaskName
 
 class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
     override fun apply(settings: Settings) {
-        val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
-            ?.trim()
-            ?.takeIf(String::isNotEmpty)
-            ?.let(::File)
-            ?.canonicalFile
-            ?: findRepositoryRoot(settings.settingsDir)
+        val discoveredRepoRootDir = findRepositoryRoot(settings.settingsDir)
+        val repoRootDir = configuredRepositoryRoot(settings.settingsDir)
+            ?: discoveredRepoRootDir
         System.setProperty("saltmarcher.repoRootDir", repoRootDir.absolutePath)
         configureVersionedHooks(repoRootDir)
 
@@ -48,6 +45,23 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
 }
 
 private fun includeSaltmarcherBuild(settings: Settings, relativePath: String) = settings.includeBuild(relativePath)
+
+private fun configuredRepositoryRoot(settingsDir: File): File? {
+    val configuredRoot = System.getProperty("saltmarcher.repoRootDir")
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?.let(::File)
+        ?.canonicalFile
+        ?: return null
+    val canonicalSettingsDir = settingsDir.canonicalFile.toPath()
+    if (!canonicalSettingsDir.startsWith(configuredRoot.toPath())) {
+        return null
+    }
+    if (!File(configuredRoot, "AGENTS.md").isFile || !File(configuredRoot, "gradlew").isFile) {
+        return null
+    }
+    return configuredRoot
+}
 
 private fun configureVersionedHooks(repoRootDir: File) {
     val hooksDir = File(repoRootDir, "tools/hooks")
