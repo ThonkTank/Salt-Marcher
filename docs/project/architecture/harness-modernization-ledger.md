@@ -26,9 +26,9 @@ modernization unless this ledger advances too.
 | --- | --- |
 | Branch | `codex/harness-modernization-t0` |
 | Milestone | T1 - Fleet conversion |
-| Conversion batch | Pending selection |
-| Status | Pending |
-| Required next proof | Select the next T1 conversion batch, update this ledger to `In Flight`, and produce scripted 1:1 scenario parity output for that batch. |
+| Conversion batch | `worldPlannerBackendHarness` |
+| Status | In Flight |
+| Required next proof | Convert `worldPlannerBackendHarness` to a JUnit `Test` task, remove its JavaExec registration, and produce scripted 1:1 scenario parity output for its frozen backend persistence proof claim. |
 | Last status note | `2026-07-12 T0-close-out` |
 
 ## Milestone Ledger
@@ -825,4 +825,59 @@ JUnit test methods, with hyphens converted to underscores:
   `build/gradle-run-logs/20260712T100407971051981-pid1356400-check.log`.
   Literal result: `BUILD SUCCESSFUL in 11m 44s`,
   `56 actionable tasks: 56 executed`.
+- Review state: Phase 1 approved; Phase 2 approved.
+
+## T1 Batch Evidence - `worldPlannerBackendHarness`
+
+- Batch started after `sessionPlannerShellLayoutHarness` close-out. Scope is
+  limited to `worldPlannerBackendHarness`.
+- Registration: the old
+  `behaviorHarnesses.javaExec("worldPlannerBackendHarness")` registration,
+  `mainClass.set("src.domain.worldplanner.WorldPlannerBackendHarness")`,
+  `worldPlannerBackendHarnessDataDir`, and its
+  `outputs.upToDateWhen { false }` entry are removed. The batch now uses
+  `behaviorHarnesses.junitTest("worldPlannerBackendHarness")`, includes only
+  `src/domain/worldplanner/WorldPlannerBackendHarness.class`, and is wired into
+  `check`.
+- Frozen proof-item name for this legacy harness is derived from its single
+  pre-conversion top-level execution: the World Planner backend persistence,
+  readback, error-preservation, malformed-row, finite-stock, and reference
+  validation flow. Assertions and fixture values remain unchanged.
+- Scripted parity mapping output:
+
+  ```text
+  old proof item             junit method
+  WORLD-PLANNER-BACKEND-001  WORLD_PLANNER_BACKEND_001
+  result: 1 old proof item(s), 1 junit method(s), 1 exact normalized match
+  ```
+
+- Initial focused run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-backend-focused tools/gradle/run-observable-gradle.sh --fail-fast worldPlannerBackendHarness`
+  failed before harness execution because the `worldPlannerBackendHarness`
+  source set did not yet have JUnit API/runtime dependencies. Retained log:
+  `build/gradle-run-logs/20260712T102432033216274-pid1380218-worldPlannerBackendHarness.log`.
+  Rework added only the matching JUnit dependencies for that source set; no
+  harness assertion, fixture, input, or production code changed.
+- Focused batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-backend-focused-2 tools/gradle/run-observable-gradle.sh --fail-fast worldPlannerBackendHarness`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T102547537773637-pid1381247-worldPlannerBackendHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 29s`,
+  `13 actionable tasks: 2 executed, 11 up-to-date`.
+- Forced batch run:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-backend-forced tools/gradle/run-observable-gradle.sh --fail-fast worldPlannerBackendHarness -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T102638077938243-pid1382215-worldPlannerBackendHarness.log`.
+  Literal result: `BUILD SUCCESSFUL in 1m`,
+  `13 actionable tasks: 13 executed`.
+- JUnit XML after the forced/full proof:
+  `build/test-results/worldPlannerBackendHarness/TEST-src.domain.worldplanner.WorldPlannerBackendHarness.xml`
+  records `tests="1"`, `failures="0"`, `errors="0"` and contains
+  `WORLD_PLANNER_BACKEND_001`.
+- Final full check:
+  `env -u CODEX_THREAD_ID SALTMARCHER_GRADLE_ISOLATION_ID=t1-world-backend-check tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260712T102746095894754-pid1382757-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 11m 46s`,
+  `58 actionable tasks: 58 executed`.
 - Review state: Phase 1 approved; Phase 2 approved.

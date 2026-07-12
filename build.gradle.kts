@@ -157,6 +157,9 @@ dependencies {
     add("hexMapEditorBehaviorHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
     add("hexMapEditorBehaviorHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     add("hexMapEditorBehaviorHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
+    add("worldPlannerBackendHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    add("worldPlannerBackendHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
+    add("worldPlannerBackendHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
 }
 
 pmd {
@@ -502,7 +505,6 @@ tasks.named("check") {
     dependsOn(dungeonMapRenderParityHarnessTask)
 }
 
-val worldPlannerBackendHarnessDataDir = layout.buildDirectory.dir("world-planner-backend-data")
 val worldPlannerEncounterHarnessDataDir = layout.buildDirectory.dir("world-planner-encounter-data")
 val worldPlannerControlsRawInputHarnessDataDir = layout.buildDirectory.dir("world-planner-controls-raw-input-data")
 val worldPlannerUiHarnessDataDir = layout.buildDirectory.dir("world-planner-ui-data")
@@ -812,24 +814,30 @@ tasks.named("check") {
     dependsOn(sessionPlannerShellLayoutHarnessTask)
 }
 
-behaviorHarnesses.javaExec("worldPlannerBackendHarness") {
+val worldPlannerBackendHarnessTask = behaviorHarnesses.junitTest("worldPlannerBackendHarness") {
     classification.set(BehaviorHarnessClassification.FOCUSED)
     conceptIds.set(listOf("world-planner-backend"))
     task {
         group = LifecycleBasePlugin.VERIFICATION_GROUP
         description = "Run the World Planner backend persistence behavior harness."
         dependsOn(tasks.named(worldPlannerBackendHarness.classesTaskName))
+        testClassesDirs = worldPlannerBackendHarness.output.classesDirs
         classpath = worldPlannerBackendHarness.runtimeClasspath
-        mainClass.set("src.domain.worldplanner.WorldPlannerBackendHarness")
-        outputs.upToDateWhen { false }
+        useJUnitPlatform()
+        include("src/domain/worldplanner/WorldPlannerBackendHarness.class")
+        inputs.property("worldPlannerBackendDataTemplate", "salt-marcher")
         doFirst {
-            val runDataDir = worldPlannerBackendHarnessDataDir.get()
-                .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
+            val runDataDir = temporaryDir.resolve("xdg-data")
+            delete(runDataDir)
             mkdir(runDataDir)
-            mkdir(runDataDir.dir("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
+            mkdir(runDataDir.resolve("salt-marcher"))
+            environment("XDG_DATA_HOME", runDataDir.absolutePath)
         }
     }
+}
+
+tasks.named("check") {
+    dependsOn(worldPlannerBackendHarnessTask)
 }
 
 behaviorHarnesses.javaExec("worldPlannerEncounterHarness") {

@@ -6,6 +6,7 @@ import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import org.junit.jupiter.api.Test;
 import shell.api.ServiceRegistry;
 import src.data.worldplanner.mapper.WorldPlannerMapper;
 import src.data.worldplanner.model.WorldNpcRecord;
@@ -37,7 +38,8 @@ public final class WorldPlannerBackendHarness {
     private WorldPlannerBackendHarness() {
     }
 
-    public static void main(String[] args) {
+    @Test
+    void WORLD_PLANNER_BACKEND_001() {
         ServiceRegistry registry = registry();
         WorldPlannerApplicationService service = registry.require(WorldPlannerApplicationService.class);
         WorldPlannerSnapshotModel model = registry.require(WorldPlannerSnapshotModel.class);
