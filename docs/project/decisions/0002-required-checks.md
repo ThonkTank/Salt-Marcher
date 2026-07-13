@@ -65,7 +65,9 @@ The required set must be deterministic enough for day-to-day autonomy and
 strong enough to prevent behavior regressions, gate erosion, and self-review.
 `check` is the authoritative CI behavior proof: Gradle's declared inputs
 select what physically re-runs, and GitHub Actions owns the cache writes that
-can later be read by local machines as feedback.
+can later be read by local machines as feedback. CI deliberately overrides
+incremental selection for build, CI, hook, and gate-wiring changes by running
+`check --rerun-tasks`; ordinary source-area PRs remain content-addressed.
 Third-party analysis remains useful evidence but not a required gate.
 
 ## Risks

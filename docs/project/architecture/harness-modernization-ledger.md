@@ -1574,6 +1574,59 @@ JUnit test methods, with hyphens converted to underscores:
 - Phase 2 independent judge review approved the local patch readiness with no
   Must Fix findings. The same publication-side T4 done-when items remain
   pending and are not claimed complete.
+- PR CI rehearsal found one T4 Must Fix before merge: PR #453's first green
+  `check` job ran `xvfb-run -a tools/gradle/run-observable-gradle.sh check`
+  and passed, but the retained CI log
+  `https://github.com/ThonkTank/Salt-Marcher/actions/runs/29215001399/job/86709048926`
+  ended with `BUILD SUCCESSFUL in 5m 8s`,
+  `74 actionable tasks: 69 executed, 4 from cache, 1 up-to-date`. Because
+  this PR touches build/CI/gate wiring, the T4 done-when requirement for a
+  build-wiring PR to re-run everything was not met. The workflow now classifies
+  changed paths before `check` and appends `-- --rerun-tasks` for build, CI,
+  hook, frozen-surface, branch-protection-readback, status-issue, or judge
+  wiring changes; if diff detection is unavailable, it fails closed to the
+  same forced mode. Ordinary source-area PRs remain content-addressed so the
+  area-touch cache-hit rehearsal is still meaningful.
+  Post-rework proof: workflow YAML parsed and the embedded Bash decision block
+  passed `bash -n`; a local simulation against `origin/main..HEAD` emitted
+  `mode=forced-rerun-build-wiring` and `extra_args=-- --rerun-tasks`. The
+  forced local proof
+  `env -u CODEX_THREAD_ID
+  SALTMARCHER_GRADLE_ISOLATION_ID=t4-build-wiring-rerun-mode
+  tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`
+  passed. Retained log:
+  `build/gradle-run-logs/20260713T023022422066492-pid1976223-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 26m 3s`,
+  `74 actionable tasks: 74 executed`. Fresh Phase 1 and Phase 2 review are
+  required because implementation changed after the prior approval.
+- Fresh Phase 1 found two Must Fix items in the build-wiring classifier:
+  root `gradle.properties` was not treated as build wiring, and merge-queue
+  base-ref resolution failures would hard-fail the argument-decision step
+  before writing the documented forced mode. Rework added `gradle.properties`
+  to the forced-rerun classifier and changed merge-queue/push base-resolution
+  failures to emit `forced-rerun-undetermined-diff` with
+  `-- --rerun-tasks`. Post-fix syntax and whitespace proof passed:
+  `git diff --check`, workflow YAML parse, and `bash -n` for the embedded
+  decision block. Targeted simulations passed: current branch diff emitted
+  `mode=forced-rerun-build-wiring`; a `gradle.properties`-only diff emitted
+  `mode=forced-rerun-build-wiring`; a source-area-only diff emitted
+  `mode=content-addressed` with empty `extra_args`; and a merge-group fetch
+  failure emitted `mode=forced-rerun-undetermined-diff` with
+  `extra_args=-- --rerun-tasks`.
+  Final post-fix forced proof passed:
+  `env -u CODEX_THREAD_ID
+  SALTMARCHER_GRADLE_ISOLATION_ID=t4-build-wiring-classifier-fix
+  tools/gradle/run-observable-gradle.sh --fail-fast check -- --rerun-tasks`.
+  Retained log:
+  `build/gradle-run-logs/20260713T030249254855537-pid1991545-check.log`.
+  Literal result: `BUILD SUCCESSFUL in 26m 20s`,
+  `74 actionable tasks: 74 executed`.
+  Phase 1 re-review approved with no remaining Must Fix findings. Phase 2
+  independent judge review approved with no Must Fix findings. Both reviews
+  leave publication-side T4 done-when items pending: PR CI area-touch cache
+  behavior, PR CI build-wiring full re-run, deleted files gone from `main`,
+  live required-check enforcement readback, and one green nightly
+  `--rerun-tasks` run.
 - Local T4 implementation commit:
   `4946450b3 ci: replace behavior gate with check`. The versioned
   pre-commit gate accepted staged tree

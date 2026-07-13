@@ -22,7 +22,7 @@ job.
 
 | Job | Status | Current policy |
 | --- | --- | --- |
-| `check` | `Required CI Gate` | Runs `xvfb-run -a tools/gradle/run-observable-gradle.sh check`; this is the authoritative CI proof surface for the converted content-addressed harness tasks and the normal Gradle check graph. |
+| `check` | `Required CI Gate` | Runs `xvfb-run -a tools/gradle/run-observable-gradle.sh check`; this is the authoritative CI proof surface for the converted content-addressed harness tasks and the normal Gradle check graph. When a PR, merge-queue item, or main push touches build, CI, hook, or gate wiring, the job appends `-- --rerun-tasks` so wiring changes re-run the full check graph instead of proving through restored task outputs. |
 | `nightly-rerun-tasks` | `Scheduled Honesty Gate` | Runs `xvfb-run -a tools/gradle/run-observable-gradle.sh check -- --rerun-tasks` on the nightly schedule; it is not a pull-request required context, and any cache/verdict divergence is an R2 issue rather than a silent re-cache. |
 | `warden-freeze` | `Required CI Gate` | Restores the base-ref warden script, then enforces R3c classification for frozen-surface changes and the narrow risk-label plausibility checks. |
 | `judge-review` | `Required CI Gate` | Restores the base-ref judge script, runs immediately for R0, fails closed for R1+ without the judge secret, and accepts only a PASS verdict or owner-only `judge-override`. |
@@ -42,6 +42,13 @@ The `check` job uses the GitHub Actions Gradle setup cache. Pull requests and
 merge-queue runs read the CI cache but do not write it; pushes to `main` own
 cache writes. Local machines never write this CI cache, and local cache hits
 are feedback rather than proof.
+
+The `check` job classifies its own diff before invoking Gradle. Ordinary
+source-area PRs stay content-addressed: Gradle's declared inputs decide which
+tasks execute and which tasks are cache hits. Build, CI, hook, frozen-surface,
+branch-protection-readback, status-issue, or judge wiring changes force
+`check --rerun-tasks`; if the workflow cannot determine the diff, it fails
+closed to the same forced mode.
 
 CI jobs run in fresh GitHub-hosted checkouts, so they do not need repo-local
 same-worktree isolation cleanup. The concurrency concern in CI is stale runs on

@@ -36,7 +36,70 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y imagemagick
-      - run: xvfb-run -a tools/gradle/run-observable-gradle.sh check
+      - name: Decide Gradle check arguments
+        id: check-args
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
+          PUSH_BEFORE: ${{ github.event.before || '' }}
+          CURRENT_SHA: ${{ github.sha }}
+          BASE_REF: ${{ github.event.merge_group.base_ref || github.base_ref || '' }}
+        run: |
+          set -euo pipefail
+
+          zero_sha="0000000000000000000000000000000000000000"
+          base=""
+          head=""
+          diff_resolution_failed="false"
+
+          case "$EVENT_NAME" in
+            pull_request)
+              base="$PR_BASE_SHA"
+              head="$PR_HEAD_SHA"
+              ;;
+            merge_group)
+              base_ref="${BASE_REF#refs/heads/}"
+              if ! git fetch --no-tags origin "$base_ref"; then
+                diff_resolution_failed="true"
+              elif ! base="$(git merge-base HEAD "origin/$base_ref")"; then
+                diff_resolution_failed="true"
+              else
+                head="HEAD"
+              fi
+              ;;
+            push)
+              base="$PUSH_BEFORE"
+              head="$CURRENT_SHA"
+              if [ -z "$base" ] || [ "$base" = "$zero_sha" ]; then
+                if ! base="$(git rev-list --max-parents=0 "$head")"; then
+                  diff_resolution_failed="true"
+                fi
+              fi
+              ;;
+          esac
+
+          extra_args=""
+          mode="content-addressed"
+          if [ "$diff_resolution_failed" = "true" ] || [ -z "$base" ] || [ -z "$head" ]; then
+            mode="forced-rerun-undetermined-diff"
+            extra_args="-- --rerun-tasks"
+          elif ! changed_files="$(git diff --name-only "$base" "$head")"; then
+            mode="forced-rerun-diff-read-failed"
+            extra_args="-- --rerun-tasks"
+          else
+            build_wiring_pattern='^(\.github/workflows/|build\.gradle\.kts$|settings\.gradle\.kts$|gradle\.properties$|gradle/|gradlew(\.bat)?$|build-logic/|build-logic-settings/|tools/gradle/|tools/hooks/|tools/quality/config/frozen-surfaces\.txt$|tools/quality/scripts/(branch_protection_readback|update_status_issue|warden_freeze)\.py$|tools/agents/judge_review\.py$)'
+            if printf '%s\n' "$changed_files" | grep -Eq "$build_wiring_pattern"; then
+              mode="forced-rerun-build-wiring"
+              extra_args="-- --rerun-tasks"
+            fi
+          fi
+
+          echo "mode=$mode"
+          echo "mode=$mode" >> "$GITHUB_OUTPUT"
+          echo "extra_args=$extra_args" >> "$GITHUB_OUTPUT"
+      - run: xvfb-run -a tools/gradle/run-observable-gradle.sh check ${{ steps.check-args.outputs.extra_args }}
 
   nightly-rerun-tasks:
     if: github.event_name == 'schedule'
