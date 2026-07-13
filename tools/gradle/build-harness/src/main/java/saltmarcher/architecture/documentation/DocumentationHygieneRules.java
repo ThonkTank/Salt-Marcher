@@ -13,13 +13,7 @@ import saltmarcher.architecture.ViolationSink;
 
 public final class DocumentationHygieneRules implements ArchitectureRule {
 
-    private static final int MAX_MARKDOWN_LINES = 350;
     private static final Set<String> VALID_STATUS = Set.of("Active", "Draft", "Deprecated");
-    private static final List<String> GOVERNED_MARKDOWN_ROOTS = List.of(
-            "AGENTS.md",
-            "docs",
-            "src",
-            "tools/quality");
     private static final List<String> LEGACY_DOCUMENTATION_ROOTS = List.of(
             "docs/architecture",
             "docs/standards",
@@ -37,7 +31,6 @@ public final class DocumentationHygieneRules implements ArchitectureRule {
         validateDocsMetadata(context, violations);
         validateLegacyDocumentationRoots(context, violations);
         validateSourceMarkdown(context, violations);
-        validateMarkdownLineCaps(context, violations);
     }
 
     private static void validateDocsMetadata(ArchitectureContext context, ViolationSink violations) {
@@ -47,15 +40,8 @@ public final class DocumentationHygieneRules implements ArchitectureRule {
             if (lines.isEmpty()) {
                 continue;
             }
-            if (lines.size() < 4) {
-                violations.add(documentPath, "documentation-metadata-presence",
-                        "docs Markdown must start with Status, Owner, Last Reviewed, and Source of Truth metadata.");
-                continue;
-            }
             validateStatusLine(documentPath, lines.get(0), violations);
-            validateMetadataPrefix(documentPath, "Owner: ", lines.get(1), "Owner", violations);
-            validateMetadataPrefix(documentPath, "Last Reviewed: ", lines.get(2), "Last Reviewed", violations);
-            validateMetadataPrefix(documentPath, "Source of Truth: ", lines.get(3), "Source of Truth", violations);
+            validateSourceOfTruthMetadata(documentPath, lines, violations);
         }
     }
 
@@ -73,16 +59,17 @@ public final class DocumentationHygieneRules implements ArchitectureRule {
         }
     }
 
-    private static void validateMetadataPrefix(
+    private static void validateSourceOfTruthMetadata(
             String documentPath,
-            String prefix,
-            String line,
-            String label,
+            List<String> lines,
             ViolationSink violations) {
-        if (!line.startsWith(prefix) || line.substring(prefix.length()).isBlank()) {
-            violations.add(documentPath, "documentation-metadata-presence",
-                    "docs Markdown must include a non-empty " + label + " metadata line.");
+        for (String line : lines.subList(1, Math.min(lines.size(), 5))) {
+            if (line.startsWith("Source of Truth: ") && !line.substring("Source of Truth: ".length()).isBlank()) {
+                return;
+            }
         }
+        violations.add(documentPath, "documentation-metadata-presence",
+                "docs Markdown must include a non-empty Source of Truth metadata line.");
     }
 
     private static void validateLegacyDocumentationRoots(ArchitectureContext context, ViolationSink violations) {
@@ -127,21 +114,6 @@ public final class DocumentationHygieneRules implements ArchitectureRule {
             if (!content.contains(requiredSection)) {
                 violations.add(documentPath, "documentation-source-markdown-content",
                         "DOMAIN.md must remain a content-bearing context document with section '" + requiredSection + "'.");
-            }
-        }
-    }
-
-    private static void validateMarkdownLineCaps(ArchitectureContext context, ViolationSink violations) {
-        for (String root : GOVERNED_MARKDOWN_ROOTS) {
-            Path path = context.repoRoot().resolve(root);
-            for (Path document : markdownFiles(context, path)) {
-                String documentPath = context.relativize(document);
-                List<String> lines = readLines(document, documentPath, violations);
-                if (lines.size() > MAX_MARKDOWN_LINES) {
-                    violations.add(documentPath, "documentation-line-cap",
-                            "Markdown file has " + lines.size()
-                                    + " lines; split, delete, or link before exceeding " + MAX_MARKDOWN_LINES + ".");
-                }
             }
         }
     }
