@@ -57,8 +57,6 @@ tools/       build infrastructure, quality platforms, and scripts
   across Phase 1 and Phase 2.
 - [Source Architecture Statement](source-architecture.md) owns the current
   source-shape routing after the role-family migration.
-- [Architecture Migration Final Measurement](architecture-migration-final-measurement.md)
-  records the M0-M6 completion metrics and retained evidence.
 - [Document Size Policy Roadmap](doc-size-policy-vision-and-roadmap.md) owns
   the roadmap replacing the hard Markdown size cap.
 - [Document Size Policy Ledger](doc-size-policy-ledger.md) owns the current
