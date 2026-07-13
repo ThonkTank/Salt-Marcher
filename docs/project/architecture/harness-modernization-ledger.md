@@ -1627,6 +1627,13 @@ JUnit test methods, with hyphens converted to underscores:
   behavior, PR CI build-wiring full re-run, deleted files gone from `main`,
   live required-check enforcement readback, and one green nightly
   `--rerun-tasks` run.
+  Local T4 rework commit:
+  `d528d0b13 ci: force check for build wiring changes`. The versioned
+  pre-commit gate accepted staged tree
+  `14233a7733fb08b70e086ea97f515d578eb8dfaf`; retained log
+  `build/pre-commit-gate/14233a7733fb08b70e086ea97f515d578eb8dfaf.log`
+  ends with `BUILD SUCCESSFUL in 18m 30s`,
+  `74 actionable tasks: 53 executed, 20 from cache, 1 up-to-date`.
 - Local T4 implementation commit:
   `4946450b3 ci: replace behavior gate with check`. The versioned
   pre-commit gate accepted staged tree
