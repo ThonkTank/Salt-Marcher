@@ -13,7 +13,13 @@ import saltmarcher.architecture.ViolationSink;
 
 public final class DocumentationHygieneRules implements ArchitectureRule {
 
+    private static final int MARKDOWN_SIZE_SIGNAL_LINES = 400;
     private static final Set<String> VALID_STATUS = Set.of("Active", "Draft", "Deprecated");
+    private static final List<String> MARKDOWN_SIZE_SIGNAL_ROOTS = List.of(
+            "AGENTS.md",
+            "docs",
+            "src",
+            "tools/quality");
     private static final List<String> LEGACY_DOCUMENTATION_ROOTS = List.of(
             "docs/architecture",
             "docs/standards",
@@ -31,6 +37,7 @@ public final class DocumentationHygieneRules implements ArchitectureRule {
         validateDocsMetadata(context, violations);
         validateLegacyDocumentationRoots(context, violations);
         validateSourceMarkdown(context, violations);
+        reportMarkdownSizeSignals(context, violations);
     }
 
     private static void validateDocsMetadata(ArchitectureContext context, ViolationSink violations) {
@@ -114,6 +121,21 @@ public final class DocumentationHygieneRules implements ArchitectureRule {
             if (!content.contains(requiredSection)) {
                 violations.add(documentPath, "documentation-source-markdown-content",
                         "DOMAIN.md must remain a content-bearing context document with section '" + requiredSection + "'.");
+            }
+        }
+    }
+
+    private static void reportMarkdownSizeSignals(ArchitectureContext context, ViolationSink violations) {
+        for (String root : MARKDOWN_SIZE_SIGNAL_ROOTS) {
+            Path path = context.repoRoot().resolve(root);
+            for (Path document : markdownFiles(context, path)) {
+                String documentPath = context.relativize(document);
+                List<String> lines = readLines(document, documentPath, violations);
+                if (lines.size() > MARKDOWN_SIZE_SIGNAL_LINES) {
+                    System.out.println("Documentation size signal: " + documentPath
+                            + " has " + lines.size()
+                            + " lines; file or link a doc-split issue before growing scope.");
+                }
             }
         }
     }
