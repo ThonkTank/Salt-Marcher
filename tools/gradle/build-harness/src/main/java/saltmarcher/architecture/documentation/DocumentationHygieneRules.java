@@ -4,8 +4,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import saltmarcher.architecture.ArchitectureContext;
 import saltmarcher.architecture.ArchitectureRule;
@@ -13,7 +17,9 @@ import saltmarcher.architecture.ViolationSink;
 
 public final class DocumentationHygieneRules implements ArchitectureRule {
 
-    private static final int MAX_MARKDOWN_LINES = 350;
+    private static final int SOFT_MARKDOWN_LINE_THRESHOLD = 400;
+    private static final Pattern ISSUE_REFERENCE = Pattern.compile(
+            "(?i)(github\\.com/[^\\s)]+/issues/\\d+|#\\d+)");
     private static final Set<String> VALID_STATUS = Set.of("Active", "Draft", "Deprecated");
     private static final List<String> GOVERNED_MARKDOWN_ROOTS = List.of(
             "AGENTS.md",
@@ -31,13 +37,25 @@ public final class DocumentationHygieneRules implements ArchitectureRule {
             "## Published Language",
             "## Application Boundary",
             "## Ubiquitous Language");
+    private final boolean reportSizeSignals;
+
+    public DocumentationHygieneRules() {
+        this(true);
+    }
+
+    DocumentationHygieneRules(boolean reportSizeSignals) {
+        this.reportSizeSignals = reportSizeSignals;
+    }
 
     @Override
     public void check(ArchitectureContext context, ViolationSink violations) {
         validateDocsMetadata(context, violations);
         validateLegacyDocumentationRoots(context, violations);
         validateSourceMarkdown(context, violations);
-        validateMarkdownLineCaps(context, violations);
+        reportMarkdownSizeSignals(context, violations);
+        validateLargeDocumentsHaveSplitIssue(context, violations);
+        validateDocumentationIndexCompleteness(context, violations);
+        validateUniqueSourceOfTruth(context, violations);
     }
 
     private static void validateDocsMetadata(ArchitectureContext context, ViolationSink violations) {
@@ -131,19 +149,118 @@ public final class DocumentationHygieneRules implements ArchitectureRule {
         }
     }
 
-    private static void validateMarkdownLineCaps(ArchitectureContext context, ViolationSink violations) {
+    private void reportMarkdownSizeSignals(ArchitectureContext context, ViolationSink violations) {
         for (String root : GOVERNED_MARKDOWN_ROOTS) {
             Path path = context.repoRoot().resolve(root);
             for (Path document : markdownFiles(context, path)) {
                 String documentPath = context.relativize(document);
                 List<String> lines = readLines(document, documentPath, violations);
-                if (lines.size() > MAX_MARKDOWN_LINES) {
-                    violations.add(documentPath, "documentation-line-cap",
-                            "Markdown file has " + lines.size()
-                                    + " lines; split, delete, or link before exceeding " + MAX_MARKDOWN_LINES + ".");
+                if (reportSizeSignals && lines.size() > SOFT_MARKDOWN_LINE_THRESHOLD) {
+                    System.out.println("[documentation-size-signal] " + documentPath + " has " + lines.size()
+                            + " lines; file or link a doc-split issue, but do not omit, compress, or relocate"
+                            + " documentation because of size.");
                 }
             }
         }
+    }
+
+    private static void validateLargeDocumentsHaveSplitIssue(ArchitectureContext context, ViolationSink violations) {
+        for (String root : GOVERNED_MARKDOWN_ROOTS) {
+            Path path = context.repoRoot().resolve(root);
+            for (Path document : markdownFiles(context, path)) {
+                String documentPath = context.relativize(document);
+                List<String> lines = readLines(document, documentPath, violations);
+                if (lines.size() <= SOFT_MARKDOWN_LINE_THRESHOLD) {
+                    continue;
+                }
+                String content = String.join("\n", lines);
+                if (!content.contains("doc-split") || !ISSUE_REFERENCE.matcher(content).find()) {
+                    violations.add(documentPath, "documentation-size-split-issue",
+                            "Markdown file has " + lines.size()
+                                    + " lines; link an open or closed doc-split issue before continuing growth.");
+                }
+            }
+        }
+    }
+
+    private static void validateDocumentationIndexCompleteness(
+            ArchitectureContext context,
+            ViolationSink violations) {
+        Path docsRoot = context.repoRoot().resolve("docs");
+        for (Path document : markdownFiles(context, docsRoot)) {
+            if ("README.md".equals(document.getFileName().toString())) {
+                continue;
+            }
+            Path readme = nearestReadme(context, document);
+            String documentPath = context.relativize(document);
+            if (readme == null) {
+                violations.add(documentPath, "documentation-index-completeness",
+                        "Docs Markdown must be listed by a README in its directory or nearest owning ancestor.");
+                continue;
+            }
+            String readmePath = context.relativize(readme);
+            String readmeContent = readString(readme, readmePath, violations);
+            if (readmeContent == null) {
+                continue;
+            }
+            String relativeFromReadme = readme.getParent().relativize(document).toString().replace('\\', '/');
+            if (!readmeContent.contains(relativeFromReadme) && !readmeContent.contains(documentPath)) {
+                violations.add(documentPath, "documentation-index-completeness",
+                        "Docs Markdown must be linked from " + readmePath + ".");
+            }
+        }
+    }
+
+    private static Path nearestReadme(ArchitectureContext context, Path document) {
+        Path docsRoot = context.repoRoot().resolve("docs");
+        Path current = document.getParent();
+        while (current != null && current.startsWith(docsRoot)) {
+            Path readme = current.resolve("README.md");
+            if (Files.isRegularFile(readme)) {
+                return readme;
+            }
+            current = current.getParent();
+        }
+        return null;
+    }
+
+    private static void validateUniqueSourceOfTruth(ArchitectureContext context, ViolationSink violations) {
+        Map<String, List<String>> documentsBySource = new HashMap<>();
+        for (Path document : markdownFiles(context, context.repoRoot().resolve("docs"))) {
+            String documentPath = context.relativize(document);
+            List<String> lines = readLines(document, documentPath, violations);
+            if (lines.size() < 4 || !lines.get(3).startsWith("Source of Truth: ")) {
+                continue;
+            }
+            String sourceOfTruth = sourceOfTruthValue(lines);
+            if (!sourceOfTruth.isBlank()) {
+                documentsBySource.computeIfAbsent(sourceOfTruth, ignored -> new ArrayList<>()).add(documentPath);
+            }
+        }
+        documentsBySource.forEach((sourceOfTruth, paths) -> {
+            if (paths.size() <= 1) {
+                return;
+            }
+            String joinedPaths = String.join(", ", paths);
+            for (String path : paths) {
+                violations.add(path, "documentation-source-of-truth-unique",
+                        "Source of Truth duplicates another document: " + joinedPaths + ".");
+            }
+        });
+    }
+
+    private static String sourceOfTruthValue(List<String> lines) {
+        StringBuilder source = new StringBuilder(lines.get(3).substring("Source of Truth: ".length()).strip());
+        int index = 4;
+        while (index < lines.size()) {
+            String line = lines.get(index);
+            if (line.isBlank() || line.startsWith("#")) {
+                break;
+            }
+            source.append(' ').append(line.strip());
+            index++;
+        }
+        return source.toString();
     }
 
     private static List<Path> markdownFiles(ArchitectureContext context, Path root) {

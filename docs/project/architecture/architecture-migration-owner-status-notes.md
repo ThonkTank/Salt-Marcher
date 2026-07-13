@@ -460,6 +460,38 @@ alle eingefrorenen Dungeon-Harnessgruppen, Render-Parity mit `DE-IMG-001`,
 Phase 1 und der unabhaengige Judge. Naechster Schritt ist M4.5
 `dungeon-editor-view` Harness-Check/Closure gegen die aktuelle Struktur.
 
+### 2026-07-11 Harness-Modernisierung-Vorbedingung-nicht-erfuellt
+
+Die Harness-Modernisierung T0-T6 startet noch nicht. Die Vorbedingung aus
+`docs/project/architecture/harness-modernization-roadmap.md` verlangt, dass
+die Architektur-Migration M0-M6 auf `main` abgeschlossen und gemerged ist.
+Das ist aktuell nicht der Fall: `origin/main` steht laut Ledger noch bei
+M3.5 Encounter-Implementation, und der aktive Migrationsbranch steht bei
+M4.4 `dungeon-rendering-pipeline` Target Design. Deshalb wurde kein T0-Pilot
+begonnen und keine Harness-Modernisierungsmechanik geaendert. Naechster
+zulaessiger Schritt bleibt die Fortsetzung der Architektur-Migration bis M6.
+
+### 2026-07-11 Harness-Modernisierung-erneut-gestoppt
+
+Die erneute Vorbedingungspruefung blockiert die Harness-Modernisierung weiter.
+`origin/main` enthaelt laut `migration-ledger.md` noch M3.5
+Encounter-Implementation, nicht den abgeschlossenen M6-Stand. Der aktive
+Branch `codex/architecture-migration-m0-charter` steht laut aktuellem Ledger
+bei M4.4 `dungeon-rendering-pipeline` Target Design. Damit ist die
+Architektur-Migration weder auf `main` abgeschlossen noch gemerged. Es wurde
+kein T0-Pilot, keine JUnit-Konvertierung und keine Cache-/CI-Mechanik der
+Harness-Modernisierung begonnen.
+
+### 2026-07-11 Harness-Modernisierung-weiter-blockiert
+
+Die dritte Vorbedingungspruefung kommt zum selben Ergebnis: Die
+Harness-Modernisierung darf noch nicht starten. `origin/main` weist im
+Architektur-Migrationsledger weiterhin M3.5 Encounter-Implementation aus;
+der aktive Branch steht bei M4.4 `dungeon-rendering-pipeline` Target Design.
+Die geforderte Voraussetzung, dass M0-M6 auf `main` abgeschlossen und gemerged
+sind, ist damit nicht erfuellt. Es wurden weiterhin keine T0-Arbeiten, keine
+Harness-Konvertierung und keine Modernisierungs-Gate-Aenderungen begonnen.
+
 ### 2026-07-11 M4.5 dungeon-editor-view-close-out
 
 Der Dungeon-Editor-View-Zyklus ist auf dem Branch abgeschlossen.

@@ -33,7 +33,13 @@ final class EncounterSessionBuilder {
         if (command.opensSavedPlan()) {
             return savedPlans.openSavedPlan(access, command.planId(), context, roster, generation);
         }
-        savedPlans.saveCurrentPlan(access, context, roster.snapshot().creatures(), generation.state().generatedTitle());
+        savedPlans.saveCurrentPlan(
+                access,
+                context,
+                roster.snapshot().creatures(),
+                generation.state().generatedTitle(),
+                command.planName(),
+                generation);
         return false;
     }
 

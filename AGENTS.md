@@ -16,7 +16,7 @@ Always run verification from the repository root.
 2. A pass whose required verify command has not literally passed is WIP. Report the literal result at handoff.
 3. Outcome checks stay binding: cycles, layer direction, behavior harnesses, and owner-named proof. Do not weaken, suppress, or bypass them; removed doc gates and role-family form checks are not architecture truth.
 4. Structural, governance, compatibility, or legacy-removal findings you cannot fix in the same pass get a `PROJECT_HEALTH_DEBT` marker at the primary cause and an entry in `docs/project/architecture/project-health-debt.md`; resolve matching markers in your write set or record the concrete blocker.
-5. Before editing a surface, read its owner doc and skill from the table below. If a surface has no clear owner, create a narrow documentation repair target instead of creating a second source of truth.
+5. Before editing a surface, read its owner doc and skill from the table below. If a surface has no clear owner, create a narrow documentation repair target instead of creating a second source of truth. Never omit, compress, or relocate documentation because of size; file a `doc-split` issue instead.
 6. Behavior changes and new behavior-bearing concepts need an owning behavior harness: extend it, create it, or record a `Harness Gap` repair target. Harnesses prove production routes; avoid fixture selftests and meta-test layers. New central build/check gates require explicit user request.
 7. Record notable decisions, incidents, and repeated fixes in `docs/project/journal/YYYY-MM.md`; see `docs/project/architecture/work-logs.md`.
 8. Risk class is mandatory on PRs: R0 docs/comments/small reversible refactor;

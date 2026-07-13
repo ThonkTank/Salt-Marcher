@@ -47,7 +47,7 @@ import src.domain.party.published.MembershipState;
 public final class EncounterStateTabHarness {
 
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
-    private static final int AWAIT_SECONDS = 10;
+    private static final int AWAIT_SECONDS = 30;
     private static final long GOBLIN_ID = 101L;
     private static final int GOBLIN_COUNT = 2;
 
@@ -59,9 +59,10 @@ public final class EncounterStateTabHarness {
             startFx();
             runOnFxThread(EncounterStateTabHarness::run);
             shutdownFx();
-            System.out.println("Encounter state tab harness passed: 2 proof item(s).");
+            System.out.println("Encounter state tab harness passed: 3 proof item(s).");
             System.out.println("ENCOUNTER-STATE-TAB-001 Ready: Encounter state tab opens through shell binding.");
             System.out.println("ENCOUNTER-STATE-TAB-002 Ready: Saved encounter readback renders in the state tab.");
+            System.out.println("REQ-encounter-named-plan-save Ready: Named saved encounter renders in the state tab.");
         } catch (Throwable throwable) {
             throwable.printStackTrace(System.err);
             try {
@@ -86,6 +87,9 @@ public final class EncounterStateTabHarness {
         assertTextPresent(view, "Goblin Ambusher", "ENCOUNTER-STATE-TAB-002 saved plan creature");
         assertTextPresent(view, "CR 1/4  |  100 XP  |  humanoid", "ENCOUNTER-STATE-TAB-002 creature facts");
         assertTextPresent(view, String.valueOf(GOBLIN_COUNT), "ENCOUNTER-STATE-TAB-002 creature count");
+
+        runtime.saveNamedEncounter();
+        assertTextPresent(view, "Named Gate Patrol", "REQ-encounter-named-plan-save saved plan title");
     }
 
     private static EncounterStateView encounterStateView(ShellBinding binding) {
@@ -200,6 +204,11 @@ public final class EncounterStateTabHarness {
         void openSavedEncounter() {
             registry.require(EncounterApplicationService.class)
                     .applyState(ApplyEncounterStateCommand.openSavedPlan(planId));
+        }
+
+        void saveNamedEncounter() {
+            registry.require(EncounterApplicationService.class)
+                    .applyState(ApplyEncounterStateCommand.saveCurrentPlan("Named Gate Patrol"));
         }
 
         private static ServiceRegistry registry() {

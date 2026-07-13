@@ -95,8 +95,8 @@ final class EncounterStateViewModel {
         applyCommand(ApplyEncounterStateCommand.shiftAlternative(alternativeShift));
     }
 
-    void saveCurrentPlan() {
-        applyCommand(ApplyEncounterStateCommand.saveCurrentPlan());
+    void saveCurrentPlan(String planName) {
+        applyCommand(ApplyEncounterStateCommand.saveCurrentPlan(planName));
     }
 
     void openSavedPlan(long selectedPlanId) {

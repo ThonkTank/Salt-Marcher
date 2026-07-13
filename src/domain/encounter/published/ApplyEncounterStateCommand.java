@@ -15,7 +15,8 @@ public record ApplyEncounterStateCommand(
         int initiative,
         long partyMemberId,
         int amount,
-        boolean healing
+        boolean healing,
+        String planName
 ) {
 
     public ApplyEncounterStateCommand {
@@ -28,6 +29,7 @@ public record ApplyEncounterStateCommand(
         combatantId = combatantId == null ? "" : combatantId;
         partyMemberId = Math.max(0L, partyMemberId);
         amount = Math.max(0, amount);
+        planName = planName == null ? "" : planName.trim();
     }
 
     public int actionCode() {
@@ -38,8 +40,21 @@ public record ApplyEncounterStateCommand(
         return action(Action.GENERATE);
     }
 
-    public static ApplyEncounterStateCommand saveCurrentPlan() {
-        return action(Action.SAVE_CURRENT_PLAN);
+    public static ApplyEncounterStateCommand saveCurrentPlan(String planName) {
+        return new ApplyEncounterStateCommand(
+                Action.SAVE_CURRENT_PLAN,
+                0L,
+                0L,
+                0L,
+                0,
+                0L,
+                List.of(),
+                "",
+                0,
+                0L,
+                0,
+                false,
+                planName);
     }
 
     public static ApplyEncounterStateCommand openSavedPlan(long planId) {
@@ -131,7 +146,8 @@ public record ApplyEncounterStateCommand(
                 0,
                 0L,
                 0,
-                false);
+                false,
+                "");
     }
 
     public static ApplyEncounterStateCommand creature(Action action, long creatureId) {
@@ -147,7 +163,8 @@ public record ApplyEncounterStateCommand(
                 0,
                 0L,
                 0,
-                false);
+                false,
+                "");
     }
 
     public static ApplyEncounterStateCommand worldNpc(Action action, long creatureId, long worldNpcId) {
@@ -163,7 +180,8 @@ public record ApplyEncounterStateCommand(
                 0,
                 0L,
                 0,
-                false);
+                false,
+                "");
     }
 
     public static ApplyEncounterStateCommand plan(Action action, long planId) {
@@ -179,7 +197,8 @@ public record ApplyEncounterStateCommand(
                 0,
                 0L,
                 0,
-                false);
+                false,
+                "");
     }
 
     public static ApplyEncounterStateCommand delta(Action action, int delta) {
@@ -195,7 +214,8 @@ public record ApplyEncounterStateCommand(
                 0,
                 0L,
                 0,
-                false);
+                false,
+                "");
     }
 
     public static ApplyEncounterStateCommand undo(Action action, long undoToken) {
@@ -211,7 +231,8 @@ public record ApplyEncounterStateCommand(
                 0,
                 0L,
                 0,
-                false);
+                false,
+                "");
     }
 
     public static ApplyEncounterStateCommand initiatives(
@@ -231,7 +252,8 @@ public record ApplyEncounterStateCommand(
                 0,
                 0L,
                 0,
-                false);
+                false,
+                "");
     }
 
     public static ApplyEncounterStateCommand hitPoints(
@@ -252,7 +274,8 @@ public record ApplyEncounterStateCommand(
                 0,
                 0L,
                 amount,
-                healing);
+                healing,
+                "");
     }
 
     public static ApplyEncounterStateCommand initiative(Action action, String combatantId, int initiative) {
@@ -268,7 +291,8 @@ public record ApplyEncounterStateCommand(
                 initiative,
                 0L,
                 0,
-                false);
+                false,
+                "");
     }
 
     public static ApplyEncounterStateCommand partyMember(Action action, long partyMemberId, int initiative) {
@@ -284,7 +308,8 @@ public record ApplyEncounterStateCommand(
                 initiative,
                 partyMemberId,
                 0,
-                false);
+                false,
+                "");
     }
 
     public List<String> initiativeIds() {

@@ -15,6 +15,7 @@ import javafx.scene.control.ContextMenu;
 import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
+import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
@@ -29,6 +30,7 @@ public final class EncounterBuilderStateView extends VBox {
     static final String STYLE_TEXT_SECONDARY = "text-secondary";
     static final String STYLE_TEXT_MUTED = "text-muted";
     static final String STYLE_ACCENT = "accent";
+    static final String STYLE_SMALL = "small";
     static final String ROSTER_PLACEHOLDER_TEXT = "Monster per +Add hinzufuegen...";
     static final List<String> DIFFICULTY_STYLE_CLASSES = List.of(
             "difficulty-easy",
@@ -58,7 +60,7 @@ public final class EncounterBuilderStateView extends VBox {
 
     private Runnable generateHandler = () -> { };
     private IntConsumer shiftAlternativeHandler = ignored -> { };
-    private Runnable saveCurrentPlanHandler = () -> { };
+    private Consumer<String> saveCurrentPlanHandler = ignored -> { };
     private LongConsumer openSavedPlanHandler = ignored -> { };
     private RosterCountHandler changeRosterCountHandler = (creatureId, delta) -> { };
     private LongConsumer removeCreatureHandler = ignored -> { };
@@ -82,8 +84,8 @@ public final class EncounterBuilderStateView extends VBox {
         shiftAlternativeHandler = handler == null ? ignored -> { } : handler;
     }
 
-    public void onSaveCurrentPlan(Runnable handler) {
-        saveCurrentPlanHandler = handler == null ? () -> { } : handler;
+    public void onSaveCurrentPlan(Consumer<String> handler) {
+        saveCurrentPlanHandler = handler == null ? ignored -> { } : handler;
     }
 
     public void onOpenSavedPlan(LongConsumer handler) {
@@ -148,7 +150,7 @@ public final class EncounterBuilderStateView extends VBox {
         clearHistoryButton.setAccessibleText("Generator-Historie leeren");
         saveEncounterButton.setAccessibleText("Aktuelles Encounter-Roster speichern");
         openEncounterButton.setAccessibleText("Gespeichertes Encounter oeffnen");
-        saveEncounterButton.setOnAction(event -> saveCurrentPlanHandler.run());
+        saveEncounterButton.setOnAction(event -> showSavePlanPopup(saveEncounterButton, saveCurrentPlanHandler));
         openEncounterButton.setTooltip(new Tooltip("Gespeichertes Encounter oeffnen"));
         clearHistoryButton.setTooltip(new Tooltip("Generator-Historie leeren"));
         clearHistoryButton.setOnAction(event -> clearGenerationHistoryHandler.run());
@@ -221,7 +223,7 @@ public final class EncounterBuilderStateView extends VBox {
 
         private final Label builderDifficultyLabel = new EncounterDifficultyBadgeLabel();
         private final Label builderTemplateLabel =
-                new BuilderStyledLabel("", "small", STYLE_TEXT_SECONDARY);
+                new BuilderStyledLabel("", STYLE_SMALL, STYLE_TEXT_SECONDARY);
         private final Label builderPartyLabel =
                 new BuilderStyledLabel("", STYLE_TEXT_SECONDARY);
         private final Label builderXpLabel = new BuilderStyledLabel("", "bold");
@@ -439,7 +441,7 @@ public final class EncounterBuilderStateView extends VBox {
             if (!panel.generationAdvisoryMessages().isEmpty()) {
                 nodes.add(new BuilderStyledLabel(
                         "Hinweise",
-                        "small",
+                        STYLE_SMALL,
                         STYLE_TEXT_SECONDARY));
                 for (String advisory : panel.generationAdvisoryMessages()) {
                     BuilderStyledLabel row =
@@ -475,6 +477,50 @@ public final class EncounterBuilderStateView extends VBox {
         popup.show(anchor, javafx.geometry.Side.BOTTOM, 0.0, 8.0);
         if (focusTarget != null) {
             javafx.application.Platform.runLater(focusTarget::requestFocus);
+        }
+    }
+
+    private static void showSavePlanPopup(
+            Node anchor,
+            Consumer<String> saveCurrentPlan
+    ) {
+        if (anchor == null) {
+            return;
+        }
+        EncounterSavePlanPopupContent content = new EncounterSavePlanPopupContent();
+        ContextMenu popup = contextMenu(content);
+        Node focusTarget = content.showForm(planName -> {
+            popup.hide();
+            saveCurrentPlan.accept(planName);
+        });
+        popup.show(anchor, javafx.geometry.Side.BOTTOM, 0.0, 8.0);
+        if (focusTarget != null) {
+            javafx.application.Platform.runLater(focusTarget::requestFocus);
+        }
+    }
+
+    private static final class EncounterSavePlanPopupContent extends VBox {
+
+        private static final String DEFAULT_PROMPT = "Encounter-Name";
+
+        EncounterSavePlanPopupContent() {
+            super(6);
+            getStyleClass().add("anchored-popup");
+        }
+
+        Node showForm(Consumer<String> saveHandler) {
+            TextField nameField = new TextField();
+            nameField.setPromptText(DEFAULT_PROMPT);
+            nameField.setAccessibleText(DEFAULT_PROMPT);
+            Button saveButton = new BuilderStyledButton("Speichern", STYLE_ACCENT);
+            saveButton.setDefaultButton(true);
+            saveButton.setOnAction(event -> saveHandler.accept(nameField.getText()));
+            nameField.setOnAction(event -> saveButton.fire());
+            getChildren().setAll(
+                    new BuilderStyledLabel("Encounter speichern", STYLE_SMALL, STYLE_TEXT_SECONDARY),
+                    nameField,
+                    saveButton);
+            return nameField;
         }
     }
 
@@ -548,7 +594,7 @@ public final class EncounterBuilderStateView extends VBox {
         EncounterRoleBadgeLabel(String role) {
             super(
                     role,
-                    "small",
+                    STYLE_SMALL,
                     "role-badge",
                     EncounterBuilderStyleMappings.lookup(ROLE_STYLES, role, "role-minion"));
         }

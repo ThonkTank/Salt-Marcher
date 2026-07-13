@@ -19,7 +19,8 @@ public record EncounterSessionCommand(
         int initiative,
         long partyMemberId,
         int amount,
-        boolean healing
+        boolean healing,
+        String planName
 ) {
     public EncounterSessionCommand {
         action = action == null ? Action.REFRESH : action;
@@ -27,6 +28,7 @@ public record EncounterSessionCommand(
         builderInputs = builderInputs == null ? EncounterGenerationInputs.empty() : builderInputs;
         initiativeInputs = initiativeInputs == null ? List.of() : List.copyOf(initiativeInputs);
         combatantId = combatantId == null ? CombatantId.empty() : combatantId;
+        planName = planName == null ? "" : planName.trim();
     }
 
     public static EncounterSessionCommand refresh() {
@@ -44,7 +46,8 @@ public record EncounterSessionCommand(
                 0,
                 0L,
                 0,
-                false);
+                false,
+                "");
     }
 
     public static EncounterSessionCommand updateBuilderInputs(EncounterGenerationInputs builderInputs) {
@@ -62,7 +65,8 @@ public record EncounterSessionCommand(
                 0,
                 0L,
                 0,
-                false);
+                false,
+                "");
     }
 
     boolean opensSavedPlan() {

@@ -25,7 +25,9 @@ final class EncounterSessionSavedPlans {
             EncounterSession.SessionRepository access,
             EncounterSessionContext context,
             List<EncounterCreatureData> roster,
-            String generatedTitle
+            String generatedTitle,
+            String requestedName,
+            EncounterSessionGeneration generation
     ) {
         if (roster.isEmpty()) {
             context.setStatus(SAVE_NEEDS_CREATURE_STATUS);
@@ -33,7 +35,7 @@ final class EncounterSessionSavedPlans {
         }
         PlanOutcome result = access.savePlan(new EncounterPlan(
                 activeSavedPlanId.orElse(0L),
-                saveName(generatedTitle, roster.isEmpty()),
+                saveName(requestedName, generatedTitle, roster.isEmpty()),
                 generatedTitle,
                 planCreatures(roster)));
         if (!result.success()) {
@@ -43,6 +45,7 @@ final class EncounterSessionSavedPlans {
         }
         EncounterPlan plan = result.plan().orElseThrow();
         activeSavedPlanId = OptionalLong.of(plan.id());
+        generation.openSavedPlan(plan.name());
         context.setStatus(plan.name() + " gespeichert.");
         context.refreshSavedPlans(access);
     }
@@ -88,7 +91,11 @@ final class EncounterSessionSavedPlans {
         return creatures;
     }
 
-    private static String saveName(String generatedTitle, boolean emptyRoster) {
+    private static String saveName(String requestedName, String generatedTitle, boolean emptyRoster) {
+        String safeRequestedName = requestedName == null ? "" : requestedName.trim();
+        if (!safeRequestedName.isBlank()) {
+            return safeRequestedName;
+        }
         if (!generatedTitle.isBlank()) {
             return generatedTitle;
         }

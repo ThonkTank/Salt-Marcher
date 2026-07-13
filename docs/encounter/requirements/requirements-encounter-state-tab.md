@@ -61,6 +61,9 @@ the fixed footer while oversized page bodies scroll.
 - Previous and next controls sit in the generator action row and switch among
   the currently generated alternatives.
 - `Speichern` stores the current roster as a saved encounter plan.
+- `REQ-encounter-named-plan-save`: When the current roster is saved, the
+  dialog lets the user enter the saved encounter name, and the saved-plan list
+  shows that entered name after the save completes.
 - `Öffnen` shows saved encounter plans from the title row. Selecting one
   replaces the builder roster, returns to Creation mode, and clears generated
   alternatives, initiative, combat, and result state.
@@ -132,6 +135,8 @@ the fixed footer while oversized page bodies scroll.
   tuning, and encounter-table selections visible to the runtime session
 - opening a saved encounter plan replaces the current creation roster and
   clears generated-alternative, initiative, combat, and result runtime state
+- saving the current encounter uses the user-entered encounter name for the
+  saved-plan list entry
 - the title-row `Verlauf löschen` action removes transient generation history
   without
   deleting the current roster
@@ -147,4 +152,10 @@ the fixed footer while oversized page bodies scroll.
 
 - [Encounter Feature Spec](docs/encounter/requirements/requirements-encounter.md:1)
 - [Encounter Domain Model](docs/encounter/domain/domain-encounter.md:1)
+- [Encounter Verification](docs/encounter/verification/verification-encounter.md:1)
 - [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
+
+## Change Footer
+
+- `REQ-encounter-named-plan-save`
+  Derived from: #443

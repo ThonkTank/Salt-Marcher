@@ -94,7 +94,8 @@ public final class EncounterApplicationService {
                 effective.initiative(),
                 effective.partyMemberId(),
                 effective.amount(),
-                effective.healing());
+                effective.healing(),
+                effective.planName());
     }
 
     private static EncounterSessionCommand.Action toSessionAction(int actionCode) {

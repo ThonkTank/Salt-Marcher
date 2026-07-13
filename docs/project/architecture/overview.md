@@ -1,25 +1,29 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-09
-Source of Truth: Project-wide architecture routing during the role-family
-doctrine removal migration.
+Source of Truth: Project-wide architecture routing during active architecture
+and document-size policy migrations.
 
 # Architecture Overview
 
 ## Purpose
 
-SaltMarcher's architecture is currently governed by the migration roadmap and
-ledger while the retired role-family doctrine is removed from the repository.
-This overview routes readers to the documents that remain authoritative during
-that migration.
+SaltMarcher's source-area architecture is currently governed by the migration
+roadmap and ledger while the retired role-family doctrine is removed from the
+repository. Document-size policy adoption has its own roadmap and ledger. This
+overview routes readers to the documents that remain authoritative during those
+migrations.
 
 ## Current Source Order
 
 1. `docs/project/architecture/architecture-migration-roadmap.md`
 2. `docs/project/architecture/migration-ledger.md`
-3. retained behavior, contract, requirement, domain, and verification docs
-4. surrounding production code for legacy areas
-5. the pilot reference commit named in the ledger for migrated areas
+3. `docs/project/architecture/doc-size-policy-vision-and-roadmap.md`
+4. `docs/project/architecture/doc-size-policy-ledger.md`
+5. `docs/project/documentation-specification.md`
+6. retained behavior, contract, requirement, domain, and verification docs
+7. surrounding production code for legacy areas
+8. the pilot reference commit named in the ledger for migrated areas
 
 Where a retained document still describes old structure, the roadmap and ledger
 win for migration work. Behavior truth remains in feature requirements,
@@ -45,6 +49,12 @@ tools/       build infrastructure, quality platforms, and scripts
   owns the target principles, per-area cycle, and migration milestones.
 - [Migration Ledger](migration-ledger.md)
   owns current milestone, in-flight work, area state, and close-out notes.
+- [Document Size Policy Roadmap](doc-size-policy-vision-and-roadmap.md) owns
+  the roadmap replacing the hard Markdown size cap.
+- [Document Size Policy Ledger](doc-size-policy-ledger.md) owns the current
+  document-size policy adoption state.
+- [Document Split Protocol](doc-split-protocol.md) owns split triggers,
+  zero-loss obligations, and the judge checklist for documentation splits.
 - [Layering Architecture Standard](patterns/layering-architecture.md)
   owns the retained package-level dependency direction statement.
 - [Bootstrap Standard](patterns/bootstrap.md) and
@@ -67,6 +77,7 @@ recorded in the roadmap, ledger, owner docs, and journal as required.
 ## References
 
 - [Documentation Standard](documentation.md)
+- [Documentation Specification](../documentation-specification.md)
 - [Agent Instruction Standard](agent-instructions.md)
 - [Quality Platforms Standard](../verification/quality-platforms.md)
 - [Harness Gaps](../verification/harness-gaps.md)

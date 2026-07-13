@@ -73,6 +73,8 @@ sourceSets {
             exclude("src/view/leftbartabs/dungeoneditor/**")
             exclude("src/view/leftbartabs/worldplanner/**")
         }
+        compileClasspath += sourceSets["main"].output + sourceSets["main"].compileClasspath
+        runtimeClasspath += output + compileClasspath + sourceSets["main"].runtimeClasspath
     }
 }
 
@@ -94,6 +96,10 @@ val dungeonEditorBehaviorHarness by sourceSets.creating {
 tasks.named<JavaCompile>(dungeonEditorBehaviorHarness.compileJavaTaskName) {
     dependsOn(tasks.named(sourceSets["main"].classesTaskName))
     classpath += sourceSets["main"].output + sourceSets["main"].compileClasspath
+}
+
+tasks.named<JavaCompile>("compileJava") {
+    outputs.cacheIf("SaltMarcher uses repository-root package source directories") { false }
 }
 
 val hexMapEditorBehaviorHarness by sourceSets.creating {
