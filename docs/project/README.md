@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-10
+Last Reviewed: 2026-07-13
 Source of Truth: Entry point into project-wide canonical documentation and the
 project-level documentation layers defined by the documentation specification.
 
@@ -61,6 +61,10 @@ Project-wide documentation placement and layer rules are owned by the
 - [Harness Modernization Roadmap](docs/project/architecture/harness-modernization-roadmap.md:1)
 - [Harness Modernization Ledger](docs/project/architecture/harness-modernization-ledger.md:1)
 - [Harness Modernization Owner Status Notes](docs/project/architecture/harness-modernization-owner-status-notes.md:1)
+- [Verification Greenfield Roadmap](docs/project/architecture/verification-greenfield-roadmap.md:1)
+- [Verification Greenfield Target Design](docs/project/architecture/verification-greenfield-target-design.md:1)
+- [Verification Greenfield Ledger](docs/project/architecture/verification-greenfield-ledger.md:1)
+- [Verification Greenfield Owner Status Notes](docs/project/architecture/verification-greenfield-owner-status-notes.md:1)
 - [Architecture Migration Hex Baseline](docs/project/architecture/architecture-migration-hex-baseline.md:1)
 - [Architecture Migration Hex Target Design](docs/project/architecture/architecture-migration-hex-target-design.md:1)
 - [Architecture Migration Worldplanner Baseline](docs/project/architecture/architecture-migration-worldplanner-baseline.md:1)
