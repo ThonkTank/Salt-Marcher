@@ -27,11 +27,11 @@ unless this ledger advances too.
 
 | Field | Value |
 | --- | --- |
-| Branch | `codex/verif-greenfield-m0-charter` |
+| Branch | `main` |
 | Milestone | M0 - Charter, Local Sync, Baseline, Predecessor Close-Out |
-| Status | Done on branch |
-| Required next proof | Open and merge the M0 charter PR with green CI, then continue with `Green scheduled nightly run recorded; predecessor T4 closed`. |
-| Last status note | `2026-07-13 Charter-docs-proof-green` |
+| Status | In Flight |
+| Required next proof | `Green scheduled nightly run recorded; predecessor T4 closed`: record the first green scheduled `nightly-rerun-tasks` proof and close predecessor T4. |
+| Last status note | `2026-07-13 Charter-docs-merged` |
 
 ## Baseline Measurements (owner machine, headless, filled in M0)
 
@@ -59,7 +59,7 @@ unless this ledger advances too.
 
 | Step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Charter docs committed and indexed | Done on branch | `4fae4d35d` | Pending | `git diff --check main...HEAD` passed with no output, 2026-07-13; `./gradlew checkDocumentationEnforcement --console=plain` passed with `Documentation checks passed.` and `BUILD SUCCESSFUL in 6s`, 2026-07-13; docs-gate repair PR #458 merged as `735331a11` after green `check`, `warden-freeze`, owner-only `judge-review`, `ckjm-report`, SonarCloud, and CodeScene, 2026-07-13 | Roadmap, target design, ledger, owner notes, and index links are committed on the branch. Prior blocker cleared by PR #458: the active Documentation Standard now owns size as a non-fatal signal and keeps `Owner` / `Last Reviewed` optional. The charter branch is rebased on repaired `main`; no violation was reported against the verification-greenfield files. |
+| Charter docs committed and indexed | Done | `dbfe28955` | `738ebe6b` | `git diff --check main...HEAD` passed with no output, 2026-07-13; `./gradlew checkDocumentationEnforcement --console=plain` passed with `Documentation checks passed.` and `BUILD SUCCESSFUL in 6s`, 2026-07-13; docs-gate repair PR #458 merged as `735331a11` after green `check`, `warden-freeze`, owner-only `judge-review`, `ckjm-report`, SonarCloud, and CodeScene, 2026-07-13; charter PR #459 merged as `738ebe6b` after green `check`, `warden-freeze`, `judge-review`, `ckjm-report`, SonarCloud, and CodeScene, 2026-07-13 | Roadmap, target design, ledger, owner notes, and index links are merged. Prior blocker cleared by PR #458: the active Documentation Standard now owns size as a non-fatal signal and keeps `Owner` / `Last Reviewed` optional. PR #459 head `dbfe28955` only refreshed the risk-label event after the proof commit; no violation was reported against the verification-greenfield files. |
 | Local checkout on origin/main; in-flight work preserved | Done on branch | Pending | Pending | Pending | Encounter WIP committed on `codex/architecture-migration-m0-charter`; `codex/architecture-roadmap-phase2` pushed to origin 2026-07-13. |
 | Green scheduled nightly run recorded; predecessor T4 closed | Pending | Pending | Pending | Pending | Update predecessor ledger T4 to Done with the nightly evidence. |
 | Predecessor roadmap deprecated with successor pointer | Pending | Pending | Pending | Pending | `Status: Deprecated` plus pointer under the title. |
