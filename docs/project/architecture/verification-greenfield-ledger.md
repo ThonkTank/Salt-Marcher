@@ -30,8 +30,8 @@ unless this ledger advances too.
 | Branch | `codex/verif-greenfield-m0-charter` |
 | Milestone | M0 - Charter, Local Sync, Baseline, Predecessor Close-Out |
 | Status | Blocked |
-| Required next proof | Repair or retire the stale documentation-enforcement blockers on `origin/main`, then rerun `./gradlew checkDocumentationEnforcement --console=plain` for the charter branch. |
-| Last status note | `2026-07-13 Charter-proof-blocked` |
+| Required next proof | Owner decision required: approve a documentation-enforcement relaxation or name a different repair path, then rerun `./gradlew checkDocumentationEnforcement --console=plain` for the charter branch. |
+| Last status note | `2026-07-13 Charter-proof-blocked-by-judge` |
 
 ## Baseline Measurements (owner machine, headless, filled in M0)
 
@@ -59,7 +59,7 @@ unless this ledger advances too.
 
 | Step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Charter docs committed and indexed | Blocked | `72304398d` | Pending | `git diff --check` passed with no output, 2026-07-13; `./gradlew checkDocumentationEnforcement --console=plain` failed, 2026-07-13 | Roadmap, target design, ledger, owner notes, and index links are committed on the branch. Blocked by pre-existing `checkDocumentationEnforcement` violations on current `origin/main`: stale hard line-cap failures, two `Status: Baseline` files, and optional `Owner`/`Last Reviewed` metadata still treated as required. No violation was reported against the new verification-greenfield files. |
+| Charter docs committed and indexed | Blocked | `72304398d` | Pending | `git diff --check` passed with no output, 2026-07-13; `./gradlew checkDocumentationEnforcement --console=plain` failed, 2026-07-13; PR #458 judge rejected documentation-gate relaxation, 2026-07-13; blocker ledger update `git diff --check` passed and `./gradlew checkDocumentationEnforcement --console=plain` failed with 12 stale documentation-enforcement violations, 2026-07-13 | Roadmap, target design, ledger, owner notes, and index links are committed on the branch. Blocked by pre-existing `checkDocumentationEnforcement` violations on current `origin/main`: stale hard line-cap failures, two `Status: Baseline` files, and optional `Owner`/`Last Reviewed` metadata still treated as required. Repair PR #458 proved the local docs gate but CI judge rejected the relaxation as gate weakening; owner must approve relaxing the documentation gate or choose a different repair path before this step can advance. No violation was reported against the new verification-greenfield files. |
 | Local checkout on origin/main; in-flight work preserved | Done on branch | Pending | Pending | Pending | Encounter WIP committed on `codex/architecture-migration-m0-charter`; `codex/architecture-roadmap-phase2` pushed to origin 2026-07-13. |
 | Green scheduled nightly run recorded; predecessor T4 closed | Pending | Pending | Pending | Pending | Update predecessor ledger T4 to Done with the nightly evidence. |
 | Predecessor roadmap deprecated with successor pointer | Pending | Pending | Pending | Pending | `Status: Deprecated` plus pointer under the title. |
