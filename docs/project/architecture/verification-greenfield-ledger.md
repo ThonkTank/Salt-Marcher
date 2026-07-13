@@ -27,11 +27,11 @@ unless this ledger advances too.
 
 | Field | Value |
 | --- | --- |
-| Branch | `main` |
+| Branch | `codex/verif-greenfield-m0-nightly-t4` |
 | Milestone | M0 - Charter, Local Sync, Baseline, Predecessor Close-Out |
-| Status | In Flight |
-| Required next proof | `Green scheduled nightly run recorded; predecessor T4 closed`: record the first green scheduled `nightly-rerun-tasks` proof and close predecessor T4. |
-| Last status note | `2026-07-13 Charter-docs-merged` |
+| Status | Blocked |
+| Required next proof | Wait for the first scheduled `quality-platforms / nightly-rerun-tasks` run after the 2026-07-14 02:17 UTC cron, then record it and close predecessor T4 if it is green. |
+| Last status note | `2026-07-14 Nightly-not-yet-fired` |
 
 ## Baseline Measurements (owner machine, headless, filled in M0)
 
@@ -61,7 +61,7 @@ unless this ledger advances too.
 | --- | --- | --- | --- | --- | --- |
 | Charter docs committed and indexed | Done | `dbfe28955` | `738ebe6b` | `git diff --check main...HEAD` passed with no output, 2026-07-13; `./gradlew checkDocumentationEnforcement --console=plain` passed with `Documentation checks passed.` and `BUILD SUCCESSFUL in 6s`, 2026-07-13; docs-gate repair PR #458 merged as `735331a11` after green `check`, `warden-freeze`, owner-only `judge-review`, `ckjm-report`, SonarCloud, and CodeScene, 2026-07-13; charter PR #459 merged as `738ebe6b` after green `check`, `warden-freeze`, `judge-review`, `ckjm-report`, SonarCloud, and CodeScene, 2026-07-13 | Roadmap, target design, ledger, owner notes, and index links are merged. Prior blocker cleared by PR #458: the active Documentation Standard now owns size as a non-fatal signal and keeps `Owner` / `Last Reviewed` optional. PR #459 head `dbfe28955` only refreshed the risk-label event after the proof commit; no violation was reported against the verification-greenfield files. |
 | Local checkout on origin/main; in-flight work preserved | Done on branch | Pending | Pending | Pending | Encounter WIP committed on `codex/architecture-migration-m0-charter`; `codex/architecture-roadmap-phase2` pushed to origin 2026-07-13. |
-| Green scheduled nightly run recorded; predecessor T4 closed | Pending | Pending | Pending | Pending | Update predecessor ledger T4 to Done with the nightly evidence. |
+| Green scheduled nightly run recorded; predecessor T4 closed | Blocked | Pending | Pending | `gh run list --workflow quality-platforms --event schedule --limit 10 --json ...` returned `[]`, 2026-07-14; `gh run list --event schedule --limit 20 --json ...` showed only `promote-stable` scheduled runs, 2026-07-14; `date -Is` returned `2026-07-14T00:29:24+02:00`, before the configured `quality-platforms` cron `17 2 * * *`, 2026-07-14 | Blocked on external schedule timing, not on a red nightly. Do not substitute a manual, PR, or push run for the required scheduled `nightly-rerun-tasks` evidence. |
 | Predecessor roadmap deprecated with successor pointer | Pending | Pending | Pending | Pending | `Status: Deprecated` plus pointer under the title. |
 | Baseline measured headless on owner machine | Pending | Pending | Pending | Pending | Four measurements into the baseline table. |
 | Targets calibrated; German status note | Pending | Pending | Pending | Pending | Targets flip Provisional -> Binding. |

@@ -29,9 +29,9 @@ modernization unless this ledger advances too.
 | Branch | `main` |
 | Milestone | T4 - CI authority and bespoke-layer deletion |
 | Conversion batch | None |
-| Status | In Flight |
-| Required next proof | Wait for and record one green scheduled nightly `--rerun-tasks` run from the merged `quality-platforms` workflow. |
-| Last status note | `2026-07-12 T3-close-out` |
+| Status | Blocked |
+| Required next proof | Wait for the first scheduled `quality-platforms / nightly-rerun-tasks` run after the 2026-07-14 02:17 UTC cron; record it here only if it is green. |
+| Last status note | `2026-07-14 Nightly-not-yet-fired` |
 
 ## Milestone Ledger
 
@@ -41,7 +41,7 @@ modernization unless this ledger advances too.
 | T1 Fleet conversion | Done on branch | Pending | Pending | Per-batch focused run, forced run, JUnit XML, final `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | All registered behavior harness tasks are JUnit `Test` tasks; no JavaExec behavior harness registration, silent Dungeon Editor direct-main entrypoint, or harness-level `outputs.upToDateWhen { false }` remains. |
 | T2 Cache correctness and hermeticity | Done on branch | Pending | Pending | Dungeon Editor and Render Parity cache-hit, classpath re-run, resource re-run, final consecutive `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | Relative result paths replace absolute Test system-property result paths for the reviewed converted check-participating Dungeon Editor surfaces. |
 | T3 Commit gate via versioned hooks | Done on branch | Pending | Pending | Rejected untested change naming `:compileTestJava`, accepted tested staged trees through clean worktree `check`, fresh-clone bootstrap set `core.hooksPath=tools/hooks`, dirty worktree isolation passed, Phase 1 Approved, Phase 2 Approved | Versioned `tools/hooks/pre-commit` now verifies the staged tree through a detached clean worktree. |
-| T4 CI authority and bespoke-layer deletion | In Flight | `4946450b3`, `d528d0b13`, `712ac4f87` | `ea6e797d`, `8aa8ed350` | Local structural proof and Phase 1/Phase 2 approved; build-wiring PR CI forced `check --rerun-tasks` green; area-touch PR CI content-addressed cache behavior green; branch-protection readback Qualified; deleted selector files absent on `main` | PR #453 replaced the required CI surface with `check`, adds scheduled `nightly-rerun-tasks`, deletes `harness-map.json`, `select_harnesses.py`, and `behavior-gate`, removes `checkHarnessMapConsistency`, and updates required-check/frozen/governance surfaces. Scheduled nightly green run remains pending. |
+| T4 CI authority and bespoke-layer deletion | Blocked | `4946450b3`, `d528d0b13`, `712ac4f87` | `ea6e797d`, `8aa8ed350` | Local structural proof and Phase 1/Phase 2 approved; build-wiring PR CI forced `check --rerun-tasks` green; area-touch PR CI content-addressed cache behavior green; branch-protection readback Qualified; deleted selector files absent on `main`; `gh run list --workflow quality-platforms --event schedule --limit 10 --json ...` returned `[]`, 2026-07-14; `gh run list --event schedule --limit 20 --json ...` showed only `promote-stable` scheduled runs, 2026-07-14; `date -Is` returned `2026-07-14T00:29:24+02:00`, before the configured `quality-platforms` cron `17 2 * * *`, 2026-07-14 | PR #453 replaced the required CI surface with `check`, adds scheduled `nightly-rerun-tasks`, deletes `harness-map.json`, `select_harnesses.py`, and `behavior-gate`, removes `checkHarnessMapConsistency`, and updates required-check/frozen/governance surfaces. Blocked on external schedule timing, not on a red nightly; do not substitute a manual, PR, or push run for the required scheduled nightly evidence. |
 | T5 Resolution report and honesty reviewer | Pending | Pending | Pending | Pending | Resource policy amendment must precede reviewer calls. |
 | T6 Governance consolidation | Pending | Pending | Pending | Pending | AGENTS/check-entrypoint consolidation waits until the system exists. |
 
