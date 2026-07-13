@@ -17,6 +17,9 @@ import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ShellContributionSpec;
@@ -41,19 +44,19 @@ public final class SessionPlannerShellLayoutHarness {
     private static final int AWAIT_SECONDS = 60;
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
 
-    private SessionPlannerShellLayoutHarness() {
+    @AfterEach
+    void hideWindows() throws Exception {
+        runOnFxThread(SessionPlannerShellLayoutHarness::hideOpenWindows);
     }
 
-    public static void main(String[] args) throws Exception {
-        try {
-            runOnFxThread(SessionPlannerShellLayoutHarness::runHarness);
-            shutdownFx();
-            System.out.println("Session Planner shell layout harness passed.");
-        } catch (Throwable throwable) {
-            throwable.printStackTrace(System.err);
-            shutdownFx();
-            System.exit(1);
-        }
+    @AfterAll
+    static void shutdownJavaFx() throws Exception {
+        shutdownFx();
+    }
+
+    @Test
+    void SESSION_PLANNER_SHELL_LAYOUT_001() throws Exception {
+        runOnFxThread(SessionPlannerShellLayoutHarness::runHarness);
     }
 
     private static void runHarness() {
@@ -319,6 +322,7 @@ public final class SessionPlannerShellLayoutHarness {
         Throwable[] failure = new Throwable[1];
         Runnable wrappedAction = () -> {
             try {
+                Platform.setImplicitExit(false);
                 action.run();
             } catch (Throwable throwable) {
                 failure[0] = throwable;
@@ -344,11 +348,16 @@ public final class SessionPlannerShellLayoutHarness {
             return;
         }
         runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                window.hide();
-            }
+            hideOpenWindows();
             Platform.exit();
         });
+    }
+
+    private static void hideOpenWindows() {
+        Platform.setImplicitExit(false);
+        for (Window window : List.copyOf(Window.getWindows())) {
+            window.hide();
+        }
     }
 
     @FunctionalInterface

@@ -19,31 +19,39 @@ import src.domain.encountertable.published.EncounterTableCatalogResult;
 import src.domain.encountertable.published.EncounterTableReadStatus;
 import src.domain.encountertable.published.RefreshEncounterTableCandidatesCommand;
 import src.domain.encountertable.published.RefreshEncounterTableCatalogCommand;
+import org.junit.jupiter.api.Test;
 
 public final class EncounterTableReadbackHarness {
 
     private static final long ASH_AMBUSH_ID = 201L;
     private static final long CINDER_PATROL_ID = 202L;
 
-    private EncounterTableReadbackHarness() {
-    }
-
-    public static void main(String[] args) throws Exception {
-        Path database = databasePath();
-        seedDatabase(database);
-        HarnessRuntime runtime = runtime();
-
+    @Test
+    void ENCOUNTER_TABLE_001() throws Exception {
+        HarnessRuntime runtime = setupRuntime();
         runtime.service.refreshCatalog(new RefreshEncounterTableCatalogCommand());
         assertAuthoredSummaryLookup(runtime.catalog.current());
+    }
 
+    @Test
+    void ENCOUNTER_TABLE_002() throws Exception {
+        HarnessRuntime runtime = setupRuntime();
         runtime.service.refreshCandidates(new RefreshEncounterTableCandidatesCommand(
                 List.of(CINDER_PATROL_ID, ASH_AMBUSH_ID),
                 300));
         assertWeightedCandidateLookup(runtime.candidates.current());
+    }
 
+    @Test
+    void ENCOUNTER_TABLE_003() throws Exception {
+        HarnessRuntime runtime = setupRuntime();
         runtime.service.refreshCandidates(new RefreshEncounterTableCandidatesCommand(List.of(), 300));
         assertEmptySelection(runtime.candidates.current());
+    }
 
+    @Test
+    void ENCOUNTER_TABLE_004() throws Exception {
+        HarnessRuntime runtime = setupRuntime();
         runtime.service.refreshCandidates(new RefreshEncounterTableCandidatesCommand(
                 List.of(ASH_AMBUSH_ID, CINDER_PATROL_ID),
                 50));
@@ -53,12 +61,26 @@ public final class EncounterTableReadbackHarness {
                 List.of(ASH_AMBUSH_ID, CINDER_PATROL_ID),
                 0));
         assertUnboundedXpCeiling(runtime.candidates.current());
+    }
 
+    @Test
+    void ENCOUNTER_TABLE_005() throws Exception {
+        Path database = databasePath();
+        seedDatabase(database);
+        HarnessRuntime runtime = runtime();
+        runtime.service.refreshCandidates(new RefreshEncounterTableCandidatesCommand(
+                List.of(ASH_AMBUSH_ID, CINDER_PATROL_ID),
+                0));
+        assertUnboundedXpCeiling(runtime.candidates.current());
         dropCreatureTable(database);
         runtime.service.refreshCandidates(new RefreshEncounterTableCandidatesCommand(List.of(ASH_AMBUSH_ID), 300));
         assertStorageErrorPublication(runtime.candidates.current());
+    }
 
-        System.out.println("Encounter table readback harness passed: 5 proof item(s).");
+    private static HarnessRuntime setupRuntime() throws Exception {
+        Path database = databasePath();
+        seedDatabase(database);
+        return runtime();
     }
 
     private static HarnessRuntime runtime() {

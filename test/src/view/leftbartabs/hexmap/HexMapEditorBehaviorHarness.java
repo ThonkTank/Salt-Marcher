@@ -1,5 +1,7 @@
 package src.view.leftbartabs.hexmap;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -13,6 +15,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 import javafx.event.ActionEvent;
 import javafx.application.Platform;
 import javafx.scene.Node;
@@ -67,6 +70,9 @@ import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.PartyOverworldTravelLocationSnapshot;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsViewInputEvent;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public final class HexMapEditorBehaviorHarness {
 
@@ -90,61 +96,229 @@ public final class HexMapEditorBehaviorHarness {
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
     private static final int AWAIT_SECONDS = 10;
 
-    private HexMapEditorBehaviorHarness() {
-    }
-
-    public static void main(String[] args) {
-        List<String> results = new ArrayList<>();
-        try {
-            run(results);
-            shutdownFx();
-            System.out.println("Hex Map editor behavior harness passed: " + results.size() + " proof item(s).");
-            for (String result : results) {
-                System.out.println(result);
-            }
-        } catch (Throwable throwable) {
-            throwable.printStackTrace(System.err);
+    @BeforeAll
+    static void startFx() throws Exception {
+        if (!FX_STARTED.compareAndSet(false, true)) {
+            return;
+        }
+        CountDownLatch latch = new CountDownLatch(1);
+        Throwable[] failure = new Throwable[1];
+        Platform.startup(() -> {
             try {
-                shutdownFx();
-            } catch (Exception shutdownFailure) {
-                shutdownFailure.printStackTrace(System.err);
+                Platform.setImplicitExit(false);
+            } catch (Throwable throwable) {
+                failure[0] = throwable;
+            } finally {
+                latch.countDown();
             }
-            System.exit(1);
+        });
+        if (!latch.await(AWAIT_SECONDS, TimeUnit.SECONDS)) {
+            throw new IllegalStateException("Timed out starting JavaFX Hex Map editor behavior harness.");
+        }
+        if (failure[0] != null) {
+            throw new IllegalStateException("JavaFX Hex Map editor behavior harness startup failed.", failure[0]);
         }
     }
 
-    static void run(List<String> results) throws Exception {
+    @AfterAll
+    static void tearDownFx() throws Exception {
+        shutdownFx();
+    }
+
+    @Test
+    void HEX_EDITOR_001() throws Exception {
+        assertProofItem("HEX-EDITOR-001");
+    }
+
+    @Test
+    void HEX_EDITOR_002() throws Exception {
+        assertProofItem("HEX-EDITOR-002");
+    }
+
+    @Test
+    void HEX_EDITOR_003() throws Exception {
+        assertProofItem("HEX-EDITOR-003");
+    }
+
+    @Test
+    void HEX_EDITOR_004() throws Exception {
+        assertProofItem("HEX-EDITOR-004");
+    }
+
+    @Test
+    void HEX_EDITOR_005() throws Exception {
+        assertProofItem("HEX-EDITOR-005");
+    }
+
+    @Test
+    void HEX_EDITOR_006() throws Exception {
+        assertProofItem("HEX-EDITOR-006");
+    }
+
+    @Test
+    void HEX_EDITOR_007() throws Exception {
+        assertProofItem("HEX-EDITOR-007");
+    }
+
+    @Test
+    void HEX_EDITOR_008() throws Exception {
+        assertProofItem("HEX-EDITOR-008");
+    }
+
+    @Test
+    void HEX_EDITOR_009() throws Exception {
+        assertProofItem("HEX-EDITOR-009");
+    }
+
+    @Test
+    void HEX_EDITOR_010() throws Exception {
+        assertProofItem("HEX-EDITOR-010");
+    }
+
+    @Test
+    void HEX_EDITOR_011() throws Exception {
+        assertProofItem("HEX-EDITOR-011");
+    }
+
+    @Test
+    void HEX_EDITOR_012() throws Exception {
+        assertProofItem("HEX-EDITOR-012");
+    }
+
+    @Test
+    void HEX_EDITOR_013() throws Exception {
+        assertProofItem("HEX-EDITOR-013");
+    }
+
+    @Test
+    void HEX_TRAVEL_001() throws Exception {
+        assertProofItem("HEX-TRAVEL-001");
+    }
+
+    @Test
+    void HEX_TRAVEL_002() throws Exception {
+        assertProofItem("HEX-TRAVEL-002");
+    }
+
+    @Test
+    void HEX_TRAVEL_003() throws Exception {
+        assertProofItem("HEX-TRAVEL-003");
+    }
+
+    @Test
+    void HEX_TRAVEL_004() throws Exception {
+        assertProofItem("HEX-TRAVEL-004");
+    }
+
+    @Test
+    void HEX_TRAVEL_005() throws Exception {
+        assertProofItem("HEX-TRAVEL-005");
+    }
+
+    @Test
+    void HEX_TRAVEL_006() throws Exception {
+        assertProofItem("HEX-TRAVEL-006");
+    }
+
+    @Test
+    void HEX_TRAVEL_007() throws Exception {
+        assertProofItem("HEX-TRAVEL-007");
+    }
+
+    @Test
+    void HEX_TRAVEL_008() throws Exception {
+        assertProofItem("HEX-TRAVEL-008");
+    }
+
+    private static void assertProofItem(String proofId) throws Exception {
+        resetHarnessDataHome();
+        switch (proofId) {
+            case "HEX-EDITOR-001" -> assertCreateMapProof();
+            case "HEX-EDITOR-002" -> assertUpdateMapProof();
+            case "HEX-EDITOR-003" -> assertSelectTileProof();
+            case "HEX-EDITOR-004" -> assertPaintTerrainProof();
+            case "HEX-EDITOR-005" -> assertSaveMarkerProof();
+            case "HEX-EDITOR-006" -> assertMarkerValidationProof();
+            case "HEX-EDITOR-007" -> assertReloadProof();
+            case "HEX-EDITOR-008" -> assertMapSaveRoutingProof();
+            case "HEX-EDITOR-009" -> assertMarkerSaveRoutingProof();
+            case "HEX-EDITOR-010" -> assertBinderActivationProof();
+            case "HEX-EDITOR-011" -> assertCatalogRenameProof();
+            case "HEX-EDITOR-012" -> runOnFxThread(HexMapEditorBehaviorHarness::assertShellBoundContributionRoute);
+            case "HEX-EDITOR-013" -> assertMapSaveFailureProof();
+            case "HEX-TRAVEL-001" -> assertStableTileIdProof();
+            case "HEX-TRAVEL-002" -> assertTravelReadbackProof();
+            case "HEX-TRAVEL-003" -> assertMovePartyToolProof();
+            case "HEX-TRAVEL-004" -> assertInvalidMoveProof();
+            case "HEX-TRAVEL-005" -> assertTravelOverlayProof();
+            case "HEX-TRAVEL-006" -> assertToolLabelProof();
+            case "HEX-TRAVEL-007" -> assertMarkerDraftToolRefreshProof();
+            case "HEX-TRAVEL-008" -> assertOversizedMapDoesNotRenderCanvasTiles();
+            default -> throw new IllegalArgumentException("Unknown Hex Map proof item: " + proofId);
+        }
+    }
+
+    private static void resetHarnessDataHome() throws IOException {
+        String xdgDataHome = System.getenv("XDG_DATA_HOME");
+        if (xdgDataHome == null || xdgDataHome.isBlank()) {
+            return;
+        }
+        Path saltMarcherDir = Path.of(xdgDataHome, "salt-marcher");
+        deleteRecursively(saltMarcherDir);
+        Files.createDirectories(saltMarcherDir);
+    }
+
+    private static void deleteRecursively(Path path) throws IOException {
+        if (!Files.exists(path)) {
+            return;
+        }
+        if (Files.isDirectory(path)) {
+            try (Stream<Path> children = Files.list(path)) {
+                for (Path child : children.toList()) {
+                    deleteRecursively(child);
+                }
+            }
+        }
+        Files.deleteIfExists(path);
+    }
+
+    private static void assertCreateMapProof() {
         RuntimeSurface runtime = RuntimeSurface.create();
         runtime.editor().createMap(new CreateHexMapCommand(ORIGINAL_NAME, START_RADIUS));
         HexEditorSnapshot created = runtime.current();
         HexMapId mapId = selectedMapId(created);
-        long authoredTileId = new HexCoordinate(AUTHORED_Q, AUTHORED_R).stableTileId();
-        HexCoordinate decodedAuthoredTile = HexCoordinate.fromStableTileId(authoredTileId)
-                .orElseThrow(() -> new IllegalStateException("HEX-TRAVEL-001 expected tile id decode."));
-        assertEquals(new HexCoordinate(AUTHORED_Q, AUTHORED_R), decodedAuthoredTile,
-                "HEX-TRAVEL-001 stable tile id roundtrip");
         assertEquals(ORIGINAL_NAME, selectedMap(created).displayName(), "HEX-EDITOR-001 created map name");
         assertEquals(START_RADIUS, selectedMap(created).radius(), "HEX-EDITOR-001 created map radius");
         assertEquals(19, selectedMap(created).tileCount(), "HEX-EDITOR-001 created radius-2 tile count");
         assertTrue(created.catalog().stream().anyMatch(map -> map.mapId().equals(mapId)),
                 "HEX-EDITOR-001 catalog exposes created map");
         assertEquals(ORIGINAL_NAME, mainProjection(created).title(), "HEX-EDITOR-001 projection title");
+    }
 
-        runtime.editor().paintTerrain(new PaintHexTerrainCommand(
-                mapId.value(),
-                AUTHORED_Q,
-                AUTHORED_R,
-                AUTHORED_TERRAIN));
-        HexEditorSnapshot painted = runtime.current();
+    private static void assertStableTileIdProof() {
+        long authoredTileId = authoredTileId();
+        HexCoordinate decodedAuthoredTile = HexCoordinate.fromStableTileId(authoredTileId)
+                .orElseThrow(() -> new IllegalStateException("HEX-TRAVEL-001 expected tile id decode."));
+        assertEquals(new HexCoordinate(AUTHORED_Q, AUTHORED_R), decodedAuthoredTile,
+                "HEX-TRAVEL-001 stable tile id roundtrip");
+    }
+
+    private static void assertPaintTerrainProof() {
+        ScenarioState state = createAndPaintTerrain();
+        HexEditorSnapshot painted = state.runtime().current();
         assertTileTerrain(painted, AUTHORED_Q, AUTHORED_R, AUTHORED_TERRAIN, "HEX-EDITOR-004 painted snapshot");
         assertEquals(
                 HexMapVocabulary.label(HexMapVocabulary.terrain(AUTHORED_TERRAIN)),
                 mainTileProjection(painted, AUTHORED_Q, AUTHORED_R).terrainLabel(),
                 "HEX-EDITOR-004 visible terrain label");
-        assertEquals(1L, runtime.database().terrainOverrideCount(mapId.value()),
+        assertEquals(1L, state.runtime().database().terrainOverrideCount(state.mapId().value()),
                 "HEX-EDITOR-004 persisted terrain override row");
+    }
 
-        runtime.editor().updateMap(new UpdateHexMapCommand(mapId.value(), UPDATED_NAME, UPDATED_RADIUS, false));
+    private static void assertUpdateMapProof() throws Exception {
+        ScenarioState state = createPaintedAndExpandedMap();
+        RuntimeSurface runtime = state.runtime();
+        HexMapId mapId = state.mapId();
         HexEditorSnapshot expanded = runtime.current();
         assertEquals(UPDATED_NAME, selectedMap(expanded).displayName(), "HEX-EDITOR-002 metadata name persists");
         assertEquals(UPDATED_RADIUS, selectedMap(expanded).radius(), "HEX-EDITOR-002 radius expansion persists");
@@ -160,7 +334,23 @@ public final class HexMapEditorBehaviorHarness {
                 "HEX-EDITOR-002 shrink warning does not rename");
         assertEquals(UPDATED_RADIUS, selectedMap(shrinkBlocked).radius(),
                 "HEX-EDITOR-002 shrink warning does not shrink");
+        runtime.database().forceMapRadius(mapId.value(), 100);
+        runtime.editor().loadEditor(new LoadHexEditorCommand());
+        HexEditorSnapshot corruptRadius = runtime.current();
+        assertContains(corruptRadius.failureText(), "radius must be at most",
+                "HEX-EDITOR-002 corrupt radius validation");
+        runtime.database().forceMapRadius(mapId.value(), UPDATED_RADIUS);
+        runtime.database().insertCorruptCatalogMap(999L, 100);
+        runtime.editor().loadEditor(new LoadHexEditorCommand());
+        HexEditorSnapshot corruptCatalogRadius = runtime.current();
+        assertContains(corruptCatalogRadius.failureText(), "radius must be at most",
+                "HEX-EDITOR-002 corrupt catalog radius validation");
+    }
 
+    private static void assertSelectTileProof() {
+        ScenarioState state = createPaintedAndExpandedMap();
+        RuntimeSurface runtime = state.runtime();
+        HexMapId mapId = state.mapId();
         runtime.editor().selectTile(new SelectHexTileCommand(mapId.value(), AUTHORED_Q, AUTHORED_R));
         HexEditorSnapshot selected = runtime.current();
         HexEditorSnapshot.TileDetails tileDetails = selected.selectedTile()
@@ -172,29 +362,24 @@ public final class HexMapEditorBehaviorHarness {
         assertTrue(stateProjection.tileSelected(), "HEX-EDITOR-003 state projection selected");
         assertEquals("2,0", stateProjection.coordinateText(), "HEX-EDITOR-003 visible coordinate");
         assertEquals("Wasser", stateProjection.terrainText(), "HEX-EDITOR-003 visible terrain detail");
+    }
 
-        runtime.editor().saveMarker(new SaveHexMarkerCommand(
-                mapId.value(),
-                0L,
-                AUTHORED_Q,
-                AUTHORED_R,
-                MARKER_NAME,
-                "LANDMARK",
-                MARKER_NOTE));
-        HexEditorSnapshot markerSaved = runtime.current();
+    private static void assertSaveMarkerProof() {
+        ScenarioState state = createExpandedMapWithMarker();
+        RuntimeSurface runtime = state.runtime();
+        HexMapId mapId = state.mapId();
+        HexEditorSnapshot markerSaved = state.markerSaved();
         assertMarker(markerSaved, MARKER_NAME, "LANDMARK", MARKER_NOTE, "HEX-EDITOR-005");
         assertEquals("Landmarke", mainTileProjection(markerSaved, AUTHORED_Q, AUTHORED_R).markerText(),
                 "HEX-EDITOR-005 visible marker label");
         assertEquals(1L, runtime.database().markerCount(mapId.value()),
                 "HEX-EDITOR-005 persisted one marker row");
-        runtime.party().createCharacter(new CreateCharacterCommand(
-                new CharacterDraft("Guide", "Player", 3, 12, 14),
-                MembershipState.ACTIVE));
-        runtime.party().moveCharacters(new MovePartyCharactersCommand(
-                List.of(1L),
-                new PartyOverworldTravelLocationSnapshot(mapId.value(), authoredTileId),
-                true));
-        HexTravelSnapshot travel = runtime.travel().current();
+    }
+
+    private static void assertTravelReadbackProof() {
+        ScenarioState state = createTravelScenario();
+        HexEditorSnapshot markerSaved = state.markerSaved();
+        HexTravelSnapshot travel = state.travel();
         assertTrue(travel.active(), "HEX-TRAVEL-002 active Hex travel readback");
         assertEquals(AUTHORED_Q, travel.q(), "HEX-TRAVEL-002 travel q");
         assertEquals(AUTHORED_R, travel.r(), "HEX-TRAVEL-002 travel r");
@@ -203,12 +388,45 @@ public final class HexMapEditorBehaviorHarness {
                 "HEX-TRAVEL-002 visible party token projection");
         assertContains(stateProjection(markerSaved, travel).travelText(), "2,0",
                 "HEX-TRAVEL-002 state travel readback");
-        runOnFxThread(() -> assertMainViewTravelOverlayDoesNotRedrawTiles(markerSaved, travel));
+    }
+
+    private static void assertTravelOverlayProof() throws Exception {
+        ScenarioState state = createTravelScenario();
+        runOnFxThread(() -> assertMainViewTravelOverlayDoesNotRedrawTiles(state.markerSaved(), state.travel()));
+    }
+
+    private static void assertToolLabelProof() throws Exception {
+        ScenarioState state = createTravelScenario();
+        RuntimeSurface runtime = state.runtime();
         runtime.editor().setActiveTool(new SetHexEditorToolCommand("MOVE_PARTY", "GRASSLAND"));
         HexEditorSnapshot moveToolSnapshot = runtime.current();
         runOnFxThread(() -> assertMainViewUsesToolLabel(moveToolSnapshot));
-        runOnFxThread(() -> assertMarkerDraftPreservedAcrossToolRefresh(markerSaved, moveToolSnapshot));
-        runOnFxThread(() -> assertMovePartyToolMovesPartyToken(runtime, markerSaved, travel));
+    }
+
+    private static void assertMarkerDraftToolRefreshProof() throws Exception {
+        ScenarioState state = createTravelScenario();
+        RuntimeSurface runtime = state.runtime();
+        runtime.editor().setActiveTool(new SetHexEditorToolCommand("MOVE_PARTY", "GRASSLAND"));
+        HexEditorSnapshot moveToolSnapshot = runtime.current();
+        runOnFxThread(() -> assertMarkerDraftPreservedAcrossToolRefresh(state.markerSaved(), moveToolSnapshot));
+    }
+
+    private static void assertMovePartyToolProof() throws Exception {
+        ScenarioState state = createTravelScenario();
+        RuntimeSurface runtime = state.runtime();
+        runtime.editor().setActiveTool(new SetHexEditorToolCommand("MOVE_PARTY", "GRASSLAND"));
+        runOnFxThread(() -> assertMovePartyToolMovesPartyToken(runtime, state.markerSaved(), state.travel()));
+    }
+
+    private static void assertInvalidMoveProof() {
+        ScenarioState state = createTravelScenario();
+        RuntimeSurface runtime = state.runtime();
+        HexMapId mapId = state.mapId();
+        runtime.hexTravel().movePartyToken(new src.domain.hex.published.MoveHexPartyTokenCommand(
+                mapId.value(),
+                0,
+                0,
+                List.of(1L)));
         runtime.hexTravel().movePartyToken(new src.domain.hex.published.MoveHexPartyTokenCommand(
                 mapId.value(),
                 99,
@@ -217,9 +435,24 @@ public final class HexMapEditorBehaviorHarness {
         HexTravelSnapshot invalidMove = runtime.travel().current();
         assertEquals(0, invalidMove.q(), "HEX-TRAVEL-004 invalid move keeps previous q");
         assertEquals(0, invalidMove.r(), "HEX-TRAVEL-004 invalid move keeps previous r");
-        runOnFxThread(() -> assertMapSaveDoesNotRouteToMarkerSave(runtime, markerSaved));
-        runOnFxThread(() -> assertMarkerSaveDoesNotRouteToMapUpdate(runtime, markerSaved));
+    }
 
+    private static void assertMapSaveRoutingProof() throws Exception {
+        ScenarioState state = createExpandedMapWithMarker();
+        runOnFxThread(() -> assertMapSaveDoesNotRouteToMarkerSave(state.runtime(), state.markerSaved()));
+    }
+
+    private static void assertMarkerSaveRoutingProof() throws Exception {
+        ScenarioState state = createExpandedMapWithMarker();
+        runOnFxThread(() -> assertMarkerSaveDoesNotRouteToMapUpdate(state.runtime(), state.markerSaved()));
+    }
+
+    private static void assertMarkerValidationProof() throws Exception {
+        ScenarioState state = createExpandedMapWithMarker();
+        RuntimeSurface runtime = state.runtime();
+        HexMapId mapId = state.mapId();
+        saveSecondMarker(runtime, mapId);
+        HexEditorSnapshot beforeFailure = selectedTileSnapshot(runtime, mapId);
         runtime.editor().saveMarker(new SaveHexMarkerCommand(
                 mapId.value(),
                 0L,
@@ -246,8 +479,16 @@ public final class HexMapEditorBehaviorHarness {
                 "HEX-EDITOR-006 missing type validation");
         assertEquals(2L, runtime.database().markerCount(mapId.value()),
                 "HEX-EDITOR-006 missing type does not persist");
-        runOnFxThread(() -> assertMapSaveFailureVisible(runtime, missingType));
+        runOnFxThread(() -> assertMarkerDraftPreservedAfterFailure(beforeFailure, missingName));
+    }
 
+    private static void assertMapSaveFailureProof() throws Exception {
+        ScenarioState state = createExpandedMapWithMarker();
+        runOnFxThread(() -> assertMapSaveFailureVisible(state.runtime(), state.markerSaved()));
+    }
+
+    private static void assertReloadProof() {
+        ScenarioState state = createExpandedMapWithMarker();
         RuntimeSurface reloadedRuntime = RuntimeSurface.create();
         activateEditorThroughIntentHandler(reloadedRuntime);
         HexEditorSnapshot reloaded = reloadedRuntime.current();
@@ -257,45 +498,103 @@ public final class HexMapEditorBehaviorHarness {
                 "HEX-EDITOR-007 reloaded terrain");
         assertMarker(reloaded, MARKER_NAME, "LANDMARK", MARKER_NOTE,
                 "HEX-EDITOR-007 reloaded marker");
+    }
+
+    private static void assertCatalogRenameProof() {
+        ScenarioState state = createPaintedAndExpandedMap();
+        assertCatalogRenamePreservesNonCurrentRadius(state.runtime());
+    }
+
+    private static void assertBinderActivationProof() throws Exception {
+        createPaintedAndExpandedMap();
         runOnFxThread(HexMapEditorBehaviorHarness::assertBinderActivationLoadsAfterReadSideSetup);
-        assertCatalogRenamePreservesNonCurrentRadius(runtime);
+    }
 
-        runOnFxThread(() -> assertMarkerDraftPreservedAfterFailure(selected, missingName));
-        runOnFxThread(HexMapEditorBehaviorHarness::assertShellBoundContributionRoute);
-        runtime.database().forceMapRadius(mapId.value(), 100);
-        runtime.editor().loadEditor(new LoadHexEditorCommand());
-        HexEditorSnapshot corruptRadius = runtime.current();
-        assertContains(corruptRadius.failureText(), "radius must be at most",
-                "HEX-EDITOR-002 corrupt radius validation");
-        runtime.database().forceMapRadius(mapId.value(), UPDATED_RADIUS);
-        runtime.database().insertCorruptCatalogMap(999L, 100);
-        runtime.editor().loadEditor(new LoadHexEditorCommand());
-        HexEditorSnapshot corruptCatalogRadius = runtime.current();
-        assertContains(corruptCatalogRadius.failureText(), "radius must be at most",
-                "HEX-EDITOR-002 corrupt catalog radius validation");
-        assertOversizedMapDoesNotRenderCanvasTiles();
+    private static ScenarioState createAndPaintTerrain() {
+        RuntimeSurface runtime = RuntimeSurface.create();
+        runtime.editor().createMap(new CreateHexMapCommand(ORIGINAL_NAME, START_RADIUS));
+        HexMapId mapId = selectedMapId(runtime.current());
+        runtime.editor().paintTerrain(new PaintHexTerrainCommand(
+                mapId.value(),
+                AUTHORED_Q,
+                AUTHORED_R,
+                AUTHORED_TERRAIN));
+        return new ScenarioState(runtime, mapId, authoredTileId(), runtime.current(), null);
+    }
 
-        results.add("HEX-EDITOR-001 Ready: HexEditorApplicationService createMap -> HexEditorModel readback -> main projection title");
-        results.add("HEX-EDITOR-002 Ready: updateMap expands metadata/radius, state pane accepts domain radius range, rejects over-limit stored radius, and blocks destructive shrink with warning before confirmation");
-        results.add("HEX-EDITOR-003 Ready: selectTile -> selected tile details and state projection expose q,r plus terrain");
-        results.add("HEX-EDITOR-004 Ready: paintTerrain -> HexEditorModel tile terrain, main projection label, and SQLite terrain override row");
-        results.add("HEX-EDITOR-005 Ready: saveMarker -> one-tile marker readback, visible marker label, and one SQLite marker row");
-        results.add("HEX-EDITOR-006 Ready: missing marker name/type publish validation failures and leave marker row count unchanged");
-        results.add("HEX-EDITOR-007 Ready: same-root HexMapIntentHandler activation reloads metadata, terrain override, and marker from isolated SQLite route");
-        results.add("HEX-EDITOR-010 Ready: HexMapBinder wires read-side subscribe/current before same-root activation intent loads persisted editor state");
-        results.add("HEX-EDITOR-008 Ready: map save controls event does not route marker draft into marker persistence");
-        results.add("HEX-EDITOR-009 Ready: marker save controls event does not route map draft into map metadata update");
-        results.add("HEX-EDITOR-011 Ready: shared catalog rename preserves non-current Hex map radius");
-        results.add("HEX-EDITOR-013 Ready: state-pane map save failure publishes visible error and keeps persisted map unchanged");
-        results.add("HEX-TRAVEL-001 Ready: HexCoordinate stable tile id round-trips q,r for Party overworld travel");
-        results.add("HEX-TRAVEL-002 Ready: Party overworld travel position projects as HexTravelModel and visible party token");
-        results.add("HEX-TRAVEL-003 Ready: MOVE_PARTY Hex tool moves the existing party token through PartyApplicationService");
-        results.add("HEX-TRAVEL-004 Ready: MOVE_PARTY rejects coordinates outside the selected Hex map radius");
-        results.add("HEX-TRAVEL-005 Ready: travel overlay update does not redraw the Hex tile layer");
-        results.add("HEX-TRAVEL-006 Ready: Hex map header shows user-facing Reisegruppe tool label");
-        results.add("HEX-TRAVEL-007 Ready: marker draft survives Reisegruppe tool refresh");
-        results.add("HEX-TRAVEL-008 Ready: oversized Hex map readback does not allocate rendered Canvas tiles");
-        results.add("HEX-EDITOR-012 Ready: HexMapContribution shell-bound route creates, edits, paints, selects, saves marker, moves the party token, and reloads through bound Shell slots");
+    private static ScenarioState createPaintedAndExpandedMap() {
+        ScenarioState state = createAndPaintTerrain();
+        state.runtime().editor().updateMap(new UpdateHexMapCommand(
+                state.mapId().value(),
+                UPDATED_NAME,
+                UPDATED_RADIUS,
+                false));
+        return new ScenarioState(state.runtime(), state.mapId(), state.authoredTileId(), state.runtime().current(), null);
+    }
+
+    private static ScenarioState createExpandedMapWithMarker() {
+        ScenarioState state = createPaintedAndExpandedMap();
+        state.runtime().editor().saveMarker(new SaveHexMarkerCommand(
+                state.mapId().value(),
+                0L,
+                AUTHORED_Q,
+                AUTHORED_R,
+                MARKER_NAME,
+                "LANDMARK",
+                MARKER_NOTE));
+        return new ScenarioState(
+                state.runtime(),
+                state.mapId(),
+                state.authoredTileId(),
+                state.runtime().current(),
+                null);
+    }
+
+    private static ScenarioState createTravelScenario() {
+        ScenarioState state = createExpandedMapWithMarker();
+        RuntimeSurface runtime = state.runtime();
+        runtime.party().createCharacter(new CreateCharacterCommand(
+                new CharacterDraft("Guide", "Player", 3, 12, 14),
+                MembershipState.ACTIVE));
+        runtime.party().moveCharacters(new MovePartyCharactersCommand(
+                List.of(1L),
+                new PartyOverworldTravelLocationSnapshot(state.mapId().value(), state.authoredTileId()),
+                true));
+        return new ScenarioState(
+                runtime,
+                state.mapId(),
+                state.authoredTileId(),
+                state.markerSaved(),
+                runtime.travel().current());
+    }
+
+    private static void saveSecondMarker(RuntimeSurface runtime, HexMapId mapId) {
+        runtime.editor().saveMarker(new SaveHexMarkerCommand(
+                mapId.value(),
+                0L,
+                1,
+                0,
+                "Draft Camp",
+                "RESOURCE",
+                "Should become a marker"));
+    }
+
+    private static HexEditorSnapshot selectedTileSnapshot(RuntimeSurface runtime, HexMapId mapId) {
+        runtime.editor().selectTile(new SelectHexTileCommand(mapId.value(), AUTHORED_Q, AUTHORED_R));
+        return runtime.current();
+    }
+
+    private static long authoredTileId() {
+        return new HexCoordinate(AUTHORED_Q, AUTHORED_R).stableTileId();
+    }
+
+    private record ScenarioState(
+            RuntimeSurface runtime,
+            HexMapId mapId,
+            long authoredTileId,
+            HexEditorSnapshot markerSaved,
+            HexTravelSnapshot travel
+    ) {
     }
 
     private static HexEditorSnapshot.MapSnapshot selectedMap(HexEditorSnapshot snapshot) {
@@ -1344,14 +1643,8 @@ public final class HexMapEditorBehaviorHarness {
                 latch.countDown();
             }
         };
-        if (FX_STARTED.compareAndSet(false, true)) {
-            Platform.startup(() -> {
-                Platform.setImplicitExit(false);
-                wrappedAction.run();
-            });
-        } else {
-            Platform.runLater(wrappedAction);
-        }
+        startFx();
+        Platform.runLater(wrappedAction);
         if (!latch.await(AWAIT_SECONDS, TimeUnit.SECONDS)) {
             throw new IllegalStateException("Timed out waiting for JavaFX Hex Map editor behavior harness.");
         }

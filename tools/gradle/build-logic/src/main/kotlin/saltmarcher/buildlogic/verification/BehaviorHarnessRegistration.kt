@@ -3,24 +3,17 @@ package saltmarcher.buildlogic.verification
 import org.gradle.api.Action
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
-import org.gradle.api.file.DirectoryProperty
-import org.gradle.api.file.RegularFileProperty
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Input
-import org.gradle.api.tasks.InputFile
-import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.JavaExec
-import org.gradle.api.tasks.Optional
-import org.gradle.api.tasks.PathSensitive
-import org.gradle.api.tasks.PathSensitivity
 import org.gradle.api.tasks.TaskAction
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
+import org.gradle.api.tasks.testing.Test
 import org.gradle.kotlin.dsl.register
 import org.gradle.work.DisableCachingByDefault
-import java.io.ByteArrayOutputStream
 
 enum class BehaviorHarnessClassification {
     FOCUSED,
@@ -70,6 +63,38 @@ open class BehaviorHarnessRegistrationSpec(objects: ObjectFactory) {
         )
 }
 
+open class BehaviorHarnessTestRegistrationSpec(objects: ObjectFactory) {
+    val classification: Property<BehaviorHarnessClassification> =
+        objects.property(BehaviorHarnessClassification::class.java)
+    val conceptIds: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+    val suiteIds: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+    val setupDependencies: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+    val behaviorDependencies: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+    val aggregateOf: ListProperty<String> = objects.listProperty(String::class.java).convention(emptyList())
+
+    private val taskActions = mutableListOf<Action<Test>>()
+
+    fun task(action: Action<Test>) {
+        taskActions += action
+    }
+
+    internal fun configure(task: Test) {
+        taskActions.forEach { action -> action.execute(task) }
+    }
+
+    internal fun snapshot(taskName: String): BehaviorHarnessRegistration =
+        BehaviorHarnessRegistration(
+            taskName = taskName,
+            classification = classification.orNull
+                ?: throw GradleException("Behavior harness '$taskName' must declare a classification."),
+            conceptIds = conceptIds.get(),
+            suiteIds = suiteIds.get(),
+            setupDependencies = setupDependencies.get(),
+            behaviorDependencies = behaviorDependencies.get(),
+            aggregateOf = aggregateOf.get()
+        )
+}
+
 open class BehaviorHarnessRegistry(
     private val tasks: TaskContainer,
     private val objects: ObjectFactory
@@ -89,6 +114,20 @@ open class BehaviorHarnessRegistry(
         validate(registration)
         registeredHarnesses += registration
         return tasks.register<JavaExec>(taskName) {
+            spec.configure(this)
+        }
+    }
+
+    fun junitTest(
+        taskName: String,
+        action: Action<BehaviorHarnessTestRegistrationSpec>
+    ): TaskProvider<Test> {
+        val spec = BehaviorHarnessTestRegistrationSpec(objects)
+        action.execute(spec)
+        val registration = spec.snapshot(taskName)
+        validate(registration)
+        registeredHarnesses += registration
+        return tasks.register<Test>(taskName) {
             spec.configure(this)
         }
     }
@@ -207,130 +246,6 @@ abstract class CheckBehaviorHarnessTopologyTask : DefaultTask() {
     }
 }
 
-@DisableCachingByDefault(because = "Harness-map consistency is checked against configured task metadata.")
-abstract class CheckHarnessMapConsistencyTask : DefaultTask() {
-    @get:Input
-    abstract val registeredHarnessMetadata: ListProperty<String>
-
-    @get:Input
-    @get:Optional
-    abstract val baseRef: Property<String>
-
-    @get:Internal
-    abstract val repoRoot: DirectoryProperty
-
-    @get:InputFile
-    @get:PathSensitive(PathSensitivity.RELATIVE)
-    abstract val harnessMapFile: RegularFileProperty
-
-    @TaskAction
-    fun checkHarnessMapConsistency() {
-        val registrations = registeredHarnessMetadata.get()
-            .map(::parseRegistrationMetadata)
-        val registeredNames = registrations.map(RegisteredBehaviorHarness::taskName).toSet()
-        val proofHarnessNames = registrations
-            .filter { registration -> registration.classification != BehaviorHarnessClassification.UTILITY.name }
-            .map(RegisteredBehaviorHarness::taskName)
-            .toSet()
-        val harnessMapText = harnessMapFile.get().asFile.readText()
-        val mappedNames = parseHarnessMapTaskNames(harnessMapText)
-        val mappedByPattern = parseHarnessMap(harnessMapText)
-
-        val unknown = mappedNames.filter { taskName -> taskName !in registeredNames }.sorted()
-        val missing = proofHarnessNames.filter { taskName -> taskName !in mappedNames }.sorted()
-        val listingUtilityMapped = registrations
-            .filter { registration -> registration.classification == BehaviorHarnessClassification.UTILITY.name }
-            .filter { registration -> registration.suiteIds.isEmpty() }
-            .map(RegisteredBehaviorHarness::taskName)
-            .filter { taskName -> taskName in mappedNames }
-            .sorted()
-        val violations = mutableListOf<String>()
-        if (unknown.isNotEmpty()) {
-            violations += "Unknown harness-map tasks: " + unknown.joinToString(", ")
-        }
-        if (missing.isNotEmpty()) {
-            violations += "Registered FOCUSED/AGGREGATE harnesses missing from harness-map.json: " +
-                missing.joinToString(", ")
-        }
-        if (listingUtilityMapped.isNotEmpty()) {
-            violations += "Listing UTILITY harnesses must not appear in harness-map.json: " +
-                listingUtilityMapped.joinToString(", ")
-        }
-        val shrinkViolations = baseHarnessMapShrinkViolations(mappedByPattern, proofHarnessNames)
-        if (shrinkViolations.isNotEmpty()) {
-            violations += "Harness-map coverage shrank for existing source areas: " +
-                shrinkViolations.joinToString("; ")
-        }
-        if (violations.isNotEmpty()) {
-            throw GradleException(
-                "Behavior harness map consistency violations found." +
-                    System.lineSeparator() +
-                violations.joinToString(System.lineSeparator())
-            )
-        }
-    }
-
-    private fun baseHarnessMapShrinkViolations(
-        mappedByPattern: Map<String, Set<String>>,
-        proofHarnessNames: Set<String>
-    ): List<String> {
-        val ref = baseRef.orNull?.trim().orEmpty()
-        if (ref.isEmpty()) {
-            return emptyList()
-        }
-        val baseMapText = gitShowOrNull(ref, "tools/quality/config/harness-map.json") ?: return emptyList()
-        val baseMap = parseHarnessMap(baseMapText)
-        return baseMap.entries
-            .mapNotNull { (pattern, baseTasks) ->
-                if (!sourceAreaExists(pattern)) {
-                    return@mapNotNull null
-                }
-                val stillRegistered = baseTasks.filter { taskName -> taskName in proofHarnessNames }.toSet()
-                val removed = stillRegistered - mappedByPattern.getOrDefault(pattern, emptySet())
-                if (removed.isEmpty()) {
-                    null
-                } else {
-                    "$pattern missing " + removed.sorted().joinToString(", ")
-                }
-            }
-            .sorted()
-    }
-
-    private fun sourceAreaExists(pattern: String): Boolean {
-        val root = repoRoot.get().asFile
-        if (!pattern.contains('*') && !pattern.contains('?')) {
-            return root.resolve(pattern).exists()
-        }
-        val prefix = pattern
-            .takeWhile { character -> character != '*' && character != '?' }
-            .trimEnd('/')
-        if (prefix.isEmpty()) {
-            return true
-        }
-        return root.resolve(prefix).exists()
-    }
-
-    private fun gitShowOrNull(ref: String, path: String): String? {
-        val normalizedRef = ref.removePrefix("refs/heads/").removePrefix("origin/")
-        runGit("fetch", "--no-tags", "origin", normalizedRef)
-        return runGit("show", "origin/$normalizedRef:$path")
-    }
-
-    private fun runGit(vararg args: String): String? {
-        val process = ProcessBuilder(listOf("git", *args))
-            .directory(repoRoot.get().asFile)
-            .redirectError(ProcessBuilder.Redirect.DISCARD)
-            .start()
-        val output = ByteArrayOutputStream()
-        process.inputStream.use { input -> input.copyTo(output) }
-        return if (process.waitFor() == 0) {
-            output.toString(Charsets.UTF_8)
-        } else {
-            null
-        }
-    }
-}
-
 private data class RegisteredBehaviorHarness(
     val taskName: String,
     val classification: String,
@@ -352,35 +267,6 @@ private fun parseRegistrationMetadata(metadata: String): RegisteredBehaviorHarne
         behaviorDependencies = parts.getOrElse(5) { "" }.toMetadataList(),
         aggregateOf = parts.getOrElse(6) { "" }.toMetadataList()
     )
-}
-
-private fun parseHarnessMapTaskNames(json: String): Set<String> {
-    return parseHarnessMap(json).values.flatten().toSet()
-}
-
-private fun parseHarnessMap(json: String): Map<String, Set<String>> {
-    val mappings = linkedMapOf<String, Set<String>>()
-    val entryPattern = Regex("\"([^\"]+)\"\\s*:\\s*\\[(.*?)\\]", setOf(RegexOption.DOT_MATCHES_ALL))
-    val names = mutableSetOf<String>()
-    val arrayPattern = Regex(":\\s*\\[(.*?)\\]", setOf(RegexOption.DOT_MATCHES_ALL))
-    val stringPattern = Regex("\"([^\"]+)\"")
-    for (entryMatch in entryPattern.findAll(json)) {
-        val entryNames = mutableSetOf<String>()
-        for (taskMatch in stringPattern.findAll(entryMatch.groupValues[2])) {
-            entryNames += taskMatch.groupValues[1]
-        }
-        mappings[entryMatch.groupValues[1]] = entryNames
-    }
-    if (mappings.isNotEmpty()) {
-        return mappings
-    }
-    for (arrayMatch in arrayPattern.findAll(json)) {
-        val body = arrayMatch.groupValues[1]
-        for (taskMatch in stringPattern.findAll(body)) {
-            names += taskMatch.groupValues[1]
-        }
-    }
-    return mapOf("<unknown>" to names)
 }
 
 private fun String.toMetadataList(): List<String> =

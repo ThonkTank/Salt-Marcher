@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-09
+Last Reviewed: 2026-07-12
 Source of Truth: Quality-platform operating model, public proof routes, and
 retained outcome-gate policy during the architecture migration.
 
@@ -41,7 +41,7 @@ The migration keeps outcome checks binding:
 
 - Java compilation and included-build integrity
 - package cycles and layer dependency direction
-- behavior-harness registration and map consistency
+- behavior-harness registration topology and declared Gradle task inputs
 - owner-named documentation proof for changed documentation surfaces
 - quality hygiene gates such as PMD, SpotBugs, CPD, Lizard, near-miss checks,
   compiled-artifact hygiene, packaging-resource checks, and dead-code

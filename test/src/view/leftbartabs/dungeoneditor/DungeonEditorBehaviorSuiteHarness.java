@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import org.junit.jupiter.api.Test;
 
 public final class DungeonEditorBehaviorSuiteHarness {
 
@@ -16,14 +17,71 @@ public final class DungeonEditorBehaviorSuiteHarness {
     private DungeonEditorBehaviorSuiteHarness() {
     }
 
-    public static void main(String[] args) throws Exception {
-        if (args != null && args.length == 1 && "--list".equals(args[0])) {
-            System.out.println(String.join(System.lineSeparator(), suiteIds()));
-            return;
+    @Test
+    void DUNGEON_EDITOR_BEHAVIOR_001() throws Exception {
+        runPublished(List.of("all"));
+    }
+
+    @Test
+    void DUNGEON_EDITOR_CORE_BEHAVIOR_001() throws Exception {
+        runPublished(List.of("core"));
+    }
+
+    @Test
+    void DUNGEON_EDITOR_ROUTE_BEHAVIOR_001() throws Exception {
+        runPublished(List.of("routes"));
+    }
+
+    @Test
+    void DUNGEON_EDITOR_DOOR_BEHAVIOR_001() throws Exception {
+        runPublished(List.of("doors"));
+    }
+
+    @Test
+    void DUNGEON_EDITOR_WALL_BEHAVIOR_001() throws Exception {
+        runPublished(List.of("walls"));
+    }
+
+    @Test
+    void DUNGEON_EDITOR_ROOM_BEHAVIOR_001() throws Exception {
+        runPublished(List.of("rooms"));
+    }
+
+    @Test
+    void DUNGEON_EDITOR_CLUSTER_BEHAVIOR_001() throws Exception {
+        runPublished(List.of("labels", "cluster-handles", "cluster-routes"));
+    }
+
+    @Test
+    void DUNGEON_EDITOR_CORRIDOR_BEHAVIOR_001() throws Exception {
+        runPublished(List.of("corridors"));
+    }
+
+    @Test
+    void DUNGEON_EDITOR_STAIR_BEHAVIOR_001() throws Exception {
+        runPublished(List.of("stairs"));
+    }
+
+    @Test
+    void DUNGEON_EDITOR_TRANSITION_BEHAVIOR_001() throws Exception {
+        runPublished(List.of("transitions"));
+    }
+
+    @Test
+    void DUNGEON_EDITOR_FEATURE_BEHAVIOR_001() throws Exception {
+        runPublished(List.of("features"));
+    }
+
+    @Test
+    void DUNGEON_EDITOR_BEHAVIOR_SUITES_001() {
+        List<String> ids = suiteIds();
+        if (ids.isEmpty()) {
+            throw new AssertionError("Dungeon Editor behavior suite inventory must not be empty.");
         }
-        List<String> requested = args == null || args.length == 0
-                ? List.of("all")
-                : List.of(args);
+        System.out.println(String.join(System.lineSeparator(), ids));
+    }
+
+    private static void runPublished(List<String> requested) throws Exception {
         DungeonEditorBehaviorHarnessSupport.runPublishedHarness(
                 "Dungeon Editor behavior suite harness",
                 results -> run(requested, results));

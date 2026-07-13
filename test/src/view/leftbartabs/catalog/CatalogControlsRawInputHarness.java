@@ -40,6 +40,9 @@ import src.domain.worldplanner.published.WorldFactionSummary;
 import src.domain.worldplanner.published.WorldLocationSummary;
 import src.domain.worldplanner.published.WorldPlannerReadStatus;
 import src.domain.worldplanner.published.WorldPlannerSnapshot;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 public final class CatalogControlsRawInputHarness {
 
@@ -50,34 +53,90 @@ public final class CatalogControlsRawInputHarness {
     private final List<CatalogControlsViewInputEvent> events = new ArrayList<>();
     private CatalogControlsView view;
 
-    private CatalogControlsRawInputHarness() {
+    @AfterEach
+    void hideWindows() throws Exception {
+        runOnFxThread(CatalogControlsRawInputHarness::hideOpenWindows);
     }
 
-    public static void main(String[] args) throws Exception {
-        CatalogControlsRawInputHarness harness = new CatalogControlsRawInputHarness();
-        try {
-            runOnFxThread(harness::start);
-            runOnFxThread(harness::assertProjectionRenderDoesNotPublishInput);
-            runOnFxThread(harness::editSearchField);
-            runOnFxThread(harness::assertSearchEditPublishesOneInput);
-            runOnFxThread(harness::clearAll);
-            runOnFxThread(harness::assertClearAllPublishesOneFinalInput);
-            runOnFxThread(harness::selectWorldSources);
-            runOnFxThread(harness::assertWorldSourceSelectionPublishesTypedInput);
-            runOnFxThread(harness::removeTypeChip);
-            runOnFxThread(harness::assertTypeChipRemovePublishesOneFinalInput);
-            runOnFxThread(harness::removeEncounterTableChip);
-            runOnFxThread(harness::assertEncounterTableChipRemovePublishesOneFinalInput);
-            runOnFxThread(harness::toggleDifficultyAutoAndSlide);
-            runOnFxThread(harness::assertDifficultyTuningPublishesRawInput);
-            runOnFxThread(CatalogControlsRawInputHarness::assertProductionRoutePublishesSearchAndBuilderInputs);
-            shutdownFx();
-            System.out.println("Catalog controls raw-input harness passed.");
-        } catch (Throwable throwable) {
-            throwable.printStackTrace(System.err);
-            shutdownFx();
-            System.exit(1);
-        }
+    @AfterAll
+    static void shutdownJavaFx() throws Exception {
+        shutdownFx();
+    }
+
+    @Test
+    void CATALOG_CONTROLS_RAW_INPUT_001() throws Exception {
+        runOnFxThread(() -> {
+            start();
+            assertProjectionRenderDoesNotPublishInput();
+        });
+    }
+
+    @Test
+    void CATALOG_CONTROLS_RAW_INPUT_002() throws Exception {
+        runOnFxThread(() -> {
+            start();
+            assertProjectionRenderDoesNotPublishInput();
+            editSearchField();
+            assertSearchEditPublishesOneInput();
+        });
+    }
+
+    @Test
+    void CATALOG_CONTROLS_RAW_INPUT_003() throws Exception {
+        runOnFxThread(() -> {
+            start();
+            assertProjectionRenderDoesNotPublishInput();
+            editSearchField();
+            assertSearchEditPublishesOneInput();
+            clearAll();
+            assertClearAllPublishesOneFinalInput();
+        });
+    }
+
+    @Test
+    void CATALOG_CONTROLS_RAW_INPUT_004() throws Exception {
+        runOnFxThread(() -> {
+            start();
+            assertProjectionRenderDoesNotPublishInput();
+            editSearchField();
+            assertSearchEditPublishesOneInput();
+            clearAll();
+            assertClearAllPublishesOneFinalInput();
+            selectWorldSources();
+            assertWorldSourceSelectionPublishesTypedInput();
+        });
+    }
+
+    @Test
+    void CATALOG_CONTROLS_RAW_INPUT_005() throws Exception {
+        runOnFxThread(() -> {
+            start();
+            removeTypeChip();
+            assertTypeChipRemovePublishesOneFinalInput();
+        });
+    }
+
+    @Test
+    void CATALOG_CONTROLS_RAW_INPUT_006() throws Exception {
+        runOnFxThread(() -> {
+            start();
+            removeEncounterTableChip();
+            assertEncounterTableChipRemovePublishesOneFinalInput();
+        });
+    }
+
+    @Test
+    void CATALOG_CONTROLS_RAW_INPUT_007() throws Exception {
+        runOnFxThread(() -> {
+            start();
+            toggleDifficultyAutoAndSlide();
+            assertDifficultyTuningPublishesRawInput();
+        });
+    }
+
+    @Test
+    void CATALOG_CONTROLS_RAW_INPUT_008() throws Exception {
+        runOnFxThread(CatalogControlsRawInputHarness::assertProductionRoutePublishesSearchAndBuilderInputs);
     }
 
     private void start() {
@@ -464,6 +523,7 @@ public final class CatalogControlsRawInputHarness {
         Throwable[] failure = new Throwable[1];
         Runnable wrappedAction = () -> {
             try {
+                Platform.setImplicitExit(false);
                 action.run();
             } catch (Throwable throwable) {
                 failure[0] = throwable;
@@ -489,11 +549,16 @@ public final class CatalogControlsRawInputHarness {
             return;
         }
         runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                window.hide();
-            }
+            hideOpenWindows();
             Platform.exit();
         });
+    }
+
+    private static void hideOpenWindows() {
+        Platform.setImplicitExit(false);
+        for (Window window : List.copyOf(Window.getWindows())) {
+            window.hide();
+        }
     }
 
     @FunctionalInterface

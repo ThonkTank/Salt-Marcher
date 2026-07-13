@@ -43,6 +43,9 @@ import src.domain.party.published.CalculateAdventuringDayCommand;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.MembershipState;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 public final class EncounterStateTabHarness {
 
@@ -51,35 +54,38 @@ public final class EncounterStateTabHarness {
     private static final long GOBLIN_ID = 101L;
     private static final int GOBLIN_COUNT = 2;
 
-    private EncounterStateTabHarness() {
+    @BeforeAll
+    static void startJavaFx() throws InterruptedException {
+        startFx();
     }
 
-    public static void main(String[] args) {
-        try {
-            startFx();
-            runOnFxThread(EncounterStateTabHarness::run);
-            shutdownFx();
-            System.out.println("Encounter state tab harness passed: 2 proof item(s).");
-            System.out.println("ENCOUNTER-STATE-TAB-001 Ready: Encounter state tab opens through shell binding.");
-            System.out.println("ENCOUNTER-STATE-TAB-002 Ready: Saved encounter readback renders in the state tab.");
-        } catch (Throwable throwable) {
-            throwable.printStackTrace(System.err);
-            try {
-                shutdownFx();
-            } catch (Exception shutdownFailure) {
-                shutdownFailure.printStackTrace(System.err);
-            }
-            System.exit(1);
-        }
+    @AfterAll
+    static void stopJavaFx() throws InterruptedException {
+        shutdownFx();
     }
 
-    private static void run() {
+    @Test
+    void ENCOUNTER_STATE_TAB_001() throws Exception {
+        runOnFxThread(EncounterStateTabHarness::assertEncounterStateTabOpensThroughShellBinding);
+    }
+
+    @Test
+    void ENCOUNTER_STATE_TAB_002() throws Exception {
+        runOnFxThread(EncounterStateTabHarness::assertSavedEncounterReadbackRendersInStateTab);
+    }
+
+    private static void assertEncounterStateTabOpensThroughShellBinding() {
         HarnessRuntime runtime = HarnessRuntime.create();
         ShellBinding binding = new EncounterStateContribution().bind(runtime.runtimeContext());
         EncounterStateView view = encounterStateView(binding);
         assertTextPresent(view, "Encounter", "ENCOUNTER-STATE-TAB-001 title");
         assertTextPresent(view, "Monster per +Add hinzufuegen...", "ENCOUNTER-STATE-TAB-001 empty roster");
+    }
 
+    private static void assertSavedEncounterReadbackRendersInStateTab() {
+        HarnessRuntime runtime = HarnessRuntime.create();
+        ShellBinding binding = new EncounterStateContribution().bind(runtime.runtimeContext());
+        EncounterStateView view = encounterStateView(binding);
         runtime.openSavedEncounter();
         assertTextPresent(view, "Gate Ambush", "ENCOUNTER-STATE-TAB-002 saved plan title");
         assertTextPresent(view, "Adj. XP: 100", "ENCOUNTER-STATE-TAB-002 saved plan adjusted XP");
@@ -243,7 +249,7 @@ public final class EncounterStateTabHarness {
                         statement.execute(CreaturesPersistenceSchema.CREATE_CREATURES_TABLE_SQL);
                     }
                     try (PreparedStatement statement = connection.prepareStatement("""
-                            INSERT OR REPLACE INTO creatures (
+                            INSERT OR IGNORE INTO creatures (
                                 id,
                                 name,
                                 size,

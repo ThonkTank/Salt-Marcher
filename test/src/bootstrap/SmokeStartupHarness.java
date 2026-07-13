@@ -6,6 +6,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import javafx.application.Platform;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 import shell.api.ShellContribution;
 import src.data.persistencecore.sqlite.SmokeStartupSqliteConnectionFactory;
 
@@ -16,23 +18,24 @@ public final class SmokeStartupHarness {
     private SmokeStartupHarness() {
     }
 
-    public static void main(String[] args) throws Exception {
+    @AfterAll
+    static void shutdownFx() {
+        Platform.exit();
+    }
+
+    @Test
+    void SMOKE_STARTUP_001() throws Exception {
         Instant deadline = Instant.now().plus(TIMEOUT);
         Platform.startup(() -> {
         });
-        try {
-            List<ShellContribution> contributions = new ShellViewDiscovery().discover();
-            require(!contributions.isEmpty(), "Expected at least one shell contribution.");
-            require(hasContribution(contributions, "leftbartabs"), "Expected left-bar contributions.");
-            require(hasContribution(contributions, "statetabs"), "Expected state-tab contributions.");
-            require(hasContribution(contributions, "dropdowns"), "Expected top-bar/dropdown contributions.");
-            new AppBootstrap().createShell();
-            openTempSqliteConnection();
-            require(Instant.now().isBefore(deadline), "Smoke startup exceeded timeout.");
-            System.out.println("smokeStartupHarness passed: contributions=" + contributions.size());
-        } finally {
-            Platform.exit();
-        }
+        List<ShellContribution> contributions = new ShellViewDiscovery().discover();
+        require(!contributions.isEmpty(), "Expected at least one shell contribution.");
+        require(hasContribution(contributions, "leftbartabs"), "Expected left-bar contributions.");
+        require(hasContribution(contributions, "statetabs"), "Expected state-tab contributions.");
+        require(hasContribution(contributions, "dropdowns"), "Expected top-bar/dropdown contributions.");
+        new AppBootstrap().createShell();
+        openTempSqliteConnection();
+        require(Instant.now().isBefore(deadline), "Smoke startup exceeded timeout.");
     }
 
     private static boolean hasContribution(List<ShellContribution> contributions, String packageSegment) {

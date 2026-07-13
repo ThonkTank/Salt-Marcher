@@ -34,29 +34,48 @@ import src.domain.worldplanner.published.WorldLocationSummary;
 import src.domain.worldplanner.published.WorldPlannerReadStatus;
 import src.domain.worldplanner.published.WorldPlannerSnapshot;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 public final class CatalogInitialLoadHarness {
 
     private static final int AWAIT_SECONDS = 60;
     private static final AtomicBoolean FX_STARTED = new AtomicBoolean();
 
-    private CatalogInitialLoadHarness() {
+    @AfterEach
+    void hideWindows() throws Exception {
+        runOnFxThread(CatalogInitialLoadHarness::hideOpenWindows);
     }
 
-    public static void main(String[] args) throws Exception {
-        try {
-            seedCreatureCatalog();
-            runOnFxThread(CatalogInitialLoadHarness::assertCatalogInitialLoad);
-            shutdownFx();
-            System.out.println("Catalog initial-load harness passed.");
-        } catch (Throwable throwable) {
-            throwable.printStackTrace(System.err);
-            shutdownFx();
-            System.exit(1);
-        }
+    @AfterAll
+    static void shutdownJavaFx() throws Exception {
+        shutdownFx();
     }
 
-    private static void assertCatalogInitialLoad() {
+    @Test
+    void CATALOG_INITIAL_LOAD_001() throws Exception {
+        seedCreatureCatalog();
+        runOnFxThread(() -> {
+            CatalogFixture fixture = setupCatalog();
+            assertInitialCatalogRows(fixture.main(), "CATALOG-INITIAL-LOAD-001");
+        });
+    }
+
+    @Test
+    void CATALOG_INITIAL_LOAD_002() throws Exception {
+        seedCreatureCatalog();
+        runOnFxThread(() -> {
+            CatalogFixture fixture = setupCatalog();
+            assertInitialCatalogRows(fixture.main(), "setup catalog initial rows");
+            assertWorldPlannerSourceControls(
+                    fixture.registry(),
+                    fixture.controls(),
+                    "CATALOG-INITIAL-LOAD-002");
+        });
+    }
+
+    private static CatalogFixture setupCatalog() {
         ServiceRegistry registry = services();
         ShellRuntimeContext context = new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, registry);
         ShellBinding binding = new CatalogContribution().bind(context);
@@ -69,19 +88,21 @@ public final class CatalogInitialLoadHarness {
         stage.show();
         root.applyCss();
         root.layout();
+        return new CatalogFixture(registry, controls, main);
+    }
 
+    private static void assertInitialCatalogRows(CatalogMainView main, String label) {
         TableView<?> table = descendant(main, TableView.class);
         Label countLabel = descendants(main).stream()
                 .filter(Label.class::isInstance)
                 .map(Label.class::cast)
-                .filter(label -> label.getText().endsWith("Monster gefunden"))
+                .filter(candidate -> candidate.getText().endsWith("Monster gefunden"))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Catalog count label not found."));
 
-        assertTrue(!table.getItems().isEmpty(), "Catalog table did not receive initial DB-backed rows.");
+        assertTrue(!table.getItems().isEmpty(), label + " Catalog table did not receive initial DB-backed rows.");
         assertTrue("2 Monster gefunden".equals(countLabel.getText()),
-                "Catalog count label did not reflect DB-backed total: " + countLabel.getText());
-        assertWorldPlannerSourceControls(registry, controls);
+                label + " Catalog count label did not reflect DB-backed total: " + countLabel.getText());
     }
 
     private static ServiceRegistry services() {
@@ -100,7 +121,7 @@ public final class CatalogInitialLoadHarness {
         return builder.build();
     }
 
-    private static void assertWorldPlannerSourceControls(ServiceRegistry registry, Parent controls) {
+    private static void assertWorldPlannerSourceControls(ServiceRegistry registry, Parent controls, String label) {
         Button factionButton = button(controls, "Fraktionen");
         factionButton.fire();
         CheckBox faction = popupDescendant(CheckBox.class, "Scarlet Knives");
@@ -109,10 +130,10 @@ public final class CatalogInitialLoadHarness {
 
         EncounterBuilderInputsModel inputsModel = registry.require(EncounterBuilderInputsModel.class);
         assertTrue(inputsModel.current().worldFactionIds().equals(List.of(1L)),
-                "Encounter builder did not receive selected World Planner faction ids: "
+                label + " Encounter builder did not receive selected World Planner faction ids: "
                         + inputsModel.current().worldFactionIds());
         assertTrue(inputsModel.current().worldLocationId() == 501L,
-                "Encounter builder did not receive selected World Planner location id: "
+                label + " Encounter builder did not receive selected World Planner location id: "
                         + inputsModel.current().worldLocationId());
     }
 
@@ -133,6 +154,7 @@ public final class CatalogInitialLoadHarness {
         Path dataHome = Path.of(xdgDataHome);
         Path database = dataHome.resolve("salt-marcher").resolve(CreaturesPersistenceSchema.DATABASE_FILE_NAME);
         Files.createDirectories(database.getParent());
+        Files.deleteIfExists(database);
         try (Connection connection = DriverManager.getConnection("jdbc:sqlite:" + database);
                 Statement statement = connection.createStatement()) {
             statement.execute(CreaturesPersistenceSchema.CREATE_CREATURES_TABLE_SQL);
@@ -257,6 +279,7 @@ public final class CatalogInitialLoadHarness {
         Throwable[] failure = new Throwable[1];
         Runnable wrappedAction = () -> {
             try {
+                Platform.setImplicitExit(false);
                 action.run();
             } catch (Throwable throwable) {
                 failure[0] = throwable;
@@ -282,11 +305,23 @@ public final class CatalogInitialLoadHarness {
             return;
         }
         runOnFxThread(() -> {
-            for (Window window : List.copyOf(Window.getWindows())) {
-                window.hide();
-            }
+            hideOpenWindows();
             Platform.exit();
         });
+    }
+
+    private static void hideOpenWindows() {
+        Platform.setImplicitExit(false);
+        for (Window window : List.copyOf(Window.getWindows())) {
+            window.hide();
+        }
+    }
+
+    private record CatalogFixture(
+            ServiceRegistry registry,
+            CatalogControlsView controls,
+            CatalogMainView main
+    ) {
     }
 
     @FunctionalInterface

@@ -18,6 +18,8 @@ import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.ToggleButton;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Test;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 import shell.api.ServiceRegistry;
@@ -46,16 +48,14 @@ public final class WorldPlannerUiHarness {
     private WorldPlannerUiHarness() {
     }
 
-    public static void main(String[] args) throws Exception {
-        try {
-            runOnFxThread(WorldPlannerUiHarness::runHarness);
-            shutdownFx();
-            System.out.println("World Planner UI harness passed.");
-        } catch (Throwable throwable) {
-            throwable.printStackTrace(System.err);
-            shutdownFx();
-            System.exit(1);
-        }
+    @AfterAll
+    static void stopHarness() {
+        shutdownFx();
+    }
+
+    @Test
+    void WORLD_PLANNER_UI_001() throws Exception {
+        runOnFxThread(WorldPlannerUiHarness::runHarness);
     }
 
     private static void runHarness() {

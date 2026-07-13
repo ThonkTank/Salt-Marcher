@@ -1,6 +1,7 @@
 package saltmarcher.buildlogic.settings
 
 import java.io.File
+import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
 import saltmarcher.buildlogic.shared.CheckTaskName
@@ -12,13 +13,13 @@ import saltmarcher.buildlogic.shared.ProductionHandoffTaskName
 
 class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
     override fun apply(settings: Settings) {
-        val repoRootDir = System.getProperty("saltmarcher.repoRootDir")
-            ?.trim()
-            ?.takeIf(String::isNotEmpty)
-            ?.let(::File)
-            ?.canonicalFile
-            ?: findRepositoryRoot(settings.settingsDir)
+        val discoveredRepoRootDir = findRepositoryRoot(settings.settingsDir)
+        val repoRootDir = configuredRepositoryRoot(settings.settingsDir)
+            ?: discoveredRepoRootDir
         System.setProperty("saltmarcher.repoRootDir", repoRootDir.absolutePath)
+        if (System.getenv("SALTMARCHER_PRE_COMMIT_GATE") != "1") {
+            configureVersionedHooks(repoRootDir)
+        }
 
         val requestedTaskNames = settings.gradle.startParameter.taskNames
             .map { taskName -> taskName.substringAfterLast(":") }
@@ -47,6 +48,71 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
 }
 
 private fun includeSaltmarcherBuild(settings: Settings, relativePath: String) = settings.includeBuild(relativePath)
+
+private fun configuredRepositoryRoot(settingsDir: File): File? {
+    val configuredRoot = System.getProperty("saltmarcher.repoRootDir")
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?.let(::File)
+        ?.canonicalFile
+        ?: return null
+    val canonicalSettingsDir = settingsDir.canonicalFile.toPath()
+    if (!canonicalSettingsDir.startsWith(configuredRoot.toPath())) {
+        return null
+    }
+    if (!File(configuredRoot, "AGENTS.md").isFile || !File(configuredRoot, "gradlew").isFile) {
+        return null
+    }
+    return configuredRoot
+}
+
+private fun configureVersionedHooks(repoRootDir: File) {
+    val hooksDir = File(repoRootDir, "tools/hooks")
+    val gitEntry = File(repoRootDir, ".git")
+    if (!hooksDir.isDirectory || !gitEntry.exists()) {
+        return
+    }
+
+    val expectedHooksPath = "tools/hooks"
+    val currentHooksPath = readGitConfig(repoRootDir, "--get", "core.hooksPath")
+        ?.trim()
+        ?.replace(File.separatorChar, '/')
+    if (currentHooksPath == expectedHooksPath) {
+        return
+    }
+
+    writeGitConfig(repoRootDir, "core.hooksPath", expectedHooksPath)
+}
+
+private fun readGitConfig(repoRootDir: File, vararg args: String): String? {
+    return runCatching {
+        val result = runGitConfig(repoRootDir, *args)
+        if (result.exitCode == 0) result.output else null
+    }.getOrNull()
+}
+
+private fun writeGitConfig(repoRootDir: File, vararg args: String) {
+    val result = runGitConfig(repoRootDir, *args)
+    if (result.exitCode != 0) {
+        throw GradleException(
+            "Failed to configure SaltMarcher versioned hooks in ${repoRootDir.path}: ${result.output.trim()}"
+        )
+    }
+}
+
+private data class GitConfigResult(val exitCode: Int, val output: String)
+
+private fun runGitConfig(repoRootDir: File, vararg args: String): GitConfigResult {
+    val processBuilder = ProcessBuilder(listOf("git", "-C", repoRootDir.path, "config", "--local") + args)
+        .directory(repoRootDir)
+        .redirectErrorStream(true)
+    processBuilder.environment().remove("GIT_DIR")
+    processBuilder.environment().remove("GIT_WORK_TREE")
+    processBuilder.environment().remove("GIT_INDEX_FILE")
+    val process = processBuilder.start()
+    val output = process.inputStream.bufferedReader().use { reader -> reader.readText() }
+    return GitConfigResult(process.waitFor(), output)
+}
 
 private data class VerificationRequestScope(
     val includeBuildHarness: Boolean,

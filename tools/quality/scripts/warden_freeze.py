@@ -28,10 +28,8 @@ REQUIRED_FROZEN_REPRESENTATIVES = {
     "tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/verification/SaltmarcherVerificationCorePlugin.kt":
         "tools/gradle/build-logic/src/main/kotlin/saltmarcher/buildlogic/verification/SaltmarcherVerificationCorePlugin.kt",
     "tools/quality/config/frozen-surfaces.txt": "tools/quality/config/frozen-surfaces.txt",
-    "tools/quality/config/harness-map.json": "tools/quality/config/harness-map.json",
     "tools/quality/scripts/branch_protection_readback.py": "tools/quality/scripts/branch_protection_readback.py",
     "tools/quality/scripts/promote_stable.py": "tools/quality/scripts/promote_stable.py",
-    "tools/quality/scripts/select_harnesses.py": "tools/quality/scripts/select_harnesses.py",
     "tools/quality/scripts/update_status_issue.py": "tools/quality/scripts/update_status_issue.py",
     "tools/quality/scripts/warden_freeze.py": "tools/quality/scripts/warden_freeze.py",
     "tools/agents/judge_review.py": "tools/agents/judge_review.py",

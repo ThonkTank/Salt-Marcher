@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-07
+Last Reviewed: 2026-07-12
 Source of Truth: Detailed CI job policy, external service setup, branch
 protection expectations, and review governance for SaltMarcher quality
 platforms.
@@ -17,13 +17,14 @@ operating model beneath the umbrella
 
 The workflow lives in
 [.github/workflows/quality-platforms.yml](.github/workflows/quality-platforms.yml:1)
-and defines seven jobs.
+and defines six pull-request or main-push jobs plus one scheduled honesty
+job.
 
 | Job | Status | Current policy |
 | --- | --- | --- |
-| `production-handoff` | `Required CI Gate` | Runs `tools/gradle/run-staged-verification.sh production-handoff`; this is the single public CI handoff surface for assemble, blocking quality hygiene, and internal architecture/build-harness structure checks. |
+| `check` | `Required CI Gate` | Runs `xvfb-run -a tools/gradle/run-observable-gradle.sh check`; this is the authoritative CI proof surface for the converted content-addressed harness tasks and the normal Gradle check graph. When a PR, merge-queue item, or main push touches build, CI, hook, or gate wiring, the job appends `-- --rerun-tasks` so wiring changes re-run the full check graph instead of proving through restored task outputs. |
+| `nightly-rerun-tasks` | `Scheduled Honesty Gate` | Runs `xvfb-run -a tools/gradle/run-observable-gradle.sh check -- --rerun-tasks` on the nightly schedule; it is not a pull-request required context, and any cache/verdict divergence is an R2 issue rather than a silent re-cache. |
 | `warden-freeze` | `Required CI Gate` | Restores the base-ref warden script, then enforces R3c classification for frozen-surface changes and the narrow risk-label plausibility checks. |
-| `behavior-gate` | `Required CI Gate` | Restores the base-ref harness selector, selects behavior harnesses from `tools/quality/config/harness-map.json`, and runs them under `xvfb-run`; succeeds with a notice when no mapped surface changed. |
 | `judge-review` | `Required CI Gate` | Restores the base-ref judge script, runs immediately for R0, fails closed for R1+ without the judge secret, and accepts only a PASS verdict or owner-only `judge-override`. |
 | `ckjm-report` | `Informational CI Report` | Runs `tools/gradle/run-observable-gradle.sh ckjmMain` and uploads the CKJM report from `build/reports/ckjm/`. |
 | `sonarcloud` | `Informational CI Report` | Runs Gradle `sonar` with `sonar.qualitygate.wait=true`; skipped for Dependabot or when SonarCloud configuration is incomplete. |
@@ -37,6 +38,18 @@ Documentation-only governance changes use the local owner-named proof route
 from `AGENTS.md`. Removed documentation gates are not required local or CI
 entrypoints.
 
+The `check` job uses the GitHub Actions Gradle setup cache. Pull requests and
+merge-queue runs read the CI cache but do not write it; pushes to `main` own
+cache writes. Local machines never write this CI cache, and local cache hits
+are feedback rather than proof.
+
+The `check` job classifies its own diff before invoking Gradle. Ordinary
+source-area PRs stay content-addressed: Gradle's declared inputs decide which
+tasks execute and which tasks are cache hits. Build, CI, hook, frozen-surface,
+branch-protection-readback, status-issue, or judge wiring changes force
+`check --rerun-tasks`; if the workflow cannot determine the diff, it fails
+closed to the same forced mode.
+
 CI jobs run in fresh GitHub-hosted checkouts, so they do not need repo-local
 same-worktree isolation cleanup. The concurrency concern in CI is stale runs on
 the same ref, not mutable Gradle state inside one filesystem tree. The
@@ -45,8 +58,6 @@ of cleanup steps for synthetic isolated run roots.
 
 The required measurement scripts run from the PR base ref as defined by
 [ADR 0003](docs/project/decisions/0003-honest-instruments-base-gates.md:1).
-`behavior-gate` restores only the selector script before harness selection; the
-selected harnesses still execute the PR checkout.
 
 ### SonarCloud
 
@@ -124,9 +135,8 @@ place:
   required on `pull_request`.
 - Keep human GitHub approval reviews optional unless the team later decides
   otherwise.
-- Require `production-handoff`.
+- Require `check`.
 - Require `warden-freeze`.
-- Require `behavior-gate`.
 - Require `judge-review`.
 - Keep `ckjm-report`, `sonarcloud`, and `codescene` visible; do not treat them
   as merge blockers unless a later ADR promotes them.
@@ -164,7 +174,7 @@ The readback must record:
   conditions, bypass actors visible to the authenticated actor, and
   required-status-check rules
 - comparison result against the intended required blockers:
-  `production-handoff`, `warden-freeze`, `behavior-gate`, and `judge-review`
+  `check`, `warden-freeze`, and `judge-review`
 
 Readback status uses this vocabulary:
 
@@ -184,7 +194,7 @@ Readback status uses this vocabulary:
 
 In GitHub, open Settings -> Rules -> Rulesets or Branches -> Branch protection
 rules for `main`. Require pull requests, disable force pushes and deletion,
-and require exactly the four required job contexts above. If the UI shows
+and require exactly the three required job contexts above. If the UI shows
 `quality-platforms / <job>`, verify through the API readback that the stored
 contexts are the job names. Then run
 `tools/quality/scripts/branch_protection_readback.py`; only a `Qualified`

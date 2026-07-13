@@ -37,34 +37,60 @@ import src.domain.creatures.published.RefreshCreatureCatalogCommand;
 import src.domain.creatures.published.RefreshCreatureEncounterCandidatesCommand;
 import src.domain.creatures.published.RefreshCreatureFilterOptionsCommand;
 import src.domain.creatures.published.SelectCreatureDetailCommand;
+import org.junit.jupiter.api.Test;
 
 public final class CreatureCatalogHarness {
 
-    private CreatureCatalogHarness() {
-    }
-
-    public static void main(String[] args) {
-        HarnessRuntime runtime = runtime();
-
-        runtime.port.createCreature(ashImp());
+    @Test
+    void CREATURE_CATALOG_001() {
+        HarnessRuntime runtime = runtimeWithAshImp();
         runtime.service.refreshFilterOptions(new RefreshCreatureFilterOptionsCommand());
         assertFilterOptions(runtime.filterOptions.current());
+    }
 
+    @Test
+    void CREATURE_CATALOG_002() {
+        HarnessRuntime runtime = runtimeWithAshImp();
         runtime.service.refreshCatalog(filteredCatalogCommand());
         assertFilteredCatalogReadback(runtime.catalog.current(), runtime.port.lastSearchSpec);
+    }
 
+    @Test
+    void CREATURE_CATALOG_003() {
+        HarnessRuntime runtime = runtimeWithAshImp();
         runtime.service.selectCreatureDetail(new SelectCreatureDetailCommand(101L));
         assertAshImpDetail(runtime.detail.current().detail());
+    }
+
+    @Test
+    void CREATURE_CATALOG_004() {
+        HarnessRuntime runtime = runtimeWithAshImp();
+        runtime.service.refreshCatalog(filteredCatalogCommand());
+        runtime.service.selectCreatureDetail(new SelectCreatureDetailCommand(101L));
 
         runtime.port.replaceCreature(ashImpEdited());
         runtime.service.refreshCatalog(editedCatalogCommand());
         runtime.service.selectCreatureDetail(new SelectCreatureDetailCommand(101L));
         assertEditedCreatureReadback(runtime.catalog.current(), runtime.detail.current().detail());
+    }
 
+    @Test
+    void CREATURE_CATALOG_005() {
+        HarnessRuntime runtime = runtimeAfterEditedCatalogReadback();
+        assertEditedCatalogPrecondition(runtime);
         assertInvalidCatalogQueryDoesNotHitLookup(runtime);
-        assertMissingAndBrokenDetailsPublishLookupStatus(runtime);
+    }
 
-        runtime.port.createCreature(mireOgre());
+    @Test
+    void CREATURE_CATALOG_006() {
+        HarnessRuntime runtime = runtimeAfterEditedCatalogReadback();
+        assertEditedDetailPrecondition(runtime.detail.current().detail());
+        assertMissingAndBrokenDetailsPublishLookupStatus(runtime);
+    }
+
+    @Test
+    void CREATURE_CATALOG_007() {
+        HarnessRuntime runtime = runtimeWithEncounterCandidates();
         runtime.service.refreshEncounterCandidates(new RefreshCreatureEncounterCandidatesCommand(
                 List.of(" Fiend ", "Fiend", ""),
                 List.of("Devil"),
@@ -73,10 +99,38 @@ public final class CreatureCatalogHarness {
                 1_000,
                 0));
         assertEncounterCandidateReadback(runtime.encounterCandidates.current(), runtime.port.lastEncounterSpec);
-        assertInvalidEncounterCandidateQueryDoesNotHitLookup(runtime);
-        assertCatalogStorageFailurePublishesEmptyErrorPage(runtime);
+    }
 
-        System.out.println("Creature catalog harness passed: 9 proof item(s).");
+    @Test
+    void CREATURE_CATALOG_008() {
+        HarnessRuntime runtime = runtimeWithEncounterCandidates();
+        runtime.service.refreshEncounterCandidates(new RefreshCreatureEncounterCandidatesCommand(
+                List.of(" Fiend ", "Fiend", ""),
+                List.of("Devil"),
+                List.of("Cavern"),
+                0,
+                1_000,
+                0));
+        assertInvalidEncounterCandidateQueryDoesNotHitLookup(runtime);
+    }
+
+    @Test
+    void CREATURE_CATALOG_009() {
+        HarnessRuntime runtime = runtimeWithEditedAshImp();
+        runtime.service.refreshCatalog(new RefreshCreatureCatalogCommand(
+                "",
+                "2",
+                "1",
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                List.of(),
+                null,
+                null,
+                25,
+                3));
+        assertCatalogStorageFailurePublishesEmptyErrorPage(runtime);
     }
 
     private static HarnessRuntime runtime() {
@@ -92,6 +146,34 @@ public final class CreatureCatalogHarness {
                 services.require(CreatureDetailModel.class),
                 services.require(CreatureFilterOptionsModel.class),
                 services.require(CreatureEncounterCandidatesModel.class));
+    }
+
+    private static HarnessRuntime runtimeWithAshImp() {
+        HarnessRuntime runtime = runtime();
+        runtime.port.createCreature(ashImp());
+        return runtime;
+    }
+
+    private static HarnessRuntime runtimeWithEditedAshImp() {
+        HarnessRuntime runtime = runtimeWithAshImp();
+        runtime.port.replaceCreature(ashImpEdited());
+        return runtime;
+    }
+
+    private static HarnessRuntime runtimeWithEncounterCandidates() {
+        HarnessRuntime runtime = runtimeWithEditedAshImp();
+        runtime.port.createCreature(mireOgre());
+        return runtime;
+    }
+
+    private static HarnessRuntime runtimeAfterEditedCatalogReadback() {
+        HarnessRuntime runtime = runtimeWithAshImp();
+        runtime.service.refreshCatalog(filteredCatalogCommand());
+        runtime.service.selectCreatureDetail(new SelectCreatureDetailCommand(101L));
+        runtime.port.replaceCreature(ashImpEdited());
+        runtime.service.refreshCatalog(editedCatalogCommand());
+        runtime.service.selectCreatureDetail(new SelectCreatureDetailCommand(101L));
+        return runtime;
     }
 
     private static RefreshCreatureCatalogCommand filteredCatalogCommand() {
@@ -186,6 +268,19 @@ public final class CreatureCatalogHarness {
         assertEquals(11, detail.hitPoints(), "CREATURE-CATALOG-004 edited detail hp");
         assertEquals("Cinder Claw", detail.actions().getFirst().name(), "CREATURE-CATALOG-004 edited action");
         assertTrue(!"Ash Imp".equals(detail.name()), "CREATURE-CATALOG-004 old detail name absent");
+    }
+
+    private static void assertEditedCatalogPrecondition(HarnessRuntime runtime) {
+        CreatureCatalogPageResult page = runtime.catalog.current();
+        assertEquals(CreatureQueryStatus.SUCCESS, page.status(), "setup edited catalog status");
+        assertEquals(1, page.page().totalCount(), "setup edited catalog total count");
+        assertEquals("Cinder Imp", page.page().rows().getFirst().name(), "setup edited catalog row name");
+        assertEquals(2, runtime.port.searchCount, "setup edited catalog search count");
+    }
+
+    private static void assertEditedDetailPrecondition(CreatureDetail detail) {
+        assertEquals("Cinder Imp", detail.name(), "setup edited detail name");
+        assertEquals(11, detail.hitPoints(), "setup edited detail hp");
     }
 
     private static void assertInvalidCatalogQueryDoesNotHitLookup(HarnessRuntime runtime) {
