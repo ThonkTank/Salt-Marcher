@@ -26,11 +26,11 @@ modernization unless this ledger advances too.
 
 | Field | Value |
 | --- | --- |
-| Branch | `codex/harness-modernization-t0` |
+| Branch | `codex/harness-modernization-t4-readback` |
 | Milestone | T4 - CI authority and bespoke-layer deletion |
 | Conversion batch | None |
 | Status | In Flight |
-| Required next proof | Run Phase 1 and Phase 2 review for the local T4 CI/deletion patch, publish the PR, then rehearse the literal T4 CI done-when: area-touch cache behavior, build-wiring full re-run, deleted files gone from `main`, required checks green/enforced, and one green nightly `--rerun-tasks` run. |
+| Required next proof | Rehearse the remaining literal T4 CI done-when: area-touch cache behavior, deleted files gone from `main`, and one green scheduled nightly `--rerun-tasks` run. |
 | Last status note | `2026-07-12 T3-close-out` |
 
 ## Milestone Ledger
@@ -41,7 +41,7 @@ modernization unless this ledger advances too.
 | T1 Fleet conversion | Done on branch | Pending | Pending | Per-batch focused run, forced run, JUnit XML, final `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | All registered behavior harness tasks are JUnit `Test` tasks; no JavaExec behavior harness registration, silent Dungeon Editor direct-main entrypoint, or harness-level `outputs.upToDateWhen { false }` remains. |
 | T2 Cache correctness and hermeticity | Done on branch | Pending | Pending | Dungeon Editor and Render Parity cache-hit, classpath re-run, resource re-run, final consecutive `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | Relative result paths replace absolute Test system-property result paths for the reviewed converted check-participating Dungeon Editor surfaces. |
 | T3 Commit gate via versioned hooks | Done on branch | Pending | Pending | Rejected untested change naming `:compileTestJava`, accepted tested staged trees through clean worktree `check`, fresh-clone bootstrap set `core.hooksPath=tools/hooks`, dirty worktree isolation passed, Phase 1 Approved, Phase 2 Approved | Versioned `tools/hooks/pre-commit` now verifies the staged tree through a detached clean worktree. |
-| T4 CI authority and bespoke-layer deletion | In Flight | `4946450b3` | Pending | Local structural proof and Phase 1/Phase 2 approved; PR CI proof pending | Local patch replaces the required CI surface with `check`, adds scheduled `nightly-rerun-tasks`, deletes `harness-map.json`, `select_harnesses.py`, and `behavior-gate`, removes `checkHarnessMapConsistency`, and updates required-check/frozen/governance surfaces. CI done-when remains pending. |
+| T4 CI authority and bespoke-layer deletion | In Flight | `4946450b3`, `d528d0b13`, `712ac4f87` | `ea6e797d` | Local structural proof and Phase 1/Phase 2 approved; build-wiring PR CI forced `check --rerun-tasks` green; branch-protection readback Qualified | PR #453 replaced the required CI surface with `check`, adds scheduled `nightly-rerun-tasks`, deletes `harness-map.json`, `select_harnesses.py`, and `behavior-gate`, removes `checkHarnessMapConsistency`, and updates required-check/frozen/governance surfaces. Area-touch CI cache behavior, deleted-files readback on `main`, and scheduled nightly green run remain pending. |
 | T5 Resolution report and honesty reviewer | Pending | Pending | Pending | Pending | Resource policy amendment must precede reviewer calls. |
 | T6 Governance consolidation | Pending | Pending | Pending | Pending | AGENTS/check-entrypoint consolidation waits until the system exists. |
 
@@ -1634,6 +1634,34 @@ JUnit test methods, with hyphens converted to underscores:
   `build/pre-commit-gate/14233a7733fb08b70e086ea97f515d578eb8dfaf.log`
   ends with `BUILD SUCCESSFUL in 18m 30s`,
   `74 actionable tasks: 53 executed, 20 from cache, 1 up-to-date`.
+  Ledger proof commit:
+  `712ac4f87 docs: record t4 rework proof`. The versioned pre-commit gate
+  accepted staged tree `1a1e1272cecc843d08ef1bce27e039e063e83b5e`;
+  retained log
+  `build/pre-commit-gate/1a1e1272cecc843d08ef1bce27e039e063e83b5e.log`
+  ends with `BUILD SUCCESSFUL in 18m 50s`,
+  `74 actionable tasks: 53 executed, 20 from cache, 1 up-to-date`.
+- PR #453 merged at `2026-07-13T02:25:46Z` with merge commit
+  `ea6e797d192517bc1fda4559ef1bde42c9d190f7`. The final build-wiring CI
+  rehearsal ran on head `712ac4f8759258210ef50dbde90167872fffa0be`. Retained
+  GitHub job:
+  `https://github.com/ThonkTank/Salt-Marcher/actions/runs/29219089697/job/86720585022`.
+  Literal CI result: the decision step emitted
+  `mode=forced-rerun-build-wiring`; the Gradle command was
+  `./gradlew check --console=plain --continue --rerun-tasks`; the job ended
+  with `BUILD SUCCESSFUL in 5m 43s`,
+  `74 actionable tasks: 73 executed, 1 up-to-date`. The single up-to-date task
+  was `cleanSpotbugsMainEvidence`, a `Delete` cleanup task with no evidence
+  files to delete. There were no `FROM-CACHE` tasks in the forced CI run.
+  The required jobs `check`, `warden-freeze`, and `judge-review` were green;
+  `nightly-rerun-tasks` was skipped for the PR event as expected.
+- Branch protection readback before updating GitHub was `Not Qualified`:
+  classic protection still required `behavior-gate`, `production-handoff`,
+  `warden-freeze`, and `judge-review`. The classic branch-protection required
+  checks were then updated to `check`, `warden-freeze`, and `judge-review`
+  while keeping `strict=true`. The follow-up readback at
+  `2026-07-13T02:26:06+00:00` returned `Qualified`; observed required checks
+  are exactly `check`, `judge-review`, and `warden-freeze`.
 - Local T4 implementation commit:
   `4946450b3 ci: replace behavior gate with check`. The versioned
   pre-commit gate accepted staged tree
