@@ -6,6 +6,23 @@ greenfield roadmap.
 
 # Verification Greenfield Owner Status Notes
 
+## 2026-07-13 Charter-proof-blocked
+
+Der Charter-Branch wurde auf `codex/verif-greenfield-m0-charter` neu von
+`origin/main` aufgebaut. Die vier Greenfield-Dokumente und der
+Projekt-README-Link sind committed; `git diff --check` ist gruen.
+
+Der erforderliche Docs-Proof blockiert aber vor dem Merge:
+`./gradlew checkDocumentationEnforcement --console=plain` faellt auf dem
+aktuellen Main-Bestand mit zwoelf bestehenden Dokumentationsverletzungen. Die
+neuen Verification-Greenfield-Dateien tauchen in der Fehlerliste nicht auf.
+Der Blocker ist die alte Dokumentations-Enforcement-Logik: Sie hard-failed
+weiterhin 350-Zeilen-Kappen und verpflichtendes `Owner`/`Last Reviewed`,
+obwohl der aktive Documentation Standard diese Regeln als Review-Signal bzw.
+optional beschreibt. Naechster Schritt ist deshalb zuerst die Reparatur oder
+Stilllegung dieses veralteten Docs-Gates, danach der erneute
+`checkDocumentationEnforcement`-Lauf fuer den Charter-Branch.
+
 ## 2026-07-13 Roadmap-angelegt
 
 Die Verification-Greenfield-Roadmap ist angelegt und beantwortet die

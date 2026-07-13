@@ -27,11 +27,11 @@ unless this ledger advances too.
 
 | Field | Value |
 | --- | --- |
-| Branch | `codex/verif-greenfield-roadmap` |
+| Branch | `codex/verif-greenfield-m0-charter` |
 | Milestone | M0 - Charter, Local Sync, Baseline, Predecessor Close-Out |
-| Status | In Flight |
-| Required next proof | Merge the charter PR, then record one green scheduled `nightly-rerun-tasks` run and close predecessor T4. |
-| Last status note | `2026-07-13 Roadmap-angelegt` |
+| Status | Blocked |
+| Required next proof | Repair or retire the stale documentation-enforcement blockers on `origin/main`, then rerun `./gradlew checkDocumentationEnforcement --console=plain` for the charter branch. |
+| Last status note | `2026-07-13 Charter-proof-blocked` |
 
 ## Baseline Measurements (owner machine, headless, filled in M0)
 
@@ -59,7 +59,7 @@ unless this ledger advances too.
 
 | Step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Charter docs committed and indexed | In Flight | Pending | Pending | Pending | Roadmap, target design, ledger, owner notes, index links. |
+| Charter docs committed and indexed | Blocked | `72304398d` | Pending | `git diff --check` passed with no output, 2026-07-13; `./gradlew checkDocumentationEnforcement --console=plain` failed, 2026-07-13 | Roadmap, target design, ledger, owner notes, and index links are committed on the branch. Blocked by pre-existing `checkDocumentationEnforcement` violations on current `origin/main`: stale hard line-cap failures, two `Status: Baseline` files, and optional `Owner`/`Last Reviewed` metadata still treated as required. No violation was reported against the new verification-greenfield files. |
 | Local checkout on origin/main; in-flight work preserved | Done on branch | Pending | Pending | Pending | Encounter WIP committed on `codex/architecture-migration-m0-charter`; `codex/architecture-roadmap-phase2` pushed to origin 2026-07-13. |
 | Green scheduled nightly run recorded; predecessor T4 closed | Pending | Pending | Pending | Pending | Update predecessor ledger T4 to Done with the nightly evidence. |
 | Predecessor roadmap deprecated with successor pointer | Pending | Pending | Pending | Pending | `Status: Deprecated` plus pointer under the title. |
