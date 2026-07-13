@@ -37,9 +37,9 @@ migration unless this ledger advances too.
 | Branch | `codex/architecture-roadmap-phase2` |
 | Milestone | Phase 2 W1 - Split `DungeonAuthoredApplicationService` |
 | Work item | W1 Split `DungeonAuthoredApplicationService` |
-| Cycle step | 1. Harness check/closure in flight |
+| Cycle step | 2. Baseline metrics in flight |
 | In-flight area | `dungeon-authored-application-service` |
-| Required next proof | Identify current harness coverage for `DungeonAuthoredApplicationService`, prove old-structure parity through production harnesses, and freeze the W1 scenario/assertion inventory before baseline. |
+| Required next proof | Measure the current `DungeonAuthoredApplicationService` baseline: service surface, member clusters, chain lengths, tripwires, typed-boundary residue, forwarding/delegation candidates, and exception candidates before target design. |
 | Last status note | `2026-07-13 W0 Phase-2-Vorbereitung` |
 
 ## Phase 1 Completion Snapshot
@@ -63,15 +63,16 @@ across `docs/project/architecture/*.md` and
 `docs/project/architecture/patterns/*.md`, measured after adding the Phase-2
 roadmap and before moving Phase-1 evidence. After the archive move and W0
 owner note, the active surface was 4,857 lines before the W1 ledger expansion;
-after W1 step 1 was opened in this ledger, the current active surface is 4,873
-lines.
+after W1 step 1 was opened in this ledger, the active surface was 4,873 lines.
+After the W1 harness inventory and ledger closure, the current active surface
+is 4,964 lines.
 
 | Work item | Status | Branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
 | W0.1 Override verification | Done | Pending | Pending | Owner confirmation is recorded in the Phase-2 roadmap; no investigation is allowed. | PR #451 `judge-override` was owner-set and legitimate. Phase 2 has no owner touchpoints. |
-| W0.2 Evidence archive | Done on branch | Pending | Pending | Active architecture-doc surface moved from 13,135 lines to 4,857 lines before W1 ledger expansion and 4,873 lines after W1 step 1 opened; active instruction/routing-surface grep for archived evidence filenames returned no matches; `git diff --cached --check` passed, 2026-07-13. | Moved Phase-1 baselines, target designs, owner status notes, owner smoke checklists, LOC exception notes, and final measurement to `docs/project/archive/migration/`; kept the Phase-1 roadmap and this ledger active. |
+| W0.2 Evidence archive | Done on branch | `446a80ca1` | Pending | Active architecture-doc surface moved from 13,135 lines to 4,857 lines before W1 ledger expansion and 4,873 lines after W1 step 1 opened; active instruction/routing-surface grep for archived evidence filenames returned no matches; `git diff --cached --check` passed, 2026-07-13. | Moved Phase-1 baselines, target designs, owner status notes, owner smoke checklists, LOC exception notes, and final measurement to `docs/project/archive/migration/`; kept the Phase-1 roadmap and this ledger active. |
 | W0.3 Phase-2 ledger section | Done on branch | `e7985a129` | Pending | `git diff --check` passed, 2026-07-13; `git diff --no-index --check /dev/null docs/project/architecture/architecture-roadmap-phase2.md` emitted no whitespace-error output, 2026-07-13. | This section seeds W0-W4 state and the repealed-targets note before the archive move so the ledger remains authoritative during W0.2. |
-| W1 Split `DungeonAuthoredApplicationService` | In Flight | Pending | Pending | Pending | Phase-2 pilot; current cycle step is harness check/closure. |
+| W1 Split `DungeonAuthoredApplicationService` | In Flight | Pending | Pending | Step 1 harness check/closure complete on branch; step 2 baseline metrics in flight. | Phase-2 pilot; harness scenarios/assertions are frozen and baseline metrics are next. |
 | W2 Dungeon render cascade | Pending | Pending | Pending | Pending | Requires consumer inventory and `DungeonMapRenderParitySnapshotHarness` before/after proof per commit. |
 | W3 View god files | Pending | Pending | Pending | Pending | One file per cycle pass, starting with the listed >500-LOC view files. |
 | W4 Sweep and close | Pending | Pending | Pending | Pending | Final typed-boundary, tripwire, chain, and German closing report sweep. |
@@ -80,8 +81,8 @@ lines.
 
 | Cycle step | Status | Branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
-| 1. Harness check/closure | In Flight | Pending | Pending | Pending | Confirm current coverage for `DungeonAuthoredApplicationService`, route through existing dungeon production harnesses, and freeze scenario/assertion inventory before baseline. |
-| 2. Baseline metrics | Pending | Pending | Pending | Pending | Not started. |
+| 1. Harness check/closure | Done on branch | Pending | Pending | W1 inventory `docs/project/architecture/architecture-roadmap-phase2-w1-harness-inventory.md`; retained logs `build/gradle-run-logs/20260713T111054622741220-pid116911-dungeonEditorCoreBehaviorHarness__dungeonEditorBehaviorHarness__dungeonEditorRouteBehaviorHarness.log`, `build/gradle-run-logs/20260713T112021346890229-pid126221-dungeonEditorDoorBehaviorHarness.log`, `build/gradle-run-logs/20260713T112142548201954-pid127574-dungeonEditorDoorBehaviorHarness__dungeonEditorWallBehaviorHarness__dungeonEditorRoomBehaviorHarness__dungeonEditorClusterBehaviorHarness.log`, `build/gradle-run-logs/20260713T112207247669148-pid128808-dungeonEditorCorridorBehaviorHarness__dungeonEditorStairBehaviorHarness__dungeonEditorTransitionBehaviorHarness__dungeonEditorFeatureBehaviorHarness.log`, `build/gradle-run-logs/20260713T112649339019823-pid132371-dungeonTravelProjectionLevelHarness__dungeonMapRenderParityHarness__checkBehaviorHarnessTopology.log`, and focused handoff wrapper/observable logs `build/gradle-run-logs/20260713T092751Z-staged-focused-handoff.log` / `build/gradle-run-logs/20260713T112752175226150-pid134722-focused-handoff.log` passed; initial sandbox Gradle startup failure, transient door latency miss, and stale `checkHarnessMapConsistency` selection failure are recorded as non-advancing attempts. | Existing production-route harness coverage is sufficient for W1 baseline: aggregate 206, route 187, door 58, wall 33, room 64, cluster 84, corridor 68, stair 63, transition 62, feature 59, travel 5, render parity 3; core 72 is supplemental model-invariant coverage. No scenario/assertion edits and no W1 harness gap. |
+| 2. Baseline metrics | In Flight | Pending | Pending | Pending | Measure current service surface, split-responsibility clusters, chain lengths, tripwires, typed-boundary residue, forwarding/delegation candidates, and exception candidates before target design. |
 | 3. Target design | Pending | Pending | Pending | Pending | Not started; must include split map, target classes, call chains, deletion list, and seam statement. |
 | 4. Harness wiring port | Pending | Pending | Pending | Pending | Not started. |
 | 5. Implementation | Pending | Pending | Pending | Pending | Not started. |
