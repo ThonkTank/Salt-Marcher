@@ -1,9 +1,10 @@
 Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-11
-Source of Truth: Current architecture migration position, in-flight work,
-area status, and harness status for the roadmap in
-`docs/project/architecture/architecture-migration-roadmap.md`.
+Source of Truth: Current architecture migration position, Phase 2
+decomposition state, in-flight work, area status, and harness status for
+`docs/project/architecture/architecture-migration-roadmap.md` and
+`docs/project/architecture/architecture-roadmap-phase2.md`.
 
 # Architecture Migration Ledger
 
@@ -11,7 +12,8 @@ area status, and harness status for the roadmap in
 
 This ledger is the single source of truth for the architecture migration state.
 It records the active milestone, the current work item, area status, merge
-commit state, and harness status. German owner status notes live in
+commit state, and harness status across Phase 1 and Phase 2. German owner
+status notes live in
 `docs/project/architecture/architecture-migration-owner-status-notes.md`.
 Chat plans and pass logs may describe work, but they do not advance the
 migration unless this ledger advances too.
@@ -30,13 +32,43 @@ migration unless this ledger advances too.
 
 | Field | Value |
 | --- | --- |
-| Branch | `main` |
-| Milestone | M6 - Completion |
-| Work item | Architecture migration complete |
-| Cycle step | M6 complete |
+| Branch | `codex/architecture-roadmap-phase2` |
+| Milestone | Phase 2 W0 - Preconditions |
+| Work item | W0.2 Evidence archive |
+| Cycle step | W0.2 in flight; archive Phase-1 evidence and record active-surface line counts |
 | In-flight area | None |
-| Required next proof | None; M0-M6 are complete on `main` via PR #451 merge commit `c12cb494f`. |
+| Required next proof | `git diff --check`; after W0.2 archive movement, prove active instruction surfaces do not reference archived files. |
 | Last status note | `2026-07-12 M6-post-merge-close-out` |
+
+## Phase 1 Completion Snapshot
+
+Phase 1 M0-M6 is complete on `main` via PR #451 merge commit `c12cb494f`.
+The Phase-1 roadmap, area ledgers, owner status notes, final measurement, and
+reference commits remain the historical source for the completed migration.
+
+## Phase 2 Decomposition Ledger
+
+Phase 2 is governed by
+`docs/project/architecture/architecture-roadmap-phase2.md`. Phase-1 reduction
+targets are repealed for Phase 2: do not carry forward `>=40% LOC reduction`,
+`fewer files is better`, or reduction-only review language. Phase 2 optimizes
+for cohesive decomposition; file count and LOC may rise when the split map
+removes god-file responsibilities without reintroducing forwarding layers.
+
+Active architecture-doc surface before W0.2 archive movement: 13,135 lines
+across `docs/project/architecture/*.md` and
+`docs/project/architecture/patterns/*.md`, measured after adding the Phase-2
+roadmap and before moving Phase-1 evidence.
+
+| Work item | Status | Branch commit | Merge commit | Proof | Notes |
+| --- | --- | --- | --- | --- | --- |
+| W0.1 Override verification | Done | Pending | Pending | Owner confirmation is recorded in the Phase-2 roadmap; no investigation is allowed. | PR #451 `judge-override` was owner-set and legitimate. Phase 2 has no owner touchpoints. |
+| W0.2 Evidence archive | In Flight | Pending | Pending | Pending | Move Phase-1 baselines, target designs, and close-out notes to `docs/project/archive/migration/`; keep the Phase-1 roadmap and this ledger active; ensure active instruction surfaces do not reference archived files; record active-surface line count after the move. |
+| W0.3 Phase-2 ledger section | Done on branch | Pending | Pending | `git diff --check` passed, 2026-07-13; `git diff --no-index --check /dev/null docs/project/architecture/architecture-roadmap-phase2.md` emitted no whitespace-error output, 2026-07-13. | This section seeds W0-W4 state and the repealed-targets note before the archive move so the ledger remains authoritative during W0.2. |
+| W1 Split `DungeonAuthoredApplicationService` | Pending | Pending | Pending | Pending | Phase-2 pilot; start only after W0 closes. |
+| W2 Dungeon render cascade | Pending | Pending | Pending | Pending | Requires consumer inventory and `DungeonMapRenderParitySnapshotHarness` before/after proof per commit. |
+| W3 View god files | Pending | Pending | Pending | Pending | One file per cycle pass, starting with the listed >500-LOC view files. |
+| W4 Sweep and close | Pending | Pending | Pending | Pending | Final typed-boundary, tripwire, chain, and German closing report sweep. |
 
 ## M0 Step Ledger
 

@@ -16,14 +16,15 @@ migrations.
 
 ## Current Source Order
 
-1. `docs/project/architecture/architecture-migration-roadmap.md`
+1. `docs/project/architecture/architecture-roadmap-phase2.md`
 2. `docs/project/architecture/migration-ledger.md`
-3. `docs/project/architecture/doc-size-policy-vision-and-roadmap.md`
-4. `docs/project/architecture/doc-size-policy-ledger.md`
-5. `docs/project/documentation-specification.md`
-6. retained behavior, contract, requirement, domain, and verification docs
-7. surrounding production code for legacy areas
-8. the pilot reference commit named in the ledger for migrated areas
+3. `docs/project/architecture/architecture-migration-roadmap.md`
+4. `docs/project/architecture/doc-size-policy-vision-and-roadmap.md`
+5. `docs/project/architecture/doc-size-policy-ledger.md`
+6. `docs/project/documentation-specification.md`
+7. retained behavior, contract, requirement, domain, and verification docs
+8. surrounding production code for legacy areas
+9. the pilot reference commit named in the ledger for migrated areas
 
 Where a retained document still describes old structure, the roadmap and ledger
 win for migration work. Behavior truth remains in feature requirements,
@@ -45,10 +46,15 @@ tools/       build infrastructure, quality platforms, and scripts
 
 ## Retained Architecture Statements
 
+- [Architecture Roadmap Phase 2](architecture-roadmap-phase2.md)
+  owns the decomposition targets, W0-W4 work items, split-map rule, and
+  Phase-1 metric repeal.
 - [Architecture Migration Roadmap](architecture-migration-roadmap.md)
-  owns the target principles, per-area cycle, and migration milestones.
+  owns the completed Phase-1 target principles, per-area cycle, and M0-M6
+  migration milestones.
 - [Migration Ledger](migration-ledger.md)
-  owns current milestone, in-flight work, area state, and close-out notes.
+  owns current milestone, in-flight work, area state, and close-out notes
+  across Phase 1 and Phase 2.
 - [Source Architecture Statement](source-architecture.md) owns the current
   source-shape routing after the role-family migration.
 - [Architecture Migration Final Measurement](architecture-migration-final-measurement.md)
