@@ -26,11 +26,11 @@ modernization unless this ledger advances too.
 
 | Field | Value |
 | --- | --- |
-| Branch | `codex/harness-modernization-t4-readback` |
+| Branch | `main` |
 | Milestone | T4 - CI authority and bespoke-layer deletion |
 | Conversion batch | None |
 | Status | In Flight |
-| Required next proof | Rehearse the remaining literal T4 CI done-when: area-touch cache behavior, deleted files gone from `main`, and one green scheduled nightly `--rerun-tasks` run. |
+| Required next proof | Wait for and record one green scheduled nightly `--rerun-tasks` run from the merged `quality-platforms` workflow. |
 | Last status note | `2026-07-12 T3-close-out` |
 
 ## Milestone Ledger
@@ -41,7 +41,7 @@ modernization unless this ledger advances too.
 | T1 Fleet conversion | Done on branch | Pending | Pending | Per-batch focused run, forced run, JUnit XML, final `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | All registered behavior harness tasks are JUnit `Test` tasks; no JavaExec behavior harness registration, silent Dungeon Editor direct-main entrypoint, or harness-level `outputs.upToDateWhen { false }` remains. |
 | T2 Cache correctness and hermeticity | Done on branch | Pending | Pending | Dungeon Editor and Render Parity cache-hit, classpath re-run, resource re-run, final consecutive `check --rerun-tasks`, Phase 1 Approved, Phase 2 Approved | Relative result paths replace absolute Test system-property result paths for the reviewed converted check-participating Dungeon Editor surfaces. |
 | T3 Commit gate via versioned hooks | Done on branch | Pending | Pending | Rejected untested change naming `:compileTestJava`, accepted tested staged trees through clean worktree `check`, fresh-clone bootstrap set `core.hooksPath=tools/hooks`, dirty worktree isolation passed, Phase 1 Approved, Phase 2 Approved | Versioned `tools/hooks/pre-commit` now verifies the staged tree through a detached clean worktree. |
-| T4 CI authority and bespoke-layer deletion | In Flight | `4946450b3`, `d528d0b13`, `712ac4f87` | `ea6e797d` | Local structural proof and Phase 1/Phase 2 approved; build-wiring PR CI forced `check --rerun-tasks` green; branch-protection readback Qualified | PR #453 replaced the required CI surface with `check`, adds scheduled `nightly-rerun-tasks`, deletes `harness-map.json`, `select_harnesses.py`, and `behavior-gate`, removes `checkHarnessMapConsistency`, and updates required-check/frozen/governance surfaces. Area-touch CI cache behavior, deleted-files readback on `main`, and scheduled nightly green run remain pending. |
+| T4 CI authority and bespoke-layer deletion | In Flight | `4946450b3`, `d528d0b13`, `712ac4f87` | `ea6e797d`, `8aa8ed350` | Local structural proof and Phase 1/Phase 2 approved; build-wiring PR CI forced `check --rerun-tasks` green; area-touch PR CI content-addressed cache behavior green; branch-protection readback Qualified; deleted selector files absent on `main` | PR #453 replaced the required CI surface with `check`, adds scheduled `nightly-rerun-tasks`, deletes `harness-map.json`, `select_harnesses.py`, and `behavior-gate`, removes `checkHarnessMapConsistency`, and updates required-check/frozen/governance surfaces. Scheduled nightly green run remains pending. |
 | T5 Resolution report and honesty reviewer | Pending | Pending | Pending | Pending | Resource policy amendment must precede reviewer calls. |
 | T6 Governance consolidation | Pending | Pending | Pending | Pending | AGENTS/check-entrypoint consolidation waits until the system exists. |
 
@@ -1662,6 +1662,32 @@ JUnit test methods, with hyphens converted to underscores:
   while keeping `strict=true`. The follow-up readback at
   `2026-07-13T02:26:06+00:00` returned `Qualified`; observed required checks
   are exactly `check`, `judge-review`, and `warden-freeze`.
+- PR #455 merged at `2026-07-13T02:51:38Z` with merge commit
+  `8aa8ed3503abdad37661092e26318aca269454e4`, recording the branch-protection
+  readback and build-wiring CI evidence in this ledger and the July journal.
+  A main readback after that merge confirmed
+  `tools/quality/config/harness-map.json` and
+  `tools/quality/scripts/select_harnesses.py` are absent from `main`.
+- Area-touch CI rehearsal used PR #456 with a single no-op comment in
+  `test/src/domain/worldplanner/WorldPlannerBackendHarness.java`, which belongs
+  to the dedicated `worldPlannerBackendHarness` source set. The PR was not
+  merged after evidence collection. Retained GitHub job:
+  `https://github.com/ThonkTank/Salt-Marcher/actions/runs/29221196557/job/86726474910`.
+  Literal CI result: the decision step emitted `mode=content-addressed`; the
+  Gradle command was `./gradlew check --console=plain --continue`; the job
+  ended with `BUILD SUCCESSFUL in 34s`,
+  `74 actionable tasks: 24 executed, 49 from cache, 1 up-to-date`.
+  The touched-area tasks
+  `compileWorldPlannerBackendHarnessJava`, `worldPlannerBackendHarness`, and
+  adjacent same-source-set `worldPlannerEncounterHarness` executed, while
+  unrelated harnesses such as catalog, dungeon editor, hex, party, session
+  planner, smoke startup, World Planner UI, and search-filter harnesses restored
+  from the CI cache. Required jobs `check`, `warden-freeze`, and
+  `judge-review` were green; `nightly-rerun-tasks` was skipped for the PR event
+  as expected.
+- No scheduled `quality-platforms` run existed as of `2026-07-13T03:18:28Z`;
+  the first real Nightly proof can only close T4 after a scheduled
+  `nightly-rerun-tasks` job runs green on the merged workflow.
 - Local T4 implementation commit:
   `4946450b3 ci: replace behavior gate with check`. The versioned
   pre-commit gate accepted staged tree
