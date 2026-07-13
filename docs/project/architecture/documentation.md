@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-13
+Last Reviewed: 2026-06-30
 Source of Truth: Documentation taxonomy, header metadata, and review rules
 for all project documentation outside `AGENTS.md`.
 
@@ -189,10 +189,6 @@ Documentation governance is broader than compile-time enforcement.
 
 - Documentation-only proof is `git diff --check` plus any owner-named proof
   from `AGENTS.md`; removed documentation gates are not acceptance evidence.
-- `checkDocumentationEnforcement` enforces required `Status` and
-  `Source of Truth` metadata for docs Markdown; `Owner` and `Last Reviewed`
-  remain optional review context, not gate inputs. It emits non-fatal size
-  signals for Markdown over 400 lines.
 - Header metadata, placement, link integrity, legacy documentation roots, and
   redirect-only source Markdown are review responsibilities unless a current
   owner explicitly names a narrower proof route.

@@ -70,7 +70,7 @@ public final class DocumentationHygieneRules implements ArchitectureRule {
             String documentPath,
             List<String> lines,
             ViolationSink violations) {
-        for (String line : lines.subList(1, Math.min(lines.size(), 5))) {
+        for (String line : lines.subList(1, Math.min(lines.size(), 4))) {
             if (line.startsWith("Source of Truth: ") && !line.substring("Source of Truth: ".length()).isBlank()) {
                 return;
             }
