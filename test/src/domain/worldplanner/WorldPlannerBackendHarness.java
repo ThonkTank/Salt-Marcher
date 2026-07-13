@@ -34,6 +34,7 @@ import src.domain.worldplanner.published.WorldPlannerSnapshot;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
 public final class WorldPlannerBackendHarness {
+    // T4 area-touch rehearsal marker; does not change scenario semantics.
 
     private WorldPlannerBackendHarness() {
     }
