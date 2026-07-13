@@ -24,14 +24,18 @@ commit_id="$(printf 'SaltMarcher pre-commit verification\n' | git commit-tree "$
 gate_worktree="$(mktemp -d "${TMPDIR:-/tmp}/saltmarcher-pre-commit.XXXXXX")"
 log_dir="$repo_root/build/pre-commit-gate"
 log_file="$log_dir/${commit_id}.log"
+git_env_clear_args=()
+while IFS= read -r git_env_name; do
+    git_env_clear_args+=("-u" "$git_env_name")
+done < <(git rev-parse --local-env-vars)
 
 cleanup() {
-    git -C "$repo_root" worktree remove --force "$gate_worktree" >/dev/null 2>&1 || rm -rf "$gate_worktree"
+    env "${git_env_clear_args[@]}" git -C "$repo_root" worktree remove --force "$gate_worktree" >/dev/null 2>&1 || rm -rf "$gate_worktree"
 }
 trap cleanup EXIT
 
 mkdir -p "$log_dir"
-git worktree add --detach --quiet "$gate_worktree" "$commit_id"
+env "${git_env_clear_args[@]}" git -C "$repo_root" worktree add --detach --quiet "$gate_worktree" "$commit_id"
 
 echo "pre-commit: verifying staged tree $commit_id in clean worktree."
 echo "pre-commit: log: $log_file"
@@ -39,7 +43,7 @@ echo "pre-commit: log: $log_file"
 set +e
 (
     cd "$gate_worktree"
-    SALTMARCHER_PRE_COMMIT_GATE=1 ./gradlew check --console=plain
+    env "${git_env_clear_args[@]}" SALTMARCHER_PRE_COMMIT_GATE=1 ./gradlew check --console=plain
 ) >"$log_file" 2>&1
 gradle_status=$?
 set -e

@@ -1,4 +1,4 @@
-Status: Baseline
+Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-11
 Source of Truth: M4.5 `dungeon-editor-view` baseline metrics for
