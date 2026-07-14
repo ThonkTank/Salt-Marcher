@@ -6,6 +6,38 @@ greenfield roadmap.
 
 # Verification Greenfield Owner Status Notes
 
+## 2026-07-14 M0-headless-baseline-kalibriert
+
+M0 ist nach dem M1a-Merge headless auf der Owner-Maschine gemessen. Der
+serielle warme Voll-Lauf ist gruen, aber ueber dem bisherigen Zielwert:
+`tools/gradle/run-observable-gradle.sh check -- --rerun-tasks`, Log
+`build/gradle-run-logs/20260714T164711390209469-pid560170-check.log`,
+`BUILD SUCCESSFUL in 24m 28s`, `74 actionable tasks: 74 executed`. Das
+Ziel `<= 20 min` bleibt binding und ist als M0-Miss im Ledger markiert; M1b
+muss dagegen mindestens 40 Prozent kuerzen oder M5 braucht eine einzeln
+begruendete Ausnahme.
+
+Der no-change-Pfad ist bereits gut:
+`tools/gradle/run-observable-gradle.sh check`, Log
+`build/gradle-run-logs/20260714T171153492803370-pid575396-check.log`,
+`BUILD SUCCESSFUL in 12s`, `74 actionable tasks: 6 executed, 1 from cache, 67 up-to-date`.
+Das Ziel `<= 2 min` ist damit binding und gruen.
+
+Der Pre-Commit-Hook ist der eigentliche lokale Schmerzpunkt. Der Hook wurde
+mit einem temporaeren `.gitignore`-Marker als unberuehrter Bereich gemessen;
+der Marker wurde vor dem Commit wieder hergestellt. Der staged-tree-Hash war
+`26659f56c14130cfcddd1f67d2d65a824f05999f`, Log
+`build/pre-commit-gate/26659f56c14130cfcddd1f67d2d65a824f05999f.log`,
+`BUILD SUCCESSFUL in 13m 39s`, `74 actionable tasks: 53 executed, 20 from
+cache, 1 up-to-date`. Das Ziel `<= 5 min` bleibt binding und ist ebenfalls
+als M0-Miss markiert. Der Hook fuehrt im isolierten Worktree noch zu viel
+aus; M1b, M4 oder M5 muessen das reparieren oder M5 muss eine einzelne
+Ausnahme dokumentieren.
+
+Alle M0-Zielwerte sind jetzt von `Provisional` auf `Binding` gestellt. Es
+wurde kein Judge, kein Gate und keine frozen surface entfernt oder
+abgeschwaecht; dieser Schritt war reine Baseline-/Ledger-/Statusarbeit.
+
 ## 2026-07-14 M1a-headless-auf-Branch
 
 M1a ist auf `codex/verif-greenfield-m1a-monocle-headless` umgesetzt. Der
