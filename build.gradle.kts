@@ -22,7 +22,7 @@ plugins {
     java
     application
     pmd
-    id("com.github.spotbugs") version "6.5.0"
+    id("com.github.spotbugs") version "6.5.9"
     id("saltmarcher.quality-conventions")
     id("saltmarcher.verification-core")
     id("org.openjfx.javafxplugin") version "0.1.0"
@@ -149,31 +149,31 @@ dependencies {
 
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.xerial:sqlite-jdbc:3.53.2.0")
-    pmd("net.sourceforge.pmd:pmd-ant:7.23.0")
-    pmd("net.sourceforge.pmd:pmd-java:7.23.0")
+    pmd("net.sourceforge.pmd:pmd-ant:7.26.0")
+    pmd("net.sourceforge.pmd:pmd-java:7.26.0")
     pmd("saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
     spotbugsPlugins("com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0")
-    testImplementation("org.junit.jupiter:junit-jupiter:6.1.1")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.1.2")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
     testRuntimeOnly(monocleDependency)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
-    add("dungeonEditorBehaviorHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.2")
+    add("dungeonEditorBehaviorHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.2")
     add("dungeonEditorBehaviorHarnessRuntimeOnly", monocleDependency)
     add("dungeonEditorBehaviorHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
-    add("dungeonEditorBehaviorHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
-    add("hexMapEditorBehaviorHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    add("dungeonEditorBehaviorHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.2")
+    add("hexMapEditorBehaviorHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.2")
     add("hexMapEditorBehaviorHarnessRuntimeOnly", monocleDependency)
     add("hexMapEditorBehaviorHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
-    add("hexMapEditorBehaviorHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
-    add("worldPlannerBackendHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    add("hexMapEditorBehaviorHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.2")
+    add("worldPlannerBackendHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.2")
     add("worldPlannerBackendHarnessRuntimeOnly", monocleDependency)
     add("worldPlannerBackendHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
-    add("worldPlannerBackendHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
-    add("worldPlannerUiHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    add("worldPlannerBackendHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.2")
+    add("worldPlannerUiHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.2")
     add("worldPlannerUiHarnessRuntimeOnly", monocleDependency)
     add("worldPlannerUiHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
-    add("worldPlannerUiHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
+    add("worldPlannerUiHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.2")
 }
 
 pmd {
