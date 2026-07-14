@@ -14,6 +14,7 @@ import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.verification.BehaviorHarnessClassification
 import saltmarcher.buildlogic.verification.BehaviorHarnessRegistry
 import saltmarcher.buildlogic.tasks.MainClassesSystemPropertyProvider
+import saltmarcher.buildlogic.tasks.PrepareHarnessRuntimeDirectoriesAction
 import saltmarcher.buildlogic.tasks.hygiene.ValidateSpotbugsCoverageTask
 
 plugins {
@@ -39,6 +40,7 @@ val complexityRulesetFile = layout.projectDirectory.file("tools/quality/config/p
 val lawOfDemeterRulesetFile = layout.projectDirectory.file("tools/quality/config/pmd/law-of-demeter-ruleset.xml")
 val spotbugsExcludeFilterFile = layout.projectDirectory.file("tools/quality/config/spotbugs/exclude-filter.xml")
 val javafxVersion = "21.0.2"
+val verificationMaxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceIn(1, 2)
 
 val preloaderJvmArg = preloaderClassName.map { "-Djavafx.preloader=$it" }
 
@@ -257,10 +259,16 @@ tasks.test {
 }
 
 tasks.withType<Test>().configureEach {
+    maxParallelForks = verificationMaxParallelForks
     systemProperty("glass.platform", "Monocle")
     systemProperty("monocle.platform", "Headless")
     systemProperty("prism.order", "sw")
     systemProperty("java.awt.headless", "true")
+}
+
+fun Test.prepareHarnessRuntimeDirectories(xdgDataHome: File, resultsDirectory: File? = null) {
+    environment("XDG_DATA_HOME", xdgDataHome.absolutePath)
+    doFirst(PrepareHarnessRuntimeDirectoriesAction(xdgDataHome.absolutePath, resultsDirectory?.absolutePath))
 }
 
 val dungeonEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("dungeon-editor-behavior-data")
@@ -286,6 +294,7 @@ fun registerDungeonEditorBehaviorHarnessTask(
         this.behaviorDependencies.set(behaviorDependencies)
         this.aggregateOf.set(aggregateOf)
         task {
+            val runDataDir = dungeonEditorBehaviorHarnessDataDir.map { it.dir(taskName) }
             val taskResultsDir = dungeonEditorBehaviorHarnessResultsDir.map { it.dir(taskName) }
             val taskResultsPath = "build/dungeon-editor-behavior-results/$taskName"
             group = LifecycleBasePlugin.VERIFICATION_GROUP
@@ -306,14 +315,7 @@ fun registerDungeonEditorBehaviorHarnessTask(
                 .withPathSensitivity(PathSensitivity.RELATIVE)
             inputs.property("dungeonEditorBehaviorSuites", suiteIds.joinToString(","))
             outputs.dir(taskResultsDir)
-            doFirst {
-                val runDataDir = dungeonEditorBehaviorHarnessDataDir.get()
-                    .dir("run-" + System.currentTimeMillis() + "-" + ProcessHandle.current().pid())
-                mkdir(runDataDir)
-                mkdir(runDataDir.dir("salt-marcher"))
-                mkdir(taskResultsDir)
-                environment("XDG_DATA_HOME", runDataDir.asFile.absolutePath)
-            }
+            prepareHarnessRuntimeDirectories(runDataDir.get().asFile, taskResultsDir.get().asFile)
             systemProperty(
                 "saltmarcher.dungeonEditorBehavior.resultsDir",
                 taskResultsPath
@@ -507,13 +509,7 @@ val dungeonTravelProjectionLevelHarnessTask = behaviorHarnesses.junitTest("dunge
             .withPropertyName("dungeonTravelBehaviorCatalogs")
             .withPathSensitivity(PathSensitivity.RELATIVE)
         inputs.property("dungeonTravelProjectionLevelDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -544,15 +540,10 @@ val dungeonMapRenderParityHarnessTask = behaviorHarnesses.junitTest("dungeonMapR
             .withPathSensitivity(PathSensitivity.RELATIVE)
         inputs.property("dungeonMapRenderParityDataTemplate", "salt-marcher")
         outputs.dir(dungeonMapRenderParityHarnessResultsDir)
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            delete(dungeonMapRenderParityHarnessResultsDir)
-            mkdir(dungeonMapRenderParityHarnessResultsDir)
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(
+            temporaryDir.resolve("xdg-data"),
+            dungeonMapRenderParityHarnessResultsDir.get().asFile
+        )
         systemProperty(
             "saltmarcher.dungeonEditorBehavior.resultsDir",
             taskResultsPath
@@ -576,13 +567,7 @@ val catalogInitialLoadHarnessTask = behaviorHarnesses.junitTest("catalogInitialL
         useJUnitPlatform()
         include("src/view/leftbartabs/catalog/CatalogInitialLoadHarness.class")
         inputs.property("catalogInitialLoadDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -602,13 +587,7 @@ val catalogCrudControlsHarnessTask = behaviorHarnesses.junitTest("catalogCrudCon
         useJUnitPlatform()
         include("src/view/slotcontent/controls/catalogcrud/CatalogCrudControlsHarness.class")
         inputs.property("catalogCrudControlsDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -628,13 +607,7 @@ val catalogControlsRawInputHarnessTask = behaviorHarnesses.junitTest("catalogCon
         useJUnitPlatform()
         include("src/view/leftbartabs/catalog/CatalogControlsRawInputHarness.class")
         inputs.property("catalogControlsRawInputDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -654,13 +627,7 @@ val searchFilterControlsHarnessTask = behaviorHarnesses.junitTest("searchFilterC
         useJUnitPlatform()
         include("src/view/slotcontent/controls/searchfilter/SearchFilterControlsHarness.class")
         inputs.property("searchFilterControlsDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -680,13 +647,7 @@ val partyDropdownHarnessTask = behaviorHarnesses.junitTest("partyDropdownHarness
         useJUnitPlatform()
         include("src/view/dropdowns/party/PartyDropdownHarness.class")
         inputs.property("partyDropdownDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -706,13 +667,7 @@ val hexMapEditorBehaviorHarnessTask = behaviorHarnesses.junitTest("hexMapEditorB
         useJUnitPlatform()
         include("src/view/leftbartabs/hexmap/HexMapEditorBehaviorHarness.class")
         inputs.property("hexMapEditorBehaviorDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -732,13 +687,7 @@ val hexTravelStateBehaviorHarnessTask = behaviorHarnesses.junitTest("hexTravelSt
         useJUnitPlatform()
         include("src/view/statetabs/travel/TravelStateHexHarness.class")
         inputs.property("hexTravelStateBehaviorDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -758,13 +707,7 @@ val encounterStateTabHarnessTask = behaviorHarnesses.junitTest("encounterStateTa
         useJUnitPlatform()
         include("src/view/statetabs/encounter/EncounterStateTabHarness.class")
         inputs.property("encounterStateTabDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -784,13 +727,7 @@ val encounterTableReadbackHarnessTask = behaviorHarnesses.junitTest("encounterTa
         useJUnitPlatform()
         include("src/domain/encountertable/EncounterTableReadbackHarness.class")
         inputs.property("encounterTableReadbackDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -828,13 +765,7 @@ val sessionPlannerCatalogHarnessTask = behaviorHarnesses.junitTest("sessionPlann
         useJUnitPlatform()
         include("src/view/leftbartabs/sessionplanner/SessionPlannerCatalogHarness.class")
         inputs.property("sessionPlannerCatalogDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -854,13 +785,7 @@ val sessionPlannerShellLayoutHarnessTask = behaviorHarnesses.junitTest("sessionP
         useJUnitPlatform()
         include("shell/host/SessionPlannerShellLayoutHarness.class")
         inputs.property("sessionPlannerShellLayoutDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -880,13 +805,7 @@ val worldPlannerBackendHarnessTask = behaviorHarnesses.junitTest("worldPlannerBa
         useJUnitPlatform()
         include("src/domain/worldplanner/WorldPlannerBackendHarness.class")
         inputs.property("worldPlannerBackendDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -906,13 +825,7 @@ val worldPlannerEncounterHarnessTask = behaviorHarnesses.junitTest("worldPlanner
         useJUnitPlatform()
         include("src/domain/encounter/WorldPlannerEncounterHarness.class")
         inputs.property("worldPlannerEncounterDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -932,13 +845,7 @@ val worldPlannerControlsRawInputHarnessTask = behaviorHarnesses.junitTest("world
         useJUnitPlatform()
         include("src/view/leftbartabs/worldplanner/WorldPlannerControlsRawInputHarness.class")
         inputs.property("worldPlannerControlsRawInputDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -958,13 +865,7 @@ val worldPlannerUiHarnessTask = behaviorHarnesses.junitTest("worldPlannerUiHarne
         useJUnitPlatform()
         include("src/view/leftbartabs/worldplanner/WorldPlannerUiHarness.class")
         inputs.property("worldPlannerUiDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 
@@ -984,13 +885,7 @@ val smokeStartupHarnessTask = behaviorHarnesses.junitTest("smokeStartupHarness")
         useJUnitPlatform()
         include("bootstrap/SmokeStartupHarness.class")
         inputs.property("smokeStartupDataTemplate", "salt-marcher")
-        doFirst {
-            val runDataDir = temporaryDir.resolve("xdg-data")
-            delete(runDataDir)
-            mkdir(runDataDir)
-            mkdir(runDataDir.resolve("salt-marcher"))
-            environment("XDG_DATA_HOME", runDataDir.absolutePath)
-        }
+        prepareHarnessRuntimeDirectories(temporaryDir.resolve("xdg-data"))
     }
 }
 

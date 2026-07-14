@@ -1,7 +1,6 @@
 package saltmarcher.buildlogic.settings
 
 import java.io.File
-import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
 import saltmarcher.buildlogic.shared.CheckTaskName
@@ -74,45 +73,103 @@ private fun configureVersionedHooks(repoRootDir: File) {
     }
 
     val expectedHooksPath = "tools/hooks"
-    val currentHooksPath = readGitConfig(repoRootDir, "--get", "core.hooksPath")
+    val configFile = gitLocalConfigFile(gitEntry)
+        ?: return
+    val currentHooksPath = readCoreHooksPath(configFile)
         ?.trim()
         ?.replace(File.separatorChar, '/')
     if (currentHooksPath == expectedHooksPath) {
         return
     }
 
-    writeGitConfig(repoRootDir, "core.hooksPath", expectedHooksPath)
+    writeCoreHooksPath(configFile, expectedHooksPath)
 }
 
-private fun readGitConfig(repoRootDir: File, vararg args: String): String? {
-    return runCatching {
-        val result = runGitConfig(repoRootDir, *args)
-        if (result.exitCode == 0) result.output else null
-    }.getOrNull()
-}
-
-private fun writeGitConfig(repoRootDir: File, vararg args: String) {
-    val result = runGitConfig(repoRootDir, *args)
-    if (result.exitCode != 0) {
-        throw GradleException(
-            "Failed to configure SaltMarcher versioned hooks in ${repoRootDir.path}: ${result.output.trim()}"
-        )
+private fun gitLocalConfigFile(gitEntry: File): File? {
+    if (gitEntry.isDirectory) {
+        return File(gitEntry, "config")
     }
+    if (!gitEntry.isFile) {
+        return null
+    }
+    val gitDir = gitEntry.readLines()
+        .firstOrNull()
+        ?.substringAfter("gitdir:", missingDelimiterValue = "")
+        ?.trim()
+        ?.takeIf(String::isNotEmpty)
+        ?: return null
+    val resolvedGitDir = File(gitDir).takeIf(File::isAbsolute)
+        ?: File(gitEntry.parentFile, gitDir)
+    return File(resolvedGitDir.canonicalFile, "config")
 }
 
-private data class GitConfigResult(val exitCode: Int, val output: String)
-
-private fun runGitConfig(repoRootDir: File, vararg args: String): GitConfigResult {
-    val processBuilder = ProcessBuilder(listOf("git", "-C", repoRootDir.path, "config", "--local") + args)
-        .directory(repoRootDir)
-        .redirectErrorStream(true)
-    processBuilder.environment().remove("GIT_DIR")
-    processBuilder.environment().remove("GIT_WORK_TREE")
-    processBuilder.environment().remove("GIT_INDEX_FILE")
-    val process = processBuilder.start()
-    val output = process.inputStream.bufferedReader().use { reader -> reader.readText() }
-    return GitConfigResult(process.waitFor(), output)
+private fun readCoreHooksPath(configFile: File): String? {
+    if (!configFile.isFile) {
+        return null
+    }
+    var inCoreSection = false
+    for (line in configFile.readLines()) {
+        val trimmed = line.trim()
+        if (isGitConfigSection(trimmed)) {
+            inCoreSection = isCoreSection(trimmed)
+        } else if (inCoreSection && isHooksPathEntry(trimmed)) {
+            return trimmed.substringAfter("=").trim().trim('"')
+        }
+    }
+    return null
 }
+
+private fun writeCoreHooksPath(configFile: File, expectedHooksPath: String) {
+    val lines = if (configFile.isFile) configFile.readLines() else emptyList()
+    val rewritten = mutableListOf<String>()
+    var inCoreSection = false
+    var sawCoreSection = false
+    var wroteHooksPath = false
+
+    for (line in lines) {
+        val trimmed = line.trim()
+        if (isGitConfigSection(trimmed)) {
+            if (inCoreSection && !wroteHooksPath) {
+                rewritten.add("\thooksPath = $expectedHooksPath")
+                wroteHooksPath = true
+            }
+            inCoreSection = isCoreSection(trimmed)
+            sawCoreSection = sawCoreSection || inCoreSection
+            rewritten.add(line)
+        } else if (inCoreSection && isHooksPathEntry(trimmed)) {
+            if (!wroteHooksPath) {
+                rewritten.add("\thooksPath = $expectedHooksPath")
+                wroteHooksPath = true
+            }
+        } else {
+            rewritten.add(line)
+        }
+    }
+
+    if (!sawCoreSection) {
+        if (rewritten.isNotEmpty() && rewritten.last().isNotBlank()) {
+            rewritten.add("")
+        }
+        rewritten.add("[core]")
+        rewritten.add("\thooksPath = $expectedHooksPath")
+    } else if (inCoreSection && !wroteHooksPath) {
+        rewritten.add("\thooksPath = $expectedHooksPath")
+    }
+
+    configFile.parentFile.mkdirs()
+    configFile.writeText(rewritten.joinToString(System.lineSeparator()) + System.lineSeparator())
+}
+
+private fun isGitConfigSection(trimmedLine: String): Boolean =
+    trimmedLine.startsWith("[") && trimmedLine.endsWith("]")
+
+private fun isCoreSection(trimmedLine: String): Boolean =
+    trimmedLine.equals("[core]", ignoreCase = true)
+
+private fun isHooksPathEntry(trimmedLine: String): Boolean =
+    trimmedLine.substringBefore("=", missingDelimiterValue = "")
+        .trim()
+        .equals("hooksPath", ignoreCase = true)
 
 private data class VerificationRequestScope(
     val includeBuildHarness: Boolean,
