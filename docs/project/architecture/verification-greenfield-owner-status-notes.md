@@ -6,6 +6,40 @@ greenfield roadmap.
 
 # Verification Greenfield Owner Status Notes
 
+## 2026-07-14 M1b-final-timing-blocked
+
+M1b ist beim finalen Timing-Proof blockiert. Der geforderte erste volle
+parallele Lauf
+`tools/gradle/run-observable-gradle.sh check -- --rerun-tasks` wurde nicht
+gruen: Log `build/gradle-run-logs/20260714T195520161786024-pid657529-check.log`,
+`BUILD FAILED in 15m 3s`, `74 actionable tasks: 74 executed`. Rot waren
+`DUNGEON_EDITOR_ROOM_BEHAVIOR_001` mit einem Preview-Latenzbudget-Miss
+(`335ms`) und `HEX_EDITOR_012` mit einem JavaFX-Wait-Timeout. Der direkte
+Wiederholungslauf
+`build/gradle-run-logs/20260714T201736052214251-pid681778-check.log` war
+ebenfalls rot: `BUILD FAILED in 14m 3s`, `66 actionable tasks: 66 executed`,
+diesmal wegen `HEX_EDITOR_012`.
+
+Die betroffenen Szenarien sind nicht fuer sich genommen kaputt:
+`dungeonEditorRoomBehaviorHarness` lief einzeln gruen
+(`BUILD SUCCESSFUL in 3m 27s`, Log
+`build/gradle-run-logs/20260714T201127882616754-pid679977-dungeonEditorRoomBehaviorHarness.log`)
+und `hexMapEditorBehaviorHarness` lief einzeln gruen
+(`BUILD SUCCESSFUL in 1m`, Log
+`build/gradle-run-logs/20260714T201510707773501-pid681187-hexMapEditorBehaviorHarness.log`).
+Der Blocker ist die aktuelle Full-Check-Topologie: Das komplette
+Dungeon-Editor-Aggregat und die Teilharnesses laufen im parallelen Graphen
+weiter nebeneinander und erzeugen genug UI/Monocle-Last, dass harte
+Latenzbudgets und generische JavaFX-Waits vor einem gruenen Full-Verdict
+fallen.
+
+Ich habe keine Latenzassertion abgeschwaecht und keinen Gate/Judge entfernt.
+Der naechste saubere Schritt braucht eine Entscheidung im Target Design oder
+Ledger: Entweder darf M1b eine begrenzte Topologie-Reparatur vorziehen, die
+die doppelte Dungeon-Ausfuehrung beseitigt oder isoliert, oder M1b bleibt
+blocked und M2 muss diese Ursache zuerst reparieren. Ohne eine solche
+Entscheidung waere ein Timing-Sieg nur Schoenrechnen.
+
 ## 2026-07-14 M0-headless-baseline-kalibriert
 
 M0 ist nach dem M1a-Merge headless auf der Owner-Maschine gemessen. Der
