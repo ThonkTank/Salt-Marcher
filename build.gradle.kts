@@ -38,6 +38,7 @@ val sonarProjectKey = providers.gradleProperty("sonarProjectKey")
 val complexityRulesetFile = layout.projectDirectory.file("tools/quality/config/pmd/complexity-ruleset.xml")
 val lawOfDemeterRulesetFile = layout.projectDirectory.file("tools/quality/config/pmd/law-of-demeter-ruleset.xml")
 val spotbugsExcludeFilterFile = layout.projectDirectory.file("tools/quality/config/spotbugs/exclude-filter.xml")
+val javafxVersion = "21.0.2"
 
 val preloaderJvmArg = preloaderClassName.map { "-Djavafx.preloader=$it" }
 
@@ -52,7 +53,7 @@ java {
 }
 
 javafx {
-    version = "21.0.2"
+    version = javafxVersion
     modules = listOf("javafx.controls")
 }
 
@@ -141,6 +142,8 @@ val worldPlannerUiHarness by sourceSets.creating {
 }
 
 dependencies {
+    val monocleDependency = "org.testfx:openjfx-monocle:$javafxVersion"
+
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.xerial:sqlite-jdbc:3.53.2.0")
     pmd("net.sourceforge.pmd:pmd-ant:7.23.0")
@@ -149,18 +152,23 @@ dependencies {
     spotbugsPlugins("com.h3xstream.findsecbugs:findsecbugs-plugin:1.14.0")
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.1")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
+    testRuntimeOnly(monocleDependency)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
     add("dungeonEditorBehaviorHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    add("dungeonEditorBehaviorHarnessRuntimeOnly", monocleDependency)
     add("dungeonEditorBehaviorHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     add("dungeonEditorBehaviorHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
     add("hexMapEditorBehaviorHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    add("hexMapEditorBehaviorHarnessRuntimeOnly", monocleDependency)
     add("hexMapEditorBehaviorHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     add("hexMapEditorBehaviorHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
     add("worldPlannerBackendHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    add("worldPlannerBackendHarnessRuntimeOnly", monocleDependency)
     add("worldPlannerBackendHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     add("worldPlannerBackendHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
     add("worldPlannerUiHarnessImplementation", "org.junit.jupiter:junit-jupiter:6.1.1")
+    add("worldPlannerUiHarnessRuntimeOnly", monocleDependency)
     add("worldPlannerUiHarnessRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     add("worldPlannerUiHarnessRuntimeOnly", "org.junit.jupiter:junit-jupiter-engine:6.1.1")
 }
@@ -246,6 +254,13 @@ tasks.withType<CreateStartScripts>().configureEach {
 tasks.test {
     useJUnitPlatform()
     exclude("architecture/**")
+}
+
+tasks.withType<Test>().configureEach {
+    systemProperty("glass.platform", "Monocle")
+    systemProperty("monocle.platform", "Headless")
+    systemProperty("prism.order", "sw")
+    systemProperty("java.awt.headless", "true")
 }
 
 val dungeonEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("dungeon-editor-behavior-data")
