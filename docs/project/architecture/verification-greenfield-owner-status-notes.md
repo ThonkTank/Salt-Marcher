@@ -1,10 +1,42 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-13
+Last Reviewed: 2026-07-14
 Source of Truth: German owner-facing status notes for the verification
 greenfield roadmap.
 
 # Verification Greenfield Owner Status Notes
+
+## 2026-07-14 M1a-headless-auf-Branch
+
+M1a ist auf `codex/verif-greenfield-m1a-monocle-headless` umgesetzt. Der
+Scope blieb absichtlich eng: genau `build.gradle.kts`, keine
+`BehaviorHarnessRegistration.kt`, keine Harness-Registry und keine andere
+frozen surface. Die Build-Datei legt jetzt die JavaFX-Version einmal fest,
+haengt `org.testfx:openjfx-monocle:21.0.2` an `testRuntimeOnly` und an die
+vier Harness-Runtime-Classpaths, und setzt fuer alle `Test`-Tasks
+`glass.platform=Monocle`, `monocle.platform=Headless`, `prism.order=sw` und
+`java.awt.headless=true`.
+
+Der lokale V9-Rehearsal-Lauf war gruen:
+`tools/gradle/run-observable-gradle.sh check`, Log
+`build/gradle-run-logs/20260714T135216811451835-pid530683-check.log`,
+`BUILD SUCCESSFUL in 20m 25s`, `74 actionable tasks: 51 executed, 9 from
+cache, 14 up-to-date`. Der erste Versuch kam nicht bis Gradle, weil die
+Sandbox keine brauchbare Wildcard-IP fuer Gradles Lock-Dienst lieferte; der
+freigegebene Lauf ist die zaehlende Proof. Der Commit-Hook hat denselben
+M1a-Stand zusaetzlich als staged tree
+`1d7cadadd9701361898fad737ccc06c94443f184` akzeptiert:
+`BUILD SUCCESSFUL in 13m 18s`, `74 actionable tasks: 53 executed, 20 from
+cache, 1 up-to-date`.
+
+Die Verdict-Paritaet gegen den bisherigen Fensterpfad steht auf gleicher
+Task-Graph-Groesse und gleichem gruenem Ergebnis: Der letzte lokale T4-Proof
+vor M1a war ebenfalls ein gruenes `check` mit 74 Tasks (`18m 30s` und
+`18m 50s` im Harness-Modernization-Ledger). Die Cache-Verteilung ist anders,
+weil die neue Runtime-Abhaengigkeit Build-Inputs veraendert; das ist kein
+Szenario- oder Verdict-Drift. Nach dem Merge ist die naechste Arbeit wieder
+M0: headless seriell die Baseline messen und danach die Zielwerte
+kalibrieren.
 
 ## 2026-07-14 Nightly-gruen-T4-geschlossen-M1a-vorgezogen
 

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-13
+Last Reviewed: 2026-07-14
 Source of Truth: Live execution state, baselines, proofs, and target
 adjudication for the verification greenfield roadmap.
 
@@ -30,11 +30,11 @@ unless this ledger advances too.
 
 | Field | Value |
 | --- | --- |
-| Branch | `codex/verif-greenfield-m0-nightly-close` |
-| Milestone | M0 - Charter, Local Sync, Baseline, Predecessor Close-Out |
-| Status | In Flight |
-| Required next proof | M1a (Monocle headless) before the M0 baseline: the baseline must never be measured on the real display. Land the amendment commit, then `org.testfx:openjfx-monocle:21.0.2` plus the `withType<Test>` system properties in `build.gradle.kts`, then the V9 rehearsal (zero windows, no focus theft). The M0 baseline follows on the headless serial harness. |
-| Last status note | `2026-07-14 Nightly-green-T4-closed` |
+| Branch | `codex/verif-greenfield-m1a-monocle-headless` |
+| Milestone | M1a - Headless Local Execution (Non-Frozen Surfaces Only) |
+| Status | Done on branch |
+| Required next proof | After this M1a branch merges, return to M0 and measure the headless serial baseline on the owner machine: warm `check --rerun-tasks`, warm no-change `check`, and one untouched-area pre-commit gate run, then calibrate targets and write the German M0 close-out note. |
+| Last status note | `2026-07-14 M1a-headless-on-branch` |
 
 ## Baseline Measurements (owner machine, headless, filled in M0 after M1a)
 
@@ -84,11 +84,11 @@ the real number; targets are calibrated against it, not against the estimate.
 
 | Step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Amendment commit for the M1a/M1b split and D2 coordinates | Done on branch | Pending | Pending | Pending | Must precede the implementing commit per the target design's amendment rule. |
-| `openjfx-monocle:21.0.2` on test + 4 harness runtime classpaths | Pending | Pending | Pending | Pending | `build.gradle.kts` only; version-locked to the `javafx { version }` pin. Classpath, never module path. |
-| `withType<Test>` block with the Monocle system properties | Pending | Pending | Pending | Pending | One block covers `test`, `architectureTest`, and all `junitTest` harnesses. Frozen `BehaviorHarnessRegistration.kt` untouched. |
-| V9 rehearsal: local check opens zero windows, no focus theft | Pending | Pending | Pending | Pending | Run a full local `check` while typing in another application. |
-| Verdict parity against the pre-M1a windowed run; note | Pending | Pending | Pending | Pending | Same executed task set, same verdicts. Unblocks the M0 baseline. |
+| Amendment commit for the M1a/M1b split and D2 coordinates | Done | `03b0a9ed0` | `8f0d24459` | PR #462 merged the amendment commit as `8f0d24459`, 2026-07-14; target design D2 now records the M1a/M1b split, Monocle coordinates, classpath-only constraint, and Xvfb rejection. | Must precede the implementing commit per the target design's amendment rule. |
+| `openjfx-monocle:21.0.2` on test + 4 harness runtime classpaths | Done on branch | `510e183ff` | Pending | `build.gradle.kts` now derives `org.testfx:openjfx-monocle:21.0.2` from the JavaFX version pin and adds it to `testRuntimeOnly`, `dungeonEditorBehaviorHarnessRuntimeOnly`, `hexMapEditorBehaviorHarnessRuntimeOnly`, `worldPlannerBackendHarnessRuntimeOnly`, and `worldPlannerUiHarnessRuntimeOnly`, 2026-07-14; `tools/gradle/run-observable-gradle.sh check` passed with `BUILD SUCCESSFUL in 20m 25s`, `74 actionable tasks: 51 executed, 9 from cache, 14 up-to-date`, retained log `build/gradle-run-logs/20260714T135216811451835-pid530683-check.log`; the versioned pre-commit gate accepted staged tree `1d7cadadd9701361898fad737ccc06c94443f184` with `BUILD SUCCESSFUL in 13m 18s`, `74 actionable tasks: 53 executed, 20 from cache, 1 up-to-date`. | `build.gradle.kts` only; version-locked to the `javafx { version }` pin. Classpath, never module path. |
+| `withType<Test>` block with the Monocle system properties | Done on branch | `510e183ff` | Pending | `build.gradle.kts` now configures every `Test` task with `glass.platform=Monocle`, `monocle.platform=Headless`, `prism.order=sw`, and `java.awt.headless=true`, 2026-07-14; `tools/gradle/run-observable-gradle.sh check` passed with `BUILD SUCCESSFUL in 20m 25s`, `74 actionable tasks: 51 executed, 9 from cache, 14 up-to-date`. | One block covers `test`, `architectureTest`, and all `junitTest` harnesses. Frozen `BehaviorHarnessRegistration.kt` untouched. |
+| V9 rehearsal: local check opens zero windows, no focus theft | Done on branch | `510e183ff` | Pending | `tools/gradle/run-observable-gradle.sh check` initially failed only before Gradle startup in the sandbox with `Could not determine a usable wildcard IP for this machine`; rerun outside the sandbox passed with `BUILD SUCCESSFUL in 20m 25s`, `74 actionable tasks: 51 executed, 9 from cache, 14 up-to-date`, 2026-07-14. The successful run exercised the full local `check` graph under Monocle Headless properties; no JavaFX display startup error or focus-theft interruption was observed or reported during the run. | Full local `check` rehearsal completed under the new headless default. |
+| Verdict parity against the pre-M1a windowed run; note | Done on branch | `510e183ff` | Pending | The pre-M1a local T4 proof recorded green `./gradlew check` verdicts with the same 74-task graph: `BUILD SUCCESSFUL in 18m 30s`, `74 actionable tasks: 53 executed, 20 from cache, 1 up-to-date`, and the follow-up proof `BUILD SUCCESSFUL in 18m 50s`, `74 actionable tasks: 53 executed, 20 from cache, 1 up-to-date` (`harness-modernization-ledger.md`); M1a local `check` is also green with 74 tasks, 2026-07-14. | Same task-graph cardinality and green verdicts. Cache distribution changed because the new runtime dependency invalidated task inputs. This unblocks the M0 baseline after merge. |
 
 ## M1b Ledger (runs after the M0 baseline)
 
