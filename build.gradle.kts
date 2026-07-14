@@ -13,6 +13,7 @@ import org.gradle.jvm.application.tasks.CreateStartScripts
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import saltmarcher.buildlogic.verification.BehaviorHarnessClassification
 import saltmarcher.buildlogic.verification.BehaviorHarnessRegistry
+import saltmarcher.buildlogic.tasks.FinishHarnessRuntimeDirectoriesAction
 import saltmarcher.buildlogic.tasks.MainClassesSystemPropertyProvider
 import saltmarcher.buildlogic.tasks.PrepareHarnessRuntimeDirectoriesAction
 import saltmarcher.buildlogic.tasks.hygiene.ValidateSpotbugsCoverageTask
@@ -268,7 +269,14 @@ tasks.withType<Test>().configureEach {
 
 fun Test.prepareHarnessRuntimeDirectories(xdgDataHome: File, resultsDirectory: File? = null) {
     environment("XDG_DATA_HOME", xdgDataHome.absolutePath)
-    doFirst(PrepareHarnessRuntimeDirectoriesAction(xdgDataHome.absolutePath, resultsDirectory?.absolutePath))
+    doFirst(
+        PrepareHarnessRuntimeDirectoriesAction(
+            xdgDataHome.absolutePath,
+            layout.buildDirectory.get().asFile.absolutePath,
+            resultsDirectory?.absolutePath
+        )
+    )
+    doLast(FinishHarnessRuntimeDirectoriesAction(xdgDataHome.absolutePath, resultsDirectory?.absolutePath))
 }
 
 val dungeonEditorBehaviorHarnessDataDir = layout.buildDirectory.dir("dungeon-editor-behavior-data")
