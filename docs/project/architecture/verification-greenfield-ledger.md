@@ -27,11 +27,11 @@ unless this ledger advances too.
 
 | Field | Value |
 | --- | --- |
-| Branch | `codex/verif-greenfield-m0-nightly-t4` |
+| Branch | `codex/verif-greenfield-m0-nightly-close` |
 | Milestone | M0 - Charter, Local Sync, Baseline, Predecessor Close-Out |
-| Status | Blocked |
-| Required next proof | Wait for the first scheduled `quality-platforms / nightly-rerun-tasks` run after the 2026-07-14 02:17 UTC cron, then record it and close predecessor T4 if it is green. |
-| Last status note | `2026-07-14 Nightly-not-yet-fired` |
+| Status | In Flight |
+| Required next proof | M1a (Monocle headless) before the M0 baseline: the baseline must never be measured on the real display. Land the amendment commit, then `org.testfx:openjfx-monocle:21.0.2` plus the `withType<Test>` system properties in `build.gradle.kts`, then the V9 rehearsal (zero windows, no focus theft). The M0 baseline follows on the headless serial harness. |
+| Last status note | `2026-07-14 Nightly-green-T4-closed` |
 
 ## Baseline Measurements (owner machine, headless, filled in M0)
 
@@ -60,9 +60,9 @@ unless this ledger advances too.
 | Step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
 | Charter docs committed and indexed | Done | `dbfe28955` | `738ebe6b` | `git diff --check main...HEAD` passed with no output, 2026-07-13; `./gradlew checkDocumentationEnforcement --console=plain` passed with `Documentation checks passed.` and `BUILD SUCCESSFUL in 6s`, 2026-07-13; docs-gate repair PR #458 merged as `735331a11` after green `check`, `warden-freeze`, owner-only `judge-review`, `ckjm-report`, SonarCloud, and CodeScene, 2026-07-13; charter PR #459 merged as `738ebe6b` after green `check`, `warden-freeze`, `judge-review`, `ckjm-report`, SonarCloud, and CodeScene, 2026-07-13 | Roadmap, target design, ledger, owner notes, and index links are merged. Prior blocker cleared by PR #458: the active Documentation Standard now owns size as a non-fatal signal and keeps `Owner` / `Last Reviewed` optional. PR #459 head `dbfe28955` only refreshed the risk-label event after the proof commit; no violation was reported against the verification-greenfield files. |
-| Local checkout on origin/main; in-flight work preserved | Done on branch | Pending | Pending | Pending | Encounter WIP committed on `codex/architecture-migration-m0-charter`; `codex/architecture-roadmap-phase2` pushed to origin 2026-07-13. |
-| Green scheduled nightly run recorded; predecessor T4 closed | Blocked | Pending | Pending | `gh run list --workflow quality-platforms --event schedule --limit 10 --json ...` returned `[]`, 2026-07-14; `gh run list --event schedule --limit 20 --json ...` showed only `promote-stable` scheduled runs, 2026-07-14; `date -Is` returned `2026-07-14T00:29:24+02:00`, before the configured `quality-platforms` cron `17 2 * * *`, 2026-07-14 | Blocked on external schedule timing, not on a red nightly. Do not substitute a manual, PR, or push run for the required scheduled `nightly-rerun-tasks` evidence. |
-| Predecessor roadmap deprecated with successor pointer | Pending | Pending | Pending | Pending | `Status: Deprecated` plus pointer under the title. |
+| Local checkout on origin/main; in-flight work preserved | Done on branch | Pending | Pending | `git status -sb` showed `## main...origin/main` with no divergence at `093a7f96e`, 2026-07-14; `git ls-remote --heads origin codex/architecture-roadmap-phase2 codex/architecture-migration-m0-charter` returned both refs (`d95c9f685`, `02c0c95fea53fdb7aca3fdba7499dfda8244fdad`), 2026-07-14; `git worktree list` returned only `/home/aaron/Schreibtisch/projects/SaltMarcher`, 2026-07-14 | Both in-flight architecture branches are now pushed, which is what the M0 done-when requires. Encounter WIP is `02c0c95fe` on `codex/architecture-migration-m0-charter`; `codex/architecture-roadmap-phase2` carries the W1 service baseline. Merged and superseded local branches were deleted; only these two plus `main` remain. |
+| Green scheduled nightly run recorded; predecessor T4 closed | Done on branch | Pending | Pending | `gh run view 29307758537 --json headSha,event,conclusion,createdAt,updatedAt,jobs` returned `event=schedule`, `conclusion=success`, `headSha=093a7f96e8565458af4cf9c2935f7a0d4d7ee540`, job `nightly-rerun-tasks=success`, `createdAt=2026-07-14T05:08:48Z`, `updatedAt=2026-07-14T05:15:25Z`, 2026-07-14; its job log records `[observable-gradle] Command: ./gradlew check --console=plain --continue --rerun-tasks` and `BUILD SUCCESSFUL in 5m 44s`, `74 actionable tasks: 73 executed, 1 up-to-date`, 2026-07-14 | The earlier block was external schedule timing only: the cron `17 2 * * *` had not yet fired when it was checked at `2026-07-14T00:29:24+02:00`. The first scheduled run after it is green and is recorded here without substituting a manual, PR, or push run. Predecessor T4 closed in `harness-modernization-ledger.md`. |
+| Predecessor roadmap deprecated with successor pointer | Done on branch | Pending | Pending | `head -6 docs/project/architecture/harness-modernization-roadmap.md` shows `Status: Deprecated` and `Last Reviewed: 2026-07-14`, 2026-07-14; the successor pointer to this roadmap stands directly under the title, 2026-07-14 | `Status: Deprecated` plus pointer under the title. Retained rather than deleted because T5's specification lives there and is referenced by this roadmap's Deferred Annex. |
 | Baseline measured headless on owner machine | Pending | Pending | Pending | Pending | Four measurements into the baseline table. |
 | Targets calibrated; German status note | Pending | Pending | Pending | Pending | Targets flip Provisional -> Binding. |
 
