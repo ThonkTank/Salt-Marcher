@@ -6,6 +6,54 @@ greenfield roadmap.
 
 # Verification Greenfield Owner Status Notes
 
+## 2026-07-14 Nightly-gruen-T4-geschlossen-M1a-vorgezogen
+
+Der M0-Blocker war reine Zeitfrage. Der geplante Nightly hatte beim Pruefen um
+`00:29+02:00` schlicht noch nicht gefeuert (Cron `17 2 * * *`). Der erste
+geplante Lauf danach ist gruen: Run `29307758537`, `event=schedule`, Job
+`nightly-rerun-tasks=success`, `BUILD SUCCESSFUL in 5m 44s`. Damit ist
+Vorgaenger-T4 geschlossen und die alte Harness-Roadmap steht auf
+`Status: Deprecated` mit Nachfolger-Zeiger. Sie wird aufgehoben statt
+geloescht, weil die T5-Spezifikation dort liegt und vom Deferred Annex
+referenziert wird.
+
+**M1a wird vor die M0-Baseline gezogen.** M0 verlangt eine headless gemessene
+Baseline, aber Headless landet erst in M1 - und heute ist headless schlicht
+unmoeglich: Gradle reicht `-D`-Properties nicht an die Test-Forks weiter, und
+die Monocle-Glass-Implementierung fehlt auf dem Classpath (sie ist nicht Teil
+des Desktop-JavaFX). Eine Baseline waere also nur mit fokusklauenden Fenstern
+messbar gewesen - genau das, was V9 verbietet. Deshalb: M1 wird in M1a
+(Headless, zwei Edits in `build.gradle.kts`) und M1b (Parallelismus)
+gesplittet; M1a laeuft zuerst, danach wird headless gemessen, dann bringt M1b
+die Zeit runter.
+
+Zwei Rechercheergebnisse entschaerfen M1a deutlich. Erstens: `org.testfx:
+openjfx-monocle:21.0.2` existiert (2024-02-11), ist mit JDK 21 gegen JavaFX
+21.0.2 gebaut und passt exakt auf den Versions-Pin des Projekts; das bekannte
+JPMS-Problem greift nicht, weil hier alles auf dem Classpath liegt. Zweitens:
+der einzige pixelvergleichende Harness
+(`DungeonMapRenderParitySnapshotHarness`) haelt **keine** Golden-Images vor -
+er vergleicht zwei Snapshots aus demselben Lauf. Ein Pipeline-Wechsel auf
+Software-Rendering bewegt beide Seiten gemeinsam; eine Golden-Neuaufnahme ist
+damit voraussichtlich nicht noetig. CI rendert hinter `xvfb-run` ohnehin ohne
+GPU, also ist der Software-Pfad der, auf dem die Flotte heute schon gruen ist.
+
+**Zur 1,5-Stunden-Annahme:** Sie ist nirgends im Repo belegt. Der groesste
+aufgezeichnete lokale Voll-Lauf ist `26m 8s` bzw. `26m 17s` bei 75 Tasks; der
+Nightly faehrt denselben Graphen (74 Tasks) auf CI in `5m 44s`. Der reale
+Schmerz ist also Fokus-Klau plus etwa Faktor 4,5 gegenueber CI, nicht Faktor
+16. Die M0-Baseline liefert die echte Zahl; die Zielwerte werden daran
+kalibriert und nicht an der Schaetzung. Der kalte Voll-Lauf entfaellt: er hat
+keinen Zielwert und wuerde nur eine weitere Volllast-Runde auf dem Laptop
+kosten.
+
+Ausserdem sind jetzt **beide** in-flight-Architekturbranches auf origin
+(`codex/architecture-migration-m0-charter` mit dem Encounter-Stand,
+`codex/architecture-roadmap-phase2` mit der W1-Service-Baseline) - das M0-
+Done-when verlangt ausdruecklich gepushte Branches. Lokal bleiben nur noch
+`main` plus diese beiden; die gemergten und ueberholten Branches sind weg,
+und `git worktree list` zeigt nur noch `projects/SaltMarcher`.
+
 ## 2026-07-13 Charter-proof-blocked
 
 Der Charter-Branch wurde auf `codex/verif-greenfield-m0-charter` neu von

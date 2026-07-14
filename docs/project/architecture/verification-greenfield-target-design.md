@@ -51,24 +51,67 @@ undeclared-input failure V2 forbids. Rejected: keeping the registry with a
 
 ### D2 - Shared Headless JavaFX Bootstrap (Monocle)
 
-One JUnit 5 extension owns the toolkit and runs it headless via Monocle
-(`-Dglass.platform=Monocle -Dmonocle.platform=Headless -Dprism.order=sw`):
-`Platform.startup` once per worker JVM, `Platform.exit` on JVM shutdown,
-scenario helpers for `runLater`-and-await. Test classes drop their hand-rolled
-`@BeforeAll` bootstraps. Headless is the default for local and CI runs alike,
-which satisfies V9 (no focus-stealing windows) and removes the need for
-`xvfb` on CI. Fork reuse stays on; `forkEvery` is a per-class fallback only
-for classes the M2 pilot proves stateful.
+Delivered in two halves. **M1a (bootstrap):** Monocle becomes the default
+glass for every `Test` task, with no test-code change. **M2 (extension):** one
+JUnit 5 extension owns the toolkit - `Platform.startup` once per worker JVM,
+`Platform.exit` on JVM shutdown, scenario helpers for `runLater`-and-await -
+and the 14 test classes drop their hand-rolled `@BeforeAll` bootstraps. Fork
+reuse stays on; `forkEvery` is a per-class fallback only for classes the M2
+pilot proves stateful.
+
+Headless is the default for local and CI runs alike, which satisfies V9 (no
+focus-stealing windows) and removes the need for `xvfb` on CI.
+
+M1a is exactly two edits, both in `build.gradle.kts` (not a frozen surface;
+the frozen `BehaviorHarnessRegistration.kt` is not touched):
+
+1. `org.testfx:openjfx-monocle:21.0.2` on the test runtime classpaths: the
+   `testRuntimeOnly` configuration plus the four harness `*RuntimeOnly`
+   configurations, following the existing `add(...)` pattern in the
+   `dependencies` block.
+2. A `tasks.withType<Test>().configureEach { }` block setting
+   `glass.platform=Monocle`, `monocle.platform=Headless`, `prism.order=sw`,
+   and `java.awt.headless=true`. There is no shared `Test` configuration block
+   today, so this one block covers all registration sites at once: `tasks.test`,
+   `architectureTest`, and every `behaviorHarnesses.junitTest` harness.
+
+Version and classpath constraints, verified 2026-07-14:
+
+- The Monocle glass is NOT part of desktop `org.openjfx:javafx-graphics`, so
+  the artifact is mandatory; `-D` flags alone cannot work. Gradle daemon `-D`
+  properties also do not reach forked test JVMs - the build forwards none
+  today - so the properties must be set on the `Test` tasks themselves.
+- `openjfx-monocle:21.0.2` (published 2024-02-11) is built by JDK 21 against
+  `javafx-base`/`javafx-graphics:21.0.2` and must stay version-locked to the
+  `javafx { version }` pin in `build.gradle.kts`. That lock is what keeps the
+  `com.sun.glass` internal-SPI drift risk at zero.
+- Keep it on the CLASSPATH, not the module path: on the module path Monocle 21
+  fails with `module javafx.graphics does not export com.sun.glass.ui`
+  (TestFX/Monocle#107). This project has no `module-info.java`, so the
+  constraint holds today and must be re-checked before any JPMS move.
+- Successor: JavaFX 26 ships a Headless platform inside `javafx.graphics`
+  (`-Dglass.platform=Headless`, note the different value). When the project
+  moves to JavaFX 26 or a 21.x backport lands, drop this dependency.
 
 Rationale: V9 makes non-disruptive local execution a hard requirement, so a
 headless glass is mandatory, not optional. The rendering-path change
 (software pipeline) is safe here because the assertions walk the scene graph
 (`Labeled.getText`, canvas paint state), not real screen pixels; the M2 pilot
-proves 1:1 scenario parity before the windowed boot path is deleted.
+proves 1:1 scenario parity before the windowed boot path is deleted. The one
+pixel-comparing surface, `DungeonMapRenderParitySnapshotHarness`, stores no
+golden images: it captures both sides inside the same run and asserts
+same-frame parity plus route sensitivity, so switching pipelines moves both
+sides together. CI has no GPU behind `xvfb-run` and therefore already proves
+the fleet on a software path.
 
 Rejected: keeping real-display `Platform.startup` and shielding only CI with
 `xvfb` - it leaves the local machine unusable during runs (V9 fail) and keeps
 two divergent boot paths (V3).
+
+Rejected: Xvfb on the owner machine. It would shield the desktop without any
+dependency, but it is not installed there, it pushes a machine-level setup
+requirement onto every contributor, and it keeps the local and CI boot paths
+diverging from the intended headless target instead of converging on it.
 
 ### D3 - Parallelism
 

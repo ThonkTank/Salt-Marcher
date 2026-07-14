@@ -128,16 +128,27 @@ milestones because it ends the daily pain (focus theft, serial slowness). A
 later milestone must not start before the earlier one is green in the ledger.
 At most one milestone is in flight.
 
+One deliberate interleave: **M1a runs before the M0 baseline.** M0 requires a
+headless baseline, but headless does not exist yet, so the baseline could only
+be measured with focus-stealing windows on the real display, which V9 and the
+Local-First Mandate forbid. M1a is therefore the one milestone step that
+precedes an open M0 step; M1b still measures against the M0 baseline, so the
+ordering of the timing claim is preserved. Execution order:
+M0 docs -> M1a -> M0 baseline and calibration -> M1b -> M2 -> M3 -> M4 -> M5.
+
 ### M0 - Charter, Local Sync, Baseline, Predecessor Close-Out
 
 Commit this charter (roadmap, target design, ledger, owner notes, index
 links). Bring `projects/SaltMarcher` to `origin/main`, preserving in-flight
 work per the Local-First Mandate. Record the first green scheduled
 `nightly-rerun-tasks` run, close T4 in the predecessor ledger, and deprecate
-the predecessor roadmap with a successor pointer. Measure the baseline on the
-owner machine, headless: full cold `check --rerun-tasks`, warm
+the predecessor roadmap with a successor pointer. Then, after M1a has made
+runs headless, measure the baseline on the owner machine: warm
 `check --rerun-tasks`, warm no-change `check`, and one pre-commit gate run on
-an untouched-area commit. Calibrate the binding numeric targets.
+an untouched-area commit. These are exactly the three measurements that carry
+a binding target; the cold `check --rerun-tasks` has no target and is recorded
+as `Not measured - no binding target` rather than costing an extra full-load
+run on the owner machine. Calibrate the binding numeric targets.
 
 Done when:
 
@@ -148,30 +159,44 @@ Done when:
   work preserved on pushed branches;
 - the predecessor ledger shows T4 Done with the nightly proof recorded, and
   the predecessor roadmap is `Status: Deprecated` with a successor pointer;
-- the ledger baseline table carries all four measurements with literal
-  `BUILD SUCCESSFUL in ...` evidence;
+- the ledger baseline table carries the three targeted measurements with
+  literal `BUILD SUCCESSFUL in ...` evidence, measured headless;
 - the binding targets table is calibrated and marked binding;
 - a German owner status note covers the M0 close-out.
 
-### M1 - Headless and Parallel Local Execution (Non-Frozen Surfaces Only)
+### M1a - Headless Local Execution (Non-Frozen Surfaces Only)
 
-The first relief milestone. In `gradle.properties` and the behavior `Test`
-task configuration in `build.gradle.kts` (neither is a frozen surface): make
-Monocle headless the default so no test window ever appears
-(`-Dglass.platform=Monocle -Dmonocle.platform=Headless -Dprism.order=sw`),
-and enable `org.gradle.parallel`, `maxParallelForks`, the configuration
-cache, and daemon heap. Rehearse parallel safety (isolated `XDG_DATA_HOME`
-per task, no shared temp paths) and verdict parity: the executed task set and
-every verdict match the serial baseline.
+The first relief milestone and the smallest one: it ends the focus theft on
+its own, before any timing work. Execute D2's bootstrap half in
+`build.gradle.kts` (not a frozen surface; `BehaviorHarnessRegistration.kt` is
+and stays untouched): put `org.testfx:openjfx-monocle` on the test runtime
+classpaths and set the Monocle system properties on every `Test` task, so no
+test window ever appears. No parallelism, no test-code changes, no shared
+extension yet - those are M1b and M2.
 
 Done when:
 
 - a local full `check` opens zero visible windows and never steals focus
   (V9), verified by running it while typing in another application;
+- the executed task set and every verdict match the pre-M1a windowed run
+  (no scenario semantics change);
+- the ledger records the literal proof and the M0 baseline step is unblocked.
+
+### M1b - Parallel Local Execution (Non-Frozen Surfaces Only)
+
+Runs after the M0 baseline exists, because its target is relative to it. In
+`gradle.properties` and the `Test` task configuration: enable
+`org.gradle.parallel`, `org.gradle.workers.max`, the configuration cache,
+daemon heap, and `maxParallelForks`. Rehearse parallel safety (isolated
+`XDG_DATA_HOME` per task, no shared temp paths) and verdict parity.
+
+Done when:
+
 - two consecutive parallel full `check --rerun-tasks` runs are green and
   agree with the serial baseline verdicts;
 - full warm `check --rerun-tasks` wall time is at least 40% below the M0
-  baseline with an identical executed-task set.
+  baseline with an identical executed-task set;
+- the V9 property from M1a still holds under parallel execution.
 
 ### M2 - Test Topology Consolidation
 
@@ -288,7 +313,12 @@ full specification remains readable in the predecessor roadmap.
 
 - Monocle headless uses the software pipeline; countermeasure: assertions
   walk the scene graph, not real pixels, and the M2 pilot proves 1:1 parity
-  before the old boot path is deleted.
+  before the old boot path is deleted. The one pixel-comparing surface,
+  `DungeonMapRenderParitySnapshotHarness`, stores no golden images: it
+  captures both sides within the same run and asserts same-frame parity plus
+  route sensitivity, so a pipeline switch moves both sides together. CI
+  already renders without a GPU behind `xvfb-run`, so the software path is
+  the one the fleet is proven on today.
 - Parallel execution surfaces hidden shared state; countermeasure: M1
   rehearsals, `forkEvery` fallback per class only for proven-stateful tests,
   and the permanent nightly rerun.
