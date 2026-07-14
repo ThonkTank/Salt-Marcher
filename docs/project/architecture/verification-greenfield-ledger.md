@@ -16,7 +16,10 @@ unless this ledger advances too.
 ## State Rules
 
 - At most one milestone may be `In Flight`; inside M2, at most one area
-  conversion batch.
+  conversion batch. The single exception is the M1a-before-M0-baseline
+  interleave the roadmap fixes: M1a runs while M0's baseline step is still
+  open, because headless must exist before the baseline can be measured
+  headless.
 - Step `Status` values: `Pending`, `In Flight`, `Blocked`, `Done on branch`,
   `Done`.
 - A step without a literally green proof (command plus result plus date) is
@@ -33,14 +36,25 @@ unless this ledger advances too.
 | Required next proof | M1a (Monocle headless) before the M0 baseline: the baseline must never be measured on the real display. Land the amendment commit, then `org.testfx:openjfx-monocle:21.0.2` plus the `withType<Test>` system properties in `build.gradle.kts`, then the V9 rehearsal (zero windows, no focus theft). The M0 baseline follows on the headless serial harness. |
 | Last status note | `2026-07-14 Nightly-green-T4-closed` |
 
-## Baseline Measurements (owner machine, headless, filled in M0)
+## Baseline Measurements (owner machine, headless, filled in M0 after M1a)
+
+Measured only after M1a has made runs headless: a windowed baseline would
+violate V9 and the Local-First Mandate. Serial, i.e. before M1b.
 
 | Measurement | Command | Result | Date |
 | --- | --- | --- | --- |
-| Full cold `check --rerun-tasks` | Pending | Pending | Pending |
+| Full cold `check --rerun-tasks` | Not measured - no binding target | Not measured - no binding target | Not measured - no binding target |
 | Full warm `check --rerun-tasks` | Pending | Pending | Pending |
 | Warm no-change `check` | Pending | Pending | Pending |
 | Pre-commit gate, untouched-area commit | Pending | Pending | Pending |
+
+Prior evidence for calibration, from the predecessor's records: the largest
+full forced local `check` on record is `BUILD SUCCESSFUL in 26m 8s` / `26m 17s`
+with `75 actionable tasks: 75 executed`
+(`harness-modernization-owner-status-notes.md`), while the scheduled CI nightly
+runs the same graph (74 tasks) in `5m 44s` (run 29307758537). No ~90-minute
+local run is recorded anywhere in the repository. The M0 measurement decides
+the real number; targets are calibrated against it, not against the estimate.
 
 ## Binding Numeric Targets (calibrated in M0, adjudicated in M5)
 
@@ -66,14 +80,23 @@ unless this ledger advances too.
 | Baseline measured headless on owner machine | Pending | Pending | Pending | Pending | Four measurements into the baseline table. |
 | Targets calibrated; German status note | Pending | Pending | Pending | Pending | Targets flip Provisional -> Binding. |
 
-## M1 Ledger
+## M1a Ledger (runs before the M0 baseline)
 
 | Step | Status | Local branch commit | Merge commit | Proof | Notes |
 | --- | --- | --- | --- | --- | --- |
-| Monocle headless default in gradle.properties and Test config | Pending | Pending | Pending | Pending | Non-frozen surfaces only. |
-| Parallel settings and `maxParallelForks` | Pending | Pending | Pending | Pending | |
-| V9 rehearsal: local check opens zero windows, no focus theft | Pending | Pending | Pending | Pending | Run while typing elsewhere. |
-| Parallel-safety and verdict parity; >= 40% wall-time cut; note | Pending | Pending | Pending | Pending | Against M0 warm baseline. |
+| Amendment commit for the M1a/M1b split and D2 coordinates | Done on branch | Pending | Pending | Pending | Must precede the implementing commit per the target design's amendment rule. |
+| `openjfx-monocle:21.0.2` on test + 4 harness runtime classpaths | Pending | Pending | Pending | Pending | `build.gradle.kts` only; version-locked to the `javafx { version }` pin. Classpath, never module path. |
+| `withType<Test>` block with the Monocle system properties | Pending | Pending | Pending | Pending | One block covers `test`, `architectureTest`, and all `junitTest` harnesses. Frozen `BehaviorHarnessRegistration.kt` untouched. |
+| V9 rehearsal: local check opens zero windows, no focus theft | Pending | Pending | Pending | Pending | Run a full local `check` while typing in another application. |
+| Verdict parity against the pre-M1a windowed run; note | Pending | Pending | Pending | Pending | Same executed task set, same verdicts. Unblocks the M0 baseline. |
+
+## M1b Ledger (runs after the M0 baseline)
+
+| Step | Status | Local branch commit | Merge commit | Proof | Notes |
+| --- | --- | --- | --- | --- | --- |
+| Parallel settings in `gradle.properties` and `maxParallelForks` | Pending | Pending | Pending | Pending | `parallel`, `workers.max`, `configuration-cache`, `jvmargs`. |
+| Parallel-safety rehearsal: `XDG_DATA_HOME` isolation holds | Pending | Pending | Pending | Pending | 19 hand-copied assignments in `build.gradle.kts`; prove two behavior tasks run concurrently without collision. |
+| Verdict parity; >= 40% wall-time cut; V9 still holds; note | Pending | Pending | Pending | Pending | Against the M0 warm headless baseline. |
 
 ## M2 Ledger
 
