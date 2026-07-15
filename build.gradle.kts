@@ -63,14 +63,14 @@ dependencies {
 
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.xerial:sqlite-jdbc:3.53.2.0")
-    pmd("net.sourceforge.pmd:pmd-ant:7.23.0")
-    pmd("net.sourceforge.pmd:pmd-java:7.23.0")
+    pmd("net.sourceforge.pmd:pmd-ant:7.26.0")
+    pmd("net.sourceforge.pmd:pmd-java:7.26.0")
     pmd("saltmarcher.quality:quality-rules:1.0-SNAPSHOT")
-    testImplementation("org.junit.jupiter:junit-jupiter:6.1.1")
+    testImplementation("org.junit.jupiter:junit-jupiter:6.1.2")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
     testRuntimeOnly(monocleDependency)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.2")
 }
 
 pmd {
