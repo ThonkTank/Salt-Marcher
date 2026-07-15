@@ -2,6 +2,9 @@ name: quality-platforms
 
 on:
   pull_request:
+    # `labeled`/`unlabeled` are required: warden-freeze and judge-review read the
+    # risk label, so a label added after opening must re-run the required checks.
+    types: [opened, synchronize, reopened, labeled, unlabeled]
   merge_group:
   push:
     branches:
