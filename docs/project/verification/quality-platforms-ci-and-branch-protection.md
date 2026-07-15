@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-12
+Last Reviewed: 2026-07-15
 Source of Truth: Detailed CI job policy, external service setup, branch
 protection expectations, and review governance for SaltMarcher quality
 platforms.
@@ -11,18 +11,18 @@ platforms.
 
 This subordinate standard defines the CI-facing and repository-configuration
 operating model beneath the umbrella
-[Quality Platforms Standard](docs/project/verification/quality-platforms.md:1).
+[Quality Platforms Standard](quality-platforms.md).
 
 ## GitHub Actions
 
 The workflow lives in
-[.github/workflows/quality-platforms.yml](.github/workflows/quality-platforms.yml:1)
+[.github/workflows/quality-platforms.yml](../../../.github/workflows/quality-platforms.yml)
 and defines six pull-request or main-push jobs plus one scheduled honesty
 job.
 
 | Job | Status | Current policy |
 | --- | --- | --- |
-| `check` | `Required CI Gate` | Runs `xvfb-run -a tools/gradle/run-observable-gradle.sh check`; this is the authoritative CI proof surface for the converted content-addressed harness tasks and the normal Gradle check graph. When a PR, merge-queue item, or main push touches build, CI, hook, or gate wiring, the job appends `-- --rerun-tasks` so wiring changes re-run the full check graph instead of proving through restored task outputs. |
+| `check` | `Required CI Gate` | Runs `xvfb-run -a tools/gradle/run-observable-gradle.sh check -- --rerun-tasks`; this is the fail-closed CI proof surface while the verification successor is pending. |
 | `nightly-rerun-tasks` | `Scheduled Honesty Gate` | Runs `xvfb-run -a tools/gradle/run-observable-gradle.sh check -- --rerun-tasks` on the nightly schedule; it is not a pull-request required context, and any cache/verdict divergence is an R2 issue rather than a silent re-cache. |
 | `warden-freeze` | `Required CI Gate` | Restores the base-ref warden script, then enforces R3c classification for frozen-surface changes and the narrow risk-label plausibility checks. |
 | `judge-review` | `Required CI Gate` | Restores the base-ref judge script, runs immediately for R0, fails closed for R1+ without the judge secret, and accepts only a PASS verdict or owner-only `judge-override`. |
@@ -38,26 +38,23 @@ Documentation-only governance changes use the local owner-named proof route
 from `AGENTS.md`. Removed documentation gates are not required local or CI
 entrypoints.
 
-The `check` job uses the GitHub Actions Gradle setup cache. Pull requests and
-merge-queue runs read the CI cache but do not write it; pushes to `main` own
-cache writes. Local machines never write this CI cache, and local cache hits
-are feedback rather than proof.
+The `check` job uses the GitHub Actions Gradle setup cache. Pull requests read
+the CI cache but do not write it; pushes to `main` own cache writes. Local
+machines never write this CI cache, and local cache hits are feedback rather
+than proof.
 
-The `check` job classifies its own diff before invoking Gradle. Ordinary
-source-area PRs stay content-addressed: Gradle's declared inputs decide which
-tasks execute and which tasks are cache hits. Build, CI, hook, frozen-surface,
-branch-protection-readback, status-issue, or judge wiring changes force
-`check --rerun-tasks`; if the workflow cannot determine the diff, it fails
-closed to the same forced mode.
+For pull-request and main-push events, the required `check` job runs the full
+graph with `--rerun-tasks`. This deliberately avoids path classification until
+the verification successor defines a simpler permanent CI model.
 
 CI jobs run in fresh GitHub-hosted checkouts, so they do not need repo-local
 same-worktree isolation cleanup. The concurrency concern in CI is stale runs on
-the same ref, not mutable Gradle state inside one filesystem tree. The
-workflow therefore uses workflow concurrency and `merge_group` coverage instead
-of cleanup steps for synthetic isolated run roots.
+the same ref, not mutable Gradle state inside one filesystem tree. The workflow
+therefore uses workflow concurrency instead of cleanup steps for synthetic
+isolated run roots.
 
 The required measurement scripts run from the PR base ref as defined by
-[ADR 0003](docs/project/decisions/0003-honest-instruments-base-gates.md:1).
+[ADR 0003](../decisions/0003-honest-instruments-base-gates.md).
 
 ### SonarCloud
 
@@ -113,10 +110,9 @@ informational report is skipped with a green GitHub job and an explicit log
 message instead of invoking the service helper with empty configuration.
 
 Recommended service-side setup: bind the project to this repository with
-`main` as reference branch; enable Delta Analysis for pull requests,
-`merge_group`, and pushes to `main`; hard-gate hotspot goal violations, code
-health decline, and new-code health below `8.0`; treat absent expected change
-patterns as warnings.
+`main` as reference branch; enable Delta Analysis for pull requests and pushes
+to `main`; hard-gate hotspot goal violations, code health decline, and new-code
+health below `8.0`; treat absent expected change patterns as warnings.
 
 ## Branch Protection
 
@@ -130,9 +126,8 @@ place:
 - Require a pull request before merging.
 - Disable direct pushes to `main`.
 - Enable auto-merge.
-- Prefer merge queue once the repository plan supports it; if merge queue is
-  enabled, require the same quality-platform jobs on `merge_group` that are
-  required on `pull_request`.
+- Keep merge queue disabled. It must not be enabled before W002 replaces the
+  current governance jobs with the sole required `check` context.
 - Keep human GitHub approval reviews optional unless the team later decides
   otherwise.
 - Require `check`.
@@ -142,6 +137,13 @@ place:
   as merge blockers unless a later ADR promotes them.
 
 ### Branch Protection Readback
+
+The read-only GitHub readback on 2026-07-15 found strict classic branch
+protection requiring exactly `check`, `warden-freeze`, and `judge-review`, no
+repository rulesets, and GraphQL `repository.mergeQueue(branch: "main") =
+null`. W000 neither configures nor claims merge-queue support: its workflow has
+no merge-queue event path. Merge queue must remain disabled until W002 replaces
+the current governance jobs with the sole required `check` context.
 
 The branch-protection bullets above are `Intended Policy`. They are not proof
 that GitHub currently blocks merges. Live required-check conformity is
@@ -245,9 +247,9 @@ The quality platforms do not replace review judgment.
 
 ## References
 
-- [Quality Platforms Standard](docs/project/verification/quality-platforms.md:1)
-- [.github/workflows/quality-platforms.yml](.github/workflows/quality-platforms.yml:1)
-- [Required Checks ADR](docs/project/decisions/0002-required-checks.md:1)
-- [GitHub Protected Branches REST Reference](references/quality-platforms/github-rest-branch-protection.md:1)
-- [GitHub Repository Rules REST Reference](references/quality-platforms/github-rest-repository-rules.md:1)
-- [Code Quality Lens](tools/quality/skills/lens-code-quality/SKILL.md:1)
+- [Quality Platforms Standard](quality-platforms.md)
+- [.github/workflows/quality-platforms.yml](../../../.github/workflows/quality-platforms.yml)
+- [Required Checks ADR](../decisions/0002-required-checks.md)
+- [GitHub Protected Branches REST Reference](../../../../references/quality-platforms/github-rest-branch-protection.md)
+- [GitHub Repository Rules REST Reference](../../../../references/quality-platforms/github-rest-repository-rules.md)
+- [Code Quality Lens](../../../tools/quality/skills/lens-code-quality/SKILL.md)

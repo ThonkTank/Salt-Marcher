@@ -53,5 +53,5 @@ Binders do not duplicate detail-entry assembly.
 
 ## References
 
-- [Catalog Tab UI](docs/creatures/requirements/requirements-creatures-catalog.md:1)
-- [Creatures Domain Model](docs/creatures/domain/domain-creatures.md:1)
+- [Catalog Tab UI](requirements-creatures-catalog.md)
+- [Creatures Domain Model](../domain/domain-creatures.md)

@@ -125,12 +125,12 @@ Target state:
 
 - documentation-only edits use `./gradlew checkDocumentationEnforcement
   --console=plain`
-- broader feature-boundary and placement questions remain review-owned until
-  the migration ledger starts the sessionplanner area and its behavior harness
-  inventory is closed
+- broader feature-boundary and placement questions are review-owned; the
+  Session Planner behavior harnesses remain the proof owners for user-visible
+  planner behavior
 
 ## References
 
-- [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
-- [Session Planner Persistence Contract](docs/sessionplanner/contract/contract-session-planner-persistence.md:1)
-- [Session Planner Requirements](docs/sessionplanner/requirements/requirements-session-planner.md:1)
+- [Layering Architecture Standard](../../project/architecture/patterns/layering-architecture.md)
+- [Session Planner Persistence Contract](../contract/contract-session-planner-persistence.md)
+- [Session Planner Requirements](../requirements/requirements-session-planner.md)

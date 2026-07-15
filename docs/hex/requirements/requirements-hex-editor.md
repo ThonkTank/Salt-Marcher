@@ -130,4 +130,4 @@ The V1 marker vocabulary exposes these visible marker types:
 - [Hex Domain](../domain/domain-hex-map.md)
 - [Hex Persistence Contract](../contract/contract-hex-persistence.md)
 - [Hex Editor Verification](../verification/verification-hex-editor.md)
-- [Maps Canvas Requirements](docs/maps/requirements/requirements-maps-canvas.md:1)
+- [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md) (line 1)

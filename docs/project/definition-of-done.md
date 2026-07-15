@@ -20,8 +20,8 @@ A change is Done when:
 
 ## Owner Acceptance Thresholds
 
-- Documentation-only changes are owner-accepted when the required
-  documentation gate is green; Aaron does not need to click through them.
+- Documentation-only changes are owner-accepted when the required owner-named
+  documentation proof is green; Aaron does not need to click through them.
 - Visible behavior is owner-accepted only after Aaron has personally tested and
   approved every function in scope.
 - Any change that touches an existing campaign or database requires a backup

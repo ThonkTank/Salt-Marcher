@@ -7,7 +7,7 @@ metadata, and how any piece of recorded intent is found again later.
 Every document has exactly one home defined here. A document with no home here
 is either deleted, or this standard is amended first.
 
-The system answers four questions for any reader (owner, agent, or judge) in
+The system answers four questions for any reader (owner, agent, or reviewer) in
 under a minute of navigation:
 
 1. **Why does this project exist?** -> `docs/project/vision.md`
@@ -30,14 +30,16 @@ under a minute of navigation:
 - **P3 Traceable intent.** An implemented behavior should be traceable back to
   the intent that caused it: vision -> roadmap -> issue -> requirement -> proof.
   This is a review lens, not an ID-threading ceremony.
-- **P4 Findable by index.** Every directory has a README index; every document
-  is listed in it. Nothing relies on a reader already knowing a filename.
-- **P5 Prose only where machines cannot prove.** Anything a checker, harness,
-  or CI gate enforces mechanically is not additionally described in prose
-  beyond a one-line pointer to the gate. A verification document that restates
-  what a harness already asserts is a defect, not documentation.
-- **P6 Owner-facing German, repo-facing English.** Interview transcripts and
-  owner readbacks are German. All repository documents are English.
+- **P4 Findable by index.** Every document is reachable from the nearest parent
+  README index. Add a directory-local README when that directory is itself a
+  navigation boundary; leaf directories may be indexed by their parent.
+- **P5 Own proof contracts, not transcripts.** Owner documents may define
+  proof contracts, acceptance criteria, and invariants. They point to the
+  implementing checker, harness, or CI gate without duplicating its mechanical
+  implementation or recorded results.
+- **P6 English with owner-facing exceptions.** Interview transcripts and owner
+  readbacks or status notes may be German. Other repository documents are
+  English.
 - **P7 Verbatim before interpretation.** Owner intent is recorded in the
   owner's words first. Rephrasing into repo English is marked as
   interpretation and requires explicit owner confirmation.
@@ -56,13 +58,13 @@ owns -- there is no obligation to populate every type.
 | `contract/` | Boundary, API, schema, and persistence contracts |
 | `architecture/` | Structural boundaries, owners, and decisions |
 | `verification/` | Proof routes: which harness owns which claim |
-| `delivery/` | Temporary rollout notes; never canonical architecture |
+| `delivery/` | Temporary cross-session goal contracts, milestones, current position, writer allocation, blockers, and next transition; deleted when delivery completes |
 
 Project-wide additions: `docs/project/decisions/` holds ADRs (one decision
 each, immutable once accepted, superseded rather than edited; required for R1
 architecture changes, dependency major upgrades, gate or tooling changes, and
-release policy changes). `docs/project/journal/YYYY-MM.md` holds design notes
-and incidents -- append-only, never a source of truth.
+release policy changes). `docs/project/journal/YYYY-MM.md` holds retained
+design notes and incidents, but is never a source of truth.
 `docs/project/interviews/` holds verbatim German owner-intent capture -- source
 material, never itself a source of truth. `AGENTS.md` holds project-wide agent
 norms only, never feature designs.
@@ -110,24 +112,26 @@ Structural starting points, not mandatory forms. ADRs use
 | UI | component purpose; visible surfaces; interactions; visible states |
 | Persistence | root contract; schema ownership; migration and stability rules |
 | Verification | which harness owns which claim; known gaps or review-owned proof |
+| Delivery | goal and scope; adopted target; milestones; current position; writer allocation; blockers; next transition; deletion condition |
 
 ## What Must Not Be Documented
 
 - Current-state descriptions of code or UI (they live in code and harnesses).
-- Anything a mechanical gate already enforces, beyond a pointer to the gate.
+- Mechanical implementation details or result transcripts already owned by a
+  checker, harness, CI gate, or retained build log.
 - Aspirational process documents without an owner and a consumer.
 - Duplicate summaries "for convenience" -- that is the index chain's job.
 - Operational bookkeeping that git history already records.
 
 ## Enforcement
 
-Honest layering -- what actually blocks, and what is judgement:
+Honest layering -- what actually blocks, and what requires review judgment:
 
 - **Mechanical** (`checkDocumentationEnforcement`, part of `check`): the
   `Status` and `Source of Truth` header lines, legacy-root absence, source-tree
   Markdown ownership (`src/domain/<ctx>/DOMAIN.md` only), and a non-fatal size
   signal. Nothing else in this document is machine-checked.
-- **Judge**: P1/P2/P5 violations -- state prose, duplicated truth, ceremonial
+- **Review**: P1/P2/P5 violations -- state prose, duplicated truth, ceremonial
   prose, a verification doc that mirrors its harness -- are review findings.
   So are placement, link integrity, and conflicting truth.
 - **Owner**: vision content and behavioral acceptance only. The owner is never

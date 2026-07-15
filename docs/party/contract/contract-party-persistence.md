@@ -92,6 +92,6 @@ truth only; it does not persist character positions.
 
 ## References
 
-- [Party Domain Model](docs/party/domain/domain-party.md:1)
-- [Party Dropdown UI](docs/party/requirements/requirements-party-dropdown.md:1)
-- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
+- [Party Domain Model](../domain/domain-party.md) (line 1)
+- [Party Dropdown UI](../requirements/requirements-party-dropdown.md) (line 1)
+- [Data Layer Standard](../../project/architecture/patterns/data-layer.md) (line 1)

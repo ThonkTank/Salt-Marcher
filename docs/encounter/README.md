@@ -14,15 +14,15 @@ only the user-accepted roster when the user saves a plan.
 
 ## Documentation Set
 
-- [Feature Spec](docs/encounter/requirements/requirements-encounter.md:1)
-- [Domain Model](docs/encounter/domain/domain-encounter.md:1)
-- [Persistence](docs/encounter/contract/contract-encounter-persistence.md:1)
-- [Saved Plans Contract](docs/encounter/contract/contract-encounter-saved-plans.md:1)
-- [Plan Budget Contract](docs/encounter/contract/contract-encounter-plan-budget.md:1)
-- [Builder Inputs Contract](docs/encounter/contract/contract-encounter-builder-inputs.md:1)
-- [Encounter State Contract](docs/encounter/contract/contract-encounter-state.md:1)
-- [Encounter Table Feature README](docs/encountertable/README.md:1)
-- [Encounter UI](docs/encounter/requirements/requirements-encounter-state-tab.md:1)
+- [Feature Spec](requirements/requirements-encounter.md)
+- [Domain Model](domain/domain-encounter.md)
+- [Persistence](contract/contract-encounter-persistence.md)
+- [Saved Plans Contract](contract/contract-encounter-saved-plans.md)
+- [Plan Budget Contract](contract/contract-encounter-plan-budget.md)
+- [Builder Inputs Contract](contract/contract-encounter-builder-inputs.md)
+- [Encounter State Contract](contract/contract-encounter-state.md)
+- [Encounter Table Feature README](../encountertable/README.md)
+- [Encounter UI](requirements/requirements-encounter-state-tab.md)
 
 ## Scope
 

@@ -1,6 +1,6 @@
 ---
 name: repo-tools
-description: Use before planning, implementing, refactoring, or reviewing SaltMarcher repo-tracked changes to identify available repo-local developer tools and their evidence strength.
+description: Optional catalog for discovering SaltMarcher repo-local developer tools and their evidence strength when a task needs one.
 ---
 
 # Repo Tools
@@ -29,18 +29,6 @@ description: Use before planning, implementing, refactoring, or reviewing SaltMa
   and cleanup candidates for a path.
 - Evidence strength: `Candidate`; owner docs remain authoritative.
 - Typical use: `python3 tools/quality/reporting/agent_context_map.py --surface <path>`
-
-### Project Health Scan
-
-- Tool path: `tools/quality/reporting/project_health_scan.py`
-- Helps with: `PROJECT_HEALTH_DEBT` marker/register sync and active debt
-  intake for planned paths or worktree state.
-- Governing skill: `tools/quality/skills/project-health/SKILL.md`
-- Evidence strength: `Evidence-Proven` for literal marker/register sync;
-  `Candidate` for trend evidence from logs.
-- Typical use:
-  `python3 tools/quality/reporting/project_health_scan.py --scope <path>`
-  or `python3 tools/quality/reporting/project_health_scan.py --intake --worktree`
 
 ## Handoff
 

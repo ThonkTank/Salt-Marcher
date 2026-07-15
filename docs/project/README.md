@@ -17,13 +17,11 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 
 - [Documentation Standard](documentation.md) -- what is documented where.
 - [Agent Instruction Standard](architecture/agent-instructions.md) -- tiers,
-  roles, judge review.
+  roles, review.
 - [Autonomy Boundaries](architecture/autonomy-boundaries.md) -- what the system
   decides alone, and what the owner decides.
 - [Resource Policy](policies/resource-policy.md) -- paid services, egress,
   secrets.
-- [Project Health](architecture/project-health.md) and its
-  [Debt Register](architecture/project-health-debt.md).
 
 ## Architecture
 
@@ -36,6 +34,12 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
   [styling](architecture/patterns/styling.md).
 - [Verification Core](architecture/verification-core.md) -- public verification
   surfaces and outcome-check wiring.
+- Historical pointer: [deprecated Harness Modernization Roadmap](architecture/harness-modernization-roadmap.md).
+
+## Delivery
+
+- [Active delivery index](delivery/README.md)
+- [Verification harness replacement](delivery/verification-harness-replacement/README.md)
 
 ## Decisions
 
@@ -43,6 +47,7 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 - [ADR 0002 Required Checks](decisions/0002-required-checks.md)
 - [ADR 0003 Honest Instruments Base Gates](decisions/0003-honest-instruments-base-gates.md)
 - [ADR 0004 Content-Addressed Harness Verification](decisions/0004-content-addressed-harness-verification.md)
+- [ADR 0005 Governance Cleanup and Local Hook Removal](decisions/0005-governance-cleanup-and-local-hook-removal.md)
 - [ADR Template](decisions/0000-template.md)
 
 ## Verification
@@ -65,5 +70,5 @@ Behavior owned centrally rather than by one feature:
 
 ## Journal
 
-[docs/project/journal/](journal/README.md) holds L-tier design notes and
-incidents. It is append-only and never a source of truth.
+[docs/project/journal/](journal/README.md) holds retained L-tier design notes
+and incidents. It is never a source of truth.

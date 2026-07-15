@@ -20,10 +20,10 @@ scene/location-reference metadata.
 
 Verified source documents:
 
-- [World Planner Requirements](docs/worldplanner/requirements/requirements-world-planner.md:1)
-- [World Planner Domain Model](docs/worldplanner/domain/domain-world-planner.md:1)
-- [World Planner Architecture](docs/worldplanner/architecture/architecture-world-planner.md:1)
-- [World Planner Persistence Contract](docs/worldplanner/contract/contract-world-planner-persistence.md:1)
+- [World Planner Requirements](../requirements/requirements-world-planner.md) (line 1)
+- [World Planner Domain Model](../domain/domain-world-planner.md) (line 1)
+- [World Planner Architecture](../architecture/architecture-world-planner.md) (line 1)
+- [World Planner Persistence Contract](../contract/contract-world-planner-persistence.md) (line 1)
 
 ## Documentation Proof
 
@@ -133,6 +133,6 @@ available production-path harness proof.
 
 ## References
 
-- [Quality Platforms](docs/project/verification/quality-platforms.md:1)
-- [World Planner Requirements](docs/worldplanner/requirements/requirements-world-planner.md:1)
-- [World Planner Domain Model](docs/worldplanner/domain/domain-world-planner.md:1)
+- [Quality Platforms](../../project/verification/quality-platforms.md) (line 1)
+- [World Planner Requirements](../requirements/requirements-world-planner.md) (line 1)
+- [World Planner Domain Model](../domain/domain-world-planner.md) (line 1)

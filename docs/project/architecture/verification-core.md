@@ -29,8 +29,7 @@ handoff, not a public verification surface.
 
 `tools/gradle/run-staged-verification.sh` and
 `tools/gradle/run-observable-gradle.sh` own command ergonomics, observable logs,
-project-health preflight routing, elapsed-time readback, task-count readback,
-and configuration-cache readback.
+elapsed-time readback, task-count readback, and configuration-cache readback.
 
 Wrappers may know public surface names. They must not choose private rule
 classes, private Gradle dependencies, or proof strength from package names.

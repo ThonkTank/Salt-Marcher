@@ -29,7 +29,7 @@ tasks with honest classpaths and declared non-classpath inputs.
 
 SaltMarcher will convert behavior harnesses to JUnit `Test` tasks in the
 milestone order defined by the
-the harness modernization roadmap (completed; see git history).
+[Harness Modernization Roadmap](../architecture/harness-modernization-roadmap.md) (line 1).
 Each former proof item ID maps 1:1 to a JUnit test method name. Scenario
 semantics are frozen: assertions, inputs, fixtures, visible facts, and
 published behavior claims survive conversion unchanged.

@@ -11,8 +11,8 @@ surfaces are edited.
 ## Rules
 
 1. Identify the cleanup naturally inside the current write set.
-2. Resolve `PROJECT_HEALTH_DEBT` support you touch, including legacy-removal
-   entries, or report a blocker.
+2. Fix structural or legacy-removal findings inside the scoped pass when
+   proportional; otherwise name the blocker or open a scoped GitHub issue.
 3. Prefer small local simplification that reduces the current change's risk.
 4. Do not create broad cleanup waves, new gates, or speculative abstractions
    without explicit user scope.
@@ -22,5 +22,4 @@ surfaces are edited.
 
 ## Handoff
 
-Report cleanup done, markers removed or blockers, and any scope decision left
-for the user.
+Report cleanup done, blockers, and any scope decision left for the user.

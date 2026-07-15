@@ -86,7 +86,7 @@ reuse for rendering, hit-testing, and passive pointer capture.
 
 ## References
 
-- [Maps Canvas Architecture](docs/maps/architecture/architecture-maps-canvas.md:1)
-- [Maps Canvas Contract](docs/maps/contract/contract-maps-canvas.md:1)
-- [Dungeon Map Adoption Architecture](docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
-- [Hex Map Adoption Architecture](docs/maps/architecture/architecture-maps-hex-adoption.md:1)
+- [Maps Canvas Architecture](../architecture/architecture-maps-canvas.md) (line 1)
+- [Maps Canvas Contract](../contract/contract-maps-canvas.md) (line 1)
+- [Dungeon Map Adoption Architecture](../architecture/architecture-maps-dungeon-adoption.md) (line 1)
+- [Hex Map Adoption Architecture](../architecture/architecture-maps-hex-adoption.md) (line 1)

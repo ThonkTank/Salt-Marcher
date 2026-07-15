@@ -1,7 +1,7 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-04
-Source of Truth: SaltMarcher agent workflow tiers, role boundaries, judge review,
+Last Reviewed: 2026-07-15
+Source of Truth: SaltMarcher agent workflow tiers, role boundaries, review,
 and instruction-surface change rules.
 
 # Agent Instruction Standard
@@ -14,13 +14,13 @@ Every tracked change is classified before editing.
 
 Use S when the write set is limited to Markdown docs or a single-file fix with
 exactly one obvious correction and no architecture, API, state, or shape
-decision. Run the matching verification command. No judge review is required.
+decision. Run the matching verification command. Independent review is optional.
 
 **M - Medium**
 
 Use M for normal implementation work that is not S or L. State a 5-15 line plan
-in the PR: goal, write set, proof command, and risks. Then implement, run
-proof, get one judge review, and merge only after green CI.
+in the PR: goal, write set, proof command, and risks. Implement, run proof, get
+one independent review, and merge only after green CI.
 
 **L - Large**
 
@@ -28,8 +28,9 @@ Use L when the change touches two or more layers' public surfaces, dependency
 versions, build or verification wiring, enforcement packages, or agent
 instruction surfaces. Before implementation, append a one-page design note to
 `docs/project/journal/YYYY-MM.md` covering problem, target state, alternatives
-considered, scope boundary, and done-when facts. The user may explicitly waive
-the design note.
+considered, scope boundary, and done-when facts. Add an ADR before implementation
+when the Documentation Standard requires one for the change class. The journal
+remains the short design or incident record. The user may waive either artifact.
 
 ## Roles
 
@@ -37,13 +38,10 @@ the design note.
 - **Verification Runner** runs assigned proof commands on the final checkout
   and records literal results. The implementer must not substitute this role
   when final independent proof was requested.
-- **Judge** reviews the final diff with a different model or reviewer instance
-  than the implementer and writes the verdict in the PR review.
+- **Reviewer** reviews the final diff independently and writes the verdict in
+  the PR review.
 
-One person or agent may hold only the Implementer role for a pass. The Judge
-must be independent from the implementation.
-
-## Judge Review
+## Review
 
 Always apply `lens-code-quality`. Add `lens-security` when the diff touches IO,
 persistence, parsing, external input, or shell/exec. Add `lens-performance`
@@ -63,7 +61,7 @@ last relevant proof run.
 
 ## Stable-State Barrier
 
-While an implementation, fix, proof, or review role may still change or judge
+While an implementation, fix, proof, or review role may still change or review
 the target write set, do not launch proof, review, desktop install, or other
 expensive side work against that same checkout. After any wait, interruption,
 resume, or user correction, refresh the user instruction, worktree dirty paths,
@@ -74,7 +72,7 @@ current owners before new tracked edits.
 
 A blocked pass stays WIP with the blocker named in the PR. Direct review fixes
 are allowed only for S-tier findings. Everything else goes back to the
-implementer with the judge's findings; no separate planner or repair-plan
+implementer with the review findings; no separate planner or repair-plan
 review chain is required.
 
 ## Parallel Work

@@ -32,7 +32,7 @@ Current state:
 - Because the Catalog tab does not publish active-tab state content, the shell
   shows the global state-tab strip with `Encounter` and `Reise`.
 - Creature Inspector content is defined separately in
-  [Creature Details UI](docs/creatures/requirements/requirements-creatures-details.md:1).
+  [Creature Details UI](requirements-creatures-details.md).
 
 ## Interactions
 
@@ -92,5 +92,5 @@ Current state:
 
 ## References
 
-- [Creature Details UI](docs/creatures/requirements/requirements-creatures-details.md:1)
-- [Encounter Runtime State UI](docs/encounter/requirements/requirements-encounter-state-tab.md:1)
+- [Creature Details UI](requirements-creatures-details.md)
+- [Encounter Runtime State UI](../../encounter/requirements/requirements-encounter-state-tab.md)

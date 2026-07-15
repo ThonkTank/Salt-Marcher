@@ -222,9 +222,9 @@ runtime state.
 
 ## References
 
-- [Feature Spec](docs/encounter/requirements/requirements-encounter.md:1)
-- [Encounter Persistence](docs/encounter/contract/contract-encounter-persistence.md:1)
-- [Encounter Builder Inputs Contract](docs/encounter/contract/contract-encounter-builder-inputs.md:1)
-- [Encounter Saved Plans Contract](docs/encounter/contract/contract-encounter-saved-plans.md:1)
-- [Encounter State Contract](docs/encounter/contract/contract-encounter-state.md:1)
-- [Encounter UI](docs/encounter/requirements/requirements-encounter-state-tab.md:1)
+- [Feature Spec](../requirements/requirements-encounter.md)
+- [Encounter Persistence](../contract/contract-encounter-persistence.md)
+- [Encounter Builder Inputs Contract](../contract/contract-encounter-builder-inputs.md)
+- [Encounter Saved Plans Contract](../contract/contract-encounter-saved-plans.md)
+- [Encounter State Contract](../contract/contract-encounter-state.md)
+- [Encounter UI](../requirements/requirements-encounter-state-tab.md)

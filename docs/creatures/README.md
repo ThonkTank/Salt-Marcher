@@ -21,10 +21,10 @@ Its public backend surface is split into:
 
 ## Documentation Set
 
-- [Creatures Domain Model](docs/creatures/domain/domain-creatures.md:1)
-- [Creatures Persistence](docs/creatures/contract/contract-creatures-persistence.md:1)
-- [Catalog Tab UI](docs/creatures/requirements/requirements-creatures-catalog.md:1)
-- [Creature Details UI](docs/creatures/requirements/requirements-creatures-details.md:1)
+- [Creatures Domain Model](domain/domain-creatures.md)
+- [Creatures Persistence](contract/contract-creatures-persistence.md)
+- [Catalog Tab UI](requirements/requirements-creatures-catalog.md)
+- [Creature Details UI](requirements/requirements-creatures-details.md)
 
 ## Scope
 

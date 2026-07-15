@@ -1,6 +1,6 @@
 ---
 name: lens-code-quality
-description: Reviews SaltMarcher diffs for correctness, simplicity, maintainability, smells, structure, conventions, and review evidence quality. Use as the default judge lens for every M/L implementation review.
+description: Reviews SaltMarcher diffs for correctness, simplicity, maintainability, smells, structure, conventions, and review evidence quality. Use as the independent Reviewer lens for every M/L implementation review.
 ---
 
 # Lens: Code Quality
@@ -28,9 +28,9 @@ Use verdicts from `docs/project/architecture/agent-instructions.md`:
   documents?
 - Tests and proof: Is the proof command relevant and fresh for the diff? If a
   tracked file changed after proof, return `Proof Refresh Required`.
-- Debt: Are supported residual findings fixed, explicitly user-excluded, or
-  recorded through `PROJECT_HEALTH_DEBT` when they are not part of the current
-  objective?
+- Residuals: Are supported findings fixed, explicitly excluded by the user, or
+  named as a blocker or scoped GitHub issue when they are not proportional to
+  the current objective?
 
 ## Finding Format
 
@@ -48,4 +48,3 @@ test or proof risk.
 ## References
 
 - [Agent Instruction Standard](../../../../docs/project/architecture/agent-instructions.md)
-- [Project Health](../../../../docs/project/architecture/project-health.md)

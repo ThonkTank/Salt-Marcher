@@ -130,7 +130,7 @@ sharing the editor backend boundary.
 
 ## References
 
-- [Maps Canvas Architecture](docs/maps/architecture/architecture-maps-canvas.md:1)
-- [Maps Canvas Contract](docs/maps/contract/contract-maps-canvas.md:1)
-- [Dungeon Map Surface Contract](docs/maps/contract/contract-maps-dungeon-surface.md:1)
-- [Dungeon Feature Overview](docs/dungeon/README.md:1)
+- [Maps Canvas Architecture](architecture-maps-canvas.md)
+- [Maps Canvas Contract](../contract/contract-maps-canvas.md)
+- [Dungeon Map Surface Contract](../contract/contract-maps-dungeon-surface.md)
+- [Dungeon Feature Overview](../../dungeon/README.md)

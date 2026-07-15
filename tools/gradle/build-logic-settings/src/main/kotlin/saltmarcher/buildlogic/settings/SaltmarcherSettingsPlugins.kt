@@ -16,9 +16,6 @@ class SaltmarcherRootSettingsPlugin : Plugin<Settings> {
         val repoRootDir = configuredRepositoryRoot(settings.settingsDir)
             ?: discoveredRepoRootDir
         System.setProperty("saltmarcher.repoRootDir", repoRootDir.absolutePath)
-        if (System.getenv("SALTMARCHER_PRE_COMMIT_GATE") != "1") {
-            configureVersionedHooks(repoRootDir)
-        }
 
         val requestedTaskNames = settings.gradle.startParameter.taskNames
             .map { taskName -> taskName.substringAfterLast(":") }
@@ -64,112 +61,6 @@ private fun configuredRepositoryRoot(settingsDir: File): File? {
     }
     return configuredRoot
 }
-
-private fun configureVersionedHooks(repoRootDir: File) {
-    val hooksDir = File(repoRootDir, "tools/hooks")
-    val gitEntry = File(repoRootDir, ".git")
-    if (!hooksDir.isDirectory || !gitEntry.exists()) {
-        return
-    }
-
-    val expectedHooksPath = "tools/hooks"
-    val configFile = gitLocalConfigFile(gitEntry)
-        ?: return
-    val currentHooksPath = readCoreHooksPath(configFile)
-        ?.trim()
-        ?.replace(File.separatorChar, '/')
-    if (currentHooksPath == expectedHooksPath) {
-        return
-    }
-
-    writeCoreHooksPath(configFile, expectedHooksPath)
-}
-
-private fun gitLocalConfigFile(gitEntry: File): File? {
-    if (gitEntry.isDirectory) {
-        return File(gitEntry, "config")
-    }
-    if (!gitEntry.isFile) {
-        return null
-    }
-    val gitDir = gitEntry.readLines()
-        .firstOrNull()
-        ?.substringAfter("gitdir:", missingDelimiterValue = "")
-        ?.trim()
-        ?.takeIf(String::isNotEmpty)
-        ?: return null
-    val resolvedGitDir = File(gitDir).takeIf(File::isAbsolute)
-        ?: File(gitEntry.parentFile, gitDir)
-    return File(resolvedGitDir.canonicalFile, "config")
-}
-
-private fun readCoreHooksPath(configFile: File): String? {
-    if (!configFile.isFile) {
-        return null
-    }
-    var inCoreSection = false
-    for (line in configFile.readLines()) {
-        val trimmed = line.trim()
-        if (isGitConfigSection(trimmed)) {
-            inCoreSection = isCoreSection(trimmed)
-        } else if (inCoreSection && isHooksPathEntry(trimmed)) {
-            return trimmed.substringAfter("=").trim().trim('"')
-        }
-    }
-    return null
-}
-
-private fun writeCoreHooksPath(configFile: File, expectedHooksPath: String) {
-    val lines = if (configFile.isFile) configFile.readLines() else emptyList()
-    val rewritten = mutableListOf<String>()
-    var inCoreSection = false
-    var sawCoreSection = false
-    var wroteHooksPath = false
-
-    for (line in lines) {
-        val trimmed = line.trim()
-        if (isGitConfigSection(trimmed)) {
-            if (inCoreSection && !wroteHooksPath) {
-                rewritten.add("\thooksPath = $expectedHooksPath")
-                wroteHooksPath = true
-            }
-            inCoreSection = isCoreSection(trimmed)
-            sawCoreSection = sawCoreSection || inCoreSection
-            rewritten.add(line)
-        } else if (inCoreSection && isHooksPathEntry(trimmed)) {
-            if (!wroteHooksPath) {
-                rewritten.add("\thooksPath = $expectedHooksPath")
-                wroteHooksPath = true
-            }
-        } else {
-            rewritten.add(line)
-        }
-    }
-
-    if (!sawCoreSection) {
-        if (rewritten.isNotEmpty() && rewritten.last().isNotBlank()) {
-            rewritten.add("")
-        }
-        rewritten.add("[core]")
-        rewritten.add("\thooksPath = $expectedHooksPath")
-    } else if (inCoreSection && !wroteHooksPath) {
-        rewritten.add("\thooksPath = $expectedHooksPath")
-    }
-
-    configFile.parentFile.mkdirs()
-    configFile.writeText(rewritten.joinToString(System.lineSeparator()) + System.lineSeparator())
-}
-
-private fun isGitConfigSection(trimmedLine: String): Boolean =
-    trimmedLine.startsWith("[") && trimmedLine.endsWith("]")
-
-private fun isCoreSection(trimmedLine: String): Boolean =
-    trimmedLine.equals("[core]", ignoreCase = true)
-
-private fun isHooksPathEntry(trimmedLine: String): Boolean =
-    trimmedLine.substringBefore("=", missingDelimiterValue = "")
-        .trim()
-        .equals("hooksPath", ignoreCase = true)
 
 private data class VerificationRequestScope(
     val includeBuildHarness: Boolean,

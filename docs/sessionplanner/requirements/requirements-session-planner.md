@@ -124,7 +124,7 @@ Target state:
 
 ## References
 
-- [Session Planner Architecture](docs/sessionplanner/architecture/architecture-session-planner.md:1)
-- [Session Planner Persistence Contract](docs/sessionplanner/contract/contract-session-planner-persistence.md:1)
-- [Session Planner Domain Model](docs/sessionplanner/domain/domain-session-planner.md:1)
-- [Encounter Plan Budget Contract](docs/encounter/contract/contract-encounter-plan-budget.md:1)
+- [Session Planner Architecture](../architecture/architecture-session-planner.md) (line 1)
+- [Session Planner Persistence Contract](../contract/contract-session-planner-persistence.md) (line 1)
+- [Session Planner Domain Model](../domain/domain-session-planner.md) (line 1)
+- [Encounter Plan Budget Contract](../../encounter/contract/contract-encounter-plan-budget.md) (line 1)

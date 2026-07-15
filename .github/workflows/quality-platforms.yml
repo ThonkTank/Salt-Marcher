@@ -2,10 +2,9 @@ name: quality-platforms
 
 on:
   pull_request:
-    # `labeled`/`unlabeled` are required: warden-freeze and judge-review read the
-    # risk label, so a label added after opening must re-run the required checks.
-    types: [opened, synchronize, reopened, labeled, unlabeled]
-  merge_group:
+    # Labels and PR text feed the current required governance jobs, so each
+    # relevant metadata edit must re-run them until W002 deletes those jobs.
+    types: [opened, synchronize, reopened, edited, labeled, unlabeled]
   push:
     branches:
       - main
@@ -39,70 +38,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y imagemagick
-      - name: Decide Gradle check arguments
-        id: check-args
-        shell: bash
-        env:
-          EVENT_NAME: ${{ github.event_name }}
-          PR_BASE_SHA: ${{ github.event.pull_request.base.sha || '' }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
-          PUSH_BEFORE: ${{ github.event.before || '' }}
-          CURRENT_SHA: ${{ github.sha }}
-          BASE_REF: ${{ github.event.merge_group.base_ref || github.base_ref || '' }}
-        run: |
-          set -euo pipefail
-
-          zero_sha="0000000000000000000000000000000000000000"
-          base=""
-          head=""
-          diff_resolution_failed="false"
-
-          case "$EVENT_NAME" in
-            pull_request)
-              base="$PR_BASE_SHA"
-              head="$PR_HEAD_SHA"
-              ;;
-            merge_group)
-              base_ref="${BASE_REF#refs/heads/}"
-              if ! git fetch --no-tags origin "$base_ref"; then
-                diff_resolution_failed="true"
-              elif ! base="$(git merge-base HEAD "origin/$base_ref")"; then
-                diff_resolution_failed="true"
-              else
-                head="HEAD"
-              fi
-              ;;
-            push)
-              base="$PUSH_BEFORE"
-              head="$CURRENT_SHA"
-              if [ -z "$base" ] || [ "$base" = "$zero_sha" ]; then
-                if ! base="$(git rev-list --max-parents=0 "$head")"; then
-                  diff_resolution_failed="true"
-                fi
-              fi
-              ;;
-          esac
-
-          extra_args=""
-          mode="content-addressed"
-          if [ "$diff_resolution_failed" = "true" ] || [ -z "$base" ] || [ -z "$head" ]; then
-            mode="forced-rerun-undetermined-diff"
-            extra_args="-- --rerun-tasks"
-          elif ! changed_files="$(git diff --name-only "$base" "$head")"; then
-            mode="forced-rerun-diff-read-failed"
-            extra_args="-- --rerun-tasks"
-          else
-            build_wiring_pattern='^(\.github/workflows/|build\.gradle\.kts$|settings\.gradle\.kts$|gradle\.properties$|gradle/|gradlew(\.bat)?$|build-logic/|build-logic-settings/|tools/gradle/|tools/hooks/|tools/quality/config/frozen-surfaces\.txt$|tools/quality/scripts/(branch_protection_readback|update_status_issue|warden_freeze)\.py$|tools/agents/judge_review\.py$)'
-            if printf '%s\n' "$changed_files" | grep -Eq "$build_wiring_pattern"; then
-              mode="forced-rerun-build-wiring"
-              extra_args="-- --rerun-tasks"
-            fi
-          fi
-
-          echo "mode=$mode"
-          echo "mode=$mode" >> "$GITHUB_OUTPUT"
-          echo "extra_args=$extra_args" >> "$GITHUB_OUTPUT"
-      - run: xvfb-run -a tools/gradle/run-observable-gradle.sh check ${{ steps.check-args.outputs.extra_args }}
+      - run: xvfb-run -a tools/gradle/run-observable-gradle.sh check -- --rerun-tasks
 
   nightly-rerun-tasks:
     if: github.event_name == 'schedule'
@@ -132,18 +68,18 @@ jobs:
         with:
           fetch-depth: 0
       - name: Use base warden script
-        if: github.event_name != 'push'
+        if: github.event_name == 'pull_request'
         run: |
-          cp tools/quality/config/frozen-surfaces.txt "$RUNNER_TEMP/frozen-surfaces.pr"
-          git fetch --no-tags origin "$BASE_REF"
-          git checkout "origin/$BASE_REF" -- tools/quality/scripts/warden_freeze.py tools/quality/config/frozen-surfaces.txt
-          python3 tools/quality/scripts/warden_freeze.py --self-test
-          cp "$RUNNER_TEMP/frozen-surfaces.pr" tools/quality/config/frozen-surfaces.txt
-        env:
-          BASE_REF: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_ref || github.base_ref }}
+          set -euo pipefail
+          cp tools/quality/config/frozen-surfaces.txt "$RUNNER_TEMP/frozen-surfaces.proposed"
+          git fetch --no-tags origin "$GITHUB_BASE_REF"
+          git checkout "origin/$GITHUB_BASE_REF" -- tools/quality/scripts/warden_freeze.py tools/quality/config/frozen-surfaces.txt
+          python3 -I tools/quality/scripts/warden_freeze.py --self-test
+          cp "$RUNNER_TEMP/frozen-surfaces.proposed" tools/quality/config/frozen-surfaces.txt
+          python3 -I tools/quality/scripts/warden_freeze.py --self-test
       - if: github.event_name == 'push'
-        run: python3 tools/quality/scripts/warden_freeze.py --self-test
-      - run: python3 tools/quality/scripts/warden_freeze.py
+        run: python3 -I tools/quality/scripts/warden_freeze.py --self-test
+      - run: python3 -I tools/quality/scripts/warden_freeze.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -159,13 +95,11 @@ jobs:
           node-version: "22"
       - run: npm install -g @anthropic-ai/claude-code@2.1.201
       - name: Use base judge script
-        if: github.event_name != 'push'
+        if: github.event_name == 'pull_request'
         run: |
-          git fetch --no-tags origin "$BASE_REF"
-          git checkout "origin/$BASE_REF" -- tools/agents/judge_review.py
-        env:
-          BASE_REF: ${{ github.event_name == 'merge_group' && github.event.merge_group.base_ref || github.base_ref }}
-      - run: python3 tools/agents/judge_review.py
+          git fetch --no-tags origin "$GITHUB_BASE_REF"
+          git checkout "origin/$GITHUB_BASE_REF" -- tools/agents/judge_review.py
+      - run: python3 -I tools/agents/judge_review.py
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN || secrets.ANTHROPIC_AUTH_TOKEN }}

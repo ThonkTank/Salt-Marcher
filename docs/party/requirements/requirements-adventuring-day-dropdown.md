@@ -66,5 +66,5 @@ Current state:
 
 ## References
 
-- [Adventuring Day Calculator](docs/party/requirements/requirements-adventuring-day-calculator.md:1)
-- [Party Dropdown UI](docs/party/requirements/requirements-party-dropdown.md:1)
+- [Adventuring Day Calculator](requirements-adventuring-day-calculator.md)
+- [Party Dropdown UI](requirements-party-dropdown.md)

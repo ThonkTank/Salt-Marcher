@@ -74,4 +74,4 @@ party-owned runtime position.
 
 - [Hex Feature Requirements](./requirements-hex.md)
 - [Hex Travel State Requirements](./requirements-hex-travel-state.md)
-- [Maps Canvas Requirements](docs/maps/requirements/requirements-maps-canvas.md:1)
+- [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md) (line 1)

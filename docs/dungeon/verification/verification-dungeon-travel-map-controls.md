@@ -23,4 +23,4 @@ truth remain in their neighboring requirements, domain, and invariant catalogs.
 
 - [Dungeon Travel Requirements](../requirements/requirements-dungeon-travel.md)
 - [Dungeon Domain Model](../domain/domain-dungeon.md)
-- [Dungeon Map Surface Contract](docs/maps/contract/contract-maps-dungeon-surface.md:1)
+- [Dungeon Map Surface Contract](../../maps/contract/contract-maps-dungeon-surface.md) (line 1)

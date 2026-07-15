@@ -134,7 +134,7 @@ public final class DocumentationHygieneRules implements ArchitectureRule {
                 if (lines.size() > MARKDOWN_SIZE_SIGNAL_LINES) {
                     System.out.println("Documentation size signal: " + documentPath
                             + " has " + lines.size()
-                            + " lines; file or link a doc-split issue before growing scope.");
+                            + " lines; review whether the document crosses an ownership boundary.");
                 }
             }
         }
