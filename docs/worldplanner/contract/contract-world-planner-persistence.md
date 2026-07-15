@@ -108,6 +108,6 @@ or pending confirmation workflows.
 
 ## References
 
-- [World Planner Domain Model](docs/worldplanner/domain/domain-world-planner.md:1)
-- [World Planner Architecture](docs/worldplanner/architecture/architecture-world-planner.md:1)
-- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
+- [World Planner Domain Model](../domain/domain-world-planner.md) (line 1)
+- [World Planner Architecture](../architecture/architecture-world-planner.md) (line 1)
+- [Data Layer Standard](../../project/architecture/patterns/data-layer.md) (line 1)

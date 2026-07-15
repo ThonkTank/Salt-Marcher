@@ -135,6 +135,5 @@ Target state:
 
 ## References
 
-- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
-- [Party Persistence](docs/party/contract/contract-party-persistence.md:1)
-- [Party UI](docs/party/requirements/requirements-party-dropdown.md:1)
+- [Party Persistence](../contract/contract-party-persistence.md)
+- [Party UI](../requirements/requirements-party-dropdown.md)

@@ -41,7 +41,7 @@ passed.
 `sonarcloud`, `codescene`, and `ckjm-report` remain informational jobs.
 
 Trusted-ref execution for `warden-freeze` and `judge-review` is owned by
-[ADR 0003](docs/project/decisions/0003-honest-instruments-base-gates.md:1).
+[ADR 0003](0003-honest-instruments-base-gates.md) (line 1).
 
 ## Workflow Permission Budget
 

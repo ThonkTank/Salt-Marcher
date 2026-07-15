@@ -75,6 +75,5 @@ Target state:
 
 ## References
 
-- [Encounter Runtime State UI](docs/encounter/requirements/requirements-encounter-state-tab.md:1)
-- [Hex Travel State Requirements](docs/hex/requirements/requirements-hex-travel-state.md:1)
-- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
+- [Encounter Runtime State UI](../../encounter/requirements/requirements-encounter-state-tab.md)
+- [Hex Travel State Requirements](../../hex/requirements/requirements-hex-travel-state.md)

@@ -95,7 +95,6 @@ Reclassify `creatures` before adding any of:
 
 ## References
 
-- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
-- [Creatures Persistence](docs/creatures/contract/contract-creatures-persistence.md:1)
-- [Catalog Tab UI](docs/creatures/requirements/requirements-creatures-catalog.md:1)
-- [Creature Details UI](docs/creatures/requirements/requirements-creatures-details.md:1)
+- [Creatures Persistence](../contract/contract-creatures-persistence.md)
+- [Catalog Tab UI](../requirements/requirements-creatures-catalog.md)
+- [Creature Details UI](../requirements/requirements-creatures-details.md)

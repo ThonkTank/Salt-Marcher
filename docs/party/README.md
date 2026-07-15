@@ -14,8 +14,8 @@ public backend boundary formed by
 
 ## Documentation Set
 
-- [Party Domain Model](docs/party/domain/domain-party.md:1)
-- [Party Persistence](docs/party/contract/contract-party-persistence.md:1)
-- [Party Dropdown Requirements](docs/party/requirements/requirements-party-dropdown.md:1)
-- [Adventuring Day Dropdown Requirements](docs/party/requirements/requirements-adventuring-day-dropdown.md:1)
-- [Adventuring Day Calculator Requirements](docs/party/requirements/requirements-adventuring-day-calculator.md:1)
+- [Party Domain Model](domain/domain-party.md)
+- [Party Persistence](contract/contract-party-persistence.md)
+- [Party Dropdown Requirements](requirements/requirements-party-dropdown.md)
+- [Adventuring Day Dropdown Requirements](requirements/requirements-adventuring-day-dropdown.md)
+- [Adventuring Day Calculator Requirements](requirements/requirements-adventuring-day-calculator.md)

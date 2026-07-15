@@ -152,7 +152,27 @@ def git_output(args: list[str]) -> str:
     return subprocess.check_output(args, cwd=REPO_ROOT, text=True, stderr=subprocess.STDOUT)
 
 
+def normalize_base_reference(base_ref: str) -> str:
+    return base_ref.removeprefix("refs/heads/")
+
+
+def origin_reference(base_ref: str) -> str:
+    return f"origin/{normalize_base_reference(base_ref)}"
+
+
+def base_reference(payload: dict, environment: dict[str, str] | None = None) -> str:
+    environment = os.environ if environment is None else environment
+    raw_reference = (
+        environment.get("GITHUB_BASE_REF")
+        or payload.get("pull_request", {}).get("base", {}).get("ref")
+        or (payload.get("merge_group") or {}).get("base_ref", "")
+    )
+    return normalize_base_reference(raw_reference)
+
+
 def diff_text(base_ref: str) -> str:
+    base_ref = normalize_base_reference(base_ref)
+    origin_ref = origin_reference(base_ref)
     subprocess.run(
         ["git", "fetch", "--no-tags", "origin", base_ref],
         cwd=REPO_ROOT,
@@ -160,12 +180,12 @@ def diff_text(base_ref: str) -> str:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    diff = git_output(["git", "diff", f"origin/{base_ref}...HEAD"])
+    diff = git_output(["git", "diff", f"{origin_ref}...HEAD"])
     if len(diff) <= 60000:
         return diff
-    files = git_output(["git", "diff", "--name-only", f"origin/{base_ref}...HEAD"])
-    stat = git_output(["git", "diff", "--stat", f"origin/{base_ref}...HEAD"])
-    largest = git_output(["git", "diff", "--numstat", f"origin/{base_ref}...HEAD"]).splitlines()
+    files = git_output(["git", "diff", "--name-only", f"{origin_ref}...HEAD"])
+    stat = git_output(["git", "diff", "--stat", f"{origin_ref}...HEAD"])
+    largest = git_output(["git", "diff", "--numstat", f"{origin_ref}...HEAD"]).splitlines()
     ranked = sorted(
         largest,
         key=lambda line: sum(int(part) for part in line.split("\t")[:2] if part.isdigit()),
@@ -174,7 +194,7 @@ def diff_text(base_ref: str) -> str:
     full = []
     for line in ranked:
         path = line.split("\t")[-1]
-        full.append(git_output(["git", "diff", f"origin/{base_ref}...HEAD", "--", path]))
+        full.append(git_output(["git", "diff", f"{origin_ref}...HEAD", "--", path]))
     return "FILES\n" + files + "\nSTAT\n" + stat + "\nLARGEST FILE DIFFS\n" + "\n".join(full)
 
 
@@ -298,7 +318,23 @@ def has_pass_verdict(verdict: str) -> bool:
     return any(line == "VERDICT: PASS" or line.startswith("VERDICT: PASS ") for line in verdict_lines)
 
 
-def main() -> int:
+def run_self_test() -> int:
+    merge_group_payload = {"merge_group": {"base_ref": "refs/heads/main"}}
+    base_ref = base_reference(merge_group_payload, {})
+    resolved = origin_reference(base_ref)
+    if base_ref != "main" or resolved != "origin/main" or resolved == "origin/refs/heads/main":
+        raise AssertionError(f"merge-group base ref normalized incorrectly: {base_ref=}, {resolved=}")
+    print("judge-review: self-test passed")
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if argv == ["--self-test"]:
+        return run_self_test()
+    if argv:
+        print("usage: judge_review.py [--self-test]", file=sys.stderr)
+        return 2
     payload = event_payload()
     labels = pr_labels(payload)
     if has_owner_judge_override(labels, payload):
@@ -307,11 +343,7 @@ def main() -> int:
     if not (labels & R1_PLUS):
         print("judge-review: R0 or unlabeled non-R1+ change; judge not required.")
         return 0
-    base_ref = (
-        os.environ.get("GITHUB_BASE_REF")
-        or payload.get("pull_request", {}).get("base", {}).get("ref")
-        or (payload.get("merge_group") or {}).get("base_ref", "")
-    )
+    base_ref = base_reference(payload)
     if not base_ref:
         print("judge-review: no PR base ref; audit-only event.")
         return 0

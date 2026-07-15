@@ -112,5 +112,5 @@ Provide one dungeon workflow that lets a GM:
 - [Dungeon Editor Requirements](./requirements-dungeon-editor.md)
 - [Dungeon Travel State Requirements](./requirements-dungeon-travel-state.md)
 - [Dungeon Travel Requirements](./requirements-dungeon-travel.md)
-- [Maps Canvas Requirements](docs/maps/requirements/requirements-maps-canvas.md:1)
-- [Dungeon Domain Model](docs/dungeon/domain/domain-dungeon.md:1)
+- [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md) (line 1)
+- [Dungeon Domain Model](../domain/domain-dungeon.md) (line 1)

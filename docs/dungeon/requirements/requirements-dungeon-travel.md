@@ -90,6 +90,6 @@ truth plus party-owned runtime state.
 
 - [Dungeon Feature Requirements](./requirements-dungeon.md)
 - [Dungeon Travel State Requirements](./requirements-dungeon-travel-state.md)
-- [Maps Canvas Requirements](docs/maps/requirements/requirements-maps-canvas.md:1)
-- [Dungeon Map Surface Contract](docs/maps/contract/contract-maps-dungeon-surface.md:1)
-- [Dungeon Map Adoption Architecture](docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
+- [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md) (line 1)
+- [Dungeon Map Surface Contract](../../maps/contract/contract-maps-dungeon-surface.md) (line 1)
+- [Dungeon Map Adoption Architecture](../../maps/architecture/architecture-maps-dungeon-adoption.md) (line 1)

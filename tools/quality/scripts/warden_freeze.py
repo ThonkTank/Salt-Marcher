@@ -96,7 +96,7 @@ def changed_files(payload: dict) -> list[str]:
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    return changed_paths_for_range(REPO_ROOT, f"origin/{base_ref}...HEAD")
+    return changed_paths_for_range(REPO_ROOT, f"{origin_reference(base_ref)}...HEAD")
 
 
 def changed_paths_for_range(repo_root: Path, diff_range: str) -> list[str]:
@@ -130,7 +130,7 @@ def changed_line_count(payload: dict) -> int:
     if not base_ref:
         return 0
     result = subprocess.run(
-        ["git", "diff", "--numstat", f"origin/{base_ref}...HEAD"],
+        ["git", "diff", "--numstat", f"{origin_reference(base_ref)}...HEAD"],
         cwd=REPO_ROOT,
         text=True,
         check=True,
@@ -146,12 +146,22 @@ def changed_line_count(payload: dict) -> int:
     return total
 
 
-def base_reference(payload: dict) -> str:
-    return (
-        os.environ.get("GITHUB_BASE_REF")
+def normalize_base_reference(base_ref: str) -> str:
+    return base_ref.removeprefix("refs/heads/")
+
+
+def origin_reference(base_ref: str) -> str:
+    return f"origin/{normalize_base_reference(base_ref)}"
+
+
+def base_reference(payload: dict, environment: dict[str, str] | None = None) -> str:
+    environment = os.environ if environment is None else environment
+    raw_reference = (
+        environment.get("GITHUB_BASE_REF")
         or payload.get("pull_request", {}).get("base", {}).get("ref")
         or (payload.get("merge_group") or {}).get("base_ref", "")
     )
+    return normalize_base_reference(raw_reference)
 
 
 def frozen_patterns() -> list[str]:
@@ -176,6 +186,11 @@ def contains_sql_marker(path: str) -> bool:
 
 def run_self_test() -> int:
     assert_required_frozen_patterns_cover_representatives()
+    merge_group_payload = {"merge_group": {"base_ref": "refs/heads/main"}}
+    base_ref = base_reference(merge_group_payload, {})
+    resolved = origin_reference(base_ref)
+    if base_ref != "main" or resolved != "origin/main" or resolved == "origin/refs/heads/main":
+        raise AssertionError(f"merge-group base ref normalized incorrectly: {base_ref=}, {resolved=}")
     patterns = ["tools/agents/**", ".github/workflows/**"]
     with tempfile.TemporaryDirectory(prefix="warden-freeze-self-test-") as tmp:
         repo = Path(tmp)

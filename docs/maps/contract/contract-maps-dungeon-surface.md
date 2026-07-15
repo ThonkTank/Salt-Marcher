@@ -18,7 +18,7 @@ generic maps feature.
 It is not target feature-runtime conformance for the live Dungeon Editor
 view/shell/UI seam. Target raw-input UI, shell binding, runtime render frame,
 and typed raw-input ownership remains in
-[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1).
+[Source Architecture](../../project/architecture/source-architecture.md).
 
 Owners:
 
@@ -180,6 +180,6 @@ raw-input APIs consumed directly by that seam.
 
 ## References
 
-- [Maps Canvas Architecture](docs/maps/architecture/architecture-maps-canvas.md:1)
-- [Dungeon Map Adoption Architecture](docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
-- [Dungeon Persistence Contract](docs/dungeon/contract/contract-dungeon-persistence.md:1)
+- [Maps Canvas Architecture](../architecture/architecture-maps-canvas.md)
+- [Dungeon Map Adoption Architecture](../architecture/architecture-maps-dungeon-adoption.md)
+- [Dungeon Persistence Contract](../../dungeon/contract/contract-dungeon-persistence.md)

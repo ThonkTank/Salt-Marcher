@@ -34,6 +34,6 @@ enforcement inventory is no longer authoritative.
 
 ## References
 
-- [Architecture Overview](../overview.md)
+- [Source Architecture](../source-architecture.md)
 - [Layering Architecture Standard](layering-architecture.md)
 - [Bootstrap Standard](bootstrap.md)

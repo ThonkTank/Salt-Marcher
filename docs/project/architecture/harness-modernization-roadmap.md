@@ -1,19 +1,18 @@
 Status: Deprecated
+Successor: [Verification Harness Replacement Delivery](../delivery/verification-harness-replacement/README.md)
+Source of Truth: Non-operative historical snapshot of the completed
+content-addressed verification conversion and its later-rejected proposals.
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-14
-Source of Truth: Historical record of the completed content-addressed
-verification conversion (T0-T4) and the retained T5 honesty-reviewer
-specification.
 
 # Harness Modernization Roadmap - Content-Addressed Verification
 
-Superseded by the
-[Verification Greenfield Roadmap](verification-greenfield-roadmap.md). T0-T4
-are Done and merged on `main`; T6 is absorbed there as milestone M5, and T5
-lives on as its deliberately unscheduled Deferred Annex, which is why this
-document is retained rather than deleted. No work starts from this roadmap;
-its live state is closed in the
-[Harness Modernization Ledger](harness-modernization-ledger.md).
+The current successor is the temporary
+[Verification Harness Replacement Delivery](../delivery/verification-harness-replacement/README.md).
+This full body remains only as historical context for ADR 0004. Every target,
+milestone, hard rule, and `Done when` below is non-operative. T5 and its
+reviewer are rejected and cannot be activated from this document; the closed
+ledger remains in Git history and is not restored.
 
 Precondition: The architecture migration roadmap (M0-M6) is complete and
 merged. This roadmap assumes the post-migration area structure and MUST NOT

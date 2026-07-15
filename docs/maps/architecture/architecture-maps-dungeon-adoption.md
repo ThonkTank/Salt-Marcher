@@ -13,9 +13,7 @@ This specification records the current compatibility binding of map-canvas
 constraints onto the dungeon feature.
 
 It does not define target feature-runtime conformance. Target ownership for
-feature runtime and view roles remains in
-[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
-and [Architecture Migration Ledger](docs/project/architecture/migration-ledger.md:1).
+feature runtime and view roles remains in [Source Architecture](../../project/architecture/source-architecture.md).
 
 It owns:
 
@@ -97,8 +95,7 @@ backend movement path.
 
 These canvas-specific seams are current compatibility seams, not new canonical
 reusable role families or target feature-runtime precedent. The canonical
-reusable-slotcontent target lives only in the
-[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1).
+reusable-slotcontent target lives only in [Source Architecture](../../project/architecture/source-architecture.md).
 
 ### Map Catalog
 
@@ -133,7 +130,7 @@ sharing the editor backend boundary.
 
 ## References
 
-- [Maps Canvas Architecture](docs/maps/architecture/architecture-maps-canvas.md:1)
-- [Maps Canvas Contract](docs/maps/contract/contract-maps-canvas.md:1)
-- [Dungeon Map Surface Contract](docs/maps/contract/contract-maps-dungeon-surface.md:1)
-- [Dungeon Feature Overview](docs/dungeon/README.md:1)
+- [Maps Canvas Architecture](architecture-maps-canvas.md)
+- [Maps Canvas Contract](../contract/contract-maps-canvas.md)
+- [Dungeon Map Surface Contract](../contract/contract-maps-dungeon-surface.md)
+- [Dungeon Feature Overview](../../dungeon/README.md)

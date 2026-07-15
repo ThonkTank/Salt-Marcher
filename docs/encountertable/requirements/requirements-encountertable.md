@@ -47,6 +47,6 @@ encounter generation.
 
 ## References
 
-- [Encounter Table Domain Model](docs/encountertable/domain/domain-encountertable.md:1)
-- [Encounter Table Persistence](docs/encountertable/contract/contract-encountertable-persistence.md:1)
-- [Encounter Feature Spec](docs/encounter/requirements/requirements-encounter.md:1)
+- [Encounter Table Domain Model](../domain/domain-encountertable.md) (line 1)
+- [Encounter Table Persistence](../contract/contract-encountertable-persistence.md) (line 1)
+- [Encounter Feature Spec](../../encounter/requirements/requirements-encounter.md) (line 1)

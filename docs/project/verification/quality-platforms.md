@@ -2,7 +2,7 @@ Status: Active
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-12
 Source of Truth: Quality-platform operating model, public proof routes, and
-retained outcome-gate policy during the architecture migration.
+retained outcome-gate policy.
 
 # Quality Platforms Standard
 
@@ -12,9 +12,8 @@ SaltMarcher uses structural build gates for automated confidence,
 production-path behavior harnesses for behavior proof, and manual testing only
 for desktop interaction or UI judgment that cannot be mechanically qualified.
 
-This standard owns the public quality-platform operating model. It does not
-restore the retired role-family enforcement doctrine removed by the
-architecture migration.
+This standard owns the public quality-platform operating model. Retired
+role-family form checks are not part of that model.
 
 ## Public Proof Routes
 
@@ -37,7 +36,7 @@ handoff routes unless a retained owner explicitly promotes them.
 
 ## Retained Outcome Gates
 
-The migration keeps outcome checks binding:
+The following outcome checks stay binding:
 
 - Java compilation and included-build integrity
 - package cycles and layer dependency direction
@@ -47,8 +46,8 @@ The migration keeps outcome checks binding:
   compiled-artifact hygiene, packaging-resource checks, and dead-code
   reachability
 
-The migration removes role-family form inventories and role-taxonomy teaching.
-Do not recreate them as quality-platform policy.
+Role-family form inventories and role-taxonomy teaching are not
+quality-platform policy.
 
 ## Behavior Harness Policy
 
@@ -58,8 +57,9 @@ Harness Gap. Harnesses should exercise production routes and inspect
 production state, persisted data, published models, rendered facts, or named
 owner APIs.
 
-Harness scenarios and assertions are frozen during migration passes except for
-separate wiring-port commits owned by the roadmap.
+Harness scenarios and assertions change only in behavior-owning work with the
+corresponding harness proof. Verification wiring changes must preserve the
+scenario's production route and assertion strength.
 
 ## Custom Checker Policy
 
@@ -81,4 +81,3 @@ This governance rule does not add a gate by itself.
 - [Quality Platforms Local Entrypoints](quality-platforms-local-entrypoints.md)
 - [Verification Core Architecture](../architecture/verification-core.md)
 - [Harness Gaps](harness-gaps.md)
-- [Architecture Migration Roadmap](../architecture/architecture-migration-roadmap.md)

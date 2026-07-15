@@ -10,8 +10,8 @@ local invocation policy for SaltMarcher quality platforms.
 
 `tools/gradle/run-staged-verification.sh production-handoff` is the default
 implementation-handoff route for production-code and shared verification
-wiring changes. The wrapper routes to Gradle's `production-handoff` lifecycle
-task after project-health debt intake.
+wiring changes. The wrapper routes directly to Gradle's `production-handoff`
+lifecycle task.
 
 `tools/gradle/run-staged-verification.sh focused-handoff --path
 <repo-package-or-resource-dir> [--area <area>] [--with compile-integrity]` is

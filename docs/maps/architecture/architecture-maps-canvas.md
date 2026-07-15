@@ -3,8 +3,7 @@ Owner: SaltMarcher Team
 Last Reviewed: 2026-04-26
 Source of Truth: Legacy shared map-canvas architecture record. The former
 `MapCanvasView` implementation seam has been removed; current dungeon rendering
-is adopter-local while the view layer migrates to the reusable three-role
-slotcontent model.
+is adopter-local under the reusable three-role slotcontent model.
 
 # Maps Canvas Architecture
 
@@ -27,8 +26,8 @@ It owns:
 It does not own adopter-native payload fields or adopter gameplay behavior.
 
 This document is not the canonical target model for reusable `slotcontent/**`.
-The canonical reusable-slotcontent architecture lives only in the
-[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1).
+The canonical reusable-slotcontent architecture lives only in
+[Source Architecture](../../project/architecture/source-architecture.md).
 The canvas-specific `CanvasPointerEvent` and `MapRenderScene` seams described
 here are current implementation debt relative to that owner.
 
@@ -41,9 +40,9 @@ here are current implementation debt relative to that owner.
 - adopter-native `published/**` surface payload
 - adopter-local render scene such as the dungeon map render state
 
-Current code may still use adopter-local class names ending in `*ViewModel`
-while the repo migrates to the canonical `ContributionModel` / `ContentModel`
-role language. That naming is migration debt, not a second architecture.
+Adopter-local class names ending in `*ViewModel` are compatibility names, not
+a second architecture beside the canonical `ContributionModel` /
+`ContentModel` role language.
 
 ## Boundary Rules
 
@@ -102,9 +101,8 @@ its own.
   phase-specific callback APIs.
 - Active-root Binders own adopter-specific pointer translation wiring and bind
   the adopter boundary to the one canvas-facing map-slot `ContentModel`.
-- Some adopter classes still carry `*ViewModel` names; those classes are
-  legacy compatibility names until the migration roadmap and ledger start the
-  owning area.
+- Some adopter classes still carry `*ViewModel` names; those are compatibility
+  names and new code must follow the owning feature's canonical role language.
 
 ## Forbidden Shortcuts
 
@@ -130,7 +128,7 @@ its own.
 
 ## References
 
-- [Maps Canvas Requirements](docs/maps/requirements/requirements-maps-canvas.md:1)
-- [Maps Canvas Contract](docs/maps/contract/contract-maps-canvas.md:1)
-- [Dungeon Map Adoption Architecture](docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
-- [Hex Map Adoption Architecture](docs/maps/architecture/architecture-maps-hex-adoption.md:1)
+- [Maps Canvas Requirements](../requirements/requirements-maps-canvas.md)
+- [Maps Canvas Contract](../contract/contract-maps-canvas.md)
+- [Dungeon Map Adoption Architecture](architecture-maps-dungeon-adoption.md)
+- [Hex Map Adoption Architecture](architecture-maps-hex-adoption.md)

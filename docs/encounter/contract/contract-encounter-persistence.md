@@ -81,6 +81,6 @@ the creatures application service when a plan is opened.
 
 ## References
 
-- [Encounter Domain Model](docs/encounter/domain/domain-encounter.md:1)
-- [Encounter Feature Spec](docs/encounter/requirements/requirements-encounter.md:1)
-- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
+- [Encounter Domain Model](../domain/domain-encounter.md) (line 1)
+- [Encounter Feature Spec](../requirements/requirements-encounter.md) (line 1)
+- [Data Layer Standard](../../project/architecture/patterns/data-layer.md) (line 1)

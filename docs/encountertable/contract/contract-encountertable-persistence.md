@@ -66,6 +66,6 @@ This document is normative for the `encountertable` feature's persistence path.
 
 ## References
 
-- [Encounter Table Domain Model](docs/encountertable/domain/domain-encountertable.md:1)
-- [Encounter Table Feature Spec](docs/encountertable/requirements/requirements-encountertable.md:1)
-- [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
+- [Encounter Table Domain Model](../domain/domain-encountertable.md) (line 1)
+- [Encounter Table Feature Spec](../requirements/requirements-encountertable.md) (line 1)
+- [Data Layer Standard](../../project/architecture/patterns/data-layer.md) (line 1)

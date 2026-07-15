@@ -47,5 +47,5 @@ footer visibility, and body scroll policy.
 
 ## References
 
-- [Anchored Popup](docs/project/requirements/requirements-anchored-popup.md:1)
-- [Travel State Tab UI](docs/project/requirements/requirements-travel-state-tab.md:1)
+- [Anchored Popup](requirements-anchored-popup.md)
+- [Travel State Tab UI](requirements-travel-state-tab.md)

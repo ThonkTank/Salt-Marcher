@@ -33,5 +33,5 @@ by SessionPlanner.
 
 ## References
 
-- [Encounter Domain Model](docs/encounter/domain/domain-encounter.md:1)
-- [Session Planner Requirements](docs/sessionplanner/requirements/requirements-session-planner.md:1)
+- [Encounter Domain Model](../domain/domain-encounter.md) (line 1)
+- [Session Planner Requirements](../../sessionplanner/requirements/requirements-session-planner.md) (line 1)

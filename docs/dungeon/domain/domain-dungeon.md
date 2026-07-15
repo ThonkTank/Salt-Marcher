@@ -255,12 +255,12 @@ Active root boundaries:
 
 ## References
 
-- [Dungeon Feature Docs](docs/dungeon/README.md:1)
-- [Dungeon Domain Architecture](docs/dungeon/architecture/architecture-dungeon-domain.md:1)
-- [Dungeon Feature Requirements](docs/dungeon/requirements/requirements-dungeon.md:1)
-- [Dungeon Editor Requirements](docs/dungeon/requirements/requirements-dungeon-editor.md:1)
-- [Dungeon Map Adoption Architecture](docs/maps/architecture/architecture-maps-dungeon-adoption.md:1)
-- [Dungeon Map Surface Contract](docs/maps/contract/contract-maps-dungeon-surface.md:1)
-- [Dungeon Persistence Contract](docs/dungeon/contract/contract-dungeon-persistence.md:1)
-- [Dungeon Core Model Invariants](docs/dungeon/verification/verification-dungeon-core-model-invariants.md:1)
-- [Dungeon Editor-Wide Invariants](docs/dungeon/verification/verification-dungeon-editor-wide-invariants.md:1)
+- [Dungeon Feature Docs](../README.md) (line 1)
+- [Dungeon Domain Architecture](../architecture/architecture-dungeon-domain.md) (line 1)
+- [Dungeon Feature Requirements](../requirements/requirements-dungeon.md) (line 1)
+- [Dungeon Editor Requirements](../requirements/requirements-dungeon-editor.md) (line 1)
+- [Dungeon Map Adoption Architecture](../../maps/architecture/architecture-maps-dungeon-adoption.md) (line 1)
+- [Dungeon Map Surface Contract](../../maps/contract/contract-maps-dungeon-surface.md) (line 1)
+- [Dungeon Persistence Contract](../contract/contract-dungeon-persistence.md) (line 1)
+- [Dungeon Core Model Invariants](../verification/verification-dungeon-core-model-invariants.md) (line 1)
+- [Dungeon Editor-Wide Invariants](../verification/verification-dungeon-editor-wide-invariants.md) (line 1)

@@ -41,7 +41,7 @@ maps, or hex maps.
 
 ## References
 
-- [Creatures Feature Overview](docs/creatures/README.md:1)
-- [Encounter Feature Overview](docs/encounter/README.md:1)
-- [Encounter Table Feature Overview](docs/encountertable/README.md:1)
-- [Session Planner Feature Overview](docs/sessionplanner/README.md:1)
+- [Creatures Feature Overview](../creatures/README.md) (line 1)
+- [Encounter Feature Overview](../encounter/README.md) (line 1)
+- [Encounter Table Feature Overview](../encountertable/README.md) (line 1)
+- [Session Planner Feature Overview](../sessionplanner/README.md) (line 1)

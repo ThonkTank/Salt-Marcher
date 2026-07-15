@@ -45,5 +45,5 @@ host and emits technical shown/hidden input events.
 
 ## References
 
-- [Dialog Surface](docs/project/requirements/requirements-dialog-surface.md:1)
-- [Dropdown Helper Slotcontent](docs/project/requirements/requirements-dropdown-popup.md:1)
+- [Dialog Surface](requirements-dialog-surface.md)
+- [Dropdown Helper Slotcontent](requirements-dropdown-popup.md)

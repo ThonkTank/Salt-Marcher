@@ -10,7 +10,7 @@ and feature documentation directories.
 
 This directory is the entry point for project-wide and feature-owned
 SaltMarcher documentation. Documentation intent and findability rules are owned
-by the [Documentation Specification](project/documentation-specification.md).
+by the [Documentation Standard](project/documentation.md).
 
 ## Documentation Layers
 
@@ -27,7 +27,7 @@ by the [Documentation Specification](project/documentation-specification.md).
 ## Project Documentation
 
 - [Project Documentation Index](project/README.md)
-- [Documentation Specification](project/documentation-specification.md)
+- [Documentation Standard](project/documentation.md)
 
 ## Feature Documentation
 

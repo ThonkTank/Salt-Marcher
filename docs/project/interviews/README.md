@@ -1,6 +1,6 @@
 Status: Active
 Owner: Aaron
-Last Reviewed: 2026-07-10
+Last Reviewed: 2026-07-15
 Source of Truth: Index for German owner-interview transcripts used as source
 material for SaltMarcher vision, roadmap, acceptance criteria, and Definition
 of Done documents.
@@ -18,14 +18,15 @@ marked interpretation.
 
 - [Goal Interview 2026-07-10](2026-07-10-goal-interview.md)
 
-## Schedule
+## Current Sequencing
 
-The goal interview is the next owner-facing documentation step after the
-document-size policy M4 proof and judge review. The transcript file above is
-the prepared capture surface; no owner answer is interpreted or copied into
-repo-facing documents before verbatim capture and explicit confirmation.
+Interviews are evidence only and do not schedule delivery. Current
+verification-harness sequencing and its `Next Transition` are owned by the
+[Verification Harness Replacement Delivery](../delivery/verification-harness-replacement/README.md).
+Interview transcripts remain verbatim capture surfaces; no owner answer is
+interpreted or copied into repo-facing documents before explicit confirmation.
 
 ## References
 
-- [Documentation Specification](../documentation-specification.md)
+- [Documentation Standard](../documentation.md)
 - [Project Documentation Index](../README.md)

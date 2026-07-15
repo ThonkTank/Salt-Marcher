@@ -112,4 +112,4 @@ Provide one hex-map workflow that lets a GM:
 - [Hex Travel Requirements](./requirements-hex-travel.md)
 - [Hex Travel State Requirements](./requirements-hex-travel-state.md)
 - [Hex Editor Requirements](./requirements-hex-editor.md)
-- [Maps Canvas Requirements](docs/maps/requirements/requirements-maps-canvas.md:1)
+- [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md) (line 1)
