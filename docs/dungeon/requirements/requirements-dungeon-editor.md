@@ -253,8 +253,7 @@ Anchor and direction behavior:
   recompute path cells and exits from the current spec, and reject the edit
   instead of committing a partial path when any parameter is invalid
 - direct path-handle movement is not a full geometry recompute; it may move the
-  selected path node while preserving existing exits, as covered separately by
-  `DE-STAIR-005`
+  selected path node while preserving existing exits
 
 Validation and rejection:
 

@@ -18,13 +18,9 @@ marked interpretation.
 
 - [Goal Interview 2026-07-10](2026-07-10-goal-interview.md)
 
-## Current Sequencing
-
-Interviews are evidence only and do not schedule delivery. Current
-verification-harness sequencing and its `Next Transition` are owned by the
-[Verification Harness Replacement Delivery](../delivery/verification-harness-replacement/README.md).
-Interview transcripts remain verbatim capture surfaces; no owner answer is
-interpreted or copied into repo-facing documents before explicit confirmation.
+Interview transcripts are evidence only and do not schedule delivery. No owner
+answer is interpreted or copied into repo-facing documents before explicit
+confirmation.
 
 ## References
 

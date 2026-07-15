@@ -16,8 +16,8 @@ schema meaning or making adapter row shape the domain owner.
 
 - Owner: Hex feature.
 - Producer: Hex editor write path.
-- Consumers: Hex editor readback, future Hex runtime map loading, and
-  focused Hex editor verification harnesses.
+- Consumers: Hex editor readback, future Hex runtime map loading, and Hex editor
+  behavior tests.
 
 ## Scope Boundary
 
@@ -104,11 +104,10 @@ relies on it.
 
 ## Verification Notes
 
-Focused Hex editor harness proof MUST verify persisted map, terrain, and marker
+Hex editor tests MUST verify persisted map, terrain, and marker
 rows through a production persistence route.
 
 ## References
 
 - [Hex Domain](../domain/domain-hex-map.md)
 - [Hex Editor Requirements](../requirements/requirements-hex-editor.md)
-- [Hex Editor Verification](../verification/verification-hex-editor.md)

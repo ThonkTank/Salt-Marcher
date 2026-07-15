@@ -109,4 +109,3 @@ making SQLite the source of domain meaning.
 
 - [Hex Editor Requirements](../requirements/requirements-hex-editor.md)
 - [Hex Persistence Contract](../contract/contract-hex-persistence.md)
-- [Hex Editor Verification](../verification/verification-hex-editor.md)

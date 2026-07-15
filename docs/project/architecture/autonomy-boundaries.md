@@ -1,58 +1,32 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-09
-Source of Truth: Autonomous decision boundary for reversible technical work.
+Last Reviewed: 2026-07-15
+Source of Truth: Autonomous technical decisions and owner-only safety boundaries.
 
 # Autonomy Boundaries
 
-## Default
+## Technical Work
 
-The agent decides technical matters autonomously: architecture, module
-boundaries, refactoring, dependency choices, test structure, CI shape,
-documentation structure, build logic, performance work, and cleanup strategy.
-It does not ask the owner about these topics. It records non-trivial decisions
-in an ADR or journal entry, validates the change, and keeps rollback clear.
+Agents decide architecture, refactoring, dependencies, test structure, CI,
+documentation structure, performance work, and cleanup without owner approval.
+Clear requests proceed directly; red checks and review findings are repair
+inputs, not reasons to create another process layer.
 
-The agent may change any unfrozen file under the normal risk class and proof
-route without a key turn. Reversible work should bias toward action instead of
-asking.
+## Owner Boundaries
 
-## Honest Instruments
+Ask the owner only for:
 
-The agent must not silently change the frozen instruments that measure whether
-autonomous delivery still works. Those paths live in
-`tools/quality/config/frozen-surfaces.txt` and require `risk:R3c` plus the
-full required gate set.
+- stable acceptance of owner-visible behavior;
+- consent before changing real local user data;
+- enabling or spending money on a service;
+- creating, moving, rotating, or disclosing secrets;
+- external transmission outside the resource policy.
 
-The frozen set stays limited to measurement, promotion, external-policy, and
-real-local-update surfaces. Ordinary build code, instruction text, refactoring
-rules, and documentation are agent-owned unless they are explicitly listed.
+Reversible technical work uses a feature branch, pull request, and the required
+green `check`. No additional approval taxonomy or role ceremony is required.
 
-## Owner Questions
+## Safety
 
-Ask the owner only for stable acceptance, real user-data consent, cost, or an
-outside-policy external action. Do not ask the owner to decide architecture,
-refactoring, CI repair, red-check repair, harness gaps, migration mechanics, or
-ordinary provisional next/main behavior.
-
-R2 work may land autonomously as a provisional recommendation with a German
-release note and acceptance checklist. R3a work may land autonomously after a
-restore-tested backup and copy dry run. R3b work may land autonomously when it
-fits `docs/project/policies/resource-policy.md`; outside-policy R3b work
-prepares a policy/no-action PR instead of waiting in chat.
-
-`Entscheid du`, `nimm den Default`, or equivalent wording means: apply the
-agent's recommendation with the safest reasonable rollback and move on.
-
-## Safety Model
-
-Reversibility is the safety model. `main` can be reset or reverted to a prior
-commit, and the owner's daily testing of next/stable remains the behavior
-acceptance gate no agent can replace.
-
-Cost and provider availability are owner or policy boundaries when a task would
-spend money, use an external service, or move data outside policy. Red checks,
-P0/P1 findings, dirty checkouts, updater windows, missing harnesses, and failed
-reviews stay technical repair inputs inside the normal branch and pull-request
-workflow; they do not authorize bypassing required proof, review, or merge
-protections.
+Never modify real local data without a restore-tested backup, transmit it,
+enable a paid service, expose a secret, or bypass branch protection. Owner
+acceptance cannot be replaced by automated review.

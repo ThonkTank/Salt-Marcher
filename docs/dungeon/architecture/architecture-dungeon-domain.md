@@ -112,18 +112,8 @@ corridors, stairs, transitions, topology, or derived rebuild policy.
 
 ## Verification And Review
 
-Architecture compliance is review-owned unless a retained project-wide outcome
-gate explicitly names the rule. Documentation-only changes to this document use:
-
-```bash
-./gradlew checkDocumentationEnforcement --console=plain
-```
-
-Model-family behavior is traced in
-[Dungeon Core Model Invariants](../verification/verification-dungeon-core-model-invariants.md).
-Editor behavior is traced through
-[Dungeon Editor-Wide Invariants](../verification/verification-dungeon-editor-wide-invariants.md)
-and the tool-specific editor catalogs.
+ArchUnit checks retained package dependency rules. JUnit tests prove model and
+editor behavior. Documentation-only changes use `git diff --check`.
 
 ## References
 

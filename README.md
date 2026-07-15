@@ -11,10 +11,10 @@ Run the app from the repository root:
 ./gradlew run --console=plain
 ```
 
-Install the desktop app after a green production handoff:
+Install the desktop app after a green check:
 
 ```bash
-tools/gradle/run-staged-verification.sh desktop-install
+./gradlew installDesktopApp --console=plain
 ```
 
 ## Local Data
@@ -41,7 +41,7 @@ surface.
 - `src/data/`: local persistence gateways, mappers, schemas, and SQLite support
 - `src/view/`: legacy JavaFX view contributions and controls
 - `docs/`: canonical project and feature documentation
-- `tools/`: Gradle wrappers, quality gates, local tools, and agent scripts
+- `tools/`: Gradle build logic, quality configuration, and local tools
 
 Start with `AGENTS.md` for agent workflow rules and
 `docs/project/README.md` for the canonical documentation map.

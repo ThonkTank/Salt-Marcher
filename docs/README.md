@@ -21,8 +21,7 @@ by the [Documentation Standard](project/documentation.md).
 - L2 Backlog: GitHub Issues record ideas, bugs, UX problems, and questions.
 - L3 Behavior: feature requirements under `docs/<feature>/requirements/`
   record target behavior.
-- L4 Proof: feature verification docs under `docs/<feature>/verification/`
-  plus harnesses record proof routes.
+- L4 Proof: executable JUnit tests record current behavior evidence.
 
 ## Project Documentation
 

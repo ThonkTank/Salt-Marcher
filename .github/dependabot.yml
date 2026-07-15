@@ -7,7 +7,6 @@ updates:
     labels:
       - "dependencies"
       - "continuous-refactoring"
-      - "risk:R1"
     groups:
       gradle-minor-patch:
         patterns:
@@ -23,25 +22,8 @@ updates:
     labels:
       - "dependencies"
       - "continuous-refactoring"
-      - "risk:R3c"
     groups:
       actions-minor-patch:
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-          - "patch"
-
-  - package-ecosystem: "pip"
-    directory: "/tools/quality/config/lizard"
-    schedule:
-      interval: "weekly"
-    labels:
-      - "dependencies"
-      - "continuous-refactoring"
-      - "risk:R1"
-    groups:
-      lizard-minor-patch:
         patterns:
           - "*"
         update-types:

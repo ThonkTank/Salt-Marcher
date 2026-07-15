@@ -24,7 +24,7 @@ and maintainability outcomes, not by role-family suffixes or form doctrine.
 5. **Logic lives where its data lives.** Behavior belongs with the state and
    invariants it changes; it is not squeezed into view or feature god files.
 6. **Structure is judged by outcomes.** Cycle-free packages, dependency
-   direction, green behavior harnesses, implemented approved designs, and
+   direction, green behavior tests, implemented approved designs, and
    production handoff decide structure.
 
 ## Repository Shape
@@ -71,7 +71,7 @@ owns source mechanics and translation to public boundaries.
 Public seams consumed by multiple areas stay byte-compatible until every
 consumer is migrated or an owner document explicitly changes the seam with
 proof. Behavior truth remains in requirements, contracts, domain docs,
-verification docs, behavior harnesses, and the running application.
+owner requirements, behavior tests, and the running application.
 
 ## References
 

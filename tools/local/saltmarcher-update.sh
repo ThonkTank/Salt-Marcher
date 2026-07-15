@@ -72,7 +72,7 @@ find "$BACKUP_DIR" -name 'data-*.tar.gz' -type f | sort | head -n -5 | xargs -r 
 
 previous_tag="$installed_tag"
 git checkout "$newest_tag"
-if ! tools/gradle/run-staged-verification.sh desktop-install; then
+if ! ./gradlew check installDesktopApp --console=plain; then
     [[ -n "$previous_tag" ]] && git checkout "$previous_tag" || true
     python3 - "$STATUS_FILE" "$newest_tag" "$backup" <<'PY'
 import json, sys, time
@@ -90,7 +90,7 @@ fi
 
 tmp_xdg="$(mktemp -d)"
 tar -xzf "$backup" -C "$tmp_xdg"
-XDG_DATA_HOME="$tmp_xdg" tools/gradle/run-observable-gradle.sh smokeStartupHarness
+XDG_DATA_HOME="$tmp_xdg" tools/gradle/run-observable-gradle.sh test --tests bootstrap.SmokeStartupTest
 python3 - "$STATUS_FILE" "$newest_tag" "$backup" <<'PY'
 import json, sys, time
 path, tag, backup = sys.argv[1:4]

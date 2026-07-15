@@ -31,11 +31,6 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
 - [Hex Persistence Contract](./contract/contract-hex-persistence.md)
 
-### Verification
-
-- [Hex Editor Verification](./verification/verification-hex-editor.md)
-- [Hex Travel Verification](./verification/verification-hex-travel.md)
-
 ### Related Maps Docs
 
 - [Maps Feature Overview](../maps/README.md) (line 1)

@@ -94,7 +94,7 @@ contract.
 
 ## Verification Notes
 
-The current backend behavior harness proves:
+The current backend behavior tests prove:
 
 - NPC, faction, and location persistence round trips
 - finite and unlimited faction inventory semantics
