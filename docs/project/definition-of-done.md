@@ -29,6 +29,6 @@ A change is Done when:
 
 ## References
 
-- [Documentation Specification](documentation-specification.md)
+- [Documentation Standard](documentation.md)
 - [Project Roadmap](roadmap.md)
 - [Goal Interview 2026-07-10](interviews/2026-07-10-goal-interview.md)

@@ -61,6 +61,16 @@ judge now prefers the Anthropic Messages API when `ANTHROPIC_API_KEY` is
 present because that path sets `temperature: 0`; OAuth CLI remains accepted
 when the subscription route is the available judge credential.
 
+The OAuth route must run through the Claude Code CLI, which is why
+`judge_review.py` depends on that binary being installed in CI. Local Claude
+Code authentication is OAuth-based, not API-key-based, and the OAuth refresh
+endpoint rotates refresh tokens, so CI uses a long-lived `claude setup-token`
+token rather than the short-lived session access token. That long-lived token
+is **not** accepted as a direct `/v1/messages` bearer token -- dropping the CLI
+dependency in favour of a plain HTTP call against the OAuth credential does not
+work. `ANTHROPIC_AUTH_TOKEN` is only a temporary secret alias mapped into
+`CLAUDE_CODE_OAUTH_TOKEN` until the canonical secret name is available.
+
 ## Validation
 
 Local validation must include Python compilation, warden self-test, `check`,

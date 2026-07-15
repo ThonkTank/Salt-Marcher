@@ -7,3 +7,5 @@ tools/**/build/
 docs/references/
 tools/html/
 .local/dnd-source/
+__pycache__/
+*.pyc

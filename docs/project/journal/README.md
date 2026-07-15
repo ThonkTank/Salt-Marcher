@@ -1,26 +1,29 @@
 Status: Active
-Owner: SaltMarcher Team
-Last Reviewed: 2026-07-04
-Source of Truth: Entry point for SaltMarcher committed work journal files.
+Source of Truth: Entry point and format for the project journal.
 
 # Project Journal
 
-Journal files record L-tier design notes, incidents, repeated fixes, debt
-closures, and harness gaps. Format and trigger rules live in
-`docs/project/architecture/work-logs.md`.
+One file per month, `YYYY-MM.md`, append-only. The journal records L-tier
+design notes and incidents, and nothing else. It is never a source of truth: a
+decision that outlives its month belongs in an ADR under
+`docs/project/decisions/`, and structural debt belongs in the
+[project-health register](../architecture/project-health-debt.md).
 
-## Journal Files
+Do not journal routine progress, proof transcripts, or status updates. Git
+history already records what happened when, more reliably and at no reading
+cost.
 
-- [July 2026 Journal](2026-07.md)
-- [Architecture Migration Journal](2026-07-architecture-migration.md)
-- [ADR 0003 Live Proof Journal](2026-07-adr-0003-live-proof.md)
-- [Branch Protection Readbacks](2026-07-branch-protection-readbacks.md)
-- [Continuous Autonomous Operation](2026-07-continuous-autonomous-operation.md)
-- [Dependabot Maintenance](2026-07-dependabot-maintenance.md)
-- [Harness Gaps](2026-07-harness-gaps.md)
-- [Harness Modernization R2 Issues](2026-07-harness-modernization-r2-issues.md)
-- [Maintenance](2026-07-maintenance.md)
-- [Migration R2 Issues](2026-07-migration-r2-issues.md)
-- [Nightshift Metrics](2026-07-nightshift-metrics.md)
-- [R3c Feature Runtime Fitness](2026-07-r3c-feature-runtime-fitness.md)
-- [Target Operating Model Owner Actions](2026-07-target-operating-model-owner-actions.md)
+## Entry Format
+
+```text
+## YYYY-MM-DD <slug> - <one-line title>
+
+Problem: <what forced a decision>
+Target: <what was chosen>
+Alternatives rejected: <what was not chosen, and why>
+Scope: <what this does and does not cover>
+Done when: <the fact that closes it>
+```
+
+An incident entry replaces Target and Alternatives with what happened, what
+caused it, and what now prevents a repeat.

@@ -76,4 +76,3 @@ into creature or loot persistence directly.
 - [Encounter Table Persistence](docs/encountertable/contract/contract-encountertable-persistence.md:1)
 - [Encounter Table Feature Spec](docs/encountertable/requirements/requirements-encountertable.md:1)
 - [Encounter Feature Spec](docs/encounter/requirements/requirements-encounter.md:1)
-- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)

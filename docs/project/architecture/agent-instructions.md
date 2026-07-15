@@ -18,10 +18,9 @@ decision. Run the matching verification command. No judge review is required.
 
 **M - Medium**
 
-Use M for normal implementation work that is not S or L. Record a 5-15 line
-plan in the implementation log or PR: goal, write set, proof command, and
-risks. Then implement, run worker-local proof, get final proof on the final
-checkout, get one judge review, and merge only after green CI.
+Use M for normal implementation work that is not S or L. State a 5-15 line plan
+in the PR: goal, write set, proof command, and risks. Then implement, run
+proof, get one judge review, and merge only after green CI.
 
 **L - Large**
 
@@ -34,19 +33,19 @@ the design note.
 
 ## Roles
 
-- **Implementer** writes the change, implementation log, and worker-local proof.
+- **Implementer** writes the change and its proof.
 - **Verification Runner** runs assigned proof commands on the final checkout
   and records literal results. The implementer must not substitute this role
   when final independent proof was requested.
 - **Judge** reviews the final diff with a different model or reviewer instance
-  than the implementer and writes the verdict in the review log or PR review.
+  than the implementer and writes the verdict in the PR review.
 
 One person or agent may hold only the Implementer role for a pass. The Judge
 must be independent from the implementation.
 
 ## Judge Review
 
-Always apply `lens-code-quality`; for documentation splits, also apply the [Document Split Protocol](doc-split-protocol.md) judge checklist. Add `lens-security` when the diff touches IO,
+Always apply `lens-code-quality`. Add `lens-security` when the diff touches IO,
 persistence, parsing, external input, or shell/exec. Add `lens-performance`
 when it touches hot collection loops, caching, rendering, startup, or memory
 pressure. Add `lens-architecture` when it touches layer boundaries, owner
@@ -73,7 +72,7 @@ current owners before new tracked edits.
 
 ## Blockers
 
-A blocked pass stays WIP with the blocker named in the log. Direct review fixes
+A blocked pass stays WIP with the blocker named in the PR. Direct review fixes
 are allowed only for S-tier findings. Everything else goes back to the
 implementer with the judge's findings; no separate planner or repair-plan
 review chain is required.
@@ -89,13 +88,11 @@ unless the user explicitly asks.
 
 Edits to `AGENTS.md`, any `SKILL.md`, `agents/openai.yaml`, or this document
 are tier L and use `agent-instruction-engineering`. Such changes must not raise
-total instruction volume: state in the log or PR which instruction lines were
-removed to pay for lines added, or show that the net line count is unchanged or
-lower.
+total instruction volume: state in the PR which instruction lines were removed
+to pay for lines added, or show that the net line count is unchanged or lower.
 
 ## References
 
 - [Agent Guide](../../../AGENTS.md)
-- [Documentation Standard](documentation.md)
-- [Work Logs](work-logs.md)
+- [Documentation Standard](../documentation.md)
 - [Quality Platforms](../verification/quality-platforms.md)

@@ -156,4 +156,4 @@ Scope decision: <local / broader same owner / separate slice>
 
 - [Callchain README](../../../callchain/README.md)
 - [Repo Tools Skill](../repo-tools/SKILL.md)
-- [Agent Context Standard](../../../../docs/project/architecture/agent-context.md)
+- [Agent Guide](../../../../AGENTS.md)

@@ -118,6 +118,4 @@ verification route for production-code changes.
 - [World Planner Requirements](docs/worldplanner/requirements/requirements-world-planner.md:1)
 - [World Planner Domain Model](docs/worldplanner/domain/domain-world-planner.md:1)
 - [World Planner Persistence Contract](docs/worldplanner/contract/contract-world-planner-persistence.md:1)
-- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
 - [Data Layer Standard](docs/project/architecture/patterns/data-layer.md:1)
-- [Architecture Migration Ledger](docs/project/architecture/migration-ledger.md:1)

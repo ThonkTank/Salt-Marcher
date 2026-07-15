@@ -24,8 +24,7 @@ It does not own adopter-native requests, adopter-native payloads, or adopter
 domain truth.
 
 This is not the canonical target reusable-slotcontent contract. The canonical
-reusable-slotcontent target lives only in the
-[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1).
+reusable-slotcontent target lives only in [Source Architecture](../../project/architecture/source-architecture.md).
 The `MapRenderScene` and `CanvasPointerEvent` seams below describe removed
 implementation boundary debt relative to that owner.
 

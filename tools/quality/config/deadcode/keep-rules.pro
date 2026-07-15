@@ -6,7 +6,7 @@
 # intentionally dynamic and cannot be expressed through the structural scanners.
 
 # M2 Hex migration: keep the published model compatibility constructors named
-# by docs/project/architecture/architecture-migration-hex-target-design.md.
+# by the completed hex architecture migration.
 -keepclassmembers class src.domain.hex.published.HexEditorModel {
     public <init>(java.util.function.Supplier,java.util.function.Function);
 }
@@ -15,7 +15,7 @@
 }
 
 # M3 Party migration: keep byte-compatible published helper accessors named by
-# docs/project/architecture/architecture-migration-party-target-design.md while
+# the completed party architecture migration while
 # adjacent consumers migrate independently.
 -keepclassmembers class src.domain.party.published.CreateCharacterCommand {
     public java.lang.String membershipName();

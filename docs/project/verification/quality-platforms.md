@@ -81,4 +81,3 @@ This governance rule does not add a gate by itself.
 - [Quality Platforms Local Entrypoints](quality-platforms-local-entrypoints.md)
 - [Verification Core Architecture](../architecture/verification-core.md)
 - [Harness Gaps](harness-gaps.md)
-- [Architecture Migration Roadmap](../architecture/architecture-migration-roadmap.md)

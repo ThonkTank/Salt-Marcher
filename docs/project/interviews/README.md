@@ -27,5 +27,5 @@ repo-facing documents before verbatim capture and explicit confirmation.
 
 ## References
 
-- [Documentation Specification](../documentation-specification.md)
+- [Documentation Standard](../documentation.md)
 - [Project Documentation Index](../README.md)

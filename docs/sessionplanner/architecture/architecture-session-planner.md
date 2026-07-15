@@ -131,7 +131,6 @@ Target state:
 
 ## References
 
-- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
 - [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
 - [Session Planner Persistence Contract](docs/sessionplanner/contract/contract-session-planner-persistence.md:1)
 - [Session Planner Requirements](docs/sessionplanner/requirements/requirements-session-planner.md:1)

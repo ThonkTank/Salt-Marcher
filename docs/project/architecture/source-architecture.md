@@ -27,6 +27,20 @@ and maintainability outcomes, not by role-family suffixes or form doctrine.
    direction, green behavior harnesses, implemented approved designs, and
    production handoff decide structure.
 
+## Repository Shape
+
+```text
+bootstrap/    application startup and generic discovery
+shell/        passive cockpit host and shell contracts
+src/features/ feature-owned runtime code
+src/view/     cockpit contributions
+src/domain/   application core by context
+src/data/     outbound adapters
+resources/    static resources and centralized stylesheets
+docs/         project and feature documentation
+tools/        build infrastructure, quality platforms, and scripts
+```
+
 ## Code Pointers
 
 - Startup stays generic in `bootstrap/AppBootstrap.java` and
@@ -61,9 +75,14 @@ verification docs, behavior harnesses, and the running application.
 
 ## References
 
-- [Architecture Overview](overview.md)
-- [Layering Architecture Standard](patterns/layering-architecture.md)
-- [Bootstrap Standard](patterns/bootstrap.md)
-- [Shell Layer Standard](patterns/shell-layer.md)
-- [Data Layer Standard](patterns/data-layer.md)
-- [Migration Ledger](migration-ledger.md)
+- [Layering Architecture Standard](patterns/layering-architecture.md) owns the
+  package-level dependency direction statement.
+- [Bootstrap Standard](patterns/bootstrap.md) and
+  [Shell Layer Standard](patterns/shell-layer.md) own startup and shell hosting.
+- [Data Layer Standard](patterns/data-layer.md) owns the adapter-zone decision
+  for `src/data/**`.
+- [Styling Standard](patterns/styling.md) owns centralized styling rules.
+- [Verification Core Architecture](verification-core.md) owns public
+  verification surfaces and the outcome-check wiring.
+- [Documentation Standard](../documentation.md)
+- [Agent Instruction Standard](agent-instructions.md)

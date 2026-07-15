@@ -53,4 +53,3 @@ Current state:
 ## References
 
 - [Anchored Popup](docs/project/requirements/requirements-anchored-popup.md:1)
-- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)

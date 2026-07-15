@@ -74,7 +74,6 @@ def is_agent_instruction(surface: str) -> bool:
         or surface == "agents/openai.yaml"
         or surface.endswith("/agents/openai.yaml")
         or surface == "docs/project/architecture/agent-instructions.md"
-        or surface == "docs/project/architecture/agent-context.md"
     )
 
 
@@ -193,7 +192,6 @@ def owner_candidates(surface: str) -> tuple[str, ...]:
     paths = [
         "workspace AGENTS.md",
         "AGENTS.md",
-        "docs/project/architecture/agent-context.md",
         "tools/quality/skills/code-exploration/SKILL.md",
         "tools/quality/skills/repo-tools/SKILL.md",
     ]
@@ -205,16 +203,8 @@ def owner_candidates(surface: str) -> tuple[str, ...]:
         sibling_skill = governing_skill_for_agent_metadata(surface)
         if sibling_skill is not None:
             paths.append(sibling_skill)
-    if under(surface, "src/domain"):
-        paths.extend([
-            "docs/project/architecture/architecture-migration-roadmap.md",
-            "docs/project/architecture/migration-ledger.md",
-        ])
-    if under(surface, "src/view"):
-        paths.extend([
-            "docs/project/architecture/architecture-migration-roadmap.md",
-            "docs/project/architecture/migration-ledger.md",
-        ])
+    if under(surface, "src/domain") or under(surface, "src/view"):
+        paths.append("docs/project/architecture/source-architecture.md")
     if is_quality_tooling_surface(surface):
         paths.extend([
             "docs/project/verification/quality-platforms.md",
@@ -225,7 +215,7 @@ def owner_candidates(surface: str) -> tuple[str, ...]:
     if exploration_owner is not None:
         paths.append(exploration_owner)
     if is_markdown(surface):
-        paths.append("docs/project/architecture/documentation.md")
+        paths.append("docs/project/documentation.md")
     return existing(paths)
 
 

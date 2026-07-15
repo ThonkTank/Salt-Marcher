@@ -36,7 +36,5 @@ longer names role-local gate documents.
 
 ## References
 
-- [Architecture Migration Roadmap](../architecture-migration-roadmap.md)
-- [Migration Ledger](../migration-ledger.md)
 - [Layering Architecture Standard](layering-architecture.md)
 - [Quality Platforms Standard](../../verification/quality-platforms.md)

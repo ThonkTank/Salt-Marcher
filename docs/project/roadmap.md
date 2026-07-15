@@ -37,6 +37,6 @@ linked to GitHub issues.
 
 ## References
 
-- [Documentation Specification](documentation-specification.md)
+- [Documentation Standard](documentation.md)
 - [Project Vision](vision.md)
 - [Goal Interview 2026-07-10](interviews/2026-07-10-goal-interview.md)

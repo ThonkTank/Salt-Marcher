@@ -85,9 +85,8 @@ Before planning, implementing, refactoring, or reviewing covered work:
    review input before another local fix loop.
 12. Before handoff, rerun the scan for the touched scopes and report literal
     marker/register sync status.
-13. Record project-health findings in Implementation Reading Packets and pass
-    logs through `docs/project/architecture/implementation-documentation.md`
-    without duplicating that standard's packet or log field lists here.
+13. Record project-health findings in the marker and register, not only in the
+    PR or reviewer output.
 
 ## Owner-Area Review
 
@@ -124,5 +123,4 @@ Report project-health disposition for covered work:
 - [Project Health Standard](../../../../docs/project/architecture/project-health.md)
 - [Project Health Debt Register](../../../../docs/project/architecture/project-health-debt.md)
 - [Agent Instruction Standard](../../../../docs/project/architecture/agent-instructions.md)
-- [Implementation Documentation Standard](../../../../docs/project/architecture/implementation-documentation.md)
 - [Project Health Scan](../../reporting/project_health_scan.py)

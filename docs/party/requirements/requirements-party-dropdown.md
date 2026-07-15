@@ -89,4 +89,3 @@ summary, and mutation controls call the party application service.
 - [Adventuring Day Top-Bar UI](docs/party/requirements/requirements-adventuring-day-dropdown.md:1)
 - [Party Domain Model](docs/party/domain/domain-party.md:1)
 - [Party Persistence](docs/party/contract/contract-party-persistence.md:1)
-- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)

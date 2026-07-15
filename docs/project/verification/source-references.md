@@ -161,7 +161,7 @@ reference mirrors.
 
 ## References
 
-- [Documentation Standard](docs/project/architecture/documentation.md:1)
+- [Documentation Standard](docs/project/documentation.md:1)
 - [Layering Architecture Standard](docs/project/architecture/patterns/layering-architecture.md:1)
 - [Agent Instruction Standard](docs/project/architecture/agent-instructions.md:1)
 - [Source References Skill](tools/quality/skills/source-references/SKILL.md:1)

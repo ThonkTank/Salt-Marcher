@@ -77,5 +77,3 @@ required.
 
 - [Quality Platforms Standard](../verification/quality-platforms.md)
 - [Quality Platforms Local Entrypoints](../verification/quality-platforms-local-entrypoints.md)
-- [Architecture Migration Roadmap](architecture-migration-roadmap.md)
-- [Migration Ledger](migration-ledger.md)

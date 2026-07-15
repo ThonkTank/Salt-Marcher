@@ -55,4 +55,3 @@ Binders do not duplicate detail-entry assembly.
 
 - [Catalog Tab UI](docs/creatures/requirements/requirements-creatures-catalog.md:1)
 - [Creatures Domain Model](docs/creatures/domain/domain-creatures.md:1)
-- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)

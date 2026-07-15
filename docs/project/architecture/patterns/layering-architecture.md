@@ -51,8 +51,6 @@ published seams byte-compatible until every consuming side is migrated.
 
 ## References
 
-- [Architecture Migration Roadmap](../architecture-migration-roadmap.md)
-- [Migration Ledger](../migration-ledger.md)
 - [Architecture Overview](../overview.md)
 - [Data Layer Standard](data-layer.md)
 - [Shell Layer Standard](shell-layer.md)

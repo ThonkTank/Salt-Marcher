@@ -27,8 +27,8 @@ It owns:
 It does not own adopter-native payload fields or adopter gameplay behavior.
 
 This document is not the canonical target model for reusable `slotcontent/**`.
-The canonical reusable-slotcontent architecture lives only in the
-[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1).
+The canonical reusable-slotcontent architecture lives only in
+[Source Architecture](../../project/architecture/source-architecture.md).
 The canvas-specific `CanvasPointerEvent` and `MapRenderScene` seams described
 here are current implementation debt relative to that owner.
 

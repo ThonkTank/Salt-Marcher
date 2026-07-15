@@ -10,7 +10,7 @@ and dependency direction below `src/domain/dungeon/**`.
 
 This document owns the feature-specific architecture of the Dungeon domain.
 It explains how Dungeon domain code is structured inside the project-wide
-[Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1).
+[Source Architecture](../../project/architecture/source-architecture.md).
 
 It does not own Dungeon business truth, editor behavior, persistence shape, or
 proof rows. Those live in the neighboring domain, requirements, contract, and
@@ -133,5 +133,3 @@ and the tool-specific editor catalogs.
 - [Dungeon Persistence Contract](../contract/contract-dungeon-persistence.md)
 - [Dungeon Core Model Invariants](../verification/verification-dungeon-core-model-invariants.md)
 - [Dungeon Editor-Wide Invariants](../verification/verification-dungeon-editor-wide-invariants.md)
-- [Architecture Migration Roadmap](docs/project/architecture/architecture-migration-roadmap.md:1)
-- [Architecture Migration Ledger](docs/project/architecture/migration-ledger.md:1)
