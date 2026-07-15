@@ -30,9 +30,7 @@ long-lived feature state.
 
 ## Verification
 
-Bootstrap behavior and structure are covered through the retained public
-verification surfaces in `production-handoff` and the layer-dependency outcome
-test. The retired form-enforcement inventory is no longer a source of truth.
+Bootstrap behavior and dependency direction are covered by `check`.
 
 ## References
 

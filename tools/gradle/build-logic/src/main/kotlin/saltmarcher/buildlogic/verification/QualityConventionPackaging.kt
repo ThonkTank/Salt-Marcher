@@ -6,7 +6,6 @@ import org.gradle.api.tasks.Sync
 import org.gradle.jvm.tasks.Jar
 import org.gradle.kotlin.dsl.named
 import org.gradle.kotlin.dsl.register
-import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.language.jvm.tasks.ProcessResources
 import saltmarcher.buildlogic.tasks.CheckDesktopAppImageLayoutTask
 import saltmarcher.buildlogic.tasks.CheckDesktopPackagingInputsTask
@@ -55,7 +54,7 @@ internal fun Project.registerQualityConventionPackagingTasks(environment: Qualit
     }
 
     tasks.register<CheckDesktopPackagingInputsTask>("checkDesktopPackagingInputs") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        group = "distribution"
         description = "Validate main class, icon, stylesheet, and launcher metadata required for desktop packaging."
         mainClassSourceFile.set(layout.projectDirectory.file(packaging.mainClassNameProvider.map { "${it.replace('.', '/')}.java" }))
         preloaderClassSourceFile.set(layout.projectDirectory.file(packaging.preloaderClassNameProvider.map { "${it.replace('.', '/')}.java" }))
@@ -126,7 +125,7 @@ internal fun Project.registerQualityConventionPackagingTasks(environment: Qualit
     }
 
     val checkDesktopAppImageLayout = tasks.register<CheckDesktopAppImageLayoutTask>("checkDesktopAppImageLayout") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
+        group = "distribution"
         description = "Validate the packaged desktop app image keeps JavaFX on a dedicated module path."
         dependsOn(packageAppImage, packageAppImageFallback)
         appImageDirectory.set(packagedAppImageDir)

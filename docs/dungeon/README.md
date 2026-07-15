@@ -24,8 +24,8 @@ Generic map-canvas behavior and dungeon map-surface adoption now live in
    direction.
 3. Read [Dungeon Domain Model](./domain/domain-dungeon.md) for domain truth,
    write-model ownership, published language, and invariants.
-4. Read the relevant requirements document for user-visible behavior, then the
-   matching verification catalog for proof rows.
+4. Read the relevant requirements document for user-visible behavior. Executable
+   evidence lives in the matching JUnit tests.
 
 ### Architecture
 
@@ -45,46 +45,6 @@ Generic map-canvas behavior and dungeon map-surface adoption now live in
 ### Domain
 
 - [Dungeon Domain Model](./domain/domain-dungeon.md)
-
-### Verification
-
-Shared proof routing:
-
-- [Dungeon Core Model Invariants](./verification/verification-dungeon-core-model-invariants.md)
-- [Dungeon Editor-Wide Invariants](./verification/verification-dungeon-editor-wide-invariants.md)
-- [Dungeon Editor Fixture Catalog](./verification/verification-dungeon-editor-fixtures.md)
-
-Model family invariant catalogs:
-
-- [Dungeon Cluster Invariants](./verification/verification-dungeon-cluster-invariants.md)
-- [Dungeon Corridor Invariants](./verification/verification-dungeon-corridor-invariants.md)
-- [Dungeon Door Invariants](./verification/verification-dungeon-door-invariants.md)
-- [Dungeon Floor Invariants](./verification/verification-dungeon-floor-invariants.md)
-- [Dungeon Path Invariants](./verification/verification-dungeon-path-invariants.md)
-- [Dungeon Room Invariants](./verification/verification-dungeon-room-invariants.md)
-- [Dungeon Stair Invariants](./verification/verification-dungeon-stair-invariants.md)
-- [Dungeon Transition Invariants](./verification/verification-dungeon-transition-invariants.md)
-- [Dungeon Wall Invariants](./verification/verification-dungeon-wall-invariants.md)
-
-Editor tool matrices:
-
-- [Dungeon Editor Map, Projection, And Controls Matrix](./verification/verification-dungeon-editor-map-controls.md)
-- [Dungeon Editor Selection Matrix](./verification/verification-dungeon-editor-selection.md)
-- [Dungeon Editor Room Matrix](./verification/verification-dungeon-editor-rooms.md)
-- [Dungeon Editor Cluster Matrix](./verification/verification-dungeon-editor-clusters.md)
-- [Dungeon Editor Wall Matrix](./verification/verification-dungeon-editor-walls.md)
-- [Dungeon Editor Door Matrix](./verification/verification-dungeon-editor-doors.md)
-- [Dungeon Editor Corridor Matrix](./verification/verification-dungeon-editor-corridors.md)
-- [Dungeon Editor Stair Matrix](./verification/verification-dungeon-editor-stairs.md)
-- [Dungeon Editor Transition Matrix](./verification/verification-dungeon-editor-transitions.md)
-- [Dungeon Editor Handle Matrix](./verification/verification-dungeon-editor-handles.md)
-- [Dungeon Editor Label Matrix](./verification/verification-dungeon-editor-labels.md)
-- [Dungeon Editor Feature Matrix](./verification/verification-dungeon-editor-features.md)
-- [Dungeon Render Snapshot Parity Matrix](./verification/verification-dungeon-render-snapshot-parity.md)
-
-Travel matrices:
-
-- [Dungeon Travel Map And Projection Controls Matrix](./verification/verification-dungeon-travel-map-controls.md)
 
 ### Delivery
 

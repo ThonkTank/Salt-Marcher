@@ -50,13 +50,14 @@ final class DungeonEditorBinder {
         DungeonEditorFeatureShellBinding.PublicationSink frameSink = viewModel::applyFrame;
         featureShell.subscribe(frameSink);
         featureShell.publishCurrent(frameSink);
-        return new Binding(ShellControls.stack(mapCatalog, controls), main, state);
+        return new Binding(ShellControls.stack(mapCatalog, controls), main, state, mapContentModel);
     }
 
-    private record Binding(
+    record Binding(
             Node controls,
             Node main,
-            Node state
+            Node state,
+            DungeonMapContentModel mapContentModel
     ) implements ShellBinding {
 
         @Override

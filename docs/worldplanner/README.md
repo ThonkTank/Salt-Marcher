@@ -35,10 +35,6 @@ maps, or hex maps.
 
 - [World Planner Domain Model](./domain/domain-world-planner.md)
 
-### Verification
-
-- [World Planner Verification](./verification/verification-world-planner.md)
-
 ## References
 
 - [Creatures Feature Overview](../creatures/README.md) (line 1)

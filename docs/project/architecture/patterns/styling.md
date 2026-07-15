@@ -27,8 +27,7 @@ own inline presentation system.
 
 ## Verification
 
-The retained public proof route is `production-handoff`; individual styling
-tasks remain implementation diagnostics when present in the Gradle graph.
+The required proof route is `check`.
 
 ## References
 

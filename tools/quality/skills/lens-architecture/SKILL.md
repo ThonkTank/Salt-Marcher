@@ -35,12 +35,12 @@ Choose the mode from the assignment and evidence before judging findings:
   blockers when they overlap the objective; do not downgrade them to baseline
   debt merely because the code still passes existing checks.
 - **Architecture Question Review**: evaluate whether the existing architecture,
-  documented standard, check, harness, or invariant is the right constraint for
+  documented standard, check, test, or invariant is the right constraint for
   the problem. Use this when the user asks a fundamental architecture question,
   when optimization review assigns this lens, or when repeated implementation
-  churn is driven mainly by harness blockers, quality gates, or rule compliance.
+  churn is driven mainly by test blockers, quality gates, or rule compliance.
   Also use it when the reviewed surface contains adapter-on-adapter stacks,
-  ownership subversion, self-confirming harness behavior, temporary
+  ownership subversion, self-confirming test behavior, temporary
   compatibility seams, or explicit deletion instructions.
 
 In Architecture Question Review, do not stop at "the current solution fits or
@@ -271,7 +271,7 @@ Skip this section entirely for single-process, synchronous codebases where none 
 - Is a new technology or communication pattern being introduced?
 - Could this decision be hard to reverse later (one-way door)?
 - Does this decision lack automated enforcement (no fitness function, no linting rule, no CI gate)? If so, should one be added?
-- If automated enforcement or a harness shaped the implementation, is that check protecting the right invariant at the right abstraction level?
+- If automated enforcement or a test shaped the implementation, is that check protecting the right invariant at the right abstraction level?
 - Did repeated blocker-driven rewrites reveal that the architecture boundary or check is too broad, too narrow, stale, or misplaced?
 - Does the change preserve a marked temporary adapter or legacy seam as
   baseline? If yes, is there a documented owner, removal condition, and proof
@@ -315,7 +315,7 @@ Tag each finding with category and severity:
 - `[coupling]` -- Creates a hidden or unnecessary dependency
 - `[data]` -- Data architecture concern (ownership, schema, consistency model)
 - `[risk]` -- Introduces an architectural risk or undocumented one-way-door decision
-- `[governance]` -- A documented rule, check, harness, or standard appears misplaced, stale, too broad, too narrow, or more costly than the invariant it protects
+- `[governance]` -- A documented rule, check, test, or standard appears misplaced, stale, too broad, too narrow, or more costly than the invariant it protects
 - `[retire]` -- A marked-to-delete layer, adapter, API, or compatibility seam is
   being left behind, copied, or treated as baseline without an explicit owner
   and removal condition

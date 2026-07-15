@@ -123,11 +123,8 @@ Target state:
 
 ## Verification Notes
 
-- documentation-only edits use `./gradlew checkDocumentationEnforcement
-  --console=plain`
-- broader feature-boundary and placement questions are review-owned; the
-  Session Planner behavior harnesses remain the proof owners for user-visible
-  planner behavior
+- documentation-only edits use `git diff --check`
+- Session Planner JUnit tests prove user-visible planner behavior
 
 ## References
 

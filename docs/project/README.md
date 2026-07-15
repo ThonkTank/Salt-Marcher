@@ -16,8 +16,8 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 ## Rules
 
 - [Documentation Standard](documentation.md) -- what is documented where.
-- [Agent Instruction Standard](architecture/agent-instructions.md) -- tiers,
-  roles, review.
+- [Agent Instruction Standard](architecture/agent-instructions.md) -- direct
+  execution and proportional review.
 - [Autonomy Boundaries](architecture/autonomy-boundaries.md) -- what the system
   decides alone, and what the owner decides.
 - [Resource Policy](policies/resource-policy.md) -- paid services, egress,
@@ -34,29 +34,14 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
   [styling](architecture/patterns/styling.md).
 - [Verification Core](architecture/verification-core.md) -- public verification
   surfaces and outcome-check wiring.
-- Historical pointer: [deprecated Harness Modernization Roadmap](architecture/harness-modernization-roadmap.md).
 
 ## Delivery
 
 - [Active delivery index](delivery/README.md)
-- [Verification harness replacement](delivery/verification-harness-replacement/README.md)
-
-## Decisions
-
-- [ADR 0001 Target Operating Model](decisions/0001-target-operating-model.md)
-- [ADR 0002 Required Checks](decisions/0002-required-checks.md)
-- [ADR 0003 Honest Instruments Base Gates](decisions/0003-honest-instruments-base-gates.md)
-- [ADR 0004 Content-Addressed Harness Verification](decisions/0004-content-addressed-harness-verification.md)
-- [ADR 0005 Governance Cleanup and Local Hook Removal](decisions/0005-governance-cleanup-and-local-hook-removal.md)
-- [ADR Template](decisions/0000-template.md)
 
 ## Verification
 
-- [Quality Platforms](verification/quality-platforms.md), split into
-  [CI and branch protection](verification/quality-platforms-ci-and-branch-protection.md),
-  [local entry points](verification/quality-platforms-local-entrypoints.md), and
-  [local gates](verification/quality-platforms-local-gates.md).
-- [Harness Gaps](verification/harness-gaps.md)
+- [Quality Platforms](verification/quality-platforms.md)
 - [Source References Standard](verification/source-references.md)
 
 ## Repo-Wide Requirements
@@ -67,8 +52,3 @@ Behavior owned centrally rather than by one feature:
 [dropdown popup](requirements/requirements-dropdown-popup.md),
 [progress meter](requirements/requirements-progress-meter.md),
 [travel state tab](requirements/requirements-travel-state-tab.md).
-
-## Journal
-
-[docs/project/journal/](journal/README.md) holds retained L-tier design notes
-and incidents. It is never a source of truth.

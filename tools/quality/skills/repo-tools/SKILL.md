@@ -22,14 +22,6 @@ description: Optional catalog for discovering SaltMarcher repo-local developer t
 - Governing skill: `tools/quality/skills/callchain-tool/SKILL.md`
 - Evidence strength: `Candidate`; confirm dynamic routing in source.
 
-### Agent Context Map
-
-- Tool path: `tools/quality/reporting/agent_context_map.py`
-- Helps with: candidate owner docs, mandatory skills, verification guidance,
-  and cleanup candidates for a path.
-- Evidence strength: `Candidate`; owner docs remain authoritative.
-- Typical use: `python3 tools/quality/reporting/agent_context_map.py --surface <path>`
-
 ## Handoff
 
 Report repo-tool usage only when it affected the work: tool name, selector or

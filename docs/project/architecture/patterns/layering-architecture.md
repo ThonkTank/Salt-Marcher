@@ -39,7 +39,7 @@ Source dependencies stay inside these boundaries:
   service-composition files may use the narrow shell service-registration seam.
 
 The automated outcome check is the layer-dependency-direction ArchUnit test
-under `test/architecture/system/`; behavior harnesses prove user-visible
+under `test/architecture/system/`; behavior tests prove user-visible
 behavior.
 
 ## Public Boundary Policy

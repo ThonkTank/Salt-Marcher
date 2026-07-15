@@ -28,9 +28,8 @@ store long-lived feature state.
 
 ## Verification
 
-The retained proof routes are the public production handoff, behavior
-harnesses, and layer-dependency outcome checks. The retired role-family
-enforcement inventory is no longer authoritative.
+JUnit behavior tests and ArchUnit dependency checks cover the retained public
+shell outcomes.
 
 ## References
 

@@ -1,83 +1,43 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-12
-Source of Truth: Quality-platform operating model, public proof routes, and
-retained outcome-gate policy.
+Last Reviewed: 2026-07-15
+Source of Truth: SaltMarcher's required proof surface and verification principles.
 
-# Quality Platforms Standard
+# Quality Platforms
 
-## Goal
+## Public Tasks
 
-SaltMarcher uses structural build gates for automated confidence,
-production-path behavior harnesses for behavior proof, and manual testing only
-for desktop interaction or UI judgment that cannot be mechanically qualified.
+- `./gradlew check` is the sole required local and CI proof.
+- `./gradlew test` runs the complete JUnit suite.
+- `./gradlew uiTest` diagnoses headless JavaFX behavior failures.
+- `./gradlew architectureTest` diagnoses architecture failures.
 
-This standard owns the public quality-platform operating model. Retired
-role-family form checks are not part of that model.
+The diagnostic tasks never replace `check`. Ordinary test coverage belongs in
+the single test source set and requires no build registry entry.
 
-## Public Proof Routes
+## Principles
 
-- `tools/gradle/run-staged-verification.sh production-handoff`
-  is the broad production-code handoff route.
-- `tools/gradle/run-staged-verification.sh focused-handoff --path
-  <repo-package-or-resource-dir> [--area <area>]`
-  is the scoped local route for narrow package/resource work when the selected
-  surface actually consumes that scope.
-- Documentation-only and instruction-surface changes use `git diff --check`
-  plus any owner-named proof from `AGENTS.md`; removed documentation gates are
-  not public proof routes.
-- Focused behavior harness tasks remain the proof owner for behavior
-  scenarios. They are not replaced by compile, PMD, or architecture structure
-  checks.
+- Behavior tests prove accepted observable outcomes through production routes.
+- JUnit owns scenario discovery, selection, and scenario-level XML results.
+- Monocle owns headless JavaFX execution.
+- ArchUnit owns production dependency and cycle rules across all production
+  roots.
+- Gradle owns task inputs and incremental execution.
+- A static analyzer remains only when it catches a useful defect class not
+  already covered by the compiler, tests, ArchUnit, or another retained tool.
+- Verification code does not test its own fixtures, registries, task topology,
+  or implementation form as a substitute for product behavior.
 
-Private Gradle tasks, bundle selectors, engine-local diagnostics, and
-build-harness internals are useful during repair, but they are not public
-handoff routes unless a retained owner explicitly promotes them.
+Branch protection requires exactly the `check` context. External analyzer and
+AI-review services are not part of verification.
 
-## Retained Outcome Gates
+## Qualification
 
-The following outcome checks stay binding:
-
-- Java compilation and included-build integrity
-- package cycles and layer dependency direction
-- behavior-harness registration topology and declared Gradle task inputs
-- owner-named documentation proof for changed documentation surfaces
-- quality hygiene gates such as PMD, SpotBugs, CPD, Lizard, near-miss checks,
-  compiled-artifact hygiene, packaging-resource checks, and dead-code
-  reachability
-
-Role-family form inventories and role-taxonomy teaching are not
-quality-platform policy.
-
-## Behavior Harness Policy
-
-Behavior changes, user-reported misbehavior, new features, and new
-behavior-bearing concepts need an owning behavior harness or a recorded
-Harness Gap. Harnesses should exercise production routes and inspect
-production state, persisted data, published models, rendered facts, or named
-owner APIs.
-
-Harness scenarios and assertions change only in behavior-owning work with the
-corresponding harness proof. Verification wiring changes must preserve the
-scenario's production route and assertion strength.
-
-## Custom Checker Policy
-
-Standard tools are the default home for quality and architecture rules:
-
-- PMD for generic source smells and metrics
-- SpotBugs for bytecode bug and security-smell discovery
-- ArchUnit for dependency, module, boundary, and cycle rules
-- Error Prone for compiler-local symbol, method-call, signature, and AST rules
-- build-harness for source-tree topology and repository file/resource policy
-
-New first-party checkers must name the gap that standard tools cannot express,
-the public proof route that exposes the result, and the retirement condition.
-This governance rule does not add a gate by itself.
+The final replacement is qualified by two consecutive warm
+`./gradlew check --rerun-tasks` runs of at most twelve minutes each, one warm
+no-change `./gradlew check` of at most thirty seconds, headless execution, and
+readback of branch protection.
 
 ## References
 
-- [Quality Platforms Local Gates](quality-platforms-local-gates.md)
-- [Quality Platforms Local Entrypoints](quality-platforms-local-entrypoints.md)
 - [Verification Core Architecture](../architecture/verification-core.md)
-- [Harness Gaps](harness-gaps.md)

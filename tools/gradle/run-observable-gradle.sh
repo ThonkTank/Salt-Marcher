@@ -13,7 +13,7 @@ Usage:
 Examples:
   tools/gradle/run-observable-gradle.sh architectureTest
   tools/gradle/run-observable-gradle.sh --fail-fast compileJava
-  tools/gradle/run-observable-gradle.sh pmdStrictMain spotbugsMain -- --rerun-tasks
+  tools/gradle/run-observable-gradle.sh check -- --rerun-tasks
 
 Options:
   --fail-fast  Do not add wrapper-owned Gradle --continue.

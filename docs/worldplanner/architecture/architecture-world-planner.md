@@ -18,8 +18,8 @@ integration.
 ## Current State
 
 World Planner owns a backend domain, SQLite persistence adapter, published
-readback model, minimal left-bar contribution, backend behavior harness, and
-left-bar UI harness for NPCs, factions, and campaign-planning locations.
+readback model, minimal left-bar contribution, backend behavior tests, and
+left-bar UI tests for NPCs, factions, and campaign-planning locations.
 Encounter, Combat lifecycle, and Session Planner location-choice integration
 remain later waves.
 
@@ -107,11 +107,9 @@ decision before it could become the left-bar target.
 
 ## Verification And Review
 
-World Planner architecture conformance is review-owned outside the implemented
-backend and minimal left-bar routes. Later implementation waves must add
-behavior harness proof for Encounter, Combat lifecycle, and public
-location-choice production routes and use the repository's normal staged
-verification route for production-code changes.
+World Planner architecture conformance is covered by ArchUnit where it is
+mechanically meaningful. Later behavior must add JUnit coverage for its public
+production routes.
 
 ## References
 

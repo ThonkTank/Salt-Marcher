@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ruleset name="SaltMarcher Code Smells"
+         xmlns="http://pmd.sourceforge.net/ruleset/2.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://pmd.sourceforge.net/ruleset/2.0.0 https://pmd.github.io/schema/ruleset_2_0_0.xsd">
+    <description>Maintainability smells not covered by compilation, behavior tests, or ArchUnit.</description>
+
+    <rule ref="category/java/design.xml/CognitiveComplexity">
+        <properties><property name="reportLevel" value="15" /></properties>
+    </rule>
+    <rule name="CyclomaticComplexity"
+          language="java"
+          message="The {0} ''{1}'' has a cyclomatic complexity of {2}."
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeCyclomaticComplexityRule">
+        <priority>3</priority>
+        <properties>
+            <property name="classReportLevel" value="80" />
+            <property name="methodReportLevel" value="10" />
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/NPathComplexity">
+        <properties><property name="reportLevel" value="200" /></properties>
+    </rule>
+    <rule name="CouplingBetweenObjects"
+          language="java"
+          message="A value of {0} may denote high coupling (threshold: {1})."
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeCouplingBetweenObjectsRule">
+        <priority>3</priority>
+        <properties><property name="threshold" value="20" /></properties>
+    </rule>
+    <rule ref="category/java/design.xml/AvoidDeeplyNestedIfStmts">
+        <properties><property name="problemDepth" value="3" /></properties>
+    </rule>
+    <rule ref="category/java/design.xml/NcssCount">
+        <properties>
+            <property name="methodReportLevel" value="60" />
+            <property name="classReportLevel" value="1500" />
+        </properties>
+    </rule>
+    <rule ref="category/java/design.xml/ExcessiveParameterList">
+        <properties><property name="minimum" value="10" /></properties>
+    </rule>
+    <rule name="TooManyMethods"
+          language="java"
+          message="This class has too many methods."
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeTooManyMethodsRule">
+        <priority>3</priority>
+    </rule>
+    <rule ref="category/java/design.xml/TooManyFields" />
+    <rule ref="category/java/design.xml/ExcessivePublicCount" />
+    <rule name="ExcessiveImports"
+          language="java"
+          message="A high number of imports ({0}) indicates coupling; threshold is {1}."
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeExcessiveImportsRule">
+        <priority>3</priority>
+    </rule>
+    <rule name="GodClass"
+          language="java"
+          message="Possible God Class (WMC={0}, ATFD={1}, TCC={2}%)."
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeGodClassRule">
+        <priority>3</priority>
+    </rule>
+    <rule name="DataClass"
+          language="java"
+          message="The class ''{0}'' is suspected to be a Data Class."
+          class="saltmarcher.quality.pmd.hygiene.SourceShapeDataClassRule">
+        <priority>3</priority>
+    </rule>
+</ruleset>

@@ -10,7 +10,7 @@ public record DungeonInspectorSnapshot(
         String summary,
         /*
          * LEGACY_REMOVE_ON_TOUCH: display/debug compatibility only. Remove when
-         * generic inspector displays and legacy selection harness assertions read
+         * generic inspector displays and selection behavior tests read
          * title/summary/statePanelFacts instead of key/value fact lines.
          */
         List<String> facts,

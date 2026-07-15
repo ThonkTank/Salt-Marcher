@@ -41,6 +41,10 @@ public final class PackageCycleArchitectureTest {
             slices().matching("src.domain.(*)..").should().beFreeOfCycles();
 
     @ArchTest
+    static final ArchRule domainSubpackagesMustBeCycleFree =
+            slices().matching("src.domain.(*).(*)..").should().beFreeOfCycles();
+
+    @ArchTest
     static final ArchRule viewComponentsMustBeCycleFree =
             slices().assignedFrom(VIEW_COMPONENT_SLICE_ASSIGNMENT).should().beFreeOfCycles();
 

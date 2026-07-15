@@ -20,19 +20,11 @@ kotlin {
     jvmToolchain(21)
 }
 
-dependencies {
-    implementation("net.ltgt.errorprone:net.ltgt.errorprone.gradle.plugin:5.1.0")
-}
-
 gradlePlugin {
     plugins {
         register("saltmarcherQualityConventions") {
             id = "saltmarcher.quality-conventions"
             implementationClass = "saltmarcher.buildlogic.verification.SaltmarcherQualityConventionsPlugin"
-        }
-        register("saltmarcherVerificationCore") {
-            id = "saltmarcher.verification-core"
-            implementationClass = "saltmarcher.buildlogic.verification.SaltmarcherVerificationCorePlugin"
         }
     }
 }

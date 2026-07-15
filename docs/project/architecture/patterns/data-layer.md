@@ -29,10 +29,7 @@ requires an adapter or gateway signature adaptation.
 
 ## Verification
 
-The retained public proof route is `production-handoff`; focused route use is
-limited to scoped package work as described in the quality-platform docs. The
-M0 migration removed the old form-enforcement inventories, so this standard no
-longer names role-local gate documents.
+The required proof route is `check`.
 
 ## References
 
