@@ -43,4 +43,4 @@ persistence truth.
 ## References
 
 - [Maps Canvas Architecture](./architecture-maps-canvas.md)
-- [Maps Canvas Contract](./contract-maps-canvas.md)
+- [Maps Canvas Contract](../contract/contract-maps-canvas.md)

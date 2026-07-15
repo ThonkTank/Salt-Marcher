@@ -51,7 +51,7 @@ published seams byte-compatible until every consuming side is migrated.
 
 ## References
 
-- [Architecture Overview](../overview.md)
+- [Source Architecture](../source-architecture.md)
 - [Data Layer Standard](data-layer.md)
 - [Shell Layer Standard](shell-layer.md)
 - [Bootstrap Standard](bootstrap.md)

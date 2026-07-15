@@ -127,5 +127,5 @@ shared frontend root is superseded by this contract.
 
 ## References
 
-- [Maps Canvas Requirements](./requirements-maps-canvas.md)
-- [Maps Canvas Architecture](./architecture-maps-canvas.md)
+- [Maps Canvas Requirements](../requirements/requirements-maps-canvas.md)
+- [Maps Canvas Architecture](../architecture/architecture-maps-canvas.md)

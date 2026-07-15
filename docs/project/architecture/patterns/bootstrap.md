@@ -36,6 +36,6 @@ test. The retired form-enforcement inventory is no longer a source of truth.
 
 ## References
 
-- [Architecture Overview](../overview.md)
+- [Source Architecture](../source-architecture.md)
 - [Layering Architecture Standard](layering-architecture.md)
 - [Shell Layer Standard](shell-layer.md)

@@ -32,5 +32,5 @@ tasks remain implementation diagnostics when present in the Gradle graph.
 
 ## References
 
-- [Architecture Overview](../overview.md)
+- [Source Architecture](../source-architecture.md)
 - [Quality Platforms Standard](../../verification/quality-platforms.md)
