@@ -6,6 +6,7 @@ import src.domain.worldplanner.published.WorldFactionSummary;
 import src.domain.worldplanner.published.WorldLocationSummary;
 import src.domain.worldplanner.published.WorldNpcLifecycleStatus;
 import src.domain.worldplanner.published.WorldNpcSummary;
+import src.domain.worldplanner.published.WorldDispositionKind;
 import src.domain.worldplanner.published.WorldPlannerReadStatus;
 import src.domain.worldplanner.published.WorldPlannerSnapshot;
 
@@ -24,6 +25,12 @@ final class WorldPlannerSnapshotProjection {
                                 npc.behaviorNotes(),
                                 npc.historyNotes(),
                                 npc.generalNotes(),
+                                safeState.factionIdForNpc(npc.npcId()),
+                                npc.dispositionModifier(),
+                                safeState.effectiveDisposition(npc),
+                                WorldDispositionKind.valueOf(
+                                        src.domain.worldplanner.model.world.WorldDisposition
+                                                .kind(safeState.effectiveDisposition(npc)).name()),
                                 WorldNpcLifecycleStatus.fromName(npc.status().name())))
                         .toList(),
                 safeState.factions().stream()
@@ -32,6 +39,7 @@ final class WorldPlannerSnapshotProjection {
                                 faction.displayName(),
                                 faction.notes(),
                                 faction.primaryEncounterTableId(),
+                                faction.disposition(),
                                 faction.npcIds(),
                                 faction.inventoryLimits().stream()
                                         .map(limit -> new WorldFactionInventoryLimitSummary(

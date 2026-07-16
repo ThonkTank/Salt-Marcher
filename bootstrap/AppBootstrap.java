@@ -15,11 +15,13 @@ import shell.host.AppShell;
 import src.data.creatures.query.SqliteCreatureCatalogQueryAdapter;
 import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.data.encounter.repository.SqliteEncounterPlanRepository;
+import src.data.encounter.runtime.SqliteEncounterRuntimeStateRepository;
 import src.data.encountertable.query.SqliteEncounterTableCatalogAdapter;
 import src.data.hex.repository.SqliteHexMapRepository;
 import src.data.items.SqliteItemCatalogAdapter;
 import src.data.party.repository.SqlitePartyRosterRepository;
 import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
+import src.data.scene.SqliteSceneWorkspaceRepository;
 import src.data.worldplanner.repository.SqliteWorldPlannerRepository;
 import src.domain.creatures.CreaturesServiceAssembly;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
@@ -31,6 +33,7 @@ import src.domain.hex.HexServiceAssembly;
 import src.domain.items.ItemsServiceAssembly;
 import src.domain.party.PartyServiceAssembly;
 import src.domain.sessionplanner.SessionPlannerServiceAssembly;
+import src.domain.scene.SceneServiceAssembly;
 import src.domain.worldplanner.WorldPlannerApplicationService;
 import src.domain.worldplanner.WorldPlannerReferenceAssembly;
 import src.domain.worldplanner.WorldPlannerServiceAssembly;
@@ -43,6 +46,7 @@ import src.view.leftbartabs.dungeoneditor.DungeonEditorContribution;
 import src.view.leftbartabs.dungeontravel.DungeonTravelContribution;
 import src.view.leftbartabs.hexmap.HexMapContribution;
 import src.view.leftbartabs.sessionplanner.SessionPlannerContribution;
+import src.view.leftbartabs.scene.SceneContribution;
 import src.view.statetabs.encounter.EncounterStateContribution;
 import src.view.statetabs.travel.TravelStateContribution;
 
@@ -92,7 +96,8 @@ public final class AppBootstrap {
                 party.activeComposition(),
                 party.adventuringDaySummary(),
                 party.mutation(),
-                new SqliteEncounterPlanRepository());
+                new SqliteEncounterPlanRepository(),
+                new SqliteEncounterRuntimeStateRepository());
 
         DungeonServiceAssembly.Component dungeon = DungeonServiceAssembly.create(
                 new SqliteDungeonMapRepository(),
@@ -111,9 +116,15 @@ public final class AppBootstrap {
                 encounter.savedPlans(),
                 encounter.planBudget(),
                 worldSnapshot);
+        SceneServiceAssembly scenes = new SceneServiceAssembly(
+                new SqliteSceneWorkspaceRepository(),
+                party.activeParty(),
+                worldSnapshot,
+                session.preparedScenes(),
+                encounter.runtimeContexts());
         return new Components(
                 creatures, encounterTables, items, party, worldApplication, worldSnapshot,
-                encounter, dungeon, hex, session);
+                encounter, dungeon, hex, session, scenes);
     }
 
     private List<ResolvedContribution> bindContributions(AppShell shell, Components components) {
@@ -125,6 +136,7 @@ public final class AppBootstrap {
         var dungeon = components.dungeon();
         var hex = components.hex();
         var session = components.session();
+        var scenes = components.scenes();
         var inspector = shell.inspector();
         DungeonEditorRuntimeDependencies dungeonEditorDependencies = new DungeonEditorRuntimeDependencies(
                 new DungeonEditorRuntimeDependencies.CompatibilityReadbackModels(
@@ -149,6 +161,7 @@ public final class AppBootstrap {
                 new SessionPlannerContribution(
                         session.application(), session.currentSessionModel(), session.catalogModel(),
                         session.participantsModel(), session.sceneTimelineModel(), session.statePanelModel()),
+                new SceneContribution(scenes),
                 new EncounterStateContribution(
                         creatures.detail(), creatures.application(), encounter.state(), encounter.application(),
                         components.worldApplication(), inspector),
@@ -211,7 +224,8 @@ public final class AppBootstrap {
             EncounterServiceAssembly.Component encounter,
             DungeonServiceAssembly.Component dungeon,
             HexServiceAssembly hex,
-            SessionPlannerServiceAssembly session
+            SessionPlannerServiceAssembly session,
+            SceneServiceAssembly scenes
     ) {
     }
 

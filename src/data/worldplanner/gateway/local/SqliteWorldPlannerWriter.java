@@ -57,7 +57,7 @@ final class SqliteWorldPlannerWriter {
     ) throws SQLException {
         String sql = INSERT_PREFIX + WorldPlannerPersistenceSchema.NPCS_TABLE
                 + " (npc_id, display_name, creature_statblock_id, appearance_notes, behavior_notes, "
-                + "history_notes, general_notes, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                + "history_notes, general_notes, disposition_modifier, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (WorldNpcRecord npc : npcs) {
                 statement.setLong(1, npc.npcId());
@@ -67,7 +67,8 @@ final class SqliteWorldPlannerWriter {
                 statement.setString(5, npc.behaviorNotes());
                 statement.setString(6, npc.historyNotes());
                 statement.setString(7, npc.generalNotes());
-                statement.setString(8, npc.status());
+                statement.setInt(8, npc.dispositionModifier());
+                statement.setString(9, npc.status());
                 statement.addBatch();
             }
             statement.executeBatch();
@@ -79,13 +80,14 @@ final class SqliteWorldPlannerWriter {
             List<WorldFactionRecord> factions
     ) throws SQLException {
         String sql = INSERT_PREFIX + WorldPlannerPersistenceSchema.FACTIONS_TABLE
-                + " (faction_id, display_name, notes, primary_encounter_table_id) VALUES (?, ?, ?, ?)";
+                + " (faction_id, display_name, notes, primary_encounter_table_id, disposition) VALUES (?, ?, ?, ?, ?)";
         try (PreparedStatement statement = connection.prepareStatement(sql)) {
             for (WorldFactionRecord faction : factions) {
                 statement.setLong(1, faction.factionId());
                 statement.setString(2, faction.displayName());
                 statement.setString(3, faction.notes());
                 statement.setLong(4, faction.primaryEncounterTableId());
+                statement.setInt(5, faction.disposition());
                 statement.addBatch();
             }
             statement.executeBatch();

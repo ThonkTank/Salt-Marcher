@@ -35,6 +35,7 @@ Provide one session-owned planning surface that:
 - copying World Planner location details into sessionplanner-owned truth
 - deriving gold budgets from provisional heuristics
 - replacing the encounter state tab or the party dropdown
+- owning live runtime-scene state
 
 ## Primary User Flow
 
@@ -121,6 +122,8 @@ Target state:
 - placed rests can appear only between adjacent scenes
 - loot placeholders stay visible while gold budgeting remains explicitly marked
   as unavailable
+- prepared scenes are available through a read-only runtime import surface
+  without changing the planner's current-session pointer
 
 ## References
 

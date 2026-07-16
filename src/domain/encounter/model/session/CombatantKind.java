@@ -2,6 +2,7 @@ package src.domain.encounter.model.session;
 
 public enum CombatantKind {
     PLAYER_CHARACTER("SC"),
+    ALLY_NPC("Verbündeter"),
     MONSTER("Monster");
 
     private final String label;
@@ -25,4 +26,7 @@ public enum CombatantKind {
     public static CombatantKind monsterKind() {
         return MONSTER;
     }
+
+    public boolean alliedNpc() { return this == ALLY_NPC; }
+    public boolean enemy() { return this == MONSTER; }
 }

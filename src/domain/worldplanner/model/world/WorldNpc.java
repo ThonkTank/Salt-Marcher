@@ -8,8 +8,23 @@ public record WorldNpc(
         String behaviorNotes,
         String historyNotes,
         String generalNotes,
+        int dispositionModifier,
         WorldNpcLifecycleState status
 ) {
+    public WorldNpc(
+            long npcId,
+            String displayName,
+            long creatureStatblockId,
+            String appearanceNotes,
+            String behaviorNotes,
+            String historyNotes,
+            String generalNotes,
+            WorldNpcLifecycleState status
+    ) {
+        this(npcId, displayName, creatureStatblockId, appearanceNotes, behaviorNotes,
+                historyNotes, generalNotes, 0, status);
+    }
+
     public WorldNpc {
         if (!WorldPlannerIds.isPositive(npcId)) {
             throw new IllegalArgumentException("npcId must be positive");
@@ -22,6 +37,7 @@ public record WorldNpc(
         behaviorNotes = text(behaviorNotes);
         historyNotes = text(historyNotes);
         generalNotes = text(generalNotes);
+        dispositionModifier = WorldDisposition.clamp(dispositionModifier);
         if (status == null) {
             throw new IllegalArgumentException("status must be present");
         }
@@ -37,7 +53,14 @@ public record WorldNpc(
                 safeNotes.behaviorNotes(),
                 safeNotes.historyNotes(),
                 safeNotes.generalNotes(),
+                dispositionModifier,
                 status);
+    }
+
+    public WorldNpc withDispositionModifier(int modifier) {
+        return new WorldNpc(
+                npcId, displayName, creatureStatblockId, appearanceNotes, behaviorNotes,
+                historyNotes, generalNotes, modifier, status);
     }
 
     public WorldNpc markDefeated() {
@@ -57,6 +80,7 @@ public record WorldNpc(
                 behaviorNotes,
                 historyNotes,
                 generalNotes,
+                dispositionModifier,
                 nextStatus);
     }
 

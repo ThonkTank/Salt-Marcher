@@ -58,6 +58,16 @@ public final class CombatRosterBuilder {
         return true;
     }
 
+    public void addAlly(CombatRoster roster, EncounterCreatureData creature, int initiative) {
+        if (roster.combatants().stream().anyMatch(value -> value.worldNpcId() == creature.worldNpcId())) {
+            return;
+        }
+        roster.add(Combatant.allyNpc(creature.id(), creature.name(),
+                MonsterCombatProfile.fromEncounterCreature(creature), creature.worldNpcId(), initiative,
+                nextOrder(roster.combatants())));
+        roster.sort();
+    }
+
     private static int addMonsterMembers(
             CombatRoster roster,
             MonsterCombatProfile profile,

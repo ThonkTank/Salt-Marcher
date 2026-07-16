@@ -24,7 +24,9 @@ import src.domain.worldplanner.published.CreateWorldFactionCommand;
 import src.domain.worldplanner.published.CreateWorldLocationCommand;
 import src.domain.worldplanner.published.CreateWorldNpcCommand;
 import src.domain.worldplanner.published.SetWorldFactionInventoryLimitCommand;
+import src.domain.worldplanner.published.SetWorldFactionDispositionCommand;
 import src.domain.worldplanner.published.SetWorldNpcLifecycleStatusCommand;
+import src.domain.worldplanner.published.SetWorldNpcDispositionModifierCommand;
 import src.domain.worldplanner.published.UpdateWorldNpcNotesCommand;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 import src.view.slotcontent.controls.searchfilter.SearchFilterControlsView;
@@ -143,6 +145,9 @@ public final class WorldPlannerBinder {
             worldPlanner.setNpcLifecycleStatus(SetWorldNpcLifecycleStatusCommand.active(viewModel.selectedNpcId()));
         } else if (actions.addToEncounterRequested()) {
             addNpcToEncounter(viewModel);
+        } else if (actions.setNpcDispositionRequested()) {
+            worldPlanner.setNpcDispositionModifier(new SetWorldNpcDispositionModifierCommand(
+                    viewModel.selectedNpcId(), parseDisposition(snapshot.dispositionModifierText())));
         }
     }
 
@@ -166,6 +171,9 @@ public final class WorldPlannerBinder {
                     viewModel.factionStatblockChoiceId(snapshot.inventoryStatblockChoiceIndex()),
                     snapshot.finiteInventory(),
                     parseQuantity(snapshot.inventoryQuantityText())));
+        } else if (actions.setFactionDispositionRequested()) {
+            worldPlanner.setFactionDisposition(new SetWorldFactionDispositionCommand(
+                    viewModel.selectedFactionId(), parseDisposition(snapshot.dispositionText())));
         }
     }
 
@@ -251,6 +259,14 @@ public final class WorldPlannerBinder {
             case LOCATIONS -> "Ort";
             default -> "NPC";
         };
+    }
+
+    private static int parseDisposition(String value) {
+        try {
+            return Math.max(-50, Math.min(50, Integer.parseInt(value == null ? "" : value.trim())));
+        } catch (NumberFormatException exception) {
+            return 0;
+        }
     }
 
     public static final class CatalogModule {

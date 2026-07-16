@@ -106,6 +106,32 @@ final class EncounterSessionGeneration {
                 generationHistoryPresent);
     }
 
+    List<GeneratedEncounterData> alternatives() {
+        return List.copyOf(generatedAlternatives);
+    }
+
+    void restore(
+            EncounterGenerationInputs inputs,
+            List<GeneratedEncounterData> alternatives,
+            List<String> advisories,
+            int selectedIndex,
+            int adjustedXp,
+            String difficulty,
+            String title,
+            boolean historyPresent
+    ) {
+        builderInputs = inputs == null ? EncounterGenerationInputs.empty() : inputs;
+        generatedAlternatives.clear();
+        generatedAlternatives.addAll(alternatives == null ? List.of() : alternatives);
+        generatedAdvisories = advisories == null ? List.of() : List.copyOf(advisories);
+        selectedAlternativeIndex = generatedAlternatives.isEmpty()
+                ? 0 : Math.floorMod(selectedIndex, generatedAlternatives.size());
+        generatedAdjustedXp = Math.max(0, adjustedXp);
+        generatedDifficulty = difficulty == null ? "" : difficulty;
+        generatedTitle = title == null ? "" : title;
+        generationHistoryPresent = historyPresent;
+    }
+
     private void clearGeneratedEncounterState() {
         generatedAlternatives.clear();
         selectedAlternativeIndex = 0;

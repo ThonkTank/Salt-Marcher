@@ -33,7 +33,11 @@ public final class EncounterGenerator {
     }
 
     public EncounterGenerationResult generate(EncounterGenerationRequest request) {
-        Preparation preparation = prepare(request, SEARCH_LIMIT);
+        return generate(request, null);
+    }
+
+    public EncounterGenerationResult generate(EncounterGenerationRequest request, PartyBudgetFacts scopedParty) {
+        Preparation preparation = prepare(request, SEARCH_LIMIT, scopedParty);
         if (!preparation.success()) {
             return new EncounterGenerationResult(
                     false,
@@ -52,8 +56,8 @@ public final class EncounterGenerator {
                 preparation.fallbackUsed());
     }
 
-    private Preparation prepare(EncounterGenerationRequest request, int searchLimit) {
-        PartyLoad partyLoad = loadPartyState();
+    private Preparation prepare(EncounterGenerationRequest request, int searchLimit, PartyBudgetFacts scopedParty) {
+        PartyLoad partyLoad = loadPartyState(scopedParty);
         if (!partyLoad.success()) {
             return partyLoad.failure();
         }
@@ -90,8 +94,8 @@ public final class EncounterGenerator {
                 search.fallbackUsed());
     }
 
-    private PartyLoad loadPartyState() {
-        PartyBudgetFacts budgetFacts = facts.loadPartyBudgetFacts();
+    private PartyLoad loadPartyState(PartyBudgetFacts scopedParty) {
+        PartyBudgetFacts budgetFacts = scopedParty == null ? facts.loadPartyBudgetFacts() : scopedParty;
         if (budgetFacts.status().isStorageError()) {
             return PartyLoad.failure("Party data could not be loaded.");
         }

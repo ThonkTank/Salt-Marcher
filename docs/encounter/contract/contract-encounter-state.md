@@ -16,6 +16,8 @@ state tab.
   the builder, initiative, combat, and resolution panes plus one status line
 - consumers may read the current state and observe later revisions without
   depending on an implementation-owned model handle
+- the read surface represents the focused runtime context; switching context
+  republishes it without discarding other persisted Encounter sessions
 
 ## Write Surface
 

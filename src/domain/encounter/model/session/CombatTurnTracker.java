@@ -52,6 +52,19 @@ final class CombatTurnTracker {
         return projection;
     }
 
+    int currentTurnIndex() {
+        return currentTurnIndex.orElse(CombatTurn.NO_ACTIVE_TURN_INDEX);
+    }
+
+    int round() {
+        return round;
+    }
+
+    void restoreState(int turnIndex, int restoredRound) {
+        currentTurnIndex = toOptionalTurnIndex(turnIndex);
+        round = Math.max(1, restoredRound);
+    }
+
     private static OptionalInt toOptionalTurnIndex(int turnIndex) {
         return turnIndex < 0 ? OptionalInt.empty() : OptionalInt.of(turnIndex);
     }
