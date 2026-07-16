@@ -1,0 +1,92 @@
+package features.dungeon.domain.core.projection;
+
+import java.util.Objects;
+import features.dungeon.domain.core.geometry.Edge;
+import features.dungeon.domain.core.graph.DungeonTopologyElementKind;
+import features.dungeon.domain.core.graph.DungeonTopologyRef;
+
+public final class DungeonBoundaryFacts {
+    private static final String DOOR_KIND = "door";
+    private static final String OPEN_KIND = "open";
+
+    private final String kind;
+    private final long id;
+    private final String label;
+    private final Edge edge;
+    private final DungeonTopologyRef topologyRef;
+
+    public DungeonBoundaryFacts(
+            String kind,
+            long id,
+            String label,
+            Edge edge,
+            DungeonTopologyRef topologyRef
+    ) {
+        this.kind = kind == null || kind.isBlank() ? "boundary" : kind;
+        this.id = id;
+        this.label = label == null || label.isBlank() ? "Boundary" : label;
+        this.edge = edge;
+        this.topologyRef = topologyRef == null
+                ? new DungeonTopologyRef(topologyKind(kind), id)
+                : topologyRef;
+    }
+
+    public String kind() {
+        return kind;
+    }
+
+    public long id() {
+        return id;
+    }
+
+    public String label() {
+        return label;
+    }
+
+    public Edge edge() {
+        return edge;
+    }
+
+    public DungeonTopologyRef topologyRef() {
+        return topologyRef;
+    }
+
+    private static DungeonTopologyElementKind topologyKind(String kind) {
+        if (kind == null || kind.isBlank()) {
+            return DungeonTopologyElementKind.WALL;
+        }
+        String normalized = kind.trim();
+        if (DOOR_KIND.equalsIgnoreCase(normalized)) {
+            return DungeonTopologyElementKind.DOOR;
+        }
+        if (OPEN_KIND.equalsIgnoreCase(normalized)) {
+            return DungeonTopologyElementKind.EMPTY;
+        }
+        return DungeonTopologyElementKind.WALL;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof DungeonBoundaryFacts that
+                && id == that.id
+                && Objects.equals(kind, that.kind)
+                && Objects.equals(label, that.label)
+                && Objects.equals(edge, that.edge)
+                && Objects.equals(topologyRef, that.topologyRef);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(kind, id, label, edge, topologyRef);
+    }
+
+    @Override
+    public String toString() {
+        return "DungeonBoundaryFacts[kind=" + kind
+                + ", id=" + id
+                + ", label=" + label
+                + ", edge=" + edge
+                + ", topologyRef=" + topologyRef
+                + "]";
+    }
+}

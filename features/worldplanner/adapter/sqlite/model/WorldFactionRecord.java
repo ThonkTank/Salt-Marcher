@@ -1,0 +1,18 @@
+package features.worldplanner.adapter.sqlite.model;
+
+import java.util.List;
+
+public record WorldFactionRecord(
+        long factionId,
+        String displayName,
+        String notes,
+        long primaryEncounterTableId,
+        List<Long> npcIds,
+        List<WorldFactionInventoryLimitRecord> inventoryLimits
+) {
+
+    public WorldFactionRecord {
+        npcIds = npcIds == null ? List.of() : List.copyOf(npcIds);
+        inventoryLimits = inventoryLimits == null ? List.of() : List.copyOf(inventoryLimits);
+    }
+}

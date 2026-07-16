@@ -28,9 +28,9 @@ public final class PlatformDiagnosticsArchitectureTest {
                             "java.sql..",
                             "java.io..",
                             "java.nio.file..",
+                            "app..",
                             "shell..",
-                            "features..",
-                            "src..");
+                            "features..");
 
     @Test
     void diagnosticsApiCannotAcceptFreeFormPayloadsOrThrowables() {

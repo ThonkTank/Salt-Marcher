@@ -27,31 +27,31 @@ import shell.api.ShellSlot;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellBinding;
 import shell.api.ShellLeftBarTabMode;
-import src.view.leftbartabs.catalog.CatalogContribution;
-import src.view.leftbartabs.dungeoneditor.DungeonEditorContribution;
-import src.view.leftbartabs.dungeontravel.DungeonTravelContribution;
-import src.view.leftbartabs.hexmap.HexMapContribution;
-import src.view.leftbartabs.hexmap.HexMapControlsView;
-import src.view.leftbartabs.hexmap.HexMapMainView;
-import src.view.leftbartabs.sessionplanner.SessionPlannerContribution;
-import src.view.leftbartabs.sessionplanner.SessionPlannerControlsView;
-import src.view.leftbartabs.sessionplanner.SessionPlannerTimelineMainView;
-import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsView;
-import src.data.creatures.query.SqliteCreatureCatalogQueryAdapter;
-import src.data.dungeon.repository.SqliteDungeonMapRepository;
-import src.data.encounter.repository.SqliteEncounterPlanRepository;
-import src.data.encountertable.query.SqliteEncounterTableCatalogAdapter;
-import src.data.hex.repository.SqliteHexMapRepository;
-import src.data.party.repository.SqlitePartyRosterRepository;
-import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
-import src.domain.creatures.CreaturesServiceAssembly;
-import src.domain.dungeon.DungeonServiceAssembly;
-import src.domain.encounter.EncounterServiceAssembly;
-import src.domain.encountertable.EncounterTableServiceAssembly;
-import src.domain.hex.HexServiceAssembly;
-import src.domain.party.PartyServiceAssembly;
-import src.domain.sessionplanner.SessionPlannerServiceAssembly;
-import src.features.dungeon.runtime.DungeonEditorRuntimeDependencies;
+import features.encounter.adapter.javafx.catalog.CatalogContribution;
+import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
+import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
+import features.hex.adapter.javafx.hexmap.HexMapContribution;
+import features.hex.adapter.javafx.hexmap.HexMapControlsView;
+import features.hex.adapter.javafx.hexmap.HexMapMainView;
+import features.sessionplanner.adapter.javafx.SessionPlannerContribution;
+import features.sessionplanner.adapter.javafx.SessionPlannerControlsView;
+import features.sessionplanner.adapter.javafx.SessionPlannerTimelineMainView;
+import platform.ui.catalogcrud.CatalogCrudControlsView;
+import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter;
+import features.dungeon.adapter.sqlite.repository.SqliteDungeonMapRepository;
+import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
+import features.encountertable.adapter.sqlite.query.SqliteEncounterTableCatalogAdapter;
+import features.hex.adapter.sqlite.repository.SqliteHexMapRepository;
+import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
+import features.sessionplanner.adapter.sqlite.repository.SqliteSessionPlanRepository;
+import features.creatures.CreaturesServiceAssembly;
+import features.dungeon.DungeonTestAssembly;
+import features.encounter.EncounterServiceAssembly;
+import features.encountertable.EncounterTableServiceAssembly;
+import features.hex.HexServiceAssembly;
+import features.party.PartyServiceAssembly;
+import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.dungeon.application.editor.DungeonEditorRuntimeDependencies;
 
 @org.junit.jupiter.api.Tag("ui")
 public final class SessionPlannerShellLayoutTest {
@@ -215,7 +215,7 @@ public final class SessionPlannerShellLayoutTest {
                 encounter.planBudget(), null);
         HexServiceAssembly hex = new HexServiceAssembly(
                 new SqliteHexMapRepository(), party.travelPositions(), party.application());
-        DungeonServiceAssembly.Component dungeon = DungeonServiceAssembly.create(
+        DungeonTestAssembly.Component dungeon = DungeonTestAssembly.create(
                 new SqliteDungeonMapRepository(), party.activeParty(), party.travelPositions(),
                 party.application(), party.mutation());
         return new LayoutServices(party, creatures, tables, encounter, session, hex, dungeon);
@@ -303,7 +303,7 @@ public final class SessionPlannerShellLayoutTest {
             EncounterServiceAssembly.Component encounter,
             SessionPlannerServiceAssembly session,
             HexServiceAssembly hex,
-            DungeonServiceAssembly.Component dungeon
+            DungeonTestAssembly.Component dungeon
     ) {
     }
 
