@@ -3,8 +3,8 @@ package src.data.sessionplanner.gateway.local;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import platform.persistence.SqliteSchemaColumnSupport;
 import src.data.sessionplanner.model.SessionPlannerPersistenceSchema;
-import src.data.persistencecore.sqlite.SqliteSchemaColumnSupport;
 
 final class SessionPlannerSchemaMigrator {
 

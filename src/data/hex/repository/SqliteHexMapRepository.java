@@ -3,6 +3,7 @@ package src.data.hex.repository;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import platform.persistence.SqliteDatabase;
 import src.data.hex.gateway.local.SqliteHexMapLocalGateway;
 import src.data.hex.mapper.HexMapMapper;
 import src.domain.hex.model.map.HexMap;
@@ -21,6 +22,10 @@ public final class SqliteHexMapRepository implements HexMapRepository {
 
     public SqliteHexMapRepository() {
         this(new SqliteHexMapLocalGateway());
+    }
+
+    public SqliteHexMapRepository(SqliteDatabase database) {
+        this(new SqliteHexMapLocalGateway(database));
     }
 
     SqliteHexMapRepository(SqliteHexMapLocalGateway gateway) {

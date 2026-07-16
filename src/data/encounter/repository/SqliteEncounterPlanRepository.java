@@ -3,6 +3,7 @@ package src.data.encounter.repository;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import platform.persistence.SqliteDatabase;
 import src.data.encounter.gateway.local.SqliteEncounterLocalGateway;
 import src.data.encounter.mapper.EncounterPlanMapper;
 import src.data.encounter.model.EncounterPlanCreatureRecord;
@@ -18,6 +19,10 @@ public final class SqliteEncounterPlanRepository implements EncounterPlanReposit
 
     public SqliteEncounterPlanRepository() {
         this(new SqliteEncounterLocalGateway());
+    }
+
+    public SqliteEncounterPlanRepository(SqliteDatabase database) {
+        this(new SqliteEncounterLocalGateway(database));
     }
 
     SqliteEncounterPlanRepository(SqliteEncounterLocalGateway gateway) {

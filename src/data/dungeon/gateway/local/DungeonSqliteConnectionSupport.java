@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Objects;
 import java.util.Optional;
+import platform.persistence.SqliteConnectionSource;
 import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonPersistenceSchema;
 
@@ -16,26 +17,14 @@ final class DungeonSqliteConnectionSupport {
     private static final String SQL_WHERE = " WHERE ";
     private static final String WHERE_DUNGEON_MAP_ID = SQL_WHERE + "dungeon_map_id=?";
 
-    private final DungeonSqliteConnectionFactory connectionFactory;
-    private final DungeonSqliteSchemaManager schemaManager;
+    private final SqliteConnectionSource connections;
 
-    DungeonSqliteConnectionSupport(
-            DungeonSqliteConnectionFactory connectionFactory,
-            DungeonSqliteSchemaManager schemaManager
-    ) {
-        this.connectionFactory = Objects.requireNonNull(connectionFactory, "connectionFactory");
-        this.schemaManager = Objects.requireNonNull(schemaManager, "schemaManager");
+    DungeonSqliteConnectionSupport(SqliteConnectionSource connections) {
+        this.connections = Objects.requireNonNull(connections, "connections");
     }
 
     Connection openReadyConnection() throws SQLException {
-        Connection connection = connectionFactory.openConnection();
-        try {
-            schemaManager.ensureSchema(connection);
-            return connection;
-        } catch (SQLException exception) {
-            connection.close();
-            throw exception;
-        }
+        return connections.openConnection();
     }
 
     static Optional<DungeonMapRecord> findMap(

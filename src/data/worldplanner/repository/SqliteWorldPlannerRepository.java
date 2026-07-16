@@ -1,6 +1,7 @@
 package src.data.worldplanner.repository;
 
 import java.util.Objects;
+import platform.persistence.SqliteDatabase;
 import src.data.worldplanner.gateway.local.SqliteWorldPlannerLocalGateway;
 import src.data.worldplanner.mapper.WorldPlannerMapper;
 import src.domain.worldplanner.model.world.WorldPlannerState;
@@ -12,6 +13,10 @@ public final class SqliteWorldPlannerRepository implements WorldPlannerRepositor
 
     public SqliteWorldPlannerRepository() {
         this(new SqliteWorldPlannerLocalGateway());
+    }
+
+    public SqliteWorldPlannerRepository(SqliteDatabase database) {
+        this(new SqliteWorldPlannerLocalGateway(database));
     }
 
     SqliteWorldPlannerRepository(SqliteWorldPlannerLocalGateway gateway) {

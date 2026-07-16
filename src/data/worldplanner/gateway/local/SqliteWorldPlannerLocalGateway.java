@@ -3,25 +3,30 @@ package src.data.worldplanner.gateway.local;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Objects;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteConnectionSource;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
+import src.data.worldplanner.model.WorldPlannerPersistenceSchema;
 import src.data.worldplanner.model.WorldPlannerSnapshotRecord;
 
 public final class SqliteWorldPlannerLocalGateway {
 
-    private final WorldPlannerSqliteConnectionFactory connectionFactory;
-    private final WorldPlannerSchemaMigrator schemaMigrator;
+    private final SqliteConnectionSource connections;
     private final SqliteWorldPlannerReader reader = new SqliteWorldPlannerReader();
     private final SqliteWorldPlannerWriter writer = new SqliteWorldPlannerWriter();
 
     public SqliteWorldPlannerLocalGateway() {
-        this(new WorldPlannerSqliteConnectionFactory(), new WorldPlannerSchemaMigrator());
+        this(SqliteDatabase.defaultDatabase(
+                WorldPlannerPersistenceSchema.databaseFileName(),
+                NoopDiagnostics.INSTANCE));
     }
 
-    SqliteWorldPlannerLocalGateway(
-            WorldPlannerSqliteConnectionFactory connectionFactory,
-            WorldPlannerSchemaMigrator schemaMigrator
-    ) {
-        this.connectionFactory = Objects.requireNonNull(connectionFactory, "connectionFactory");
-        this.schemaMigrator = Objects.requireNonNull(schemaMigrator, "schemaMigrator");
+    public SqliteWorldPlannerLocalGateway(SqliteDatabase database) {
+        WorldPlannerSchemaMigrator schemaMigrator = new WorldPlannerSchemaMigrator();
+        this.connections = Objects.requireNonNull(database, "database").connections(
+                "world-planner",
+                new SqliteMigration(1, schemaMigrator::ensureSchema));
     }
 
     public WorldPlannerSnapshotRecord load() {
@@ -43,13 +48,6 @@ public final class SqliteWorldPlannerLocalGateway {
     }
 
     private Connection openReadyConnection() throws SQLException {
-        Connection connection = connectionFactory.openConnection();
-        try {
-            schemaMigrator.ensureSchema(connection);
-            return connection;
-        } catch (SQLException exception) {
-            connection.close();
-            throw exception;
-        }
+        return connections.openConnection();
     }
 }

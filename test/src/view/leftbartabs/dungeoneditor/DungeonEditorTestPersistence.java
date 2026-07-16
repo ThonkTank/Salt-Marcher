@@ -1814,7 +1814,7 @@ class DungeonEditorTestPersistence {
                         0,
                         3,
                         1);
-                insertTopologyElement(connection, mapId, stairId, 0L, "STAIR", "S1", 400);
+                insertFeatureTopologyElement(connection, mapId, stairId, "STAIR", "S1", 400);
                 insertStairPathNode(connection, stairId, 0, 2, 2, 0);
                 insertStairPathNode(connection, stairId, 1, 2, 1, 0);
                 insertStairPathNode(connection, stairId, 2, 2, 0, 0);
@@ -1840,7 +1840,7 @@ class DungeonEditorTestPersistence {
                         0,
                         3,
                         1);
-                insertTopologyElement(connection, mapId, stairId, 0L, "STAIR", "S1", 400);
+                insertFeatureTopologyElement(connection, mapId, stairId, "STAIR", "S1", 400);
                 insertStairPathNode(connection, stairId, 0, 2, 2, 0);
                 insertStairPathNode(connection, stairId, 1, 2, 1, 0);
                 insertStairPathNode(connection, stairId, 2, 2, 0, 0);
@@ -1902,7 +1902,13 @@ class DungeonEditorTestPersistence {
                         0,
                         1,
                         1);
-                insertTopologyElement(connection, mapId, stairId, 0L, "STAIR", "Global Stair Sentinel", 900);
+                insertFeatureTopologyElement(
+                        connection,
+                        mapId,
+                        stairId,
+                        "STAIR",
+                        "Global Stair Sentinel",
+                        900);
                 connection.commit();
             } catch (SQLException exception) {
                 throw new IllegalStateException("Failed to seed global stair identity sentinel.", exception);

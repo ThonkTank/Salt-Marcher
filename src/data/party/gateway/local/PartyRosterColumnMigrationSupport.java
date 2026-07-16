@@ -1,6 +1,6 @@
 package src.data.party.gateway.local;
 
-import src.data.persistencecore.sqlite.SqliteSchemaColumnSupport;
+import platform.persistence.SqliteSchemaColumnSupport;
 import src.data.party.model.PartyPersistenceSchema;
 
 import java.sql.Connection;

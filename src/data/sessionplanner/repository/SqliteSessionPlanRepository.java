@@ -3,6 +3,7 @@ package src.data.sessionplanner.repository;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import platform.persistence.SqliteDatabase;
 import src.data.sessionplanner.gateway.local.SqliteSessionPlannerLocalGateway;
 import src.data.sessionplanner.mapper.SessionPlanMapper;
 import src.domain.sessionplanner.model.session.SessionPlan;
@@ -15,6 +16,10 @@ public final class SqliteSessionPlanRepository implements SessionPlanRepository 
 
     public SqliteSessionPlanRepository() {
         this(new SqliteSessionPlannerLocalGateway());
+    }
+
+    public SqliteSessionPlanRepository(SqliteDatabase database) {
+        this(new SqliteSessionPlannerLocalGateway(database));
     }
 
     SqliteSessionPlanRepository(SqliteSessionPlannerLocalGateway gateway) {

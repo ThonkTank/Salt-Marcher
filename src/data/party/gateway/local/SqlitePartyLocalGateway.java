@@ -1,5 +1,9 @@
 package src.data.party.gateway.local;
 
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteConnectionSource;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
 import src.data.party.model.PartyRosterRecord;
 
 import java.sql.Connection;
@@ -11,30 +15,25 @@ import java.util.Objects;
  */
 public final class SqlitePartyLocalGateway {
 
-    private final PartySqliteConnectionFactory connectionFactory;
-    private final PartyRosterSchemaMigrator schemaMigrator;
+    private final SqliteConnectionSource connections;
     private final PartyRosterSqliteStore store;
 
     public SqlitePartyLocalGateway() {
-        this(
-                new PartySqliteConnectionFactory(),
-                new PartyRosterSchemaMigrator(),
-                new PartyRosterSqliteStore());
+        this(SqliteDatabase.defaultDatabase(
+                SqliteDatabase.DEFAULT_DATABASE_FILE_NAME,
+                NoopDiagnostics.INSTANCE));
     }
 
-    SqlitePartyLocalGateway(
-            PartySqliteConnectionFactory connectionFactory,
-            PartyRosterSchemaMigrator schemaMigrator,
-            PartyRosterSqliteStore store
-    ) {
-        this.connectionFactory = Objects.requireNonNull(connectionFactory, "connectionFactory");
-        this.schemaMigrator = Objects.requireNonNull(schemaMigrator, "schemaMigrator");
-        this.store = Objects.requireNonNull(store, "store");
+    public SqlitePartyLocalGateway(SqliteDatabase database) {
+        PartyRosterSchemaMigrator schemaMigrator = new PartyRosterSchemaMigrator();
+        this.connections = Objects.requireNonNull(database, "database").connections(
+                "party",
+                new SqliteMigration(1, schemaMigrator::ensureSchema));
+        this.store = new PartyRosterSqliteStore();
     }
 
     public PartyRosterRecord load() {
-        try (Connection connection = connectionFactory.openConnection()) {
-            schemaMigrator.ensureSchema(connection);
+        try (Connection connection = connections.openConnection()) {
             return store.load(connection);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to load party roster from SQLite.", exception);
@@ -43,8 +42,7 @@ public final class SqlitePartyLocalGateway {
 
     public void save(PartyRosterRecord rosterRecord) {
         Objects.requireNonNull(rosterRecord, "rosterRecord");
-        try (Connection connection = connectionFactory.openConnection()) {
-            schemaMigrator.ensureSchema(connection);
+        try (Connection connection = connections.openConnection()) {
             store.save(connection, rosterRecord);
         } catch (SQLException exception) {
             throw new IllegalStateException("Failed to save party roster to SQLite.", exception);

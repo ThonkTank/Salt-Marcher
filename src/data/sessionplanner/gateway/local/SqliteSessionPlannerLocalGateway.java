@@ -5,32 +5,39 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteConnectionSource;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
 import src.data.sessionplanner.model.SessionPlanRecord;
 import src.data.sessionplanner.model.SessionPlanSnapshotRecord;
+import src.data.sessionplanner.model.SessionPlannerPersistenceSchema;
 
 public final class SqliteSessionPlannerLocalGateway {
 
-    private final SessionPlannerSqliteConnectionFactory connectionFactory;
-    private final SessionPlannerSchemaMigrator schemaMigrator;
+    private final SqliteConnectionSource connections;
     private final SessionPlanSqliteReads reads;
     private final SessionPlanSqliteWrites writes;
 
     public SqliteSessionPlannerLocalGateway() {
-        this(
-                new SessionPlannerSqliteConnectionFactory(),
-                new SessionPlannerSchemaMigrator(),
-                new SessionPlanSqliteReads(),
-                new SessionPlanSqliteWrites());
+        this(SqliteDatabase.defaultDatabase(
+                SessionPlannerPersistenceSchema.DATABASE_FILE_NAME,
+                NoopDiagnostics.INSTANCE));
+    }
+
+    public SqliteSessionPlannerLocalGateway(SqliteDatabase database) {
+        this(database, new SessionPlanSqliteReads(), new SessionPlanSqliteWrites());
     }
 
     SqliteSessionPlannerLocalGateway(
-            SessionPlannerSqliteConnectionFactory connectionFactory,
-            SessionPlannerSchemaMigrator schemaMigrator,
+            SqliteDatabase database,
             SessionPlanSqliteReads reads,
             SessionPlanSqliteWrites writes
     ) {
-        this.connectionFactory = Objects.requireNonNull(connectionFactory, "connectionFactory");
-        this.schemaMigrator = Objects.requireNonNull(schemaMigrator, "schemaMigrator");
+        SessionPlannerSchemaMigrator schemaMigrator = new SessionPlannerSchemaMigrator();
+        this.connections = Objects.requireNonNull(database, "database").connections(
+                "session-planner",
+                new SqliteMigration(1, schemaMigrator::ensureSchema));
         this.reads = Objects.requireNonNull(reads, "reads");
         this.writes = Objects.requireNonNull(writes, "writes");
     }
@@ -101,14 +108,7 @@ public final class SqliteSessionPlannerLocalGateway {
     }
 
     private Connection openReadyConnection() throws SQLException {
-        Connection connection = connectionFactory.openConnection();
-        try {
-            schemaMigrator.ensureSchema(connection);
-            return connection;
-        } catch (SQLException exception) {
-            connection.close();
-            throw exception;
-        }
+        return connections.openConnection();
     }
 
     private SessionPlanSnapshotRecord saveSnapshot(

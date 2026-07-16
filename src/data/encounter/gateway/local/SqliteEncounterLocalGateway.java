@@ -5,31 +5,31 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteConnectionSource;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
 import src.data.encounter.model.EncounterPlanCreatureRecord;
 import src.data.encounter.model.EncounterPlanRecord;
 import src.data.encounter.model.EncounterPlanSnapshotRecord;
 
 public final class SqliteEncounterLocalGateway {
 
-    private final EncounterSqliteConnectionFactory connectionFactory;
-    private final EncounterSchemaMigrator schemaMigrator;
+    private final SqliteConnectionSource connections;
     private final EncounterPlanSqliteStore store;
 
     public SqliteEncounterLocalGateway() {
-        this(
-                new EncounterSqliteConnectionFactory(),
-                new EncounterSchemaMigrator(),
-                new EncounterPlanSqliteStore());
+        this(SqliteDatabase.defaultDatabase(
+                SqliteDatabase.DEFAULT_DATABASE_FILE_NAME,
+                NoopDiagnostics.INSTANCE));
     }
 
-    SqliteEncounterLocalGateway(
-            EncounterSqliteConnectionFactory connectionFactory,
-            EncounterSchemaMigrator schemaMigrator,
-            EncounterPlanSqliteStore store
-    ) {
-        this.connectionFactory = Objects.requireNonNull(connectionFactory, "connectionFactory");
-        this.schemaMigrator = Objects.requireNonNull(schemaMigrator, "schemaMigrator");
-        this.store = Objects.requireNonNull(store, "store");
+    public SqliteEncounterLocalGateway(SqliteDatabase database) {
+        EncounterSchemaMigrator schemaMigrator = new EncounterSchemaMigrator();
+        this.connections = Objects.requireNonNull(database, "database").connections(
+                "encounter",
+                new SqliteMigration(1, schemaMigrator::ensureSchema));
+        this.store = new EncounterPlanSqliteStore();
     }
 
     public EncounterPlanSnapshotRecord save(
@@ -97,13 +97,6 @@ public final class SqliteEncounterLocalGateway {
     }
 
     private Connection openReadyConnection() throws SQLException {
-        Connection connection = connectionFactory.openConnection();
-        try {
-            schemaMigrator.ensureSchema(connection);
-            return connection;
-        } catch (SQLException exception) {
-            connection.close();
-            throw exception;
-        }
+        return connections.openConnection();
     }
 }

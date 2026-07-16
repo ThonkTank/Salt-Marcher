@@ -4,25 +4,29 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteConnectionSource;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
 import src.data.encountertable.model.EncounterTableCandidateRecord;
 import src.data.encountertable.model.EncounterTableSummaryRecord;
 
 public final class SqliteEncounterTableLocalGateway {
 
-    private final EncounterTableSqliteConnectionFactory connectionFactory;
-    private final EncounterTableSchemaMigrator schemaMigrator;
+    private final SqliteConnectionSource connections;
     private final EncounterTableSqliteStore store = new EncounterTableSqliteStore();
 
     public SqliteEncounterTableLocalGateway() {
-        this(new EncounterTableSqliteConnectionFactory(), new EncounterTableSchemaMigrator());
+        this(SqliteDatabase.defaultDatabase(
+                SqliteDatabase.DEFAULT_DATABASE_FILE_NAME,
+                NoopDiagnostics.INSTANCE));
     }
 
-    SqliteEncounterTableLocalGateway(
-            EncounterTableSqliteConnectionFactory connectionFactory,
-            EncounterTableSchemaMigrator schemaMigrator
-    ) {
-        this.connectionFactory = Objects.requireNonNull(connectionFactory, "connectionFactory");
-        this.schemaMigrator = Objects.requireNonNull(schemaMigrator, "schemaMigrator");
+    public SqliteEncounterTableLocalGateway(SqliteDatabase database) {
+        EncounterTableSchemaMigrator schemaMigrator = new EncounterTableSchemaMigrator();
+        this.connections = Objects.requireNonNull(database, "database").connections(
+                "encounter-table",
+                new SqliteMigration(1, schemaMigrator::ensureSchema));
     }
 
     public List<EncounterTableSummaryRecord> loadSummaries() {
@@ -42,13 +46,6 @@ public final class SqliteEncounterTableLocalGateway {
     }
 
     private Connection openReadyConnection() throws SQLException {
-        Connection connection = connectionFactory.openConnection();
-        try {
-            schemaMigrator.ensureSchema(connection);
-            return connection;
-        } catch (SQLException exception) {
-            connection.close();
-            throw exception;
-        }
+        return connections.openConnection();
     }
 }
