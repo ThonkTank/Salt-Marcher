@@ -26,7 +26,8 @@ public final class SqliteWorldPlannerLocalGateway {
         WorldPlannerSchemaMigrator schemaMigrator = new WorldPlannerSchemaMigrator();
         this.connections = Objects.requireNonNull(database, "database").connections(
                 "world-planner",
-                new SqliteMigration(1, schemaMigrator::ensureSchema));
+                new SqliteMigration(1, schemaMigrator::ensureSchema),
+                new SqliteMigration(2, schemaMigrator::addDisposition));
     }
 
     public WorldPlannerSnapshotRecord load() {

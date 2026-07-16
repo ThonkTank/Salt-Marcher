@@ -8,18 +8,16 @@ import platform.execution.ExecutionLane;
 import platform.persistence.SqliteDatabase;
 import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
-import shell.api.InspectorSink;
 import shell.api.ShellContribution;
 import features.creatures.api.CreaturesApi;
-import features.creatures.api.CreatureCatalogModel;
 import features.creatures.api.CreatureDetailModel;
 import features.creatures.api.CreatureEncounterCandidatesModel;
-import features.creatures.api.CreatureFilterOptionsModel;
-import features.encounter.adapter.javafx.catalog.CatalogContribution;
 import features.encounter.adapter.javafx.state.EncounterStateContribution;
 import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
+import features.encounter.adapter.sqlite.gateway.local.SqliteEncounterRuntimeContextRepository;
 import features.encounter.api.EncounterApi;
 import features.encounter.api.GeneratedEncounterPlanImportApi;
+import features.encounter.api.EncounterRuntimeContextApi;
 import features.encounter.application.EncounterApplicationService;
 import features.encounter.application.EncounterForeignFacts;
 import features.encounter.application.GeneratedEncounterPlanBatchRepository;
@@ -32,7 +30,6 @@ import features.encounter.domain.plan.repository.EncounterPlanRepository;
 import features.encounter.domain.reference.EncounterCreatureCandidateCriteria;
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.api.EncounterTableCandidatesModel;
-import features.encountertable.api.EncounterTableCatalogModel;
 import features.party.api.PartyApi;
 import features.party.api.ActivePartyCompositionModel;
 import features.party.api.ActivePartyModel;
@@ -80,6 +77,7 @@ public final class EncounterServiceAssembly {
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
+        SqliteDatabase safeDatabase = java.util.Objects.requireNonNull(database, "database");
         return create(
                 creatures,
                 creatureDetails,
@@ -92,7 +90,8 @@ public final class EncounterServiceAssembly {
                 activePartyComposition,
                 daySummary,
                 partyMutation,
-                new SqliteEncounterPlanRepository(java.util.Objects.requireNonNull(database, "database")),
+                new SqliteEncounterPlanRepository(safeDatabase),
+                new SqliteEncounterRuntimeContextRepository(safeDatabase),
                 executionLane,
                 uiDispatcher,
                 diagnostics);
@@ -115,6 +114,34 @@ public final class EncounterServiceAssembly {
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
+        return create(
+                creatures, creatureDetails, creatureCandidates, encounterTables, tableCandidates,
+                worldPlanner, party, activeParty, activePartyComposition, daySummary, partyMutation,
+                planRepository,
+                new InMemoryRuntimeContextRepository(),
+                executionLane,
+                uiDispatcher,
+                diagnostics);
+    }
+
+    private static Component create(
+            CreaturesApi creatures,
+            CreatureDetailModel creatureDetails,
+            CreatureEncounterCandidatesModel creatureCandidates,
+            EncounterTableApi encounterTables,
+            EncounterTableCandidatesModel tableCandidates,
+            @Nullable WorldPlannerSnapshotModel worldPlanner,
+            PartyApi party,
+            ActivePartyModel activeParty,
+            ActivePartyCompositionModel activePartyComposition,
+            AdventuringDaySummaryModel daySummary,
+            PartyMutationModel partyMutation,
+            EncounterPlanRepository planRepository,
+            features.encounter.application.EncounterRuntimeContextRepository contextRepository,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
         EncounterPublishedState publishedState = new EncounterPublishedState(
                 java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
         EncounterForeignFacts facts = new EncounterForeignFacts(
@@ -127,7 +154,11 @@ public final class EncounterServiceAssembly {
                 plans,
                 new EncounterGenerator(facts));
         EncounterApplicationService application = new EncounterApplicationService(
-                runtime, plans, publishedState, java.util.Objects.requireNonNull(executionLane, "executionLane"));
+                runtime,
+                plans,
+                publishedState,
+                contextRepository,
+                java.util.Objects.requireNonNull(executionLane, "executionLane"));
         GeneratedEncounterPlanImportApi generatedPlanImport = new GeneratedEncounterPlanImportService(
                 xp -> facts.loadCreatureCandidates(new EncounterCreatureCandidateCriteria(
                         java.util.List.of(),
@@ -140,6 +171,7 @@ public final class EncounterServiceAssembly {
                 executionLane);
         return new Component(
                 application,
+                application.runtimeContexts(),
                 generatedPlanImport,
                 publishedState.stateModel(),
                 publishedState.builderInputsModel(),
@@ -150,6 +182,7 @@ public final class EncounterServiceAssembly {
 
     public record Component(
             EncounterApi application,
+            EncounterRuntimeContextApi runtimeContexts,
             GeneratedEncounterPlanImportApi generatedPlanImport,
             features.encounter.api.EncounterStateModel state,
             features.encounter.api.EncounterBuilderInputsModel builderInputs,
@@ -158,43 +191,17 @@ public final class EncounterServiceAssembly {
             features.encounter.api.EncounterPlanBudgetModel planBudget
     ) {
 
-        public ShellContribution catalogContribution(
-                CreaturesApi creatures,
-                EncounterTableApi encounterTables,
-                CreatureFilterOptionsModel filterOptions,
-                CreatureCatalogModel catalog,
-                CreatureDetailModel detail,
-                EncounterTableCatalogModel encounterTableCatalog,
-                @Nullable WorldPlannerSnapshotModel worldPlanner,
-                InspectorSink inspector
-        ) {
-            return new CatalogContribution(
-                    creatures,
-                    encounterTables,
-                    application,
-                    builderInputs,
-                    filterOptions,
-                    catalog,
-                    detail,
-                    encounterTableCatalog,
-                    tuningPreview,
-                    worldPlanner,
-                    inspector);
-        }
-
         public ShellContribution stateContribution(
-                CreatureDetailModel detail,
                 CreaturesApi creatures,
                 @Nullable WorldPlannerApi worldPlanner,
-                InspectorSink inspector
+                java.util.function.LongConsumer openCreatureInspector
         ) {
             return new EncounterStateContribution(
-                    detail,
                     creatures,
                     state,
                     application,
                     worldPlanner,
-                    inspector);
+                    openCreatureInspector);
         }
     }
 
@@ -225,6 +232,22 @@ public final class EncounterServiceAssembly {
 
     private static IllegalStateException unsupportedImport() {
         return new IllegalStateException("Encounter repository does not support generated-plan import.");
+    }
+
+    private static final class InMemoryRuntimeContextRepository
+            implements features.encounter.application.EncounterRuntimeContextRepository {
+
+        private StoredRuntimeContexts value = StoredRuntimeContexts.empty();
+
+        @Override
+        public StoredRuntimeContexts load() {
+            return value;
+        }
+
+        @Override
+        public void replace(StoredRuntimeContexts contexts) {
+            value = contexts;
+        }
     }
 
 }

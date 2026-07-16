@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-16
 Source of Truth: Persistence boundary, stored truth, reference rules, and
 error behavior for World Planner authored state.
 
@@ -83,6 +83,11 @@ World Planner persistence does not store:
 World Planner is a feature-owned persistence surface. It does not migrate
 existing Session Planner, Encounter, EncounterTable, Creatures, Party, Dungeon,
 or Hex tables in the current backend slice.
+
+World Planner schema version `2` adds the faction disposition and NPC modifier
+columns with a stored default of `0`. Existing membership rows are normalized
+deterministically to the lowest faction identity per NPC before the unique
+single-faction index is installed; no foreign record is rewritten.
 
 Later migrations may add Session Planner-owned references to World Planner
 locations, but those changes belong to the Session Planner persistence

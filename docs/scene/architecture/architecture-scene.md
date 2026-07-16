@@ -12,36 +12,47 @@ state switching, and Scene persistence. It answers how parallel scenes share
 foreign facts without sharing mutable feature internals and how restart-safe
 combat remains Encounter-owned.
 
-## Current And Target Shape
+## Current Shape
 
-The stable implementation remains in the migration-era `src/domain`,
-`src/data`, and `src/view` roots. Its internal roles follow the target feature
-boundary so the later move to `features/scene/{api,domain,application,adapter}`
-is mechanical rather than a redesign.
+Scene is one vertical feature under `features/scene`. Its `api` publishes the
+asynchronous command boundary and immutable model, `domain` owns the running
+workspace, `application` orchestrates foreign facts and the synchronization
+saga, `adapter/sqlite` persists Scene-owned truth, and `adapter/javafx`
+contributes controls and main content to the passive shell. `SceneFeature` is
+the only composition entry point used by `app`.
 
 ## Context View
 
 ```text
-Party API ---------\
-World Planner API --+--> Scene application --> Scene persistence
-Session Planner API-/          |
-                               +--> Encounter runtime-context API
-                                          |
-                                          +--> Encounter runtime persistence
+Party API ----------------\
+World Planner API ---------+--> Scene application --> Scene SQLite adapter
+Session Planner API -------/          |
+                                      +--> Encounter runtime-context API
+                                                 |
+                                                 +--> Encounter-owned runtime
 ```
 
-Scene may consume only published foreign facts. It MUST NOT read foreign
-repositories or persist copied foreign details. Encounter accepts generic
-context keys and MUST NOT depend on Scene types.
+Scene consumes `ActivePartyModel`, `WorldPlannerSnapshotModel`,
+`PreparedSceneCatalogModel`, and `EncounterRuntimeContextApi` only from the
+providers' `api` packages. It MUST NOT read foreign repositories or persist
+copied foreign details. Encounter accepts opaque context identifiers and MUST
+NOT depend on Scene types.
 
 ## Decisions
 
 - Runtime scenes are separate from authored Session Planner scenes because
   planning edits and live play have different consistency and lifecycle needs.
+- A prepared scene import creates a new Scene-owned copy on every invocation.
+  Provenance remains visible, but no live link back to Session Planner exists.
 - Encounter sessions are keyed and persisted by Encounter because moving their
   mutable combat internals into Scene would split Encounter ownership.
-- Scene sends a complete revisioned context snapshot. This makes recovery after
-  a partial local storage failure idempotent and exposes stale synchronization.
+- Scene commands and persistence work run asynchronously on the shared
+  `ExecutionLane`; `SceneModel.current()` reads published memory and performs no
+  persistence or foreign I/O.
+- Scene saves the workspace with `encounterSynchronized=false` before sending a
+  complete revisioned context snapshot. Only an accepted Encounter revision is
+  saved as synchronized. Initialization and refresh retry a pending snapshot.
+  This makes recovery after a partial local failure idempotent and observable.
 - The Scene JavaFX contribution uses controls and main slots but no state slot,
   preserving simultaneous access to the Encounter state tab.
 
@@ -52,6 +63,13 @@ state or duplicate another feature's truth.
 ## Quality And Enforcement
 
 SQLite writes are transactional inside each owner. Cross-feature synchronization
-is retryable rather than described as an atomic transaction. Production-route
-tests own restart and reconciliation proof; `architectureTest` remains the
-mechanical owner of project dependency rules.
+is a retryable saga rather than an atomic transaction. `check` owns executable
+qualification, while `architectureTest` mechanically enforces target package
+dependency direction.
+
+## References
+
+- [Source Architecture](../../project/architecture/source-architecture.md)
+- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+- [Scene Requirements](../requirements/requirements-scene.md)
+- [Scene Persistence Contract](../contract/contract-scene-persistence.md)

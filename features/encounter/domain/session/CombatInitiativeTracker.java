@@ -21,7 +21,11 @@ final class CombatInitiativeTracker {
         open(context, roster, List.of());
     }
 
-    void open(EncounterSessionContext context, List<EncounterCreatureData> roster, List<EncounterCreatureData> allies) {
+    void open(
+            EncounterSessionContext context,
+            List<EncounterCreatureData> roster,
+            List<EncounterCreatureData> allies
+    ) {
         if (roster.isEmpty()) {
             context.setStatus(OPEN_INITIATIVE_NEEDS_CREATURE_STATUS);
             return;
@@ -51,9 +55,11 @@ final class CombatInitiativeTracker {
                     CombatantKind.MONSTER,
                     rolled));
         }
-        for (EncounterCreatureData ally : allies) {
+        for (EncounterCreatureData ally : allies == null ? List.<EncounterCreatureData>of() : allies) {
             pendingRows.add(new InitiativeEntryData(
-                    ally.id(), ally.name(), CombatantKind.ALLY_NPC,
+                    ally.id(),
+                    ally.name(),
+                    CombatantKind.ALLY_NPC,
                     CombatRosterBuilder.defaultMonsterInitiative(ally.initiativeBonus())));
         }
         context.enterMode(Mode.INITIATIVE, INITIATIVE_READY_STATUS);
@@ -84,16 +90,18 @@ final class CombatInitiativeTracker {
                         fallbackIndex);
                 continue;
             }
+            if (entry.kind().alliedNpc()) {
+                EncounterCreatureData ally = rosterCreature(roster, entry.id()).orElse(null);
+                if (ally != null) {
+                    combatRosterBuilder.addAlly(combatRoster, ally, input.initiative());
+                }
+                continue;
+            }
             EncounterCreatureData creature = rosterCreature(roster, entry.id()).orElse(null);
             if (creature == null) {
                 continue;
             }
-            if (entry.kind().alliedNpc()) {
-                combatRosterBuilder.addAlly(combatRoster, creature, input.initiative());
-                fallbackIndex++;
-            } else {
-                fallbackIndex = combatRosterBuilder.addMonsters(combatRoster, creature, input.initiative(), fallbackIndex);
-            }
+            fallbackIndex = combatRosterBuilder.addMonsters(combatRoster, creature, input.initiative(), fallbackIndex);
         }
         combatRoster.sort();
         combatTurnTracker.beginCombat(combatTurns, combatRoster);
@@ -102,24 +110,6 @@ final class CombatInitiativeTracker {
 
     List<InitiativeEntryData> entries() {
         return List.copyOf(pendingRows);
-    }
-
-    void reconcileParty(List<PartyMemberData> party) {
-        List<InitiativeEntryData> next = new ArrayList<>();
-        List<PartyMemberData> members = party == null ? List.of() : List.copyOf(party);
-        for (int index = 0; index < members.size(); index++) {
-            PartyMemberData member = members.get(index);
-            InitiativeEntryData existing = pendingRows.stream()
-                    .filter(row -> row.id().equals(member.id()) && row.kind().playerCharacter())
-                    .findFirst().orElse(null);
-            next.add(existing == null
-                    ? new InitiativeEntryData(member.id(), member.name() + " (Lv. " + member.level() + ")",
-                            CombatantKind.playerCharacterKind(), CombatRosterBuilder.defaultPlayerInitiative(index))
-                    : existing);
-        }
-        pendingRows.stream().filter(row -> !row.kind().playerCharacter()).forEach(next::add);
-        pendingRows.clear();
-        pendingRows.addAll(next);
     }
 
     void restore(List<InitiativeEntryData> entries) {

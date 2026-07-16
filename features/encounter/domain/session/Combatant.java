@@ -66,16 +66,28 @@ public record Combatant(
     }
 
     public static Combatant allyNpc(
-            String sourceId,
-            String displayName,
+            String id,
+            String name,
             MonsterCombatProfile profile,
             long worldNpcId,
             int initiative,
             int order
     ) {
-        return new Combatant(sourceId + ":1", displayName, CombatantKind.ALLY_NPC, profile.creatureId(),
-                worldNpcId, profile.maxHp(), profile.maxHp(), profile.armorClass(), initiative, 1, 0,
-                "Verbündeter · " + profile.detail(), "", order);
+        return new Combatant(
+                id,
+                name,
+                CombatantKind.ALLY_NPC,
+                profile.creatureId(),
+                worldNpcId,
+                profile.maxHp(),
+                profile.maxHp(),
+                profile.armorClass(),
+                initiative,
+                1,
+                profile.xp(),
+                profile.detail(),
+                DEFAULT_LOOT,
+                order);
     }
 
     public boolean isPlayerCharacter() {
@@ -87,8 +99,7 @@ public record Combatant(
     }
 
     public boolean sharesMobBucketWith(Combatant other) {
-        return kind == other.kind() && worldNpcId == 0L && other.worldNpcId() == 0L
-                && creatureId == other.creatureId() && initiative == other.initiative();
+        return worldNpcId == 0L && other.worldNpcId() == 0L && creatureId == other.creatureId() && initiative == other.initiative();
     }
 
     public String mobName() {
@@ -102,6 +113,10 @@ public record Combatant(
 
     public Combatant withInitiative(int value) {
         return new Combatant(id, name, kind, creatureId, worldNpcId, currentHp, maxHp, ac, value, count, xp, detail, loot, order);
+    }
+
+    public Combatant withKind(CombatantKind value) {
+        return new Combatant(id, name, value, creatureId, worldNpcId, currentHp, maxHp, ac, initiative, count, xp, detail, loot, order);
     }
 
     public static int compareByHpThenName(Combatant left, Combatant right) {

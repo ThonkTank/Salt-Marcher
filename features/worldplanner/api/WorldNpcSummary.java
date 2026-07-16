@@ -29,6 +29,15 @@ public record WorldNpcSummary(
     }
 
     public WorldNpcSummary {
+        factionId = Math.max(0L, factionId);
+        dispositionModifier = clamp(dispositionModifier);
+        effectiveDisposition = clamp(effectiveDisposition);
         disposition = disposition == null ? WorldDispositionKind.NEUTRAL : disposition;
+        status = status == null ? WorldNpcLifecycleStatus.ACTIVE : status;
     }
+
+    private static int clamp(int value) {
+        return Math.max(-50, Math.min(50, value));
+    }
+
 }

@@ -46,14 +46,6 @@ public final class EncounterPlanGateway {
         return result.status().isSuccess() ? Optional.of(toSessionBudget(result.budget())) : Optional.empty();
     }
 
-    Optional<BudgetData> loadBudget(PartyBudgetFacts facts) {
-        if (facts == null || !facts.status().isSuccess()) {
-            return Optional.empty();
-        }
-        return Optional.of(toSessionBudget(EncounterDifficultyMathHelper.summarizeBudget(
-                facts.activePartyLevels(), facts.consumedDailyXp(), facts.totalBudgetXp())));
-    }
-
     BudgetResult loadBudgetForTuningPreview() {
         PartyBudgetFacts budgetFacts = facts.loadPartyBudgetFacts();
         if (budgetFacts.status().isStorageError()) {

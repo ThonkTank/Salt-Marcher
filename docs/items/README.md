@@ -1,4 +1,4 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
 Last Reviewed: 2026-07-16
 Source of Truth: Entry point and document map for the Items feature.
@@ -22,7 +22,8 @@ user-authored item state.
 The import is pinned to the public 2014 API at
 `https://www.dnd5eapi.co/api/2014`. The API requires no authentication and
 exposes GET-only reference data. SaltMarcher stores the imported projection
-locally and performs no network requests while browsing the Catalog.
+locally and performs no network requests while browsing the Catalog. Network
+access exists only behind the explicit `ItemsImportApi` maintenance call.
 
 ## References
 

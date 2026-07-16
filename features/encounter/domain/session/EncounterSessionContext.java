@@ -84,4 +84,9 @@ final class EncounterSessionContext {
             status = result.message();
         }
     }
+
+    void restore(int restoredMode, String restoredStatus) {
+        mode = restoredMode;
+        status = restoredStatus == null || restoredStatus.isBlank() ? DEFAULT_STATUS : restoredStatus;
+    }
 }

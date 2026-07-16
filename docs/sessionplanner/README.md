@@ -37,6 +37,9 @@ generated reward truth, loot truth, or generation rules.
 
 - [Session Generation Feature](../sessiongeneration/README.md)
 - [Encounter Generated Import](../encounter/contract/contract-encounter-generated-import.md)
+- Session Planner publishes every prepared scene through a revisioned,
+  I/O-free catalog. Scene imports create independent copies; later planner
+  edits do not mutate running scenes.
 
 ## References
 

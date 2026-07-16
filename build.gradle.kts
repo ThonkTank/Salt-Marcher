@@ -61,19 +61,11 @@ dependencies {
 
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.xerial:sqlite-jdbc:3.53.2.0")
-    implementation("com.google.code.gson:gson:2.14.0")
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.1")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
     testRuntimeOnly(monocleDependency)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
-}
-
-tasks.register<JavaExec>("importSrdItems") {
-    group = "application"
-    description = "Import the public 2014 SRD equipment and magic-item catalog into local SQLite."
-    classpath = sourceSets["main"].runtimeClasspath
-    mainClass = "src.data.items.importer.PublicSrdItemImporter"
 }
 
 extensions.configure<JavaApplication> {
@@ -83,6 +75,14 @@ extensions.configure<JavaApplication> {
 
 tasks.withType<CreateStartScripts>().configureEach {
     applicationName = launcherName.get()
+}
+
+tasks.register<JavaExec>("importSrdItems") {
+    group = "application"
+    description = "Explicitly replace the local Items catalog from the public D&D 5e 2014 SRD API."
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("features.items.ItemsImportCommand")
 }
 
 tasks.test {

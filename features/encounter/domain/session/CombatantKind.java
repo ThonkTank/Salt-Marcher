@@ -27,6 +27,11 @@ public enum CombatantKind {
         return MONSTER;
     }
 
-    public boolean alliedNpc() { return this == ALLY_NPC; }
-    public boolean enemy() { return this == MONSTER; }
+    public boolean alliedNpc() {
+        return this == ALLY_NPC;
+    }
+
+    public boolean enemy() {
+        return this == MONSTER;
+    }
 }

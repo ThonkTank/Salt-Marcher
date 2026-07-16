@@ -33,6 +33,8 @@ import features.encounter.domain.plan.EncounterPlan;
 import features.encounter.domain.plan.EncounterPlanCreature;
 import features.encounter.domain.plan.repository.EncounterPlanRepository;
 import features.encounter.api.ApplyEncounterStateCommand;
+import features.encounter.api.OpenSavedEncounterPlanCommand;
+import features.encounter.api.OpenSavedEncounterPlanResult;
 import features.encountertable.domain.catalog.EncounterTableCandidateData;
 import features.encountertable.domain.catalog.EncounterTableSummaryData;
 import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
@@ -78,8 +80,43 @@ public final class EncounterStateTabTest {
     }
 
     @Test
-    void ENCOUNTER_STATE_TAB_003() throws Exception {
-        runOnFxThread(EncounterStateTabTest::assertUnsavedRosterPublicationForCatalogConfirmation);
+    void savedCatalogOpenRequiresDiscardConfirmationForUnsavedRoster() {
+        TestRuntime runtime = TestRuntime.create();
+        runtime.encounter.application().applyState(ApplyEncounterStateCommand.addCreature(GOBLIN_ID));
+
+        OpenSavedEncounterPlanResult guarded = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, false))
+                .toCompletableFuture()
+                .join();
+        org.junit.jupiter.api.Assertions.assertEquals(
+                OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED,
+                guarded.status());
+
+        OpenSavedEncounterPlanResult opened = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, true))
+                .toCompletableFuture()
+                .join();
+        org.junit.jupiter.api.Assertions.assertEquals(OpenSavedEncounterPlanResult.Status.OPENED, opened.status());
+    }
+
+    @Test
+    void savedCatalogOpenRequiresDiscardConfirmationAfterLastRosterEntryWasRemoved() {
+        TestRuntime runtime = TestRuntime.create();
+        OpenSavedEncounterPlanResult opened = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, true))
+                .toCompletableFuture()
+                .join();
+        org.junit.jupiter.api.Assertions.assertEquals(OpenSavedEncounterPlanResult.Status.OPENED, opened.status());
+
+        runtime.encounter.application().applyState(ApplyEncounterStateCommand.removeCreature(GOBLIN_ID));
+        OpenSavedEncounterPlanResult guarded = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, false))
+                .toCompletableFuture()
+                .join();
+
+        org.junit.jupiter.api.Assertions.assertEquals(
+                OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED,
+                guarded.status());
     }
 
     private static void assertEncounterStateTabOpensThroughShellBinding() {
@@ -88,19 +125,6 @@ public final class EncounterStateTabTest {
         EncounterStateView view = encounterStateView(binding);
         assertTextPresent(view, "Encounter", "ENCOUNTER-STATE-TAB-001 title");
         assertTextPresent(view, "Monster per +Add hinzufuegen...", "ENCOUNTER-STATE-TAB-001 empty roster");
-        assertTextAbsent(view, "Oeffnen", "Saved-plan opening moved out of Encounter state");
-    }
-
-    private static void assertUnsavedRosterPublicationForCatalogConfirmation() {
-        TestRuntime runtime = TestRuntime.create();
-        runtime.openSavedEncounter();
-        if (runtime.hasUnsavedRosterChanges()) {
-            throw new AssertionError("Opening a saved plan must begin from a clean roster state.");
-        }
-        runtime.addGoblin();
-        if (!runtime.hasUnsavedRosterChanges()) {
-            throw new AssertionError("Roster mutation must publish unsaved state for Catalog confirmation.");
-        }
     }
 
     private static void assertSavedEncounterReadbackRendersInStateTab() {
@@ -149,13 +173,6 @@ public final class EncounterStateTabTest {
                 .anyMatch(expected::equals);
         if (!found) {
             throw new IllegalStateException(message + " expected visible text <" + expected + ">.");
-        }
-    }
-
-    private static void assertTextAbsent(Node root, String expected, String message) {
-        boolean found = labeledNodes(root).stream().map(Labeled::getText).anyMatch(expected::equals);
-        if (found) {
-            throw new IllegalStateException(message + " unexpectedly found visible text <" + expected + ">.");
         }
     }
 
@@ -248,18 +265,10 @@ public final class EncounterStateTabTest {
             encounter.application().applyState(ApplyEncounterStateCommand.openSavedPlan(planId));
         }
 
-        void addGoblin() {
-            encounter.application().applyState(ApplyEncounterStateCommand.addCreature(GOBLIN_ID));
-        }
-
-        boolean hasUnsavedRosterChanges() {
-            return encounter.state().current().builderPane().hasUnsavedRosterChanges();
-        }
-
         EncounterStateContribution contribution() {
             return new EncounterStateContribution(
-                    creatures.detail(), creatures.application(), encounter.state(), encounter.application(),
-                    null, new NoopInspectorSink());
+                    creatures.application(), encounter.state(), encounter.application(),
+                    null, ignored -> { });
         }
 
         private static void seedParty(PartyApi party) {

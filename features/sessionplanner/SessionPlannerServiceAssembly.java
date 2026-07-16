@@ -33,6 +33,7 @@ import features.sessionplanner.api.SessionPlannerCurrentSessionModel;
 import features.sessionplanner.api.SessionPlannerParticipantsModel;
 import features.sessionplanner.api.SessionPlannerSceneTimelineModel;
 import features.sessionplanner.api.SessionPlannerStatePanelModel;
+import features.sessionplanner.api.PreparedSceneCatalogModel;
 import features.sessionplanner.application.SessionGenerationCoordinator;
 import features.sessionplanner.application.SessionGenerationPublishedState;
 import features.sessionplanner.application.SessionPlannerApplicationService;
@@ -235,6 +236,10 @@ public final class SessionPlannerServiceAssembly {
 
     public SessionGenerationPreviewModel generationPreviewModel() {
         return runtime.generationState().model();
+    }
+
+    public PreparedSceneCatalogModel preparedScenes() {
+        return runtime.publishedState().preparedSceneCatalogModel();
     }
 
     public ShellContribution contribution() {

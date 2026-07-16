@@ -68,11 +68,35 @@ public final class EncounterSession {
                 combatResolution.resultState());
     }
 
+    public EncounterSessionMemento memento() {
+        return builder.memento(
+                context,
+                combatInitiative.entries(),
+                combatRoster.combatants(),
+                combatTurnTracker.currentTurnIndex(),
+                combatTurnTracker.round(),
+                combatResolution.resultState());
+    }
+
+    public void restore(EncounterSessionMemento memento, SessionRepository access) {
+        if (memento == null) {
+            apply(EncounterSessionCommand.refresh(), access);
+            return;
+        }
+        context.refresh(access, true);
+        context.restore(memento.mode(), memento.status());
+        builder.restore(memento);
+        combatInitiative.restore(memento.initiativeEntries());
+        combatRoster.replaceAll(memento.combatants());
+        combatTurnTracker.restoreState(memento.currentTurnIndex(), memento.round());
+        combatResolution.restore(memento.resultState());
+    }
+
     public void reconcileParty(SessionRepository access) {
         var activeTurnId = combatTurnTracker.activeTurnId(combatTurns, combatRoster);
-        context.refresh(access);
+        context.refresh(access, false);
         if (context.mode() == Mode.INITIATIVE) {
-            combatInitiative.reconcileParty(context.activeParty());
+            combatInitiative.open(context, builder.roster(), sceneAllies);
         } else if (context.mode() == Mode.COMBAT) {
             combatRoster.reconcilePlayers(context.activeParty(), combatRosterBuilder);
             combatTurnTracker.restore(combatTurns, combatRoster, activeTurnId);
@@ -80,11 +104,10 @@ public final class EncounterSession {
     }
 
     public void reconcileSceneNpcs(List<SceneNpcData> npcs, SessionRepository access) {
-        List<SceneNpcData> values = npcs == null ? List.of() : List.copyOf(npcs);
         List<EncounterCreatureData> hostile = new java.util.ArrayList<>();
         List<EncounterCreatureData> friendly = new java.util.ArrayList<>();
-        for (SceneNpcData npc : values) {
-            if (!npc.active() || npc.role() == SceneNpcData.Role.NEUTRAL) {
+        for (SceneNpcData npc : npcs == null ? List.<SceneNpcData>of() : npcs) {
+            if (npc.role() == SceneNpcData.Role.NEUTRAL) {
                 continue;
             }
             CreatureDetailData detail = access.loadCreature(npc.creatureId()).orElse(null);
@@ -108,7 +131,7 @@ public final class EncounterSession {
                 }
             }
         } else if (context.mode() == Mode.INITIATIVE) {
-            combatInitiative.open(context, combinedRoster(), sceneAllies);
+            combatInitiative.open(context, builder.roster(), sceneAllies);
         } else if (context.mode() == Mode.COMBAT) {
             var activeTurnId = combatTurnTracker.activeTurnId(combatTurns, combatRoster);
             combatRoster.reconcileSceneNpcs(hostile, friendly, combatRosterBuilder);
@@ -120,36 +143,6 @@ public final class EncounterSession {
         List<EncounterCreatureData> combined = new java.util.ArrayList<>(builder.roster());
         combined.addAll(sceneAllies);
         return List.copyOf(combined);
-    }
-
-    public EncounterSessionMemento memento() {
-        EncounterSessionMemento.BuilderSlice slice = builder.memento();
-        return new EncounterSessionMemento(
-                EncounterSessionMemento.CURRENT_FORMAT_VERSION,
-                context.mode(), context.status(), slice.builderInputs(), slice.roster(), slice.pendingUndo(),
-                slice.nextUndoToken(), slice.generatedAlternatives(), slice.generatedAdvisories(),
-                slice.selectedAlternativeIndex(), slice.generatedAdjustedXp(), slice.generatedDifficulty(),
-                slice.generatedTitle(), slice.generationHistoryPresent(), slice.activeSavedPlanId(),
-                combatInitiative.entries(), combatRoster.combatants(), combatTurnTracker.currentTurnIndex(),
-                combatTurnTracker.round(), combatResolution.resultState());
-    }
-
-    public void restore(EncounterSessionMemento memento, SessionRepository access) {
-        if (memento == null) {
-            apply(EncounterSessionCommand.refresh(), access);
-            return;
-        }
-        context.refresh(access);
-        context.restore(memento.mode(), memento.status());
-        builder.restore(new EncounterSessionMemento.BuilderSlice(
-                memento.builderInputs(), memento.roster(), memento.pendingUndo(), memento.nextUndoToken(),
-                memento.generatedAlternatives(), memento.generatedAdvisories(), memento.selectedAlternativeIndex(),
-                memento.generatedAdjustedXp(), memento.generatedDifficulty(), memento.generatedTitle(),
-                memento.generationHistoryPresent(), memento.activeSavedPlanId()));
-        combatInitiative.restore(memento.initiativeEntries());
-        combatRoster.replaceAll(memento.combatants());
-        combatTurnTracker.restoreState(memento.currentTurnIndex(), memento.round());
-        combatResolution.restore(memento.resultState());
     }
 
     private void addCreature(SessionRepository access, long creatureId, long worldNpcId) {
@@ -249,7 +242,7 @@ public final class EncounterSession {
             Map<EncounterSessionCommand.Action, SessionCommandHandler> handlers =
                     new EnumMap<>(EncounterSessionCommand.Action.class);
             handlers.put(EncounterSessionCommand.Action.REFRESH, (session, command, access) ->
-                    session.context.refresh(access));
+                    session.context.refresh(access, true));
             handlers.put(EncounterSessionCommand.Action.UPDATE_BUILDER_INPUTS, (session, command, access) ->
                     session.builder.updateBuilderInputs(command.builderInputs()));
             handlers.put(EncounterSessionCommand.Action.GENERATE, (session, command, access) ->
@@ -276,7 +269,10 @@ public final class EncounterSession {
             handlers.put(EncounterSessionCommand.Action.UNDO_REMOVE, (session, command, access) ->
                     session.builder.mutateCreature(command, session.context));
             handlers.put(EncounterSessionCommand.Action.OPEN_INITIATIVE, (session, command, access) ->
-                    session.combatInitiative.open(session.context, session.builder.roster(), session.sceneAllies));
+                    session.combatInitiative.open(
+                            session.context,
+                            session.builder.roster(),
+                            session.sceneAllies));
             handlers.put(EncounterSessionCommand.Action.BACK_TO_BUILDER, (session, command, access) ->
                     session.context.enterMode(
                             Mode.BUILDER,

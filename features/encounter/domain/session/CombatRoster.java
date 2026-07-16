@@ -45,7 +45,10 @@ public final class CombatRoster {
             PartyMemberData member = members.get(index);
             if (!containsId(CombatantId.from(member.id()))) {
                 builder.addPlayerToRunningCombat(
-                        this, member.id(), member.name(), CombatRosterBuilder.defaultPlayerInitiative(index));
+                        this,
+                        member.id(),
+                        member.name(),
+                        CombatRosterBuilder.defaultPlayerInitiative(index));
             }
         }
         sort();
@@ -56,21 +59,54 @@ public final class CombatRoster {
             List<EncounterCreatureData> friendly,
             CombatRosterBuilder builder
     ) {
-        List<Long> retained = new java.util.ArrayList<>();
+        List<Long> retained = new ArrayList<>();
         hostile.forEach(value -> retained.add(value.worldNpcId()));
         friendly.forEach(value -> retained.add(value.worldNpcId()));
         combatants.removeIf(value -> value.worldNpcId() > 0L && !retained.contains(value.worldNpcId()));
+
+        List<Combatant> reconciled = new ArrayList<>();
+        for (Combatant combatant : combatants) {
+            CombatantKind desiredKind = desiredSceneNpcKind(combatant.worldNpcId(), hostile, friendly);
+            reconciled.add(desiredKind == null || combatant.kind() == desiredKind
+                    ? combatant
+                    : combatant.withKind(desiredKind));
+        }
+        replaceAll(reconciled);
+
         for (EncounterCreatureData ally : friendly) {
-            combatants.removeIf(value -> value.worldNpcId() == ally.worldNpcId() && value.kind().enemy());
             builder.addAlly(this, ally, CombatRosterBuilder.defaultMonsterInitiative(ally.initiativeBonus()));
         }
         for (EncounterCreatureData enemy : hostile) {
             boolean exists = combatants.stream().anyMatch(value -> value.worldNpcId() == enemy.worldNpcId());
             if (!exists) {
-                builder.addMonsters(this, enemy, CombatRosterBuilder.defaultMonsterInitiative(enemy.initiativeBonus()),
+                builder.addMonsters(
+                        this,
+                        enemy,
+                        CombatRosterBuilder.defaultMonsterInitiative(enemy.initiativeBonus()),
                         combatants.size());
             }
         }
         sort();
+    }
+
+    private static CombatantKind desiredSceneNpcKind(
+            long worldNpcId,
+            List<EncounterCreatureData> hostile,
+            List<EncounterCreatureData> friendly
+    ) {
+        if (worldNpcId <= 0L) {
+            return null;
+        }
+        for (EncounterCreatureData enemy : hostile) {
+            if (enemy.worldNpcId() == worldNpcId) {
+                return CombatantKind.MONSTER;
+            }
+        }
+        for (EncounterCreatureData ally : friendly) {
+            if (ally.worldNpcId() == worldNpcId) {
+                return CombatantKind.ALLY_NPC;
+            }
+        }
+        return null;
     }
 }

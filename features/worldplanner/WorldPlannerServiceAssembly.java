@@ -1,6 +1,7 @@
 package features.worldplanner;
 
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.diagnostics.NoopDiagnostics;
@@ -10,12 +11,11 @@ import platform.persistence.SqliteDatabase;
 import platform.ui.DirectUiDispatcher;
 import platform.ui.UiDispatcher;
 import shell.api.InspectorSink;
-import shell.api.ShellContribution;
 import features.creatures.api.CreatureCatalogModel;
 import features.creatures.api.CreatureReferenceApi;
 import features.encountertable.api.EncounterTableCatalogModel;
 import features.encountertable.api.EncounterTableReferenceApi;
-import features.worldplanner.adapter.javafx.WorldPlannerContribution;
+import features.worldplanner.adapter.javafx.WorldPlannerInspectorController;
 import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
 import features.worldplanner.api.WorldPlannerApi;
 import features.worldplanner.api.WorldPlannerEncounterSink;
@@ -117,6 +117,7 @@ public final class WorldPlannerServiceAssembly {
 
         private final WorldPlannerApplicationService application;
         private final WorldPlannerSnapshotModel snapshot;
+        private @Nullable WorldPlannerInspectorController activeInspectorController;
 
         private Component(
                 WorldPlannerApplicationService application,
@@ -134,19 +135,90 @@ public final class WorldPlannerServiceAssembly {
             return snapshot;
         }
 
-        public ShellContribution contribution(
+        public void openNpcInspector(
+                long npcId,
                 WorldPlannerEncounterSink encounter,
                 CreatureCatalogModel creatureCatalog,
                 EncounterTableCatalogModel encounterTableCatalog,
                 InspectorSink inspector
         ) {
-            return new WorldPlannerContribution(
-                    application,
-                    encounter,
-                    snapshot,
-                    creatureCatalog,
-                    encounterTableCatalog,
-                    inspector);
+            inspectorController(
+                    application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openNpcInspector(npcId);
+        }
+
+        public void openFactionInspector(
+                long factionId,
+                WorldPlannerEncounterSink encounter,
+                CreatureCatalogModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            inspectorController(
+                    application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openFactionInspector(factionId);
+        }
+
+        public void openLocationInspector(
+                long locationId,
+                WorldPlannerEncounterSink encounter,
+                CreatureCatalogModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            inspectorController(
+                    application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openLocationInspector(locationId);
+        }
+
+        public void openNpcCreator(
+                WorldPlannerEncounterSink encounter,
+                CreatureCatalogModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            inspectorController(application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openNpcCreator();
+        }
+
+        public void openFactionCreator(
+                WorldPlannerEncounterSink encounter,
+                CreatureCatalogModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            inspectorController(application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openFactionCreator();
+        }
+
+        public void openLocationCreator(
+                WorldPlannerEncounterSink encounter,
+                CreatureCatalogModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            inspectorController(application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)
+                    .openLocationCreator();
+        }
+
+        private synchronized WorldPlannerInspectorController inspectorController(
+                WorldPlannerApi application,
+                WorldPlannerEncounterSink encounter,
+                WorldPlannerSnapshotModel snapshot,
+                CreatureCatalogModel creatureCatalog,
+                EncounterTableCatalogModel encounterTableCatalog,
+                InspectorSink inspector
+        ) {
+            if (activeInspectorController != null && activeInspectorController.matches(
+                    encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector)) {
+                return activeInspectorController;
+            }
+            if (activeInspectorController != null) {
+                activeInspectorController.close();
+            }
+            activeInspectorController = new WorldPlannerInspectorController(
+                    application, encounter, snapshot, creatureCatalog, encounterTableCatalog, inspector);
+            return activeInspectorController;
         }
     }
 }

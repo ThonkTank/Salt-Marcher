@@ -139,68 +139,6 @@
     -fx-font-weight: bold;
 }
 
-/* Runtime scene board: a compact GM pinboard with one strong focus rail. */
-.scene-runtime-controls {
-    -fx-background-color: -sm-bg-panel;
-    -fx-border-color: transparent transparent -sm-border-subtle transparent;
-}
-.scene-runtime-eyebrow {
-    -fx-text-fill: -sm-accent-hover;
-    -fx-font-size: 10px;
-    -fx-font-weight: bold;
-    -fx-letter-spacing: 1.2px;
-}
-.scene-runtime-switch {
-    -fx-alignment: center-left;
-    -fx-background-color: -sm-bg-card;
-    -fx-border-color: -sm-border-subtle;
-    -fx-padding: 8 10;
-}
-.scene-runtime-switch:selected {
-    -fx-background-color: -sm-active-bg-card;
-    -fx-border-color: -sm-medium;
-    -fx-border-width: 0 0 0 4;
-}
-.scene-runtime-header {
-    -fx-background-color: linear-gradient(to right, -sm-bg-panel, -sm-bg-card);
-    -fx-border-color: transparent transparent -sm-border-subtle transparent;
-}
-.scene-runtime-scene-mark {
-    -fx-text-fill: -sm-medium;
-    -fx-font-size: 10px;
-    -fx-font-weight: bold;
-    -fx-padding: 7 0 0 0;
-}
-.scene-runtime-title-input {
-    -fx-font-size: 17px;
-    -fx-font-weight: bold;
-}
-.scene-runtime-panel {
-    -fx-background-color: -sm-bg-card;
-    -fx-border-color: -sm-border-subtle;
-    -fx-background-radius: 6;
-    -fx-border-radius: 6;
-}
-.scene-runtime-panel-title {
-    -fx-font-size: 15px;
-    -fx-font-weight: bold;
-}
-.scene-runtime-row {
-    -fx-background-color: -sm-bg-panel;
-    -fx-padding: 7;
-    -fx-background-radius: 4;
-}
-.scene-runtime-row-label { -fx-font-size: 12px; }
-.scene-runtime-location {
-    -fx-text-fill: -sm-medium;
-    -fx-font-weight: bold;
-    -fx-font-size: 14px;
-}
-.scene-runtime-divider {
-    -fx-min-height: 1px;
-    -fx-background-color: -sm-border-subtle;
-}
-
 .button {
     -fx-background-color: -sm-bg-elevated;
     -fx-text-fill: -sm-text-primary;
@@ -313,41 +251,6 @@
 .catalog-main-pagination {
     -fx-spacing: 8;
     -fx-padding: 8 0 0 0;
-}
-.catalog-workspace-controls {
-    -fx-padding: 10 12 12 12;
-    -fx-background-color: -sm-bg-panel;
-}
-.catalog-workspace-main {
-    -fx-background-color: -sm-bg-darkest;
-}
-.catalog-content-tabs {
-    -fx-padding: 0 0 8 0;
-    -fx-border-color: transparent transparent -sm-border-subtle transparent;
-    -fx-border-width: 0 0 1 0;
-}
-.catalog-content-tab {
-    -fx-padding: 5 9 5 9;
-    -fx-background-color: transparent;
-    -fx-border-color: -sm-border-subtle;
-    -fx-border-radius: 4;
-}
-.catalog-content-tab:selected {
-    -fx-background-color: rgba(30, 127, 212, 0.20);
-    -fx-border-color: -sm-accent-hover;
-    -fx-text-fill: -sm-text-primary;
-}
-.catalog-section-title {
-    -fx-font-weight: bold;
-    -fx-text-fill: -sm-text-secondary;
-}
-.catalog-item-filters {
-    -fx-alignment: center-left;
-}
-.item-detail,
-.world-planner-inspector {
-    -fx-spacing: 8;
-    -fx-padding: 12;
 }
 .party-header {
     -fx-background-color: -sm-bg-elevated;
@@ -1616,13 +1519,31 @@
 .session-planner-scene-encounter-summary {
     -fx-padding: 2 0 2 0;
 }
+.world-planner-controls,
 .world-planner-main,
 .world-planner-state {
     -fx-spacing: 8;
     -fx-padding: 12;
 }
+.world-planner-controls {
+    -fx-min-width: 220;
+    -fx-alignment: center-left;
+}
+.world-planner-title,
 .world-planner-section-title {
     -fx-font-weight: bold;
+}
+.world-planner-module-tabs {
+    -fx-padding: 0 0 0 6;
+    -fx-spacing: 6;
+}
+.world-planner-module-tab,
+.world-planner-refresh {
+    -fx-alignment: center;
+    -fx-padding: 5 10 5 10;
+}
+.world-planner-module-tab {
+    -fx-min-width: 84;
 }
 .search-filter-controls {
     -fx-spacing: 7;

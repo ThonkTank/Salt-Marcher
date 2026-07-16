@@ -190,7 +190,7 @@ final class GeneratedEncounterPlanImportTest {
             assertEquals("Original label", saved.name());
             assertEquals(1L, saved.creatures().getFirst().creatureId());
             assertEquals(1, rowCount(databasePath, "generated_encounter_plan_origins"));
-            assertEquals(2, encounterMigrationVersion(databasePath));
+            assertEquals(3, encounterMigrationVersion(databasePath));
         }
     }
 

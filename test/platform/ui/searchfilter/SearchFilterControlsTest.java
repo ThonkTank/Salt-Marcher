@@ -11,20 +11,9 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import shell.api.InspectorEntrySpec;
-import shell.api.InspectorSink;
-import shell.api.ShellBinding;
-import shell.api.ShellSlot;
-import features.worldplanner.adapter.sqlite.repository.SqliteWorldPlannerRepository;
-import features.worldplanner.application.WorldPlannerApplicationService;
-import features.worldplanner.WorldPlannerServiceAssembly;
-import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
-import features.worldplanner.api.CreateWorldNpcCommand;
-import features.worldplanner.adapter.javafx.WorldPlannerContribution;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -120,11 +109,6 @@ public final class SearchFilterControlsTest {
         });
     }
 
-    @Test
-    void SEARCH_FILTER_CONTROLS_005() throws Exception {
-        runOnFxThread(SearchFilterControlsTest::assertWorldPlannerProductionRoute);
-    }
-
     private static SearchFilterFixture setupSearchFilterFixture() {
         SearchFilterControlsContentModel model = new SearchFilterControlsContentModel();
         SearchFilterControlsView view = new SearchFilterControlsView();
@@ -149,49 +133,6 @@ public final class SearchFilterControlsTest {
         assertTrue(fixture.events().isEmpty(), label + " projection render does not emit input");
     }
 
-    private static void assertWorldPlannerProductionRoute() {
-        WorldPlannerServiceAssembly services = worldPlannerServices();
-        WorldPlannerApplicationService application = services.createApplicationService();
-        ShellBinding binding = new WorldPlannerContribution(
-                application,
-                null,
-                services.snapshotModel(),
-                null,
-                null,
-                EmptyInspectorSink.INSTANCE).bind();
-        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
-        Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
-        Stage stage = new Stage();
-        stage.setScene(new Scene(new javafx.scene.layout.HBox(controls, main), 1_120.0, 620.0));
-        stage.show();
-        layoutOpenWindows();
-
-        application.createNpc(new CreateWorldNpcCommand(
-                "Captain Vale",
-                101L,
-                "scarred",
-                "watchful",
-                "former scout",
-                "knows the pass"));
-        layoutOpenWindows();
-
-        TextField search = descendant(descendant(controls, SearchFilterControlsView.class), TextField.class);
-        search.setText("Captain");
-        layoutOpenWindows();
-        assertTrue(listView(main).getItems().stream().anyMatch(item -> item.toString().contains("Captain Vale")),
-                "WorldPlannerContribution production route keeps matching row through SearchFilter controls");
-        search.setText("missing");
-        layoutOpenWindows();
-        assertTrue(listView(main).getItems().isEmpty(),
-                "WorldPlannerContribution production route filters nonmatching rows through SearchFilter controls");
-        stage.close();
-    }
-
-    private static WorldPlannerServiceAssembly worldPlannerServices() {
-        return new WorldPlannerServiceAssembly(
-                new SqliteWorldPlannerRepository(),
-                new PositiveReferencePort());
-    }
 
     private static SearchFilterControlsContentModel.Projection projection(
             String query,
@@ -256,23 +197,6 @@ public final class SearchFilterControlsTest {
                 .map(type::cast)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Descendant not found: " + type.getSimpleName()));
-    }
-
-    private static <T extends Node> T slot(ShellBinding binding, ShellSlot slot, Class<T> type) {
-        Node node = binding.slotContent().get(slot);
-        if (type.isInstance(node)) {
-            return type.cast(node);
-        }
-        throw new AssertionError("Shell slot not found: " + slot);
-    }
-
-    @SuppressWarnings("unchecked")
-    private static ListView<Object> listView(Parent parent) {
-        return descendants(parent).stream()
-                .filter(ListView.class::isInstance)
-                .map(node -> (ListView<Object>) node)
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("ListView not found."));
     }
 
     private static List<Node> descendants(Node node) {
@@ -367,33 +291,4 @@ public final class SearchFilterControlsTest {
         void run() throws Exception;
     }
 
-    private static final class PositiveReferencePort implements WorldPlannerReferencePort {
-
-        @Override
-        public boolean creatureStatblockExists(long creatureStatblockId) {
-            return creatureStatblockId > 0L;
-        }
-
-        @Override
-        public boolean encounterTableExists(long encounterTableId) {
-            return encounterTableId > 0L;
-        }
-    }
-
-    private enum EmptyInspectorSink implements InspectorSink {
-        INSTANCE;
-
-        @Override
-        public void push(InspectorEntrySpec entry) {
-        }
-
-        @Override
-        public void clear() {
-        }
-
-        @Override
-        public boolean isShowing(Object entryKey) {
-            return false;
-        }
-    }
 }

@@ -36,7 +36,10 @@ import features.worldplanner.api.CreateWorldLocationCommand;
 import features.worldplanner.api.CreateWorldNpcCommand;
 import features.worldplanner.api.RefreshWorldPlannerCommand;
 import features.worldplanner.api.SetWorldFactionInventoryLimitCommand;
+import features.worldplanner.api.SetWorldFactionDispositionCommand;
 import features.worldplanner.api.SetWorldNpcLifecycleStatusCommand;
+import features.worldplanner.api.SetWorldNpcDispositionModifierCommand;
+import features.worldplanner.api.WorldDispositionKind;
 import features.worldplanner.api.UpdateWorldNpcNotesCommand;
 import features.worldplanner.api.WorldNpcLifecycleStatus;
 import features.worldplanner.api.WorldPlannerReadStatus;
@@ -50,6 +53,7 @@ public final class WorldPlannerBackendTest {
 
     @Test
     void WORLD_PLANNER_BACKEND_001() {
+        resetDatabase();
         WorldPlannerRuntime runtime = productionRuntime();
         WorldPlannerApplicationService service = runtime.application();
         WorldPlannerSnapshotModel model = runtime.snapshot();
@@ -63,6 +67,8 @@ public final class WorldPlannerBackendTest {
                 "knows the pass"));
         service.createFaction(new CreateWorldFactionCommand("Ash Guard", "border patrol", 201L));
         service.addFactionNpc(new AddWorldFactionNpcCommand(1L, 1L));
+        service.setFactionDisposition(new SetWorldFactionDispositionCommand(1L, -20));
+        service.setNpcDispositionModifier(new SetWorldNpcDispositionModifierCommand(1L, 5));
         service.setFactionInventoryLimit(new SetWorldFactionInventoryLimitCommand(
                 1L,
                 101L,
@@ -98,6 +104,10 @@ public final class WorldPlannerBackendTest {
         assertEquals(1, current.factions().size(), "faction count");
         assertEquals(1, current.factions().get(0).npcIds().size(), "duplicate faction npc rejected");
         assertEquals(1L, current.factions().get(0).npcIds().get(0), "faction npc membership");
+        assertEquals(-20, current.factions().getFirst().disposition(), "faction disposition");
+        assertEquals(5, current.npcs().getFirst().dispositionModifier(), "npc disposition modifier");
+        assertEquals(-15, current.npcs().getFirst().effectiveDisposition(), "effective disposition");
+        assertEquals(WorldDispositionKind.HOSTILE, current.npcs().getFirst().disposition(), "disposition kind");
         assertEquals(3, current.factions().get(0).inventoryLimits().get(0).quantity(), "finite stock");
         assertEquals(2, current.factions().get(0).inventoryLimits().size(), "explicit unlimited stock retained");
         assertEquals(false, current.factions().get(0).inventoryLimits().get(1).finite(), "explicit unlimited finite flag");
@@ -112,6 +122,8 @@ public final class WorldPlannerBackendTest {
         assertEquals("Captain Vale", reloaded.npcs().get(0).displayName(), "persisted npc name");
         assertEquals(WorldNpcLifecycleStatus.ACTIVE, reloaded.npcs().get(0).status(), "persisted lifecycle");
         assertEquals(201L, reloaded.factions().get(0).primaryEncounterTableId(), "persisted faction table");
+        assertEquals(-20, reloaded.factions().getFirst().disposition(), "persisted faction disposition");
+        assertEquals(5, reloaded.npcs().getFirst().dispositionModifier(), "persisted npc disposition modifier");
         assertEquals(2, reloaded.factions().get(0).inventoryLimits().size(), "persisted inventory limits");
         assertEquals(false, reloaded.factions().get(0).inventoryLimits().get(1).finite(), "persisted unlimited flag");
         assertEquals(201L, reloaded.locations().get(0).encounterTableIds().get(0), "persisted location table");

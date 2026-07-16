@@ -21,10 +21,6 @@ final class EncounterSessionSavedPlans {
         activeSavedPlanId = OptionalLong.empty();
     }
 
-    boolean hasActivePlan() {
-        return activeSavedPlanId.isPresent();
-    }
-
     long activeSavedPlanId() {
         return activeSavedPlanId.orElse(0L);
     }
@@ -33,7 +29,7 @@ final class EncounterSessionSavedPlans {
         activeSavedPlanId = planId > 0L ? OptionalLong.of(planId) : OptionalLong.empty();
     }
 
-    void saveCurrentPlan(
+    boolean saveCurrentPlan(
             EncounterSession.SessionRepository access,
             EncounterSessionContext context,
             List<EncounterCreatureData> roster,
@@ -41,7 +37,7 @@ final class EncounterSessionSavedPlans {
     ) {
         if (roster.isEmpty()) {
             context.setStatus(SAVE_NEEDS_CREATURE_STATUS);
-            return;
+            return false;
         }
         PlanOutcome result = access.savePlan(new EncounterPlan(
                 activeSavedPlanId.orElse(0L),
@@ -50,11 +46,14 @@ final class EncounterSessionSavedPlans {
                 planCreatures(roster)));
         if (!result.success()) {
             context.setStatus(result.message().isBlank() ? SAVE_FAILURE_STATUS : result.message());
-            return;
+            context.refreshSavedPlans(access);
+            return false;
         }
         EncounterPlan plan = result.plan().orElseThrow();
         activeSavedPlanId = OptionalLong.of(plan.id());
         context.setStatus(plan.name() + " gespeichert.");
+        context.refreshSavedPlans(access);
+        return true;
     }
 
     boolean openSavedPlan(
@@ -67,6 +66,7 @@ final class EncounterSessionSavedPlans {
         PlanOutcome result = access.loadPlan(planId);
         if (!result.success()) {
             context.setStatus(result.message().isBlank() ? OPEN_FAILURE_STATUS : result.message());
+            context.refreshSavedPlans(access);
             return false;
         }
         EncounterPlan plan = result.plan().orElseThrow();
@@ -74,6 +74,7 @@ final class EncounterSessionSavedPlans {
         generation.openSavedPlan(plan.generatedLabel().isBlank() ? plan.name() : plan.generatedLabel());
         activeSavedPlanId = OptionalLong.of(plan.id());
         context.enterMode(Mode.BUILDER, plan.name() + " geoeffnet.");
+        context.refreshSavedPlans(access);
         return true;
     }
 

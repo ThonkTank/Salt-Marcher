@@ -96,5 +96,11 @@ public final class CreaturesServiceAssembly {
             CreatureDetailModel detail,
             CreatureEncounterCandidatesModel encounterCandidates
     ) {
+        public void openInspector(shell.api.InspectorSink inspector, long creatureId) {
+            features.creatures.adapter.javafx.details.CreatureDetailsView.openInspector(
+                    inspector,
+                    detail,
+                    creatureId);
+        }
     }
 }

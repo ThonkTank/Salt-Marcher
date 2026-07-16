@@ -60,8 +60,8 @@ final class CombatTurnTracker {
         return round;
     }
 
-    void restoreState(int turnIndex, int restoredRound) {
-        currentTurnIndex = toOptionalTurnIndex(turnIndex);
+    void restoreState(int restoredTurnIndex, int restoredRound) {
+        currentTurnIndex = toOptionalTurnIndex(restoredTurnIndex);
         round = Math.max(1, restoredRound);
     }
 

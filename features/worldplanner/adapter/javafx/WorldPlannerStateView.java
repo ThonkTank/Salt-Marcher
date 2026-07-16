@@ -112,6 +112,7 @@ public final class WorldPlannerStateView extends VBox {
         behaviorNotes.setText(npc.behaviorNotes());
         historyNotes.setText(npc.historyNotes());
         generalNotes.setText(npc.generalNotes());
+        npcDisposition.setText(npc.dispositionModifierText());
     }
 
     private void renderFaction(FactionEditor faction) {
@@ -119,6 +120,7 @@ public final class WorldPlannerStateView extends VBox {
         renderChoices(primaryEncounterTableChoice, faction.encounterTableLabels(), faction.selectedPrimaryTableLabel());
         renderChoices(npcChoice, faction.npcReferenceLabels(), "");
         renderChoices(inventoryStatblockChoice, faction.statblockLabels(), "");
+        factionDisposition.setText(faction.dispositionText());
     }
 
     private void renderLocation(LocationEditor location) {

@@ -109,36 +109,38 @@ final class EncounterSessionRosterMutation {
         return new EncounterSessionRosterState(roster, pendingUndo);
     }
 
+    void clearPendingUndo() {
+        pendingUndo = Optional.empty();
+    }
+
     long nextUndoToken() {
         return nextUndoToken;
     }
 
-    void restore(List<EncounterCreatureData> creatures, Optional<RemovedRosterEntryData> undo, long nextToken) {
+    void restore(
+            List<EncounterCreatureData> restoredRoster,
+            Optional<RemovedRosterEntryData> restoredUndo,
+            long restoredNextUndoToken
+    ) {
         roster.clear();
-        roster.addAll(creatures == null ? List.of() : creatures);
-        pendingUndo = undo == null ? Optional.empty() : undo;
-        nextUndoToken = Math.max(0L, nextToken);
+        roster.addAll(restoredRoster == null ? List.of() : restoredRoster);
+        pendingUndo = restoredUndo == null ? Optional.empty() : restoredUndo;
+        nextUndoToken = Math.max(0L, restoredNextUndoToken);
     }
 
-    void removeWorldNpcsExcept(List<Long> retainedIds) {
-        List<Long> retained = retainedIds == null ? List.of() : retainedIds;
-        roster.removeIf(creature -> creature.worldNpcId() > 0L && !retained.contains(creature.worldNpcId()));
+    boolean removeWorldNpcsExcept(List<Long> retainedWorldNpcIds) {
+        List<Long> retained = retainedWorldNpcIds == null ? List.of() : List.copyOf(retainedWorldNpcIds);
+        return roster.removeIf(value -> value.worldNpcId() > 0L && !retained.contains(value.worldNpcId()));
     }
 
     boolean containsWorldNpc(long worldNpcId) {
-        return roster.stream().anyMatch(creature -> creature.worldNpcId() == worldNpcId);
+        return worldNpcId > 0L && roster.stream().anyMatch(value -> value.worldNpcId() == worldNpcId);
     }
 
     void addSceneWorldNpc(EncounterCreatureData creature, EncounterSessionContext context) {
-        if (creature != null && creature.worldNpcId() > 0L && !containsWorldNpc(creature.worldNpcId())) {
-            roster.add(creature);
-            pendingUndo = Optional.empty();
-            context.setStatus(creature.name() + " ist als Szenen-NPC im Encounter.");
-        }
-    }
-
-    void clearPendingUndo() {
+        roster.add(creature);
         pendingUndo = Optional.empty();
+        context.setStatus(creature.name() + " wurde aus der Szene übernommen.");
     }
 
     private static boolean isGenericCreature(EncounterCreatureData creature, long creatureId) {

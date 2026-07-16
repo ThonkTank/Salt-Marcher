@@ -25,16 +25,16 @@ final class EncounterSessionGeneration {
         builderInputs = nextInputs == null ? EncounterGenerationInputs.empty() : nextInputs;
     }
 
-    void generate(
+    boolean generate(
             EncounterSession.SessionRepository access,
             Optional<EncounterGenerationRequest> request,
             EncounterSessionContext context,
             EncounterSessionRosterMutation roster
     ) {
-        context.refresh(access);
+        context.refresh(access, true);
         if (!context.hasActiveParty()) {
             context.setStatus(NO_PARTY_STATUS);
-            return;
+            return false;
         }
         EncounterGenerationRequest generation = request.isPresent()
                 ? request.orElseThrow()
@@ -44,7 +44,7 @@ final class EncounterSessionGeneration {
             clearGeneratedEncounterState();
             generatedAdvisories = List.of();
             context.setStatus(result.message().isBlank() ? GENERATION_FAILURE_STATUS : result.message());
-            return;
+            return false;
         }
         generatedAlternatives.clear();
         generatedAlternatives.addAll(result.alternatives());
@@ -52,6 +52,7 @@ final class EncounterSessionGeneration {
         selectedAlternativeIndex = 0;
         applyGeneratedEncounter(generatedAlternatives.getFirst(), roster);
         context.setStatus(EncounterSessionGenerationMessages.successText(result));
+        return true;
     }
 
     void clearGenerationHistory(EncounterSessionContext context) {
@@ -62,12 +63,13 @@ final class EncounterSessionGeneration {
         context.setStatus(HISTORY_CLEARED_STATUS);
     }
 
-    void shiftGeneratedAlternative(int delta, EncounterSessionRosterMutation roster) {
+    boolean shiftGeneratedAlternative(int delta, EncounterSessionRosterMutation roster) {
         if (generatedAlternatives.isEmpty()) {
-            return;
+            return false;
         }
         selectedAlternativeIndex = Math.floorMod(selectedAlternativeIndex + delta, generatedAlternatives.size());
         applyGeneratedEncounter(generatedAlternatives.get(selectedAlternativeIndex), roster);
+        return true;
     }
 
     void clearGeneratedSelection() {
@@ -97,6 +99,7 @@ final class EncounterSessionGeneration {
     EncounterSessionGenerationState state() {
         return new EncounterSessionGenerationState(
                 builderInputs,
+                generatedAlternatives,
                 generatedAdvisories,
                 generatedAdjustedXp,
                 generatedDifficulty,
@@ -106,30 +109,16 @@ final class EncounterSessionGeneration {
                 generationHistoryPresent);
     }
 
-    List<GeneratedEncounterData> alternatives() {
-        return List.copyOf(generatedAlternatives);
-    }
-
-    void restore(
-            EncounterGenerationInputs inputs,
-            List<GeneratedEncounterData> alternatives,
-            List<String> advisories,
-            int selectedIndex,
-            int adjustedXp,
-            String difficulty,
-            String title,
-            boolean historyPresent
-    ) {
-        builderInputs = inputs == null ? EncounterGenerationInputs.empty() : inputs;
+    void restore(EncounterSessionMemento memento) {
+        builderInputs = memento.builderInputs();
         generatedAlternatives.clear();
-        generatedAlternatives.addAll(alternatives == null ? List.of() : alternatives);
-        generatedAdvisories = advisories == null ? List.of() : List.copyOf(advisories);
-        selectedAlternativeIndex = generatedAlternatives.isEmpty()
-                ? 0 : Math.floorMod(selectedIndex, generatedAlternatives.size());
-        generatedAdjustedXp = Math.max(0, adjustedXp);
-        generatedDifficulty = difficulty == null ? "" : difficulty;
-        generatedTitle = title == null ? "" : title;
-        generationHistoryPresent = historyPresent;
+        generatedAlternatives.addAll(memento.generatedAlternatives());
+        generatedAdvisories = memento.generatedAdvisories();
+        selectedAlternativeIndex = memento.selectedAlternativeIndex();
+        generatedAdjustedXp = memento.generatedAdjustedXp();
+        generatedDifficulty = memento.generatedDifficulty();
+        generatedTitle = memento.generatedTitle();
+        generationHistoryPresent = memento.generationHistoryPresent();
     }
 
     private void clearGeneratedEncounterState() {

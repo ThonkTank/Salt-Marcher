@@ -27,7 +27,7 @@ import shell.api.ShellSlot;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellBinding;
 import shell.api.ShellLeftBarTabMode;
-import features.encounter.adapter.javafx.catalog.CatalogContribution;
+import features.catalog.adapter.javafx.CatalogContribution;
 import features.dungeon.adapter.javafx.editor.DungeonEditorContribution;
 import features.dungeon.adapter.javafx.travel.DungeonTravelContribution;
 import features.hex.adapter.javafx.hexmap.HexMapContribution;
@@ -192,6 +192,9 @@ public final class SessionPlannerShellLayoutTest {
                 shell.api.NavigationGraphicResource.of("/shell/host/malformed-navigation-icon.svg"));
         assertTrue(malformedGraphic.getStyleClass().contains("nav-icon-missing"),
                 "malformed navigation resource uses missing graphic fallback");
+        assertLoadedNavigationGraphic(
+                "/view/leftbartabs/scene/navigation-icon.svg",
+                "Scene navigation icon loads from its stable resource path");
         assertHexMapShellLayout();
     }
 
@@ -289,8 +292,27 @@ public final class SessionPlannerShellLayoutTest {
                 services.creatures().application(), services.tables().application(),
                 services.encounter().application(), services.encounter().builderInputs(),
                 services.creatures().filterOptions(), services.creatures().catalog(),
-                services.creatures().detail(), services.tables().catalog(),
-                services.encounter().tuningPreview(), null, EmptyInspectorSink.INSTANCE);
+                services.tables().catalog(), services.encounter().tuningPreview(),
+                services.encounter().savedPlans(), unavailableItems(), null,
+                EmptyInspectorSink.INSTANCE, ignored -> { }, ignored -> { }, ignored -> { }, ignored -> { },
+                () -> { }, () -> { }, () -> { });
+    }
+
+    private static features.items.api.ItemsCatalogApi unavailableItems() {
+        return new features.items.api.ItemsCatalogApi() {
+            public java.util.concurrent.CompletionStage<FilterOptionsResult> loadFilterOptions() {
+                return java.util.concurrent.CompletableFuture.completedFuture(new FilterOptionsResult(
+                        CatalogStatus.UNAVAILABLE, List.of(), List.of(), List.of()));
+            }
+            public java.util.concurrent.CompletionStage<PageResult> search(ItemQuery query) {
+                return java.util.concurrent.CompletableFuture.completedFuture(new PageResult(
+                        CatalogStatus.UNAVAILABLE, List.of(), 0, 50, 0));
+            }
+            public java.util.concurrent.CompletionStage<DetailResult> loadDetail(String sourceKey) {
+                return java.util.concurrent.CompletableFuture.completedFuture(
+                        new DetailResult(CatalogStatus.UNAVAILABLE, null));
+            }
+        };
     }
 
     private record LayoutServices(

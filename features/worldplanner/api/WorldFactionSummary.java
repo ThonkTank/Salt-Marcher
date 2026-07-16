@@ -24,6 +24,7 @@ public record WorldFactionSummary(
     }
 
     public WorldFactionSummary {
+        disposition = Math.max(-50, Math.min(50, disposition));
         npcIds = npcIds == null ? List.of() : List.copyOf(npcIds);
         inventoryLimits = inventoryLimits == null ? List.of() : List.copyOf(inventoryLimits);
     }

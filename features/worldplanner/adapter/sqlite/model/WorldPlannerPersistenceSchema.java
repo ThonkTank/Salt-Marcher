@@ -50,6 +50,12 @@ public final class WorldPlannerPersistenceSchema {
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_world_planner_npc_single_faction ON "
                     + FACTION_NPCS_TABLE + "(npc_id)";
 
+    public static final String KEEP_ONE_FACTION_PER_NPC_SQL =
+            "DELETE FROM " + FACTION_NPCS_TABLE + " "
+                    + "WHERE EXISTS (SELECT 1 FROM " + FACTION_NPCS_TABLE + " AS earlier "
+                    + "WHERE earlier.npc_id = " + FACTION_NPCS_TABLE + ".npc_id "
+                    + "AND earlier.faction_id < " + FACTION_NPCS_TABLE + ".faction_id)";
+
     public static final String CREATE_FACTION_LIMITS_SQL =
             CREATE_TABLE_IF_NOT_EXISTS + FACTION_LIMITS_TABLE + " ("
                     + "faction_id INTEGER NOT NULL REFERENCES " + FACTIONS_TABLE + "(faction_id) ON DELETE CASCADE, "

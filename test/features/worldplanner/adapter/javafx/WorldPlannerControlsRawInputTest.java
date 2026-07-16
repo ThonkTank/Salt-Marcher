@@ -74,6 +74,7 @@ public final class WorldPlannerControlsRawInputTest {
     }
 
     private void start() {
+        Platform.setImplicitExit(false);
         view = new WorldPlannerControlsView();
         viewModel.onControlsInput(view(), events::add);
         view().bind(viewModel);
