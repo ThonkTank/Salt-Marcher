@@ -1,0 +1,9 @@
+Theme_ID	Theme	Magic_Type	Notes	Active	Source_Rows	Spell_Colors
+theme:armaments	Armaments	Armaments	Waffen, Rüstung, Munition, Kampfverbrauchsgüter	true	2,3,4,5,6,7,8,9,10,11,12,13,14	Rot, Platin, Weiss
+theme:relics	Relics	Relics	Reliquien, Wertstücke, Dokumente, rituelle Gegenstände	true	15,16,17,18,19	Weiss, Schwarz, Lila
+theme:arcana	Arcana	Arcana	Magische Foki, Komponenten, Tränke	true	20,21,22,23,24	Platin, Lila, Weiss
+theme:survival	Survival	Implements	Reise-, Lager- und Erkundungsausrüstung	true	25,26,27,28,29,30	Grün, Blau, Gelb
+theme:craft	Craft	Implements	Werkzeuge, Instrumente, technische Kleinteile	true	31,32,33,34	Platin, Rot, Gelb
+theme:trade	Trade	Implements	Handelsware und Wertgegenstände	true	35,36,37,38	Lila, Platin, Weiss
+theme:consumables	Consumables	Implements	Verbrauchsgüter und gefährliche Stoffe	true	39,40,41,42,43,44	Grün, Schwarz, Blau, Rot
+theme:travel	Travel	Implements	Transport und Reisezubehör	true	45,46,47,48,49,50,51,52	Gelb, Blau, Grün, Platin

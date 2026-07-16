@@ -34,7 +34,7 @@ public final class TargetDependencyArchitectureTest {
                     events.add(SimpleConditionEvent.violated(
                             item,
                             item.getName() + " must reside in a feature api, domain, application, "
-                                    + "adapter/sqlite, adapter/javafx, or exact feature-root package"));
+                                    + "adapter/sqlite, adapter/resource, adapter/javafx, or exact feature-root package"));
                 }
                 if (source.root == TargetRoot.PLATFORM
                         && !TargetPackage.isValidPlatformPackage(item.getPackageName())) {
@@ -149,7 +149,7 @@ public final class TargetDependencyArchitectureTest {
                 return switch (featureArea) {
                     case APPLICATION, COMPOSITION -> target.featureArea != FeatureArea.API;
                     case JAVAFX_ADAPTER -> target.featureArea != FeatureArea.API;
-                    case API, DOMAIN, SQLITE_ADAPTER, INVALID, NONE -> true;
+                    case API, DOMAIN, SQLITE_ADAPTER, RESOURCE_ADAPTER, INVALID, NONE -> true;
                 };
             }
             return switch (featureArea) {
@@ -160,6 +160,9 @@ public final class TargetDependencyArchitectureTest {
                         || target.featureArea == FeatureArea.COMPOSITION;
                 case SQLITE_ADAPTER -> target.featureArea == FeatureArea.JAVAFX_ADAPTER
                         || target.featureArea == FeatureArea.COMPOSITION;
+                case RESOURCE_ADAPTER -> target.featureArea != FeatureArea.API
+                        && target.featureArea != FeatureArea.DOMAIN
+                        && target.featureArea != FeatureArea.RESOURCE_ADAPTER;
                 case JAVAFX_ADAPTER -> target.featureArea != FeatureArea.API
                         && target.featureArea != FeatureArea.DOMAIN
                         && target.featureArea != FeatureArea.APPLICATION
@@ -192,7 +195,7 @@ public final class TargetDependencyArchitectureTest {
             }
             return switch (featureArea) {
                 case API, DOMAIN, APPLICATION -> javaFx || jdbc || fileIo;
-                case SQLITE_ADAPTER -> javaFx;
+                case SQLITE_ADAPTER, RESOURCE_ADAPTER -> javaFx;
                 case JAVAFX_ADAPTER, COMPOSITION -> jdbc || fileIo;
                 case INVALID, NONE -> javaFx || jdbc || fileIo;
             };
@@ -216,6 +219,7 @@ public final class TargetDependencyArchitectureTest {
                         packageName, "execution", "state", "ui", "diagnostics");
                 case SQLITE_ADAPTER -> !inAnyPlatformPackage(
                         packageName, "persistence", "diagnostics");
+                case RESOURCE_ADAPTER -> !inAnyPlatformPackage(packageName, "diagnostics");
                 case JAVAFX_ADAPTER -> !inAnyPlatformPackage(packageName, "ui");
                 case COMPOSITION -> !isValidPlatformPackage(packageName);
                 case DOMAIN, INVALID, NONE -> true;
@@ -255,6 +259,7 @@ public final class TargetDependencyArchitectureTest {
         DOMAIN,
         APPLICATION,
         SQLITE_ADAPTER,
+        RESOURCE_ADAPTER,
         JAVAFX_ADAPTER,
         COMPOSITION,
         INVALID,
@@ -267,6 +272,7 @@ public final class TargetDependencyArchitectureTest {
                 case "application" -> APPLICATION;
                 case "adapter" -> switch (nestedSegment) {
                     case "sqlite" -> SQLITE_ADAPTER;
+                    case "resource" -> RESOURCE_ADAPTER;
                     case "javafx" -> JAVAFX_ADAPTER;
                     default -> INVALID;
                 };

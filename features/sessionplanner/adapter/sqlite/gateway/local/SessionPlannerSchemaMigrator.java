@@ -51,6 +51,13 @@ final class SessionPlannerSchemaMigrator {
         }
     }
 
+    void addGeneratedRewards(Connection connection) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_GENERATED_REWARDS_SQL);
+            statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_GENERATED_REWARDS_ORDER_INDEX_SQL);
+        }
+    }
+
     private static void addSceneTitleColumnIfMissing(Connection connection, Statement statement) throws SQLException {
         if (!SqliteSchemaColumnSupport.hasColumn(
                 connection,

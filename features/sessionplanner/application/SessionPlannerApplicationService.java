@@ -30,6 +30,9 @@ import features.sessionplanner.api.SessionPlannerRestKind;
 import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessionplanner.api.SetSessionRestGapCommand;
 import features.sessionplanner.api.UpdateSessionEncounterSceneCommand;
+import features.sessionplanner.api.ApplyGeneratedSessionCommand;
+import features.sessionplanner.api.PreviewGeneratedSessionCommand;
+import features.sessionplanner.api.SessionGenerationDraftChangedCommand;
 
 public final class SessionPlannerApplicationService implements features.sessionplanner.api.SessionPlannerApi {
 
@@ -45,30 +48,48 @@ public final class SessionPlannerApplicationService implements features.sessionp
     private final SessionPlannerPublishedState publishedState;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
+    private final SessionGenerationCoordinator generation;
     private final AtomicBoolean initializationRequested = new AtomicBoolean();
+    private final AtomicBoolean initialized = new AtomicBoolean();
 
     public SessionPlannerApplicationService(
             SessionPlanRepository repository,
             SessionPlannerForeignFacts facts,
             SessionPlannerPublishedState publishedState,
+            SessionGenerationCoordinator generation,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.facts = Objects.requireNonNull(facts, "facts");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
+        this.generation = Objects.requireNonNull(generation, "generation");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     public void initialize() {
         if (initializationRequested.compareAndSet(false, true)) {
-            executeStorageCommand(publishedState::initialize);
+            executeStorageCommand(() -> {
+                Optional<SessionPlan> current = publishedState.initialize();
+                initialized.set(true);
+                current.ifPresent(generation::refreshGeneratedRewards);
+            });
         }
     }
 
     public void refreshForeignFacts() {
         executeStorageCommand(publishedState::publishLoadedCurrentSession);
+    }
+
+    public void refreshPartyFacts() {
+        if (!initialized.get()) {
+            return;
+        }
+        executeStorageCommand(() -> {
+            generation.markStale();
+            publishedState.publishLoadedCurrentSession();
+        });
     }
 
     public void createSession(SessionPlannerCatalogCommand.CreateSessionCommand command) {
@@ -174,6 +195,24 @@ public final class SessionPlannerApplicationService implements features.sessionp
         executeStorageCommand(() -> mutateCurrent(session -> session.removeLootPlaceholder(command.lootId())));
     }
 
+    @Override
+    public void previewGeneratedSession(PreviewGeneratedSessionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        generation.preview(command);
+    }
+
+    @Override
+    public void generatedSessionDraftChanged(SessionGenerationDraftChangedCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        generation.draftChanged();
+    }
+
+    @Override
+    public void applyGeneratedSession(ApplyGeneratedSessionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        generation.apply(command);
+    }
+
     private void createSessionOnLane(SessionPlannerCatalogCommand.CreateSessionCommand command) {
         OptionalLong nextId = nextSessionId();
         if (nextId.isEmpty()) {
@@ -199,6 +238,7 @@ public final class SessionPlannerApplicationService implements features.sessionp
             return;
         }
         repository.rename(command.sessionId(), command.displayName());
+        generation.markStale();
         repository.loadById(command.sessionId()).ifPresent(session -> publishedState.publishCurrentSession(
                 session.clearStatus().withStatus("Session umbenannt.")));
     }
@@ -240,12 +280,16 @@ public final class SessionPlannerApplicationService implements features.sessionp
 
     private void selectLoadedSession(SessionPlan sessionPlan) {
         repository.setCurrentSessionId(sessionPlan.sessionId());
+        generation.markStale();
         publishedState.publishCurrentSession(sessionPlan.clearStatus().withStatus("Session geoeffnet."));
+        generation.refreshGeneratedRewards(sessionPlan);
     }
 
     private void selectFallback(SessionPlan sessionPlan) {
         repository.setCurrentSessionId(sessionPlan.sessionId());
+        generation.markStale();
         publishedState.publishCurrentSession(sessionPlan);
+        generation.refreshGeneratedRewards(sessionPlan);
     }
 
     private Optional<SessionPlan> loadCurrentSession() {
@@ -280,6 +324,7 @@ public final class SessionPlannerApplicationService implements features.sessionp
                     stableSession.withStatus(SAVE_FAILURE_STATUS));
             return;
         }
+        generation.markStale();
         publishedState.publishCurrentSession(saved);
     }
 
@@ -292,6 +337,7 @@ public final class SessionPlannerApplicationService implements features.sessionp
             reportStorageFailure(exception);
             return;
         }
+        generation.markStale();
         publishedState.publishCurrentSession(saved);
     }
 

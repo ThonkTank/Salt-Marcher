@@ -12,8 +12,11 @@ import features.encounter.adapter.sqlite.model.EncounterPlanSnapshotRecord;
 import features.encounter.domain.plan.EncounterPlan;
 import features.encounter.domain.plan.repository.EncounterPlanRepository;
 import features.encounter.domain.plan.EncounterPlanSummary;
+import features.encounter.api.GeneratedEncounterPlanSource;
+import features.encounter.application.GeneratedEncounterPlanBatchRepository;
 
-public final class SqliteEncounterPlanRepository implements EncounterPlanRepository {
+public final class SqliteEncounterPlanRepository
+        implements EncounterPlanRepository, GeneratedEncounterPlanBatchRepository {
 
     private final SqliteEncounterLocalGateway gateway;
 
@@ -53,6 +56,20 @@ public final class SqliteEncounterPlanRepository implements EncounterPlanReposit
         return gateway.list().stream()
                 .map(EncounterPlanMapper::toDomainSummary)
                 .toList();
+    }
+
+    @Override
+    public Optional<StoredBatch> loadGeneratedBatch(GeneratedEncounterPlanSource source) {
+        return gateway.loadGeneratedBatch(source);
+    }
+
+    @Override
+    public StoredBatch saveGeneratedBatch(
+            GeneratedEncounterPlanSource source,
+            String batchFingerprint,
+            List<ResolvedPlan> plans
+    ) {
+        return gateway.saveGeneratedBatch(source, batchFingerprint, plans);
     }
 
     private static List<EncounterPlanCreatureRecord> toRecords(EncounterPlan plan) {

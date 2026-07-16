@@ -32,7 +32,7 @@ final class SqliteDungeonHexPlannerAdaptersTest {
             Map<String, Integer> expectedVersions = Map.of(
                     "dungeon", 1,
                     "hex", 1,
-                    "session-planner", 1,
+                    "session-planner", 2,
                     "world-planner", 1);
 
             assertTrue(dungeons.searchByName("").isEmpty());

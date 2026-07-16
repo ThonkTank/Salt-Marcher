@@ -40,7 +40,8 @@ final class SessionPlanSqliteReads {
                 detailReads.loadParticipants(connection, sessionId),
                 detailReads.loadEncounters(connection, sessionId),
                 detailReads.loadRests(connection, sessionId),
-                detailReads.loadLootPlaceholders(connection, sessionId)));
+                detailReads.loadLootPlaceholders(connection, sessionId),
+                detailReads.loadGeneratedRewards(connection, sessionId)));
     }
 
     List<SessionPlanRecord> listSessions(Connection connection) throws SQLException {

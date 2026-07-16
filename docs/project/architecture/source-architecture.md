@@ -34,7 +34,8 @@ feature publishes `api` only for capabilities consumed outside its
 implementation, owns `domain` only for business truth and invariants, and owns
 `application` only for use-case orchestration. A feature with stored truth owns
 an `adapter/sqlite`; a feature with JavaFX presentation owns an
-`adapter/javafx`. Empty role packages are forbidden. Dungeon remains one
+`adapter/javafx`; bundled read-only reference data belongs in an
+`adapter/resource`. Empty role packages are forbidden. Dungeon remains one
 feature and publishes separate Authored, Editor, and Travel APIs.
 
 ## Permanent Boundaries

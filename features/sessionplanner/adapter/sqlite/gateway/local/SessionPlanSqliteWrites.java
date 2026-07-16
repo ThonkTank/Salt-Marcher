@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.List;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionLootPlaceholderRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
@@ -79,6 +80,14 @@ final class SessionPlanSqliteWrites {
             List<SessionLootPlaceholderRecord> lootPlaceholders
     ) throws SQLException {
         childTableWrites.replaceLootPlaceholders(connection, sessionId, lootPlaceholders);
+    }
+
+    void replaceGeneratedRewards(
+            Connection connection,
+            long sessionId,
+            List<SessionGeneratedRewardRecord> generatedRewards
+    ) throws SQLException {
+        childTableWrites.replaceGeneratedRewards(connection, sessionId, generatedRewards);
     }
 
     private static boolean existsPlan(Connection connection, long sessionId) throws SQLException {

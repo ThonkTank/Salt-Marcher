@@ -14,6 +14,7 @@ api              commands, results, immutable state, public capabilities
 domain           feature truth and invariants
 application      orchestration over domain and ports
 adapter/sqlite   persistence mechanics and translation, when stored truth exists
+adapter/resource bundled read-only resource loading and translation, when static reference data exists
 adapter/javafx   presentation and shell contribution, when JavaFX UI exists
 <feature root>   composition entry point used only by app
 ```
@@ -34,6 +35,10 @@ NOT create an empty adapter package merely to match this list.
 - `adapter/sqlite` MAY implement feature-owned ports and use
   `platform.persistence` plus `platform.diagnostics`. It MUST NOT depend on
   JavaFX adapters.
+- `adapter/resource` MAY implement feature-owned ports and read bundled,
+  offline resources through JDK resource I/O. It MAY use
+  `platform.diagnostics`; it MUST NOT depend on application orchestration,
+  foreign features, JDBC, or JavaFX.
 - `adapter/javafx` MAY depend on its feature API, domain values, and application
   layer, foreign feature APIs, `shell.api`, and `platform.ui`. It MUST NOT reach
   into a foreign domain, application, or adapter, SQLite packages, or other

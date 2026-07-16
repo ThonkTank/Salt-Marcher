@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-16
 Source of Truth: Encounter feature ownership, saved-plan write model, runtime
 generation policy, and domain invariants.
 
@@ -31,6 +31,11 @@ chooser-display language.
 
 It also owns shared request/read vocabulary such as difficulty bands, tuning
 preview labels, one saved-plan chooser display carrier, and status enums.
+
+Generated import publishes `GeneratedEncounterPlanSource`, ordered
+`GeneratedEncounterPlanSpec` and typed XP-and-role slots, plus one atomic import
+result mapping encounter numbers to saved-plan identities. These carriers are
+translation language; they do not become the saved-plan aggregate model.
 
 `EncounterDifficultyBand.AUTO` and Auto tuning sentinels are public request
 language only. The application boundary resolves them into concrete generation
@@ -68,6 +73,10 @@ feature-owned persistence port. The SQLite adapter persists plan and creature
 rows; the domain model keeps the saved roster invariant independent of storage
 shape.
 
+Generated-plan import resolves all typed slots through current creature facts,
+validates the full batch, and delegates one atomic batch write. Reward and
+Session Planner mutations remain outside Encounter.
+
 ## Architecture Constraints
 
 - Encounter owns saved-plan roster truth, balancing, candidate narrowing, and
@@ -89,6 +98,8 @@ Each saved plan owns:
 - user-visible plan name
 - optional generated encounter label
 - ordered creature identity and quantity rows
+- optional generated origin containing engine version, generation-run
+  identity, encounter number, and normalized-spec fingerprint
 
 It derives:
 
@@ -138,6 +149,7 @@ Commands entering the model are:
 - save current encounter plan
 - list saved encounter plans
 - load saved encounter plan
+- atomically import generated encounter specifications
 
 Core invariants:
 
@@ -155,6 +167,14 @@ Core invariants:
 - generator ranking must be deterministic for the same inputs
 - a saved plan must contain at least one creature
 - saved plans store creature identity and quantity, not creature truth
+- generated origin is unique per engine version, generation identity, and
+  encounter number
+- every generated spec resolves to a non-empty roster before any member of its
+  batch is persisted
+- one generated batch is all-or-nothing and an identical completed retry is
+  idempotent
+- generated origin never transfers reward, packing, audit, or session-scene
+  ownership into Encounter
 
 ## Consistency Model
 
@@ -168,6 +188,11 @@ the saved creature identities and current creature details; initiative, combat,
 result, and generator-alternative state are cleared because they are session
 runtime state.
 
+Generated batch import is one persistence consistency boundary. Resolution
+failure or a mismatched retry writes nothing. Once imported, the roster follows
+the same saved-plan invariants as a manually saved plan; its origin remains
+immutable audit and idempotency metadata.
+
 ## Ubiquitous Language
 
 - `EncounterDifficultyBand`: requested difficulty intent.
@@ -179,6 +204,9 @@ runtime state.
 - `SavedEncounterPlanChoice`: published saved-plan chooser display row.
 - `EncounterPlanFact`: Session Planner-facing saved-plan planning readout
   exposed by `EncounterApi`.
+- `GeneratedEncounterPlanSource`: immutable generation origin.
+- `GeneratedEncounterPlanSpec`: ordered generated encounter slots awaiting
+  Encounter-owned creature resolution.
 
 ## Domain Policies
 
@@ -207,4 +235,5 @@ runtime state.
 - [Encounter Builder Inputs Contract](../contract/contract-encounter-builder-inputs.md)
 - [Encounter Saved Plans Contract](../contract/contract-encounter-saved-plans.md)
 - [Encounter State Contract](../contract/contract-encounter-state.md)
+- [Generated Import Contract](../contract/contract-encounter-generated-import.md)
 - [Encounter UI](../requirements/requirements-encounter-state-tab.md)

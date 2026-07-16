@@ -1,0 +1,451 @@
+Spell	Level	Elements	Spell_ID
+Acid Splash	0.0	Grün	spell:acid-splash
+Animal Friendship	0.0	Grün	spell:animal-friendship
+Booming Blade	0.0	Gelb	spell:booming-blade
+Control Flames	0.0	Rot	spell:control-flames
+Create Bonfire	0.0	Rot	spell:create-bonfire
+Druidcraft	0.0	Grün	spell:druidcraft
+Eldritch Blast	0.0	Schwarz	spell:eldritch-blast
+Encode Thoughts	0.0	Platin	spell:encode-thoughts
+Fire Bolt	0.0	Rot	spell:fire-bolt
+Frostbite	0.0	Blau	spell:frostbite
+Green-Flame Blade	0.0	Rot	spell:green-flame-blade
+Guidance	0.0	Blau	spell:guidance
+Gust	0.0	Gelb	spell:gust
+Infestation	0.0	Grün	spell:infestation
+Light	0.0	Weiss	spell:light
+Lightning Lure	0.0	Gelb	spell:lightning-lure
+Mage Hand	0.0	Platin	spell:mage-hand
+Magic Stone	0.0	Grün	spell:magic-stone
+Mending	0.0	Rot	spell:mending
+Message	0.0	Lila	spell:message
+Mind Sliver	0.0	Lila	spell:mind-sliver
+Minor Illusion	0.0	Lila	spell:minor-illusion
+Mold Earth	0.0	Grün	spell:mold-earth
+Poison Spray	0.0	Schwarz	spell:poison-spray
+Prestidigitation	0.0	Platin	spell:prestidigitation
+Primal Savagery	0.0	Rot	spell:primal-savagery
+Produce Flame	0.0	Rot	spell:produce-flame
+Ray of Frost	0.0	Blau	spell:ray-of-frost
+Resistance	0.0	Platin	spell:resistance
+Sacred Flame	0.0	Weiss	spell:sacred-flame
+Sapping Sting	0.0	Schwarz	spell:sapping-sting
+Shape Water	0.0	Blau	spell:shape-water
+Shillelagh	0.0	Grün	spell:shillelagh
+Shocking Grasp	0.0	Gelb	spell:shocking-grasp
+Spare the Dying	0.0	Weiss	spell:spare-the-dying
+Sword Burst	0.0	Platin	spell:sword-burst
+Thaumaturgy	0.0	Platin	spell:thaumaturgy
+Thorn Whip	0.0	Grün	spell:thorn-whip
+Thunderclap	0.0	Gelb	spell:thunderclap
+Toll the Dead	0.0	Schwarz	spell:toll-the-dead
+True Strike	0.0	Blau	spell:true-strike
+Vicious Mockery	0.0	Lila	spell:vicious-mockery
+Word of Radiance	0.0	Weiss	spell:word-of-radiance
+Alarm	1.0	Lila	spell:alarm
+Armor of Agathys	1.0	Blau	spell:armor-of-agathys
+Bane	1.0	Lila	spell:bane
+Beast Bond	1.0	Grün	spell:beast-bond
+Burning Hands	1.0	Rot	spell:burning-hands
+Catapult	1.0	Platin	spell:catapult
+Chaos Bolt	1.0	Schwarz	spell:chaos-bolt
+Charm Person	1.0	Lila	spell:charm-person
+Chromatic Orb	1.0	Platin	spell:chromatic-orb
+Color Spray	1.0	Weiss	spell:color-spray
+Command	1.0	Lila	spell:command
+Compelled Duel	1.0	Lila	spell:compelled-duel
+Comprehend Languages	1.0	Platin	spell:comprehend-languages
+Create or Destroy Water	1.0	Blau	spell:create-or-destroy-water
+Detect Evil and Good	1.0	Weiss	spell:detect-evil-and-good
+Detect Magic	1.0	Weiss	spell:detect-magic
+Detect Poison and Disease	1.0	Weiss	spell:detect-poison-and-disease
+Disguise Self	1.0	Lila	spell:disguise-self
+Dissonant Whispers	1.0	Lila	spell:dissonant-whispers
+Distort Value	1.0	Lila	spell:distort-value
+Earth Tremor	1.0	Grün	spell:earth-tremor
+Ensnaring Strike	1.0	Schwarz	spell:ensnaring-strike
+Entangle	1.0	Schwarz	spell:entangle
+Expeditious Retreat	1.0	Gelb	spell:expeditious-retreat
+False Life	1.0	Schwarz	spell:false-life
+Feather Fall	1.0	Gelb	spell:feather-fall
+Find Familiar	1.0	Platin	spell:find-familiar
+Fog Cloud	1.0	Gelb	spell:fog-cloud
+Frost Fingers	1.0	Blau	spell:frost-fingers
+Goodberry	1.0	Schwarz	spell:goodberry
+Grease	1.0	Grün	spell:grease
+Guiding Bolt	1.0	Weiss	spell:guiding-bolt
+Hail of Thorns	1.0	Schwarz	spell:hail-of-thorns
+Healing Word	1.0	Blau	spell:healing-word
+Hellish Rebuke	1.0	Rot	spell:hellish-rebuke
+Heroism	1.0	Rot	spell:heroism
+Hex	1.0	Schwarz	spell:hex
+Ice Knife	1.0	Blau	spell:ice-knife
+Identify	1.0	Weiss	spell:identify
+Illusory Script	1.0	Lila	spell:illusory-script
+Inflict Wounds	1.0	Schwarz	spell:inflict-wounds
+Jump	1.0	Gelb	spell:jump
+Longstrider	1.0	Gelb	spell:longstrider
+Mage Armor	1.0	Platin	spell:mage-armor
+Magic Missile	1.0	Platin	spell:magic-missile
+Protection from Evil and Good	1.0	Weiss	spell:protection-from-evil-and-good
+Purify Food and Drink	1.0	Blau	spell:purify-food-and-drink
+Ray of Sickness	1.0	Schwarz	spell:ray-of-sickness
+Sanctuary	1.0	Weiss	spell:sanctuary
+Searing Smite	1.0	Rot	spell:searing-smite
+Shield	1.0	Platin	spell:shield
+Shield of Faith	1.0	Weiss	spell:shield-of-faith
+Silent Image	1.0	Lila	spell:silent-image
+Silvery Barbs	1.0	Lila	spell:silvery-barbs
+Sleep	1.0	Lila	spell:sleep
+Snare	1.0	Platin	spell:snare
+Speak with Animals	1.0	Grün	spell:speak-with-animals
+Tasha's Caustic Brew	1.0	Schwarz	spell:tashas-caustic-brew
+Tasha's Hideous Laughter	1.0	Lila	spell:tashas-hideous-laughter
+Tenser's Floating Disk	1.0	Platin	spell:tensers-floating-disk
+Thunderous Smite	1.0	Gelb	spell:thunderous-smite
+Thunderwave	1.0	Gelb	spell:thunderwave
+Unseen Servant	1.0	Platin	spell:unseen-servant
+Witch Bolt	1.0	Gelb	spell:witch-bolt
+Wrathful Smite	1.0	Lila	spell:wrathful-smite
+Aid	2.0	Rot	spell:aid
+Air Bubble	2.0	Gelb	spell:air-bubble
+Alter Self	2.0	Grün	spell:alter-self
+Animal Messenger	2.0	Grün	spell:animal-messenger
+Augury	2.0	Weiss	spell:augury
+Barkskin	2.0	Grün	spell:barkskin
+Beast Sense	2.0	Grün	spell:beast-sense
+Blindness/Deafness	2.0	Schwarz	spell:blindness-deafness
+Blur	2.0	Lila	spell:blur
+Branding Smite	2.0	Rot	spell:branding-smite
+Calm Emotions	2.0	Lila	spell:calm-emotions
+Cloud of Daggers	2.0	Rot	spell:cloud-of-daggers
+Continual Flame	2.0	Rot	spell:continual-flame
+Cordon of Arrows	2.0	Rot	spell:cordon-of-arrows
+Crown of Madness	2.0	Lila	spell:crown-of-madness
+Darkvision	2.0	Weiss	spell:darkvision
+Detect Thoughts	2.0	Lila	spell:detect-thoughts
+Dragon's Breath	2.0	Rot	spell:dragons-breath
+Dust Devil	2.0	Gelb	spell:dust-devil
+Earthbind	2.0	Grün	spell:earthbind
+Enhance Ability	2.0	Blau	spell:enhance-ability
+Enlarge/Reduce	2.0	Grün	spell:enlarge-reduce
+Enthrall	2.0	Lila	spell:enthrall
+Find Traps	2.0	Weiss	spell:find-traps
+Flame Blade	2.0	Rot	spell:flame-blade
+Flaming Sphere	2.0	Rot	spell:flaming-sphere
+Flock of Familiars	2.0	Platin	spell:flock-of-familiars
+Gentle Repose	2.0	Blau	spell:gentle-repose
+Gust of Wind	2.0	Gelb	spell:gust-of-wind
+Healing Spirit	2.0	Blau	spell:healing-spirit
+Heat Metal	2.0	Rot	spell:heat-metal
+Hold Person	2.0	Platin	spell:hold-person
+Immovable Object	2.0	Grün	spell:immovable-object
+Invisibility	2.0	Lila	spell:invisibility
+Knock	2.0	Platin	spell:knock
+Lesser Restoration	2.0	Blau	spell:lesser-restoration
+Levitate	2.0	Gelb	spell:levitate
+Locate Animals or Plants	2.0	Grün	spell:locate-animals-or-plants
+Locate Object	2.0	Weiss	spell:locate-object
+Magic Mouth	2.0	Platin	spell:magic-mouth
+Magic Weapon	2.0	Platin	spell:magic-weapon
+Maximillian's Earthen Grasp	2.0	Grün	spell:maximillians-earthen-grasp
+Melf's Acid Arrow	2.0	Grün	spell:melfs-acid-arrow
+Mind Spike	2.0	Lila	spell:mind-spike
+Mirror Image	2.0	Lila	spell:mirror-image
+Misty Step	2.0	Platin	spell:misty-step
+Moonbeam	2.0	Weiss	spell:moonbeam
+Nystul's Magic Aura	2.0	Platin	spell:nystuls-magic-aura
+Pass Without Trace	2.0	Lila	spell:pass-without-trace
+Phantasmal Force	2.0	Lila	spell:phantasmal-force
+Prayer of Healing	2.0	Blau	spell:prayer-of-healing
+Protection from Poison	2.0	Blau	spell:protection-from-poison
+Pyrotechnics	2.0	Rot	spell:pyrotechnics
+Ray of Enfeeblement	2.0	Schwarz	spell:ray-of-enfeeblement
+Rime's Binding Ice	2.0	Gelb	spell:rimes-binding-ice
+Rope Trick	2.0	Platin	spell:rope-trick
+Scorching Ray	2.0	Rot	spell:scorching-ray
+See Invisibility	2.0	Weiss	spell:see-invisibility
+Shadow Blade	2.0	Schwarz	spell:shadow-blade
+Shatter	2.0	Gelb	spell:shatter
+Skywrite	2.0	Gelb	spell:skywrite
+Snilloc's Snowball Swarm	2.0	Gelb	spell:snillocs-snowball-swarm
+Spider Climb	2.0	Gelb	spell:spider-climb
+Spike Growth	2.0	Grün	spell:spike-growth
+Spiritual Weapon	2.0	Weiss	spell:spiritual-weapon
+Suggestion	2.0	Lila	spell:suggestion
+Summon Beast	2.0	Grün	spell:summon-beast
+Tasha's Mind Whip	2.0	Lila	spell:tashas-mind-whip
+Vortex Warp	2.0	Platin	spell:vortex-warp
+Warding Bond	2.0	Weiss	spell:warding-bond
+Warding Wind	2.0	Gelb	spell:warding-wind
+Warp Sense	2.0	Weiss	spell:warp-sense
+Web	2.0	Grün	spell:web
+Wither and Bloom	2.0	Grün	spell:wither-and-bloom
+Animate Dead	3.0	Schwarz	spell:animate-dead
+Ashardalon's Stride	3.0	Gelb	spell:ashardalons-stride
+Aura of Vitality	3.0	Blau	spell:aura-of-vitality
+Banishment	3.0	Platin	spell:banishment
+Beacon of Hope	3.0	Weiss	spell:beacon-of-hope
+Bestow Curse	3.0	Schwarz	spell:bestow-curse
+Blinding Smite	3.0	Schwarz	spell:blinding-smite
+Blink	3.0	Platin	spell:blink
+Call Lightning	3.0	Gelb	spell:call-lightning
+Catnap	3.0	Blau	spell:catnap
+Clairvoyance	3.0	Weiss	spell:clairvoyance
+Conjure Animals	3.0	Grün	spell:conjure-animals
+Conjure Barrage	3.0	Rot	spell:conjure-barrage
+Conjure Minor Elementals	3.0	Rot, Blau, Grün, Gelb, Platin	spell:conjure-minor-elementals
+Create Food and Water	3.0	Blau, Grün	spell:create-food-and-water
+Crusader's Mantle	3.0	Weiss	spell:crusaders-mantle
+Daylight	3.0	Weiss	spell:daylight
+Dispel Magic	3.0	Platin	spell:dispel-magic
+Elemental Weapon	3.0	Platin	spell:elemental-weapon
+Enemies Abound	3.0	Lila	spell:enemies-abound
+Erupting Earth	3.0	Grün	spell:erupting-earth
+Fast Friends	3.0	Lila	spell:fast-friends
+Fear	3.0	Lila	spell:fear
+Feign Death	3.0	Schwarz	spell:feign-death
+Fireball	3.0	Rot	spell:fireball
+Flame Arrows	3.0	Rot	spell:flame-arrows
+Fly	3.0	Gelb	spell:fly
+Gaseous Form	3.0	Gelb	spell:gaseous-form
+Haste	3.0	Gelb	spell:haste
+Hunger Of Hadar	3.0	Schwarz	spell:hunger-of-hadar
+Hypnotic Pattern	3.0	Lila	spell:hypnotic-pattern
+Incite Greed	3.0	Lila	spell:incite-greed
+Intellect Fortress	3.0	Lila	spell:intellect-fortress
+Life Transference	3.0	Blau	spell:life-transference
+Lightning Arrow	3.0	Gelb	spell:lightning-arrow
+Lightning Bolt	3.0	Gelb	spell:lightning-bolt
+Magic Circle	3.0	Platin	spell:magic-circle
+Major Image	3.0	Lila	spell:major-image
+Mass Healing Word	3.0	Blau	spell:mass-healing-word
+Meld into Stone	3.0	Grün	spell:meld-into-stone
+Melf's Minute Meteors	3.0	Grün	spell:melfs-minute-meteors
+Phantom Steed	3.0	Weiss	spell:phantom-steed
+Plant Growth	3.0	Grün	spell:plant-growth
+Protection from Energy	3.0	Platin	spell:protection-from-energy
+Pulse Wave	3.0	Platin	spell:pulse-wave
+Remove Curse	3.0	Blau	spell:remove-curse
+Revivify	3.0	Blau	spell:revivify
+Sending	3.0	Lila	spell:sending
+Sleet Storm	3.0	Blau	spell:sleet-storm
+Slow	3.0	Blau	spell:slow
+Speak with Dead	3.0	Schwarz	spell:speak-with-dead
+Speak with Plants	3.0	Grün	spell:speak-with-plants
+Spirit Guardians	3.0	Weiss	spell:spirit-guardians
+Spirit Shroud	3.0	Weiss	spell:spirit-shroud
+Stinking Cloud	3.0	Grün	spell:stinking-cloud
+Summon Fey	3.0	Lila	spell:summon-fey
+Summon Lesser Demons	3.0	Schwarz	spell:summon-lesser-demons
+Summon Shadowspawn	3.0	Schwarz	spell:summon-shadowspawn
+Summon Undead	3.0	Schwarz	spell:summon-undead
+Thunder Step	3.0	Gelb	spell:thunder-step
+Tidal Wave	3.0	Blau	spell:tidal-wave
+Tiny Servant	3.0	Rot	spell:tiny-servant
+Tongues	3.0	Weiss	spell:tongues
+Vampiric Touch	3.0	Schwarz	spell:vampiric-touch
+Wall of Sand	3.0	Grün	spell:wall-of-sand
+Wall of Water	3.0	Blau	spell:wall-of-water
+Water Breathing	3.0	Blau	spell:water-breathing
+Water Walk	3.0	Blau	spell:water-walk
+Wind Wall	3.0	Gelb	spell:wind-wall
+Arcane Eye	4.0	Blau	spell:arcane-eye
+Aura of Life	4.0	Blau	spell:aura-of-life
+Aura of Purity	4.0	Blau	spell:aura-of-purity
+Blight	4.0	Schwarz	spell:blight
+Charm Monster	4.0	Grün	spell:charm-monster
+Confusion	4.0	Lila	spell:confusion
+Conjure Woodland Beings	4.0	Grün	spell:conjure-woodland-beings
+Control Water	4.0	Blau	spell:control-water
+Death Ward	4.0	Schwarz	spell:death-ward
+Dimension Door	4.0	Platin	spell:dimension-door
+Divination	4.0	Blau	spell:divination
+Dominate Beast	4.0	Grün	spell:dominate-beast
+Fabricate	4.0	Rot	spell:fabricate
+Fire Shield	4.0	Rot	spell:fire-shield
+Freedom of Movement	4.0	Gelb	spell:freedom-of-movement
+Galder's Speedy Courier	4.0	Gelb	spell:galders-speedy-courier
+Gate Seal	4.0	Platin	spell:gate-seal
+Giant Insect	4.0	Grün	spell:giant-insect
+Grasping Vine	4.0	Grün	spell:grasping-vine
+Gravity Sinkhole	4.0	Platin	spell:gravity-sinkhole
+Greater Invisibility	4.0	Lila	spell:greater-invisibility
+Guardian of Faith	4.0	Weiss	spell:guardian-of-faith
+Guardian of Nature	4.0	Grün	spell:guardian-of-nature
+Hallucinatory Terrain	4.0	Lila	spell:hallucinatory-terrain
+Ice Storm	4.0	Grün	spell:ice-storm
+Leomund's Secret Chest	4.0	Lila	spell:leomunds-secret-chest
+Locate Creature	4.0	Blau	spell:locate-creature
+Mordenkainen's Faithful Hound	4.0	Weiss	spell:mordenkainens-faithful-hound
+Mordenkainen's Private Sanctum	4.0	Platin	spell:mordenkainens-private-sanctum
+Otiluke's Resilient Sphere	4.0	Platin	spell:otilukes-resilient-sphere
+Phantasmal Killer	4.0	Lila	spell:phantasmal-killer
+Polymorph	4.0	Grün	spell:polymorph
+Raulothim's Psychic Lance	4.0	Lila	spell:raulothims-psychic-lance
+Shadow Of Moil	4.0	Schwarz	spell:shadow-of-moil
+Sickening Radiance	4.0	Schwarz	spell:sickening-radiance
+Spirit Of Death	4.0	Schwarz	spell:spirit-of-death
+Staggering Smite	4.0	Lila	spell:staggering-smite
+Steel Wind Strike	4.0	Gelb	spell:steel-wind-strike
+Stone Shape	4.0	Grün	spell:stone-shape
+Stoneskin	4.0	Grün	spell:stoneskin
+Storm Sphere	4.0	Gelb	spell:storm-sphere
+Summon Aberration	4.0	Platin	spell:summon-aberration
+Summon Construct	4.0	Rot	spell:summon-construct
+Summon Elemental	4.0	Rot, Blau, Grün, Gelb, Platin	spell:summon-elemental
+Summon Greater Demon	4.0	Schwarz	spell:summon-greater-demon
+Vitriolic Sphere	4.0	Schwarz	spell:vitriolic-sphere
+Wall of Fire	4.0	Rot	spell:wall-of-fire
+Watery Sphere	4.0	Blau	spell:watery-sphere
+Animate Objects	5.0	Weiss	spell:animate-objects
+Antilife Shell	5.0	Schwarz	spell:antilife-shell
+Awaken	5.0	Weiss	spell:awaken
+Bigby's Hand	5.0	Platin	spell:bigbys-hand
+Circle of Power	5.0	Platin	spell:circle-of-power
+Cloudkill	5.0	Schwarz	spell:cloudkill
+Commune	5.0	Weiss	spell:commune
+Commune with Nature	5.0	Grün	spell:commune-with-nature
+Cone of Cold	5.0	Blau	spell:cone-of-cold
+Conjure Elemental	5.0	Rot, Blau, Grün, Gelb, Platin	spell:conjure-elemental
+Conjure Volley	5.0	Rot	spell:conjure-volley
+Contact Other Plane	5.0	Platin	spell:contact-other-plane
+Contagion	5.0	Schwarz	spell:contagion
+Control Winds	5.0	Gelb	spell:control-winds
+Creation	5.0	Rot	spell:creation
+Danse Macabre	5.0	Lila	spell:danse-macabre
+Destructive Wave	5.0	Weiss	spell:destructive-wave
+Dispel Evil and Good	5.0	Weiss	spell:dispel-evil-and-good
+Dream	5.0	Lila	spell:dream
+Enervation	5.0	Lila	spell:enervation
+Far Step	5.0	Platin	spell:far-step
+Flame Strike	5.0	Rot	spell:flame-strike
+Geas	5.0	Lila	spell:geas
+Greater Restoration	5.0	Blau	spell:greater-restoration
+Hallow	5.0	Weiss	spell:hallow
+Hold Monster	5.0	Platin	spell:hold-monster
+Holy Weapon	5.0	Weiss	spell:holy-weapon
+Immolation	5.0	Rot	spell:immolation
+Insect Plague	5.0	Grün	spell:insect-plague
+Legend Lore	5.0	Weiss	spell:legend-lore
+Maelstrom	5.0	Blau	spell:maelstrom
+Mass Cure Wounds	5.0	Blau	spell:mass-cure-wounds
+Mislead	5.0	Lila	spell:mislead
+Modify Memory	5.0	Lila	spell:modify-memory
+Negative Energy Flood	5.0	Schwarz	spell:negative-energy-flood
+Passwall	5.0	Rot	spell:passwall
+Planar Binding	5.0	Platin	spell:planar-binding
+Raise Dead	5.0	Schwarz	spell:raise-dead
+Rary's Telepathic Bond	5.0	Lila	spell:rarys-telepathic-bond
+Reincarnate	5.0	Weiss	spell:reincarnate
+Scrying	5.0	Weiss	spell:scrying
+Seeming	5.0	Lila	spell:seeming
+Summon Celestial	5.0	Weiss	spell:summon-celestial
+Summon Draconic Spirit	5.0	Weiss	spell:summon-draconic-spirit
+Telekinesis	5.0	Platin	spell:telekinesis
+Teleportation Circle	5.0	Platin	spell:teleportation-circle
+Temporal Shunt	5.0	Platin	spell:temporal-shunt
+Transmute Rock	5.0	Grün	spell:transmute-rock
+Tree Stride	5.0	Grün	spell:tree-stride
+Wall of Force	5.0	Platin	spell:wall-of-force
+Wall of Light	5.0	Weiss	spell:wall-of-light
+Wall of Stone	5.0	Grün	spell:wall-of-stone
+Wrath Of Nature	5.0	Grün	spell:wrath-of-nature
+Blade Barrier	6.0	Rot	spell:blade-barrier
+Bones of the Earth	6.0	Grün	spell:bones-of-the-earth
+Chain Lightning	6.0	Gelb	spell:chain-lightning
+Circle of Death	6.0	Schwarz	spell:circle-of-death
+Conjure Fey	6.0	Lila	spell:conjure-fey
+Contingency	6.0	Platin	spell:contingency
+Create Homunculus	6.0	Rot	spell:create-homunculus
+Create Undead	6.0	Schwarz	spell:create-undead
+Disintegrate	6.0	Schwarz	spell:disintegrate
+Drawmij's Instant Summons	6.0	Platin	spell:drawmijs-instant-summons
+Druid Grove	6.0	Grün	spell:druid-grove
+Find the Path	6.0	Weiss	spell:find-the-path
+Fizban's Platinum Shield	6.0	Platin	spell:fizbans-platinum-shield
+Flesh to Stone	6.0	Grün	spell:flesh-to-stone
+Forbiddance	6.0	Platin	spell:forbiddance
+Globe of Invulnerability	6.0	Blau	spell:globe-of-invulnerability
+Gravity Fissure	6.0	Platin	spell:gravity-fissure
+Guards and Wards	6.0	Platin	spell:guards-and-wards
+Harm	6.0	Schwarz	spell:harm
+Heal	6.0	Blau	spell:heal
+Heroes' Feast	6.0	Rot	spell:heroes-feast
+Investiture of Flame	6.0	Rot	spell:investiture-of-flame
+Investiture of Ice	6.0	Blau	spell:investiture-of-ice
+Investiture of Stone	6.0	Grün	spell:investiture-of-stone
+Investiture of Wind	6.0	Gelb	spell:investiture-of-wind
+Magic Jar	6.0	Weiss	spell:magic-jar
+Mental Prison	6.0	Lila	spell:mental-prison
+Move Earth	6.0	Grün	spell:move-earth
+Otiluke's Freezing Sphere	6.0	Blau	spell:otilukes-freezing-sphere
+Otto's Irresistible Dance	6.0	Lila	spell:ottos-irresistible-dance
+Planar Ally	6.0	Weiss	spell:planar-ally
+Primordial Ward	6.0	Platin	spell:primordial-ward
+Programmed Illusion	6.0	Lila	spell:programmed-illusion
+Soul Cage	6.0	Weiss	spell:soul-cage
+Summon Fiend	6.0	Schwarz	spell:summon-fiend
+Tasha's Otherworldly Guise	6.0	Lila	spell:tashas-otherworldly-guise
+Tenser's Transformation	6.0	Grün	spell:tensers-transformation
+Transport via Plants	6.0	Grün	spell:transport-via-plants
+True Seeing	6.0	Weiss	spell:true-seeing
+Wall of Ice	6.0	Blau	spell:wall-of-ice
+Wall of Thorns	6.0	Grün	spell:wall-of-thorns
+Wind Walk	6.0	Gelb	spell:wind-walk
+Word of Recall	6.0	Weiss	spell:word-of-recall
+Conjure Celestial	7.0	Weiss	spell:conjure-celestial
+Delayed Blast Fireball	7.0	Rot	spell:delayed-blast-fireball
+Divine Word	7.0	Weiss	spell:divine-word
+Draconic Transformation	7.0	Grün	spell:draconic-transformation
+Etherealness	7.0	Gelb	spell:etherealness
+Fire Storm	7.0	Rot	spell:fire-storm
+Holy Aura	7.0	Weiss	spell:holy-aura
+Plane Shift	7.0	Platin	spell:plane-shift
+Power Word: Pain	7.0	Schwarz	spell:power-word-pain
+Prismatic Spray	7.0	Platin	spell:prismatic-spray
+Project Image	7.0	Lila	spell:project-image
+Regenerate	7.0	Blau	spell:regenerate
+Resurrection	7.0	Weiss	spell:resurrection
+Reverse Gravity	7.0	Platin	spell:reverse-gravity
+Sequester	7.0	Platin	spell:sequester
+Simulacrum	7.0	Lila	spell:simulacrum
+Symbol	7.0	Schwarz	spell:symbol
+Teleport	7.0	Platin	spell:teleport
+Temple of the Gods	7.0	Weiss	spell:temple-of-the-gods
+Tether Essence	7.0	Weiss	spell:tether-essence
+Whirlwind	7.0	Gelb	spell:whirlwind
+Abi-Dalzim's Horrid Wilting	8.0	Schwarz	spell:abi-dalzims-horrid-wilting
+Animal Shapes	8.0	Grün	spell:animal-shapes
+Clone	8.0	Grün	spell:clone
+Control Weather	8.0	Gelb	spell:control-weather
+Demiplane	8.0	Platin	spell:demiplane
+Dominate Monster	8.0	Grün	spell:dominate-monster
+Earthquake	8.0	Grün	spell:earthquake
+Feeblemind	8.0	Lila	spell:feeblemind
+Glibness	8.0	Lila	spell:glibness
+Illusory Dragon	8.0	Lila	spell:illusory-dragon
+Incendiary Cloud	8.0	Rot	spell:incendiary-cloud
+Maddening Darkness	8.0	Schwarz	spell:maddening-darkness
+Maze	8.0	Platin	spell:maze
+Mind Blank	8.0	Lila	spell:mind-blank
+Power Word: Stun	8.0	Platin	spell:power-word-stun
+Telepathy	8.0	Lila	spell:telepathy
+Tsunami	8.0	Blau	spell:tsunami
+Astral Projection	9.0	Gelb	spell:astral-projection
+Blade of Disaster	9.0	Rot	spell:blade-of-disaster
+Gate	9.0	Platin	spell:gate
+Imprisonment	9.0	Platin	spell:imprisonment
+Mass Heal	9.0	Blau	spell:mass-heal
+Mass Polymorph	9.0	Grün	spell:mass-polymorph
+Meteor Swarm	9.0	Rot, Grün	spell:meteor-swarm
+Power Word: Kill	9.0	Schwarz	spell:power-word-kill
+Prismatic Wall	9.0	Rot, Blau, Gelb, Weiss	spell:prismatic-wall
+Psychic Scream	9.0	Lila	spell:psychic-scream
+Shapechange	9.0	Grün	spell:shapechange
+Storm of Vengeance	9.0	Blau, Gelb	spell:storm-of-vengeance
+Time Ravage	9.0	Platin	spell:time-ravage
+Time Stop	9.0	Platin	spell:time-stop
+True Polymorph	9.0	Grün	spell:true-polymorph
+True Resurrection	9.0	Weiss	spell:true-resurrection
+Weird	9.0	Lila	spell:weird

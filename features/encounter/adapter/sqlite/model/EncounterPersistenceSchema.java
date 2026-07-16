@@ -26,6 +26,12 @@ public final class EncounterPersistenceSchema {
             column("quantity", "INTEGER NOT NULL CHECK(quantity > 0)"),
             column("sort_order", "INTEGER NOT NULL"));
 
+    public static final String GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME =
+            "generated_encounter_plan_batches";
+
+    public static final String GENERATED_ENCOUNTER_PLAN_ORIGINS_TABLE_NAME =
+            "generated_encounter_plan_origins";
+
     public static final String CREATE_ENCOUNTER_PLANS_SQL = ENCOUNTER_PLANS.createTableSql();
 
     public static final String CREATE_ENCOUNTER_PLAN_CREATURES_SQL =
@@ -46,6 +52,31 @@ public final class EncounterPersistenceSchema {
     public static final String CREATE_ENCOUNTER_PLAN_CREATURES_PLAN_INDEX_SQL =
             "CREATE INDEX IF NOT EXISTS idx_saved_encounter_plan_creatures_plan ON "
                     + ENCOUNTER_PLAN_CREATURES.name() + "(plan_id, sort_order)";
+
+    public static final String CREATE_GENERATED_ENCOUNTER_PLAN_BATCHES_SQL =
+            "CREATE TABLE IF NOT EXISTS " + GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME + " ("
+                    + "engine_version TEXT NOT NULL, "
+                    + "generation_id TEXT NOT NULL, "
+                    + "batch_fingerprint TEXT NOT NULL, "
+                    + "encounter_count INTEGER NOT NULL CHECK(encounter_count > 0), "
+                    + "PRIMARY KEY(engine_version, generation_id)"
+                    + ")";
+
+    public static final String CREATE_GENERATED_ENCOUNTER_PLAN_ORIGINS_SQL =
+            "CREATE TABLE IF NOT EXISTS " + GENERATED_ENCOUNTER_PLAN_ORIGINS_TABLE_NAME + " ("
+                    + "engine_version TEXT NOT NULL, "
+                    + "generation_id TEXT NOT NULL, "
+                    + "encounter_number INTEGER NOT NULL CHECK(encounter_number > 0), "
+                    + "batch_order INTEGER NOT NULL CHECK(batch_order >= 0), "
+                    + "spec_fingerprint TEXT NOT NULL, "
+                    + "plan_id INTEGER NOT NULL UNIQUE REFERENCES " + ENCOUNTER_PLANS.name()
+                    + "(plan_id) ON DELETE CASCADE, "
+                    + "PRIMARY KEY(engine_version, generation_id, encounter_number), "
+                    + "UNIQUE(engine_version, generation_id, batch_order), "
+                    + "FOREIGN KEY(engine_version, generation_id) REFERENCES "
+                    + GENERATED_ENCOUNTER_PLAN_BATCHES_TABLE_NAME
+                    + "(engine_version, generation_id) ON DELETE CASCADE"
+                    + ")";
 
     private EncounterPersistenceSchema() {
     }

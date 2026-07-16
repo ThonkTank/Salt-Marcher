@@ -1,0 +1,29 @@
+Container	Capacity_Units	Relation	Hide_In_Output	Notes	Packing_Priority	Mixable	Container_ID
+Pocket	3.0	with	true	Virtuelle Kleidungstasche; nicht als Loot-Item	100.0	false	container:pocket
+Pouch	20.0	with	false	Kleiner Beutel; nicht als Loot-Item	30.0	true	container:pouch
+Satchel	10.0	with	false	Tasche für gemischte kleine Items; nicht als Loot-Item	40.0	true	container:satchel
+Bundle	10.0	of	false	Virtuelle Gruppierung; nicht als Loot-Item	80.0	true	container:bundle
+Sack	50.0	of	false	Einfacher Sack; nicht als Loot-Item	50.0	true	container:sack
+Backpack	60.0	with	false	Migriert aus DB_LootItems	60.0	true	container:backpack
+Basket	20.0	with	false	Migriert aus DB_LootItems	70.0	true	container:basket
+Glass Bottle	16.0	with	false	Migriert aus DB_LootItems	207.0	false	container:glass-bottle
+Bucket	384.0	of	false	Migriert aus DB_LootItems	208.0	false	container:bucket
+Crossbow Bolt Case	20.0	with	false	Migriert aus DB_LootItems	209.0	false	container:crossbow-bolt-case
+Map/Scroll Case	6.0	with	false	Migriert aus DB_LootItems	210.0	false	container:map-scroll-case
+Component Pouch	20.0	with	false	Migriert aus DB_LootItems	211.0	false	container:component-pouch
+Flask	8.0	with	false	Migriert aus DB_LootItems	212.0	false	container:flask
+Jug	64.0	with	false	Migriert aus DB_LootItems	213.0	false	container:jug
+Iron Pot	10.0	with	false	Migriert aus DB_LootItems	214.0	false	container:iron-pot
+Crate	200.0	of	false	Große Kiste; nicht als Loot-Item	20.0	true	container:crate
+Chest	100.0	with	false	Truhe; nicht als Loot-Item	10.0	true	container:chest
+Cart	1000.0	with	false	Karren oder große Ladung; nicht als Loot-Item	90.0	true	container:cart
+Quiver	20.0	of	false	Migriert aus DB_LootItems	218.0	false	container:quiver
+Vial	1.0	with	false	Migriert aus DB_LootItems	219.0	false	container:vial
+Vial Case	12.0	with	false	Phiolen-Etui; nicht als Loot-Item	220.0	false	container:vial-case
+Waterskin	64.0	with	false	Migriert aus DB_LootItems	221.0	false	container:waterskin
+Scroll Tube	6.0	with	false	Schriftrollen-/Kartenröhre; nicht als Loot-Item	222.0	false	container:scroll-tube
+Tool Roll	8.0	with	false	Werkzeugrolle; nicht als Loot-Item	223.0	false	container:tool-roll
+Weapon Rack	20.0	with	false	Waffenständer; nicht als Loot-Item	224.0	false	container:weapon-rack
+Keg	640.0	of	false	Liquid container; capacity in fl oz.	225.0	false	container:keg
+Barrel	5120.0	of	false	Large liquid container; capacity in fl oz.	226.0	false	container:barrel
+Pile	200.0	of	false	Loose heap for dry goods or many identical items; capacity is a packing unit, not a physical vessel.	75.0	true	container:pile

@@ -26,6 +26,8 @@ import features.encountertable.EncounterTableServiceAssembly;
 import features.hex.HexServiceAssembly;
 import features.party.PartyServiceAssembly;
 import features.sessionplanner.SessionPlannerServiceAssembly;
+import features.sessiongeneration.SessionGenerationServiceAssembly;
+import features.sessiongeneration.api.SessionGenerationApi;
 import features.worldplanner.WorldPlannerServiceAssembly;
 
 /** Explicit production composition root. */
@@ -117,6 +119,7 @@ public final class AppBootstrap implements AutoCloseable {
         HexServiceAssembly.Component hex = HexServiceAssembly.create(
                 database, party.travelPositions(), party.application(),
                 executionLane, uiDispatcher, diagnostics);
+        SessionGenerationApi generation = SessionGenerationServiceAssembly.create(database, executionLane);
         SessionPlannerServiceAssembly session = SessionPlannerServiceAssembly.create(
                 database,
                 party.application(),
@@ -126,6 +129,8 @@ public final class AppBootstrap implements AutoCloseable {
                 encounter.savedPlans(),
                 encounter.planBudget(),
                 world.snapshot(),
+                generation,
+                encounter.generatedPlanImport(),
                 executionLane,
                 uiDispatcher,
                 diagnostics);

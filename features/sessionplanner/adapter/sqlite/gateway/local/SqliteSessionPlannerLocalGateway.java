@@ -37,7 +37,8 @@ public final class SqliteSessionPlannerLocalGateway {
         SessionPlannerSchemaMigrator schemaMigrator = new SessionPlannerSchemaMigrator();
         this.connections = Objects.requireNonNull(database, "database").connections(
                 "session-planner",
-                new SqliteMigration(1, schemaMigrator::ensureSchema));
+                new SqliteMigration(1, schemaMigrator::ensureSchema),
+                new SqliteMigration(2, schemaMigrator::addGeneratedRewards));
         this.reads = Objects.requireNonNull(reads, "reads");
         this.writes = Objects.requireNonNull(writes, "writes");
     }
@@ -124,6 +125,7 @@ public final class SqliteSessionPlannerLocalGateway {
             writes.replaceEncounters(connection, sessionId, snapshot.encounters());
             writes.replaceRests(connection, sessionId, snapshot.rests());
             writes.replaceLootPlaceholders(connection, sessionId, snapshot.lootPlaceholders());
+            writes.replaceGeneratedRewards(connection, sessionId, snapshot.generatedRewards());
             connection.commit();
             Optional<SessionPlanSnapshotRecord> savedSession = reads.loadSession(connection, sessionId);
             if (savedSession.isEmpty()) {

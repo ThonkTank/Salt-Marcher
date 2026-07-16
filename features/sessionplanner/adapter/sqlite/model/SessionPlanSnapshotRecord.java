@@ -7,7 +7,8 @@ public record SessionPlanSnapshotRecord(
         List<SessionParticipantRecord> participants,
         List<SessionEncounterRecord> encounters,
         List<SessionRestPlacementRecord> rests,
-        List<SessionLootPlaceholderRecord> lootPlaceholders
+        List<SessionLootPlaceholderRecord> lootPlaceholders,
+        List<SessionGeneratedRewardRecord> generatedRewards
 ) {
 
     public SessionPlanSnapshotRecord {
@@ -15,5 +16,6 @@ public record SessionPlanSnapshotRecord(
         encounters = encounters == null ? List.of() : List.copyOf(encounters);
         rests = rests == null ? List.of() : List.copyOf(rests);
         lootPlaceholders = lootPlaceholders == null ? List.of() : List.copyOf(lootPlaceholders);
+        generatedRewards = generatedRewards == null ? List.of() : List.copyOf(generatedRewards);
     }
 }
