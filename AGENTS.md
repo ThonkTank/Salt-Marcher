@@ -14,6 +14,13 @@ Run verification from the repository root.
 
 ## Delivery Rules
 
+Standing owner approval: for work in this repository, push only the owned
+feature branch to the configured `origin`, open or update its pull request, and
+merge it only after required CI is green. Do not request additional permission
+for those standard publication steps. This approval does not cover other
+remotes, unrelated branches, red or skipped required checks, real user data,
+secrets, paid services, or external data transmission.
+
 1. Work on a feature branch and merge through a pull request with green CI.
 2. Implement a clear request directly. Add planning or coordination only when
    it resolves concrete uncertainty or the user explicitly requests it.
