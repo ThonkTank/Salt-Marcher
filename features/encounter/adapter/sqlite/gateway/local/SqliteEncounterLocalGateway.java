@@ -33,7 +33,8 @@ public final class SqliteEncounterLocalGateway {
         this.connections = Objects.requireNonNull(database, "database").connections(
                 "encounter",
                 new SqliteMigration(1, schemaMigrator::ensureSchema),
-                new SqliteMigration(2, schemaMigrator::ensureGeneratedPlanOrigins));
+                new SqliteMigration(2, schemaMigrator::ensureGeneratedPlanOrigins),
+                new SqliteMigration(3, schemaMigrator::ensureRuntimeContexts));
         this.store = new EncounterPlanSqliteStore();
         this.origins = new GeneratedEncounterPlanOriginSqliteStore();
     }

@@ -59,7 +59,7 @@ public final class CombatTurn {
         int totalEnemies = 0;
         int aliveEnemies = 0;
         for (Combatant combatant : combatants) {
-            if (!combatant.isPlayerCharacter()) {
+            if (combatant.kind().enemy()) {
                 totalEnemies++;
                 if (combatant.isAlive()) {
                     aliveEnemies++;

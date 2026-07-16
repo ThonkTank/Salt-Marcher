@@ -73,6 +73,35 @@ final class SqliteDatabaseTest {
     }
 
     @Test
+    void maintenanceBackupIsIntegrityCheckedAndRestoreTestedBeforePublication() throws Exception {
+        Path databasePath = temporaryDirectory.resolve("maintenance.db");
+        SqliteMigration migration = seedMigration();
+        try (SqliteDatabase database = new SqliteDatabase(databasePath, (id, type) -> { });
+             var connection = database.connections("seed", migration).openConnection()) {
+            connection.createStatement().execute(
+                    "INSERT INTO recovery_data(id, value) VALUES(1, 'recoverable')");
+            SqliteDatabase.MaintenanceBackup receipt =
+                    database.createVerifiedMaintenanceBackup("items");
+            assertEquals("items", receipt.owner());
+        }
+
+        Path backup;
+        try (var files = Files.list(temporaryDirectory)) {
+            backup = files.filter(path -> path.getFileName().toString()
+                            .startsWith("maintenance.db.maintenance-items-"))
+                    .findFirst()
+                    .orElseThrow();
+        }
+        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + backup)) {
+            assertEquals("recoverable", storedValue(connection));
+            assertEquals("ok", pragmaText(connection, "PRAGMA integrity_check"));
+        }
+        try (var files = Files.walk(temporaryDirectory)) {
+            assertFalse(files.anyMatch(path -> path.getFileName().toString().equals("restore-probe.db")));
+        }
+    }
+
+    @Test
     void runsEveryRegisteredFeaturePlanOnceInRegistrationOrder() throws Exception {
         Path databasePath = temporaryDirectory.resolve("ordered.db");
         List<String> order = new ArrayList<>();

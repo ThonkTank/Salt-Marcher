@@ -72,6 +72,15 @@ After pending migrations, integrity and foreign-key checks MUST pass before
 commit. Logical feature-row validation and feature-specific error statuses
 remain owned by the feature contracts.
 
+An explicit feature maintenance operation that replaces local reference data
+MUST request a feature-named maintenance backup immediately before its replace
+transaction. The platform creates a WAL-consistent snapshot, verifies it,
+copies it to an isolated restore probe, verifies that probe, deletes the probe,
+and only then publishes a timestamped local maintenance backup receipt. The
+feature MUST fail before mutation if any step fails. This mechanism is not a
+permission to run maintenance during startup or against automated-test user
+data.
+
 ## Errors, Privacy, And Proof
 
 Lifecycle failures surface as storage failure through existing feature-owned

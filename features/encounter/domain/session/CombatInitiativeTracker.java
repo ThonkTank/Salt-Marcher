@@ -18,6 +18,14 @@ final class CombatInitiativeTracker {
     }
 
     void open(EncounterSessionContext context, List<EncounterCreatureData> roster) {
+        open(context, roster, List.of());
+    }
+
+    void open(
+            EncounterSessionContext context,
+            List<EncounterCreatureData> roster,
+            List<EncounterCreatureData> allies
+    ) {
         if (roster.isEmpty()) {
             context.setStatus(OPEN_INITIATIVE_NEEDS_CREATURE_STATUS);
             return;
@@ -47,6 +55,13 @@ final class CombatInitiativeTracker {
                     CombatantKind.MONSTER,
                     rolled));
         }
+        for (EncounterCreatureData ally : allies == null ? List.<EncounterCreatureData>of() : allies) {
+            pendingRows.add(new InitiativeEntryData(
+                    ally.id(),
+                    ally.name(),
+                    CombatantKind.ALLY_NPC,
+                    CombatRosterBuilder.defaultMonsterInitiative(ally.initiativeBonus())));
+        }
         context.enterMode(Mode.INITIATIVE, INITIATIVE_READY_STATUS);
     }
 
@@ -75,6 +90,13 @@ final class CombatInitiativeTracker {
                         fallbackIndex);
                 continue;
             }
+            if (entry.kind().alliedNpc()) {
+                EncounterCreatureData ally = rosterCreature(roster, entry.id()).orElse(null);
+                if (ally != null) {
+                    combatRosterBuilder.addAlly(combatRoster, ally, input.initiative());
+                }
+                continue;
+            }
             EncounterCreatureData creature = rosterCreature(roster, entry.id()).orElse(null);
             if (creature == null) {
                 continue;
@@ -88,6 +110,11 @@ final class CombatInitiativeTracker {
 
     List<InitiativeEntryData> entries() {
         return List.copyOf(pendingRows);
+    }
+
+    void restore(List<InitiativeEntryData> entries) {
+        pendingRows.clear();
+        pendingRows.addAll(entries == null ? List.of() : entries);
     }
 
     private static Optional<InitiativeEntryData> initiativeEntry(List<InitiativeEntryData> entries, String id) {

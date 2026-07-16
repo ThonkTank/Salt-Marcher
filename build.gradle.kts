@@ -1,5 +1,6 @@
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.application.tasks.CreateStartScripts
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -74,6 +75,14 @@ extensions.configure<JavaApplication> {
 
 tasks.withType<CreateStartScripts>().configureEach {
     applicationName = launcherName.get()
+}
+
+tasks.register<JavaExec>("importSrdItems") {
+    group = "application"
+    description = "Explicitly replace the local Items catalog from the public D&D 5e 2014 SRD API."
+    dependsOn(tasks.named("classes"))
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass.set("features.items.ItemsImportCommand")
 }
 
 tasks.test {

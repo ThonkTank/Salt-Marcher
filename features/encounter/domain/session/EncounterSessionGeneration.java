@@ -25,7 +25,7 @@ final class EncounterSessionGeneration {
         builderInputs = nextInputs == null ? EncounterGenerationInputs.empty() : nextInputs;
     }
 
-    void generate(
+    boolean generate(
             EncounterSession.SessionRepository access,
             Optional<EncounterGenerationRequest> request,
             EncounterSessionContext context,
@@ -34,7 +34,7 @@ final class EncounterSessionGeneration {
         context.refresh(access, true);
         if (!context.hasActiveParty()) {
             context.setStatus(NO_PARTY_STATUS);
-            return;
+            return false;
         }
         EncounterGenerationRequest generation = request.isPresent()
                 ? request.orElseThrow()
@@ -44,7 +44,7 @@ final class EncounterSessionGeneration {
             clearGeneratedEncounterState();
             generatedAdvisories = List.of();
             context.setStatus(result.message().isBlank() ? GENERATION_FAILURE_STATUS : result.message());
-            return;
+            return false;
         }
         generatedAlternatives.clear();
         generatedAlternatives.addAll(result.alternatives());
@@ -52,6 +52,7 @@ final class EncounterSessionGeneration {
         selectedAlternativeIndex = 0;
         applyGeneratedEncounter(generatedAlternatives.getFirst(), roster);
         context.setStatus(EncounterSessionGenerationMessages.successText(result));
+        return true;
     }
 
     void clearGenerationHistory(EncounterSessionContext context) {
@@ -62,12 +63,13 @@ final class EncounterSessionGeneration {
         context.setStatus(HISTORY_CLEARED_STATUS);
     }
 
-    void shiftGeneratedAlternative(int delta, EncounterSessionRosterMutation roster) {
+    boolean shiftGeneratedAlternative(int delta, EncounterSessionRosterMutation roster) {
         if (generatedAlternatives.isEmpty()) {
-            return;
+            return false;
         }
         selectedAlternativeIndex = Math.floorMod(selectedAlternativeIndex + delta, generatedAlternatives.size());
         applyGeneratedEncounter(generatedAlternatives.get(selectedAlternativeIndex), roster);
+        return true;
     }
 
     void clearGeneratedSelection() {
@@ -97,6 +99,7 @@ final class EncounterSessionGeneration {
     EncounterSessionGenerationState state() {
         return new EncounterSessionGenerationState(
                 builderInputs,
+                generatedAlternatives,
                 generatedAdvisories,
                 generatedAdjustedXp,
                 generatedDifficulty,
@@ -104,6 +107,18 @@ final class EncounterSessionGeneration {
                 selectedAlternativeIndex,
                 generatedAlternatives.size(),
                 generationHistoryPresent);
+    }
+
+    void restore(EncounterSessionMemento memento) {
+        builderInputs = memento.builderInputs();
+        generatedAlternatives.clear();
+        generatedAlternatives.addAll(memento.generatedAlternatives());
+        generatedAdvisories = memento.generatedAdvisories();
+        selectedAlternativeIndex = memento.selectedAlternativeIndex();
+        generatedAdjustedXp = memento.generatedAdjustedXp();
+        generatedDifficulty = memento.generatedDifficulty();
+        generatedTitle = memento.generatedTitle();
+        generationHistoryPresent = memento.generationHistoryPresent();
     }
 
     private void clearGeneratedEncounterState() {

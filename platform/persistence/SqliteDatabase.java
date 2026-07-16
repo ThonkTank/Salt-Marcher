@@ -90,6 +90,45 @@ public final class SqliteDatabase implements AutoCloseable {
         return databasePath;
     }
 
+    /**
+     * Creates and restore-tests a durable snapshot before an explicit maintenance operation.
+     * Callers still own their feature transaction; this method only establishes a verified
+     * recovery point for the complete database without exposing its local path.
+     */
+    public synchronized MaintenanceBackup createVerifiedMaintenanceBackup(String owner) throws SQLException {
+        String safeOwner = requireOwner(owner);
+        prepare();
+        if (!Files.isRegularFile(databasePath) || fileSize(databasePath) == 0L) {
+            throw new SQLException("SQLite maintenance backup requires an initialized database.");
+        }
+
+        Path snapshot = null;
+        Path restoreProbe = null;
+        try {
+            snapshot = createVacuumSnapshot(databasePath);
+            assertIntegrity(snapshot);
+            restoreProbe = snapshot.resolveSibling("restore-probe.db");
+            Files.copy(snapshot, restoreProbe, StandardCopyOption.REPLACE_EXISTING);
+            assertIntegrity(restoreProbe);
+
+            Instant createdAt = Instant.now();
+            Path target = sibling(databasePath.getFileName()
+                    + ".maintenance-" + safeOwner + "-" + createdAt.toEpochMilli() + ".sqlite");
+            replaceAtomically(snapshot, target);
+            snapshot = null;
+            assertIntegrity(target);
+            return new MaintenanceBackup(safeOwner, createdAt);
+        } catch (IOException exception) {
+            throw new SQLException("Could not create SQLite maintenance backup.", exception);
+        } finally {
+            if (snapshot != null) {
+                deletePreflightSnapshot(snapshot);
+            } else if (restoreProbe != null) {
+                deletePreflightSnapshot(restoreProbe);
+            }
+        }
+    }
+
     public synchronized SqliteConnectionSource connections(String owner, SqliteMigration... migrations) {
         String safeOwner = requireOwner(owner);
         List<SqliteMigration> plan = normalizedPlan(migrations);
@@ -695,6 +734,14 @@ public final class SqliteDatabase implements AutoCloseable {
     }
 
     private record FileMove(Path source, Path target) { }
+
+    public record MaintenanceBackup(String owner, Instant createdAt) {
+
+        public MaintenanceBackup {
+            owner = requireOwner(owner);
+            createdAt = Objects.requireNonNull(createdAt, "createdAt");
+        }
+    }
 
     private static final class PreflightLockUnavailableException extends SQLException {
 

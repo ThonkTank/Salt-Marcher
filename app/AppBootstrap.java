@@ -19,12 +19,15 @@ import shell.api.ShellStateTabSpec;
 import shell.api.ShellTopBarSpec;
 import shell.host.AppShell;
 import features.creatures.CreaturesServiceAssembly;
+import features.catalog.CatalogServiceAssembly;
 import features.dungeon.DungeonFeature;
 import features.encounter.EncounterServiceAssembly;
 import features.encounter.api.ApplyEncounterStateCommand;
 import features.encountertable.EncounterTableServiceAssembly;
 import features.hex.HexServiceAssembly;
+import features.items.ItemsServiceAssembly;
 import features.party.PartyServiceAssembly;
+import features.scene.SceneFeature;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.sessiongeneration.SessionGenerationServiceAssembly;
 import features.sessiongeneration.api.SessionGenerationApi;
@@ -84,6 +87,8 @@ public final class AppBootstrap implements AutoCloseable {
                         database, executionLane, uiDispatcher, diagnostics);
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
                 database, executionLane, uiDispatcher, diagnostics);
+        ItemsServiceAssembly.Component items = ItemsServiceAssembly.create(
+                database, executionLane, diagnostics);
 
         WorldPlannerServiceAssembly.Component world = WorldPlannerServiceAssembly.create(
                 database,
@@ -134,39 +139,64 @@ public final class AppBootstrap implements AutoCloseable {
                 executionLane,
                 uiDispatcher,
                 diagnostics);
+        SceneFeature.Component scene = SceneFeature.create(
+                database,
+                party.activeParty(),
+                world.snapshot(),
+                session.preparedScenes(),
+                encounter.runtimeContexts(),
+                executionLane,
+                uiDispatcher,
+                diagnostics);
         return new Components(
-                creatures, encounterTables, party, world, encounter, dungeon, hex, session);
+                creatures, encounterTables, party, items, world, encounter, dungeon, hex, session, scene);
     }
 
     private List<ResolvedContribution> bindContributions(AppShell shell, Components components) {
         var creatures = components.creatures();
         var tables = components.encounterTables();
         var party = components.party();
+        var items = components.items();
         var world = components.world();
         var encounter = components.encounter();
         var dungeon = components.dungeon();
         var hex = components.hex();
         var session = components.session();
+        var scene = components.scene();
         var inspector = shell.inspector();
+        features.worldplanner.api.WorldPlannerEncounterSink worldEncounter =
+                (statblockId, npcId) -> encounter.application().applyState(
+                        ApplyEncounterStateCommand.addWorldNpcCreature(statblockId, npcId));
 
         List<ShellContribution> manifest = List.of(
                 party.adventuringDayTopBarContribution(),
                 party.partyTopBarContribution(),
-                encounter.catalogContribution(
-                        creatures.application(), tables.application(), creatures.filterOptions(),
-                        creatures.catalog(), creatures.detail(), tables.catalog(), world.snapshot(), inspector),
+                CatalogServiceAssembly.contribution(
+                        creatures.application(), tables.application(), encounter.application(),
+                        encounter.builderInputs(), creatures.filterOptions(), creatures.catalog(),
+                        tables.catalog(), encounter.tuningPreview(), encounter.savedPlans(),
+                        items.catalog(), world.snapshot(), inspector,
+                        creatureId -> creatures.openInspector(inspector, creatureId),
+                        npcId -> world.openNpcInspector(
+                                npcId, worldEncounter, creatures.catalog(), tables.catalog(), inspector),
+                        factionId -> world.openFactionInspector(
+                                factionId, worldEncounter, creatures.catalog(), tables.catalog(), inspector),
+                        locationId -> world.openLocationInspector(
+                                locationId, worldEncounter, creatures.catalog(), tables.catalog(), inspector),
+                        () -> world.openNpcCreator(
+                                worldEncounter, creatures.catalog(), tables.catalog(), inspector),
+                        () -> world.openFactionCreator(
+                                worldEncounter, creatures.catalog(), tables.catalog(), inspector),
+                        () -> world.openLocationCreator(
+                                worldEncounter, creatures.catalog(), tables.catalog(), inspector)),
                 dungeon.editorContribution(),
                 dungeon.travelContribution(),
                 hex.mapContribution(),
                 session.contribution(),
-                world.contribution(
-                        (statblockId, npcId) -> encounter.application().applyState(
-                                ApplyEncounterStateCommand.addWorldNpcCreature(statblockId, npcId)),
-                        creatures.catalog(),
-                        tables.catalog(),
-                        inspector),
+                scene.contribution(),
                 encounter.stateContribution(
-                        creatures.detail(), creatures.application(), world.application(), inspector),
+                        creatures.application(), world.application(),
+                        creatureId -> creatures.openInspector(inspector, creatureId)),
                 hex.travelStateContribution());
 
         List<ResolvedContribution> resolved = new ArrayList<>(manifest.size());
@@ -220,11 +250,13 @@ public final class AppBootstrap implements AutoCloseable {
             CreaturesServiceAssembly.Component creatures,
             EncounterTableServiceAssembly.Component encounterTables,
             PartyServiceAssembly.Component party,
+            ItemsServiceAssembly.Component items,
             WorldPlannerServiceAssembly.Component world,
             EncounterServiceAssembly.Component encounter,
             DungeonFeature.Component dungeon,
             HexServiceAssembly.Component hex,
-            SessionPlannerServiceAssembly session
+            SessionPlannerServiceAssembly session,
+            SceneFeature.Component scene
     ) {
     }
 

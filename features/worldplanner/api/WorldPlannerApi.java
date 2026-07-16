@@ -14,7 +14,11 @@ public interface WorldPlannerApi {
 
     void addFactionNpc(AddWorldFactionNpcCommand command);
 
+    void setFactionDisposition(SetWorldFactionDispositionCommand command);
+
     void setFactionInventoryLimit(SetWorldFactionInventoryLimitCommand command);
+
+    void setNpcDispositionModifier(SetWorldNpcDispositionModifierCommand command);
 
     void createLocation(CreateWorldLocationCommand command);
 

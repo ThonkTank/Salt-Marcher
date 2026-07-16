@@ -15,6 +15,9 @@ import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
 import features.sessionplanner.api.SessionPlannerSessionSnapshot;
 import features.sessionplanner.api.SessionPlannerStatePanelModel;
 import features.sessionplanner.api.SessionPlannerStatePanelProjection;
+import features.sessionplanner.api.PreparedSceneCatalogModel;
+import features.sessionplanner.api.PreparedSceneCatalogSnapshot;
+import features.sessionplanner.api.PreparedSceneSource;
 import platform.state.PublishedState;
 
 public final class SessionPlannerPublishedState {
@@ -29,11 +32,14 @@ public final class SessionPlannerPublishedState {
     private final PublishedState<SessionPlannerParticipantsProjection> participants;
     private final PublishedState<SessionPlannerSceneTimelineProjection> sceneTimeline;
     private final PublishedState<SessionPlannerStatePanelProjection> statePanel;
+    private final PublishedState<PreparedSceneCatalogSnapshot> preparedScenes;
     private final SessionPlannerCurrentSessionModel currentSessionModel;
     private final SessionPlannerCatalogModel catalogModel;
     private final SessionPlannerParticipantsModel participantsModel;
     private final SessionPlannerSceneTimelineModel sceneTimelineModel;
     private final SessionPlannerStatePanelModel statePanelModel;
+    private final PreparedSceneCatalogModel preparedSceneCatalogModel;
+    private long preparedSceneRevision;
     private boolean loaded;
 
     public SessionPlannerPublishedState(
@@ -52,11 +58,13 @@ public final class SessionPlannerPublishedState {
         participants = new PublishedState<>(SessionPlannerParticipantsProjection.empty(), uiDispatcher);
         sceneTimeline = new PublishedState<>(SessionPlannerSceneTimelineProjection.empty(), uiDispatcher);
         statePanel = new PublishedState<>(SessionPlannerStatePanelProjection.empty(), uiDispatcher);
+        preparedScenes = new PublishedState<>(PreparedSceneCatalogSnapshot.empty(), uiDispatcher);
         currentSessionModel = new SessionPlannerCurrentSessionModel(sessions::current, sessions::subscribe);
         catalogModel = new SessionPlannerCatalogModel(catalog::current, catalog::subscribe);
         participantsModel = new SessionPlannerParticipantsModel(participants::current, participants::subscribe);
         sceneTimelineModel = new SessionPlannerSceneTimelineModel(sceneTimeline::current, sceneTimeline::subscribe);
         statePanelModel = new SessionPlannerStatePanelModel(statePanel::current, statePanel::subscribe);
+        preparedSceneCatalogModel = new PreparedSceneCatalogModel(preparedScenes::current, preparedScenes::subscribe);
     }
 
     public SessionPlannerCurrentSessionModel currentSessionModel() {
@@ -79,9 +87,13 @@ public final class SessionPlannerPublishedState {
         return statePanelModel;
     }
 
+    public PreparedSceneCatalogModel preparedSceneCatalogModel() {
+        return preparedSceneCatalogModel;
+    }
+
     void publishCurrentSession(SessionPlan sessionPlan) {
         SessionPlan safeSession = Objects.requireNonNull(sessionPlan, "sessionPlan");
-        publishCatalog(safeSession.sessionId(), safeSession.statusText());
+        publishCatalog(safeSession, safeSession.statusText());
         publishSessionProjections(safeSession);
     }
 
@@ -111,7 +123,7 @@ public final class SessionPlannerPublishedState {
         }
         Optional<SessionPlan> currentSession = repository.loadCurrent();
         if (currentSession.isEmpty()) {
-            publishCatalog(NO_SESSION_ID, "");
+            publishCatalog(null, "");
             loaded = true;
             return Optional.empty();
         }
@@ -119,7 +131,33 @@ public final class SessionPlannerPublishedState {
         return currentSession;
     }
 
-    private void publishCatalog(long selectedSessionId, String statusText) {
-        catalog.publish(projection.catalog(repository.listSessions(), selectedSessionId, statusText));
+    private void publishCatalog(SessionPlan selectedSession, String statusText) {
+        long selectedSessionId = selectedSession == null ? NO_SESSION_ID : selectedSession.sessionId();
+        var summaries = repository.listSessions();
+        catalog.publish(projection.catalog(summaries, selectedSessionId, statusText));
+        java.util.List<PreparedSceneSource> sources = new java.util.ArrayList<>();
+        for (var summary : summaries) {
+            Optional<SessionPlan> loaded = selectedSession != null
+                    && summary.sessionId() == selectedSession.sessionId()
+                    ? Optional.of(selectedSession)
+                    : repository.loadById(summary.sessionId());
+            loaded.ifPresent(session -> {
+                for (var scene : session.encounters()) {
+                    sources.add(new PreparedSceneSource(
+                            session.sessionId(),
+                            session.displayName(),
+                            scene.encounterId(),
+                            scene.sceneTitle(),
+                            scene.sceneNotes(),
+                            scene.locationId(),
+                            scene.encounterPlanId(),
+                            session.participantRefs()));
+                }
+            });
+        }
+        preparedScenes.publish(new PreparedSceneCatalogSnapshot(
+                ++preparedSceneRevision,
+                java.util.List.copyOf(sources),
+                statusText));
     }
 }

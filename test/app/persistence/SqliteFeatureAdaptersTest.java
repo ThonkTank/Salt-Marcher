@@ -30,7 +30,7 @@ final class SqliteFeatureAdaptersTest {
             SqliteEncounterPlanRepository encounters = new SqliteEncounterPlanRepository(database);
             Map<String, Integer> expectedVersions = Map.of(
                     "creatures", 1,
-                    "encounter", 2,
+                    "encounter", 3,
                     "encounter-table", 1,
                     "party", 1);
 

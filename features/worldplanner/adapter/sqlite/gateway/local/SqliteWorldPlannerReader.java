@@ -29,7 +29,7 @@ final class SqliteWorldPlannerReader {
 
     private List<WorldNpcRecord> loadNpcs(Connection connection) throws SQLException {
         String sql = "SELECT npc_id, display_name, creature_statblock_id, appearance_notes, behavior_notes, "
-                + "history_notes, general_notes, status FROM "
+                + "history_notes, general_notes, disposition_modifier, status FROM "
                 + WorldPlannerPersistenceSchema.NPCS_TABLE
                 + " ORDER BY npc_id";
         try (PreparedStatement statement = connection.prepareStatement(sql);
@@ -44,6 +44,7 @@ final class SqliteWorldPlannerReader {
                         result.getString("behavior_notes"),
                         result.getString("history_notes"),
                         result.getString("general_notes"),
+                        result.getInt("disposition_modifier"),
                         result.getString("status")));
             }
             return records;
@@ -51,7 +52,7 @@ final class SqliteWorldPlannerReader {
     }
 
     private List<WorldFactionRecord> loadFactions(Connection connection) throws SQLException {
-        String sql = "SELECT faction_id, display_name, notes, primary_encounter_table_id FROM "
+        String sql = "SELECT faction_id, display_name, notes, primary_encounter_table_id, disposition FROM "
                 + WorldPlannerPersistenceSchema.FACTIONS_TABLE
                 + " ORDER BY faction_id";
         try (PreparedStatement statement = connection.prepareStatement(sql);
@@ -64,6 +65,7 @@ final class SqliteWorldPlannerReader {
                         result.getString("display_name"),
                         result.getString("notes"),
                         result.getLong("primary_encounter_table_id"),
+                        result.getInt("disposition"),
                         loadFactionNpcIds(connection, factionId),
                         loadFactionLimits(connection, factionId)));
             }

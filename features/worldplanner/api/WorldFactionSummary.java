@@ -7,11 +7,24 @@ public record WorldFactionSummary(
         String displayName,
         String notes,
         long primaryEncounterTableId,
+        int disposition,
         List<Long> npcIds,
         List<WorldFactionInventoryLimitSummary> inventoryLimits
 ) {
 
+    public WorldFactionSummary(
+            long factionId,
+            String displayName,
+            String notes,
+            long primaryEncounterTableId,
+            List<Long> npcIds,
+            List<WorldFactionInventoryLimitSummary> inventoryLimits
+    ) {
+        this(factionId, displayName, notes, primaryEncounterTableId, 0, npcIds, inventoryLimits);
+    }
+
     public WorldFactionSummary {
+        disposition = Math.max(-50, Math.min(50, disposition));
         npcIds = npcIds == null ? List.of() : List.copyOf(npcIds);
         inventoryLimits = inventoryLimits == null ? List.of() : List.copyOf(inventoryLimits);
     }

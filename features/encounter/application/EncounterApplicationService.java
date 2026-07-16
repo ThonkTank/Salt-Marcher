@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.HashSet;
+import java.util.concurrent.CompletableFuture;
 import platform.execution.DirectExecutionLane;
 import platform.execution.ExecutionLane;
 import features.encounter.domain.generation.EncounterGenerationInputs;
@@ -14,10 +17,22 @@ import features.encounter.domain.session.CombatantId;
 import features.encounter.domain.session.EncounterInitiativeInput;
 import features.encounter.domain.session.EncounterSession;
 import features.encounter.domain.session.EncounterSessionCommand;
+import features.encounter.domain.session.Mode;
 import features.encounter.api.ApplyEncounterStateCommand;
 import features.encounter.api.EncounterBuilderInputs;
 import features.encounter.api.RefreshEncounterPlanBudgetCommand;
 import features.encounter.api.UpdateEncounterBuilderInputsCommand;
+import features.encounter.api.EncounterRuntimeContextApi;
+import features.encounter.api.EncounterRuntimeContextId;
+import features.encounter.api.EncounterRuntimeContextSpec;
+import features.encounter.api.EncounterRuntimeContextSyncResult;
+import features.encounter.api.EncounterRuntimeNpcRole;
+import features.encounter.api.SynchronizeEncounterRuntimeContextsCommand;
+import features.encounter.api.OpenSavedEncounterPlanCommand;
+import features.encounter.api.OpenSavedEncounterPlanResult;
+import features.encounter.domain.session.SceneNpcData;
+import features.encounter.domain.generation.EncounterGenerationRequest;
+import features.encounter.domain.session.EncounterSessionMemento;
 
 /**
  * Public encounter command boundary below the view layer.
@@ -54,6 +69,7 @@ public final class EncounterApplicationService implements features.encounter.api
 
     private final CommandActions commands;
     private final ExecutionLane executionLane;
+    private final EncounterRuntimeContextApi runtimeContexts;
 
     public EncounterApplicationService(
             EncounterSessionRuntimeAccess runtimeAccess,
@@ -61,7 +77,17 @@ public final class EncounterApplicationService implements features.encounter.api
             EncounterPublishedState publishedState,
             ExecutionLane executionLane
     ) {
-        this(RuntimeCommandActions.create(runtimeAccess, plans, publishedState), executionLane);
+        this(runtimeAccess, plans, publishedState, new InMemoryRuntimeContextRepository(), executionLane);
+    }
+
+    public EncounterApplicationService(
+            EncounterSessionRuntimeAccess runtimeAccess,
+            EncounterPlanGateway plans,
+            EncounterPublishedState publishedState,
+            EncounterRuntimeContextRepository contextRepository,
+            ExecutionLane executionLane
+    ) {
+        this(RuntimeCommandActions.create(runtimeAccess, plans, publishedState, contextRepository), executionLane);
     }
 
     EncounterApplicationService(CommandActions commands) {
@@ -71,7 +97,17 @@ public final class EncounterApplicationService implements features.encounter.api
     EncounterApplicationService(CommandActions commands, ExecutionLane executionLane) {
         this.commands = Objects.requireNonNull(commands, "commands");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.runtimeContexts = commands instanceof RuntimeCommandActions runtime
+                ? new RuntimeContextApi(runtime, executionLane)
+                : command -> CompletableFuture.completedFuture(new EncounterRuntimeContextSyncResult(
+                        EncounterRuntimeContextSyncResult.Status.INVALID,
+                        0L,
+                        "Encounter runtime contexts are unavailable."));
         this.executionLane.execute(commands::initialize);
+    }
+
+    public EncounterRuntimeContextApi runtimeContexts() {
+        return runtimeContexts;
     }
 
     public void applyState(ApplyEncounterStateCommand command) {
@@ -84,6 +120,31 @@ public final class EncounterApplicationService implements features.encounter.api
 
     public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) {
         executionLane.execute(() -> commands.refreshPlanBudget(command));
+    }
+
+    @Override
+    public java.util.concurrent.CompletionStage<OpenSavedEncounterPlanResult> openSavedPlan(
+            OpenSavedEncounterPlanCommand command
+    ) {
+        CompletableFuture<OpenSavedEncounterPlanResult> result = new CompletableFuture<>();
+        executionLane.execute(() -> {
+            if (commands instanceof RuntimeCommandActions runtime) {
+                try {
+                    result.complete(runtime.openSavedPlan(command));
+                } catch (RuntimeException exception) {
+                    result.complete(new OpenSavedEncounterPlanResult(
+                            OpenSavedEncounterPlanResult.Status.STORAGE_ERROR,
+                            command == null ? 0L : command.planId(),
+                            "Encounter konnte nicht geöffnet werden."));
+                }
+            } else {
+                result.complete(new OpenSavedEncounterPlanResult(
+                        OpenSavedEncounterPlanResult.Status.INVALID,
+                        command == null ? 0L : command.planId(),
+                        "Encounter-Laufzeit ist nicht verfügbar."));
+            }
+        });
+        return result;
     }
 
     private static EncounterSessionCommand toSessionCommand(ApplyEncounterStateCommand command) {
@@ -175,29 +236,56 @@ public final class EncounterApplicationService implements features.encounter.api
         private final EncounterSessionRuntimeAccess runtimeAccess;
         private final EncounterPlanGateway plans;
         private final EncounterPublishedState publishedState;
-        private final EncounterSession session = new EncounterSession();
+        private final EncounterRuntimeContextRepository contextRepository;
+        private final Map<String, ContextRuntime> contexts = new LinkedHashMap<>();
+        private final HashSet<String> combatDirtyContexts = new HashSet<>();
+        private EncounterRuntimeContextId focusedContextId = new EncounterRuntimeContextId("global");
+        private long sourceRevision;
 
         private RuntimeCommandActions(
                 EncounterSessionRuntimeAccess runtimeAccess,
                 EncounterPlanGateway plans,
-                EncounterPublishedState publishedState
+                EncounterPublishedState publishedState,
+                EncounterRuntimeContextRepository contextRepository
         ) {
             this.runtimeAccess = Objects.requireNonNull(runtimeAccess, "runtimeAccess");
             this.plans = Objects.requireNonNull(plans, "plans");
             this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
+            this.contextRepository = Objects.requireNonNull(contextRepository, "contextRepository");
         }
 
         private static RuntimeCommandActions create(
                 EncounterSessionRuntimeAccess runtimeAccess,
                 EncounterPlanGateway plans,
-                EncounterPublishedState publishedState
+                EncounterPublishedState publishedState,
+                EncounterRuntimeContextRepository contextRepository
         ) {
-            return new RuntimeCommandActions(runtimeAccess, plans, publishedState);
+            return new RuntimeCommandActions(runtimeAccess, plans, publishedState, contextRepository);
         }
 
         @Override
         public void initialize() {
-            session.apply(EncounterSessionCommand.refresh(), runtimeAccess);
+            EncounterRuntimeContextRepository.StoredRuntimeContexts stored = contextRepository.load();
+            sourceRevision = stored.sourceRevision();
+            for (EncounterRuntimeContextRepository.StoredRuntimeContext value : stored.contexts()) {
+                ContextRuntime runtime = newRuntime(value.specification());
+                runtime.session().restore(value.session(), runtime.access());
+                runtime.session().reconcileParty(runtime.access());
+                runtime.session().reconcileSceneNpcs(toSceneNpcs(value.specification()), runtime.access());
+                contexts.put(value.specification().contextId().value(), runtime);
+            }
+            if (stored.focusedContextId() != null
+                    && contexts.containsKey(stored.focusedContextId().value())) {
+                focusedContextId = stored.focusedContextId();
+            }
+            if (contexts.isEmpty()) {
+                EncounterRuntimeContextSpec global = new EncounterRuntimeContextSpec(
+                        focusedContextId, List.of(), 0L, 0L, List.of());
+                ContextRuntime runtime = newRuntime(global);
+                runtime.session().apply(EncounterSessionCommand.refresh(), runtime.access());
+                contexts.put(focusedContextId.value(), runtime);
+                persist();
+            }
             publishCurrentSession();
             publishSavedPlans();
             publishPlanBudget(0L);
@@ -206,7 +294,18 @@ public final class EncounterApplicationService implements features.encounter.api
         @Override
         public void applyState(ApplyEncounterStateCommand command) {
             EncounterSessionCommand effective = toSessionCommand(command);
-            session.apply(effective, runtimeAccess);
+            if (effective.action() == EncounterSessionCommand.Action.OPEN_SAVED_PLAN && isFocusedDirty()) {
+                publishCurrentSession();
+                return;
+            }
+            int previousMode = focused().session().memento().mode();
+            focused().session().apply(effective, focused().access());
+            if (isCombatRuntimeMutation(effective.action(), previousMode)) {
+                combatDirtyContexts.add(focusedContextId.value());
+            } else if (effective.action() == EncounterSessionCommand.Action.OPEN_SAVED_PLAN) {
+                combatDirtyContexts.remove(focusedContextId.value());
+            }
+            persist();
             publishCurrentSession();
             if (effective.action().republishesSavedPlans()) {
                 publishSavedPlans();
@@ -215,7 +314,10 @@ public final class EncounterApplicationService implements features.encounter.api
 
         @Override
         public void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command) {
-            session.apply(EncounterSessionCommand.updateBuilderInputs(toGenerationInputs(command)), runtimeAccess);
+            focused().session().apply(
+                    EncounterSessionCommand.updateBuilderInputs(toGenerationInputs(command)),
+                    focused().access());
+            persist();
             publishCurrentSession();
         }
 
@@ -225,7 +327,7 @@ public final class EncounterApplicationService implements features.encounter.api
         }
 
         private void publishCurrentSession() {
-            publishedState.publishCurrentSession(session, plans);
+            publishedState.publishCurrentSession(focused().session(), plans);
         }
 
         private void publishSavedPlans() {
@@ -234,6 +336,339 @@ public final class EncounterApplicationService implements features.encounter.api
 
         private void publishPlanBudget(long planId) {
             publishedState.publishPlanBudget(plans.loadPlanBudgetForPublication(planId));
+        }
+
+        private OpenSavedEncounterPlanResult openSavedPlan(OpenSavedEncounterPlanCommand command) {
+            if (command == null || command.planId() <= 0L) {
+                return new OpenSavedEncounterPlanResult(
+                        OpenSavedEncounterPlanResult.Status.INVALID,
+                        0L,
+                        "Encounter-Plan-ID fehlt.");
+            }
+            boolean unsaved = isFocusedDirty();
+            if (unsaved && !command.discardUnsavedChanges()) {
+                return new OpenSavedEncounterPlanResult(
+                        OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED,
+                        command.planId(),
+                        "Ungespeicherte Encounter-Änderungen verwerfen?");
+            }
+            focused().session().apply(
+                    toSessionCommand(ApplyEncounterStateCommand.openSavedPlan(command.planId())),
+                    focused().access());
+            combatDirtyContexts.remove(focusedContextId.value());
+            persist();
+            publishCurrentSession();
+            return new OpenSavedEncounterPlanResult(
+                    OpenSavedEncounterPlanResult.Status.OPENED,
+                    command.planId(),
+                    "Encounter geöffnet.");
+        }
+
+        private EncounterRuntimeContextSyncResult synchronize(SynchronizeEncounterRuntimeContextsCommand command) {
+            if (command == null || command.contexts().isEmpty()) {
+                return new EncounterRuntimeContextSyncResult(
+                        EncounterRuntimeContextSyncResult.Status.INVALID,
+                        sourceRevision,
+                        "Mindestens ein Encounter-Kontext ist erforderlich.");
+            }
+            if (command.sourceRevision() <= sourceRevision) {
+                return new EncounterRuntimeContextSyncResult(
+                        EncounterRuntimeContextSyncResult.Status.STALE_IGNORED,
+                        sourceRevision,
+                        "Veraltete Scene-Revision ignoriert.");
+            }
+            HashSet<String> ids = new HashSet<>();
+            for (EncounterRuntimeContextSpec spec : command.contexts()) {
+                if (!ids.add(spec.contextId().value())) {
+                    return new EncounterRuntimeContextSyncResult(
+                            EncounterRuntimeContextSyncResult.Status.INVALID,
+                            sourceRevision,
+                            "Encounter-Kontext-IDs müssen eindeutig sein.");
+                }
+            }
+            if (!ids.contains(command.focusedContextId().value())) {
+                return new EncounterRuntimeContextSyncResult(
+                        EncounterRuntimeContextSyncResult.Status.INVALID,
+                        sourceRevision,
+                        "Der fokussierte Encounter-Kontext fehlt.");
+            }
+
+            Map<String, ContextRuntime> next = new LinkedHashMap<>();
+            for (EncounterRuntimeContextSpec spec : command.contexts()) {
+                ContextRuntime existing = contexts.get(spec.contextId().value());
+                boolean created = existing == null;
+                ContextRuntime runtime;
+                if (created) {
+                    runtime = newRuntime(spec);
+                    runtime.session().apply(EncounterSessionCommand.refresh(), runtime.access());
+                    if (spec.initialEncounterPlanId() > 0L) {
+                        runtime.session().apply(
+                                toSessionCommand(ApplyEncounterStateCommand.openSavedPlan(
+                                        spec.initialEncounterPlanId())),
+                                runtime.access());
+                    }
+                } else {
+                    runtime = newRuntime(spec);
+                    runtime.session().restore(existing.session().memento(), runtime.access());
+                    runtime.session().reconcileParty(runtime.access());
+                }
+                runtime.session().reconcileSceneNpcs(toSceneNpcs(spec), runtime.access());
+                next.put(spec.contextId().value(), runtime);
+            }
+            contextRepository.replace(storedContexts(
+                    next,
+                    command.sourceRevision(),
+                    command.focusedContextId()));
+            contexts.clear();
+            contexts.putAll(next);
+            combatDirtyContexts.retainAll(ids);
+            focusedContextId = command.focusedContextId();
+            sourceRevision = command.sourceRevision();
+            publishCurrentSession();
+            return new EncounterRuntimeContextSyncResult(
+                    EncounterRuntimeContextSyncResult.Status.APPLIED,
+                    sourceRevision,
+                    "Encounter-Kontexte synchronisiert.");
+        }
+
+        private ContextRuntime focused() {
+            ContextRuntime runtime = contexts.get(focusedContextId.value());
+            if (runtime == null) {
+                throw new IllegalStateException("Focused Encounter runtime context is missing.");
+            }
+            return runtime;
+        }
+
+        private ContextRuntime newRuntime(EncounterRuntimeContextSpec spec) {
+            return new ContextRuntime(spec, contextAccess(spec), new EncounterSession());
+        }
+
+        private EncounterSession.SessionRepository contextAccess(EncounterRuntimeContextSpec spec) {
+            return new ContextSessionRepository(runtimeAccess, spec);
+        }
+
+        private void persist() {
+            contextRepository.replace(storedContexts(contexts, sourceRevision, focusedContextId));
+        }
+
+        private EncounterRuntimeContextRepository.StoredRuntimeContexts storedContexts(
+                Map<String, ContextRuntime> source,
+                long revision,
+                EncounterRuntimeContextId focused
+        ) {
+            List<EncounterRuntimeContextRepository.StoredRuntimeContext> stored = source.values().stream()
+                    .map(value -> new EncounterRuntimeContextRepository.StoredRuntimeContext(
+                            value.specification(), persistedMemento(value)))
+                    .toList();
+            return new EncounterRuntimeContextRepository.StoredRuntimeContexts(revision, focused, stored);
+        }
+
+        private EncounterSessionMemento persistedMemento(ContextRuntime runtime) {
+            EncounterSessionMemento current = runtime.session().memento();
+            if (current.dirty() || !combatDirtyContexts.contains(runtime.specification().contextId().value())) {
+                return current;
+            }
+            return new EncounterSessionMemento(
+                    current.mode(),
+                    current.status(),
+                    current.builderInputs(),
+                    current.generatedAlternatives(),
+                    current.generatedAdvisories(),
+                    current.selectedAlternativeIndex(),
+                    current.generatedAdjustedXp(),
+                    current.generatedDifficulty(),
+                    current.generatedTitle(),
+                    current.generationHistoryPresent(),
+                    true,
+                    current.roster(),
+                    current.pendingUndo(),
+                    current.nextUndoToken(),
+                    current.activeSavedPlanId(),
+                    current.initiativeEntries(),
+                    current.combatants(),
+                    current.currentTurnIndex(),
+                    current.round(),
+                    current.resultState());
+        }
+
+        private boolean isFocusedDirty() {
+            return focused().session().memento().dirty()
+                    || combatDirtyContexts.contains(focusedContextId.value());
+        }
+
+        private static boolean isCombatRuntimeMutation(EncounterSessionCommand.Action action, int previousMode) {
+            return switch (action) {
+                case OPEN_INITIATIVE,
+                        BACK_TO_BUILDER,
+                        CONFIRM_INITIATIVE,
+                        ADVANCE_TURN,
+                        ADJUST_INITIATIVE,
+                        ADD_PARTY_MEMBER_TO_COMBAT,
+                        END_COMBAT,
+                        AWARD_XP,
+                        RETURN_TO_BUILDER_AFTER_RESULTS,
+                        MUTATE_HP -> true;
+                case ADD_CREATURE -> Mode.isCombatMode(previousMode);
+                default -> false;
+            };
+        }
+
+        private static List<SceneNpcData> toSceneNpcs(EncounterRuntimeContextSpec spec) {
+            return spec.npcs().stream()
+                    .map(npc -> new SceneNpcData(
+                            npc.worldNpcId(),
+                            npc.statblockId(),
+                            switch (npc.role()) {
+                                case ENEMY -> SceneNpcData.Role.HOSTILE;
+                                case ALLY -> SceneNpcData.Role.FRIENDLY;
+                                case NEUTRAL -> SceneNpcData.Role.NEUTRAL;
+                            }))
+                    .toList();
+        }
+    }
+
+    private record ContextRuntime(
+            EncounterRuntimeContextSpec specification,
+            EncounterSession.SessionRepository access,
+            EncounterSession session
+    ) { }
+
+    private static final class RuntimeContextApi implements EncounterRuntimeContextApi {
+
+        private final RuntimeCommandActions commands;
+        private final ExecutionLane executionLane;
+
+        private RuntimeContextApi(RuntimeCommandActions commands, ExecutionLane executionLane) {
+            this.commands = commands;
+            this.executionLane = executionLane;
+        }
+
+        @Override
+        public java.util.concurrent.CompletionStage<EncounterRuntimeContextSyncResult> synchronize(
+                SynchronizeEncounterRuntimeContextsCommand command
+        ) {
+            CompletableFuture<EncounterRuntimeContextSyncResult> result = new CompletableFuture<>();
+            executionLane.execute(() -> {
+                try {
+                    result.complete(commands.synchronize(command));
+                } catch (RuntimeException exception) {
+                    result.complete(new EncounterRuntimeContextSyncResult(
+                            EncounterRuntimeContextSyncResult.Status.STORAGE_ERROR,
+                            commands.sourceRevision,
+                            "Encounter-Kontexte konnten nicht gespeichert werden."));
+                }
+            });
+            return result;
+        }
+    }
+
+    private static final class ContextSessionRepository implements EncounterSession.SessionRepository {
+
+        private final EncounterSessionRuntimeAccess delegate;
+        private final EncounterRuntimeContextSpec specification;
+
+        private ContextSessionRepository(
+                EncounterSessionRuntimeAccess delegate,
+                EncounterRuntimeContextSpec specification
+        ) {
+            this.delegate = delegate;
+            this.specification = specification;
+        }
+
+        @Override
+        public List<features.encounter.domain.session.PartyMemberData> loadActiveParty() {
+            List<features.encounter.domain.session.PartyMemberData> active = delegate.loadActiveParty();
+            if ("global".equals(specification.contextId().value())) {
+                return active;
+            }
+            return active.stream()
+                    .filter(member -> specification.partyMemberIds().contains(member.numericId()))
+                    .toList();
+        }
+
+        @Override
+        public java.util.Optional<features.encounter.domain.session.BudgetData> loadBudget() {
+            if ("global".equals(specification.contextId().value())) {
+                return delegate.loadBudget();
+            }
+            return delegate.loadBudgetForParty(loadActiveParty());
+        }
+
+        @Override
+        public features.encounter.domain.session.GenerationResultData generate(
+                features.encounter.domain.generation.EncounterGenerationRequest request) {
+            if ("global".equals(specification.contextId().value())) {
+                return delegate.generate(request);
+            }
+            return delegate.generateForParty(withSynchronizedLocation(request), loadActiveParty());
+        }
+
+        private EncounterGenerationRequest withSynchronizedLocation(EncounterGenerationRequest request) {
+            EncounterGenerationRequest effective = request == null
+                    ? new EncounterGenerationRequest(
+                            EncounterGenerationInputs.empty(), 0, 0L, List.of(), List.of())
+                    : request;
+            EncounterGenerationInputs original = effective.inputs();
+            EncounterGenerationInputs scoped = new EncounterGenerationInputs(
+                    original.creatureTypes(),
+                    original.creatureSubtypes(),
+                    original.biomes(),
+                    original.targetDifficulty(),
+                    original.tuning(),
+                    original.encounterTableIds(),
+                    original.worldFactionIds(),
+                    specification.locationId(),
+                    original.finiteCreatureStockCaps());
+            return new EncounterGenerationRequest(
+                    scoped,
+                    effective.alternativeCount(),
+                    effective.generationSeed(),
+                    effective.excludedCreatureIds(),
+                    effective.lockedCreatures());
+        }
+
+        @Override
+        public features.encounter.domain.session.PlanOutcome savePlan(
+                features.encounter.domain.plan.EncounterPlan plan) {
+            return delegate.savePlan(plan);
+        }
+
+        @Override
+        public features.encounter.domain.session.PlanOutcome loadPlan(long planId) {
+            return delegate.loadPlan(planId);
+        }
+
+        @Override
+        public features.encounter.domain.session.ListPlansOutcome listPlans() {
+            return delegate.listPlans();
+        }
+
+        @Override
+        public java.util.Optional<features.encounter.domain.session.CreatureDetailData> loadCreature(long creatureId) {
+            return delegate.loadCreature(creatureId);
+        }
+
+        @Override
+        public features.encounter.domain.session.AwardXpOutcome awardXp(
+                List<Long> partyMemberIds,
+                int xpPerCharacter
+        ) {
+            return delegate.awardXp(partyMemberIds, xpPerCharacter);
+        }
+    }
+
+    private static final class InMemoryRuntimeContextRepository implements EncounterRuntimeContextRepository {
+
+        private StoredRuntimeContexts value = StoredRuntimeContexts.empty();
+
+        @Override
+        public StoredRuntimeContexts load() {
+            return value;
+        }
+
+        @Override
+        public void replace(StoredRuntimeContexts contexts) {
+            value = contexts;
         }
     }
 

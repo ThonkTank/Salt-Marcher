@@ -22,6 +22,7 @@ only the user-accepted roster when the user saves a plan.
 - [Builder Inputs Contract](contract/contract-encounter-builder-inputs.md)
 - [Encounter State Contract](contract/contract-encounter-state.md)
 - [Generated Import Contract](contract/contract-encounter-generated-import.md)
+- [Runtime Context Contract](contract/contract-encounter-runtime-contexts.md)
 - [Encounter Table Feature README](../encountertable/README.md)
 - [Encounter UI](requirements/requirements-encounter-state-tab.md)
 
@@ -37,10 +38,12 @@ In scope:
 - adding catalog creature rows into a manual runtime roster
 - saving and opening encounter-plan rosters
 - atomically importing generated-origin encounter specifications as saved plans
+- preserving one independent builder, initiative, combat, and result runtime
+  for every running Scene context
 
 Out of scope:
 
-- persisting initiative, combat, result, or loot state as encounter-plan truth
+- Scene workspace, party, location, NPC, or disposition truth
 - dungeon room placement or biome ownership
 - bootstrap or shell policy
 - generated reward, packing, audit, or session-scene ownership

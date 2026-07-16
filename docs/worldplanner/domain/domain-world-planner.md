@@ -45,6 +45,7 @@ World Planner has three authored aggregate centers.
 - appearance, behavior, history, and notes
 - lifecycle status: active or defeated
 - optional last known faction/location references
+- a bounded `-50..+50` disposition modifier toward the PCs
 
 `WorldFaction` owns:
 
@@ -53,6 +54,7 @@ World Planner has three authored aggregate centers.
 - one primary encounter-table reference
 - NPC memberships
 - optional finite statblock inventory limits
+- a bounded `-50..+50` base disposition toward the PCs
 
 `WorldLocation` owns:
 
@@ -98,6 +100,10 @@ Commands entering the model include:
 - confirm post-combat losses
 
 Core invariants:
+
+- one NPC belongs to at most one faction
+- effective PC disposition is the clamped faction base plus NPC modifier;
+  `<= -15` is hostile, `>= +15` friendly, and the values between are neutral
 
 - NPC statblock references point to creature-owned statblocks and do not copy
   creature truth.

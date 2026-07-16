@@ -25,7 +25,9 @@ import features.worldplanner.api.CreateWorldFactionCommand;
 import features.worldplanner.api.CreateWorldLocationCommand;
 import features.worldplanner.api.CreateWorldNpcCommand;
 import features.worldplanner.api.RefreshWorldPlannerCommand;
+import features.worldplanner.api.SetWorldFactionDispositionCommand;
 import features.worldplanner.api.SetWorldFactionInventoryLimitCommand;
+import features.worldplanner.api.SetWorldNpcDispositionModifierCommand;
 import features.worldplanner.api.SetWorldNpcLifecycleStatusCommand;
 import features.worldplanner.api.UpdateWorldNpcNotesCommand;
 
@@ -197,11 +199,60 @@ public final class WorldPlannerApplicationService implements features.worldplann
                 save(state.withStatus("Fraktion oder NPC nicht gefunden."));
                 return;
             }
-            if (faction.npcIds().contains(command.npcId())) {
+            if (faction.npcIds().contains(command.npcId())
+                    && state.factionIdForNpc(command.npcId()) == faction.factionId()) {
                 save(state.withStatus("NPC ist bereits Teil der Fraktion."));
                 return;
             }
-            save(replaceFaction(state, faction.addNpc(command.npcId()), "NPC zur Fraktion hinzugefuegt."));
+            List<WorldFaction> reassigned = new ArrayList<>();
+            for (WorldFaction existing : state.factions()) {
+                WorldFaction withoutNpc = existing.npcIds().contains(command.npcId())
+                        ? existing.removeNpc(command.npcId())
+                        : existing;
+                reassigned.add(withoutNpc.factionId() == faction.factionId()
+                        ? withoutNpc.addNpc(command.npcId())
+                        : withoutNpc);
+            }
+            save(new WorldPlannerState(
+                    state.npcs(),
+                    reassigned,
+                    state.locations(),
+                    state.nextNpcId(),
+                    state.nextFactionId(),
+                    state.nextLocationId(),
+                    "NPC-Fraktion aktualisiert."));
+        });
+    }
+
+    public void setFactionDisposition(SetWorldFactionDispositionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldFaction faction = state.faction(command.factionId());
+            if (faction == null) {
+                save(state.withStatus("Fraktion nicht gefunden."));
+                return;
+            }
+            save(replaceFaction(
+                    state,
+                    faction.withDisposition(command.disposition()),
+                    "Fraktionshaltung aktualisiert."));
+        });
+    }
+
+    public void setNpcDispositionModifier(SetWorldNpcDispositionModifierCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldNpc npc = state.npc(command.npcId());
+            if (npc == null) {
+                save(state.withStatus("NPC nicht gefunden."));
+                return;
+            }
+            save(replaceNpc(
+                    state,
+                    npc.withDispositionModifier(command.modifier()),
+                    "NPC-Haltung aktualisiert."));
         });
     }
 

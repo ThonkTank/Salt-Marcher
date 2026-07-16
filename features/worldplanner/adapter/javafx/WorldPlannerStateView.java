@@ -19,7 +19,6 @@ public final class WorldPlannerStateView extends VBox {
     private static final int NPCS = 0;
     private static final int FACTIONS = 1;
     private static final int LOCATIONS = 2;
-    private static final int SOURCES = 3;
     private static final int NOTES_ROWS = 3;
     private static final int SINGLE_CHOICE_COUNT = 1;
     private static final String EDITOR_STYLE = "world-planner-editor";
@@ -33,23 +32,23 @@ public final class WorldPlannerStateView extends VBox {
     private final TextArea behaviorNotes = notesArea();
     private final TextArea historyNotes = notesArea();
     private final TextArea generalNotes = notesArea();
+    private final TextField npcDisposition = new TextField("0");
     private final TextField factionName = new TextField();
     private final ComboBox<String> primaryEncounterTableChoice = new ComboBox<>();
     private final ComboBox<String> npcChoice = new ComboBox<>();
     private final ComboBox<String> inventoryStatblockChoice = new ComboBox<>();
     private final CheckBox finiteInventory = new CheckBox("Finite");
     private final TextField inventoryQuantity = new TextField();
+    private final TextField factionDisposition = new TextField("0");
     private final TextField locationName = new TextField();
     private final ComboBox<String> factionChoice = new ComboBox<>();
     private final ComboBox<String> locationTableChoice = new ComboBox<>();
-    private final Label sourcesSummary = wrap();
     private final VBox npcEditor = new VBox(8);
     private final VBox factionEditor = new VBox(8);
     private final VBox locationEditor = new VBox(8);
-    private final VBox sourcesPreview = new VBox(8);
     private Consumer<StateInput> eventSink = event -> { };
 
-    WorldPlannerStateView() {
+    public WorldPlannerStateView() {
         getStyleClass().add("world-planner-state");
         moduleTitle.getStyleClass().add("world-planner-section-title");
         configureEditors();
@@ -59,8 +58,7 @@ public final class WorldPlannerStateView extends VBox {
                 labelled("Next", nextAction),
                 npcEditor,
                 factionEditor,
-                locationEditor,
-                sourcesPreview);
+                locationEditor);
     }
 
     public void bind(WorldPlannerViewModel viewModel) {
@@ -81,20 +79,20 @@ public final class WorldPlannerStateView extends VBox {
         npcChoice.setPromptText("NPC waehlen");
         inventoryStatblockChoice.setPromptText("Bestand-Statblock waehlen");
         inventoryQuantity.setPromptText("Anzahl");
+        npcDisposition.setPromptText("Haltungsmodifikator -50 bis 50");
+        factionDisposition.setPromptText("Fraktionshaltung -50 bis 50");
         locationName.setPromptText("Location Name");
         factionChoice.setPromptText("Fraktion waehlen");
         locationTableChoice.setPromptText("Location-Tabelle waehlen");
         npcEditor.getStyleClass().add(EDITOR_STYLE);
         factionEditor.getStyleClass().add(EDITOR_STYLE);
         locationEditor.getStyleClass().add(EDITOR_STYLE);
-        sourcesPreview.getStyleClass().add(EDITOR_STYLE);
         npcEditor.getChildren().setAll(new Label("Edit NPC"), npcFields(), npcActions());
         factionEditor.getChildren().setAll(new Label("Edit Faction"), factionFields(), factionActions());
         locationEditor.getChildren().setAll(new Label("Edit Location"), locationFields(), locationActions());
-        sourcesPreview.getChildren().setAll(new Label("Encounter Sources"), sourcesSummary);
     }
 
-    private void render(StateProjection projection) {
+    void render(StateProjection projection) {
         int activeModuleIndex = projection.activeModuleIndex();
         moduleTitle.setText(projection.moduleTitle());
         status.setText(projection.statusText());
@@ -102,11 +100,9 @@ public final class WorldPlannerStateView extends VBox {
         renderNpc(projection.npc());
         renderFaction(projection.faction());
         renderLocation(projection.location());
-        sourcesSummary.setText(projection.sourcesSummary());
         visible(npcEditor, activeModuleIndex == NPCS);
         visible(factionEditor, activeModuleIndex == FACTIONS);
         visible(locationEditor, activeModuleIndex == LOCATIONS);
-        visible(sourcesPreview, activeModuleIndex == SOURCES);
     }
 
     private void renderNpc(NpcEditor npc) {
@@ -116,6 +112,7 @@ public final class WorldPlannerStateView extends VBox {
         behaviorNotes.setText(npc.behaviorNotes());
         historyNotes.setText(npc.historyNotes());
         generalNotes.setText(npc.generalNotes());
+        npcDisposition.setText(npc.dispositionModifierText());
     }
 
     private void renderFaction(FactionEditor faction) {
@@ -123,6 +120,7 @@ public final class WorldPlannerStateView extends VBox {
         renderChoices(primaryEncounterTableChoice, faction.encounterTableLabels(), faction.selectedPrimaryTableLabel());
         renderChoices(npcChoice, faction.npcReferenceLabels(), "");
         renderChoices(inventoryStatblockChoice, faction.statblockLabels(), "");
+        factionDisposition.setText(faction.dispositionText());
     }
 
     private void renderLocation(LocationEditor location) {
@@ -136,6 +134,7 @@ public final class WorldPlannerStateView extends VBox {
         fields.addRow(0, npcName, statblockChoice);
         fields.addRow(1, labelled("Aussehen", appearanceNotes), labelled("Verhalten", behaviorNotes));
         fields.addRow(2, labelled("History", historyNotes), labelled("Notizen", generalNotes));
+        fields.addRow(3, labelled("Haltungsmodifikator", npcDisposition));
         return fields;
     }
 
@@ -144,6 +143,7 @@ public final class WorldPlannerStateView extends VBox {
         fields.addRow(0, factionName, primaryEncounterTableChoice);
         fields.addRow(1, npcChoice, inventoryStatblockChoice);
         fields.addRow(2, finiteInventory, inventoryQuantity);
+        fields.addRow(3, labelled("Haltung zu den PCs", factionDisposition));
         return fields;
     }
 
@@ -163,7 +163,9 @@ public final class WorldPlannerStateView extends VBox {
         Button reactivate = action(NPCS, "Aktiv", actions(false, false, false, true, false, false, false, false, false));
         Button addToEncounter = action(NPCS, "Zum Encounter",
                 actions(false, false, false, false, true, false, false, false, false));
-        return new HBox(8, create, updateNotes, defeat, reactivate, addToEncounter);
+        Button disposition = action(NPCS, "Haltung setzen",
+                new ActionSnapshot(false, false, false, false, false, false, false, false, false, true, false));
+        return new HBox(8, create, updateNotes, disposition, defeat, reactivate, addToEncounter);
     }
 
     private Node factionActions() {
@@ -173,7 +175,9 @@ public final class WorldPlannerStateView extends VBox {
                 actions(false, false, false, false, false, true, false, false, false));
         Button limit = action(FACTIONS, "Bestand setzen",
                 actions(false, false, false, false, false, false, true, false, false));
-        return new HBox(8, create, addNpc, limit);
+        Button disposition = action(FACTIONS, "Haltung setzen",
+                new ActionSnapshot(false, false, false, false, false, false, false, false, false, false, true));
+        return new HBox(8, create, addNpc, disposition, limit);
     }
 
     private Node locationActions() {
@@ -204,14 +208,16 @@ public final class WorldPlannerStateView extends VBox {
                         appearanceNotes.getText(),
                         behaviorNotes.getText(),
                         historyNotes.getText(),
-                        generalNotes.getText()),
+                        generalNotes.getText(),
+                        npcDisposition.getText()),
                 new FactionSnapshot(
                         factionName.getText(),
                         primaryEncounterTableChoice.getSelectionModel().getSelectedIndex(),
                         npcChoice.getSelectionModel().getSelectedIndex(),
                         inventoryStatblockChoice.getSelectionModel().getSelectedIndex(),
                         finiteInventory.isSelected(),
-                        inventoryQuantity.getText()),
+                        inventoryQuantity.getText(),
+                        factionDisposition.getText()),
                 new LocationSnapshot(
                         locationName.getText(),
                         factionChoice.getSelectionModel().getSelectedIndex(),

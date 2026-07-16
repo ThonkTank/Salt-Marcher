@@ -44,6 +44,7 @@ public final class EncounterSession {
     private final CombatInitiativeTracker combatInitiative = new CombatInitiativeTracker();
     private final CombatTurnTracker combatTurnTracker = new CombatTurnTracker();
     private final CombatResolutionTracker combatResolution = new CombatResolutionTracker();
+    private final List<EncounterCreatureData> sceneAllies = new java.util.ArrayList<>();
 
     public EncounterSession apply(EncounterSessionCommand command, SessionRepository access) {
         EncounterSessionCommand effective = command == null ? EncounterSessionCommand.refresh() : command;
@@ -65,6 +66,83 @@ public final class EncounterSession {
                 combatProjection,
                 context.missingCombatPartyMembers(combatProjection),
                 combatResolution.resultState());
+    }
+
+    public EncounterSessionMemento memento() {
+        return builder.memento(
+                context,
+                combatInitiative.entries(),
+                combatRoster.combatants(),
+                combatTurnTracker.currentTurnIndex(),
+                combatTurnTracker.round(),
+                combatResolution.resultState());
+    }
+
+    public void restore(EncounterSessionMemento memento, SessionRepository access) {
+        if (memento == null) {
+            apply(EncounterSessionCommand.refresh(), access);
+            return;
+        }
+        context.refresh(access, true);
+        context.restore(memento.mode(), memento.status());
+        builder.restore(memento);
+        combatInitiative.restore(memento.initiativeEntries());
+        combatRoster.replaceAll(memento.combatants());
+        combatTurnTracker.restoreState(memento.currentTurnIndex(), memento.round());
+        combatResolution.restore(memento.resultState());
+    }
+
+    public void reconcileParty(SessionRepository access) {
+        var activeTurnId = combatTurnTracker.activeTurnId(combatTurns, combatRoster);
+        context.refresh(access, false);
+        if (context.mode() == Mode.INITIATIVE) {
+            combatInitiative.open(context, builder.roster(), sceneAllies);
+        } else if (context.mode() == Mode.COMBAT) {
+            combatRoster.reconcilePlayers(context.activeParty(), combatRosterBuilder);
+            combatTurnTracker.restore(combatTurns, combatRoster, activeTurnId);
+        }
+    }
+
+    public void reconcileSceneNpcs(List<SceneNpcData> npcs, SessionRepository access) {
+        List<EncounterCreatureData> hostile = new java.util.ArrayList<>();
+        List<EncounterCreatureData> friendly = new java.util.ArrayList<>();
+        for (SceneNpcData npc : npcs == null ? List.<SceneNpcData>of() : npcs) {
+            if (npc.role() == SceneNpcData.Role.NEUTRAL) {
+                continue;
+            }
+            CreatureDetailData detail = access.loadCreature(npc.creatureId()).orElse(null);
+            if (detail == null) {
+                continue;
+            }
+            EncounterCreatureData creature = EncounterSessionCreatureRows.worldNpc(detail, npc.worldNpcId());
+            if (npc.role() == SceneNpcData.Role.FRIENDLY) {
+                friendly.add(creature);
+            } else {
+                hostile.add(creature);
+            }
+        }
+        sceneAllies.clear();
+        sceneAllies.addAll(friendly);
+        builder.retainSceneEnemies(hostile.stream().map(EncounterCreatureData::worldNpcId).toList());
+        if (context.mode() == Mode.BUILDER) {
+            for (EncounterCreatureData creature : hostile) {
+                if (!builder.containsWorldNpc(creature.worldNpcId())) {
+                    builder.addSceneWorldNpc(creature, context);
+                }
+            }
+        } else if (context.mode() == Mode.INITIATIVE) {
+            combatInitiative.open(context, builder.roster(), sceneAllies);
+        } else if (context.mode() == Mode.COMBAT) {
+            var activeTurnId = combatTurnTracker.activeTurnId(combatTurns, combatRoster);
+            combatRoster.reconcileSceneNpcs(hostile, friendly, combatRosterBuilder);
+            combatTurnTracker.restore(combatTurns, combatRoster, activeTurnId);
+        }
+    }
+
+    private List<EncounterCreatureData> combinedRoster() {
+        List<EncounterCreatureData> combined = new java.util.ArrayList<>(builder.roster());
+        combined.addAll(sceneAllies);
+        return List.copyOf(combined);
     }
 
     private void addCreature(SessionRepository access, long creatureId, long worldNpcId) {
@@ -191,7 +269,10 @@ public final class EncounterSession {
             handlers.put(EncounterSessionCommand.Action.UNDO_REMOVE, (session, command, access) ->
                     session.builder.mutateCreature(command, session.context));
             handlers.put(EncounterSessionCommand.Action.OPEN_INITIATIVE, (session, command, access) ->
-                    session.combatInitiative.open(session.context, session.builder.roster()));
+                    session.combatInitiative.open(
+                            session.context,
+                            session.builder.roster(),
+                            session.sceneAllies));
             handlers.put(EncounterSessionCommand.Action.BACK_TO_BUILDER, (session, command, access) ->
                     session.context.enterMode(
                             Mode.BUILDER,
@@ -199,7 +280,7 @@ public final class EncounterSession {
             handlers.put(EncounterSessionCommand.Action.CONFIRM_INITIATIVE, (session, command, access) ->
                     session.combatInitiative.confirm(
                             command.initiativeInputs(),
-                            session.builder.roster(),
+                            session.combinedRoster(),
                             session.combatRoster,
                             session.combatRosterBuilder,
                             session.combatTurnTracker,

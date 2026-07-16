@@ -33,6 +33,8 @@ import features.encounter.domain.plan.EncounterPlan;
 import features.encounter.domain.plan.EncounterPlanCreature;
 import features.encounter.domain.plan.repository.EncounterPlanRepository;
 import features.encounter.api.ApplyEncounterStateCommand;
+import features.encounter.api.OpenSavedEncounterPlanCommand;
+import features.encounter.api.OpenSavedEncounterPlanResult;
 import features.encountertable.domain.catalog.EncounterTableCandidateData;
 import features.encountertable.domain.catalog.EncounterTableSummaryData;
 import features.encountertable.domain.catalog.port.EncounterTableCatalogPort;
@@ -75,6 +77,46 @@ public final class EncounterStateTabTest {
     @Test
     void ENCOUNTER_STATE_TAB_002() throws Exception {
         runOnFxThread(EncounterStateTabTest::assertSavedEncounterReadbackRendersInStateTab);
+    }
+
+    @Test
+    void savedCatalogOpenRequiresDiscardConfirmationForUnsavedRoster() {
+        TestRuntime runtime = TestRuntime.create();
+        runtime.encounter.application().applyState(ApplyEncounterStateCommand.addCreature(GOBLIN_ID));
+
+        OpenSavedEncounterPlanResult guarded = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, false))
+                .toCompletableFuture()
+                .join();
+        org.junit.jupiter.api.Assertions.assertEquals(
+                OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED,
+                guarded.status());
+
+        OpenSavedEncounterPlanResult opened = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, true))
+                .toCompletableFuture()
+                .join();
+        org.junit.jupiter.api.Assertions.assertEquals(OpenSavedEncounterPlanResult.Status.OPENED, opened.status());
+    }
+
+    @Test
+    void savedCatalogOpenRequiresDiscardConfirmationAfterLastRosterEntryWasRemoved() {
+        TestRuntime runtime = TestRuntime.create();
+        OpenSavedEncounterPlanResult opened = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, true))
+                .toCompletableFuture()
+                .join();
+        org.junit.jupiter.api.Assertions.assertEquals(OpenSavedEncounterPlanResult.Status.OPENED, opened.status());
+
+        runtime.encounter.application().applyState(ApplyEncounterStateCommand.removeCreature(GOBLIN_ID));
+        OpenSavedEncounterPlanResult guarded = runtime.encounter.application()
+                .openSavedPlan(new OpenSavedEncounterPlanCommand(runtime.planId, false))
+                .toCompletableFuture()
+                .join();
+
+        org.junit.jupiter.api.Assertions.assertEquals(
+                OpenSavedEncounterPlanResult.Status.CONFIRMATION_REQUIRED,
+                guarded.status());
     }
 
     private static void assertEncounterStateTabOpensThroughShellBinding() {
@@ -225,8 +267,8 @@ public final class EncounterStateTabTest {
 
         EncounterStateContribution contribution() {
             return new EncounterStateContribution(
-                    creatures.detail(), creatures.application(), encounter.state(), encounter.application(),
-                    null, new NoopInspectorSink());
+                    creatures.application(), encounter.state(), encounter.application(),
+                    null, ignored -> { });
         }
 
         private static void seedParty(PartyApi party) {

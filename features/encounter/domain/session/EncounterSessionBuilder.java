@@ -10,6 +10,7 @@ final class EncounterSessionBuilder {
     private final EncounterSessionRosterMutation roster = new EncounterSessionRosterMutation();
     private final EncounterSessionGeneration generation = new EncounterSessionGeneration();
     private final EncounterSessionSavedPlans savedPlans = new EncounterSessionSavedPlans();
+    private boolean dirty;
 
     void updateBuilderInputs(EncounterGenerationInputs nextInputs) {
         generation.updateBuilderInputs(nextInputs);
@@ -22,7 +23,9 @@ final class EncounterSessionBuilder {
     ) {
         roster.clearPendingUndo();
         savedPlans.clearActivePlan();
-        generation.generate(access, request, context, roster);
+        if (generation.generate(access, request, context, roster)) {
+            dirty = true;
+        }
     }
 
     boolean applySavedPlanCommand(
@@ -31,15 +34,27 @@ final class EncounterSessionBuilder {
             EncounterSessionContext context
     ) {
         if (command.opensSavedPlan()) {
-            return savedPlans.openSavedPlan(access, command.planId(), context, roster, generation);
+            boolean opened = savedPlans.openSavedPlan(access, command.planId(), context, roster, generation);
+            if (opened) {
+                dirty = false;
+            }
+            return opened;
         }
-        savedPlans.saveCurrentPlan(access, context, roster.snapshot().creatures(), generation.state().generatedTitle());
+        if (savedPlans.saveCurrentPlan(
+                access,
+                context,
+                roster.snapshot().creatures(),
+                generation.state().generatedTitle())) {
+            dirty = false;
+        }
         return false;
     }
 
     void applyGenerationCommand(EncounterSessionCommand command, EncounterSessionContext context) {
         if (command.shiftsGeneratedAlternative()) {
-            generation.shiftGeneratedAlternative(command.delta(), roster);
+            if (generation.shiftGeneratedAlternative(command.delta(), roster)) {
+                dirty = true;
+            }
             return;
         }
         generation.clearGenerationHistory(context);
@@ -49,6 +64,7 @@ final class EncounterSessionBuilder {
         if (roster.addCreature(creature, worldNpcId, context)) {
             savedPlans.clearActivePlan();
             generation.clearGeneratedSelection();
+            dirty = true;
         }
     }
 
@@ -56,6 +72,7 @@ final class EncounterSessionBuilder {
         if (roster.mutateCreature(command, context)) {
             savedPlans.clearActivePlan();
             generation.clearGeneratedSelection();
+            dirty = true;
         }
     }
 
@@ -69,5 +86,60 @@ final class EncounterSessionBuilder {
 
     BuilderStateData builderState(EncounterSessionContext context) {
         return EncounterSessionGenerationProjection.builderState(context, roster.snapshot(), generation.state());
+    }
+
+    EncounterSessionMemento memento(
+            EncounterSessionContext context,
+            List<InitiativeEntryData> initiativeEntries,
+            List<Combatant> combatants,
+            int currentTurnIndex,
+            int round,
+            ResultStateData resultState
+    ) {
+        var rosterState = roster.snapshot();
+        var generationState = generation.state();
+        return new EncounterSessionMemento(
+                context.mode(),
+                context.status(),
+                generationState.builderInputs(),
+                generationState.generatedAlternatives(),
+                generationState.generatedAdvisories(),
+                generationState.selectedAlternativeIndex(),
+                generationState.generatedAdjustedXp(),
+                generationState.generatedDifficulty(),
+                generationState.generatedTitle(),
+                generationState.generationHistoryPresent(),
+                dirty,
+                rosterState.creatures(),
+                rosterState.pendingUndo(),
+                roster.nextUndoToken(),
+                savedPlans.activeSavedPlanId(),
+                initiativeEntries,
+                combatants,
+                currentTurnIndex,
+                round,
+                resultState);
+    }
+
+    void restore(EncounterSessionMemento memento) {
+        roster.restore(memento.roster(), memento.pendingUndo(), memento.nextUndoToken());
+        generation.restore(memento);
+        savedPlans.restore(memento.activeSavedPlanId());
+        dirty = memento.dirty();
+    }
+
+    void retainSceneEnemies(List<Long> worldNpcIds) {
+        if (roster.removeWorldNpcsExcept(worldNpcIds)) {
+            dirty = true;
+        }
+    }
+
+    boolean containsWorldNpc(long worldNpcId) {
+        return roster.containsWorldNpc(worldNpcId);
+    }
+
+    void addSceneWorldNpc(EncounterCreatureData creature, EncounterSessionContext context) {
+        roster.addSceneWorldNpc(creature, context);
+        dirty = true;
     }
 }

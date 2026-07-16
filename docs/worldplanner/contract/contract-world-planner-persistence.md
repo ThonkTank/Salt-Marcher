@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-16
 Source of Truth: Persistence boundary, stored truth, reference rules, and
 error behavior for World Planner authored state.
 
@@ -28,9 +28,10 @@ location, lifecycle, note, link, source-constraint, and inventory-limit truth.
 World Planner persistence stores:
 
 - NPC identity, display name, creature statblock reference, lifecycle status,
-  appearance notes, behavior notes, history notes, and general notes
+  appearance notes, behavior notes, history notes, general notes, and bounded
+  PC-disposition modifier
 - faction identity, display name, notes, primary encounter-table reference,
-  and NPC membership
+  bounded PC-disposition base, and NPC membership
 - faction statblock inventory limit rows, including whether a statblock is
   finite or unlimited
 - location identity, display name, notes, linked factions, and linked
@@ -59,6 +60,7 @@ World Planner persistence does not store:
 - Missing optional source constraints mean unconstrained.
 - Missing statblock inventory limits mean unlimited.
 - Explicit finite inventory limit `0` means none available for that statblock.
+- NPC membership rows enforce at most one faction for each NPC.
 
 ## Validation And Error Behavior
 
@@ -66,6 +68,7 @@ World Planner persistence does not store:
   encounter-table references.
 - Writes must reject duplicate membership or duplicate link rows instead of
   silently persisting ambiguous truth.
+- Disposition values must remain between `-50` and `+50`.
 - Finite inventory limits must be non-negative.
 - A faction must not persist more than one primary encounter-table reference.
 - Candidate combat losses must not mutate durable NPC lifecycle or faction
@@ -80,6 +83,11 @@ World Planner persistence does not store:
 World Planner is a feature-owned persistence surface. It does not migrate
 existing Session Planner, Encounter, EncounterTable, Creatures, Party, Dungeon,
 or Hex tables in the current backend slice.
+
+World Planner schema version `2` adds the faction disposition and NPC modifier
+columns with a stored default of `0`. Existing membership rows are normalized
+deterministically to the lowest faction identity per NPC before the unique
+single-faction index is installed; no foreign record is rewritten.
 
 Later migrations may add Session Planner-owned references to World Planner
 locations, but those changes belong to the Session Planner persistence

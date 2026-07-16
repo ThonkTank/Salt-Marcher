@@ -46,12 +46,12 @@ public final class SmokeStartupTest {
             List<ToggleButton> navigation = navigationButtons(shell);
             require(
                     navigation.stream().map(Node::getAccessibleText).toList().equals(List.of(
+                            "Szenen",
                             "Session Planner",
-                            "World Planner",
                             "Dungeon-Editor",
                             "Dungeon-Reise",
                             "Hex-Karte",
-                            "Encounter-Planer")),
+                            "Katalog")),
                     "Expected exact explicit navigation manifest in shell order.");
             require(
                     shell.lookup(".title-large") instanceof Label title && "Dungeon-Editor".equals(title.getText()),
@@ -91,8 +91,8 @@ public final class SmokeStartupTest {
     }
 
     private static void assertStateTabManifest(AppShell shell, List<ToggleButton> navigation) {
-        require(navigation.stream().anyMatch(button -> "Encounter-Planer".equals(button.getAccessibleText())),
-                "Encounter-Planer navigation entry missing.");
+        require(navigation.stream().anyMatch(button -> "Katalog".equals(button.getAccessibleText())),
+                "Katalog navigation entry missing.");
         shell.navigateTo(new ContributionKey("catalog"));
         shell.applyCss();
         shell.layout();

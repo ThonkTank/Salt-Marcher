@@ -3,6 +3,7 @@ package features.worldplanner.application;
 import features.worldplanner.domain.world.WorldPlannerState;
 import features.worldplanner.api.WorldFactionInventoryLimitSummary;
 import features.worldplanner.api.WorldFactionSummary;
+import features.worldplanner.api.WorldDispositionKind;
 import features.worldplanner.api.WorldLocationSummary;
 import features.worldplanner.api.WorldNpcLifecycleStatus;
 import features.worldplanner.api.WorldNpcSummary;
@@ -24,6 +25,10 @@ public final class WorldPlannerSnapshotProjection {
                                 npc.behaviorNotes(),
                                 npc.historyNotes(),
                                 npc.generalNotes(),
+                                safeState.factionIdForNpc(npc.npcId()),
+                                npc.dispositionModifier(),
+                                safeState.effectiveDisposition(npc),
+                                dispositionKind(safeState.effectiveDisposition(npc)),
                                 WorldNpcLifecycleStatus.fromName(npc.status().name())))
                         .toList(),
                 safeState.factions().stream()
@@ -32,6 +37,7 @@ public final class WorldPlannerSnapshotProjection {
                                 faction.displayName(),
                                 faction.notes(),
                                 faction.primaryEncounterTableId(),
+                                faction.disposition(),
                                 faction.npcIds(),
                                 faction.inventoryLimits().stream()
                                         .map(limit -> new WorldFactionInventoryLimitSummary(
@@ -52,5 +58,13 @@ public final class WorldPlannerSnapshotProjection {
     }
 
     private WorldPlannerSnapshotProjection() {
+    }
+
+    private static WorldDispositionKind dispositionKind(int value) {
+        return switch (features.worldplanner.domain.world.WorldDisposition.kind(value)) {
+            case HOSTILE -> WorldDispositionKind.HOSTILE;
+            case NEUTRAL -> WorldDispositionKind.NEUTRAL;
+            case FRIENDLY -> WorldDispositionKind.FRIENDLY;
+        };
     }
 }

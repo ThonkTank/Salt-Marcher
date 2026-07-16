@@ -189,6 +189,33 @@ final class SessionPlannerRuntimeMechanismsTest {
         assertEquals(List.of("sessionplanner.storage-failure"), diagnostics.ids);
     }
 
+    @Test
+    void publishesPreparedSceneCopiesForAllPersistedSessionScenesWithoutModelReads() {
+        ReentrantRecordingLane lane = new ReentrantRecordingLane();
+        RecordingDispatcher dispatcher = new RecordingDispatcher();
+        PartyServiceAssembly.Component party = createParty(lane, dispatcher);
+        SessionPlan prepared = SessionPlan.seeded(7L, List.of(1L), EncounterDays.one())
+                .addScene()
+                .updateEncounterScene(1L, "Torwache", "Alarm bei Dämmerung", 31L);
+        RecordingSessionRepository repository = new RecordingSessionRepository(prepared);
+        SessionPlannerServiceAssembly planner = createPlanner(
+                repository, party, lane, dispatcher, (id, type) -> { });
+
+        planner.application().initialize();
+        lane.runAll();
+        dispatcher.runAll();
+        int readsAfterPublication = repository.reads;
+
+        var snapshot = planner.preparedScenes().current();
+
+        assertEquals(1, snapshot.scenes().size());
+        assertEquals("Torwache", snapshot.scenes().getFirst().title());
+        assertEquals("Alarm bei Dämmerung", snapshot.scenes().getFirst().notes());
+        assertEquals(31L, snapshot.scenes().getFirst().locationId());
+        assertEquals(List.of(1L), snapshot.scenes().getFirst().participantIds());
+        assertEquals(readsAfterPublication, repository.reads);
+    }
+
     private static PartyServiceAssembly.Component createParty(
             ReentrantRecordingLane lane,
             RecordingDispatcher dispatcher

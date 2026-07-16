@@ -113,6 +113,36 @@ final class EncounterSessionRosterMutation {
         pendingUndo = Optional.empty();
     }
 
+    long nextUndoToken() {
+        return nextUndoToken;
+    }
+
+    void restore(
+            List<EncounterCreatureData> restoredRoster,
+            Optional<RemovedRosterEntryData> restoredUndo,
+            long restoredNextUndoToken
+    ) {
+        roster.clear();
+        roster.addAll(restoredRoster == null ? List.of() : restoredRoster);
+        pendingUndo = restoredUndo == null ? Optional.empty() : restoredUndo;
+        nextUndoToken = Math.max(0L, restoredNextUndoToken);
+    }
+
+    boolean removeWorldNpcsExcept(List<Long> retainedWorldNpcIds) {
+        List<Long> retained = retainedWorldNpcIds == null ? List.of() : List.copyOf(retainedWorldNpcIds);
+        return roster.removeIf(value -> value.worldNpcId() > 0L && !retained.contains(value.worldNpcId()));
+    }
+
+    boolean containsWorldNpc(long worldNpcId) {
+        return worldNpcId > 0L && roster.stream().anyMatch(value -> value.worldNpcId() == worldNpcId);
+    }
+
+    void addSceneWorldNpc(EncounterCreatureData creature, EncounterSessionContext context) {
+        roster.add(creature);
+        pendingUndo = Optional.empty();
+        context.setStatus(creature.name() + " wurde aus der Szene übernommen.");
+    }
+
     private static boolean isGenericCreature(EncounterCreatureData creature, long creatureId) {
         return creature.creatureId() == creatureId && creature.worldNpcId() == UNRESOLVED_WORLD_NPC_ID;
     }
