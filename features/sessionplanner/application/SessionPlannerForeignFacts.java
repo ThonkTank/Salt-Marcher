@@ -2,6 +2,7 @@ package features.sessionplanner.application;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 import org.jspecify.annotations.Nullable;
 import features.encounter.api.EncounterApi;
 import features.encounter.api.EncounterPlanBudgetModel;
@@ -99,6 +100,18 @@ public final class SessionPlannerForeignFacts {
         }
     }
 
+    public void subscribePartyRefresh(Runnable refresh) {
+        Objects.requireNonNull(refresh, "refresh");
+        AtomicReference<PartyGenerationFacts> previous = new AtomicReference<>(
+                PartyGenerationFacts.from(activeParty.current()));
+        activeParty.subscribe(result -> {
+            PartyGenerationFacts current = PartyGenerationFacts.from(result);
+            if (!current.equals(previous.getAndSet(current))) {
+                refresh.run();
+            }
+        });
+    }
+
     private static SessionEncounterPlanFact encounterPlan(
             long encounterPlanId,
             EncounterPlanBudgetResult result
@@ -157,6 +170,29 @@ public final class SessionPlannerForeignFacts {
                 member == null || member.id() == null ? 0L : member.id(),
                 member == null ? "" : member.name(),
                 member == null ? 0 : member.level());
+    }
+
+    private record PartyGenerationFacts(
+            ReadStatus status,
+            List<MemberGenerationFacts> members
+    ) {
+
+        private static PartyGenerationFacts from(ActivePartyResult result) {
+            if (result == null) {
+                return new PartyGenerationFacts(ReadStatus.STORAGE_ERROR, List.of());
+            }
+            return new PartyGenerationFacts(
+                    result.status(),
+                    result.members().stream()
+                            .map(member -> new MemberGenerationFacts(
+                                    member == null || member.id() == null ? 0L : member.id(),
+                                    member == null ? 0 : member.level()))
+                            .sorted(java.util.Comparator.comparingLong(MemberGenerationFacts::id))
+                            .toList());
+        }
+    }
+
+    private record MemberGenerationFacts(long id, int level) {
     }
 
     private static SessionEncounterPlanListFact toEncounterPlanListFact(SavedEncounterPlanListResult result) {

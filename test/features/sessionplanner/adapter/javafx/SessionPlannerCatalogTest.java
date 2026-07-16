@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CompletableFuture;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -40,6 +41,7 @@ import features.encounter.api.EncounterPlanBudgetModel;
 import features.encounter.api.EncounterPlanBudgetResult;
 import features.encounter.api.EncounterPlanBudgetStatus;
 import features.encounter.api.EncounterPlanBudgetSummary;
+import features.encounter.api.GeneratedEncounterPlanImportResult;
 import features.encounter.api.SavedEncounterPlanListModel;
 import features.encounter.api.SavedEncounterPlanListResult;
 import features.encounter.api.SavedEncounterPlanStatus;
@@ -53,6 +55,7 @@ import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.SessionPlannerServiceAssembly;
 import features.sessionplanner.api.SessionPlannerCatalogModel;
+import features.sessionplanner.api.SessionPlannerCatalogCommand;
 import features.sessionplanner.api.SessionPlannerCatalogSnapshot;
 import features.sessionplanner.api.SessionPlannerCurrentSessionModel;
 import features.sessionplanner.api.SessionPlannerParticipantsModel;
@@ -60,6 +63,14 @@ import features.sessionplanner.api.SessionPlannerRestKind;
 import features.sessionplanner.api.SessionPlannerSceneTimelineProjection;
 import features.sessionplanner.api.SessionPlannerParticipantsProjection;
 import features.sessionplanner.api.SessionPlannerSessionSnapshot;
+import features.sessionplanner.api.SessionGenerationPreviewModel;
+import features.sessionplanner.api.SessionGenerationPreviewSnapshot;
+import features.sessionplanner.api.SessionGenerationPreviewStatus;
+import features.sessiongeneration.api.GenerationRequest;
+import features.sessiongeneration.api.GenerationResponse;
+import features.sessiongeneration.api.GenerationResult;
+import features.sessiongeneration.api.GenerationRunId;
+import features.sessiongeneration.api.SessionGenerationApi;
 import features.worldplanner.application.WorldPlannerApplicationService;
 import features.worldplanner.WorldPlannerServiceAssembly;
 import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
@@ -89,13 +100,86 @@ public final class SessionPlannerCatalogTest {
         runOnFxThread(SessionPlannerCatalogTest::runTest);
     }
 
+    @Test
+    void generationDraftEditWhilePendingUsesApplicationInvalidationRoute() throws Exception {
+        CompletableFuture<GenerationResponse> pending = new CompletableFuture<>();
+        SessionGenerationApi delayedGeneration = new SessionGenerationApi() {
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationResponse> generate(GenerationRequest request) {
+                return pending;
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationResponse> load(GenerationRunId runId) {
+                return pending;
+            }
+        };
+        runOnFxThread(() -> assertPendingDraftInvalidation(delayedGeneration));
+    }
+
+    @Test
+    void generationInputsAreDisabledWhileApplyIsInFlight() throws Exception {
+        runOnFxThread(SessionPlannerCatalogTest::assertApplyingInputsDisabled);
+    }
+
+    private static void assertApplyingInputsDisabled() {
+        SessionGenerationPanel panel = new SessionGenerationPanel();
+        SessionGenerationPreviewSnapshot applying = new SessionGenerationPreviewSnapshot(
+                SessionGenerationPreviewStatus.APPLYING,
+                "Generierte Session wird angewandt …",
+                7L,
+                "run-179974",
+                179_974L,
+                "10e7b8c2f3d43c0868e2ce0c3bf8471b72ed4d5327fc633452e0245d32f416f6",
+                SessionGenerationPreviewSnapshot.Summary.empty(),
+                List.of(),
+                List.of(),
+                List.of(),
+                4L,
+                false);
+        panel.bind(new SessionGenerationPreviewModel(() -> applying, listener -> () -> { }));
+
+        assertTrue(textField(panel, "Auto").isDisabled(), "encounter-count input is disabled while applying");
+        assertTrue(textField(panel, "Seed").isDisabled(), "seed input is disabled while applying");
+        assertTrue(button(panel, "Vorschau erzeugen").isDisabled(), "preview action is disabled while applying");
+    }
+
+    private static void assertPendingDraftInvalidation(SessionGenerationApi generation) {
+        SessionPlannerTestServices services = services(generation);
+        seedActiveParty(services);
+        SessionPlannerServiceAssembly planner = services.planner();
+        ShellBinding binding = new SessionPlannerContribution(
+                planner.application(), planner.currentSessionModel(), planner.catalogModel(),
+                planner.participantsModel(), planner.sceneTimelineModel(), planner.statePanelModel(),
+                planner.generationPreviewModel()).bind();
+        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+        Stage stage = new Stage();
+        stage.setScene(new Scene(controls, 420.0, 720.0));
+        stage.show();
+        planner.application().createSession(new SessionPlannerCatalogCommand.CreateSessionCommand("Pending"));
+        layout(controls);
+
+        button(controls, "Vorschau erzeugen").fire();
+        assertEquals(features.sessionplanner.api.SessionGenerationPreviewStatus.GENERATING,
+                planner.generationPreviewModel().current().status(),
+                "preview remains pending until provider completion");
+
+        textField(controls, "Seed").setText("179975");
+
+        assertEquals(features.sessionplanner.api.SessionGenerationPreviewStatus.STALE,
+                planner.generationPreviewModel().current().status(),
+                "seed edit invalidates pending attempt through application state");
+        assertTrue(button(controls, "Anwenden").isDisabled(), "pending draft edit keeps Apply disabled");
+    }
+
     private static void runTest() {
         SessionPlannerTestServices services = services();
         long locationId = seedLocation(services);
         SessionPlannerServiceAssembly planner = services.planner();
         ShellBinding binding = new SessionPlannerContribution(
                 planner.application(), planner.currentSessionModel(), planner.catalogModel(),
-                planner.participantsModel(), planner.sceneTimelineModel(), planner.statePanelModel()).bind();
+                planner.participantsModel(), planner.sceneTimelineModel(), planner.statePanelModel(),
+                planner.generationPreviewModel()).bind();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
         Parent state = slot(binding, ShellSlot.COCKPIT_STATE, Parent.class);
@@ -190,6 +274,7 @@ public final class SessionPlannerCatalogTest {
                 participants,
                 sceneTimeline,
                 locationId);
+        assertProductionRouteGeneratedSession(controls, main, participants, sceneTimeline);
     }
 
     private static void createSession(Parent controls, String name) {
@@ -362,7 +447,8 @@ public final class SessionPlannerCatalogTest {
                 List.of(),
                 List.of(new SessionEncounterRecord(1L, 101L, "100", "", "", 0L, 0)),
                 List.of(),
-                List.of(new SessionLootPlaceholderRecord(1L, 0L, "Legacy Cache", 0))));
+                List.of(new SessionLootPlaceholderRecord(1L, 0L, "Legacy Cache", 0)),
+                List.of()));
         assertEquals(Long.valueOf(1L), Long.valueOf(loaded.lootPlaceholders().getFirst().encounterId()),
                 "legacy loot without encounter id loads into the first encounter");
     }
@@ -481,6 +567,62 @@ public final class SessionPlannerCatalogTest {
                 "scene remove through linked scene card removes one scene");
     }
 
+    private static void assertProductionRouteGeneratedSession(
+            Parent controls,
+            Parent main,
+            SessionPlannerParticipantsModel participants,
+            features.sessionplanner.api.SessionPlannerSceneTimelineModel sceneTimeline
+    ) {
+        comboBoxByPrompt(main, "Spieler").getSelectionModel().selectFirst();
+        button(main, "Hinzufuegen").fire();
+        layout(main);
+        assertEquals(Integer.valueOf(1), Integer.valueOf(participants.current().participants().size()),
+                "generation route has one resolved session participant");
+        int scenesBeforePreview = sceneTimeline.current().sessionScenes().size();
+
+        button(controls, "Vorschau erzeugen").fire();
+        layout(controls);
+
+        assertEquals(Integer.valueOf(scenesBeforePreview), Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
+                "preview performs no Session mutation");
+        assertTrue(hasLabelContaining(controls, "Seed 179974"), "preview renders seed provenance");
+        assertTrue(!hasLabelContaining(controls, "saltmarcher-v1"), "preview exposes no ruleset label");
+        assertTrue(!button(controls, "Anwenden").isDisabled(), "green preview enables Apply");
+
+        button(controls, "Anwenden").fire();
+        assertTrue(hasLabelContaining(controls, "Alle aktuellen Szenen"), "Apply reveals replacement warning");
+        Button confirmation = button(controls, "Ersetzen bestätigen");
+        textField(controls, "Auto").setText("1");
+        layout(controls);
+        assertTrue(button(controls, "Anwenden").isDisabled(),
+                "encounter-count edit invalidates the ready preview");
+        assertTrue(!isEffectivelyVisible(confirmation), "encounter-count edit closes Apply confirmation");
+
+        button(controls, "Vorschau erzeugen").fire();
+        layout(controls);
+        button(controls, "Anwenden").fire();
+        confirmation = button(controls, "Ersetzen bestätigen");
+        textField(controls, "Seed").setText("179975");
+        layout(controls);
+        assertTrue(button(controls, "Anwenden").isDisabled(), "seed edit invalidates the ready preview");
+        assertTrue(!isEffectivelyVisible(confirmation), "seed edit closes Apply confirmation");
+
+        textField(controls, "Seed").setText("179974");
+        button(controls, "Vorschau erzeugen").fire();
+        layout(controls);
+        button(controls, "Anwenden").fire();
+        button(controls, "Ersetzen bestätigen").fire();
+        layout(main);
+
+        assertEquals(Integer.valueOf(1), Integer.valueOf(sceneTimeline.current().sessionScenes().size()),
+                "confirmed Apply replaces the timeline");
+        assertEquals(Long.valueOf(901L),
+                Long.valueOf(sceneTimeline.current().sessionScenes().getFirst().linkedEncounterPlanId()),
+                "confirmed Apply attaches imported Encounter plan");
+        assertTrue(hasLabel(main, "ENCOUNTER · Generated cache"),
+                "applied generated reward reopens through the normal timeline projection");
+    }
+
     private static void seedActiveParty(SessionPlannerTestServices services) {
         PartyApi party = services.party().application();
         party.createCharacter(new CreateCharacterCommand(
@@ -589,6 +731,10 @@ public final class SessionPlannerCatalogTest {
     }
 
     private static SessionPlannerTestServices services() {
+        return services(generationService());
+    }
+
+    private static SessionPlannerTestServices services(SessionGenerationApi generation) {
         PartyServiceAssembly.Component party =
                 PartyServiceAssembly.create(new SqlitePartyRosterRepository());
         WorldPlannerServiceAssembly world = new WorldPlannerServiceAssembly(
@@ -611,7 +757,12 @@ public final class SessionPlannerCatalogTest {
         SessionPlannerServiceAssembly planner = new SessionPlannerServiceAssembly(
                 new SqliteSessionPlanRepository(), party.application(), party.activeParty(),
                 party.adventuringDayCalculation(), noopEncounterApplicationService(), savedPlans,
-                planBudget, world.snapshotModel());
+                planBudget, world.snapshotModel(), generation,
+                command -> CompletableFuture.completedFuture(GeneratedEncounterPlanImportResult.success(
+                        List.of(new GeneratedEncounterPlanImportResult.ImportedPlan(1, 901L)))),
+                platform.execution.DirectExecutionLane.INSTANCE,
+                platform.ui.DirectUiDispatcher.INSTANCE,
+                platform.diagnostics.NoopDiagnostics.INSTANCE);
         return new SessionPlannerTestServices(party, world, worldApplication, planner);
     }
 
@@ -664,6 +815,46 @@ public final class SessionPlannerCatalogTest {
         return EncounterApplicationServiceFakes.noOp();
     }
 
+    private static SessionGenerationApi generationService() {
+        GenerationResult result = new GenerationResult(
+                new GenerationRunId("ui-generation"),
+                "saltmarcher-v1",
+                "catalog-2026-07-16",
+                "10e7b8c2f3d43c0868e2ce0c3bf8471b72ed4d5327fc633452e0245d32f416f6",
+                179_974L,
+                new GenerationResult.SessionSummary(
+                        1, BigDecimal.ONE, 1, 1_000L, 100L, BigDecimal.valueOf(4L),
+                        100L, 20L, 1, 0, 0, 1),
+                List.of(new GenerationResult.EncounterTarget(1, 100L)),
+                List.of(new GenerationResult.Encounter(
+                        1, 100L, 100L, GenerationResult.Difficulty.MEDIUM,
+                        "candidate", "Generated creature", 1, BigDecimal.ONE,
+                        List.of(new GenerationResult.EncounterBlock(
+                                GenerationResult.EncounterRole.STANDARD, 1, "1/2", 100L, 1)))),
+                List.of(new GenerationResult.Treasure(
+                        1, GenerationResult.StockClass.NORMAL, GenerationResult.RewardChannel.ENCOUNTER,
+                        1, "Vault", "none", 100L, 1, 0)),
+                List.of(new GenerationResult.LootItem(
+                        1, 1, GenerationResult.LootRole.USEFUL, "cache", "Generated cache",
+                        1L, 100L, 100L, BigDecimal.ONE, "chest", "", false)),
+                List.of(),
+                new GenerationResult.RewardSummary(100L, 0L, 0),
+                "Generated output",
+                List.of(new GenerationResult.Audit(
+                        "final-output", GenerationResult.AuditStatus.PASS, "ok")));
+        return new SessionGenerationApi() {
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationResponse> generate(GenerationRequest request) {
+                return CompletableFuture.completedFuture(GenerationResponse.success(result));
+            }
+
+            @Override
+            public java.util.concurrent.CompletionStage<GenerationResponse> load(GenerationRunId runId) {
+                return CompletableFuture.completedFuture(GenerationResponse.success(result));
+            }
+        };
+    }
+
     private static <T extends Node> T slot(ShellBinding binding, ShellSlot slot, Class<T> type) {
         Node node = binding.slotContent().get(slot);
         if (!type.isInstance(node)) {
@@ -690,6 +881,17 @@ public final class SessionPlannerCatalogTest {
         return buttons(parent, text).stream()
                 .filter(button -> !button.isDisabled())
                 .toList();
+    }
+
+    private static boolean isEffectivelyVisible(Node node) {
+        Node current = node;
+        while (current != null) {
+            if (!current.isVisible()) {
+                return false;
+            }
+            current = current.getParent();
+        }
+        return true;
     }
 
     private static void firePrimaryAction(Parent parent) {
@@ -758,6 +960,13 @@ public final class SessionPlannerCatalogTest {
                 .filter(Label.class::isInstance)
                 .map(Label.class::cast)
                 .anyMatch(label -> text.equals(label.getText()));
+    }
+
+    private static boolean hasLabelContaining(Parent parent, String text) {
+        return descendants(parent).stream()
+                .filter(Label.class::isInstance)
+                .map(Label.class::cast)
+                .anyMatch(label -> label.getText() != null && label.getText().contains(text));
     }
 
     private static <T extends Node> T descendant(Parent parent, Class<T> type) {

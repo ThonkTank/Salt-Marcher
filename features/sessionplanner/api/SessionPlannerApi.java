@@ -41,4 +41,10 @@ public interface SessionPlannerApi {
     void addLootPlaceholder(AddSessionLootPlaceholderCommand command);
 
     void removeLootPlaceholder(RemoveSessionLootPlaceholderCommand command);
+
+    void previewGeneratedSession(PreviewGeneratedSessionCommand command);
+
+    void generatedSessionDraftChanged(SessionGenerationDraftChangedCommand command);
+
+    void applyGeneratedSession(ApplyGeneratedSessionCommand command);
 }

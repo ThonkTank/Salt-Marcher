@@ -23,7 +23,11 @@ public final class SessionPlannerControlsView extends ScrollPane {
     private final VBox plansBox = new VBox(6);
 
     public SessionPlannerControlsView() {
-        setContent(content());
+        this(null);
+    }
+
+    SessionPlannerControlsView(Node generationPanel) {
+        setContent(content(generationPanel));
         getStyleClass().add("session-planner-controls-scroll");
         setFitToWidth(true);
         setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
@@ -41,13 +45,14 @@ public final class SessionPlannerControlsView extends ScrollPane {
         show(viewModel.controlsProjectionProperty().get());
     }
 
-    private VBox content() {
+    private VBox content(Node generationPanel) {
         VBox content = new VBox(12);
         addStyles(content, "session-planner-controls");
-        addNodes(
-                content,
-                statusLabel,
-                sectionCard("Gespeicherte Encounter", plansBox));
+        addNodes(content, statusLabel);
+        if (generationPanel != null) {
+            addNodes(content, generationPanel);
+        }
+        addNodes(content, sectionCard("Gespeicherte Encounter", plansBox));
         return content;
     }
 

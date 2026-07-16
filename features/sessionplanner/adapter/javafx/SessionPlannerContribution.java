@@ -15,6 +15,8 @@ import features.sessionplanner.api.SessionPlannerCurrentSessionModel;
 import features.sessionplanner.api.SessionPlannerParticipantsModel;
 import features.sessionplanner.api.SessionPlannerSceneTimelineModel;
 import features.sessionplanner.api.SessionPlannerStatePanelModel;
+import features.sessionplanner.api.SessionGenerationPreviewModel;
+import features.sessionplanner.api.SessionGenerationPreviewSnapshot;
 
 public final class SessionPlannerContribution implements ShellContribution {
 
@@ -24,6 +26,7 @@ public final class SessionPlannerContribution implements ShellContribution {
     private final SessionPlannerParticipantsModel participantsModel;
     private final SessionPlannerSceneTimelineModel sceneTimelineModel;
     private final SessionPlannerStatePanelModel statePanelModel;
+    private final SessionGenerationPreviewModel generationPreviewModel;
 
     public SessionPlannerContribution(
             SessionPlannerApi planner,
@@ -33,12 +36,32 @@ public final class SessionPlannerContribution implements ShellContribution {
             SessionPlannerSceneTimelineModel sceneTimelineModel,
             SessionPlannerStatePanelModel statePanelModel
     ) {
+        this(
+                planner,
+                sessionModel,
+                catalogModel,
+                participantsModel,
+                sceneTimelineModel,
+                statePanelModel,
+                new SessionGenerationPreviewModel(SessionGenerationPreviewSnapshot::idle, listener -> () -> { }));
+    }
+
+    public SessionPlannerContribution(
+            SessionPlannerApi planner,
+            SessionPlannerCurrentSessionModel sessionModel,
+            SessionPlannerCatalogModel catalogModel,
+            SessionPlannerParticipantsModel participantsModel,
+            SessionPlannerSceneTimelineModel sceneTimelineModel,
+            SessionPlannerStatePanelModel statePanelModel,
+            SessionGenerationPreviewModel generationPreviewModel
+    ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.sessionModel = Objects.requireNonNull(sessionModel, "sessionModel");
         this.catalogModel = Objects.requireNonNull(catalogModel, "catalogModel");
         this.participantsModel = Objects.requireNonNull(participantsModel, "participantsModel");
         this.sceneTimelineModel = Objects.requireNonNull(sceneTimelineModel, "sceneTimelineModel");
         this.statePanelModel = Objects.requireNonNull(statePanelModel, "statePanelModel");
+        this.generationPreviewModel = Objects.requireNonNull(generationPreviewModel, "generationPreviewModel");
     }
 
     @Override
@@ -60,6 +83,7 @@ public final class SessionPlannerContribution implements ShellContribution {
                 catalogModel,
                 participantsModel,
                 sceneTimelineModel,
-                statePanelModel).bind();
+                statePanelModel,
+                generationPreviewModel).bind();
     }
 }

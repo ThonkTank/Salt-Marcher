@@ -11,6 +11,7 @@ public final class SessionPlannerPersistenceSchema {
     public static final String SESSION_ENCOUNTERS_TABLE = "session_planner_encounters";
     public static final String SESSION_RESTS_TABLE = "session_planner_rests";
     public static final String SESSION_LOOT_PLACEHOLDERS_TABLE = "session_planner_loot_placeholders";
+    public static final String SESSION_GENERATED_REWARDS_TABLE = "session_planner_generated_rewards";
     public static final String SESSION_LOOT_ENCOUNTER_ID_COLUMN = "encounter_id";
     public static final String SESSION_ENCOUNTER_SCENE_TITLE_COLUMN = "scene_title";
     public static final String SESSION_ENCOUNTER_SCENE_NOTES_COLUMN = "scene_notes";
@@ -82,6 +83,20 @@ public final class SessionPlannerPersistenceSchema {
                     + "PRIMARY KEY(session_id, loot_id)"
                     + ")";
 
+    public static final String CREATE_SESSION_GENERATED_REWARDS_SQL =
+            CREATE_TABLE_IF_NOT_EXISTS + SESSION_GENERATED_REWARDS_TABLE + " ("
+                    + REQUIRED_SESSION_REFERENCE
+                    + "scene_id INTEGER NOT NULL, "
+                    + "generation_id TEXT NOT NULL, "
+                    + "treasure_id INTEGER NOT NULL, "
+                    + "last_known_label TEXT NOT NULL, "
+                    + SORT_ORDER_COLUMN_DECLARATION
+                    + "PRIMARY KEY(session_id, generation_id, treasure_id), "
+                    + "FOREIGN KEY(session_id, scene_id) REFERENCES "
+                    + SESSION_ENCOUNTERS_TABLE
+                    + "(session_id, encounter_id) ON DELETE CASCADE"
+                    + ")";
+
     public static final String CREATE_SESSION_PARTICIPANTS_ORDER_INDEX_SQL =
             "CREATE INDEX IF NOT EXISTS idx_session_planner_participants_order ON "
                     + SESSION_PARTICIPANTS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
@@ -97,6 +112,10 @@ public final class SessionPlannerPersistenceSchema {
     public static final String CREATE_SESSION_LOOT_PLACEHOLDERS_ORDER_INDEX_SQL =
             "CREATE INDEX IF NOT EXISTS idx_session_planner_loot_order ON "
                     + SESSION_LOOT_PLACEHOLDERS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
+
+    public static final String CREATE_SESSION_GENERATED_REWARDS_ORDER_INDEX_SQL =
+            "CREATE INDEX IF NOT EXISTS idx_session_planner_generated_rewards_order ON "
+                    + SESSION_GENERATED_REWARDS_TABLE + SESSION_ORDER_INDEX_COLUMNS;
 
     private SessionPlannerPersistenceSchema() {
     }

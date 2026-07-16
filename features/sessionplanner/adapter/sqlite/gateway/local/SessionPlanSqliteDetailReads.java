@@ -7,6 +7,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionLootPlaceholderRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionRestPlacementRecord;
@@ -95,6 +96,28 @@ final class SessionPlanSqliteDetailReads {
                             resultSet.getInt(SORT_ORDER)));
                 }
                 return lootPlaceholders;
+            }
+        }
+    }
+
+    List<SessionGeneratedRewardRecord> loadGeneratedRewards(Connection connection, long sessionId)
+            throws SQLException {
+        try (PreparedStatement statement = connection.prepareStatement(
+                "SELECT scene_id, generation_id, treasure_id, last_known_label, sort_order FROM "
+                        + SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE
+                        + " WHERE session_id = ? ORDER BY sort_order, generation_id, treasure_id")) {
+            statement.setLong(1, sessionId);
+            try (ResultSet resultSet = statement.executeQuery()) {
+                List<SessionGeneratedRewardRecord> rewards = new ArrayList<>();
+                while (resultSet.next()) {
+                    rewards.add(new SessionGeneratedRewardRecord(
+                            resultSet.getLong("scene_id"),
+                            resultSet.getString("generation_id"),
+                            resultSet.getLong("treasure_id"),
+                            resultSet.getString("last_known_label"),
+                            resultSet.getInt(SORT_ORDER)));
+                }
+                return List.copyOf(rewards);
             }
         }
     }

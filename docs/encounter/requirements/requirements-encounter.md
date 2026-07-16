@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-07-16
 Source of Truth: User-facing behavior and acceptance criteria for the
 encounter feature.
 
@@ -17,12 +17,15 @@ Provide a runtime encounter builder that:
 - lets catalog creature rows build a manual encounter roster
 - saves and opens created encounter rosters as persistent encounter plans
 - can use selected encounter tables as curated generator sources
+- atomically imports one applied Session Generation encounter batch as
+  Encounter-owned saved plans
 
 ## Non-Goals
 
 - saving initiative, combat HP, defeated state, XP-result state, or loot-result
   state as part of an encounter plan
 - room-aware dungeon population
+- owning Session Generation runs, generated rewards, or Session Planner scenes
 
 ## Primary User Flow
 
@@ -37,6 +40,15 @@ Provide a runtime encounter builder that:
 6. The user saves the current roster as an encounter plan, or opens a saved
    plan into the builder.
 7. The user starts initiative and combat from the current builder roster.
+
+Generated import is a separate Session Planner-driven flow:
+
+1. Session Planner applies one current Session Generation preview.
+2. Encounter validates the generated source and all ordered encounter specs.
+3. Encounter resolves every typed XP-and-role slot through current creature
+   facts.
+4. Encounter saves the entire generated batch or none of it and returns the
+   complete encounter-number-to-plan-id mapping.
 
 ## Expected Capabilities
 
@@ -68,6 +80,10 @@ Provide a runtime encounter builder that:
 - list saved encounter plans from the encounter title row
 - open a saved encounter plan into Creation mode and clear initiative, combat,
   result, and generated-alternative runtime state
+- accept a non-blocking typed generated-origin import without exposing
+  repositories or persistence rows
+- preserve generated origin for idempotent retry while treating every imported
+  roster as ordinary Encounter-owned saved-plan truth
 
 ## Acceptance Criteria
 
@@ -90,6 +106,14 @@ Provide a runtime encounter builder that:
   generated statblock counts from exceeding finite faction stock caps
 - opening a saved plan replaces the builder roster and returns the state tab to
   Creation mode
+- one generated import returns either every requested plan mapping in encounter
+  order or no mapping and no newly saved plan
+- an invalid or unresolvable member prevents the entire generated batch from
+  being persisted
+- retrying an identical completed generated origin does not create duplicate
+  plans
+- generated import stores no reward, packing, audit, session-scene, or copied
+  creature-detail truth
 
 ## References
 
@@ -97,3 +121,4 @@ Provide a runtime encounter builder that:
 - [Encounter Domain Model](../domain/domain-encounter.md) (line 1)
 - [Encounter Persistence Contract](../contract/contract-encounter-persistence.md) (line 1)
 - [Encounter Table Feature Spec](../../encountertable/requirements/requirements-encountertable.md) (line 1)
+- [Generated Import Contract](../contract/contract-encounter-generated-import.md)

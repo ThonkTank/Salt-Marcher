@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionLootPlaceholderRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionPlanRecord;
@@ -12,6 +13,7 @@ import features.sessionplanner.adapter.sqlite.model.SessionRestPlacementRecord;
 import features.sessionplanner.domain.session.EncounterDays;
 import features.sessionplanner.domain.session.SessionEncounter;
 import features.sessionplanner.domain.session.SessionEncounterAllocation;
+import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
 import features.sessionplanner.domain.session.SessionLootPlaceholder;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionRestPlacement;
@@ -34,7 +36,8 @@ public final class SessionPlanMapper {
                 toParticipantRecords(plan),
                 toEncounterRecords(plan),
                 toRestRecords(plan),
-                toLootRecords(plan));
+                toLootRecords(plan),
+                toGeneratedRewardRecords(plan));
     }
 
     public static SessionPlan toDomain(SessionPlanSnapshotRecord snapshot) {
@@ -63,6 +66,13 @@ public final class SessionPlanMapper {
                                 record.restKind()))
                         .toList(),
                 toDomainLoot(snapshot.lootPlaceholders(), encounters),
+                snapshot.generatedRewards().stream()
+                        .map(record -> new SessionGeneratedRewardReference(
+                                record.sceneId(),
+                                record.generationId(),
+                                record.treasureId(),
+                                record.lastKnownLabel()))
+                        .toList(),
                 plan.selectedEncounterId(),
                 plan.statusText(),
                 plan.nextEncounterId(),
@@ -99,6 +109,15 @@ public final class SessionPlanMapper {
                 placeholder.lootId(),
                 placeholder.encounterId(),
                 placeholder.label(),
+                index));
+    }
+
+    private static List<SessionGeneratedRewardRecord> toGeneratedRewardRecords(SessionPlan plan) {
+        return mapIndexed(plan.generatedRewards(), (reward, index) -> new SessionGeneratedRewardRecord(
+                reward.sceneId(),
+                reward.generationId(),
+                reward.treasureId(),
+                reward.lastKnownLabel(),
                 index));
     }
 

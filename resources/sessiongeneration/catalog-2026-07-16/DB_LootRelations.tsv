@@ -1,0 +1,1699 @@
+Relation_Type	Source_ID	Target_ID	Active	Sort_Order	Notes
+ITEM_CONTAINER	item:object:abacus	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:abacus	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:alchemist-s-supplies	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:alchemist-s-supplies	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:alchemist-s-supplies	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:alms-box	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:alms-box	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:amulet	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:amulet	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:amulet	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:antimatter-rifle	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:antimatter-rifle	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:antimatter-rifle	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:arbalest	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:arbalest	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:arbalest	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:arrow	container:quiver	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:arrow	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:assault-rifle	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:assault-rifle	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:assault-rifle	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bad-news-exandria	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bad-news-exandria	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bad-news-exandria	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bad-news-bullets	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bad-news-bullets	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bagpipes	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bagpipes	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bagpipes	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ball-bearings-bag-of-1-000	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ball-bearings-bag-of-1-000	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:battleaxe	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:battleaxe	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:battleaxe	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bedroll	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bedroll	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bedroll	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bell	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bell	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bell	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bellows-cannister	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bellows-cannister	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:birdpipes	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:birdpipes	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bit-and-bridle	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bit-and-bridle	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bit-and-bridle	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blackpowder-pistol	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blackpowder-pistol	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blackpowder-rifle	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blackpowder-rifle	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blackpowder-rifle	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blanket	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blanket	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blanket	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blessed-stake	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blessed-stake	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:block-and-tackle	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:block-and-tackle	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blowgun	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blowgun	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blowgun-needles	container:crossbow-bolt-case	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blowgun-needles	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blowgun-needles	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss-exandria	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss-exandria	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss-exandria	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss-grim-hollow	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss-grim-hollow	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss-grim-hollow	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss-bullets	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss-bullets	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss-hand	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:blunderbuss-hand	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bolt	container:crossbow-bolt-case	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bolt	container:quiver	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bolt	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:book	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:book	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:book	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:boomerang	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:boomerang	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:boots	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:boots	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:boots	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:boots	container:crate	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:breastplate	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:breastplate	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:breastplate	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:brewer-s-supplies	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:brewer-s-supplies	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:brewer-s-supplies	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:buckler-grim-hollow	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:buckler-grim-hollow	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:buckler-grim-hollow	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bullet	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bullet	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bullets-modern	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bullets-modern	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bullets-renaissance	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bullets-renaissance	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:burglar-s-pack	container:backpack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:burglar-s-pack	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:burglar-s-pack	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:calligrapher-s-supplies	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:calligrapher-s-supplies	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:calligrapher-s-supplies	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:caltrops-bag-of-20	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:caltrops-bag-of-20	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cannon	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cannon	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cannonball	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cannonball	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:carpenter-s-tools	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:carpenter-s-tools	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:carpenter-s-tools	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cartographer-s-tools	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cartographer-s-tools	container:scroll-tube	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cartographer-s-tools	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:catapult-munition	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:catapult-munition	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:catchpole	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:catchpole	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:catchpole	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cavalry-flail	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cavalry-flail	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cavalry-flail	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cavalry-hammer	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cavalry-hammer	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cavalry-hammer	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cavalry-pick	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cavalry-pick	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cavalry-pick	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:censer	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:censer	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chain	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chain	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chain	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chain-10-feet	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chain-10-feet	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chain-10-feet	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chain-mail	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chain-mail	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chain-shirt	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chain-shirt	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chain-shirt	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chakram	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chakram	container:weapon-rack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chakram	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chalk-1-piece	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:chalk-1-piece	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:claymore	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:claymore	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:claymore	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:climber-s-kit	container:backpack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:climber-s-kit	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:clothes	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:clothes	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:clothes	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:clothes	container:crate	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:club	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:club	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:club	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cobbler-s-tools	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cobbler-s-tools	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cobbler-s-tools	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:composite-longbow	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:composite-longbow	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:composite-longbow	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:composite-shortbow	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:composite-shortbow	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:composite-shortbow	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:concealed-blade	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:concealed-blade	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:concealed-blade	container:weapon-rack	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cook-s-utensils	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:cook-s-utensils	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crampons	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crampons	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crampons	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crossbow-hand	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crossbow-hand	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crossbow-heavy	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crossbow-heavy	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crossbow-heavy	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crossbow-light	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crossbow-light	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crossbow-light	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crowbar	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crowbar	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crystal	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crystal	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:crystal	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dagger	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dagger	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dagger	container:weapon-rack	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dagger	container:crate	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dart	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dart	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dice-set	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dice-set	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dice-set	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:diplomat-s-pack	container:backpack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:diplomat-s-pack	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:diplomat-s-pack	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:disguise-kit	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:disguise-kit	container:tool-roll	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:disguise-kit	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-blade	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-blade	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-blade	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-spear	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-spear	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-spear	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-barrel-shotgun	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-barrel-shotgun	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-barrel-shotgun	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-bladed-scimitar	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-bladed-scimitar	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:double-bladed-scimitar	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dragon-pistol	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dragon-pistol	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dragon-rifle	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dragon-rifle	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dragon-rifle	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dragon-shot	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dragon-shot	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dragonchess-set	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dragonchess-set	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:drum	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:drum	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:drum	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dulcimer	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dulcimer	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dungeoneer-s-pack	container:backpack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dungeoneer-s-pack	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:dungeoneer-s-pack	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:elite-rapier	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:elite-rapier	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:emblem	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:emblem	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:emblem	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:energy-cell	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:energy-cell	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:entertainer-s-pack	container:backpack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:entertainer-s-pack	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:entertainer-s-pack	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:explorer-s-pack	container:backpack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:explorer-s-pack	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:explorer-s-pack	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:feed-per-day	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:feed-per-day	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:feed-per-day	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:fighting-chain	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:fighting-chain	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:firearm-bullets	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:firearm-bullets	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flail	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flail	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flail	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flame-bellows	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flame-bellows	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flame-bellows	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flare-gun	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flare-gun	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flare	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flare	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flute	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flute	container:satchel	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:flute	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:forgery-kit	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:forgery-kit	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:forgery-kit	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gatling-gun	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gatling-gun	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gladiator-net	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gladiator-net	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gladiator-net	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:glaive	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:glaive	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:glaive	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:glassblower-s-tools	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:glassblower-s-tools	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:grappling-gun	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:grappling-gun	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:grappling-hook	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:grappling-hook	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:greataxe	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:greataxe	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:greataxe	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:greatclub	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:greatclub	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:greatclub	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:greatsword	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:greatsword	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:greatsword	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:grenade-launcher	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:grenade-launcher	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:grenade-launcher	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:guardian-poleaxe	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:guardian-poleaxe	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:guardian-poleaxe	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:halberd	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:halberd	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:halberd	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:half-plate	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:half-plate	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hammer	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hammer	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hammer-sledge	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hammer-sledge	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hand-drum	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hand-drum	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hand-drum	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hand-mortar-exandria	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hand-mortar-exandria	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hand-mortar-exandria	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hand-mortar-ammunition	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hand-mortar-ammunition	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:handaxe	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:handaxe	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:handaxe	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:handgun	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:handgun	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:healer-s-kit	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:healer-s-kit	container:satchel	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:healer-s-kit	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:helm	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:helm	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:herbalism-kit	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:herbalism-kit	container:tool-roll	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:herbalism-kit	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hide	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hide	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hide	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hoopak-ranged	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hoopak-ranged	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hoopak-ranged	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:horn	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:horn	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hourglass	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hunting-rifle	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hunting-rifle	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hunting-rifle	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hunting-trap	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hunting-trap	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:iron-net	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:iron-net	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:iron-net	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:javelin	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:javelin	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:javelin	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweler-s-tools	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweler-s-tools	container:tool-roll	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweler-s-tools	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:knightly-lance	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:knightly-lance	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:knightly-lance	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:knightly-sword	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:knightly-sword	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ladder-10-foot	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ladder-10-foot	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lance	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lance	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lance	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:laser-pistol	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:laser-pistol	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:laser-rifle	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:laser-rifle	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:laser-rifle	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:leather	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:leather	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:leather	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:leatherworker-s-tools	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:leatherworker-s-tools	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:leatherworker-s-tools	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:light-hammer	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:light-hammer	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:light-hammer	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lock	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lock	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lock	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:longbow	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:longbow	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:longbow	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:longhorn	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:longhorn	container:satchel	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:longhorn	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:longsword	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:longsword	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lute	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lute	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lyre	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lyre	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:mace	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:mace	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:mace	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:magazine	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:magazine	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:magnifying-glass	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:magnifying-glass	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:magnifying-glass	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:magnum	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:magnum	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:manacles	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:manacles	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:map	container:scroll-tube	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:map	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:mason-s-tools	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:mason-s-tools	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:maul	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:maul	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:maul	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:mess-kit	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:mess-kit	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:mess-kit	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:military-fork	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:military-fork	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:military-fork	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:mirror-steel	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:mirror-steel	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:monster-hunter-s-pack	container:backpack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:monster-hunter-s-pack	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:monster-hunter-s-pack	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:morningstar	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:morningstar	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:musket	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:musket	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:musket	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:musket-exandria	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:musket-exandria	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:musket-exandria	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:musket-exandria-bullets	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:musket-exandria-bullets	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:navigator-s-tools	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:navigator-s-tools	container:tool-roll	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:navigator-s-tools	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:needles	container:crossbow-bolt-case	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:needles	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:needles	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:net	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:net	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:net	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:noisemaker	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:noisemaker	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:orb	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:orb	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:padded	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:padded	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:padded	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:painter-s-supplies	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:painter-s-supplies	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:painter-s-supplies	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:palm-pistol-exandria	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:palm-pistol-exandria	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:palm-pistol-exandria	container:weapon-rack	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:palm-pistol-exandria	container:crate	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:palm-pistol-bullets	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:palm-pistol-bullets	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pan-flute	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pan-flute	container:satchel	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pan-flute	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:paper-cartridge-bullet	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:paper-cartridge-bullet	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:parlor-gun	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:parlor-gun	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:parlor-gun	container:weapon-rack	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:parlor-gun	container:crate	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:parrying-dagger	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:parrying-dagger	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:parrying-dagger	container:weapon-rack	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:parrying-dagger	container:crate	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pepperbox-exandria	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pepperbox-exandria	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pepperbox-bullets	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pepperbox-bullets	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pick-miner-s	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pick-miner-s	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pike	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pike	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pike	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pistol	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pistol	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pistol-exandria	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pistol-exandria	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pistol-exandria-bullets	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pistol-exandria-bullets	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pistol-automatic	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pistol-automatic	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:piton	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:piton	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:plate	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:plate	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:playing-card-set	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:playing-card-set	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:playing-card-set	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:poisoner-s-kit	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:poisoner-s-kit	container:tool-roll	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:poisoner-s-kit	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pole-10-foot	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pole-10-foot	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:polearm	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:polearm	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:polearm	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:portable-ram	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:portable-ram	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:potter-s-tools	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:potter-s-tools	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:potter-s-tools	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:powered-armor	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:powered-armor	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pride-silk-outfit	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pride-silk-outfit	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pride-silk-outfit	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:priest-s-pack	container:backpack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:priest-s-pack	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:priest-s-pack	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:prosthetics	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:prosthetics	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pump-shotgun	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pump-shotgun	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:pump-shotgun	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:punching-dagger	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:punching-dagger	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:punching-dagger	container:weapon-rack	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:punching-dagger	container:crate	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:quarterstaff	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:quarterstaff	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:quarterstaff	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rain-catcher	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rain-catcher	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rapier	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rapier	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:reliquary	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:reliquary	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-crossbow	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-crossbow	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-crossbow	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-crossbow-hand	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-crossbow-hand	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-crossbow-heavy	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-crossbow-heavy	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-crossbow-heavy	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-needler	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-needler	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-slinger	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-slinger	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:repeater-slinger	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:retractable-shield	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:retractable-shield	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:retractable-shield	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:returning-club	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:returning-club	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:returning-club	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:revolver	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:revolver	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:revolver-tgc	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:revolver-tgc	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rifle-automatic	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rifle-automatic	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rifle-automatic	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rifle-hunting	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rifle-hunting	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rifle-hunting	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ring-mail	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ring-mail	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:robes	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:robes	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:robes	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:robes	container:crate	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rod	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rod	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rod	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rope-50-feet	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rope-50-feet	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:rope-50-feet	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sabre	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sabre	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:saddle	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:saddle	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:saddlebags	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:saddlebags	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:saddlebags	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:scale-mail	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:scale-mail	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:scale-merchant-s	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:scale-merchant-s	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:scholar-s-pack	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:scholar-s-pack	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:scholar-s-pack	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:scimitar	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:scimitar	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sealing-wax	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sealing-wax	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sealing-wax	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:seeing-glass	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:seeing-glass	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:semiautomatic-pistol	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:semiautomatic-pistol	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shadowsteel-focus	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shadowsteel-focus	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shadowsteel-focus	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shawm	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shawm	container:satchel	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shawm	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sheathed-staff	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sheathed-staff	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sheathed-staff	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shell	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shell	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shield	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shield	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shield	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shortbow	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shortbow	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shortbow	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shortsword	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shortsword	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shot	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shot	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shotgun	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shotgun	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shotgun	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shovel	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:shovel	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sickle	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sickle	container:weapon-rack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sickle	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:side-handle-baton	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:side-handle-baton	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:signal-whistle	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:signal-whistle	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:signet-ring	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:signet-ring	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:signet-ring	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sling	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sling	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sling-bullet	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sling-bullet	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:small-knife	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:small-knife	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:small-knife	container:weapon-rack	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:smith-s-tools	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:smith-s-tools	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:smith-s-tools	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sniper-rifle	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sniper-rifle	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sniper-rifle	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:snowshoes	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:snowshoes	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:snowshoes	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:songhorn	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:songhorn	container:satchel	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:songhorn	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:spear	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:spear	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:spear	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:spellbook	container:satchel	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:spellbook	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:spellbook	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:spiked-armor	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:spiked-armor	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:iron-spike	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:iron-spike	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:splint	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:splint	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sprig-of-mistletoe	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sprig-of-mistletoe	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:sprig-of-mistletoe	container:component-pouch	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:spyglass	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:spyglass	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:stake-wooden	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:stake-wooden	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:stitching-needle	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:stitching-needle	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:string	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:string	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:studded-leather	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:studded-leather	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:studded-leather	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:submachine-gun	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:submachine-gun	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tent	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tent	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tent-two-person	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tent-two-person	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:thieves-tools	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:thieves-tools	container:tool-roll	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:thieves-tools	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:three-dragon-ante-set	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:three-dragon-ante-set	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tinderbox	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tinderbox	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tinderbox	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tinker-s-tools	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tinker-s-tools	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tinker-s-tools	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:totem	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:totem	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:totem	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tower-shield-grim-hollow	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:tower-shield-grim-hollow	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:trident	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:trident	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:trident	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:vestments	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:vestments	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:vestments	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:vestments	container:crate	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:viol	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:viol	container:satchel	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:viol	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wand	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wand	container:scroll-tube	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wand	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:war-pick	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:war-pick	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wargong	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wargong	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:warhammer	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:warhammer	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:weaver-s-tools	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:weaver-s-tools	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:weaver-s-tools	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:whetstone	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:whetstone	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:whip	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:whip	container:bundle	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:whip	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:whistle-stick	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:whistle-stick	container:satchel	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:whistle-stick	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:woodcarver-s-tools	container:tool-roll	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:woodcarver-s-tools	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:woodcarver-s-tools	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wooden-staff	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wooden-staff	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wooden-staff	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wrath-axe	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wrath-axe	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wrath-axe	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wrath-maul	container:weapon-rack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wrath-maul	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wrath-maul	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:yew-wand	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:yew-wand	container:scroll-tube	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:yew-wand	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:silver-jug	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:silver-jug	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:carved-statuette	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:carved-statuette	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-bracelet	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-bracelet	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-bracelet	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:goldcloth-garments	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:goldcloth-garments	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:goldcloth-garments	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:black-velvet-with-silver-embroidery	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:black-velvet-with-silver-embroidery	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:black-velvet-with-silver-embroidery	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:copper-chalice-with-silver-inlay	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:copper-chalice-with-silver-inlay	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:engraved-dice-pair	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:engraved-dice-pair	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:engraved-dice-pair	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hand-mirror-with-polished-wooden-handle	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:hand-mirror-with-polished-wooden-handle	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:embroidered-silk-handkerchief	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:embroidered-silk-handkerchief	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:embroidered-silk-handkerchief	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-portrait-pendant	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-portrait-pendant	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-portrait-pendant	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bloodstone-gold-ring	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bloodstone-gold-ring	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bloodstone-gold-ring	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ivory-statuette	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ivory-statuette	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweled-bracelet	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweled-bracelet	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweled-bracelet	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:silver-chain-with-gem-pendant	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:silver-chain-with-gem-pendant	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:silver-chain-with-gem-pendant	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bronze-crown	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bronze-crown	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gold-embroidered-silk-robes	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gold-embroidered-silk-robes	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gold-embroidered-silk-robes	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:decorative-tapestry	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:decorative-tapestry	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bronze-goblet-with-gold-inlay	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:bronze-goblet-with-gold-inlay	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gemstone-figurine-collection	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gemstone-figurine-collection	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-birdcage-with-electrum-inlay	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-birdcage-with-electrum-inlay	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:moonstone-silver-chalice	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:moonstone-silver-chalice	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ancient-book	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ancient-book	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wooden-instrument-with-ivory-and-zircon-inlay	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:wooden-instrument-with-ivory-and-zircon-inlay	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-idol	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-idol	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gem-encrusted-golden-comb	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gem-encrusted-golden-comb	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gem-encrusted-golden-comb	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gem-studded-gilded-flask	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gem-studded-gilded-flask	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:life-sized-electrum-skull	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:life-sized-electrum-skull	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:silver-and-gold-brooch	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:silver-and-gold-brooch	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:silver-and-gold-brooch	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:obsidian-statue-with-gold-inlay	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:obsidian-statue-with-gold-inlay	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gold-painted-war-mask	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gold-painted-war-mask	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:fine-gold-chains-with-fire-opal	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:fine-gold-chains-with-fire-opal	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:fine-gold-chains-with-fire-opal	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:masterwork-painting	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:masterwork-painting	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:velvet-and-silk-clothing-with-moonstones	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:velvet-and-silk-clothing-with-moonstones	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:velvet-and-silk-clothing-with-moonstones	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:emerald-platinum-bracelet	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:emerald-platinum-bracelet	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:emerald-platinum-bracelet	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:embroidered-gloves-with-gem-fragments	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:embroidered-gloves-with-gem-fragments	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:embroidered-gloves-with-gem-fragments	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gem-encrusted-anklet	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gem-encrusted-anklet	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:gem-encrusted-anklet	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-music-box	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-music-box	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-diadem-with-aquamarines	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-diadem-with-aquamarines	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:eyepatch-with-sapphires-and-moonstones	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:eyepatch-with-sapphires-and-moonstones	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:eyepatch-with-sapphires-and-moonstones	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:long-pearl-necklace	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:long-pearl-necklace	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:long-pearl-necklace	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweled-crown	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweled-crown	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweled-platinum-ring	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweled-platinum-ring	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweled-platinum-ring	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ruby-studded-golden-statuette	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:ruby-studded-golden-statuette	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:emerald-studded-golden-goblet	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:emerald-studded-golden-goblet	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-jewelry-box-with-platinum-inlay	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-jewelry-box-with-platinum-inlay	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-nesting-doll-set	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:golden-nesting-doll-set	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jade-game-board-with-golden-pieces	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jade-game-board-with-golden-pieces	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweled-ivory-drinking-horn-with-gold-rim	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:jeweled-ivory-drinking-horn-with-gold-rim	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lantern	container:chest	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:object:lantern	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:acid-vial	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:acid-vial	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:acid-vial	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:acid-vial	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:alchemist-s-doom	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:alchemist-s-doom	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:alexandrite	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:alexandrite	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:alexandrite	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:amber	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:amber	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:amber	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:amethyst	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:amethyst	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:amethyst	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:antitoxin	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:antitoxin	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:antitoxin	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:antitoxin	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:aquamarine	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:aquamarine	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:aquamarine	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:assassin-s-blood-ingested	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:assassin-s-blood-ingested	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:assassin-s-blood-ingested	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:assassin-s-blood-ingested	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:azurite	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:azurite	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:azurite	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:banded-agate	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:banded-agate	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:banded-agate	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:basic-fishing-equipment	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:basic-fishing-equipment	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:basic-fishing-equipment	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:biza-s-breath-inhaled	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:biza-s-breath-inhaled	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:biza-s-breath-inhaled	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:biza-s-breath-inhaled	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-ghost-orchid-seed	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-ghost-orchid-seed	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-ghost-orchid-seed	container:component-pouch	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-ghost-orchid-seed	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-opal	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-opal	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-opal	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-pearl	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-pearl	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-pearl	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-sap	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-sap	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-sap	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-sap	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-sapphire	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-sapphire	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:black-sapphire	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blasting-powder	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blasting-powder	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blight-ichor	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blight-ichor	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blight-ichor	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blight-ichor	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:block-of-incense	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:block-of-incense	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:block-of-incense	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blood-of-the-lycanthrope-injury	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blood-of-the-lycanthrope-injury	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blood-of-the-lycanthrope-injury	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blood-of-the-lycanthrope-injury	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:bloodstone	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:bloodstone	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:bloodstone	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blue-quartz	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blue-quartz	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blue-quartz	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blue-sapphire	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blue-sapphire	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blue-sapphire	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blue-spinel	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blue-spinel	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:blue-spinel	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:bomb	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:bomb	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:breath-of-beleth-poison	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:breath-of-beleth-poison	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:breath-of-beleth-poison	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:breath-of-beleth-poison	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:burnt-othur-fumes-inhaled	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:burnt-othur-fumes-inhaled	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:burnt-othur-fumes-inhaled	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:burnt-othur-fumes-inhaled	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:candle	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:candle	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:candle	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:carnelian	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:carnelian	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:carnelian	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:chalcedony	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:chalcedony	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:chalcedony	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:chrysoberyl	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:chrysoberyl	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:chrysoberyl	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:chrysoprase	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:chrysoprase	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:chrysoprase	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:citrine	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:citrine	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:citrine	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:coral	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:coral	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:coral	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:crawler-mucus-contact	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:crawler-mucus-contact	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:crawler-mucus-contact	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:crawler-mucus-contact	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:diamond	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:diamond	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:diamond	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dragon-s-blood	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dragon-s-blood	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dragon-s-blood	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dragon-s-blood	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:drow-poison-injury	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:drow-poison-injury	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:drow-poison-injury	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:drow-poison-injury	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dust-of-the-mummy-inhaled	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dust-of-the-mummy-inhaled	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dust-of-the-mummy-inhaled	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dust-of-the-mummy-inhaled	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dynamite-exandria	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dynamite-exandria	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dynamite-stick	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dynamite-stick	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:emerald	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:emerald	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:emerald	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:essence-of-ether-inhaled	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:essence-of-ether-inhaled	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:essence-of-ether-inhaled	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:essence-of-ether-inhaled	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:explosive-seed	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:explosive-seed	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:explosive-seed	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:eye-agate	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:eye-agate	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:eye-agate	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:fire-opal	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:fire-opal	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:fire-opal	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:fishing-tackle	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:fishing-tackle	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:fishing-tackle	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:garnet	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:garnet	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:garnet	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:hematite	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:hematite	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:hematite	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:holy-water-flask	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:holy-water-flask	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:holy-water-flask	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:holy-water-flask	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ink-1-ounce-bottle	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ink-1-ounce-bottle	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ink-1-ounce-bottle	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ink-pen	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ink-pen	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ink-pen	container:scroll-tube	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ivana-s-whisper-inhaled	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ivana-s-whisper-inhaled	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ivana-s-whisper-inhaled	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ivana-s-whisper-inhaled	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jacinth	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jacinth	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jacinth	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jade	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jade	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jade	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jasper	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jasper	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jasper	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jet	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jet	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:jet	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:lamp	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:lamp	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:lapis-lazuli	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:lapis-lazuli	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:lapis-lazuli	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:little-bag-of-sand	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:lolth-s-sting	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:lolth-s-sting	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:lolth-s-sting	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:lolth-s-sting	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:malachite	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:malachite	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:malachite	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:malice-inhaled	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:malice-inhaled	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:malice-inhaled	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:malice-inhaled	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:midnight-tears	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:midnight-tears	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:midnight-tears	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:midnight-tears	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:midnight-tears-ingested	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:midnight-tears-ingested	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:midnight-tears-ingested	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:midnight-tears-ingested	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:moonstone	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:moonstone	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:moonstone	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:moss-agate	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:moss-agate	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:moss-agate	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:murgaxor-s-elixir-of-life	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:murgaxor-s-elixir-of-life	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:murgaxor-s-elixir-of-life	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:murgaxor-s-elixir-of-life	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:muroosa-balm	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:muroosa-balm	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:muroosa-balm	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:muroosa-balm	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:obsidian	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:obsidian	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:obsidian	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil-flask	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil-flask	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil-flask	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil-flask	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil-of-taggit-contact	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil-of-taggit-contact	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil-of-taggit-contact	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:oil-of-taggit-contact	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:olisuba-leaf	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:olisuba-leaf	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:olisuba-leaf	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:olisuba-leaf	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:onyx	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:onyx	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:onyx	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:opal	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:opal	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:opal	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:pale-tincture-ingested	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:pale-tincture-ingested	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:pale-tincture-ingested	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:pale-tincture-ingested	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:paper-one-sheet	container:scroll-tube	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:paper-one-sheet	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:parchment-one-sheet	container:scroll-tube	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:parchment-one-sheet	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:pearl	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:pearl	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:pearl	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:perfume	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:perfume	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:perfume	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:perfume	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:perfume-vial	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:perfume-vial	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:perfume-vial	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:perfume-vial	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:peridot	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:peridot	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:peridot	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:poison-basic-vial	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:poison-basic-vial	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:poison-basic-vial	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:poison-basic-vial	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:potion-of-healing	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:potion-of-healing	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:potion-of-healing	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:potion-of-healing	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:pride-silk	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:pride-silk	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:pride-silk	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:purple-worm-poison-injury	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:purple-worm-poison-injury	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:purple-worm-poison-injury	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:purple-worm-poison-injury	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:quartz	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:quartz	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:quartz	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:rations-1-day	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:rations-1-day	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:rations-1-day	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:rhodochrosite	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:rhodochrosite	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:rhodochrosite	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ruby	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ruby	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ruby	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:sardonyx	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:sardonyx	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:sardonyx	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:serpent-venom-injury	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:serpent-venom-injury	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:serpent-venom-injury	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:serpent-venom-injury	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:soap	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:soap	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:spinel	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:spinel	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:spinel	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:star-rose-quartz	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:star-rose-quartz	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:star-rose-quartz	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:star-ruby	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:star-ruby	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:star-ruby	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:star-sapphire	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:star-sapphire	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:star-sapphire	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:tej	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:tej	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:tej	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:tej	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:theki-root	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:theki-root	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:theki-root	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:theki-root	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:thessaltoxin-ingested-or-injury	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:thessaltoxin-ingested-or-injury	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:thessaltoxin-ingested-or-injury	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:thessaltoxin-ingested-or-injury	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:tiger-eye	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:tiger-eye	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:tiger-eye	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:topaz	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:topaz	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:topaz	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:torch	container:bundle	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:torch	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:torch	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:torpor-ingested	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:torpor-ingested	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:torpor-ingested	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:torpor-ingested	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:tourmaline	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:tourmaline	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:tourmaline	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:truth-serum-ingested	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:truth-serum-ingested	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:truth-serum-ingested	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:truth-serum-ingested	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:turquoise	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:turquoise	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:turquoise	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:war-oil	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:war-oil	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:war-oil	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:war-oil	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:watcher-s-candle	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:watcher-s-candle	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:watcher-s-candle	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:white-ghost-orchid-seed	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:white-ghost-orchid-seed	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:white-ghost-orchid-seed	container:component-pouch	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:white-ghost-orchid-seed	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:willowshade-oil	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:willowshade-oil	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:willowshade-oil	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:willowshade-oil	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:wyvern-poison-injury	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:wyvern-poison-injury	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:wyvern-poison-injury	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:wyvern-poison-injury	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:yellow-sapphire	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:yellow-sapphire	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:yellow-sapphire	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:zircon	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:zircon	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:zircon	container:chest	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:raw-wool-lb	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:raw-wool-lb	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:raw-wool-lb	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:iron-lb	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:iron-lb	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:iron-lb	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:wood-planks-lb	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:wood-planks-lb	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:canvas-lb-sq-yd	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:canvas-lb-sq-yd	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:canvas-lb-sq-yd	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:leather-lb-sq-yd	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:leather-lb-sq-yd	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:leather-lb-sq-yd	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:furs	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:furs	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:furs	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:copper-lb	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:copper-lb	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:copper-lb	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:beeswax	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:beeswax	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:beeswax	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:cotton-lb	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:cotton-lb	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:cotton-lb	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:copper-tableware	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:copper-tableware	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:fine-leather-lb-sq-yd	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:fine-leather-lb-sq-yd	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:fine-leather-lb-sq-yd	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ivory-lb	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ivory-lb	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:ivory-lb	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:amber-lb	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:amber-lb	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:amber-lb	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:silver-lb	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:silver-lb	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:silver-lb	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:linen-lb-sq-yd	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:linen-lb-sq-yd	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:linen-lb-sq-yd	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:hardened-carving-wood-lb	container:crate	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:hardened-carving-wood-lb	container:cart	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:silk-lb	container:sack	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:silk-lb	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:silk-lb	container:cart	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:medicinal-herbs-lb	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:medicinal-herbs-lb	container:sack	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:medicinal-herbs-lb	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:mercury-lb	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:mercury-lb	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:gold-lb	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:gold-lb	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:gold-lb	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:platinum-lb	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:platinum-lb	container:chest	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:platinum-lb	container:crate	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dragonshard	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dragonshard	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dragonshard	container:component-pouch	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:dragonshard	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:gunpowder	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:gunpowder	container:crate	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:alchemist-s-fire	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:alchemist-s-fire	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:alchemist-s-fire	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:alchemist-s-fire	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:insect-repellent	container:pocket	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:insect-repellent	container:pouch	true	2.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:insect-repellent	container:vial-case	true	3.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:insect-repellent	container:chest	true	4.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:grenade	container:pouch	true	1.0	Migrated from Allowed_Containers
+ITEM_CONTAINER	item:material:grenade	container:crate	true	2.0	Migrated from Allowed_Containers
+MODIFIER_PROFILE	modifier:modular:engraved	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:ranged-weapon	true	2.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:firearm	true	3.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:armor	true	4.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:shield	true	5.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:tool	true	6.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:instrument	true	7.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:book	true	8.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:holy-symbol	true	9.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:arcane-focus	true	10.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:druidic-focus	true	11.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:art-object	true	12.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:utility-object	true	13.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:relic	true	14.0
+MODIFIER_PROFILE	modifier:modular:engraved	profile:gear	true	15.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:ranged-weapon	true	2.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:firearm	true	3.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:armor	true	4.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:shield	true	5.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:tool	true	6.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:instrument	true	7.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:book	true	8.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:holy-symbol	true	9.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:arcane-focus	true	10.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:druidic-focus	true	11.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:textile	true	12.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:pack-or-case	true	13.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:mount-gear	true	14.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:art-object	true	15.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:utility-object	true	16.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:relic	true	17.0
+MODIFIER_PROFILE	modifier:modular:ornate	profile:gear	true	18.0
+MODIFIER_PROFILE	modifier:modular:silvered	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:modular:silvered	profile:shield	true	2.0
+MODIFIER_PROFILE	modifier:modular:silvered	profile:armor	true	3.0
+MODIFIER_PROFILE	modifier:modular:silvered	profile:holy-symbol	true	4.0
+MODIFIER_PROFILE	modifier:modular:silvered	profile:ammunition	true	5.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:ranged-weapon	true	2.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:firearm	true	3.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:shield	true	4.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:armor	true	5.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:tool	true	6.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:instrument	true	7.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:book	true	8.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:holy-symbol	true	9.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:arcane-focus	true	10.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:druidic-focus	true	11.0
+MODIFIER_PROFILE	modifier:modular:gold-inlaid	profile:art-object	true	12.0
+MODIFIER_PROFILE	modifier:modular:gem-set	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:modular:gem-set	profile:shield	true	2.0
+MODIFIER_PROFILE	modifier:modular:gem-set	profile:armor	true	3.0
+MODIFIER_PROFILE	modifier:modular:gem-set	profile:book	true	4.0
+MODIFIER_PROFILE	modifier:modular:gem-set	profile:holy-symbol	true	5.0
+MODIFIER_PROFILE	modifier:modular:gem-set	profile:arcane-focus	true	6.0
+MODIFIER_PROFILE	modifier:modular:gem-set	profile:druidic-focus	true	7.0
+MODIFIER_PROFILE	modifier:modular:gem-set	profile:art-object	true	8.0
+MODIFIER_PROFILE	modifier:modular:gem-set	profile:tool	true	9.0
+MODIFIER_PROFILE	modifier:modular:gem-set	profile:instrument	true	10.0
+MODIFIER_PROFILE	modifier:modular:jeweled	profile:book	true	1.0
+MODIFIER_PROFILE	modifier:modular:jeweled	profile:holy-symbol	true	2.0
+MODIFIER_PROFILE	modifier:modular:jeweled	profile:art-object	true	3.0
+MODIFIER_PROFILE	modifier:modular:jeweled	profile:textile	true	4.0
+MODIFIER_PROFILE	modifier:modular:jeweled	profile:pack-or-case	true	5.0
+MODIFIER_PROFILE	modifier:modular:jeweled	profile:mount-gear	true	6.0
+MODIFIER_PROFILE	modifier:modular:ivory-inlaid	profile:tool	true	1.0
+MODIFIER_PROFILE	modifier:modular:ivory-inlaid	profile:instrument	true	2.0
+MODIFIER_PROFILE	modifier:modular:ivory-inlaid	profile:book	true	3.0
+MODIFIER_PROFILE	modifier:modular:ivory-inlaid	profile:holy-symbol	true	4.0
+MODIFIER_PROFILE	modifier:modular:ivory-inlaid	profile:art-object	true	5.0
+MODIFIER_PROFILE	modifier:modular:ivory-inlaid	profile:arcane-focus	true	6.0
+MODIFIER_PROFILE	modifier:modular:ivory-inlaid	profile:druidic-focus	true	7.0
+MODIFIER_PROFILE	modifier:modular:silk-lined	profile:textile	true	1.0
+MODIFIER_PROFILE	modifier:modular:silk-lined	profile:pack-or-case	true	2.0
+MODIFIER_PROFILE	modifier:modular:silk-lined	profile:instrument	true	3.0
+MODIFIER_PROFILE	modifier:modular:silk-lined	profile:book	true	4.0
+MODIFIER_PROFILE	modifier:modular:embroidered	profile:textile	true	1.0
+MODIFIER_PROFILE	modifier:modular:embroidered	profile:pack-or-case	true	2.0
+MODIFIER_PROFILE	modifier:modular:embroidered	profile:mount-gear	true	3.0
+MODIFIER_PROFILE	modifier:modular:celestial-motif	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:modular:celestial-motif	profile:shield	true	2.0
+MODIFIER_PROFILE	modifier:modular:celestial-motif	profile:armor	true	3.0
+MODIFIER_PROFILE	modifier:modular:celestial-motif	profile:book	true	4.0
+MODIFIER_PROFILE	modifier:modular:celestial-motif	profile:holy-symbol	true	5.0
+MODIFIER_PROFILE	modifier:modular:celestial-motif	profile:arcane-focus	true	6.0
+MODIFIER_PROFILE	modifier:modular:serpent-motif	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:modular:serpent-motif	profile:shield	true	2.0
+MODIFIER_PROFILE	modifier:modular:serpent-motif	profile:armor	true	3.0
+MODIFIER_PROFILE	modifier:modular:serpent-motif	profile:book	true	4.0
+MODIFIER_PROFILE	modifier:modular:serpent-motif	profile:druidic-focus	true	5.0
+MODIFIER_PROFILE	modifier:modular:dwarven-runes	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:modular:dwarven-runes	profile:armor	true	2.0
+MODIFIER_PROFILE	modifier:modular:dwarven-runes	profile:shield	true	3.0
+MODIFIER_PROFILE	modifier:modular:dwarven-runes	profile:tool	true	4.0
+MODIFIER_PROFILE	modifier:modular:elven-vinework	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:modular:elven-vinework	profile:instrument	true	2.0
+MODIFIER_PROFILE	modifier:modular:elven-vinework	profile:book	true	3.0
+MODIFIER_PROFILE	modifier:modular:elven-vinework	profile:druidic-focus	true	4.0
+MODIFIER_PROFILE	modifier:modular:elven-vinework	profile:arcane-focus	true	5.0
+MODIFIER_PROFILE	modifier:modular:velvet-case	profile:tool	true	1.0
+MODIFIER_PROFILE	modifier:modular:velvet-case	profile:instrument	true	2.0
+MODIFIER_PROFILE	modifier:modular:velvet-case	profile:book	true	3.0
+MODIFIER_PROFILE	modifier:modular:velvet-case	profile:arcane-focus	true	4.0
+MODIFIER_PROFILE	modifier:modular:velvet-case	profile:holy-symbol	true	5.0
+MODIFIER_PROFILE	modifier:modular:velvet-case	profile:utility-object	true	6.0
+MODIFIER_PROFILE	modifier:modular:lacquered-case	profile:tool	true	1.0
+MODIFIER_PROFILE	modifier:modular:lacquered-case	profile:instrument	true	2.0
+MODIFIER_PROFILE	modifier:modular:lacquered-case	profile:book	true	3.0
+MODIFIER_PROFILE	modifier:modular:lacquered-case	profile:arcane-focus	true	4.0
+MODIFIER_PROFILE	modifier:modular:lacquered-case	profile:holy-symbol	true	5.0
+MODIFIER_PROFILE	modifier:modular:lacquered-case	profile:utility-object	true	6.0
+MODIFIER_PROFILE	modifier:modular:silver-fittings	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:modular:silver-fittings	profile:shield	true	2.0
+MODIFIER_PROFILE	modifier:modular:silver-fittings	profile:armor	true	3.0
+MODIFIER_PROFILE	modifier:modular:silver-fittings	profile:book	true	4.0
+MODIFIER_PROFILE	modifier:modular:silver-fittings	profile:holy-symbol	true	5.0
+MODIFIER_PROFILE	modifier:modular:silver-fittings	profile:arcane-focus	true	6.0
+MODIFIER_PROFILE	modifier:modular:silver-fittings	profile:druidic-focus	true	7.0
+MODIFIER_PROFILE	modifier:modular:silver-fittings	profile:art-object	true	8.0
+MODIFIER_PROFILE	modifier:modular:silver-fittings	profile:tool	true	9.0
+MODIFIER_PROFILE	modifier:modular:silver-fittings	profile:instrument	true	10.0
+MODIFIER_PROFILE	modifier:modular:silver-fittings	profile:relic	true	11.0
+MODIFIER_PROFILE	modifier:modular:gilded	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:modular:gilded	profile:shield	true	2.0
+MODIFIER_PROFILE	modifier:modular:gilded	profile:armor	true	3.0
+MODIFIER_PROFILE	modifier:modular:gilded	profile:book	true	4.0
+MODIFIER_PROFILE	modifier:modular:gilded	profile:holy-symbol	true	5.0
+MODIFIER_PROFILE	modifier:modular:gilded	profile:arcane-focus	true	6.0
+MODIFIER_PROFILE	modifier:modular:gilded	profile:druidic-focus	true	7.0
+MODIFIER_PROFILE	modifier:modular:gilded	profile:art-object	true	8.0
+MODIFIER_PROFILE	modifier:modular:gilded	profile:tool	true	9.0
+MODIFIER_PROFILE	modifier:modular:gilded	profile:instrument	true	10.0
+MODIFIER_PROFILE	modifier:modular:gem-centered	profile:holy-symbol	true	1.0
+MODIFIER_PROFILE	modifier:modular:gem-centered	profile:arcane-focus	true	2.0
+MODIFIER_PROFILE	modifier:modular:gem-centered	profile:druidic-focus	true	3.0
+MODIFIER_PROFILE	modifier:modular:gem-centered	profile:art-object	true	4.0
+MODIFIER_PROFILE	modifier:modular:gem-centered	profile:shield	true	5.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:ranged-weapon	true	2.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:firearm	true	3.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:armor	true	4.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:shield	true	5.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:tool	true	6.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:instrument	true	7.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:book	true	8.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:holy-symbol	true	9.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:arcane-focus	true	10.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:druidic-focus	true	11.0
+MODIFIER_PROFILE	modifier:variant:masterwork	profile:art-object	true	12.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:ranged-weapon	true	2.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:firearm	true	3.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:armor	true	4.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:shield	true	5.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:tool	true	6.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:instrument	true	7.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:book	true	8.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:holy-symbol	true	9.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:arcane-focus	true	10.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:druidic-focus	true	11.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:art-object	true	12.0
+MODIFIER_PROFILE	modifier:variant:ceremonial	profile:relic	true	13.0
+MODIFIER_PROFILE	modifier:variant:antique	profile:book	true	1.0
+MODIFIER_PROFILE	modifier:variant:antique	profile:holy-symbol	true	2.0
+MODIFIER_PROFILE	modifier:variant:antique	profile:instrument	true	3.0
+MODIFIER_PROFILE	modifier:variant:antique	profile:art-object	true	4.0
+MODIFIER_PROFILE	modifier:variant:antique	profile:relic	true	5.0
+MODIFIER_PROFILE	modifier:variant:antique	profile:tool	true	6.0
+MODIFIER_PROFILE	modifier:variant:guild-made	profile:tool	true	1.0
+MODIFIER_PROFILE	modifier:variant:guild-made	profile:instrument	true	2.0
+MODIFIER_PROFILE	modifier:variant:guild-made	profile:utility-object	true	3.0
+MODIFIER_PROFILE	modifier:variant:guild-made	profile:pack-or-case	true	4.0
+MODIFIER_PROFILE	modifier:variant:temple-made	profile:holy-symbol	true	1.0
+MODIFIER_PROFILE	modifier:variant:temple-made	profile:relic	true	2.0
+MODIFIER_PROFILE	modifier:variant:temple-made	profile:book	true	3.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:blade-weapon	true	1.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:ranged-weapon	true	2.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:firearm	true	3.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:armor	true	4.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:shield	true	5.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:tool	true	6.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:instrument	true	7.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:book	true	8.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:holy-symbol	true	9.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:arcane-focus	true	10.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:druidic-focus	true	11.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:textile	true	12.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:pack-or-case	true	13.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:art-object	true	14.0
+MODIFIER_PROFILE	modifier:variant:cultural-style	profile:relic	true	15.0
+MODIFIER_PROFILE	modifier:variant:book-contents	profile:book	true	1.0
+MODIFIER_CATEGORY	modifier:variant:book-contents	category:book-document	true	1.0
+MODIFIER_PROFILE	modifier:variant:annotated-book	profile:book	true	1.0
+MODIFIER_CATEGORY	modifier:variant:annotated-book	category:book-document	true	1.0
+MODIFIER_PROFILE	modifier:variant:illuminated-book	profile:book	true	1.0
+MODIFIER_CATEGORY	modifier:variant:illuminated-book	category:book-document	true	1.0
+MODIFIER_PROFILE	modifier:variant:sealed-document	profile:book	true	1.0
+MODIFIER_CATEGORY	modifier:variant:sealed-document	category:book-document	true	1.0
+MODIFIER_PROFILE	modifier:variant:textile-material	profile:textile	true	1.0
+MODIFIER_CATEGORY	modifier:variant:textile-material	category:clothing	true	1.0
+MODIFIER_PROFILE	modifier:variant:travel-stained	profile:textile	true	1.0
+MODIFIER_PROFILE	modifier:variant:travel-stained	profile:book	true	2.0
+MODIFIER_PROFILE	modifier:variant:travel-stained	profile:pack-or-case	true	3.0
+MODIFIER_PROFILE	modifier:variant:noble-crest	profile:textile	true	1.0
+MODIFIER_PROFILE	modifier:variant:noble-crest	profile:armor	true	2.0
+MODIFIER_PROFILE	modifier:variant:noble-crest	profile:shield	true	3.0
+MODIFIER_PROFILE	modifier:variant:noble-crest	profile:pack-or-case	true	4.0
+MODIFIER_PROFILE	modifier:variant:compact	profile:tool	true	1.0
+MODIFIER_PROFILE	modifier:variant:compact	profile:utility-object	true	2.0
+MODIFIER_PROFILE	modifier:variant:compact	profile:gear	true	3.0
+MODIFIER_PROFILE	modifier:variant:collapsible	profile:tool	true	1.0
+MODIFIER_PROFILE	modifier:variant:collapsible	profile:utility-object	true	2.0
+MODIFIER_PROFILE	modifier:variant:collapsible	profile:gear	true	3.0
+MODIFIER_PROFILE	modifier:variant:matched-set	profile:tool	true	1.0
+MODIFIER_PROFILE	modifier:variant:matched-set	profile:instrument	true	2.0
+MODIFIER_PROFILE	modifier:variant:intricately-carved	profile:art-object	true	1.0
+MODIFIER_PROFILE	modifier:variant:intricately-carved	profile:holy-symbol	true	2.0
+MODIFIER_PROFILE	modifier:variant:intricately-carved	profile:arcane-focus	true	3.0
+MODIFIER_PROFILE	modifier:variant:intricately-carved	profile:druidic-focus	true	4.0
+MODIFIER_PROFILE	modifier:variant:intricately-carved	profile:instrument	true	5.0
+MODIFIER_PROFILE	modifier:variant:intricately-carved	profile:tool	true	6.0
+MODIFIER_PROFILE	modifier:variant:intricately-carved	profile:relic	true	7.0
+MODIFIER_PROFILE	modifier:variant:coded-markings	profile:book	true	1.0
+MODIFIER_PROFILE	modifier:variant:coded-markings	profile:tool	true	2.0
+MODIFIER_PROFILE	modifier:variant:coded-markings	profile:utility-object	true	3.0
+MODIFIER_PROFILE	modifier:variant:coded-markings	profile:arcane-focus	true	4.0
+MODIFIER_PROFILE	modifier:variant:consecrated	profile:holy-symbol	true	1.0
+MODIFIER_PROFILE	modifier:variant:consecrated	profile:relic	true	2.0
+MODIFIER_PROFILE	modifier:variant:consecrated	profile:book	true	3.0
+MODIFIER_CATEGORY	modifier:variant:sealed-material	category:potion	true	1.0
+MODIFIER_CATEGORY	modifier:variant:sealed-material	category:poison	true	2.0
+MODIFIER_CATEGORY	modifier:variant:sealed-material	category:hazard-item	true	3.0
+MODIFIER_CATEGORY	modifier:variant:sealed-material	category:trade-good	true	4.0
+MODIFIER_CATEGORY	modifier:variant:sealed-material	category:survival-supply	true	5.0
+MODIFIER_CATEGORY	modifier:variant:sealed-material	category:component-material	true	6.0
+MODIFIER_CATEGORY	modifier:variant:wax-sealed-material	category:potion	true	1.0
+MODIFIER_CATEGORY	modifier:variant:wax-sealed-material	category:poison	true	2.0
+MODIFIER_CATEGORY	modifier:variant:wax-sealed-material	category:hazard-item	true	3.0
+MODIFIER_CATEGORY	modifier:variant:wax-sealed-material	category:trade-good	true	4.0
+MODIFIER_CATEGORY	modifier:variant:wax-sealed-material	category:component-material	true	5.0
+MODIFIER_CATEGORY	modifier:variant:aged-material	category:trade-good	true	1.0
+MODIFIER_CATEGORY	modifier:variant:dyed-material	category:trade-good	true	1.0
+MODIFIER_CATEGORY	modifier:variant:dyed-material	category:survival-supply	true	2.0
+MODIFIER_CATEGORY	modifier:variant:refined-material	category:trade-good	true	1.0
+MODIFIER_CATEGORY	modifier:variant:refined-material	category:component-material	true	2.0
+MODIFIER_CATEGORY	modifier:variant:unworked-material	category:trade-good	true	1.0
+MODIFIER_CATEGORY	modifier:variant:polished-gem	category:gemstone	true	1.0
+MODIFIER_CATEGORY	modifier:variant:faceted-gem	category:gemstone	true	1.0
+MODIFIER_CATEGORY	modifier:variant:perfumed-material	category:trade-good	true	1.0
+MODIFIER_CATEGORY	modifier:variant:perfumed-material	category:survival-supply	true	2.0
+MODIFIER_CATEGORY	modifier:variant:perfumed-material	category:component-material	true	3.0
+MODIFIER_CATEGORY	modifier:variant:spoiled-material	category:survival-supply	true	1.0
+MODIFIER_CATEGORY	modifier:variant:spoiled-material	category:trade-good	true	2.0
+THEME_CATEGORY	theme:armaments	Simple_Melee_Weapon	true	1.0
+THEME_CATEGORY	theme:armaments	Martial_Melee_Weapon	true	2.0
+THEME_CATEGORY	theme:armaments	Simple_Ranged_Weapon	true	3.0
+THEME_CATEGORY	theme:armaments	Martial_Ranged_Weapon	true	4.0
+THEME_CATEGORY	theme:armaments	Firearm	true	5.0
+THEME_CATEGORY	theme:armaments	Light_Armor	true	6.0
+THEME_CATEGORY	theme:armaments	Medium_Armor	true	7.0
+THEME_CATEGORY	theme:armaments	Heavy_Armor	true	8.0
+THEME_CATEGORY	theme:armaments	Shield	true	9.0
+THEME_CATEGORY	theme:armaments	Ammunition	true	10.0
+THEME_CATEGORY	theme:armaments	Hazard_Item	true	11.0
+THEME_CATEGORY	theme:armaments	Siege_Gear	true	12.0
+THEME_CATEGORY	theme:armaments	Restraint_Trap_Gear	true	13.0
+THEME_CATEGORY	theme:relics	Holy_Symbol	true	14.0
+THEME_CATEGORY	theme:relics	Art_Object	true	15.0
+THEME_CATEGORY	theme:relics	Book_Document	true	16.0
+THEME_CATEGORY	theme:relics	Gemstone	true	17.0
+THEME_CATEGORY	theme:relics	Ritual_Item	true	18.0
+THEME_CATEGORY	theme:arcana	Arcane_Focus	true	19.0
+THEME_CATEGORY	theme:arcana	Druidic_Focus	true	20.0
+THEME_CATEGORY	theme:arcana	Component_Material	true	21.0
+THEME_CATEGORY	theme:arcana	Potion	true	22.0
+THEME_CATEGORY	theme:arcana	Ritual_Item	true	23.0
+THEME_CATEGORY	theme:survival	Camp_Gear	true	24.0
+THEME_CATEGORY	theme:survival	Exploration_Gear	true	25.0
+THEME_CATEGORY	theme:survival	Survival_Supply	true	26.0
+THEME_CATEGORY	theme:survival	Light_Fire_Gear	true	27.0
+THEME_CATEGORY	theme:survival	Equipment_Pack	true	28.0
+THEME_CATEGORY	theme:survival	Clothing	true	29.0
+THEME_CATEGORY	theme:craft	Tool	true	30.0
+THEME_CATEGORY	theme:craft	Instrument	true	31.0
+THEME_CATEGORY	theme:craft	Book_Document	true	32.0
+THEME_CATEGORY	theme:craft	Utility_Gear	true	33.0
+THEME_CATEGORY	theme:trade	Trade_Good	true	34.0
+THEME_CATEGORY	theme:trade	Gemstone	true	35.0
+THEME_CATEGORY	theme:trade	Art_Object	true	36.0
+THEME_CATEGORY	theme:trade	Clothing	true	37.0
+THEME_CATEGORY	theme:consumables	Potion	true	38.0
+THEME_CATEGORY	theme:consumables	Poison	true	39.0
+THEME_CATEGORY	theme:consumables	Hazard_Item	true	40.0
+THEME_CATEGORY	theme:consumables	Survival_Supply	true	41.0
+THEME_CATEGORY	theme:consumables	Light_Fire_Gear	true	42.0
+THEME_CATEGORY	theme:consumables	Ritual_Item	true	43.0
+THEME_CATEGORY	theme:travel	Mount_Gear	true	44.0
+THEME_CATEGORY	theme:travel	Mount	true	45.0
+THEME_CATEGORY	theme:travel	Vehicle_Land	true	46.0
+THEME_CATEGORY	theme:travel	Vehicle_Water	true	47.0
+THEME_CATEGORY	theme:travel	Vehicle_Air_Space	true	48.0
+THEME_CATEGORY	theme:travel	Exploration_Gear	true	49.0
+THEME_CATEGORY	theme:travel	Camp_Gear	true	50.0
+THEME_CATEGORY	theme:travel	Survival_Supply	true	51.0
+ITEM_CONTAINER	item:material:copper-ingot	container:sack	true	1.0	Canonical carrier item
+ITEM_CONTAINER	item:material:copper-ingot	container:chest	true	2.0	Canonical carrier item
+ITEM_CONTAINER	item:material:copper-ingot	container:crate	true	3.0	Canonical carrier item
+ITEM_CONTAINER	item:material:silver-ingot	container:pouch	true	1.0	Canonical carrier item
+ITEM_CONTAINER	item:material:silver-ingot	container:chest	true	2.0	Canonical carrier item
+ITEM_CONTAINER	item:material:silver-ingot	container:crate	true	3.0	Canonical carrier item
+ITEM_CONTAINER	item:material:gold-ingot	container:pouch	true	1.0	Canonical carrier item
+ITEM_CONTAINER	item:material:gold-ingot	container:chest	true	2.0	Canonical carrier item
+ITEM_CONTAINER	item:material:gold-ingot	container:crate	true	3.0	Canonical carrier item
+ITEM_CONTAINER	item:material:platinum-ingot	container:pouch	true	1.0	Canonical carrier item
+ITEM_CONTAINER	item:material:platinum-ingot	container:chest	true	2.0	Canonical carrier item
+ITEM_CONTAINER	item:material:platinum-ingot	container:crate	true	3.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-statuette	container:pouch	true	1.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-statuette	container:chest	true	2.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-statuette	container:crate	true	3.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-goblet	container:pouch	true	1.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-goblet	container:chest	true	2.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-brooch	container:pocket	true	1.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-brooch	container:pouch	true	2.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-brooch	container:chest	true	3.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-tapestry	container:bundle	true	1.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-tapestry	container:chest	true	2.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-tapestry	container:crate	true	3.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-ceremonial-mask	container:pouch	true	1.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-ceremonial-mask	container:chest	true	2.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-ceremonial-mask	container:crate	true	3.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-jewelry-box	container:chest	true	1.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-jewelry-box	container:crate	true	2.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-painting	container:bundle	true	1.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-painting	container:chest	true	2.0	Canonical carrier item
+ITEM_CONTAINER	item:object:plain-painting	container:crate	true	3.0	Canonical carrier item
+ITEM_CONTAINER	item:material:acid-vial	container:vial	true
+ITEM_CONTAINER	item:material:acid-vial	container:flask	true
+ITEM_CONTAINER	item:material:acid-vial	container:glass-bottle	true
+ITEM_CONTAINER	item:material:acid-vial	container:jug	true
+ITEM_CONTAINER	item:material:ink-1-ounce-bottle	container:vial	true
+ITEM_CONTAINER	item:material:ink-1-ounce-bottle	container:flask	true
+ITEM_CONTAINER	item:material:ink-1-ounce-bottle	container:glass-bottle	true
+ITEM_CONTAINER	item:material:ink-1-ounce-bottle	container:jug	true
+ITEM_CONTAINER	item:material:oil	container:flask	true
+ITEM_CONTAINER	item:material:oil	container:glass-bottle	true
+ITEM_CONTAINER	item:material:oil	container:jug	true
+ITEM_CONTAINER	item:material:oil	container:bucket	true
+ITEM_CONTAINER	item:material:oil	container:keg	true
+ITEM_CONTAINER	item:material:oil	container:barrel	true
+ITEM_CONTAINER	item:material:perfume	container:vial	true
+ITEM_CONTAINER	item:material:perfume	container:flask	true
+ITEM_CONTAINER	item:material:perfume	container:glass-bottle	true
+ITEM_CONTAINER	item:material:perfume	container:jug	true
+ITEM_CONTAINER	item:material:tej	container:glass-bottle	true
+ITEM_CONTAINER	item:material:tej	container:jug	true
+ITEM_CONTAINER	item:material:tej	container:keg	true
+ITEM_CONTAINER	item:material:tej	container:barrel	true
+ITEM_CONTAINER	item:material:mercury-lb	container:vial	true
+ITEM_CONTAINER	item:material:mercury-lb	container:flask	true
+ITEM_CONTAINER	item:material:mercury-lb	container:glass-bottle	true
+ITEM_CONTAINER	item:material:mercury-lb	container:jug	true
+ITEM_CONTAINER	item:material:mercury-lb	container:keg	true
+ITEM_CONTAINER	item:material:insect-repellent	container:vial	true
+ITEM_CONTAINER	item:material:insect-repellent	container:flask	true
+ITEM_CONTAINER	item:material:insect-repellent	container:glass-bottle	true
+ITEM_CONTAINER	item:material:insect-repellent	container:jug	true
+ITEM_CONTAINER	item:material:wine-pint	container:glass-bottle	true
+ITEM_CONTAINER	item:material:wine-pint	container:jug	true
+ITEM_CONTAINER	item:material:wine-pint	container:keg	true
+ITEM_CONTAINER	item:material:wine-pint	container:barrel	true
+ITEM_CONTAINER	item:material:ale-pint	container:glass-bottle	true
+ITEM_CONTAINER	item:material:ale-pint	container:jug	true
+ITEM_CONTAINER	item:material:ale-pint	container:keg	true
+ITEM_CONTAINER	item:material:ale-pint	container:barrel	true

@@ -1,0 +1,42 @@
+Magic_Variant_ID	Group_Key	Option	Sort_Order	Active	Source
+magic-variant:feather-basic:anchor	feather_basic	anchor	1.0	true	DB_Items: Variant Groups
+magic-variant:feather-basic:fan	feather_basic	fan	2.0	true	DB_Items: Variant Groups
+magic-variant:feather-basic:tree	feather_basic	tree	3.0	true	DB_Items: Variant Groups
+magic-variant:figurine-rare:bronze-griffon	figurine_rare	bronze griffon	1.0	true	DB_Items: Variant Groups
+magic-variant:figurine-rare:ebony-fly	figurine_rare	ebony fly	2.0	true	DB_Items: Variant Groups
+magic-variant:figurine-rare:golden-lions	figurine_rare	golden lions	3.0	true	DB_Items: Variant Groups
+magic-variant:figurine-rare:ivory-goats	figurine_rare	ivory goats	4.0	true	DB_Items: Variant Groups
+magic-variant:figurine-rare:marble-elephant	figurine_rare	marble elephant	5.0	true	DB_Items: Variant Groups
+magic-variant:figurine-rare:onyx-dog	figurine_rare	onyx dog	6.0	true	DB_Items: Variant Groups
+magic-variant:figurine-rare:serpentine-owl	figurine_rare	serpentine owl	7.0	true	DB_Items: Variant Groups
+magic-variant:giant-potion-frost-stone:frost	giant_potion_frost_stone	frost	1.0	true	DB_Items: Variant Groups
+magic-variant:giant-potion-frost-stone:stone	giant_potion_frost_stone	stone	2.0	true	DB_Items: Variant Groups
+magic-variant:feather-rare:bird	feather_rare	bird	1.0	true	DB_Items: Variant Groups
+magic-variant:feather-rare:swan-boat	feather_rare	swan boat	2.0	true	DB_Items: Variant Groups
+magic-variant:feather-rare:whip	feather_rare	whip	3.0	true	DB_Items: Variant Groups
+magic-variant:ioun-very-rare:absorption	ioun_very_rare	absorption	1.0	true	DB_Items: Variant Groups
+magic-variant:ioun-very-rare:fortitude	ioun_very_rare	fortitude	2.0	true	DB_Items: Variant Groups
+magic-variant:ioun-very-rare:intellect	ioun_very_rare	intellect	3.0	true	DB_Items: Variant Groups
+magic-variant:ioun-very-rare:leadership	ioun_very_rare	leadership	4.0	true	DB_Items: Variant Groups
+magic-variant:golem-manual:clay	golem_manual	clay	1.0	true	DB_Items: Variant Groups
+magic-variant:golem-manual:flesh	golem_manual	flesh	2.0	true	DB_Items: Variant Groups
+magic-variant:golem-manual:iron	golem_manual	iron	3.0	true	DB_Items: Variant Groups
+magic-variant:golem-manual:stone	golem_manual	stone	4.0	true	DB_Items: Variant Groups
+magic-variant:ioun-legendary:greater-absorption	ioun_legendary	greater absorption	1.0	true	DB_Items: Variant Groups
+magic-variant:ioun-legendary:mastery	ioun_legendary	mastery	2.0	true	DB_Items: Variant Groups
+magic-variant:ioun-legendary:regeneration	ioun_legendary	regeneration	3.0	true	DB_Items: Variant Groups
+magic-variant:elemental-command:air	elemental_command	air	1.0	true	DB_Items: Variant Groups
+magic-variant:elemental-command:earth	elemental_command	earth	2.0	true	DB_Items: Variant Groups
+magic-variant:elemental-command:fire	elemental_command	fire	3.0	true	DB_Items: Variant Groups
+magic-variant:elemental-command:water	elemental_command	water	4.0	true	DB_Items: Variant Groups
+magic-variant:horn-brass-silver:brass	horn_brass_silver	brass	1.0	true	DB_Items: Variant Groups
+magic-variant:horn-brass-silver:silver	horn_brass_silver	silver	2.0	true	DB_Items: Variant Groups
+magic-variant:giant-belt-frost-stone:frost	giant_belt_frost_stone	frost	1.0	true	DB_Items: Variant Groups
+magic-variant:giant-belt-frost-stone:stone	giant_belt_frost_stone	stone	2.0	true	DB_Items: Variant Groups
+magic-variant:bard-instrument-uncommon:doss-lute	bard_instrument_uncommon	Doss lute	1.0	true	DB_Items: Variant Groups
+magic-variant:bard-instrument-uncommon:fochlucan-bandore	bard_instrument_uncommon	Fochlucan bandore	2.0	true	DB_Items: Variant Groups
+magic-variant:bard-instrument-uncommon:mac-fuirmidh-cittern	bard_instrument_uncommon	Mac-Fuirmidh cittern	3.0	true	DB_Items: Variant Groups
+magic-variant:bard-instrument-rare:canaith-mandolin	bard_instrument_rare	Canaith mandolin	1.0	true	DB_Items: Variant Groups
+magic-variant:bard-instrument-rare:cli-lyre	bard_instrument_rare	Cli lyre	2.0	true	DB_Items: Variant Groups
+magic-variant:ioun-relic-rare:reserve	ioun_relic_rare	reserve	1.0	true	DB_Items: Variant Groups
+magic-variant:ioun-relic-rare:sustenance	ioun_relic_rare	sustenance	2.0	true	DB_Items: Variant Groups

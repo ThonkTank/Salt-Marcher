@@ -13,6 +13,7 @@ import features.sessionplanner.domain.session.SessionEncounterPlanFact;
 import features.sessionplanner.domain.session.SessionEncounterPlanListFact;
 import features.sessionplanner.domain.session.SessionLocationReference;
 import features.sessionplanner.domain.session.SessionLootPlaceholder;
+import features.sessionplanner.domain.session.SessionGeneratedRewardReference;
 import features.sessionplanner.domain.session.SessionPartyMemberProfile;
 import features.sessionplanner.domain.session.SessionPlan;
 import features.sessionplanner.domain.session.SessionPlanSummary;
@@ -319,21 +320,31 @@ public final class SessionPlannerProjection {
                     encounter.sceneTitle(),
                     encounter.sceneNotes(),
                     encounter.locationId(),
-                    lootForEncounter(session.lootPlaceholders(), encounter.encounterId())));
+                    lootForScene(
+                            session.lootPlaceholders(),
+                            session.generatedRewards(),
+                            encounter.encounterId())));
         }
         return List.copyOf(sessionScenes);
     }
 
-    private static List<SessionPlannerSceneTimelineProjection.LootPlaceholder> lootForEncounter(
+    private static List<SessionPlannerSceneTimelineProjection.LootPlaceholder> lootForScene(
             List<SessionLootPlaceholder> lootPlaceholders,
-            long encounterId
+            List<SessionGeneratedRewardReference> generatedRewards,
+            long sceneId
     ) {
-        return lootPlaceholders.stream()
-                .filter(loot -> loot.encounterId() == encounterId)
-                .map(loot -> new SessionPlannerSceneTimelineProjection.LootPlaceholder(
-                        loot.lootId(),
-                        loot.label()))
-                .toList();
+        List<SessionPlannerSceneTimelineProjection.LootPlaceholder> rows = new ArrayList<>();
+        lootPlaceholders.stream()
+                .filter(loot -> loot.encounterId() == sceneId)
+                .map(loot -> new SessionPlannerSceneTimelineProjection.LootPlaceholder(loot.lootId(), loot.label()))
+                .forEach(rows::add);
+        generatedRewards.stream()
+                .filter(reward -> reward.sceneId() == sceneId)
+                .map(reward -> new SessionPlannerSceneTimelineProjection.LootPlaceholder(
+                        0L,
+                        reward.lastKnownLabel()))
+                .forEach(rows::add);
+        return List.copyOf(rows);
     }
 
     private static List<SessionPlannerSceneTimelineProjection.RestGap> buildRestGaps(SessionPlan session) {

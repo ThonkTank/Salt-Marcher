@@ -5,6 +5,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
 import features.sessionplanner.adapter.sqlite.model.SessionEncounterRecord;
+import features.sessionplanner.adapter.sqlite.model.SessionGeneratedRewardRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionLootPlaceholderRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionParticipantRecord;
 import features.sessionplanner.adapter.sqlite.model.SessionRestPlacementRecord;
@@ -113,6 +114,33 @@ final class SessionPlanChildTableSqliteWrites {
         }
     }
 
+    void replaceGeneratedRewards(
+            Connection connection,
+            long sessionId,
+            List<SessionGeneratedRewardRecord> generatedRewards
+    ) throws SQLException {
+        deleteGeneratedRewards(connection, sessionId);
+        if (generatedRewards == null || generatedRewards.isEmpty()) {
+            return;
+        }
+        try (PreparedStatement insert = connection.prepareStatement(
+                INSERT_INTO
+                        + SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE
+                        + " (session_id, scene_id, generation_id, treasure_id, last_known_label, sort_order) "
+                        + "VALUES (?, ?, ?, ?, ?, ?)")) {
+            for (SessionGeneratedRewardRecord record : generatedRewards) {
+                insert.setLong(1, sessionId);
+                insert.setLong(2, record.sceneId());
+                insert.setString(3, record.generationId());
+                insert.setLong(4, record.treasureId());
+                insert.setString(5, record.lastKnownLabel());
+                insert.setInt(6, record.sortOrder());
+                insert.addBatch();
+            }
+            insert.executeBatch();
+        }
+    }
+
     private static void deleteSessionParticipants(Connection connection, long sessionId) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
                 DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_PARTICIPANTS_TABLE + WHERE_SESSION_ID)) {
@@ -140,6 +168,14 @@ final class SessionPlanChildTableSqliteWrites {
     private static void deleteSessionLootPlaceholders(Connection connection, long sessionId) throws SQLException {
         try (PreparedStatement delete = connection.prepareStatement(
                 DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE + WHERE_SESSION_ID)) {
+            delete.setLong(1, sessionId);
+            delete.executeUpdate();
+        }
+    }
+
+    private static void deleteGeneratedRewards(Connection connection, long sessionId) throws SQLException {
+        try (PreparedStatement delete = connection.prepareStatement(
+                DELETE_FROM + SessionPlannerPersistenceSchema.SESSION_GENERATED_REWARDS_TABLE + WHERE_SESSION_ID)) {
             delete.setLong(1, sessionId);
             delete.executeUpdate();
         }

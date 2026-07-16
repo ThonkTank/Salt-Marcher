@@ -24,6 +24,8 @@ import features.sessionplanner.api.SessionPlannerParticipantsModel;
 import features.sessionplanner.api.SessionPlannerRestKind;
 import features.sessionplanner.api.SessionPlannerSceneTimelineModel;
 import features.sessionplanner.api.SessionPlannerStatePanelModel;
+import features.sessionplanner.api.SessionGenerationPreviewModel;
+import features.sessionplanner.api.SessionGenerationDraftChangedCommand;
 import features.sessionplanner.api.SetSessionEncounterDaysCommand;
 import features.sessionplanner.api.SetSessionRestGapCommand;
 import features.sessionplanner.api.UpdateSessionEncounterSceneCommand;
@@ -41,6 +43,7 @@ final class SessionPlannerBinder {
     private final SessionPlannerParticipantsModel participantsModel;
     private final SessionPlannerSceneTimelineModel sceneTimelineModel;
     private final SessionPlannerStatePanelModel statePanelModel;
+    private final SessionGenerationPreviewModel generationPreviewModel;
 
     SessionPlannerBinder(
             SessionPlannerApi planner,
@@ -48,7 +51,8 @@ final class SessionPlannerBinder {
             SessionPlannerCatalogModel catalogModel,
             SessionPlannerParticipantsModel participantsModel,
             SessionPlannerSceneTimelineModel sceneTimelineModel,
-            SessionPlannerStatePanelModel statePanelModel
+            SessionPlannerStatePanelModel statePanelModel,
+            SessionGenerationPreviewModel generationPreviewModel
     ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.sessionModel = Objects.requireNonNull(sessionModel, "sessionModel");
@@ -56,12 +60,14 @@ final class SessionPlannerBinder {
         this.participantsModel = Objects.requireNonNull(participantsModel, "participantsModel");
         this.sceneTimelineModel = Objects.requireNonNull(sceneTimelineModel, "sceneTimelineModel");
         this.statePanelModel = Objects.requireNonNull(statePanelModel, "statePanelModel");
+        this.generationPreviewModel = Objects.requireNonNull(generationPreviewModel, "generationPreviewModel");
     }
 
     ShellBinding bind() {
         SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
         CatalogCrudControlsContentModel catalogContentModel = viewModel.catalogContentModel();
-        SessionPlannerControlsView controlsView = new SessionPlannerControlsView();
+        SessionGenerationPanel generationPanel = new SessionGenerationPanel();
+        SessionPlannerControlsView controlsView = new SessionPlannerControlsView(generationPanel);
         CatalogCrudControlsView catalogView = new CatalogCrudControlsView();
         SessionPlannerTimelineMainView timelineView = new SessionPlannerTimelineMainView();
         SessionPlannerStateView stateView = new SessionPlannerStateView();
@@ -72,6 +78,11 @@ final class SessionPlannerBinder {
         stateView.bind(viewModel);
         catalogView.onViewInputEvent(event -> consumeCatalog(planner, viewModel, event));
         controlsView.onAttachPlan(planId -> consumeAttachPlan(planner, viewModel, planId));
+        generationPanel.onPreview(planner::previewGeneratedSession);
+        generationPanel.onDraftChanged(() -> planner.generatedSessionDraftChanged(
+                new SessionGenerationDraftChangedCommand()));
+        generationPanel.onApply(planner::applyGeneratedSession);
+        generationPanel.bind(generationPreviewModel);
         Map<SessionPlannerViewModel.TimelineWidgetKind, Consumer<SessionPlannerViewModel.TimelineInput>>
                 timelineActions = timelineActions(planner, viewModel);
         timelineView.onTimelineInput(event -> consumeTimeline(viewModel, timelineActions, event));

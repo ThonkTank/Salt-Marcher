@@ -105,17 +105,18 @@ public final class SessionPlannerPublishedState {
         currentSession.ifPresent(this::publishCurrentSession);
     }
 
-    void initialize() {
+    Optional<SessionPlan> initialize() {
         if (loaded) {
-            return;
+            return Optional.empty();
         }
         Optional<SessionPlan> currentSession = repository.loadCurrent();
         if (currentSession.isEmpty()) {
             publishCatalog(NO_SESSION_ID, "");
             loaded = true;
-            return;
+            return Optional.empty();
         }
         publishCurrentSession(currentSession.get());
+        return currentSession;
     }
 
     private void publishCatalog(long selectedSessionId, String statusText) {

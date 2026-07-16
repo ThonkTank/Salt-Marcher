@@ -284,6 +284,8 @@ public final class SessionPlannerTimelineMainView extends ScrollPane {
                 "Entfernen",
                 event -> rawPublishLoot(event, loot.removeWidgetToken(), loot.token()),
                 STYLE_FLAT);
+        remove.setVisible(loot.token() > 0L);
+        remove.setManaged(loot.token() > 0L);
         ActionRow row = new ActionRow(8, label, remove);
         row.addStyles("session-planner-loot-card");
         return row;

@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-07
+Last Reviewed: 2026-07-16
 Source of Truth: Entry point and document map for the encounter feature.
 
 # Encounter Feature README
@@ -21,6 +21,7 @@ only the user-accepted roster when the user saves a plan.
 - [Plan Budget Contract](contract/contract-encounter-plan-budget.md)
 - [Builder Inputs Contract](contract/contract-encounter-builder-inputs.md)
 - [Encounter State Contract](contract/contract-encounter-state.md)
+- [Generated Import Contract](contract/contract-encounter-generated-import.md)
 - [Encounter Table Feature README](../encountertable/README.md)
 - [Encounter UI](requirements/requirements-encounter-state-tab.md)
 
@@ -35,9 +36,11 @@ In scope:
 - generating and ranking multiple encounter alternatives
 - adding catalog creature rows into a manual runtime roster
 - saving and opening encounter-plan rosters
+- atomically importing generated-origin encounter specifications as saved plans
 
 Out of scope:
 
 - persisting initiative, combat, result, or loot state as encounter-plan truth
 - dungeon room placement or biome ownership
 - bootstrap or shell policy
+- generated reward, packing, audit, or session-scene ownership

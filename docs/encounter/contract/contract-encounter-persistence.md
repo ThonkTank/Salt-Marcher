@@ -1,6 +1,6 @@
 Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-16
 Source of Truth: Persistence path and schema ownership rules for the
 `encounter` feature.
 
@@ -25,11 +25,17 @@ persistence path.
 - The schema owns:
   - `saved_encounter_plans`
   - `saved_encounter_plan_creatures`
+  - `generated_encounter_plan_batches`
+  - `generated_encounter_plan_origins`
 - `saved_encounter_plans` stores plan identity, display name, generated label,
   and timestamps.
 - `saved_encounter_plan_creatures` stores ordered creature identity and
   quantity rows. Creature identity references the creature catalog; the
   encounter feature does not duplicate statblocks.
+- `generated_encounter_plan_batches` stores the immutable source identity,
+  normalized batch fingerprint, and declared encounter cardinality.
+- `generated_encounter_plan_origins` stores the stable batch order,
+  encounter number, normalized spec fingerprint, and saved-plan reference.
 
 ## Current Mapping
 
@@ -42,6 +48,13 @@ not persist:
 - combat HP or turn order
 - defeated-result state
 - loot or XP-award resolution
+
+Optional generated origin consists only of engine version, generation-run
+identity, normalized batch fingerprint and cardinality, encounter order and
+number, normalized-spec fingerprint, and saved-plan reference. It does not
+copy a Session Generation result. Source-level batch uniqueness plus ordered
+origin uniqueness makes identical completed imports idempotent and makes
+subset, superset, and reordered retries distinguishable.
 
 The Encounter SQLite adapter maps private rows into `EncounterPlan` aggregate
 values. Creature detail display is reloaded through `CreaturesApi` when a plan
@@ -56,6 +69,11 @@ is opened.
   non-persisted runtime state
 - schema-readiness and storage failures MUST surface through Encounter API
   result statuses rather than leaking SQLite exceptions to consumers
+- one generated batch MUST insert all plan roots, roster rows, and origin data
+  in one transaction; any failure MUST leave no member of the batch visible
+- a partial existing origin set, mismatched cardinality, reordered request, or
+  mismatched batch or spec fingerprint MUST fail closed instead of guessing or
+  creating duplicate plans
 
 ## Stability Rules
 
@@ -63,6 +81,9 @@ is opened.
   encounter composition entry point.
 - Saved-plan storage remains encounter-owned even when generated plans are
   built from party, creatures, or encounter-table source data.
+- Generated-origin support extends the existing saved-plan schema through a
+  contiguous Encounter feature migration; it MUST NOT create a parallel
+  generated-plan store or rewrite manual plans.
 
 ## Verification Notes
 
@@ -77,3 +98,4 @@ is opened.
 - [Encounter Domain Model](../domain/domain-encounter.md) (line 1)
 - [Encounter Feature Spec](../requirements/requirements-encounter.md) (line 1)
 - [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+- [Generated Import Contract](contract-encounter-generated-import.md)

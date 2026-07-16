@@ -19,13 +19,17 @@ import features.encounter.adapter.javafx.catalog.CatalogContribution;
 import features.encounter.adapter.javafx.state.EncounterStateContribution;
 import features.encounter.adapter.sqlite.repository.SqliteEncounterPlanRepository;
 import features.encounter.api.EncounterApi;
+import features.encounter.api.GeneratedEncounterPlanImportApi;
 import features.encounter.application.EncounterApplicationService;
 import features.encounter.application.EncounterForeignFacts;
+import features.encounter.application.GeneratedEncounterPlanBatchRepository;
+import features.encounter.application.GeneratedEncounterPlanImportService;
 import features.encounter.application.EncounterPlanGateway;
 import features.encounter.application.EncounterPublishedState;
 import features.encounter.application.EncounterSessionRuntimeAccess;
 import features.encounter.domain.generation.EncounterGenerator;
 import features.encounter.domain.plan.repository.EncounterPlanRepository;
+import features.encounter.domain.reference.EncounterCreatureCandidateCriteria;
 import features.encountertable.api.EncounterTableApi;
 import features.encountertable.api.EncounterTableCandidatesModel;
 import features.encountertable.api.EncounterTableCatalogModel;
@@ -124,8 +128,19 @@ public final class EncounterServiceAssembly {
                 new EncounterGenerator(facts));
         EncounterApplicationService application = new EncounterApplicationService(
                 runtime, plans, publishedState, java.util.Objects.requireNonNull(executionLane, "executionLane"));
+        GeneratedEncounterPlanImportApi generatedPlanImport = new GeneratedEncounterPlanImportService(
+                xp -> facts.loadCreatureCandidates(new EncounterCreatureCandidateCriteria(
+                        java.util.List.of(),
+                        java.util.List.of(),
+                        java.util.List.of(),
+                        xp,
+                        xp,
+                        1000)),
+                generatedPlanRepository(planRepository),
+                executionLane);
         return new Component(
                 application,
+                generatedPlanImport,
                 publishedState.stateModel(),
                 publishedState.builderInputsModel(),
                 publishedState.tuningPreviewModel(),
@@ -135,6 +150,7 @@ public final class EncounterServiceAssembly {
 
     public record Component(
             EncounterApi application,
+            GeneratedEncounterPlanImportApi generatedPlanImport,
             features.encounter.api.EncounterStateModel state,
             features.encounter.api.EncounterBuilderInputsModel builderInputs,
             features.encounter.api.EncounterTuningPreviewModel tuningPreview,
@@ -180,6 +196,35 @@ public final class EncounterServiceAssembly {
                     worldPlanner,
                     inspector);
         }
+    }
+
+    private static GeneratedEncounterPlanBatchRepository generatedPlanRepository(
+            EncounterPlanRepository planRepository
+    ) {
+        if (planRepository instanceof GeneratedEncounterPlanBatchRepository generatedRepository) {
+            return generatedRepository;
+        }
+        return new GeneratedEncounterPlanBatchRepository() {
+            @Override
+            public java.util.Optional<GeneratedEncounterPlanBatchRepository.StoredBatch>
+                    loadGeneratedBatch(features.encounter.api.GeneratedEncounterPlanSource source) {
+                throw unsupportedImport();
+            }
+
+            @Override
+            public GeneratedEncounterPlanBatchRepository.StoredBatch
+                    saveGeneratedBatch(
+                            features.encounter.api.GeneratedEncounterPlanSource source,
+                            String batchFingerprint,
+                            java.util.List<GeneratedEncounterPlanBatchRepository.ResolvedPlan> plans
+                    ) {
+                throw unsupportedImport();
+            }
+        };
+    }
+
+    private static IllegalStateException unsupportedImport() {
+        return new IllegalStateException("Encounter repository does not support generated-plan import.");
     }
 
 }

@@ -1443,6 +1443,43 @@
     -fx-border-color: -sm-border-subtle;
     -fx-border-radius: 8;
 }
+.session-generation-panel {
+    -fx-padding: 10;
+    -fx-spacing: 8;
+}
+.session-generation-inputs {
+    -fx-spacing: 6;
+    -fx-alignment: center-left;
+}
+.session-generation-summary {
+    -fx-padding: 6 8 6 8;
+    -fx-background-color: rgba(83, 169, 140, 0.12);
+    -fx-background-radius: 6;
+    -fx-text-fill: -sm-accent-hover;
+    -fx-font-weight: bold;
+}
+.session-generation-result-card {
+    -fx-padding: 6 8 6 8;
+}
+.session-generation-confirmation {
+    -fx-padding: 8;
+    -fx-background-color: rgba(216, 107, 79, 0.12);
+    -fx-background-radius: 6;
+    -fx-border-color: rgba(216, 107, 79, 0.45);
+    -fx-border-radius: 6;
+}
+.session-generation-audit {
+    -fx-padding: 2 4 2 4;
+}
+.session-generation-audit-pass {
+    -fx-text-fill: -sm-accent-hover;
+}
+.session-generation-audit-warning {
+    -fx-text-fill: #e5c06f;
+}
+.session-generation-audit-fail {
+    -fx-text-fill: #d86b4f;
+}
 .session-planner-encounter-card {
     -fx-background-color: rgba(255, 255, 255, 0.04);
     -fx-background-radius: 8;
