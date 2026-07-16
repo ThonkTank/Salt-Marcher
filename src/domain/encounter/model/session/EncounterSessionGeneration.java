@@ -31,7 +31,7 @@ final class EncounterSessionGeneration {
             EncounterSessionContext context,
             EncounterSessionRosterMutation roster
     ) {
-        context.refresh(access, true);
+        context.refresh(access);
         if (!context.hasActiveParty()) {
             context.setStatus(NO_PARTY_STATUS);
             return;

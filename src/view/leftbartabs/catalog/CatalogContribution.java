@@ -1,6 +1,11 @@
 package src.view.leftbartabs.catalog;
 
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Objects;
+import javafx.scene.Node;
+import javafx.scene.control.Label;
+import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
 import shell.api.ContributionKey;
 import shell.api.InspectorSink;
@@ -17,10 +22,16 @@ import src.domain.creatures.published.CreatureDetailModel;
 import src.domain.creatures.published.CreatureFilterOptionsModel;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
+import src.domain.encounter.published.EncounterStateModel;
 import src.domain.encounter.published.EncounterTuningPreviewModel;
+import src.domain.encounter.published.SavedEncounterPlanListModel;
 import src.domain.encountertable.EncounterTableApplicationService;
 import src.domain.encountertable.published.EncounterTableCatalogModel;
+import src.domain.items.ItemsCatalogApi;
+import src.domain.worldplanner.WorldPlannerApplicationService;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
+import src.view.leftbartabs.worldplanner.WorldPlannerBinder;
+import src.view.leftbartabs.worldplanner.WorldPlannerBinder.CatalogModule;
 import src.view.slotcontent.details.creature.CreatureDetailsView;
 
 public final class CatalogContribution implements ShellContribution {
@@ -35,6 +46,10 @@ public final class CatalogContribution implements ShellContribution {
     private final EncounterTableCatalogModel encounterTableCatalog;
     private final EncounterTuningPreviewModel tuningPreview;
     private final @Nullable WorldPlannerSnapshotModel worldPlanner;
+    private final @Nullable WorldPlannerApplicationService worldPlannerApplication;
+    private final @Nullable ItemsCatalogApi items;
+    private final @Nullable SavedEncounterPlanListModel savedPlans;
+    private final @Nullable EncounterStateModel encounterState;
     private final InspectorSink inspector;
 
     public CatalogContribution(
@@ -50,6 +65,27 @@ public final class CatalogContribution implements ShellContribution {
             @Nullable WorldPlannerSnapshotModel worldPlanner,
             InspectorSink inspector
     ) {
+        this(creatures, encounterTables, encounters, builderInputs, filterOptions, catalog, detail,
+                encounterTableCatalog, tuningPreview, worldPlanner, null, null, null, null, inspector);
+    }
+
+    public CatalogContribution(
+            CreaturesApplicationService creatures,
+            EncounterTableApplicationService encounterTables,
+            EncounterApplicationService encounters,
+            EncounterBuilderInputsModel builderInputs,
+            CreatureFilterOptionsModel filterOptions,
+            CreatureCatalogModel catalog,
+            CreatureDetailModel detail,
+            EncounterTableCatalogModel encounterTableCatalog,
+            EncounterTuningPreviewModel tuningPreview,
+            WorldPlannerSnapshotModel worldPlanner,
+            WorldPlannerApplicationService worldPlannerApplication,
+            ItemsCatalogApi items,
+            SavedEncounterPlanListModel savedPlans,
+            EncounterStateModel encounterState,
+            InspectorSink inspector
+    ) {
         this.creatures = Objects.requireNonNull(creatures, "creatures");
         this.encounterTables = Objects.requireNonNull(encounterTables, "encounterTables");
         this.encounters = Objects.requireNonNull(encounters, "encounters");
@@ -60,6 +96,10 @@ public final class CatalogContribution implements ShellContribution {
         this.encounterTableCatalog = Objects.requireNonNull(encounterTableCatalog, "encounterTableCatalog");
         this.tuningPreview = Objects.requireNonNull(tuningPreview, "tuningPreview");
         this.worldPlanner = worldPlanner;
+        this.worldPlannerApplication = worldPlannerApplication;
+        this.items = items;
+        this.savedPlans = savedPlans;
+        this.encounterState = encounterState;
         this.inspector = Objects.requireNonNull(inspector, "inspector");
     }
 
@@ -77,13 +117,13 @@ public final class CatalogContribution implements ShellContribution {
     @Override
     public ShellBinding bind() {
         CatalogViewModel viewModel = new CatalogViewModel(creatures, encounterTables, encounters);
-        CatalogControlsView controls = new CatalogControlsView();
-        CatalogMainView main = new CatalogMainView();
+        CatalogControlsView monsterControls = new CatalogControlsView();
+        CatalogMainView monsterMain = new CatalogMainView();
 
-        controls.bind(viewModel.controlsContentModel());
-        controls.onViewInputEvent(viewModel::consume);
-        main.bind(viewModel.mainContentModel());
-        main.onViewInputEvent(viewModel::consume);
+        monsterControls.bind(viewModel.controlsContentModel());
+        monsterControls.onViewInputEvent(viewModel::consume);
+        monsterMain.bind(viewModel.mainContentModel());
+        monsterMain.onViewInputEvent(viewModel::consume);
         viewModel.creatureDetailSelectionProperty().addListener((obs, before, after) -> {
             if (after == null || after.longValue() <= 0L) {
                 return;
@@ -110,7 +150,88 @@ public final class CatalogContribution implements ShellContribution {
             viewModel.controlsContentModel().applyWorldPlannerSnapshot(worldPlanner.current());
         }
         viewModel.applyEncounterBuilderInputs(builderInputs.current());
-        return ShellBinding.cockpit("Encounter-Planer", controls, main);
+
+        ItemsCatalogModule itemModule = items == null ? null : new ItemsCatalogModule(items, inspector);
+        SavedEncounterCatalogModule savedModule = savedPlans == null || encounterState == null
+                ? null
+                : new SavedEncounterCatalogModule(encounters, savedPlans, encounterState);
+        EncounterTableCatalogModule tableModule = new EncounterTableCatalogModule(
+                encounterTables, encounterTableCatalog, encounters, builderInputs);
+        CatalogModule worldModule = worldPlannerApplication == null || worldPlanner == null
+                ? null
+                : new WorldPlannerBinder(
+                        worldPlannerApplication,
+                        encounters,
+                        worldPlanner,
+                        catalog,
+                        encounterTableCatalog,
+                        inspector).bindCatalog();
+        Node unavailableControls = unavailable("In diesem Lauf nicht konfiguriert.");
+        Node unavailableMain = unavailable("Keine Katalogdaten verfügbar.");
+        Map<CatalogSection, CatalogWorkspaceView.Content> contents = new EnumMap<>(CatalogSection.class);
+        contents.put(CatalogSection.MONSTERS, new CatalogWorkspaceView.Content(monsterControls, monsterMain));
+        contents.put(CatalogSection.ITEMS, content(itemModule, unavailableControls, unavailableMain));
+        contents.put(CatalogSection.ENCOUNTERS, content(savedModule, unavailableControls, unavailableMain));
+        contents.put(CatalogSection.NPCS, worldContent(worldModule, unavailableControls, unavailableMain));
+        contents.put(CatalogSection.FACTIONS, worldContent(worldModule, unavailableControls, unavailableMain));
+        contents.put(CatalogSection.LOCATIONS, worldContent(worldModule, unavailableControls, unavailableMain));
+        contents.put(CatalogSection.ENCOUNTER_TABLES,
+                new CatalogWorkspaceView.Content(tableModule.controls(), tableModule.main()));
+        CatalogModule boundWorldModule = worldModule;
+        CatalogWorkspaceView workspace = new CatalogWorkspaceView(contents, section -> {
+            if (section == CatalogSection.ITEMS && itemModule != null) {
+                itemModule.activate();
+            } else if (boundWorldModule != null) {
+                activateWorldSection(boundWorldModule, section);
+            }
+        });
+        return ShellBinding.cockpit("Katalog", workspace.controls(), workspace.main());
+    }
+
+    private static CatalogWorkspaceView.Content content(
+            @Nullable ItemsCatalogModule module,
+            Node unavailableControls,
+            Node unavailableMain
+    ) {
+        return module == null
+                ? new CatalogWorkspaceView.Content(unavailableControls, unavailableMain)
+                : new CatalogWorkspaceView.Content(module.controls(), module.main());
+    }
+
+    private static CatalogWorkspaceView.Content content(
+            @Nullable SavedEncounterCatalogModule module,
+            Node unavailableControls,
+            Node unavailableMain
+    ) {
+        return module == null
+                ? new CatalogWorkspaceView.Content(unavailableControls, unavailableMain)
+                : new CatalogWorkspaceView.Content(module.controls(), module.main());
+    }
+
+    private static CatalogWorkspaceView.Content worldContent(
+            @Nullable CatalogModule module,
+            Node unavailableControls,
+            Node unavailableMain
+    ) {
+        return module == null
+                ? new CatalogWorkspaceView.Content(unavailableControls, unavailableMain)
+                : new CatalogWorkspaceView.Content(module.controls(), module.main());
+    }
+
+    private static void activateWorldSection(CatalogModule module, CatalogSection section) {
+        if (section == CatalogSection.NPCS) {
+            module.activateNpcs();
+        } else if (section == CatalogSection.FACTIONS) {
+            module.activateFactions();
+        } else if (section == CatalogSection.LOCATIONS) {
+            module.activateLocations();
+        }
+    }
+
+    private static Node unavailable(String text) {
+        Label label = new Label(text);
+        label.getStyleClass().add("text-muted");
+        return new VBox(label);
     }
 
 }

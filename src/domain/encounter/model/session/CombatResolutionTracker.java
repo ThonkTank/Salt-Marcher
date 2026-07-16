@@ -54,7 +54,7 @@ final class CombatResolutionTracker {
                 outcome.success() ? XP_AWARDED_STATUS : XP_AWARD_FAILED_STATUS,
                 outcome.success());
         if (outcome.success()) {
-            context.refresh(access, false);
+            context.refresh(access);
         }
     }
 

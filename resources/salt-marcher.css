@@ -252,6 +252,41 @@
     -fx-spacing: 8;
     -fx-padding: 8 0 0 0;
 }
+.catalog-workspace-controls {
+    -fx-padding: 10 12 12 12;
+    -fx-background-color: -sm-bg-panel;
+}
+.catalog-workspace-main {
+    -fx-background-color: -sm-bg-darkest;
+}
+.catalog-content-tabs {
+    -fx-padding: 0 0 8 0;
+    -fx-border-color: transparent transparent -sm-border-subtle transparent;
+    -fx-border-width: 0 0 1 0;
+}
+.catalog-content-tab {
+    -fx-padding: 5 9 5 9;
+    -fx-background-color: transparent;
+    -fx-border-color: -sm-border-subtle;
+    -fx-border-radius: 4;
+}
+.catalog-content-tab:selected {
+    -fx-background-color: rgba(30, 127, 212, 0.20);
+    -fx-border-color: -sm-accent-hover;
+    -fx-text-fill: -sm-text-primary;
+}
+.catalog-section-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: -sm-text-secondary;
+}
+.catalog-item-filters {
+    -fx-alignment: center-left;
+}
+.item-detail,
+.world-planner-inspector {
+    -fx-spacing: 8;
+    -fx-padding: 12;
+}
 .party-header {
     -fx-background-color: -sm-bg-elevated;
     -fx-padding: 8 12 8 12;
@@ -1482,31 +1517,13 @@
 .session-planner-scene-encounter-summary {
     -fx-padding: 2 0 2 0;
 }
-.world-planner-controls,
 .world-planner-main,
 .world-planner-state {
     -fx-spacing: 8;
     -fx-padding: 12;
 }
-.world-planner-controls {
-    -fx-min-width: 220;
-    -fx-alignment: center-left;
-}
-.world-planner-title,
 .world-planner-section-title {
     -fx-font-weight: bold;
-}
-.world-planner-module-tabs {
-    -fx-padding: 0 0 0 6;
-    -fx-spacing: 6;
-}
-.world-planner-module-tab,
-.world-planner-refresh {
-    -fx-alignment: center;
-    -fx-padding: 5 10 5 10;
-}
-.world-planner-module-tab {
-    -fx-min-width: 84;
 }
 .search-filter-controls {
     -fx-spacing: 7;

@@ -17,13 +17,10 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.ToggleButton;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ShellBinding;
-import shell.api.ShellSlot;
 import src.data.encounter.repository.SqliteEncounterPlanRepository;
 import src.data.party.repository.SqlitePartyRosterRepository;
 import src.data.worldplanner.repository.SqliteWorldPlannerRepository;
@@ -69,34 +66,30 @@ public final class WorldPlannerUiTest {
     private static void runTest() {
         WorldPlannerUiServices services = services();
         CapturingInspectorSink inspector = new CapturingInspectorSink();
-        ShellBinding binding = new WorldPlannerContribution(
+        WorldPlannerBinder.CatalogModule module = new WorldPlannerBinder(
                 services.worldApplication(),
                 services.encounter().application(),
                 services.world().snapshotModel(),
                 services.creatures().catalog(),
                 services.tables().catalog(),
-                inspector).bind();
-        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
-        Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
-        Parent state = slot(binding, ShellSlot.COCKPIT_STATE, Parent.class);
+                inspector).bindCatalog();
+        module.activateNpcs();
+        Parent controls = (Parent) module.controls();
+        Parent main = (Parent) module.main();
+        Parent editor = inspectorContent(inspector);
         WorldPlannerSnapshotModel model = services.world().snapshotModel();
         EncounterStateModel encounterState = services.encounter().state();
 
-        assertNoButton(controls, "Refresh", "Refresh button removed from World Planner controls");
-        assertNoLabelContains(controls, "0 NPCs", "NPC counter label removed from World Planner controls");
-        assertNoLabelContains(controls, "0 Fraktionen", "Faction counter label removed from World Planner controls");
-        assertNoLabelContains(controls, "0 Locations", "Location counter label removed from World Planner controls");
         assertVisibleLabel(main, "NPCs", "NPC module visible by default");
         assertTrue(textFields(main, "NPC Name").isEmpty(), "Main panel no longer hosts NPC editor fields");
-        textField(state, "NPC Name").setText("Captain Vale");
-        comboBox(state, "Statblock waehlen").getSelectionModel().selectFirst();
-        textArea(state, 0).setText("scarred");
-        textArea(state, 1).setText("watchful");
-        textArea(state, 2).setText("former scout");
-        textArea(state, 3).setText("knows the pass");
-        button(state, "NPC anlegen").fire();
+        textField(editor, "NPC Name").setText("Captain Vale");
+        comboBox(editor, "Statblock waehlen").getSelectionModel().selectFirst();
+        textArea(editor, 0).setText("scarred");
+        textArea(editor, 1).setText("watchful");
+        textArea(editor, 2).setText("former scout");
+        textArea(editor, 3).setText("knows the pass");
+        button(editor, "NPC anlegen").fire();
         assertSnapshot(model.current(), 1, 0, 0, "npc created through UI route");
-        assertLabelContains(state, "Captain Vale", "NPC state renders selected NPC status");
         assertInspectorContains(inspector, "scarred", "NPC appearance renders in inspector");
         assertInspectorContains(inspector, "watchful", "NPC behavior renders in inspector");
         assertInspectorContains(inspector, "former scout", "NPC history renders in inspector");
@@ -111,14 +104,18 @@ public final class WorldPlannerUiTest {
         assertLabelContains(controls, "Status: Aktiv", "Active NPC filter chip is rendered");
         buttonByAccessible(controls, "Filter entfernen: Status: Aktiv").fire();
 
-        textArea(state, 3).setText("owes the party");
-        button(state, "Notizen speichern").fire();
+        editor = inspectorContent(inspector);
+        textArea(editor, 3).setText("owes the party");
+        button(editor, "Notizen speichern").fire();
         assertEquals("owes the party", model.current().npcs().get(0).generalNotes(), "NPC notes update through UI");
-        button(state, "Besiegt").fire();
+        editor = inspectorContent(inspector);
+        button(editor, "Besiegt").fire();
         assertEquals(WorldNpcLifecycleStatus.DEFEATED, model.current().npcs().get(0).status(), "NPC defeated through UI");
-        button(state, "Aktiv").fire();
+        editor = inspectorContent(inspector);
+        button(editor, "Aktiv").fire();
         assertEquals(WorldNpcLifecycleStatus.ACTIVE, model.current().npcs().get(0).status(), "NPC reactivated through UI");
-        button(state, "Zum Encounter").fire();
+        editor = inspectorContent(inspector);
+        button(editor, "Zum Encounter").fire();
         EncounterStateSnapshot.RosterCard rosterCard =
                 encounterState.current().builderPane().rosterCards().getFirst();
         assertEquals(101L, rosterCard.creatureId(), "Encounter receives selected NPC statblock through UI");
@@ -127,62 +124,60 @@ public final class WorldPlannerUiTest {
                 rosterCard.worldNpcId(),
                 "Encounter receives selected World NPC id through UI");
 
-        toggleButton(controls, "Fraktionen").fire();
-        assertVisibleLabel(main, "Fraktionen", "Faction module visible after controls tab switch");
-        assertFalse(visibleLabel(main, "NPCs"), "NPC module hidden after faction tab switch");
-        assertInspectorCleared(inspector, "empty faction module clears stale NPC inspector detail");
-        textField(state, "Fraktionsname").setText("Ash Guard");
-        comboBox(state, "Encounter Table waehlen").getSelectionModel().selectFirst();
-        button(state, "Fraktion anlegen").fire();
+        module.activateFactions();
+        editor = inspectorContent(inspector);
+        assertVisibleLabel(main, "Fraktionen", "Faction module visible through Catalog activation");
+        assertFalse(visibleLabel(main, "NPCs"), "NPC module hidden after faction activation");
+        textField(editor, "Fraktionsname").setText("Ash Guard");
+        comboBox(editor, "Encounter Table waehlen").getSelectionModel().selectFirst();
+        button(editor, "Fraktion anlegen").fire();
         textField(controls, "Fraktionen suchen").setText("Ash");
         assertTrue(listView(main, 1).getItems().stream().anyMatch(item -> item.contains("Ash Guard")),
                 "Faction search keeps matching row in main list");
         textField(controls, "Fraktionen suchen").setText("");
-        comboBox(state, "NPC waehlen").getSelectionModel().selectFirst();
-        button(state, "NPC hinzufuegen").fire();
-        comboBox(state, "Bestand-Statblock waehlen").getSelectionModel().selectFirst();
-        checkBox(state, "Finite").setSelected(true);
-        textField(state, "Anzahl").setText("3");
-        button(state, "Bestand setzen").fire();
+        editor = inspectorContent(inspector);
+        comboBox(editor, "NPC waehlen").getSelectionModel().selectFirst();
+        button(editor, "NPC hinzufuegen").fire();
+        editor = inspectorContent(inspector);
+        comboBox(editor, "Bestand-Statblock waehlen").getSelectionModel().selectFirst();
+        checkBox(editor, "Finite").setSelected(true);
+        textField(editor, "Anzahl").setText("3");
+        button(editor, "Bestand setzen").fire();
         assertSnapshot(model.current(), 1, 1, 0, "faction created through UI route");
         assertEquals(1, model.current().factions().get(0).npcIds().size(), "faction NPC linked through UI");
         assertEquals(3, model.current().factions().get(0).inventoryLimits().get(0).quantity(),
                 "faction finite stock set through UI");
         assertInspectorContains(inspector, "#101 x3", "Faction inventory limit renders in inspector");
 
-        toggleButton(controls, "Locations").fire();
-        assertVisibleLabel(main, "Locations", "Location module visible after controls tab switch");
-        textField(state, "Location Name").setText("Old Gate");
-        button(state, "Location anlegen").fire();
+        module.activateLocations();
+        editor = inspectorContent(inspector);
+        assertVisibleLabel(main, "Locations", "Location module visible through Catalog activation");
+        textField(editor, "Location Name").setText("Old Gate");
+        button(editor, "Location anlegen").fire();
         textField(controls, "Locations suchen").setText("Old");
         assertTrue(listView(main, 2).getItems().stream().anyMatch(item -> item.contains("Old Gate")),
                 "Location search keeps matching row in main list");
         textField(controls, "Locations suchen").setText("");
-        comboBox(state, "Fraktion waehlen").getSelectionModel().selectFirst();
-        button(state, "Fraktion linken").fire();
-        comboBox(state, "Location-Tabelle waehlen").getSelectionModel().selectFirst();
-        button(state, "Tabelle linken").fire();
+        editor = inspectorContent(inspector);
+        comboBox(editor, "Fraktion waehlen").getSelectionModel().selectFirst();
+        button(editor, "Fraktion linken").fire();
+        editor = inspectorContent(inspector);
+        comboBox(editor, "Location-Tabelle waehlen").getSelectionModel().selectFirst();
+        button(editor, "Tabelle linken").fire();
         assertSnapshot(model.current(), 1, 1, 1, "location created through UI route");
         assertEquals(1, model.current().locations().get(0).factionIds().size(), "location faction linked through UI");
         assertEquals(201L, model.current().locations().get(0).encounterTableIds().get(0),
                 "location encounter table linked through UI");
         assertInspectorContains(inspector, "Old Gate", "Location renders in inspector");
 
-        toggleButton(controls, "Encounter Sources").fire();
-        assertVisibleLabel(main, "Encounter Sources", "Encounter source module visible after controls tab switch");
-        textField(controls, "Quellen suchen").setText("Ash");
-        assertTrue(listView(main, 3).getItems().stream().anyMatch(item -> item.contains("Ash Guard")),
-                "Source search keeps matching source row in main list");
-        textField(controls, "Quellen suchen").setText("");
-        assertLabelContains(state, "Factions 1", "Source module state summarizes configured sources");
-
-        toggleButton(controls, "NPCs").fire();
+        module.activateNpcs();
         assertTrue(listView(main, 0).getItems().stream().anyMatch(item -> item.contains("Captain Vale")),
                 "NPC list readback renders created NPC");
         assertTrue(listView(main, 1).getItems().stream().anyMatch(item -> item.contains("Ash Guard")),
                 "Faction list readback renders created faction");
         assertTrue(listView(main, 2).getItems().stream().anyMatch(item -> item.contains("Old Gate")),
                 "Location list readback renders created location");
+        assertFalse(visibleLabel(main, "Encounter Sources"), "Encounter Sources is no longer a module");
     }
 
     private static WorldPlannerUiServices services() {
@@ -356,14 +351,6 @@ public final class WorldPlannerUiTest {
         }
     }
 
-    private static <T extends Node> T slot(ShellBinding binding, ShellSlot slot, Class<T> type) {
-        Node node = binding.slotContent().get(slot);
-        if (!type.isInstance(node)) {
-            throw new AssertionError("Expected " + slot + " to contain " + type.getSimpleName());
-        }
-        return type.cast(node);
-    }
-
     private static TextField textField(Parent parent, String promptText) {
         return textField(parent, promptText, 0);
     }
@@ -424,15 +411,6 @@ public final class WorldPlannerUiTest {
                 .filter(button -> accessibleText.equals(button.getAccessibleText()))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Button not found: " + accessibleText));
-    }
-
-    private static ToggleButton toggleButton(Parent parent, String text) {
-        return descendants(parent).stream()
-                .filter(ToggleButton.class::isInstance)
-                .map(ToggleButton.class::cast)
-                .filter(button -> text.equals(button.getText()))
-                .findFirst()
-                .orElseThrow(() -> new AssertionError("ToggleButton not found: " + text));
     }
 
     private static CheckBox checkBox(Parent parent, String text) {
@@ -504,6 +482,14 @@ public final class WorldPlannerUiTest {
             throw new AssertionError(message + ": inspector content is not a Parent");
         }
         assertLabelContains(parent, text, message);
+    }
+
+    private static Parent inspectorContent(CapturingInspectorSink inspector) {
+        InspectorEntrySpec entry = inspector.lastEntry();
+        if (entry == null || !(entry.contentSupplier().get() instanceof Parent parent)) {
+            throw new AssertionError("Inspector editor content not available.");
+        }
+        return parent;
     }
 
     private static void assertInspectorCleared(CapturingInspectorSink inspector, String message) {

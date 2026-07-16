@@ -1,6 +1,6 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-07-16
 Source of Truth: Encounter runtime state-pane dialog composition,
 interactions, and visible states.
 
@@ -16,15 +16,15 @@ The dialog visually mirrors the original Salt-Marcher encounter state-pane
 workflow in one local state-tab surface:
 
 - encounter creation
-- saved encounter open/save
+- saved encounter save
 - initiative entry
 - combat tracking
 - combat result resolution
 - return to encounter creation
 
-The creature catalog browser and encounter filter/tuning controls are separate
-left-bar tab content. They publish add-creature, filter, difficulty intent, and
-generator tuning signals to this dialog through runtime session state.
+The shared Catalog left-bar tab publishes add-creature, filter, difficulty,
+generator tuning, encounter-table source, and saved-plan-open signals to this
+dialog through runtime session state.
 
 ## Visible Surfaces
 
@@ -61,9 +61,10 @@ the fixed footer while oversized page bodies scroll.
 - Previous and next controls sit in the generator action row and switch among
   the currently generated alternatives.
 - `Speichern` stores the current roster as a saved encounter plan.
-- `Öffnen` shows saved encounter plans from the title row. Selecting one
-  replaces the builder roster, returns to Creation mode, and clears generated
-  alternatives, initiative, combat, and result state.
+- Opening a saved plan from Catalog replaces the builder roster, returns to
+  Creation mode, and clears generated alternatives, initiative, combat, and
+  result state. Catalog requires explicit confirmation before discarding
+  unsaved roster changes.
 - `Verlauf löschen` in the title row clears only transient generator history
   and
   generated labels. The current roster stays in Creation mode as a manual
@@ -99,8 +100,8 @@ the fixed footer while oversized page bodies scroll.
   creature cards are visible.
 - Auto-resolved generation: the generated roster shows the resolved difficulty
   through the difficulty label and adjusted XP summary.
-- Saved plan available: the title-row open action is enabled and shows the
-  saved plan name, generated label, and creature count.
+- Saved plan available: Catalog shows the saved plan name, generated label,
+  creature count, and open action.
 - Encounter-table loot conflict: the Catalog controls show `Loot-Konflikt`;
   combat start remains available because loot assignment is not part of this
   runtime surface.
@@ -132,6 +133,8 @@ the fixed footer while oversized page bodies scroll.
   tuning, and encounter-table selections visible to the runtime session
 - opening a saved encounter plan replaces the current creation roster and
   clears generated-alternative, initiative, combat, and result runtime state
+- opening from Catalog requires explicit confirmation when unsaved creation
+  roster changes would be discarded
 - the title-row `Verlauf löschen` action removes transient generation history
   without
   deleting the current roster

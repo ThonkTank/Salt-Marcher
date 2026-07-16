@@ -17,14 +17,12 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ShellBinding;
-import shell.api.ShellSlot;
 import src.data.worldplanner.repository.SqliteWorldPlannerRepository;
 import src.domain.worldplanner.WorldPlannerApplicationService;
 import src.domain.worldplanner.WorldPlannerServiceAssembly;
 import src.domain.worldplanner.model.world.port.WorldPlannerReferencePort;
 import src.domain.worldplanner.published.CreateWorldNpcCommand;
-import src.view.leftbartabs.worldplanner.WorldPlannerContribution;
+import src.view.leftbartabs.worldplanner.WorldPlannerBinder;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -152,15 +150,16 @@ public final class SearchFilterControlsTest {
     private static void assertWorldPlannerProductionRoute() {
         WorldPlannerServiceAssembly services = worldPlannerServices();
         WorldPlannerApplicationService application = services.createApplicationService();
-        ShellBinding binding = new WorldPlannerContribution(
+        WorldPlannerBinder.CatalogModule module = new WorldPlannerBinder(
                 application,
                 null,
                 services.snapshotModel(),
                 null,
                 null,
-                EmptyInspectorSink.INSTANCE).bind();
-        Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
-        Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
+                EmptyInspectorSink.INSTANCE).bindCatalog();
+        module.activateNpcs();
+        Parent controls = (Parent) module.controls();
+        Parent main = (Parent) module.main();
         Stage stage = new Stage();
         stage.setScene(new Scene(new javafx.scene.layout.HBox(controls, main), 1_120.0, 620.0));
         stage.show();
@@ -179,11 +178,11 @@ public final class SearchFilterControlsTest {
         search.setText("Captain");
         layoutOpenWindows();
         assertTrue(listView(main).getItems().stream().anyMatch(item -> item.toString().contains("Captain Vale")),
-                "WorldPlannerContribution production route keeps matching row through SearchFilter controls");
+                "Catalog World Planner route keeps matching row through SearchFilter controls");
         search.setText("missing");
         layoutOpenWindows();
         assertTrue(listView(main).getItems().isEmpty(),
-                "WorldPlannerContribution production route filters nonmatching rows through SearchFilter controls");
+                "Catalog World Planner route filters nonmatching rows through SearchFilter controls");
         stage.close();
     }
 
@@ -256,14 +255,6 @@ public final class SearchFilterControlsTest {
                 .map(type::cast)
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("Descendant not found: " + type.getSimpleName()));
-    }
-
-    private static <T extends Node> T slot(ShellBinding binding, ShellSlot slot, Class<T> type) {
-        Node node = binding.slotContent().get(slot);
-        if (type.isInstance(node)) {
-            return type.cast(node);
-        }
-        throw new AssertionError("Shell slot not found: " + slot);
     }
 
     @SuppressWarnings("unchecked")

@@ -11,8 +11,6 @@ import javafx.beans.property.ReadOnlyObjectProperty;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
-import javafx.scene.control.ContextMenu;
-import javafx.scene.control.CustomMenuItem;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tooltip;
@@ -50,7 +48,6 @@ public final class EncounterBuilderStateView extends VBox {
     private final Button previousAlternativeButton = new BuilderStyledButton("<", STYLE_COMPACT, STYLE_NEUTRAL_ACTION);
     private final Button nextAlternativeButton = new BuilderStyledButton(">", STYLE_COMPACT, STYLE_NEUTRAL_ACTION);
     private final Button saveEncounterButton = new BuilderStyledButton("Speichern", STYLE_COMPACT, STYLE_NEUTRAL_ACTION);
-    private final Button openEncounterButton = new BuilderStyledButton("Oeffnen", STYLE_COMPACT, STYLE_NEUTRAL_ACTION);
     private final Button clearHistoryButton = new BuilderStyledButton("Clear", STYLE_COMPACT, STYLE_NEUTRAL_ACTION);
     private final Button startCombatButton = new BuilderStyledButton("_Kampf starten", STYLE_ACCENT);
     private final VBox body;
@@ -59,7 +56,6 @@ public final class EncounterBuilderStateView extends VBox {
     private Runnable generateHandler = () -> { };
     private IntConsumer shiftAlternativeHandler = ignored -> { };
     private Runnable saveCurrentPlanHandler = () -> { };
-    private LongConsumer openSavedPlanHandler = ignored -> { };
     private RosterCountHandler changeRosterCountHandler = (creatureId, delta) -> { };
     private LongConsumer removeCreatureHandler = ignored -> { };
     private LongConsumer undoRemoveHandler = ignored -> { };
@@ -84,10 +80,6 @@ public final class EncounterBuilderStateView extends VBox {
 
     public void onSaveCurrentPlan(Runnable handler) {
         saveCurrentPlanHandler = handler == null ? () -> { } : handler;
-    }
-
-    public void onOpenSavedPlan(LongConsumer handler) {
-        openSavedPlanHandler = handler == null ? ignored -> { } : handler;
     }
 
     public void onChangeRosterCount(RosterCountHandler handler) {
@@ -127,10 +119,6 @@ public final class EncounterBuilderStateView extends VBox {
                 panel == null ? EncounterStateViewModel.BuilderPanel.empty() : panel;
         ((EncounterBuilderBodyPane) body).showPanel(safePanel, new BuilderActionSink());
         updateActionButtons(safePanel);
-        openEncounterButton.setOnAction(event -> showSavedPlansPopup(
-                openEncounterButton,
-                safePanel.savedPlans(),
-                openSavedPlanHandler));
     }
 
     private VBox buildPane() {
@@ -147,9 +135,7 @@ public final class EncounterBuilderStateView extends VBox {
         nextAlternativeButton.setAccessibleText("Naechste Generator-Alternative");
         clearHistoryButton.setAccessibleText("Generator-Historie leeren");
         saveEncounterButton.setAccessibleText("Aktuelles Encounter-Roster speichern");
-        openEncounterButton.setAccessibleText("Gespeichertes Encounter oeffnen");
         saveEncounterButton.setOnAction(event -> saveCurrentPlanHandler.run());
-        openEncounterButton.setTooltip(new Tooltip("Gespeichertes Encounter oeffnen"));
         clearHistoryButton.setTooltip(new Tooltip("Generator-Historie leeren"));
         clearHistoryButton.setOnAction(event -> clearGenerationHistoryHandler.run());
 
@@ -160,7 +146,6 @@ public final class EncounterBuilderStateView extends VBox {
                 new BuilderStyledLabel("Encounter", "title"),
                 titleSpacer,
                 clearHistoryButton,
-                openEncounterButton,
                 saveEncounterButton);
         titleRow.setAlignment(Pos.CENTER_LEFT);
         return titleRow;
@@ -189,7 +174,6 @@ public final class EncounterBuilderStateView extends VBox {
         previousAlternativeButton.setDisable(!panel.canPreviousAlternative());
         nextAlternativeButton.setDisable(!panel.canNextAlternative());
         saveEncounterButton.setDisable(!panel.canSavePlan());
-        openEncounterButton.setDisable(panel.savedPlans().isEmpty());
         clearHistoryButton.setDisable(!panel.canClearGenerationHistory());
         startCombatButton.setDisable(!panel.canStartCombat());
     }
@@ -458,74 +442,6 @@ public final class EncounterBuilderStateView extends VBox {
         }
     }
 
-    private static void showSavedPlansPopup(
-            Node anchor,
-            List<EncounterStateViewModel.SavedPlanView> savedPlans,
-            LongConsumer openSavedPlan
-    ) {
-        if (anchor == null) {
-            return;
-        }
-        EncounterSavedPlansPopupContent content = new EncounterSavedPlansPopupContent();
-        ContextMenu popup = contextMenu(content);
-        Node focusTarget = content.showPlans(savedPlans, plan -> {
-            popup.hide();
-            openSavedPlan.accept(plan.id());
-        });
-        popup.show(anchor, javafx.geometry.Side.BOTTOM, 0.0, 8.0);
-        if (focusTarget != null) {
-            javafx.application.Platform.runLater(focusTarget::requestFocus);
-        }
-    }
-
-    private static final class EncounterSavedPlansPopupContent extends VBox {
-
-        EncounterSavedPlansPopupContent() {
-            super(4);
-            getStyleClass().add("anchored-popup");
-        }
-
-        private void showEmpty() {
-            getChildren().setAll(new BuilderStyledLabel(
-                    "Keine gespeicherten Encounter.",
-                    STYLE_TEXT_SECONDARY));
-        }
-
-        Node showPlans(
-                List<EncounterStateViewModel.SavedPlanView> plans,
-                Consumer<EncounterStateViewModel.SavedPlanView> selectionHandler
-        ) {
-            if (plans.isEmpty()) {
-                showEmpty();
-                return null;
-            }
-            List<Node> buttons = new ArrayList<>();
-            for (EncounterStateViewModel.SavedPlanView plan : plans) {
-                buttons.add(new EncounterSavedPlanOptionButton(plan, () -> selectionHandler.accept(plan)));
-            }
-            getChildren().setAll(buttons);
-            return buttons.isEmpty() ? null : buttons.get(0);
-        }
-    }
-
-    private static final class EncounterSavedPlanOptionButton extends BuilderStyledButton {
-
-        EncounterSavedPlanOptionButton(
-                EncounterStateViewModel.SavedPlanView plan,
-                Runnable onSelect
-        ) {
-            super(labelFor(plan), "creature-link");
-            setMaxWidth(Double.MAX_VALUE);
-            setOnAction(event -> onSelect.run());
-        }
-
-        private static String labelFor(EncounterStateViewModel.SavedPlanView plan) {
-            return plan.summaryText().isBlank()
-                    ? plan.name()
-                    : plan.name() + " - " + plan.summaryText();
-        }
-    }
-
     private static final class EncounterDifficultyBadgeLabel extends BuilderStyledLabel {
 
         EncounterDifficultyBadgeLabel() {
@@ -629,13 +545,6 @@ public final class EncounterBuilderStateView extends VBox {
             super(spacing, nodes);
             getStyleClass().add(styleClass);
         }
-    }
-
-    private static ContextMenu contextMenu(Node content) {
-        CustomMenuItem menuItem = new CustomMenuItem(content, false);
-        ContextMenu menu = new ContextMenu(menuItem);
-        menu.setAutoHide(true);
-        return menu;
     }
 
     private static final class EncounterBuilderMeterBar extends HBox {

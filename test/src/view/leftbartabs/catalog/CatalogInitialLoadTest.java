@@ -7,8 +7,11 @@ import java.sql.DriverManager;
 import java.sql.Statement;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.Parent;
@@ -18,6 +21,9 @@ import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableView;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
 import javafx.stage.Window;
@@ -27,6 +33,13 @@ import shell.api.ShellBinding;
 import shell.api.ShellSlot;
 import src.data.creatures.model.CreaturesPersistenceSchema;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
+import src.domain.encounter.published.EncounterStateModel;
+import src.domain.encounter.published.EncounterStateSnapshot;
+import src.domain.encounter.published.SavedEncounterPlanListModel;
+import src.domain.encounter.published.SavedEncounterPlanListResult;
+import src.domain.encounter.published.SavedEncounterPlanStatus;
+import src.domain.encounter.published.SavedEncounterPlanSummary;
+import src.domain.items.ItemsCatalogApi;
 import src.domain.worldplanner.published.WorldFactionSummary;
 import src.domain.worldplanner.published.WorldLocationSummary;
 import src.domain.worldplanner.published.WorldPlannerReadStatus;
@@ -76,19 +89,95 @@ public final class CatalogInitialLoadTest {
         });
     }
 
+    @Test
+    void CATALOG_CONSOLIDATION_001() throws Exception {
+        seedCreatureCatalog();
+        runOnFxThread(() -> {
+            CatalogFixture fixture = setupCatalog();
+            List<String> tabs = descendants(fixture.controls()).stream()
+                    .filter(ToggleButton.class::isInstance)
+                    .map(ToggleButton.class::cast)
+                    .filter(button -> button.getStyleClass().contains("catalog-content-tab"))
+                    .map(ToggleButton::getText)
+                    .toList();
+            assertTrue(tabs.equals(List.of(
+                            "Monster", "Items", "Encounter", "NPCs", "Fraktionen", "Orte", "Encounter-Tabellen")),
+                    "Catalog content order changed: " + tabs);
+            assertTrue("Katalog".equals(fixture.binding().title()), "Catalog shell title is Katalog");
+            assertTrue(!fixture.binding().slotContent().containsKey(ShellSlot.COCKPIT_STATE),
+                    "Catalog must leave the global Encounter state slot unclaimed");
+        });
+    }
+
+    @Test
+    void CATALOG_CONSOLIDATION_002() throws Exception {
+        runOnFxThread(() -> {
+            AtomicLong openedPlan = new AtomicLong();
+            AtomicBoolean allowReplacement = new AtomicBoolean();
+            SavedEncounterCatalogModule module = new SavedEncounterCatalogModule(
+                    openedPlan::set,
+                    savedPlans(),
+                    unsavedEncounterState(),
+                    allowReplacement::get);
+            Parent main = (Parent) module.main();
+            @SuppressWarnings("unchecked")
+            javafx.scene.control.ListView<SavedEncounterPlanSummary> list =
+                    descendant(main, javafx.scene.control.ListView.class);
+            list.getSelectionModel().selectFirst();
+            Button open = button(main, "Im Encounter öffnen");
+
+            open.fire();
+            assertTrue(openedPlan.get() == 0L, "Unsaved roster replacement must be cancellable");
+            allowReplacement.set(true);
+            open.fire();
+            assertTrue(openedPlan.get() == 41L, "Confirmed Catalog open forwards the selected saved plan id");
+        });
+    }
+
+    @Test
+    void CATALOG_ITEMS_001() throws Exception {
+        runOnFxThread(() -> {
+            CapturingInspectorSink inspector = new CapturingInspectorSink();
+            ItemsCatalogModule module = new ItemsCatalogModule(new FixtureItemsCatalog(), inspector);
+            Parent main = (Parent) module.main();
+            @SuppressWarnings("unchecked")
+            javafx.scene.control.ListView<ItemsCatalogApi.ItemRow> list =
+                    descendant(main, javafx.scene.control.ListView.class);
+            assertTrue(list.getItems().size() == 1, "Items list renders the local read-only result");
+            list.getSelectionModel().selectFirst();
+            list.fireEvent(new KeyEvent(
+                    KeyEvent.KEY_PRESSED, "", "", KeyCode.ENTER,
+                    false, false, false, false));
+            assertTrue(inspector.lastEntry != null, "Item selection opens Inspector detail");
+            Parent detail = (Parent) inspector.lastEntry.contentSupplier().get();
+            assertTrue(descendants(detail).stream()
+                            .filter(Label.class::isInstance)
+                            .map(Label.class::cast)
+                            .anyMatch(label -> label.getText().contains("2014 SRD")),
+                    "Item Inspector retains public-source attribution");
+            boolean mutationAction = descendants(module.controls()).stream()
+                    .filter(Button.class::isInstance)
+                    .map(Button.class::cast)
+                    .map(Button::getText)
+                    .anyMatch(text -> List.of("Anlegen", "Bearbeiten", "Löschen", "Loot", "Zuweisen").contains(text));
+            assertTrue(!mutationAction, "Items Catalog exposes no mutation or loot action");
+        });
+    }
+
     private static CatalogFixture setupCatalog() {
         CatalogTestRuntime runtime = services();
         ShellBinding binding = runtime.contribution(EmptyInspectorSink.INSTANCE).bind();
-        CatalogControlsView controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsView.class);
-        CatalogMainView main = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogMainView.class);
+        Parent controlsRoot = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
+        Parent mainRoot = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
+        CatalogMainView main = descendant(mainRoot, CatalogMainView.class);
 
         Stage stage = new Stage();
-        HBox root = new HBox(controls, main);
+        HBox root = new HBox(controlsRoot, mainRoot);
         stage.setScene(new Scene(root, 1_150.0, 700.0));
         stage.show();
         root.applyCss();
         root.layout();
-        return new CatalogFixture(runtime, controls, main);
+        return new CatalogFixture(runtime, binding, controlsRoot, main);
     }
 
     private static void assertInitialCatalogRows(CatalogMainView main, String label) {
@@ -135,6 +224,32 @@ public final class CatalogInitialLoadTest {
                 List.of(new WorldFactionSummary(1L, "Scarlet Knives", "", 301L, List.of(), List.of())),
                 List.of(new WorldLocationSummary(501L, "Old Gate", "", List.of(1L), List.of(301L))),
                 "");
+    }
+
+    private static SavedEncounterPlanListModel savedPlans() {
+        return new SavedEncounterPlanListModel(
+                () -> new SavedEncounterPlanListResult(
+                        SavedEncounterPlanStatus.SUCCESS,
+                        List.of(new SavedEncounterPlanSummary(41L, "Gate Ambush", "2 Kreaturen")),
+                        ""),
+                listener -> () -> { });
+    }
+
+    private static EncounterStateModel unsavedEncounterState() {
+        EncounterStateSnapshot.BuilderPane builder = new EncounterStateSnapshot.BuilderPane(
+                "", "Manuelles Encounter", EncounterStateSnapshot.ThresholdMeter.empty(),
+                EncounterStateSnapshot.BuilderSettings.defaultSettings(), List.of(),
+                List.of(new EncounterStateSnapshot.RosterCard(
+                        1L, 0L, "Goblin", "1/4", 50, 15, "humanoid", "", 1)),
+                false, true, false, false, true, true, false, null);
+        EncounterStateSnapshot snapshot = new EncounterStateSnapshot(
+                EncounterStateSnapshot.Mode.BUILDER,
+                builder,
+                EncounterStateSnapshot.InitiativePane.empty(),
+                EncounterStateSnapshot.CombatPane.empty(),
+                EncounterStateSnapshot.ResolutionPane.empty(),
+                "");
+        return new EncounterStateModel(() -> snapshot, listener -> () -> { });
     }
 
     private static void seedCreatureCatalog() throws Exception {
@@ -310,7 +425,8 @@ public final class CatalogInitialLoadTest {
 
     private record CatalogFixture(
             CatalogTestRuntime runtime,
-            CatalogControlsView controls,
+            ShellBinding binding,
+            Parent controls,
             CatalogMainView main
     ) {
     }
@@ -334,6 +450,50 @@ public final class CatalogInitialLoadTest {
         @Override
         public boolean isShowing(Object entryKey) {
             return false;
+        }
+    }
+
+    private static final class CapturingInspectorSink implements InspectorSink {
+        private InspectorEntrySpec lastEntry;
+
+        @Override
+        public void push(InspectorEntrySpec entry) {
+            lastEntry = entry;
+        }
+
+        @Override
+        public void clear() {
+            lastEntry = null;
+        }
+
+        @Override
+        public boolean isShowing(Object entryKey) {
+            return lastEntry != null && java.util.Objects.equals(lastEntry.entryKey(), entryKey);
+        }
+    }
+
+    private static final class FixtureItemsCatalog implements ItemsCatalogApi {
+        private final ItemRow row = new ItemRow(
+                "equipment:club", "Club", "Weapon", "Simple", false, "", false, 10, "1 sp");
+
+        @Override
+        public CompletionStage<ItemFilterOptions> loadFilterOptions() {
+            return CompletableFuture.completedFuture(new ItemFilterOptions(
+                    Status.SUCCESS, List.of("Weapon"), List.of("Simple"), List.of()));
+        }
+
+        @Override
+        public CompletionStage<ItemPageResult> search(ItemQuery query) {
+            return CompletableFuture.completedFuture(new ItemPageResult(Status.SUCCESS, List.of(row), 1, 50, 0));
+        }
+
+        @Override
+        public CompletionStage<ItemDetailResult> loadDetail(String sourceKey) {
+            ItemDetail detail = new ItemDetail(
+                    row.sourceKey(), row.name(), row.category(), row.subcategory(), false, "", false,
+                    row.costCp(), row.costDisplay(), 2.0, "1d4 bludgeoning", "", List.of("Light"),
+                    "A wooden club.", "2014 SRD", "https://www.dnd5eapi.co/api/2014/equipment/club");
+            return CompletableFuture.completedFuture(new ItemDetailResult(Status.SUCCESS, detail));
         }
     }
 }

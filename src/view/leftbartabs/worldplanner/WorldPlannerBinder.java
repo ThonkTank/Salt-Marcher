@@ -5,12 +5,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
+import javafx.scene.control.Separator;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ShellBinding;
-import shell.api.ShellControls;
-import shell.api.ShellSlot;
 import src.domain.creatures.published.CreatureCatalogModel;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
@@ -29,7 +30,8 @@ import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 import src.view.slotcontent.controls.searchfilter.SearchFilterControlsView;
 import src.view.slotcontent.controls.searchfilter.SearchFilterControlsViewInputEvent;
 
-final class WorldPlannerBinder {
+/** Adapts World Planner-owned lists and commands into shared Catalog content. */
+public final class WorldPlannerBinder {
 
     private static final int NPCS = 0;
     private static final int FACTIONS = 1;
@@ -42,7 +44,7 @@ final class WorldPlannerBinder {
     private final @Nullable EncounterTableCatalogModel encounterTableCatalog;
     private final InspectorSink inspector;
 
-    WorldPlannerBinder(
+    public WorldPlannerBinder(
             WorldPlannerApplicationService worldPlanner,
             @Nullable EncounterApplicationService encounter,
             WorldPlannerSnapshotModel snapshotModel,
@@ -58,45 +60,33 @@ final class WorldPlannerBinder {
         this.inspector = Objects.requireNonNull(inspector, "inspector");
     }
 
-    ShellBinding bind() {
+    public CatalogModule bindCatalog() {
         WorldPlannerViewModel viewModel = new WorldPlannerViewModel(encounter != null);
-        WorldPlannerControlsView controlsView = new WorldPlannerControlsView();
-        SearchFilterControlsView searchFilterView = new SearchFilterControlsView();
-        WorldPlannerNpcMainView npcMainView = new WorldPlannerNpcMainView();
-        WorldPlannerFactionMainView factionMainView = new WorldPlannerFactionMainView();
-        WorldPlannerLocationMainView locationMainView = new WorldPlannerLocationMainView();
-        WorldPlannerSourceMainView sourceMainView = new WorldPlannerSourceMainView();
-        WorldPlannerMainView mainView = new WorldPlannerMainView(
-                npcMainView,
-                factionMainView,
-                locationMainView,
-                sourceMainView);
-        WorldPlannerStateView stateView = new WorldPlannerStateView();
+        SearchFilterControlsView search = new SearchFilterControlsView();
+        WorldPlannerNpcMainView npcs = new WorldPlannerNpcMainView();
+        WorldPlannerFactionMainView factions = new WorldPlannerFactionMainView();
+        WorldPlannerLocationMainView locations = new WorldPlannerLocationMainView();
+        StackPane main = new StackPane(npcs, factions, locations);
+        main.getStyleClass().add("world-planner-main-stack");
+        VBox.setVgrow(main, Priority.ALWAYS);
 
-        controlsView.bind(viewModel);
-        viewModel.bindSearchFilters(searchFilterView);
-        npcMainView.bind(viewModel);
-        factionMainView.bind(viewModel);
-        locationMainView.bind(viewModel);
-        sourceMainView.bind(viewModel);
-        mainView.bind(viewModel);
-        stateView.bind(viewModel);
-        viewModel.onControlsInput(controlsView, event ->
-                viewModel.consumeControls(event, worldPlanner::refresh, () -> openDetails(viewModel)));
-        searchFilterView.onViewInputEvent(event -> consumeSearch(viewModel, event));
-        npcMainView.onViewInputEvent(event -> {
+        viewModel.bindSearchFilters(search);
+        npcs.bind(viewModel);
+        factions.bind(viewModel);
+        locations.bind(viewModel);
+        search.onViewInputEvent(event -> consumeSearch(viewModel, event));
+        npcs.onViewInputEvent(event -> {
             viewModel.selectNpc(event.selectedNpcIndex());
             openDetails(viewModel);
         });
-        factionMainView.onViewInputEvent(event -> {
+        factions.onViewInputEvent(event -> {
             viewModel.selectFaction(event.selectedFactionIndex());
             openDetails(viewModel);
         });
-        locationMainView.onViewInputEvent(event -> {
+        locations.onViewInputEvent(event -> {
             viewModel.selectLocation(event.selectedLocationIndex());
             openDetails(viewModel);
         });
-        stateView.onViewInputEvent(event -> consumeState(worldPlanner, encounter, viewModel, event));
 
         snapshotModel.subscribe(viewModel::applySnapshot);
         if (creatureCatalog != null) {
@@ -109,43 +99,29 @@ final class WorldPlannerBinder {
         }
         viewModel.applySnapshot(snapshotModel.current());
         viewModel.activateRoot(worldPlanner::refresh, () -> openDetails(viewModel));
-        return new Binding(ShellControls.stack(controlsView, searchFilterView), mainView, stateView);
+        return new CatalogModule(search, main, viewModel, () -> openDetails(viewModel));
     }
 
-    private void consumeSearch(
-            WorldPlannerViewModel viewModel,
-            SearchFilterControlsViewInputEvent event
-    ) {
+    private void consumeSearch(WorldPlannerViewModel viewModel, SearchFilterControlsViewInputEvent event) {
         SearchFilterControlsViewInputEvent safeEvent = Objects.requireNonNull(event, "event");
         viewModel.applySearchFilters(safeEvent.searchQuery(), selectedFiltersByGroup(safeEvent));
         openDetails(viewModel);
     }
 
-    private void consumeState(
-            WorldPlannerApplicationService worldPlanner,
-            @Nullable EncounterApplicationService encounter,
-            WorldPlannerViewModel viewModel,
-            StateInput event
-    ) {
+    private void consumeState(WorldPlannerViewModel viewModel, StateInput event) {
         StateInput safeEvent = Objects.requireNonNull(event, "event");
         ActionSnapshot actions = safeEvent.actions();
         if (safeEvent.activeModuleIndex() == NPCS) {
-            consumeNpcState(worldPlanner, encounter, viewModel, safeEvent.npc(), actions);
+            consumeNpcState(viewModel, safeEvent.npc(), actions);
         } else if (safeEvent.activeModuleIndex() == FACTIONS) {
-            consumeFactionState(worldPlanner, viewModel, safeEvent.faction(), actions);
+            consumeFactionState(viewModel, safeEvent.faction(), actions);
         } else if (safeEvent.activeModuleIndex() == LOCATIONS) {
-            consumeLocationState(worldPlanner, viewModel, safeEvent.location(), actions);
+            consumeLocationState(viewModel, safeEvent.location(), actions);
         }
         openDetails(viewModel);
     }
 
-    private void consumeNpcState(
-            WorldPlannerApplicationService worldPlanner,
-            @Nullable EncounterApplicationService encounter,
-            WorldPlannerViewModel viewModel,
-            NpcSnapshot snapshot,
-            ActionSnapshot actions
-    ) {
+    private void consumeNpcState(WorldPlannerViewModel viewModel, NpcSnapshot snapshot, ActionSnapshot actions) {
         if (actions.createRequested()) {
             worldPlanner.createNpc(new CreateWorldNpcCommand(
                     snapshot.displayName(),
@@ -162,18 +138,15 @@ final class WorldPlannerBinder {
                     snapshot.historyNotes(),
                     snapshot.generalNotes()));
         } else if (actions.defeatRequested()) {
-            worldPlanner.setNpcLifecycleStatus(
-                    SetWorldNpcLifecycleStatusCommand.defeated(viewModel.selectedNpcId()));
+            worldPlanner.setNpcLifecycleStatus(SetWorldNpcLifecycleStatusCommand.defeated(viewModel.selectedNpcId()));
         } else if (actions.reactivateRequested()) {
-            worldPlanner.setNpcLifecycleStatus(
-                    SetWorldNpcLifecycleStatusCommand.active(viewModel.selectedNpcId()));
+            worldPlanner.setNpcLifecycleStatus(SetWorldNpcLifecycleStatusCommand.active(viewModel.selectedNpcId()));
         } else if (actions.addToEncounterRequested()) {
-            addNpcToEncounter(encounter, viewModel);
+            addNpcToEncounter(viewModel);
         }
     }
 
     private void consumeFactionState(
-            WorldPlannerApplicationService worldPlanner,
             WorldPlannerViewModel viewModel,
             FactionSnapshot snapshot,
             ActionSnapshot actions
@@ -197,7 +170,6 @@ final class WorldPlannerBinder {
     }
 
     private void consumeLocationState(
-            WorldPlannerApplicationService worldPlanner,
             WorldPlannerViewModel viewModel,
             LocationSnapshot snapshot,
             ActionSnapshot actions
@@ -215,10 +187,7 @@ final class WorldPlannerBinder {
         }
     }
 
-    private static void addNpcToEncounter(
-            @Nullable EncounterApplicationService encounter,
-            WorldPlannerViewModel viewModel
-    ) {
+    private void addNpcToEncounter(WorldPlannerViewModel viewModel) {
         long statblockId = viewModel.selectedNpcStatblockId();
         long npcId = viewModel.selectedNpcId();
         if (encounter != null && statblockId > 0L && npcId > 0L) {
@@ -227,23 +196,37 @@ final class WorldPlannerBinder {
     }
 
     private void openDetails(WorldPlannerViewModel viewModel) {
-        String key = viewModel.detailKey();
-        if (key.isBlank()) {
-            inspector.clear();
-            return;
-        }
-        DetailProjection projection = viewModel.detailProjection();
+        String detailKey = viewModel.detailKey();
+        int module = viewModel.stateProjectionProperty().get().activeModuleIndex();
+        String key = detailKey.isBlank() ? "world-planner-editor:" + module : detailKey;
+        String title = viewModel.detailTitle().isBlank() ? moduleTitle(module) : viewModel.detailTitle();
+        DetailProjection detail = viewModel.detailProjection();
+        StateProjection editor = viewModel.stateProjectionProperty().get();
         inspector.push(new InspectorEntrySpec(
-                viewModel.detailTitle(),
+                title,
                 key,
-                () -> detailContent(projection),
+                () -> detailAndEditor(detailKey, detail, editor, viewModel),
                 null));
     }
 
-    private static Node detailContent(DetailProjection projection) {
-        WorldPlannerDetailView view = new WorldPlannerDetailView();
-        view.render(projection);
-        return view;
+    private Node detailAndEditor(
+            String detailKey,
+            DetailProjection detail,
+            StateProjection editorProjection,
+            WorldPlannerViewModel viewModel
+    ) {
+        VBox content = new VBox(12);
+        content.getStyleClass().add("world-planner-inspector");
+        if (!detailKey.isBlank()) {
+            WorldPlannerDetailView detailView = new WorldPlannerDetailView();
+            detailView.render(detail);
+            content.getChildren().addAll(detailView, new Separator());
+        }
+        WorldPlannerStateView editor = new WorldPlannerStateView();
+        editor.render(editorProjection);
+        editor.onViewInputEvent(event -> consumeState(viewModel, event));
+        content.getChildren().add(editor);
+        return content;
     }
 
     private static Map<String, List<String>> selectedFiltersByGroup(SearchFilterControlsViewInputEvent event) {
@@ -262,23 +245,55 @@ final class WorldPlannerBinder {
         }
     }
 
-    private record Binding(
-            Node controls,
-            Node main,
-            Node state
-    ) implements ShellBinding {
+    private static String moduleTitle(int module) {
+        return switch (module) {
+            case FACTIONS -> "Fraktion";
+            case LOCATIONS -> "Ort";
+            default -> "NPC";
+        };
+    }
 
-        @Override
-        public String title() {
-            return "World Planner";
+    public static final class CatalogModule {
+        private final Node controls;
+        private final Node main;
+        private final WorldPlannerViewModel viewModel;
+        private final Runnable detailOpener;
+
+        private CatalogModule(
+                Node controls,
+                Node main,
+                WorldPlannerViewModel viewModel,
+                Runnable detailOpener
+        ) {
+            this.controls = controls;
+            this.main = main;
+            this.viewModel = viewModel;
+            this.detailOpener = detailOpener;
         }
 
-        @Override
-        public Map<ShellSlot, Node> slotContent() {
-            return Map.of(
-                    ShellSlot.COCKPIT_CONTROLS, controls,
-                    ShellSlot.COCKPIT_MAIN, main,
-                    ShellSlot.COCKPIT_STATE, state);
+        public Node controls() {
+            return controls;
+        }
+
+        public Node main() {
+            return main;
+        }
+
+        public void activateNpcs() {
+            activate(NPCS);
+        }
+
+        public void activateFactions() {
+            activate(FACTIONS);
+        }
+
+        public void activateLocations() {
+            activate(LOCATIONS);
+        }
+
+        private void activate(int module) {
+            viewModel.activate(module);
+            detailOpener.run();
         }
     }
 }

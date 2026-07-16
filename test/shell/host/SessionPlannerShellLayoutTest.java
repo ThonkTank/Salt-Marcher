@@ -153,7 +153,7 @@ public final class SessionPlannerShellLayoutTest {
         registerSidebarTab(
                 sidebar,
                 catalog(services).registrationSpec(),
-                "Encounter-Planer",
+                "Katalog",
                 "/view/leftbartabs/catalog/navigation-icon.svg");
         registerSidebarTab(
                 sidebar,
@@ -183,7 +183,7 @@ public final class SessionPlannerShellLayoutTest {
         assertButton(navButtons.get(1), "Dungeon-Editor", false);
         assertButton(navButtons.get(2), "Dungeon-Reise", false);
         assertButton(navButtons.get(3), "Hex-Karte", false);
-        assertButton(navButtons.get(4), "Encounter-Planer", false);
+        assertButton(navButtons.get(4), "Katalog", false);
         assertTrue(sidebarChildren.get(1).getStyleClass().contains("nav-separator"),
                 "sidebar separates runtime and editor tabs");
         assertTrue(sidebarChildren.get(3).getStyleClass().contains("nav-separator"),
@@ -192,9 +192,6 @@ public final class SessionPlannerShellLayoutTest {
                 shell.api.NavigationGraphicResource.of("/shell/host/malformed-navigation-icon.svg"));
         assertTrue(malformedGraphic.getStyleClass().contains("nav-icon-missing"),
                 "malformed navigation resource uses missing graphic fallback");
-        assertLoadedNavigationGraphic(
-                "/view/leftbartabs/worldplanner/navigation-icon.svg",
-                "World Planner navigation icon loads from its stable resource path");
         assertHexMapShellLayout();
     }
 

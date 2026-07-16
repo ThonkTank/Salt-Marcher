@@ -172,7 +172,6 @@ final class EncounterProjection {
                         safeState.difficulty().difficulty()),
                 builderSettings(safeState.builderInputs()),
                 safeState.generationAdvisoryMessages(),
-                safeState.savedPlans().stream().map(EncounterProjection::savedPlanSummary).toList(),
                 safeState.roster().stream()
                         .map(creature -> new EncounterStateSnapshot.RosterCard(
                                 creature.creatureId(),
@@ -190,6 +189,7 @@ final class EncounterProjection {
                 safeState.canPreviousAlternative(),
                 safeState.canNextAlternative(),
                 safeState.canSavePlan(),
+                safeState.hasUnsavedRosterChanges(),
                 safeState.canClearGenerationHistory(),
                 safeState.pendingUndo()
                         .map(removed -> new EncounterStateSnapshot.UndoNotice(

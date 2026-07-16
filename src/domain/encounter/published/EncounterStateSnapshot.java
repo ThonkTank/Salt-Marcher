@@ -38,13 +38,13 @@ public record EncounterStateSnapshot(
             ThresholdMeter thresholds,
             BuilderSettings currentSettings,
             List<String> generationHints,
-            List<SavedEncounterPlanSummary> savedPlanChoices,
             List<RosterCard> rosterCards,
             boolean rosterEmpty,
             boolean startCombatEnabled,
             boolean previousAlternativeEnabled,
             boolean nextAlternativeEnabled,
             boolean savePlanEnabled,
+            boolean hasUnsavedRosterChanges,
             boolean clearHistoryEnabled,
             @Nullable UndoNotice undoNotice
     ) {
@@ -54,7 +54,6 @@ public record EncounterStateSnapshot(
             thresholds = thresholds == null ? ThresholdMeter.empty() : thresholds;
             currentSettings = currentSettings == null ? BuilderSettings.defaultSettings() : currentSettings;
             generationHints = generationHints == null ? List.of() : List.copyOf(generationHints);
-            savedPlanChoices = savedPlanChoices == null ? List.of() : List.copyOf(savedPlanChoices);
             rosterCards = rosterCards == null ? List.of() : List.copyOf(rosterCards);
         }
 
@@ -66,8 +65,8 @@ public record EncounterStateSnapshot(
                     BuilderSettings.defaultSettings(),
                     List.of(),
                     List.of(),
-                    List.of(),
                     true,
+                    false,
                     false,
                     false,
                     false,

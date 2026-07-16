@@ -19,7 +19,6 @@ public final class WorldPlannerStateView extends VBox {
     private static final int NPCS = 0;
     private static final int FACTIONS = 1;
     private static final int LOCATIONS = 2;
-    private static final int SOURCES = 3;
     private static final int NOTES_ROWS = 3;
     private static final int SINGLE_CHOICE_COUNT = 1;
     private static final String EDITOR_STYLE = "world-planner-editor";
@@ -42,14 +41,12 @@ public final class WorldPlannerStateView extends VBox {
     private final TextField locationName = new TextField();
     private final ComboBox<String> factionChoice = new ComboBox<>();
     private final ComboBox<String> locationTableChoice = new ComboBox<>();
-    private final Label sourcesSummary = wrap();
     private final VBox npcEditor = new VBox(8);
     private final VBox factionEditor = new VBox(8);
     private final VBox locationEditor = new VBox(8);
-    private final VBox sourcesPreview = new VBox(8);
     private Consumer<StateInput> eventSink = event -> { };
 
-    WorldPlannerStateView() {
+    public WorldPlannerStateView() {
         getStyleClass().add("world-planner-state");
         moduleTitle.getStyleClass().add("world-planner-section-title");
         configureEditors();
@@ -59,8 +56,7 @@ public final class WorldPlannerStateView extends VBox {
                 labelled("Next", nextAction),
                 npcEditor,
                 factionEditor,
-                locationEditor,
-                sourcesPreview);
+                locationEditor);
     }
 
     public void bind(WorldPlannerViewModel viewModel) {
@@ -87,14 +83,12 @@ public final class WorldPlannerStateView extends VBox {
         npcEditor.getStyleClass().add(EDITOR_STYLE);
         factionEditor.getStyleClass().add(EDITOR_STYLE);
         locationEditor.getStyleClass().add(EDITOR_STYLE);
-        sourcesPreview.getStyleClass().add(EDITOR_STYLE);
         npcEditor.getChildren().setAll(new Label("Edit NPC"), npcFields(), npcActions());
         factionEditor.getChildren().setAll(new Label("Edit Faction"), factionFields(), factionActions());
         locationEditor.getChildren().setAll(new Label("Edit Location"), locationFields(), locationActions());
-        sourcesPreview.getChildren().setAll(new Label("Encounter Sources"), sourcesSummary);
     }
 
-    private void render(StateProjection projection) {
+    void render(StateProjection projection) {
         int activeModuleIndex = projection.activeModuleIndex();
         moduleTitle.setText(projection.moduleTitle());
         status.setText(projection.statusText());
@@ -102,11 +96,9 @@ public final class WorldPlannerStateView extends VBox {
         renderNpc(projection.npc());
         renderFaction(projection.faction());
         renderLocation(projection.location());
-        sourcesSummary.setText(projection.sourcesSummary());
         visible(npcEditor, activeModuleIndex == NPCS);
         visible(factionEditor, activeModuleIndex == FACTIONS);
         visible(locationEditor, activeModuleIndex == LOCATIONS);
-        visible(sourcesPreview, activeModuleIndex == SOURCES);
     }
 
     private void renderNpc(NpcEditor npc) {

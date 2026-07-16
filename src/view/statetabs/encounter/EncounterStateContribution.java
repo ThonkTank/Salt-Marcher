@@ -67,7 +67,6 @@ public final class EncounterStateContribution implements ShellContribution {
         builderView.onGenerate(viewModel::generate);
         builderView.onShiftAlternative(viewModel::shiftAlternative);
         builderView.onSaveCurrentPlan(viewModel::saveCurrentPlan);
-        builderView.onOpenSavedPlan(viewModel::openSavedPlan);
         builderView.onChangeRosterCount(viewModel::changeRosterCount);
         builderView.onRemoveCreature(viewModel::removeCreature);
         builderView.onUndoRemove(viewModel::undoRemove);

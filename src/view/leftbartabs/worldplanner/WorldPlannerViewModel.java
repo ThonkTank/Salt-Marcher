@@ -33,8 +33,6 @@ final class WorldPlannerViewModel {
     static final String UNLIMITED_STOCK_KEY = "unlimited";
 
     private final SearchFilterControlsContentModel searchFilterContentModel = new SearchFilterControlsContentModel();
-    private final ReadOnlyObjectWrapper<ControlsProjection> controlsProjection =
-            new ReadOnlyObjectWrapper<>(ControlsProjection.empty());
     private final ReadOnlyObjectWrapper<NpcProjection> npcProjection =
             new ReadOnlyObjectWrapper<>(NpcProjection.empty());
     private final ReadOnlyObjectWrapper<FactionProjection> factionProjection =
@@ -62,10 +60,6 @@ final class WorldPlannerViewModel {
         refreshProjections();
     }
 
-    ReadOnlyObjectProperty<ControlsProjection> controlsProjectionProperty() {
-        return controlsProjection.getReadOnlyProperty();
-    }
-
     ReadOnlyObjectProperty<NpcProjection> npcProjectionProperty() {
         return npcProjection.getReadOnlyProperty();
     }
@@ -90,26 +84,9 @@ final class WorldPlannerViewModel {
         Objects.requireNonNull(view, VIEW_PARAMETER).bind(searchFilterContentModel);
     }
 
-    void onControlsInput(WorldPlannerControlsView view, Consumer<ControlsInput> sink) {
-        Objects.requireNonNull(view, VIEW_PARAMETER).onViewInputEvent(sink);
-    }
-
     void activateRoot(Consumer<RefreshWorldPlannerCommand> refreshSink, Runnable detailOpener) {
         Objects.requireNonNull(refreshSink, "refreshSink");
         refreshSink.accept(new RefreshWorldPlannerCommand());
-        Objects.requireNonNull(detailOpener, "detailOpener").run();
-    }
-
-    void consumeControls(
-            ControlsInput input,
-            Consumer<RefreshWorldPlannerCommand> refreshSink,
-            Runnable detailOpener
-    ) {
-        ControlsInput safeInput = input == null ? new ControlsInput(0, false) : input;
-        activate(safeInput.selectedModuleIndex());
-        if (safeInput.refreshRequested()) {
-            Objects.requireNonNull(refreshSink, "refreshSink").accept(new RefreshWorldPlannerCommand());
-        }
         Objects.requireNonNull(detailOpener, "detailOpener").run();
     }
 
@@ -281,7 +258,6 @@ final class WorldPlannerViewModel {
         factionProjection.set(faction);
         locationProjection.set(location);
         sourceProjection.set(source);
-        controlsProjection.set(new ControlsProjection(activeModuleIndex));
         stateProjection.set(new WorldPlannerStateProjectionBuilder(input).stateProjection(
                 npc,
                 faction,
@@ -379,25 +355,6 @@ final class WorldPlannerViewModel {
             copied.put(entry.getKey(), entry.getValue() == null ? List.of() : List.copyOf(entry.getValue()));
         }
         return Map.copyOf(copied);
-    }
-}
-
-record ControlsInput(
-        int selectedModuleIndex,
-        boolean refreshRequested
-) {
-    ControlsInput {
-        selectedModuleIndex = Math.max(0, selectedModuleIndex);
-    }
-}
-
-record ControlsProjection(int activeModuleIndex) {
-    ControlsProjection {
-        activeModuleIndex = Math.max(0, activeModuleIndex);
-    }
-
-    static ControlsProjection empty() {
-        return new ControlsProjection(0);
     }
 }
 

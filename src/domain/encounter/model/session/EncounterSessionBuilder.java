@@ -68,6 +68,10 @@ final class EncounterSessionBuilder {
     }
 
     BuilderStateData builderState(EncounterSessionContext context) {
-        return EncounterSessionGenerationProjection.builderState(context, roster.snapshot(), generation.state());
+        return EncounterSessionGenerationProjection.builderState(
+                context,
+                roster.snapshot(),
+                generation.state(),
+                savedPlans.hasActivePlan());
     }
 }

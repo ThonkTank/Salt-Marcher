@@ -1,5 +1,6 @@
 import org.gradle.api.plugins.JavaApplication
 import org.gradle.api.tasks.PathSensitivity
+import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.application.tasks.CreateStartScripts
 import org.gradle.language.base.plugins.LifecycleBasePlugin
@@ -60,11 +61,19 @@ dependencies {
 
     implementation("org.jspecify:jspecify:1.0.0")
     implementation("org.xerial:sqlite-jdbc:3.53.2.0")
+    implementation("com.google.code.gson:gson:2.14.0")
     testImplementation("org.junit.jupiter:junit-jupiter:6.1.1")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.4.2")
     testRuntimeOnly(monocleDependency)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:6.1.1")
+}
+
+tasks.register<JavaExec>("importSrdItems") {
+    group = "application"
+    description = "Import the public 2014 SRD equipment and magic-item catalog into local SQLite."
+    classpath = sourceSets["main"].runtimeClasspath
+    mainClass = "src.data.items.importer.PublicSrdItemImporter"
 }
 
 extensions.configure<JavaApplication> {

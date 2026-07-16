@@ -164,7 +164,7 @@ public final class EncounterSession {
             Map<EncounterSessionCommand.Action, SessionCommandHandler> handlers =
                     new EnumMap<>(EncounterSessionCommand.Action.class);
             handlers.put(EncounterSessionCommand.Action.REFRESH, (session, command, access) ->
-                    session.context.refresh(access, true));
+                    session.context.refresh(access));
             handlers.put(EncounterSessionCommand.Action.UPDATE_BUILDER_INPUTS, (session, command, access) ->
                     session.builder.updateBuilderInputs(command.builderInputs()));
             handlers.put(EncounterSessionCommand.Action.GENERATE, (session, command, access) ->

@@ -13,7 +13,8 @@ final class EncounterSessionGenerationProjection {
     static BuilderStateData builderState(
             EncounterSessionContext context,
             EncounterSessionRosterState roster,
-            EncounterSessionGenerationState generation
+            EncounterSessionGenerationState generation,
+            boolean activeSavedPlan
     ) {
         int adjustedXp = generation.generatedAdjustedXp() > 0 ? generation.generatedAdjustedXp() : totalXp(roster);
         boolean multipleAlternatives = generation.alternativeCount() > SINGLE_ALTERNATIVE_COUNT;
@@ -24,11 +25,11 @@ final class EncounterSessionGenerationProjection {
                 difficulty(context, roster.creatures().isEmpty(), adjustedXp, generation.generatedDifficulty()),
                 generation.builderInputs(),
                 generation.generatedAdvisories(),
-                context.savedPlans(),
                 !roster.creatures().isEmpty() && context.hasActiveParty(),
                 multipleAlternatives,
                 multipleAlternatives,
                 !roster.creatures().isEmpty(),
+                !roster.creatures().isEmpty() && !activeSavedPlan,
                 generation.generationHistoryPresent() || generation.alternativeCount() > 0,
                 roster.pendingUndo());
     }

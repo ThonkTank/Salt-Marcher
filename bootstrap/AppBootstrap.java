@@ -3,6 +3,7 @@ package bootstrap;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
 import org.jspecify.annotations.Nullable;
 import shell.api.ShellBinding;
 import shell.api.ShellContribution;
@@ -16,6 +17,7 @@ import src.data.dungeon.repository.SqliteDungeonMapRepository;
 import src.data.encounter.repository.SqliteEncounterPlanRepository;
 import src.data.encountertable.query.SqliteEncounterTableCatalogAdapter;
 import src.data.hex.repository.SqliteHexMapRepository;
+import src.data.items.SqliteItemCatalogAdapter;
 import src.data.party.repository.SqlitePartyRosterRepository;
 import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
 import src.data.worldplanner.repository.SqliteWorldPlannerRepository;
@@ -26,6 +28,7 @@ import src.domain.encounter.EncounterServiceAssembly;
 import src.domain.encountertable.EncounterTableServiceAssembly;
 import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
 import src.domain.hex.HexServiceAssembly;
+import src.domain.items.ItemsServiceAssembly;
 import src.domain.party.PartyServiceAssembly;
 import src.domain.sessionplanner.SessionPlannerServiceAssembly;
 import src.domain.worldplanner.WorldPlannerApplicationService;
@@ -40,7 +43,6 @@ import src.view.leftbartabs.dungeoneditor.DungeonEditorContribution;
 import src.view.leftbartabs.dungeontravel.DungeonTravelContribution;
 import src.view.leftbartabs.hexmap.HexMapContribution;
 import src.view.leftbartabs.sessionplanner.SessionPlannerContribution;
-import src.view.leftbartabs.worldplanner.WorldPlannerContribution;
 import src.view.statetabs.encounter.EncounterStateContribution;
 import src.view.statetabs.travel.TravelStateContribution;
 
@@ -67,6 +69,9 @@ public final class AppBootstrap {
         CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(creatureCatalog);
         EncounterTableServiceAssembly.Component encounterTables =
                 EncounterTableServiceAssembly.create(encounterTableCatalog);
+        ItemsServiceAssembly.Component items = ItemsServiceAssembly.create(
+                new SqliteItemCatalogAdapter(),
+                ForkJoinPool.commonPool());
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(new SqlitePartyRosterRepository());
 
         WorldPlannerServiceAssembly worldAssembly = new WorldPlannerServiceAssembly(
@@ -107,13 +112,14 @@ public final class AppBootstrap {
                 encounter.planBudget(),
                 worldSnapshot);
         return new Components(
-                creatures, encounterTables, party, worldApplication, worldSnapshot,
+                creatures, encounterTables, items, party, worldApplication, worldSnapshot,
                 encounter, dungeon, hex, session);
     }
 
     private List<ResolvedContribution> bindContributions(AppShell shell, Components components) {
         var creatures = components.creatures();
         var tables = components.encounterTables();
+        var items = components.items();
         var party = components.party();
         var encounter = components.encounter();
         var dungeon = components.dungeon();
@@ -133,7 +139,9 @@ public final class AppBootstrap {
                 new CatalogContribution(
                         creatures.application(), tables.application(), encounter.application(),
                         encounter.builderInputs(), creatures.filterOptions(), creatures.catalog(), creatures.detail(),
-                        tables.catalog(), encounter.tuningPreview(), components.worldSnapshot(), inspector),
+                        tables.catalog(), encounter.tuningPreview(), components.worldSnapshot(),
+                        components.worldApplication(), items.catalog(), encounter.savedPlans(), encounter.state(),
+                        inspector),
                 new DungeonEditorContribution(dungeonEditorDependencies),
                 new DungeonTravelContribution(dungeon.travel(), dungeon.mapCatalog(), dungeon.travelModel()),
                 new HexMapContribution(
@@ -141,9 +149,6 @@ public final class AppBootstrap {
                 new SessionPlannerContribution(
                         session.application(), session.currentSessionModel(), session.catalogModel(),
                         session.participantsModel(), session.sceneTimelineModel(), session.statePanelModel()),
-                new WorldPlannerContribution(
-                        components.worldApplication(), encounter.application(), components.worldSnapshot(),
-                        creatures.catalog(), tables.catalog(), inspector),
                 new EncounterStateContribution(
                         creatures.detail(), creatures.application(), encounter.state(), encounter.application(),
                         components.worldApplication(), inspector),
@@ -199,6 +204,7 @@ public final class AppBootstrap {
     private record Components(
             CreaturesServiceAssembly.Component creatures,
             EncounterTableServiceAssembly.Component encounterTables,
+            ItemsServiceAssembly.Component items,
             PartyServiceAssembly.Component party,
             WorldPlannerApplicationService worldApplication,
             WorldPlannerSnapshotModel worldSnapshot,

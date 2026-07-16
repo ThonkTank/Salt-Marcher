@@ -3,25 +3,20 @@ package src.domain.encounter.model.session;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import src.domain.encounter.model.plan.EncounterPlanSummary;
 
 final class EncounterSessionContext {
 
     private static final String DEFAULT_STATUS = "Encounter bereit.";
 
     private final List<PartyMemberData> activeParty = new ArrayList<>();
-    private final List<EncounterPlanSummary> savedPlans = new ArrayList<>();
     private int mode = Mode.BUILDER;
     private Optional<BudgetData> budget = Optional.empty();
     private String status = DEFAULT_STATUS;
 
-    void refresh(EncounterSession.SessionRepository access, boolean includeSavedPlans) {
+    void refresh(EncounterSession.SessionRepository access) {
         activeParty.clear();
         activeParty.addAll(access.loadActiveParty());
         budget = access.loadBudget();
-        if (includeSavedPlans) {
-            refreshSavedPlans(access);
-        }
     }
 
     List<PartyMemberData> activeParty() {
@@ -30,10 +25,6 @@ final class EncounterSessionContext {
 
     boolean hasActiveParty() {
         return !activeParty.isEmpty();
-    }
-
-    List<EncounterPlanSummary> savedPlans() {
-        return List.copyOf(savedPlans);
     }
 
     Optional<BudgetData> budget() {
@@ -73,15 +64,4 @@ final class EncounterSessionContext {
         status = nextStatus;
     }
 
-    void refreshSavedPlans(EncounterSession.SessionRepository access) {
-        ListPlansOutcome result = access.listPlans();
-        savedPlans.clear();
-        if (result.success()) {
-            savedPlans.addAll(result.plans());
-            return;
-        }
-        if (!result.message().isBlank()) {
-            status = result.message();
-        }
-    }
 }

@@ -77,12 +77,30 @@ public final class EncounterStateTabTest {
         runOnFxThread(EncounterStateTabTest::assertSavedEncounterReadbackRendersInStateTab);
     }
 
+    @Test
+    void ENCOUNTER_STATE_TAB_003() throws Exception {
+        runOnFxThread(EncounterStateTabTest::assertUnsavedRosterPublicationForCatalogConfirmation);
+    }
+
     private static void assertEncounterStateTabOpensThroughShellBinding() {
         TestRuntime runtime = TestRuntime.create();
         ShellBinding binding = runtime.contribution().bind();
         EncounterStateView view = encounterStateView(binding);
         assertTextPresent(view, "Encounter", "ENCOUNTER-STATE-TAB-001 title");
         assertTextPresent(view, "Monster per +Add hinzufuegen...", "ENCOUNTER-STATE-TAB-001 empty roster");
+        assertTextAbsent(view, "Oeffnen", "Saved-plan opening moved out of Encounter state");
+    }
+
+    private static void assertUnsavedRosterPublicationForCatalogConfirmation() {
+        TestRuntime runtime = TestRuntime.create();
+        runtime.openSavedEncounter();
+        if (runtime.hasUnsavedRosterChanges()) {
+            throw new AssertionError("Opening a saved plan must begin from a clean roster state.");
+        }
+        runtime.addGoblin();
+        if (!runtime.hasUnsavedRosterChanges()) {
+            throw new AssertionError("Roster mutation must publish unsaved state for Catalog confirmation.");
+        }
     }
 
     private static void assertSavedEncounterReadbackRendersInStateTab() {
@@ -131,6 +149,13 @@ public final class EncounterStateTabTest {
                 .anyMatch(expected::equals);
         if (!found) {
             throw new IllegalStateException(message + " expected visible text <" + expected + ">.");
+        }
+    }
+
+    private static void assertTextAbsent(Node root, String expected, String message) {
+        boolean found = labeledNodes(root).stream().map(Labeled::getText).anyMatch(expected::equals);
+        if (found) {
+            throw new IllegalStateException(message + " unexpectedly found visible text <" + expected + ">.");
         }
     }
 
@@ -221,6 +246,14 @@ public final class EncounterStateTabTest {
 
         void openSavedEncounter() {
             encounter.application().applyState(ApplyEncounterStateCommand.openSavedPlan(planId));
+        }
+
+        void addGoblin() {
+            encounter.application().applyState(ApplyEncounterStateCommand.addCreature(GOBLIN_ID));
+        }
+
+        boolean hasUnsavedRosterChanges() {
+            return encounter.state().current().builderPane().hasUnsavedRosterChanges();
         }
 
         EncounterStateContribution contribution() {

@@ -11,7 +11,6 @@ import src.domain.creatures.published.SelectCreatureDetailCommand;
 import src.domain.encounter.EncounterApplicationService;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterStateSnapshot;
-import src.domain.encounter.published.SavedEncounterPlanSummary;
 import src.domain.worldplanner.WorldPlannerApplicationService;
 import src.domain.worldplanner.published.SetWorldNpcLifecycleStatusCommand;
 
@@ -96,10 +95,6 @@ final class EncounterStateViewModel {
 
     void saveCurrentPlan() {
         applyCommand(ApplyEncounterStateCommand.saveCurrentPlan());
-    }
-
-    void openSavedPlan(long selectedPlanId) {
-        applyCommand(ApplyEncounterStateCommand.openSavedPlan(selectedPlanId));
     }
 
     void changeRosterCount(long creatureId, int delta) {
@@ -288,7 +283,6 @@ final class EncounterStateViewModel {
                         difficulty.difficultyLabel()),
                 statusMessage,
                 safeSource.generationHints(),
-                safeSource.savedPlanChoices().stream().map(EncounterStateViewModel::savedPlan).toList(),
                 builderSettings(safeSource.currentSettings()),
                 safeSource.rosterCards().stream().map(EncounterStateViewModel::rosterCard).toList(),
                 safeSource.rosterEmpty(),
@@ -349,10 +343,6 @@ final class EncounterStateViewModel {
 
     private static EncounterStateSnapshot.Mode safeMode(EncounterStateSnapshot.Mode mode) {
         return mode == null ? EncounterStateSnapshot.Mode.BUILDER : mode;
-    }
-
-    private static SavedPlanView savedPlan(SavedEncounterPlanSummary plan) {
-        return new SavedPlanView(plan.planId(), plan.name(), plan.summaryText());
     }
 
     private static RosterCardView rosterCard(EncounterStateSnapshot.RosterCard creature) {
@@ -427,7 +417,6 @@ final class EncounterStateViewModel {
             DifficultySummary difficulty,
             String statusMessage,
             List<String> generationAdvisoryMessages,
-            List<SavedPlanView> savedPlans,
             BuilderSettings settings,
             List<RosterCardView> roster,
             boolean showRosterPlaceholder,
@@ -446,7 +435,6 @@ final class EncounterStateViewModel {
             generationAdvisoryMessages = generationAdvisoryMessages == null
                     ? List.of()
                     : List.copyOf(generationAdvisoryMessages);
-            savedPlans = savedPlans == null ? List.of() : List.copyOf(savedPlans);
             settings = settings == null ? BuilderSettings.defaultSettings() : settings;
             roster = roster == null ? List.of() : List.copyOf(roster);
         }
@@ -458,7 +446,6 @@ final class EncounterStateViewModel {
                     new DifficultySummary(0, 0, 0, 0, 0, ""),
                     "",
                     List.of(),
-                    List.of(),
                     BuilderSettings.defaultSettings(),
                     List.of(),
                     true,
@@ -468,13 +455,6 @@ final class EncounterStateViewModel {
                     false,
                     false,
                     null);
-        }
-    }
-
-    record SavedPlanView(long id, String name, String summaryText) {
-        SavedPlanView {
-            name = name == null ? "" : name.trim();
-            summaryText = summaryText == null ? "" : summaryText.trim();
         }
     }
 

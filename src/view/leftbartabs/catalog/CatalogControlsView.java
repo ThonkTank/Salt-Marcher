@@ -195,7 +195,6 @@ public final class CatalogControlsView extends VBox {
                                         subtypeButton,
                                         biomeButton,
                                         alignmentButton,
-                                        encounterTableButton,
                                         chipControls.clearButton()),
                                 CatalogControlsChrome.flow(
                                         4,
