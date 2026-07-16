@@ -44,10 +44,10 @@ import features.hex.HexServiceAssembly;
 import features.hex.adapter.sqlite.model.HexPersistenceSchema;
 import features.hex.api.HexEditorApi;
 import features.hex.api.HexTravelApi;
-import features.hex.domain.map.HexEditorMode;
+import features.hex.api.HexEditorMode;
 import features.hex.domain.map.HexCoordinate;
-import features.hex.domain.map.HexMarkerKind;
-import features.hex.domain.map.HexTerrain;
+import features.hex.api.HexMarkerKind;
+import features.hex.api.HexTerrain;
 import features.hex.api.CreateHexMapCommand;
 import features.hex.api.HexEditorModel;
 import features.hex.api.HexEditorSnapshot;
@@ -85,7 +85,7 @@ public final class HexMapEditorBehaviorTest {
     private static final int UPDATED_RADIUS = 3;
     private static final int AUTHORED_Q = 2;
     private static final int AUTHORED_R = 0;
-    private static final String AUTHORED_TERRAIN = "WATER";
+    private static final HexTerrain AUTHORED_TERRAIN = HexTerrain.WATER;
     private static final String MARKER_NAME = "Old Tower";
     private static final String MARKER_NOTE = "Visible from the river";
     private static final String SHELL_BOUND_MAP_NAME = "Shell Bound Hex Map";
@@ -372,7 +372,7 @@ public final class HexMapEditorBehaviorTest {
         RuntimeSurface runtime = state.runtime();
         HexMapId mapId = state.mapId();
         HexEditorSnapshot markerSaved = state.markerSaved();
-        assertMarker(markerSaved, MARKER_NAME, "LANDMARK", MARKER_NOTE, "HEX-EDITOR-005");
+        assertMarker(markerSaved, MARKER_NAME, HexMarkerKind.LANDMARK, MARKER_NOTE, "HEX-EDITOR-005");
         assertEquals("Landmarke", mainTileProjection(markerSaved, AUTHORED_Q, AUTHORED_R).markerText(),
                 "HEX-EDITOR-005 visible marker label");
         assertEquals(1L, runtime.database().markerCount(mapId.value()),
@@ -401,7 +401,7 @@ public final class HexMapEditorBehaviorTest {
     private static void assertToolLabelProof() throws Exception {
         ScenarioState state = createTravelScenario();
         RuntimeSurface runtime = state.runtime();
-        runtime.editor().setActiveTool(new SetHexEditorToolCommand("MOVE_PARTY", "GRASSLAND"));
+        runtime.editor().setActiveTool(new SetHexEditorToolCommand(HexEditorMode.MOVE_PARTY, HexTerrain.GRASSLAND));
         HexEditorSnapshot moveToolSnapshot = runtime.current();
         runOnFxThread(() -> assertMainViewUsesToolLabel(moveToolSnapshot));
     }
@@ -409,7 +409,7 @@ public final class HexMapEditorBehaviorTest {
     private static void assertMarkerDraftToolRefreshProof() throws Exception {
         ScenarioState state = createTravelScenario();
         RuntimeSurface runtime = state.runtime();
-        runtime.editor().setActiveTool(new SetHexEditorToolCommand("MOVE_PARTY", "GRASSLAND"));
+        runtime.editor().setActiveTool(new SetHexEditorToolCommand(HexEditorMode.MOVE_PARTY, HexTerrain.GRASSLAND));
         HexEditorSnapshot moveToolSnapshot = runtime.current();
         runOnFxThread(() -> assertMarkerDraftPreservedAcrossToolRefresh(state.markerSaved(), moveToolSnapshot));
     }
@@ -417,7 +417,7 @@ public final class HexMapEditorBehaviorTest {
     private static void assertMovePartyToolProof() throws Exception {
         ScenarioState state = createTravelScenario();
         RuntimeSurface runtime = state.runtime();
-        runtime.editor().setActiveTool(new SetHexEditorToolCommand("MOVE_PARTY", "GRASSLAND"));
+        runtime.editor().setActiveTool(new SetHexEditorToolCommand(HexEditorMode.MOVE_PARTY, HexTerrain.GRASSLAND));
         runOnFxThread(() -> assertMovePartyToolMovesPartyToken(runtime, state.markerSaved(), state.travel()));
     }
 
@@ -462,7 +462,7 @@ public final class HexMapEditorBehaviorTest {
                 1,
                 0,
                 " ",
-                "RESOURCE",
+                HexMarkerKind.RESOURCE,
                 ""));
         HexEditorSnapshot missingName = runtime.current();
         assertContains(missingName.failureText(), "name must be nonblank",
@@ -475,7 +475,7 @@ public final class HexMapEditorBehaviorTest {
                 1,
                 0,
                 "Unnamed Resource",
-                "",
+                null,
                 ""));
         HexEditorSnapshot missingType = runtime.current();
         assertContains(missingType.failureText(), "type is required",
@@ -499,7 +499,7 @@ public final class HexMapEditorBehaviorTest {
         assertEquals(UPDATED_RADIUS, selectedMap(reloaded).radius(), "HEX-EDITOR-007 reloaded radius");
         assertTileTerrain(reloaded, AUTHORED_Q, AUTHORED_R, AUTHORED_TERRAIN,
                 "HEX-EDITOR-007 reloaded terrain");
-        assertMarker(reloaded, MARKER_NAME, "LANDMARK", MARKER_NOTE,
+        assertMarker(reloaded, MARKER_NAME, HexMarkerKind.LANDMARK, MARKER_NOTE,
                 "HEX-EDITOR-007 reloaded marker");
     }
 
@@ -543,7 +543,7 @@ public final class HexMapEditorBehaviorTest {
                 AUTHORED_Q,
                 AUTHORED_R,
                 MARKER_NAME,
-                "LANDMARK",
+                HexMarkerKind.LANDMARK,
                 MARKER_NOTE));
         return new ScenarioState(
                 state.runtime(),
@@ -578,7 +578,7 @@ public final class HexMapEditorBehaviorTest {
                 1,
                 0,
                 "Draft Camp",
-                "RESOURCE",
+                HexMarkerKind.RESOURCE,
                 "Should become a marker"));
     }
 
@@ -617,7 +617,7 @@ public final class HexMapEditorBehaviorTest {
             HexEditorSnapshot snapshot,
             int q,
             int r,
-            String expectedTerrain,
+            HexTerrain expectedTerrain,
             String message
     ) {
         HexEditorSnapshot.TileSnapshot tile = tile(snapshot, q, r);
@@ -634,7 +634,7 @@ public final class HexMapEditorBehaviorTest {
     private static void assertMarker(
             HexEditorSnapshot snapshot,
             String expectedName,
-            String expectedType,
+            HexMarkerKind expectedType,
             String expectedNote,
             String message
     ) {
@@ -921,7 +921,7 @@ public final class HexMapEditorBehaviorTest {
                 "HEX-EDITOR-009 marker save leaves map name unchanged");
         assertEquals(2L, runtime.database().markerCount(mapId),
                 "HEX-EDITOR-009 marker save persists marker despite incidental map draft");
-        assertMarker(afterMarkerSave, "Draft Camp", "RESOURCE", "Should become a marker", "HEX-EDITOR-009");
+        assertMarker(afterMarkerSave, "Draft Camp", HexMarkerKind.RESOURCE, "Should become a marker", "HEX-EDITOR-009");
     }
 
     private static void assertMovePartyToolMovesPartyToken(
@@ -989,10 +989,10 @@ public final class HexMapEditorBehaviorTest {
         HexEditorSnapshot oversized = new HexEditorSnapshot(
                 List.of(new HexEditorSnapshot.MapSummary(new HexMapId(77L), "Oversized", 21)),
                 Optional.of(new HexEditorSnapshot.MapSnapshot(new HexMapId(77L), "Oversized", 21, 1_387)),
-                List.of(new HexEditorSnapshot.TileSnapshot(0, 0, "GRASSLAND", false, List.of())),
+                List.of(new HexEditorSnapshot.TileSnapshot(0, 0, HexTerrain.GRASSLAND, false, List.of())),
                 Optional.empty(),
-                "SELECT",
-                "GRASSLAND",
+                HexEditorMode.SELECT,
+                HexTerrain.GRASSLAND,
                 "Oversized loaded.",
                 "",
                 "");
@@ -1065,7 +1065,7 @@ public final class HexMapEditorBehaviorTest {
             selectMarkerType(markerTypeSelector(stateView), "LANDMARK");
             markerNoteArea(stateView).setText(MARKER_NOTE);
             markerSaveButton(stateView).fire();
-            assertMarker(runtime.current(), SHELL_BOUND_MARKER_NAME, "LANDMARK", MARKER_NOTE,
+            assertMarker(runtime.current(), SHELL_BOUND_MARKER_NAME, HexMarkerKind.LANDMARK, MARKER_NOTE,
                     "HEX-EDITOR-012 shell-bound marker save");
             assertEquals(1L, runtime.database().markerCount(mapId.value()),
                     "HEX-EDITOR-012 shell-bound marker save persists one marker");
@@ -1100,7 +1100,7 @@ public final class HexMapEditorBehaviorTest {
                     "HEX-EDITOR-012 shell-bound reload reads persisted map");
             assertTileTerrain(reloaded, AUTHORED_Q, AUTHORED_R, AUTHORED_TERRAIN,
                     "HEX-EDITOR-012 shell-bound reload reads persisted terrain");
-            assertMarker(reloaded, SHELL_BOUND_MARKER_NAME, "LANDMARK", MARKER_NOTE,
+            assertMarker(reloaded, SHELL_BOUND_MARKER_NAME, HexMarkerKind.LANDMARK, MARKER_NOTE,
                     "HEX-EDITOR-012 shell-bound reload reads persisted marker");
         } finally {
             stage.hide();
@@ -1548,7 +1548,7 @@ public final class HexMapEditorBehaviorTest {
                 projection.selectedQ(),
                 projection.selectedR(),
                 request.markerName(),
-                markerType.name(),
+                markerType,
                 request.markerNote()));
     }
 
@@ -1570,14 +1570,14 @@ public final class HexMapEditorBehaviorTest {
                     action.mapId(),
                     action.q(),
                     action.r(),
-                    action.activeTerrain().name()));
+                    action.activeTerrain()));
             return;
         }
         runtime.editor().selectTile(new SelectHexTileCommand(action.mapId(), action.q(), action.r()));
         if (action.activeTool() == HexEditorMode.PLACE_MARKER) {
             runtime.editor().setActiveTool(new SetHexEditorToolCommand(
-                    action.activeTool().name(),
-                    action.activeTerrain().name()));
+                    action.activeTool(),
+                    action.activeTerrain()));
         }
     }
 

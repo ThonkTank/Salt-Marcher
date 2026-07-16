@@ -13,7 +13,7 @@ import features.dungeon.api.DungeonEditorMapSurfaceModel;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
@@ -83,7 +83,7 @@ final class DungeonEditorStairScenarios {
                 .filter(handle -> handle.cell().level() == 0)
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("F7_STAIR_ANCHOR lower stair path handle not loaded."));
-        DungeonEditorTopologyElementRef stairRef = editorTopologyRef(stairHandle.ref().topologyRef());
+        DungeonTopologyElementRef stairRef = editorTopologyRef(stairHandle.ref().topologyRef());
         List<String> stableRowsBefore = runtime.database().stairStableState(mapId);
         List<String> pathRowsBefore = runtime.database().stairPathState(mapId);
         List<String> exitRowsBefore = runtime.database().stairExitState(mapId);
@@ -191,7 +191,7 @@ final class DungeonEditorStairScenarios {
         selectMap(controls, "Stair Geometry Map");
         click(button(controls, "Auswahl"));
         var stairHandle = firstStairHandle(runtime.mapSurfaceModel().current(), "DE-STAIR-004");
-        DungeonEditorTopologyElementRef stairRef = editorTopologyRef(stairHandle.ref().topologyRef());
+        DungeonTopologyElementRef stairRef = editorTopologyRef(stairHandle.ref().topologyRef());
         Point2D stairCenter = glyphCenterForRef(binding.mapContentModel(), stairRef);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMousePressed(
@@ -510,7 +510,7 @@ final class DungeonEditorStairScenarios {
         selectMap(controls, "Stair Invalid Recompute Map");
         click(button(controls, "Auswahl"));
         var stairHandle = firstStairHandle(runtime.mapSurfaceModel().current(), "DE-STAIR-007");
-        DungeonEditorTopologyElementRef stairRef = editorTopologyRef(stairHandle.ref().topologyRef());
+        DungeonTopologyElementRef stairRef = editorTopologyRef(stairHandle.ref().topologyRef());
         Point2D stairCenter = glyphCenterForRef(binding.mapContentModel(), stairRef);
         DungeonMapContentModel.Viewport viewport = binding.mapContentModel().currentViewport();
         fireMapMousePressed(
@@ -949,7 +949,7 @@ final class DungeonEditorStairScenarios {
 
         var stairHandle = firstStairHandle(runtime.mapSurfaceModel().current(), "DE-STAIR-009 unbound");
         long stairId = stairHandle.ref().topologyRef().id();
-        DungeonEditorTopologyElementRef stairRef = editorTopologyRef(stairHandle.ref().topologyRef());
+        DungeonTopologyElementRef stairRef = editorTopologyRef(stairHandle.ref().topologyRef());
         Point2D stairCenter = glyphCenterForRef(binding.mapContentModel(), stairRef);
         assertTrue(!runtime.database().stairStableState(mapId).isEmpty(),
                 "DE-STAIR-009 unbound fixture starts with a stair row and topology ref");
@@ -1017,7 +1017,7 @@ final class DungeonEditorStairScenarios {
             long mapId
     ) {
         var stairHandle = firstStairHandle(runtime.mapSurfaceModel().current(), "DE-STAIR-009 bound rejection");
-        DungeonEditorTopologyElementRef stairRef = editorTopologyRef(stairHandle.ref().topologyRef());
+        DungeonTopologyElementRef stairRef = editorTopologyRef(stairHandle.ref().topologyRef());
         Point2D stairCenter = glyphCenterForRef(binding.mapContentModel(), stairRef);
         click(button(controls, "Auswahl"));
         DungeonMapContentModel.Viewport selectViewport = binding.mapContentModel().currentViewport();

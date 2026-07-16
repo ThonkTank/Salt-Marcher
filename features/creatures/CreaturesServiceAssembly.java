@@ -13,6 +13,7 @@ import features.creatures.adapter.sqlite.query.SqliteCreatureCatalogQueryAdapter
 import features.creatures.api.CreaturesApi;
 import features.creatures.application.CreatureCatalogProjection;
 import features.creatures.application.CreaturesApplicationService;
+import features.creatures.application.CreaturesPublishedState;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
 import features.creatures.api.CreatureCatalogModel;
 import features.creatures.api.CreatureDetailModel;
@@ -60,16 +61,14 @@ public final class CreaturesServiceAssembly {
         ExecutionLane safeExecutionLane = Objects.requireNonNull(executionLane, "executionLane");
         UiDispatcher safeUiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         Diagnostics safeDiagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
-        CreatureFilterOptionsModel filterOptions = new CreatureFilterOptionsModel(safeUiDispatcher);
-        CreatureCatalogModel catalog = new CreatureCatalogModel(safeUiDispatcher);
-        CreatureDetailModel detail = new CreatureDetailModel(safeUiDispatcher);
-        CreatureEncounterCandidatesModel encounterCandidates = new CreatureEncounterCandidatesModel(safeUiDispatcher);
+        CreaturesPublishedState publishedState = new CreaturesPublishedState(safeUiDispatcher);
+        CreatureFilterOptionsModel filterOptions = publishedState.filterOptionsModel();
+        CreatureCatalogModel catalog = publishedState.catalogModel();
+        CreatureDetailModel detail = publishedState.detailModel();
+        CreatureEncounterCandidatesModel encounterCandidates = publishedState.encounterCandidatesModel();
         CreaturesApplicationService application = new CreaturesApplicationService(
                 safeCatalogPort,
-                filterOptions,
-                catalog,
-                detail,
-                encounterCandidates,
+                publishedState,
                 safeExecutionLane,
                 safeDiagnostics);
         CreatureReferenceApi references = creatureId -> {

@@ -17,38 +17,10 @@ public record DungeonFeatureFacts(
         List<Cell> cells,
         String description,
         String destinationLabel,
-        List<String> facts,
         StatePanelFacts statePanelFacts,
         DungeonTopologyRef topologyRef,
         @Nullable Edge anchorEdge
 ) {
-
-    public DungeonFeatureFacts(
-            DungeonFeatureType kind,
-            long id,
-            String label,
-            List<Cell> cells,
-            String description,
-            String destinationLabel,
-            List<String> facts,
-            DungeonTopologyRef topologyRef
-    ) {
-        this(kind, id, label, cells, description, destinationLabel, facts, StatePanelFacts.empty(), topologyRef, null);
-    }
-
-    public DungeonFeatureFacts(
-            DungeonFeatureType kind,
-            long id,
-            String label,
-            List<Cell> cells,
-            String description,
-            String destinationLabel,
-            List<String> facts,
-            StatePanelFacts statePanelFacts,
-            DungeonTopologyRef topologyRef
-    ) {
-        this(kind, id, label, cells, description, destinationLabel, facts, statePanelFacts, topologyRef, null);
-    }
 
     public DungeonFeatureFacts {
         kind = kind == null ? DungeonFeatureType.STAIR : kind;
@@ -57,28 +29,8 @@ public record DungeonFeatureFacts(
         cells = cells == null ? List.of() : List.copyOf(cells);
         description = description == null ? "" : description.trim();
         destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
-        facts = copyFacts(facts);
         statePanelFacts = statePanelFacts == null ? StatePanelFacts.empty() : statePanelFacts;
         topologyRef = topologyRef == null ? DungeonTopologyRef.empty() : topologyRef;
-    }
-
-    @Override
-    public List<String> facts() {
-        return List.copyOf(facts);
-    }
-
-    private static List<String> copyFacts(List<String> source) {
-        if (source == null || source.isEmpty()) {
-            return List.of();
-        }
-        List<String> result = new java.util.ArrayList<>();
-        for (String fact : source) {
-            String normalized = fact == null ? "" : fact.trim();
-            if (!normalized.isBlank()) {
-                result.add(normalized);
-            }
-        }
-        return List.copyOf(result);
     }
 
     public record StatePanelFacts(

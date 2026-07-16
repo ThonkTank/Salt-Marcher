@@ -7,20 +7,19 @@ import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 import platform.execution.ExecutionLane;
 import features.hex.domain.map.HexCoordinate;
-import features.hex.domain.map.HexEditorMode;
-import features.hex.domain.map.HexEditorState;
-import features.hex.domain.map.HexEditorWorkspace;
+import features.hex.api.HexEditorMode;
+import features.hex.application.HexEditorState;
+import features.hex.application.HexEditorWorkspace;
 import features.hex.domain.map.HexMap;
 import features.hex.domain.map.HexMapIdentity;
 import features.hex.domain.map.HexMapSummary;
 import features.hex.domain.map.HexMarker;
 import features.hex.domain.map.HexMarkerIdentity;
-import features.hex.domain.map.HexMarkerKind;
-import features.hex.domain.map.HexTerrain;
+import features.hex.api.HexMarkerKind;
+import features.hex.api.HexTerrain;
 import features.hex.domain.map.repository.HexMapRepository;
 import features.hex.api.CreateHexMapCommand;
-import features.hex.api.HexEditorModel;
-import features.hex.api.HexEditorModel.ToolIntent;
+import features.hex.application.HexEditorPublishedState.ToolIntent;
 import features.hex.api.LoadHexEditorCommand;
 import features.hex.api.PaintHexTerrainCommand;
 import features.hex.api.RenameHexMapCommand;
@@ -41,7 +40,7 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
     public HexEditorApplicationService(
             HexMapRepository repository,
             HexEditorWorkspace workspace,
-            HexEditorModel model,
+            HexEditorPublishedState publishedState,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
@@ -51,7 +50,7 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
                 new EditorPublisher(
                         Objects.requireNonNull(repository, "repository"),
                         Objects.requireNonNull(workspace, "workspace"),
-                        Objects.requireNonNull(model, "model")),
+                        Objects.requireNonNull(publishedState, "publishedState")),
                 Objects.requireNonNull(diagnostics, "diagnostics"));
     }
 
@@ -235,18 +234,18 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
             }
         }
 
-        void paintTerrain(long mapIdValue, int q, int r, String terrainName, ToolIntent submittedToolIntent) {
+        void paintTerrain(long mapIdValue, int q, int r, HexTerrain terrain, ToolIntent submittedToolIntent) {
             try {
                 HexMapIdentity mapId = new HexMapIdentity(mapIdValue);
                 HexCoordinate coordinate = new HexCoordinate(q, r);
-                HexTerrain terrain = EditorKeys.terrain(terrainName);
+                features.hex.domain.map.HexTerrain domainTerrain = HexApiTypeMapper.domainTerrain(terrain);
                 Optional<HexMap> loaded = repository.loadById(mapId);
                 if (loaded.isEmpty()) {
                     publisher.publishMissingMap();
                     return;
                 }
-                HexMap paintedMap = loaded.get().paintTerrain(coordinate, terrain);
-                HexMap savedMap = repository.saveTerrain(paintedMap.mapId(), coordinate, terrain);
+                HexMap paintedMap = loaded.get().paintTerrain(coordinate, domainTerrain);
+                HexMap savedMap = repository.saveTerrain(paintedMap.mapId(), coordinate, domainTerrain);
                 publisher.publishLoadedCompletion(
                         Optional.of(savedMap),
                         Optional.of(coordinate),
@@ -267,14 +266,13 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
                 int q,
                 int r,
                 String name,
-                String typeName,
+                HexMarkerKind type,
                 String note,
                 ToolIntent submittedToolIntent
         ) {
             try {
                 HexMapIdentity mapId = new HexMapIdentity(mapIdValue);
                 HexCoordinate coordinate = new HexCoordinate(q, r);
-                HexMarkerKind type = EditorKeys.markerType(typeName);
                 Optional<HexMap> loaded = repository.loadById(mapId);
                 if (loaded.isEmpty()) {
                     publisher.publishMissingMap();
@@ -287,7 +285,7 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
                         markerIdValue,
                         coordinate,
                         name,
-                        type,
+                        HexApiTypeMapper.domainMarkerKind(type),
                         note,
                         loaded.get(),
                         submittedToolIntent);
@@ -302,10 +300,8 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
             return publisher.currentToolIntent();
         }
 
-        void setActiveTool(String modeName, String terrainName) {
-            publisher.publishImmediateToolIntent(
-                    EditorKeys.mode(modeName),
-                    EditorKeys.terrain(terrainName));
+        void setActiveTool(HexEditorMode mode, HexTerrain terrain) {
+            publisher.publishImmediateToolIntent(mode, terrain);
         }
 
         private void publishSelectedTile(
@@ -318,7 +314,7 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
                     Optional.of(coordinate),
                     "Hex tile selected.",
                     HexEditorMode.defaultMode(),
-                    EditorKeys.terrain(submittedToolIntent.activeTerrain()),
+                    submittedToolIntent.activeTerrain(),
                     submittedToolIntent.revision());
         }
 
@@ -359,7 +355,7 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
                 long markerIdValue,
                 HexCoordinate coordinate,
                 String name,
-                HexMarkerKind type,
+                features.hex.domain.map.HexMarkerKind type,
                 String note,
                 HexMap map,
                 ToolIntent submittedToolIntent
@@ -375,7 +371,7 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
                     Optional.of(coordinate),
                     "Hex marker saved.",
                     HexEditorMode.PLACE_MARKER,
-                    EditorKeys.terrain(submittedToolIntent.activeTerrain()),
+                    submittedToolIntent.activeTerrain(),
                     submittedToolIntent.revision());
         }
     }
@@ -384,16 +380,16 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
 
         private final HexMapRepository repository;
         private final HexEditorWorkspace workspace;
-        private final HexEditorModel model;
+        private final HexEditorPublishedState publishedState;
 
         EditorPublisher(
                 HexMapRepository repository,
                 HexEditorWorkspace workspace,
-                HexEditorModel model
+                HexEditorPublishedState publishedState
         ) {
             this.repository = repository;
             this.workspace = workspace;
-            this.model = model;
+            this.publishedState = publishedState;
         }
 
         HexEditorState publishLoaded(
@@ -451,22 +447,22 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
 
         HexEditorState publish(HexEditorState state) {
             HexEditorState nextState = workspace.replace(state);
-            model.publish(HexEditorSnapshotProjection.project(nextState));
+            publishedState.publish(HexEditorSnapshotProjection.project(nextState));
             return nextState;
         }
 
         private HexEditorState publishCompletion(HexEditorState state, long submittedToolRevision) {
             HexEditorState nextState = workspace.replace(state);
-            model.publishCompletion(HexEditorSnapshotProjection.project(nextState), submittedToolRevision);
+            publishedState.publishCompletion(HexEditorSnapshotProjection.project(nextState), submittedToolRevision);
             return nextState;
         }
 
         ToolIntent currentToolIntent() {
-            return model.currentToolIntent();
+            return publishedState.currentToolIntent();
         }
 
         void publishImmediateToolIntent(HexEditorMode activeMode, HexTerrain activeTerrain) {
-            model.publishImmediateToolIntent(activeMode.name(), activeTerrain.name());
+            publishedState.publishImmediateToolIntent(activeMode, activeTerrain);
         }
 
         HexEditorState currentState() {
@@ -495,22 +491,4 @@ public final class HexEditorApplicationService implements features.hex.api.HexEd
         }
     }
 
-    private static final class EditorKeys {
-
-        static HexEditorMode mode(String modeName) {
-            return modeName == null || modeName.isBlank()
-                    ? HexEditorMode.defaultMode()
-                    : HexEditorMode.valueOf(modeName);
-        }
-
-        static HexTerrain terrain(String terrainName) {
-            return terrainName == null || terrainName.isBlank()
-                    ? HexTerrain.defaultTerrain()
-                    : HexTerrain.valueOf(terrainName);
-        }
-
-        static HexMarkerKind markerType(String typeName) {
-            return typeName == null || typeName.isBlank() ? null : HexMarkerKind.valueOf(typeName);
-        }
-    }
 }

@@ -41,14 +41,14 @@ final class DungeonStairFeatureProjection {
                 CellOrdering.sortedCells(stair.occupiedCells()),
                 stairDescription(stair, exits),
                 stairDestinationLabel(exits),
-                stairFacts(stair),
                 DungeonFeatureFacts.StatePanelFacts.stair(
                         stair.stairId(),
                         stair.shape(),
                         stair.direction(),
                         stair.dimension1(),
                         stair.dimension2()),
-                new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId())));
+                new DungeonTopologyRef(DungeonTopologyElementKind.STAIR, stair.stairId()),
+                null));
         if (stair.corridorId() != null) {
             relations.add(new DungeonRelationGraph.FeatureRelation(
                     stair.stairId(),
@@ -84,14 +84,4 @@ final class DungeonStairFeatureProjection {
         return String.join(", ", labels);
     }
 
-    private static List<String> stairFacts(Stair stair) {
-        if (stair == null) {
-            return List.of();
-        }
-        return List.of(
-                "shape: " + stair.shape().name(),
-                "direction: " + stair.direction().name(),
-                "dimension1: " + stair.dimension1(),
-                "dimension2: " + stair.dimension2());
-    }
 }

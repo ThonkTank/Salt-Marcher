@@ -87,6 +87,15 @@ final class PartyPublishedProjection {
         return new PartyTravelPositionsResult(ReadStatus.STORAGE_ERROR, List.of(), null);
     }
 
+    static AdventuringDayCalculationResult failedAdventuringDayCalculationResult() {
+        return new AdventuringDayCalculationResult(
+                ReadStatus.STORAGE_ERROR,
+                new AdventuringDayCalculation(
+                        new AdventuringDayBudget(0, 0, 0, 0, 0),
+                        new AdventuringDayProgress(0, 0, 0, 0, 0.0, 0, 0, List.of(), List.of())),
+                AdventuringDayPlanningSummary.empty());
+    }
+
     static MutationResult storageErrorMutationResult() {
         return new MutationResult(MutationStatus.STORAGE_ERROR);
     }

@@ -8,29 +8,13 @@ import java.util.List;
 public record DungeonInspectorSnapshot(
         String title,
         String summary,
-        /*
-         * LEGACY_REMOVE_ON_TOUCH: display/debug compatibility only. Remove when
-         * generic inspector displays and selection behavior tests read
-         * title/summary/statePanelFacts instead of key/value fact lines.
-         */
-        List<String> facts,
         StatePanelFacts statePanelFacts,
         List<RoomNarrationCard> roomNarrations
 ) {
 
-    public DungeonInspectorSnapshot(
-            String title,
-            String summary,
-            List<String> facts,
-            List<RoomNarrationCard> roomNarrations
-    ) {
-        this(title, summary, facts, StatePanelFacts.empty(), roomNarrations);
-    }
-
     public DungeonInspectorSnapshot {
         title = title == null || title.isBlank() ? "Dungeon" : title;
         summary = summary == null ? "" : summary;
-        facts = facts == null ? List.of() : List.copyOf(facts);
         statePanelFacts = statePanelFacts == null ? StatePanelFacts.empty() : statePanelFacts;
         roomNarrations = roomNarrations == null ? List.of() : List.copyOf(roomNarrations);
     }

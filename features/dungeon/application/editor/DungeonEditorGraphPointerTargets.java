@@ -2,7 +2,7 @@ package features.dungeon.application.editor;
 
 import java.util.Map;
 import features.dungeon.api.DungeonEditorMapSnapshot;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 
 final class DungeonEditorGraphPointerTargets {
     private DungeonEditorGraphPointerTargets() {
@@ -25,9 +25,9 @@ final class DungeonEditorGraphPointerTargets {
     }
 
     private static DungeonEditorRuntimePointerTarget.TopologyKind topologyKind(
-            DungeonEditorTopologyElementRef topologyRef
+            DungeonTopologyElementRef topologyRef
     ) {
-        return DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
-                DungeonEditorTopologyHitRefs.topologyKind(topologyRef));
+        return DungeonEditorRuntimePointerTarget.TopologyKind.fromPublished(
+                topologyRef == null ? null : topologyRef.kind());
     }
 }

@@ -14,6 +14,7 @@ import features.party.adapter.javafx.party.PartyTopBarContribution;
 import features.party.adapter.sqlite.repository.SqlitePartyRosterRepository;
 import features.party.api.PartyApi;
 import features.party.application.PartyApplicationService;
+import features.party.application.PartyPublishedState;
 import features.party.domain.roster.repository.PartyRosterRepository;
 import features.party.api.ActivePartyCompositionModel;
 import features.party.api.ActivePartyModel;
@@ -55,23 +56,18 @@ public final class PartyServiceAssembly {
             UiDispatcher uiDispatcher,
             Diagnostics diagnostics
     ) {
-        UiDispatcher dispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
-        PartySnapshotModel snapshot = new PartySnapshotModel(dispatcher);
-        ActivePartyModel activeParty = new ActivePartyModel(dispatcher);
-        ActivePartyCompositionModel activeComposition = new ActivePartyCompositionModel(dispatcher);
-        AdventuringDaySummaryModel daySummary = new AdventuringDaySummaryModel(dispatcher);
-        PartyTravelPositionsModel travelPositions = new PartyTravelPositionsModel(dispatcher);
-        PartyMutationModel mutation = new PartyMutationModel(dispatcher);
-        AdventuringDayCalculationModel dayCalculation = new AdventuringDayCalculationModel(dispatcher);
+        PartyPublishedState publishedState = new PartyPublishedState(
+                Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
+        PartySnapshotModel snapshot = publishedState.snapshotModel();
+        ActivePartyModel activeParty = publishedState.activePartyModel();
+        ActivePartyCompositionModel activeComposition = publishedState.activeCompositionModel();
+        AdventuringDaySummaryModel daySummary = publishedState.adventuringDaySummaryModel();
+        PartyTravelPositionsModel travelPositions = publishedState.travelPositionsModel();
+        PartyMutationModel mutation = publishedState.mutationModel();
+        AdventuringDayCalculationModel dayCalculation = publishedState.adventuringDayCalculationModel();
         PartyApplicationService application = new PartyApplicationService(
                 Objects.requireNonNull(repository, "repository"),
-                snapshot,
-                activeParty,
-                activeComposition,
-                daySummary,
-                travelPositions,
-                mutation,
-                dayCalculation,
+                publishedState,
                 Objects.requireNonNull(executionLane, "executionLane"),
                 Objects.requireNonNull(diagnostics, "diagnostics"));
         application.refreshPublishedState();

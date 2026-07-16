@@ -1,5 +1,10 @@
-package features.hex.domain.map;
+package features.hex.application;
 
+import features.hex.api.HexEditorMode;
+import features.hex.api.HexTerrain;
+import features.hex.domain.map.HexCoordinate;
+import features.hex.domain.map.HexMap;
+import features.hex.domain.map.HexMapSummary;
 import java.util.List;
 import java.util.Optional;
 

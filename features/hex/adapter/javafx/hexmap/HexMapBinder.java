@@ -9,9 +9,9 @@ import shell.api.ShellControls;
 import shell.api.ShellSlot;
 import features.hex.api.HexEditorApi;
 import features.hex.api.HexTravelApi;
-import features.hex.domain.map.HexEditorMode;
-import features.hex.domain.map.HexMarkerKind;
-import features.hex.domain.map.HexTerrain;
+import features.hex.api.HexEditorMode;
+import features.hex.api.HexMarkerKind;
+import features.hex.api.HexTerrain;
 import features.hex.api.CreateHexMapCommand;
 import features.hex.api.LoadHexEditorCommand;
 import features.hex.api.MoveHexPartyTokenCommand;
@@ -82,7 +82,7 @@ final class HexMapBinder {
     ) {
         HexMapViewModel.ControlsProjection projection = viewModel.properties().controls().get();
         if (projection.toolChanged(tool, terrain)) {
-            editor.setActiveTool(new SetHexEditorToolCommand(tool.name(), terrain.name()));
+            editor.setActiveTool(new SetHexEditorToolCommand(tool, terrain));
         }
     }
 
@@ -116,7 +116,7 @@ final class HexMapBinder {
                     action.mapId(),
                     action.q(),
                     action.r(),
-                    action.activeTerrain().name()));
+                    action.activeTerrain()));
             return;
         }
         if (action.activeTool() == HexEditorMode.MOVE_PARTY) {
@@ -125,7 +125,7 @@ final class HexMapBinder {
         }
         editor.selectTile(new SelectHexTileCommand(action.mapId(), action.q(), action.r()));
         if (action.activeTool() == HexEditorMode.PLACE_MARKER) {
-            editor.setActiveTool(new SetHexEditorToolCommand(action.activeTool().name(), action.activeTerrain().name()));
+            editor.setActiveTool(new SetHexEditorToolCommand(action.activeTool(), action.activeTerrain()));
         }
     }
 
@@ -170,7 +170,7 @@ final class HexMapBinder {
                 projection.selectedQ(),
                 projection.selectedR(),
                 request.markerName(),
-                markerType.name(),
+                markerType,
                 request.markerNote()));
     }
 

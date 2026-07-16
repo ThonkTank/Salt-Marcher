@@ -63,7 +63,7 @@ final class DungeonEditorMapProjectionServiceAssembly {
                     0L,
                     "ROOM",
                     List.of(),
-                    features.dungeon.api.DungeonEditorTopologyElementRef.empty());
+                    features.dungeon.api.DungeonTopologyElementRef.empty());
         }
         return new DungeonEditorMapSnapshot.Area(
                 area.kind().name(),
@@ -94,7 +94,7 @@ final class DungeonEditorMapProjectionServiceAssembly {
                     1L,
                     "boundary",
                     DungeonEditorValueProjectionServiceAssembly.edge(null),
-                    features.dungeon.api.DungeonEditorTopologyElementRef.empty());
+                    features.dungeon.api.DungeonTopologyElementRef.empty());
         }
         return new DungeonEditorMapSnapshot.Boundary(
                 boundary.kind().externalKind(),
@@ -126,7 +126,7 @@ final class DungeonEditorMapProjectionServiceAssembly {
                     List.of(),
                     "",
                     "",
-                    features.dungeon.api.DungeonEditorTopologyElementRef.empty(),
+                    features.dungeon.api.DungeonTopologyElementRef.empty(),
                     null);
         }
         return new DungeonEditorMapSnapshot.Feature(

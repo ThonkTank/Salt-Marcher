@@ -8,24 +8,20 @@ public record HexEditorSnapshot(
         Optional<MapSnapshot> selectedMap,
         List<TileSnapshot> tiles,
         Optional<TileDetails> selectedTile,
-        String activeTool,
-        String activeTerrain,
+        HexEditorMode activeTool,
+        HexTerrain activeTerrain,
         String statusText,
         String failureText,
         String warningText
 ) {
-
-    private static final String DEFAULT_TOOL = "SELECT";
-    private static final String DEFAULT_TERRAIN = "GRASSLAND";
-    private static final String DEFAULT_MARKER_TYPE = "LANDMARK";
 
     public HexEditorSnapshot {
         catalog = catalog == null ? List.of() : List.copyOf(catalog);
         selectedMap = selectedMap == null ? Optional.empty() : selectedMap;
         tiles = tiles == null ? List.of() : List.copyOf(tiles);
         selectedTile = selectedTile == null ? Optional.empty() : selectedTile;
-        activeTool = defaultText(activeTool, DEFAULT_TOOL);
-        activeTerrain = defaultText(activeTerrain, DEFAULT_TERRAIN);
+        activeTool = activeTool == null ? HexEditorMode.defaultMode() : activeTool;
+        activeTerrain = activeTerrain == null ? HexTerrain.defaultTerrain() : activeTerrain;
         statusText = statusText == null ? "" : statusText.trim();
         failureText = failureText == null ? "" : failureText.trim();
         warningText = warningText == null ? "" : warningText.trim();
@@ -57,8 +53,8 @@ public record HexEditorSnapshot(
                 Optional.empty(),
                 List.of(),
                 Optional.empty(),
-                DEFAULT_TOOL,
-                DEFAULT_TERRAIN,
+                HexEditorMode.defaultMode(),
+                HexTerrain.defaultTerrain(),
                 statusText,
                 "",
                 "");
@@ -91,13 +87,13 @@ public record HexEditorSnapshot(
     public record TileSnapshot(
             int q,
             int r,
-            String terrain,
+            HexTerrain terrain,
             boolean selected,
             List<MarkerSnapshot> markers
     ) {
 
         public TileSnapshot {
-            terrain = defaultText(terrain, DEFAULT_TERRAIN);
+            terrain = terrain == null ? HexTerrain.defaultTerrain() : terrain;
             markers = markers == null ? List.of() : List.copyOf(markers);
         }
 
@@ -110,7 +106,7 @@ public record HexEditorSnapshot(
     public record TileDetails(
             int q,
             int r,
-            String terrain,
+            HexTerrain terrain,
             String elevation,
             String biome,
             String explorationState,
@@ -119,7 +115,7 @@ public record HexEditorSnapshot(
     ) {
 
         public TileDetails {
-            terrain = defaultText(terrain, DEFAULT_TERRAIN);
+            terrain = terrain == null ? HexTerrain.defaultTerrain() : terrain;
             elevation = elevation == null ? "" : elevation.trim();
             biome = biome == null ? "" : biome.trim();
             explorationState = explorationState == null ? "" : explorationState.trim();
@@ -138,20 +134,16 @@ public record HexEditorSnapshot(
             int q,
             int r,
             String name,
-            String type,
+            HexMarkerKind type,
             String note
     ) {
 
         public MarkerSnapshot {
             markerId = markerId == null ? new HexMarkerId(0L) : markerId;
             name = name == null ? "" : name.trim();
-            type = defaultText(type, DEFAULT_MARKER_TYPE);
+            type = type == null ? HexMarkerKind.LANDMARK : type;
             note = note == null ? "" : note.trim();
         }
     }
 
-    private static String defaultText(String text, String fallback) {
-        String safeText = text == null ? "" : text.trim();
-        return safeText.isBlank() ? fallback : safeText;
-    }
 }

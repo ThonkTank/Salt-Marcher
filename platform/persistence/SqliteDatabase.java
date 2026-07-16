@@ -1,11 +1,16 @@
 package platform.persistence;
 
 import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -23,6 +28,7 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.sqlite.SQLiteConfig;
 import platform.diagnostics.DiagnosticId;
 import platform.diagnostics.Diagnostics;
 
@@ -34,6 +40,7 @@ public final class SqliteDatabase implements AutoCloseable {
     private static final int BUSY_TIMEOUT_MILLIS = 5_000;
     private static final String APP_DATA_DIR_NAME = "salt-marcher";
     private static final String MIGRATIONS_TABLE = "sm_schema_versions";
+    private static final byte[] SQLITE_HEADER = "SQLite format 3\0".getBytes(StandardCharsets.US_ASCII);
     private static final Pattern OWNER_PATTERN = Pattern.compile("[a-z][a-z0-9-]*");
     private static final Pattern BACKUP_VERSION_PATTERN = Pattern.compile(".*\\.backup-v(\\d+)\\.sqlite");
     private static final DiagnosticId INTEGRITY_FAILURE =
@@ -45,13 +52,19 @@ public final class SqliteDatabase implements AutoCloseable {
 
     private final Path databasePath;
     private final Diagnostics diagnostics;
+    private final FileMover fileMover;
     private final Map<String, List<SqliteMigration>> migrationPlans = new LinkedHashMap<>();
     private boolean prepared;
     private boolean closed;
 
     public SqliteDatabase(Path databasePath, Diagnostics diagnostics) {
+        this(databasePath, diagnostics, SqliteDatabase::moveReplacing);
+    }
+
+    SqliteDatabase(Path databasePath, Diagnostics diagnostics, FileMover fileMover) {
         this.databasePath = Objects.requireNonNull(databasePath, "databasePath").toAbsolutePath().normalize();
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
+        this.fileMover = Objects.requireNonNull(fileMover, "fileMover");
     }
 
     public static SqliteDatabase defaultDatabase(String fileName, Diagnostics diagnostics) {
@@ -125,24 +138,37 @@ public final class SqliteDatabase implements AutoCloseable {
     }
 
     private void prepareExistingDatabase() throws SQLException {
+        Path snapshot = null;
         try {
-            assertPhysicalIntegrity(databasePath);
-        } catch (SQLException exception) {
-            diagnostics.failure(INTEGRITY_FAILURE, exception.getClass());
-            recoverFromLatestBackup(exception);
-            return;
+            try {
+                assertSQLiteHeader(databasePath);
+                snapshot = createPreflightSnapshot();
+                assertPhysicalIntegrity(snapshot);
+            } catch (PreflightLockUnavailableException exception) {
+                diagnostics.failure(INTEGRITY_FAILURE, exception.getClass());
+                throw exception;
+            } catch (SQLException exception) {
+                diagnostics.failure(INTEGRITY_FAILURE, exception.getClass());
+                recoverFromLatestBackup(exception);
+                return;
+            }
+            int version = platformVersion(snapshot);
+            if (version > PLATFORM_SCHEMA_VERSION) {
+                throw new SQLException("SQLite platform schema is newer than this application.");
+            }
+            try {
+                assertForeignKeys(snapshot);
+            } catch (SQLException exception) {
+                diagnostics.failure(INTEGRITY_FAILURE, exception.getClass());
+                throw exception;
+            }
+            promoteVerifiedBackup(version, snapshot);
+            snapshot = null;
+        } finally {
+            if (snapshot != null) {
+                deletePreflightSnapshot(snapshot);
+            }
         }
-        int version = platformVersion(databasePath);
-        if (version > PLATFORM_SCHEMA_VERSION) {
-            throw new SQLException("SQLite platform schema is newer than this application.");
-        }
-        try {
-            assertForeignKeys(databasePath);
-        } catch (SQLException exception) {
-            diagnostics.failure(INTEGRITY_FAILURE, exception.getClass());
-            throw exception;
-        }
-        createVerifiedBackup(version);
     }
 
     private void migrate(Connection connection, Map<String, List<SqliteMigration>> plans) throws SQLException {
@@ -213,16 +239,10 @@ public final class SqliteDatabase implements AutoCloseable {
         }
     }
 
-    private void createVerifiedBackup(int version) throws SQLException {
+    private void promoteVerifiedBackup(int version, Path snapshot) throws SQLException {
         Path target = backupPath(version);
-        Path temporary = sibling(target.getFileName() + ".tmp");
-        deleteIfExists(temporary);
-        try (Connection connection = openConfigured(databasePath);
-             Statement statement = connection.createStatement()) {
-            statement.execute("VACUUM INTO '" + sqliteLiteral(temporary) + "'");
-        }
-        assertIntegrity(temporary);
-        replaceAtomically(temporary, target);
+        replaceAtomically(snapshot, target);
+        deletePreflightSnapshot(snapshot);
     }
 
     private void recoverFromLatestBackup(SQLException originalFailure) throws SQLException {
@@ -277,7 +297,11 @@ public final class SqliteDatabase implements AutoCloseable {
         for (Path candidate : candidates) {
             try {
                 assertIntegrity(candidate);
-                return candidate;
+                int namedVersion = backupVersion(candidate);
+                int storedVersion = platformVersion(candidate);
+                if (storedVersion == namedVersion && storedVersion <= PLATFORM_SCHEMA_VERSION) {
+                    return candidate;
+                }
             } catch (SQLException ignored) {
                 // Try the next older local backup; diagnostics remain payload-free at the caller boundary.
             }
@@ -291,21 +315,47 @@ public final class SqliteDatabase implements AutoCloseable {
     }
 
     private void moveDatabaseFamilyToQuarantine(Path quarantine) throws IOException {
-        Files.move(databasePath, quarantine, StandardCopyOption.REPLACE_EXISTING);
-        moveIfExists(walPath(databasePath), sibling(quarantine.getFileName() + "-wal"));
-        moveIfExists(shmPath(databasePath), sibling(quarantine.getFileName() + "-shm"));
+        moveTransaction(List.of(
+                new FileMove(databasePath, quarantine),
+                new FileMove(walPath(databasePath), sibling(quarantine.getFileName() + "-wal")),
+                new FileMove(shmPath(databasePath), sibling(quarantine.getFileName() + "-shm")),
+                new FileMove(journalPath(databasePath), sibling(quarantine.getFileName() + "-journal"))));
     }
 
     private void restoreQuarantinedPrimary(Path quarantine) throws IOException {
-        deleteIfExists(databasePath);
-        moveIfExists(quarantine, databasePath);
-        moveIfExists(sibling(quarantine.getFileName() + "-wal"), walPath(databasePath));
-        moveIfExists(sibling(quarantine.getFileName() + "-shm"), shmPath(databasePath));
+        Path failedRecovery = sibling(databasePath.getFileName() + ".recovery-failed.tmp");
+        deleteRequiredIfExists(failedRecovery);
+        moveTransaction(List.of(
+                new FileMove(databasePath, failedRecovery),
+                new FileMove(quarantine, databasePath),
+                new FileMove(sibling(quarantine.getFileName() + "-wal"), walPath(databasePath)),
+                new FileMove(sibling(quarantine.getFileName() + "-shm"), shmPath(databasePath)),
+                new FileMove(sibling(quarantine.getFileName() + "-journal"), journalPath(databasePath))));
+        deleteRequiredIfExists(failedRecovery);
     }
 
-    private static void moveIfExists(Path source, Path target) throws IOException {
-        if (Files.exists(source)) {
-            Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+    private void moveTransaction(List<FileMove> moves) throws IOException {
+        List<FileMove> completed = new ArrayList<>();
+        try {
+            for (FileMove move : moves) {
+                if (Files.exists(move.source())) {
+                    if (Files.exists(move.target())) {
+                        throw new IOException("SQLite move target already exists.");
+                    }
+                    fileMover.move(move.source(), move.target());
+                    completed.add(move);
+                }
+            }
+        } catch (IOException failure) {
+            for (int index = completed.size() - 1; index >= 0; index--) {
+                FileMove move = completed.get(index);
+                try {
+                    fileMover.move(move.target(), move.source());
+                } catch (IOException rollbackFailure) {
+                    failure.addSuppressed(rollbackFailure);
+                }
+            }
+            throw failure;
         }
     }
 
@@ -318,13 +368,13 @@ public final class SqliteDatabase implements AutoCloseable {
         if (!Files.isRegularFile(path) || fileSize(path) == 0L) {
             throw new SQLException("SQLite file is missing or empty.");
         }
-        try (Connection connection = openConfigured(path)) {
+        try (Connection connection = openReadOnly(path)) {
             assertConnectionPhysicalIntegrity(connection);
         }
     }
 
     private static void assertForeignKeys(Path path) throws SQLException {
-        try (Connection connection = openConfigured(path)) {
+        try (Connection connection = openReadOnly(path)) {
             assertConnectionForeignKeys(connection);
         }
     }
@@ -353,9 +403,16 @@ public final class SqliteDatabase implements AutoCloseable {
     }
 
     private static int platformVersion(Path path) throws SQLException {
-        try (Connection connection = openConfigured(path)) {
+        try (Connection connection = openReadOnly(path)) {
             return pragmaInt(connection, "PRAGMA user_version");
         }
+    }
+
+    private static Connection openReadOnly(Path path) throws SQLException {
+        SQLiteConfig configuration = new SQLiteConfig();
+        configuration.setReadOnly(true);
+        configuration.setBusyTimeout(BUSY_TIMEOUT_MILLIS);
+        return configuration.createConnection("jdbc:sqlite:" + path.toAbsolutePath().normalize());
     }
 
     private static Connection openConfigured(Path path) throws SQLException {
@@ -383,6 +440,116 @@ public final class SqliteDatabase implements AutoCloseable {
                 throw new SQLException("SQLite pragma did not return a value.");
             }
             return result.getInt(1);
+        }
+    }
+
+    private Path createPreflightSnapshot() throws SQLException {
+        if (Files.isRegularFile(journalPath(databasePath))) {
+            return createRollbackJournalSnapshot();
+        }
+        return createVacuumSnapshot(databasePath);
+    }
+
+    private Path createRollbackJournalSnapshot() throws SQLException {
+        Path snapshot = null;
+        try {
+            Path directory = Files.createTempDirectory(
+                    databasePath.getParent(), "." + databasePath.getFileName() + ".rollback-preflight-");
+            Path recoveredCopy = directory.resolve("recovered.db");
+            snapshot = directory.resolve("snapshot.db");
+            copyRollbackFamilyUnderLock(recoveredCopy);
+            try (Connection connection = DriverManager.getConnection(
+                    "jdbc:sqlite:" + recoveredCopy.toAbsolutePath().normalize())) {
+                assertConnectionIntegrity(connection);
+                pragmaInt(connection, "PRAGMA user_version");
+            }
+            vacuumInto(recoveredCopy, snapshot);
+            return snapshot;
+        } catch (PreflightLockUnavailableException exception) {
+            if (snapshot != null) {
+                deletePreflightSnapshot(snapshot);
+            }
+            throw exception;
+        } catch (IOException | SQLException exception) {
+            if (snapshot != null) {
+                deletePreflightSnapshot(snapshot);
+            }
+            if (exception instanceof SQLException sqlException) {
+                throw sqlException;
+            }
+            throw new SQLException("Could not create SQLite rollback snapshot.", exception);
+        }
+    }
+
+    private void copyRollbackFamilyUnderLock(Path recoveredCopy)
+            throws IOException, PreflightLockUnavailableException {
+        try (FileChannel channel = FileChannel.open(
+                databasePath, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+            FileLock lock;
+            try {
+                lock = channel.tryLock();
+            } catch (OverlappingFileLockException | IOException exception) {
+                throw new PreflightLockUnavailableException(exception);
+            }
+            if (lock == null) {
+                throw new PreflightLockUnavailableException(null);
+            }
+            try (lock) {
+                Path journal = journalPath(databasePath);
+                if (!Files.isRegularFile(journal)) {
+                    throw new PreflightLockUnavailableException(null);
+                }
+                Files.copy(databasePath, recoveredCopy);
+                Files.copy(journal, journalPath(recoveredCopy));
+            }
+        }
+    }
+
+    private Path createVacuumSnapshot(Path source) throws SQLException {
+        Path snapshot = null;
+        try {
+            Path directory = Files.createTempDirectory(
+                    databasePath.getParent(), "." + databasePath.getFileName() + ".preflight-");
+            snapshot = directory.resolve("snapshot.db");
+            vacuumInto(source, snapshot);
+            return snapshot;
+        } catch (IOException | SQLException exception) {
+            if (snapshot != null) {
+                deletePreflightSnapshot(snapshot);
+            }
+            if (exception instanceof SQLException sqlException) {
+                throw sqlException;
+            }
+            throw new SQLException("Could not create SQLite preflight snapshot.", exception);
+        }
+    }
+
+    private static void vacuumInto(Path source, Path target) throws SQLException {
+        try (Connection connection = openReadOnly(source);
+             Statement statement = connection.createStatement()) {
+            statement.execute("VACUUM INTO '" + sqliteLiteral(target) + "'");
+        }
+    }
+
+    private static void assertSQLiteHeader(Path path) throws SQLException {
+        try (var input = Files.newInputStream(path)) {
+            if (!Arrays.equals(SQLITE_HEADER, input.readNBytes(SQLITE_HEADER.length))) {
+                throw new SQLException("SQLite header is invalid.");
+            }
+        } catch (IOException exception) {
+            throw new SQLException("Could not inspect SQLite header.", exception);
+        }
+    }
+
+    private static void deletePreflightSnapshot(Path snapshot) {
+        Path directory = snapshot.getParent();
+        if (directory == null) {
+            return;
+        }
+        try (var files = Files.walk(directory)) {
+            files.sorted(Comparator.reverseOrder()).forEach(SqliteDatabase::deleteIfExists);
+        } catch (IOException ignored) {
+            // The isolated snapshot never owns persisted application truth.
         }
     }
 
@@ -480,6 +647,10 @@ public final class SqliteDatabase implements AutoCloseable {
         return path.resolveSibling(path.getFileName() + "-shm");
     }
 
+    private static Path journalPath(Path path) {
+        return path.resolveSibling(path.getFileName() + "-journal");
+    }
+
     private static String sqliteLiteral(Path path) {
         return path.toAbsolutePath().normalize().toString().replace("'", "''");
     }
@@ -498,11 +669,37 @@ public final class SqliteDatabase implements AutoCloseable {
         }
     }
 
+    private static void moveReplacing(Path source, Path target) throws IOException {
+        try {
+            Files.move(source, target, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException ignored) {
+            Files.move(source, target);
+        }
+    }
+
+    private static void deleteRequiredIfExists(Path path) throws IOException {
+        Files.deleteIfExists(path);
+    }
+
     private static void deleteIfExists(Path path) {
         try {
             Files.deleteIfExists(path);
         } catch (IOException ignored) {
             // A later create/move operation reports the actionable failure without exposing the path.
+        }
+    }
+
+    @FunctionalInterface
+    interface FileMover {
+        void move(Path source, Path target) throws IOException;
+    }
+
+    private record FileMove(Path source, Path target) { }
+
+    private static final class PreflightLockUnavailableException extends SQLException {
+
+        private PreflightLockUnavailableException(Throwable cause) {
+            super("SQLite preflight lock is unavailable.", cause);
         }
     }
 }

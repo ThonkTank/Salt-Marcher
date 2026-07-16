@@ -46,7 +46,8 @@ public final class DungeonEditorStatePanelRoomNarrationDrafts {
         Set<RoomKey> visibleRoomKeys = new HashSet<>();
         Set<ExitKey> visibleExitKeys = new HashSet<>();
         DungeonInspectorSnapshot safeInspector = inspector == null
-                ? new DungeonInspectorSnapshot("", "", List.of(), List.of())
+                ? new DungeonInspectorSnapshot(
+                        "", "", DungeonInspectorSnapshot.StatePanelFacts.empty(), List.of())
                 : inspector;
         for (DungeonInspectorSnapshot.RoomNarrationCard card : safeInspector.roomNarrations()) {
             RoomKey roomKey = new RoomKey(safeSelectedMapIdValue, card.roomId());
@@ -67,7 +68,8 @@ public final class DungeonEditorStatePanelRoomNarrationDrafts {
     VisibleDrafts visibleDrafts(long selectedMapIdValue, DungeonInspectorSnapshot inspector) {
         long safeSelectedMapIdValue = Math.max(0L, selectedMapIdValue);
         DungeonInspectorSnapshot safeInspector = inspector == null
-                ? new DungeonInspectorSnapshot("", "", List.of(), List.of())
+                ? new DungeonInspectorSnapshot(
+                        "", "", DungeonInspectorSnapshot.StatePanelFacts.empty(), List.of())
                 : inspector;
         return new VisibleDrafts(safeInspector.roomNarrations().stream()
                 .map(card -> visibleRoomDraft(safeSelectedMapIdValue, card))

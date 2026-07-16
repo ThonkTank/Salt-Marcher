@@ -140,6 +140,7 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
             case CORRIDOR, CORRIDOR_ANCHOR -> HitKind.CORRIDOR;
             case STAIR -> HitKind.STAIR;
             case TRANSITION -> HitKind.TRANSITION;
+            case FEATURE_MARKER -> HitKind.FEATURE_MARKER;
             case EMPTY -> hitKindForTopology(safeTarget.topologyElementKind());
             default -> HitKind.EMPTY;
         };
@@ -158,6 +159,9 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
         }
         if (topologyElementKind == DungeonTopologyElementKind.TRANSITION) {
             return HitKind.TRANSITION;
+        }
+        if (topologyElementKind == DungeonTopologyElementKind.FEATURE_MARKER) {
+            return HitKind.FEATURE_MARKER;
         }
         return HitKind.EMPTY;
     }

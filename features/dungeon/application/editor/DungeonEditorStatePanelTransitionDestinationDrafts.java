@@ -4,7 +4,7 @@ import features.dungeon.domain.core.structure.transition.TransitionDestinationTy
 import features.dungeon.api.DungeonEditorControlsSnapshot;
 import features.dungeon.api.DungeonEditorStateSnapshot;
 import features.dungeon.api.DungeonEditorTool;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 
 public final class DungeonEditorStatePanelTransitionDestinationDrafts {
     private static final TransitionDestinationType DEFAULT_DESTINATION_TYPE =
@@ -165,10 +165,12 @@ public final class DungeonEditorStatePanelTransitionDestinationDrafts {
     }
 
     private static long selectedTransitionId(DungeonEditorStateSnapshot.Selection selection) {
-        DungeonEditorTopologyElementRef topologyRef = selection == null
-                ? DungeonEditorTopologyElementRef.empty()
+        DungeonTopologyElementRef topologyRef = selection == null
+                ? DungeonTopologyElementRef.empty()
                 : selection.topologyRef();
-        return "TRANSITION".equals(topologyRef.kind()) ? topologyRef.id() : 0L;
+        return topologyRef.kind() == features.dungeon.api.DungeonTopologyElementKind.TRANSITION
+                ? topologyRef.id()
+                : 0L;
     }
 
     record Target(boolean visible, long sourceTransitionId) {

@@ -1,9 +1,9 @@
 package features.hex.adapter.javafx.hexmap;
 
 import java.util.List;
-import features.hex.domain.map.HexEditorMode;
-import features.hex.domain.map.HexMarkerKind;
-import features.hex.domain.map.HexTerrain;
+import features.hex.api.HexEditorMode;
+import features.hex.api.HexMarkerKind;
+import features.hex.api.HexTerrain;
 
 final class HexMapVocabulary {
 
@@ -31,37 +31,16 @@ final class HexMapVocabulary {
     private HexMapVocabulary() {
     }
 
-    static HexEditorMode tool(String key) {
-        if (key == null || key.isBlank()) {
-            return DEFAULT_TOOL;
-        }
-        try {
-            return HexEditorMode.valueOf(key.trim());
-        } catch (IllegalArgumentException ignored) {
-            return DEFAULT_TOOL;
-        }
+    static HexEditorMode tool(HexEditorMode value) {
+        return value == null ? DEFAULT_TOOL : value;
     }
 
-    static HexTerrain terrain(String key) {
-        if (key == null || key.isBlank()) {
-            return DEFAULT_TERRAIN;
-        }
-        try {
-            return HexTerrain.valueOf(key.trim());
-        } catch (IllegalArgumentException ignored) {
-            return DEFAULT_TERRAIN;
-        }
+    static HexTerrain terrain(HexTerrain value) {
+        return value == null ? DEFAULT_TERRAIN : value;
     }
 
-    static HexMarkerKind markerKind(String key) {
-        if (key == null || key.isBlank()) {
-            return DEFAULT_MARKER_TYPE;
-        }
-        try {
-            return HexMarkerKind.valueOf(key.trim());
-        } catch (IllegalArgumentException ignored) {
-            return DEFAULT_MARKER_TYPE;
-        }
+    static HexMarkerKind markerKind(HexMarkerKind value) {
+        return value == null ? DEFAULT_MARKER_TYPE : value;
     }
 
     static String label(HexEditorMode mode) {

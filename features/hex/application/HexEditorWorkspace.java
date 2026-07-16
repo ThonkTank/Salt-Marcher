@@ -1,4 +1,4 @@
-package features.hex.domain.map;
+package features.hex.application;
 
 import java.util.Objects;
 

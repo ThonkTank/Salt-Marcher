@@ -6,7 +6,7 @@ public record SaveHexMarkerCommand(
         int q,
         int r,
         String name,
-        String type,
+        HexMarkerKind type,
         String note
 ) {
 }

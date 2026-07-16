@@ -16,13 +16,9 @@ import features.creatures.domain.catalog.CreatureCatalogData;
 import features.creatures.domain.catalog.CreatureCatalogData.CatalogSortField;
 import features.creatures.domain.catalog.CreatureCatalogData.CreatureProfile;
 import features.creatures.domain.catalog.port.CreatureCatalogPort;
-import features.creatures.api.CreatureCatalogModel;
 import features.creatures.api.CreatureCatalogPageResult;
-import features.creatures.api.CreatureDetailModel;
 import features.creatures.api.CreatureDetailResult;
-import features.creatures.api.CreatureEncounterCandidatesModel;
 import features.creatures.api.CreatureEncounterCandidatesResult;
-import features.creatures.api.CreatureFilterOptionsModel;
 import features.creatures.api.CreatureFilterOptionsResult;
 import features.creatures.api.CreatureLookupStatus;
 import features.creatures.api.CreatureQueryStatus;
@@ -95,10 +91,7 @@ public final class CreaturesApplicationService implements features.creatures.api
             Map.entry("30", 155000));
 
     private final CreatureCatalogPort lookup;
-    private final CreatureFilterOptionsModel filterOptionsModel;
-    private final CreatureCatalogModel catalogModel;
-    private final CreatureDetailModel detailModel;
-    private final CreatureEncounterCandidatesModel encounterCandidatesModel;
+    private final CreaturesPublishedState publishedState;
     private final ExecutionLane executionLane;
     private final Diagnostics diagnostics;
     private final LatestState<Long> catalogRequests = new LatestState<>(0L);
@@ -106,35 +99,23 @@ public final class CreaturesApplicationService implements features.creatures.api
 
     public CreaturesApplicationService(
             CreatureCatalogPort lookup,
-            CreatureFilterOptionsModel filterOptionsModel,
-            CreatureCatalogModel catalogModel,
-            CreatureDetailModel detailModel,
-            CreatureEncounterCandidatesModel encounterCandidatesModel
+            CreaturesPublishedState publishedState
     ) {
         this(
                 lookup,
-                filterOptionsModel,
-                catalogModel,
-                detailModel,
-                encounterCandidatesModel,
+                publishedState,
                 DirectExecutionLane.INSTANCE,
                 NoopDiagnostics.INSTANCE);
     }
 
     public CreaturesApplicationService(
             CreatureCatalogPort lookup,
-            CreatureFilterOptionsModel filterOptionsModel,
-            CreatureCatalogModel catalogModel,
-            CreatureDetailModel detailModel,
-            CreatureEncounterCandidatesModel encounterCandidatesModel,
+            CreaturesPublishedState publishedState,
             ExecutionLane executionLane,
             Diagnostics diagnostics
     ) {
         this.lookup = Objects.requireNonNull(lookup, "lookup");
-        this.filterOptionsModel = Objects.requireNonNull(filterOptionsModel, "filterOptionsModel");
-        this.catalogModel = Objects.requireNonNull(catalogModel, "catalogModel");
-        this.detailModel = Objects.requireNonNull(detailModel, "detailModel");
-        this.encounterCandidatesModel = Objects.requireNonNull(encounterCandidatesModel, "encounterCandidatesModel");
+        this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
         this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
@@ -146,14 +127,14 @@ public final class CreaturesApplicationService implements features.creatures.api
 
     private void refreshFilterOptionsInLane() {
         try {
-            filterOptionsModel.publish(new CreatureFilterOptionsResult(
+            publishedState.publishFilterOptions(new CreatureFilterOptionsResult(
                     CreatureReadStatus.SUCCESS,
                     CreatureCatalogProjection.filterOptions(
                             lookup.loadFilterValues(),
                             CHALLENGE_RATINGS)));
         } catch (IllegalStateException exception) {
             diagnostics.failure(FILTER_OPTIONS_FAILURE, exception.getClass());
-            filterOptionsModel.publish(new CreatureFilterOptionsResult(
+            publishedState.publishFilterOptions(new CreatureFilterOptionsResult(
                     CreatureReadStatus.STORAGE_ERROR,
                     CreatureCatalogProjection.filterOptions(
                             CreatureCatalogData.emptyFilterValues(),
@@ -227,7 +208,7 @@ public final class CreaturesApplicationService implements features.creatures.api
     ) {
         synchronized (catalogPublicationLock) {
             if (catalogRequests.replace(requestToken, requestToken.revision())) {
-                catalogModel.publish(new CreatureCatalogPageResult(
+                publishedState.publishCatalog(new CreatureCatalogPageResult(
                         status,
                         CreatureCatalogProjection.catalogPage(page)));
             }
@@ -238,7 +219,7 @@ public final class CreaturesApplicationService implements features.creatures.api
             CreatureLookupStatus status,
             @Nullable CreatureProfile detail
     ) {
-        detailModel.publish(new CreatureDetailResult(
+        publishedState.publishDetail(new CreatureDetailResult(
                 status,
                 CreatureCatalogProjection.creatureDetail(detail)));
     }
@@ -250,7 +231,7 @@ public final class CreaturesApplicationService implements features.creatures.api
         List<CreatureCatalogData.EncounterCandidateProfile> safeCandidates = candidates == null
                 ? List.of()
                 : List.copyOf(candidates);
-        encounterCandidatesModel.publish(new CreatureEncounterCandidatesResult(
+        publishedState.publishEncounterCandidates(new CreatureEncounterCandidatesResult(
                 status,
                 safeCandidates.stream()
                         .map(CreatureCatalogProjection::encounterCandidate)

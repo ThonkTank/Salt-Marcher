@@ -23,12 +23,11 @@ import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
 import features.dungeon.api.DungeonEditorPreview;
 import features.dungeon.api.DungeonEditorStateModel;
 import features.dungeon.api.DungeonEditorStateSnapshot;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.api.DungeonEditorViewMode;
 import features.dungeon.api.DungeonInspectorSnapshot;
 import features.dungeon.api.DungeonMapSummary;
 import features.dungeon.api.DungeonOverlaySettings;
-import features.dungeon.api.DungeonTopologyElementRef;
 import features.dungeon.application.editor.DungeonEditorRuntimePointerTarget;
 import features.dungeon.application.editor.PointerInteractionTargets;
 import features.dungeon.adapter.javafx.map.DungeonMapContentModel;
@@ -880,7 +879,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             long stairId,
             String message
     ) {
-        DungeonEditorTopologyElementRef ref = new DungeonEditorTopologyElementRef("STAIR", stairId);
+        DungeonTopologyElementRef ref = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.STAIR, stairId);
         assertTrue(snapshot.surface().map().features().stream()
                         .filter(feature -> "STAIR".equals(feature.kind()))
                         .filter(feature -> feature.id() == stairId)
@@ -932,7 +931,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             int anchorR,
             String message
     ) {
-        DungeonEditorTopologyElementRef ref = new DungeonEditorTopologyElementRef("STAIR", stairId);
+        DungeonTopologyElementRef ref = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.STAIR, stairId);
         int upperR = anchorR - 2;
         Set<String> expectedFeatureCells = Set.of(
                 anchorQ + "," + anchorR + ",0",
@@ -989,7 +988,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             String destinationLabel,
             String message
     ) {
-        DungeonEditorTopologyElementRef ref = new DungeonEditorTopologyElementRef("TRANSITION", transitionId);
+        DungeonTopologyElementRef ref = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.TRANSITION, transitionId);
         assertTrue(snapshot.surface().map().features().stream()
                         .filter(feature -> "TRANSITION".equals(feature.kind()))
                         .filter(feature -> feature.id() == transitionId)
@@ -1013,7 +1012,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             int level,
             String message
     ) {
-        DungeonEditorTopologyElementRef ref = new DungeonEditorTopologyElementRef("FEATURE_MARKER", markerId);
+        DungeonTopologyElementRef ref = new DungeonTopologyElementRef(features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER, markerId);
         assertTrue(snapshot.surface().map().features().stream()
                         .filter(feature -> kind.equals(feature.kind()))
                         .filter(feature -> feature.id() == markerId)
@@ -1036,12 +1035,14 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     static void assertFeatureMarkerAbsentFromSnapshotAndRender(
             DungeonEditorMapSurfaceSnapshot snapshot,
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref,
+            DungeonTopologyElementRef ref,
             Point2D formerCenter,
             String message
     ) {
         assertTrue(snapshot.surface().map().features().stream().noneMatch(feature ->
-                        feature.id() == ref.id() && "FEATURE_MARKER".equals(feature.topologyRef().kind())),
+                        feature.id() == ref.id()
+                                && feature.topologyRef().kind()
+                                == features.dungeon.api.DungeonTopologyElementKind.FEATURE_MARKER),
                 message + " published feature list omits the deleted feature marker");
         assertTrue(snapshot.surface().map().editorHandles().stream().noneMatch(handle ->
                         handle.ref().topologyRef().equals(ref)),
@@ -1074,7 +1075,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     static void assertStairAbsentFromSnapshotAndRender(
             DungeonEditorMapSurfaceSnapshot snapshot,
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref,
+            DungeonTopologyElementRef ref,
             Point2D formerCenter,
             String message
     ) {
@@ -1405,7 +1406,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static boolean renderHasSelectedSurfacePrimitive(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref
+            DungeonTopologyElementRef ref
     ) {
         String selectionRef = ref.kind() + ":" + ref.id();
         return mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
@@ -1415,7 +1416,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static boolean renderHasSurfacePrimitive(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref
+            DungeonTopologyElementRef ref
     ) {
         String selectionRef = ref.kind() + ":" + ref.id();
         return mapContentModel.canvasStateProperty().get().renderScene().surfaces().stream()
@@ -1424,7 +1425,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static boolean renderHasSelectedGlyphPrimitive(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref
+            DungeonTopologyElementRef ref
     ) {
         String selectionRef = ref.kind() + ":" + ref.id();
         return mapContentModel.canvasStateProperty().get().renderScene().glyphs().stream()
@@ -1434,7 +1435,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static Point2D glyphCenterForRef(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref
+            DungeonTopologyElementRef ref
     ) {
         String selectionRef = ref.kind() + ":" + ref.id();
         return mapContentModel.canvasStateProperty().get().renderScene().glyphs().stream()
@@ -1452,7 +1453,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static Point2D labelCenterForRef(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref
+            DungeonTopologyElementRef ref
     ) {
         String selectionRef = ref.kind() + ":" + ref.id();
         return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
@@ -1464,7 +1465,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static boolean renderHasTextAt(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref,
+            DungeonTopologyElementRef ref,
             double expectedX,
             double expectedY,
             boolean preview
@@ -1479,7 +1480,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static boolean renderHasGlyphAt(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref,
+            DungeonTopologyElementRef ref,
             double expectedX,
             double expectedY,
             boolean preview
@@ -1500,7 +1501,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static boolean renderHasTextForRef(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref
+            DungeonTopologyElementRef ref
     ) {
         String selectionRef = ref.kind() + ":" + ref.id();
         return mapContentModel.canvasStateProperty().get().renderScene().texts().stream()
@@ -1515,13 +1516,13 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
                 .anyMatch(text -> expectedText.equals(text.text()));
     }
 
-    static DungeonEditorTopologyElementRef editorTopologyRef(DungeonTopologyElementRef ref) {
-        return new DungeonEditorTopologyElementRef(ref.kind().name(), ref.id());
+    static DungeonTopologyElementRef editorTopologyRef(DungeonTopologyElementRef ref) {
+        return ref == null ? DungeonTopologyElementRef.empty() : ref;
     }
 
     static boolean renderHasBoundaryPrimitive(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref
+            DungeonTopologyElementRef ref
     ) {
         String selectionRef = ref.kind() + ":" + ref.id();
         return mapContentModel.canvasStateProperty().get().renderScene().boundaries().stream()
@@ -1530,7 +1531,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static boolean renderHasSelectedDoorBoundaryPrimitive(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef ref
+            DungeonTopologyElementRef ref
     ) {
         String selectionRef = ref.kind() + ":" + ref.id();
         return mapContentModel.canvasStateProperty().get().renderScene().boundaries().stream()
@@ -1541,7 +1542,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static boolean selectedDoorBoundaryDiffersFromNormalDoorStyle(
             DungeonMapContentModel mapContentModel,
-            DungeonEditorTopologyElementRef selectedRef
+            DungeonTopologyElementRef selectedRef
     ) {
         String selectedSelectionRef = selectedRef.kind() + ":" + selectedRef.id();
         return mapContentModel.canvasStateProperty().get().renderScene().boundaries().stream()
@@ -1553,7 +1554,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
 
     static void assertDoorInspector(
             DungeonInspectorSnapshot inspector,
-            DungeonEditorTopologyElementRef doorRef,
+            DungeonTopologyElementRef doorRef,
             String doorLabel
     ) {
         if (inspector == null) {
@@ -1562,10 +1563,10 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
         assertEquals(doorLabel, inspector.title(), "DE-SEL-002 inspector title identifies selected door");
         assertEquals("Authorisierte Dungeon-Grenze.", inspector.summary(),
                 "DE-SEL-002 inspector summary identifies selected boundary topology");
-        assertTrue(inspector.facts().contains("ref: " + doorRef.kind() + " " + doorRef.id()),
-                "DE-SEL-002 inspector facts identify selected door topology ref");
-        assertTrue(inspector.facts().contains("kind: door"),
-                "DE-SEL-002 inspector facts identify selected topology as door");
+        assertEquals(features.dungeon.api.DungeonTopologyElementKind.DOOR, doorRef.kind(),
+                "DE-SEL-002 selected typed topology ref identifies a door");
+        assertEquals(DungeonInspectorSnapshot.StatePanelFacts.empty(), inspector.statePanelFacts(),
+                "DE-SEL-002 door inspector publishes no unrelated stair or transition panel state");
     }
 
     static void assertDoorOwningRoomFacts(
@@ -1712,7 +1713,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static void assertSelectionMatches(
-            DungeonEditorTopologyElementRef expectedRef,
+            DungeonTopologyElementRef expectedRef,
             long expectedClusterId,
             DungeonEditorStateSnapshot.Selection selection,
             String message
@@ -1741,7 +1742,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
             DungeonEditorStateSnapshot.Selection selection,
             String message
     ) {
-        assertEquals(DungeonEditorTopologyElementRef.empty(), selection.topologyRef(), message + " topology ref");
+        assertEquals(DungeonTopologyElementRef.empty(), selection.topologyRef(), message + " topology ref");
         assertEquals(0L, selection.clusterId(), message + " cluster id");
         assertTrue(!selection.clusterSelection(), message + " cluster selection flag");
         assertTrue(selection.handleRef() == null, message + " handle ref");

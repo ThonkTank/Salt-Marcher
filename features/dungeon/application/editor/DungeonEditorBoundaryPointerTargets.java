@@ -4,7 +4,7 @@ import java.util.Map;
 import features.dungeon.api.DungeonEdgeRef;
 import features.dungeon.api.DungeonEditorMapSnapshot;
 import features.dungeon.api.DungeonEditorMapSurfaceSnapshot;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 
 final class DungeonEditorBoundaryPointerTargets {
     private DungeonEditorBoundaryPointerTargets() {
@@ -23,11 +23,13 @@ final class DungeonEditorBoundaryPointerTargets {
             String kind = boundaryKind(boundary.kind());
             DungeonEditorRuntimePointerTarget.BoundaryTarget target =
                     new DungeonEditorRuntimePointerTarget.BoundaryTarget(
-                            DungeonEditorRuntimePointerTargetCompatibility.legacyBoundaryKind(kind),
+                            "DOOR".equals(kind)
+                                    ? DungeonEditorRuntimePointerTarget.BoundaryKind.DOOR
+                                    : DungeonEditorRuntimePointerTarget.BoundaryKind.WALL,
                             boundaryKey(kind, boundary.id(), boundary.topologyRef(), edge),
                             boundary.id(),
-                            DungeonEditorRuntimePointerTargetCompatibility.legacyTopologyKind(
-                                    DungeonEditorTopologyHitRefs.topologyKind(boundary.topologyRef())),
+                            DungeonEditorRuntimePointerTarget.TopologyKind.fromPublished(
+                                    boundary.topologyRef().kind()),
                             DungeonEditorTopologyHitRefs.topologyId(boundary.topologyRef()),
                             edge.from().q(),
                             edge.from().r(),
@@ -43,7 +45,7 @@ final class DungeonEditorBoundaryPointerTargets {
     private static String boundaryKey(
             String kind,
             long ownerId,
-            DungeonEditorTopologyElementRef topologyRef,
+            DungeonTopologyElementRef topologyRef,
             DungeonEdgeRef edge
     ) {
         return kind + ":"

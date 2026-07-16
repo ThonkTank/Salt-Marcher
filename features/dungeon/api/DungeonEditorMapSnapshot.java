@@ -33,7 +33,7 @@ public record DungeonEditorMapSnapshot(
             long clusterId,
             String label,
             List<DungeonCellRef> cells,
-            DungeonEditorTopologyElementRef topologyRef
+            DungeonTopologyElementRef topologyRef
     ) {
 
         public Area {
@@ -42,7 +42,7 @@ public record DungeonEditorMapSnapshot(
             clusterId = Math.max(0L, clusterId);
             label = label == null || label.isBlank() ? kind : label.trim();
             cells = cells == null ? List.of() : List.copyOf(cells);
-            topologyRef = topologyRef == null ? DungeonEditorTopologyElementRef.empty() : topologyRef;
+            topologyRef = topologyRef == null ? DungeonTopologyElementRef.empty() : topologyRef;
         }
     }
 
@@ -51,7 +51,7 @@ public record DungeonEditorMapSnapshot(
             long id,
             String label,
             DungeonEdgeRef edge,
-            DungeonEditorTopologyElementRef topologyRef
+            DungeonTopologyElementRef topologyRef
     ) {
 
         public Boundary {
@@ -61,7 +61,7 @@ public record DungeonEditorMapSnapshot(
             edge = edge == null
                     ? new DungeonEdgeRef(new DungeonCellRef(0, 0, 0), new DungeonCellRef(0, 0, 0))
                     : edge;
-            topologyRef = topologyRef == null ? DungeonEditorTopologyElementRef.empty() : topologyRef;
+            topologyRef = topologyRef == null ? DungeonTopologyElementRef.empty() : topologyRef;
         }
     }
 
@@ -72,7 +72,7 @@ public record DungeonEditorMapSnapshot(
             List<DungeonCellRef> cells,
             String description,
             String destinationLabel,
-            DungeonEditorTopologyElementRef topologyRef,
+            DungeonTopologyElementRef topologyRef,
             @Nullable DungeonEdgeRef anchorEdge
     ) {
         public Feature {
@@ -82,7 +82,7 @@ public record DungeonEditorMapSnapshot(
             cells = cells == null ? List.of() : List.copyOf(cells);
             description = description == null ? "" : description.trim();
             destinationLabel = destinationLabel == null ? "" : destinationLabel.trim();
-            topologyRef = topologyRef == null ? DungeonEditorTopologyElementRef.empty() : topologyRef;
+            topologyRef = topologyRef == null ? DungeonTopologyElementRef.empty() : topologyRef;
         }
     }
 

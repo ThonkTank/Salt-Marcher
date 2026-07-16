@@ -7,8 +7,8 @@ import javafx.scene.control.ToggleButton;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import features.hex.domain.map.HexEditorMode;
-import features.hex.domain.map.HexTerrain;
+import features.hex.api.HexEditorMode;
+import features.hex.api.HexTerrain;
 
 public final class HexMapControlsView extends VBox {
 

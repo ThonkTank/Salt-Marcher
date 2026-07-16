@@ -3,7 +3,7 @@ package features.dungeon.application.editor;
 import features.dungeon.api.DungeonCellRef;
 import features.dungeon.api.DungeonEditorHandleRef;
 import features.dungeon.api.DungeonEditorMapHitRef;
-import features.dungeon.api.DungeonEditorTopologyElementRef;
+import features.dungeon.api.DungeonTopologyElementRef;
 
 public final class DungeonEditorMarkerHitRefs {
     private DungeonEditorMarkerHitRefs() {
@@ -36,7 +36,7 @@ public final class DungeonEditorMarkerHitRefs {
     }
 
     public static DungeonEditorMapHitRef featureMarker(
-            DungeonEditorTopologyElementRef topologyRef,
+            DungeonTopologyElementRef topologyRef,
             long ownerId,
             int q,
             int r,

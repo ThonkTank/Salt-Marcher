@@ -181,7 +181,11 @@ final class DungeonEditorPreviewRenderDiffAssembler {
     private record AreaKey(String kind, long id) {
     }
 
-    private record BoundaryKey(String topologyKind, long topologyId, long boundaryId) {
+    private record BoundaryKey(
+            features.dungeon.api.DungeonTopologyElementKind topologyKind,
+            long topologyId,
+            long boundaryId
+    ) {
     }
 
     private record HandleKey(
@@ -196,6 +200,11 @@ final class DungeonEditorPreviewRenderDiffAssembler {
     ) {
     }
 
-    private record FeatureKey(String featureKind, String topologyKind, long topologyId, long featureId) {
+    private record FeatureKey(
+            String featureKind,
+            features.dungeon.api.DungeonTopologyElementKind topologyKind,
+            long topologyId,
+            long featureId
+    ) {
     }
 }

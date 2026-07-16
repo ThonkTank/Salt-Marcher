@@ -34,18 +34,18 @@ public record DungeonEditorStateSnapshot(
     }
 
     public record Selection(
-            DungeonEditorTopologyElementRef topologyRef,
+            DungeonTopologyElementRef topologyRef,
             long clusterId,
             boolean clusterSelection,
             @Nullable DungeonEditorHandleRef handleRef
     ) {
         public Selection {
-            topologyRef = topologyRef == null ? DungeonEditorTopologyElementRef.empty() : topologyRef;
+            topologyRef = topologyRef == null ? DungeonTopologyElementRef.empty() : topologyRef;
             clusterId = Math.max(0L, clusterId);
         }
 
         public static Selection empty() {
-            return new Selection(DungeonEditorTopologyElementRef.empty(), 0L, false, null);
+            return new Selection(DungeonTopologyElementRef.empty(), 0L, false, null);
         }
     }
 }
