@@ -99,6 +99,8 @@ public final class SessionPlanMapper {
                 placeholder.lootId(),
                 placeholder.encounterId(),
                 placeholder.label(),
+                placeholder.generationId(),
+                placeholder.treasureId(),
                 index));
     }
 
@@ -111,7 +113,9 @@ public final class SessionPlanMapper {
                 .map(record -> new SessionLootPlaceholder(
                         record.lootId(),
                         record.encounterId() > 0L ? record.encounterId() : fallbackEncounterId,
-                        record.label()))
+                        record.label(),
+                        record.generationId(),
+                        record.treasureId()))
                 .toList();
     }
 

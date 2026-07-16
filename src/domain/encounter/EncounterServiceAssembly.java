@@ -40,7 +40,11 @@ public final class EncounterServiceAssembly {
                 facts,
                 plans,
                 new EncounterGenerator(facts));
-        EncounterApplicationService application = new EncounterApplicationService(runtime, plans, publishedState);
+        EncounterApplicationService application = new EncounterApplicationService(
+                runtime,
+                plans,
+                publishedState,
+                new GeneratedEncounterPlanImporter(facts, plans));
         return new Component(
                 application,
                 publishedState.stateModel(),

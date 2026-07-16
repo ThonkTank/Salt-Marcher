@@ -25,8 +25,8 @@ features/sessionplanner/adapter/javafx/
 features/sessionplanner/SessionPlannerFeature
 ```
 
-The application composition supplies `PartyApi`, `EncounterApi`, and
-`WorldPlannerApi` explicitly. `SessionPlannerFeature` exposes
+The application composition supplies `PartyApi`, `EncounterApi`,
+`SessionGenerationApi`, and `WorldPlannerApi` explicitly. `SessionPlannerFeature` exposes
 `SessionPlannerApi` plus constructed shell contributions.
 
 ## Boundaries
@@ -43,6 +43,8 @@ The application composition supplies `PartyApi`, `EncounterApi`, and
   mutating feature state directly.
 - Gold remains explicit placeholder state until a loot owner publishes a real
   API and contract.
+- Generator previews remain runtime projections; applied sessions persist only
+  foreign Encounter-plan and generated-Loot references plus display caches.
 
 Persistence-backed calls are non-blocking. Failed writes retain the last stable
 state; late asynchronous results cannot replace a newer revision.

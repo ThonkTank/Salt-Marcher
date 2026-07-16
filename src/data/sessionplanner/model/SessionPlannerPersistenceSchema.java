@@ -13,6 +13,8 @@ public final class SessionPlannerPersistenceSchema {
     public static final String SESSION_RESTS_TABLE = "session_planner_rests";
     public static final String SESSION_LOOT_PLACEHOLDERS_TABLE = "session_planner_loot_placeholders";
     public static final String SESSION_LOOT_ENCOUNTER_ID_COLUMN = "encounter_id";
+    public static final String SESSION_LOOT_GENERATION_ID_COLUMN = "generation_id";
+    public static final String SESSION_LOOT_TREASURE_ID_COLUMN = "treasure_id";
     public static final String SESSION_ENCOUNTER_SCENE_TITLE_COLUMN = "scene_title";
     public static final String SESSION_ENCOUNTER_SCENE_NOTES_COLUMN = "scene_notes";
     public static final String SESSION_ENCOUNTER_LOCATION_ID_COLUMN = "location_id";
@@ -79,6 +81,8 @@ public final class SessionPlannerPersistenceSchema {
                     + "loot_id INTEGER NOT NULL, "
                     + SESSION_LOOT_ENCOUNTER_ID_COLUMN + " INTEGER NOT NULL DEFAULT 0, "
                     + "label TEXT NOT NULL, "
+                    + SESSION_LOOT_GENERATION_ID_COLUMN + " INTEGER NOT NULL DEFAULT 0, "
+                    + SESSION_LOOT_TREASURE_ID_COLUMN + " INTEGER NOT NULL DEFAULT 0, "
                     + SORT_ORDER_COLUMN_DECLARATION
                     + "PRIMARY KEY(session_id, loot_id)"
                     + ")";

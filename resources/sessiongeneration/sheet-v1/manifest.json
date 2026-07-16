@@ -1,0 +1,119 @@
+{
+  "ruleset": "sheet-v1",
+  "sourceSha256": "f87f6046444b7bf17814fae71c17802f4f875bfe4e4c9ec75574a1fc01a07621",
+  "sourceUrl": "https://docs.google.com/spreadsheets/d/106AZXUTiRqKQ3bvh7FILYkZoHX1S_rAHZ4EcH7u2ino",
+  "tables": [
+    {
+      "columns": 18,
+      "file": "DB_Progression.tsv",
+      "name": "DB_Progression",
+      "rows": 20,
+      "sha256": "da3155ac33eefee126d863559b7cf809b4a009a3ffb4947375e6e0ff09207ee7"
+    },
+    {
+      "columns": 6,
+      "file": "DB_CR.tsv",
+      "name": "DB_CR",
+      "rows": 34,
+      "sha256": "a843b67dae9f46a99ff82e7134e445230a531acb09f648496488c0758bda4b50"
+    },
+    {
+      "columns": 6,
+      "file": "DB_EncounterRoleBands.tsv",
+      "name": "DB_EncounterRoleBands",
+      "rows": 680,
+      "sha256": "45e8a322e39c4762e2a22e02116932e3f19dfdb01a7cfc38c54ba14caca93ca6"
+    },
+    {
+      "columns": 7,
+      "file": "DB_EncounterPatterns.tsv",
+      "name": "DB_EncounterPatterns",
+      "rows": 24,
+      "sha256": "d331a7e3fb724679f2e669cee01d881894d26a9d2ea987e3104f26eaa0b4fd91"
+    },
+    {
+      "columns": 23,
+      "file": "DB_LootItems.tsv",
+      "name": "DB_LootItems",
+      "rows": 681,
+      "sha256": "0b2b9db07e6c69f600438d376d3e060fb6fb16c67b4886cfd211116ec3bbcd1f"
+    },
+    {
+      "columns": 14,
+      "file": "DB_LootModifiers.tsv",
+      "name": "DB_LootModifiers",
+      "rows": 59,
+      "sha256": "8276ae6e349fd6de012797d09fd6852949415bb35028a0447d428366ac2edb97"
+    },
+    {
+      "columns": 6,
+      "file": "DB_LootRelations.tsv",
+      "name": "DB_LootRelations",
+      "rows": 1698,
+      "sha256": "9a6d4b4eeb12453668d4df1ad609010bfa84d38742531ac18dbfeec3e75beae8"
+    },
+    {
+      "columns": 7,
+      "file": "DB_Themes.tsv",
+      "name": "DB_Themes",
+      "rows": 8,
+      "sha256": "e07e16d79ca774b308ae481ab4dab45c2f5910a4c749178aa822416453ad9200"
+    },
+    {
+      "columns": 10,
+      "file": "DB_MagicItems.tsv",
+      "name": "DB_MagicItems",
+      "rows": 552,
+      "sha256": "e99715f120e2fa862f00fcd429dfcc4131b434da031f042d4c7460365640dd76"
+    },
+    {
+      "columns": 6,
+      "file": "DB_MagicVariants.tsv",
+      "name": "DB_MagicVariants",
+      "rows": 41,
+      "sha256": "a303651189a9a422a90872a02e75225cd26d48f07a72318e01a5c1554ee537cb"
+    },
+    {
+      "columns": 7,
+      "file": "DB_MagicDecisionTypes.tsv",
+      "name": "DB_MagicDecisionTypes",
+      "rows": 5,
+      "sha256": "4461a87784910520a4b64fdf0c877082d120a86e5f03105bad7afedc4a0e7f06"
+    },
+    {
+      "columns": 4,
+      "file": "DB_Spells.tsv",
+      "name": "DB_Spells",
+      "rows": 450,
+      "sha256": "faee389d0ab43942be1cefebdd883ff7a2e1b04ad746e11046974edd4fd054b0"
+    },
+    {
+      "columns": 8,
+      "file": "DB_Containers.tsv",
+      "name": "DB_Containers",
+      "rows": 28,
+      "sha256": "e5c4020f509903a42bbf66f7684777abe7d7e6e4055b80aa2adddb405dfb831a"
+    },
+    {
+      "columns": 14,
+      "file": "DB_EnspelledRules.tsv",
+      "name": "DB_EnspelledRules",
+      "rows": 45,
+      "sha256": "2942ebe736e9e226aeb791cd62f3e51b4ecf1b70399a30ec160884b9d861ce6f"
+    },
+    {
+      "columns": 12,
+      "file": "DB_MagicCurses.tsv",
+      "name": "DB_MagicCurses",
+      "rows": 300,
+      "sha256": "a0f529f76e0dddfc67a4040169309805be85432fa9c440444dc66d9066a77be9"
+    },
+    {
+      "columns": 5,
+      "file": "DB_LootSources.tsv",
+      "name": "DB_LootSources",
+      "rows": 8,
+      "sha256": "ac7700997576e39ea665d040ace3ffb34db20701b6ee07786bdd5405a65734da"
+    }
+  ]
+}

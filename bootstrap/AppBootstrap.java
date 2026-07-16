@@ -18,6 +18,8 @@ import src.data.encountertable.query.SqliteEncounterTableCatalogAdapter;
 import src.data.hex.repository.SqliteHexMapRepository;
 import src.data.party.repository.SqlitePartyRosterRepository;
 import src.data.sessionplanner.repository.SqliteSessionPlanRepository;
+import src.data.sessiongeneration.TsvSessionGenerationCatalog;
+import src.data.sessiongeneration.SqliteSessionGenerationRepository;
 import src.data.worldplanner.repository.SqliteWorldPlannerRepository;
 import src.domain.creatures.CreaturesServiceAssembly;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
@@ -28,6 +30,8 @@ import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
 import src.domain.hex.HexServiceAssembly;
 import src.domain.party.PartyServiceAssembly;
 import src.domain.sessionplanner.SessionPlannerServiceAssembly;
+import src.domain.sessiongeneration.SessionGenerationApplicationService;
+import src.domain.sessiongeneration.SheetV1GenerationEngine;
 import src.domain.worldplanner.WorldPlannerApplicationService;
 import src.domain.worldplanner.WorldPlannerReferenceAssembly;
 import src.domain.worldplanner.WorldPlannerServiceAssembly;
@@ -88,6 +92,9 @@ public final class AppBootstrap {
                 party.adventuringDaySummary(),
                 party.mutation(),
                 new SqliteEncounterPlanRepository());
+        SessionGenerationApplicationService sessionGeneration = new SessionGenerationApplicationService(
+                new SheetV1GenerationEngine(new TsvSessionGenerationCatalog()),
+                new SqliteSessionGenerationRepository());
 
         DungeonServiceAssembly.Component dungeon = DungeonServiceAssembly.create(
                 new SqliteDungeonMapRepository(),
@@ -105,7 +112,8 @@ public final class AppBootstrap {
                 encounter.application(),
                 encounter.savedPlans(),
                 encounter.planBudget(),
-                worldSnapshot);
+                worldSnapshot,
+                sessionGeneration);
         return new Components(
                 creatures, encounterTables, party, worldApplication, worldSnapshot,
                 encounter, dungeon, hex, session);
@@ -140,7 +148,8 @@ public final class AppBootstrap {
                         hex.editorApplication(), hex.travelApplication(), hex.editorModel(), hex.travelModel()),
                 new SessionPlannerContribution(
                         session.application(), session.currentSessionModel(), session.catalogModel(),
-                        session.participantsModel(), session.sceneTimelineModel(), session.statePanelModel()),
+                        session.participantsModel(), session.sceneTimelineModel(), session.statePanelModel(),
+                        session.generationModel()),
                 new WorldPlannerContribution(
                         components.worldApplication(), encounter.application(), components.worldSnapshot(),
                         creatures.catalog(), tables.catalog(), inspector),

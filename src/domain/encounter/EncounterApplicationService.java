@@ -14,6 +14,8 @@ import src.domain.encounter.model.session.EncounterSession;
 import src.domain.encounter.model.session.EncounterSessionCommand;
 import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterBuilderInputs;
+import src.domain.encounter.published.GeneratedEncounterImportResult;
+import src.domain.encounter.published.ImportGeneratedEncounterPlansCommand;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
 import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
 
@@ -51,17 +53,21 @@ public final class EncounterApplicationService {
             Map.entry(Integer.valueOf(21), EncounterSessionCommand.Action.MUTATE_HP));
 
     private final CommandActions commands;
+    private final GeneratedEncounterPlanImporter generatedPlanImporter;
 
     EncounterApplicationService(
             EncounterSessionRuntimeAccess runtimeAccess,
             EncounterPlanGateway plans,
-            EncounterPublishedState publishedState
+            EncounterPublishedState publishedState,
+            GeneratedEncounterPlanImporter generatedPlanImporter
     ) {
-        this(RuntimeCommandActions.create(runtimeAccess, plans, publishedState));
+        commands = RuntimeCommandActions.create(runtimeAccess, plans, publishedState);
+        this.generatedPlanImporter = Objects.requireNonNull(generatedPlanImporter, "generatedPlanImporter");
     }
 
     EncounterApplicationService(CommandActions commands) {
         this.commands = Objects.requireNonNull(commands, "commands");
+        generatedPlanImporter = null;
     }
 
     public void applyState(ApplyEncounterStateCommand command) {
@@ -74,6 +80,12 @@ public final class EncounterApplicationService {
 
     public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) {
         commands.refreshPlanBudget(command);
+    }
+
+    public GeneratedEncounterImportResult importGeneratedPlans(ImportGeneratedEncounterPlansCommand command) {
+        return generatedPlanImporter == null
+                ? GeneratedEncounterImportResult.unavailable("Generated encounter import is not registered.")
+                : generatedPlanImporter.importPlans(command);
     }
 
     private static EncounterSessionCommand toSessionCommand(ApplyEncounterStateCommand command) {

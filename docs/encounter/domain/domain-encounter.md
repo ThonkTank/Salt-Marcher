@@ -108,6 +108,8 @@ It derives:
 
 Generated alternatives remain ephemeral derived state until the user saves the
 current roster as an encounter plan.
+Session Generation may request an idempotent exact-CR import; Encounter still
+owns creature resolution and the resulting saved roster.
 
 The current builder, initiative, combat, and result session state is
 domain-owned runtime state. It is not persisted as a saved encounter plan, but

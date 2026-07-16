@@ -24,6 +24,8 @@ import src.domain.sessionplanner.published.SessionPlannerRestKind;
 import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
 import src.domain.sessionplanner.published.UpdateSessionEncounterSceneCommand;
+import src.domain.sessionplanner.published.ApplyGeneratedSessionEncounterLootCommand;
+import src.domain.sessionplanner.published.GenerateSessionEncounterLootCommand;
 
 public final class SessionPlannerApplicationService {
 
@@ -36,15 +38,18 @@ public final class SessionPlannerApplicationService {
     private final SessionPlanRepository repository;
     private final SessionPlannerForeignFacts facts;
     private final SessionPlannerPublishedState publishedState;
+    private final SessionPlannerGenerationWorkflow generationWorkflow;
 
     SessionPlannerApplicationService(
             SessionPlanRepository repository,
             SessionPlannerForeignFacts facts,
-            SessionPlannerPublishedState publishedState
+            SessionPlannerPublishedState publishedState,
+            SessionPlannerGenerationWorkflow generationWorkflow
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.facts = Objects.requireNonNull(facts, "facts");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
+        this.generationWorkflow = Objects.requireNonNull(generationWorkflow, "generationWorkflow");
     }
 
     public void createSession(SessionPlannerCatalogCommand.CreateSessionCommand command) {
@@ -183,6 +188,17 @@ public final class SessionPlannerApplicationService {
     public void removeLootPlaceholder(RemoveSessionLootPlaceholderCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
         saveCurrent(loadCurrentSession().removeLootPlaceholder(command.lootId()));
+    }
+
+    public void generateEncounterLoot(GenerateSessionEncounterLootCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        generationWorkflow.generate(loadCurrentSession(), command);
+    }
+
+    public void applyGeneratedEncounterLoot(ApplyGeneratedSessionEncounterLootCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        SessionPlan stable = loadCurrentSession();
+        saveCurrent(generationWorkflow.apply(stable, command));
     }
 
     private void selectLoadedSession(SessionPlan sessionPlan) {

@@ -11,11 +11,14 @@ import shell.api.ShellSlot;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
 import src.domain.sessionplanner.published.AddSessionLootPlaceholderCommand;
 import src.domain.sessionplanner.published.AddSessionSceneCommand;
+import src.domain.sessionplanner.published.ApplyGeneratedSessionEncounterLootCommand;
 import src.domain.sessionplanner.published.AttachSessionEncounterCommand;
 import src.domain.sessionplanner.published.ClearSessionRestGapCommand;
 import src.domain.sessionplanner.published.RemoveSessionLootPlaceholderCommand;
 import src.domain.sessionplanner.published.SessionPlannerCatalogCommand;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
+import src.domain.sessionplanner.published.GenerateSessionEncounterLootCommand;
+import src.domain.sessionplanner.published.SessionPlannerGenerationModel;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerEncounterAllocationCommand;
 import src.domain.sessionplanner.published.SessionPlannerEncounterCommand;
@@ -41,6 +44,7 @@ final class SessionPlannerBinder {
     private final SessionPlannerParticipantsModel participantsModel;
     private final SessionPlannerSceneTimelineModel sceneTimelineModel;
     private final SessionPlannerStatePanelModel statePanelModel;
+    private final SessionPlannerGenerationModel generationModel;
 
     SessionPlannerBinder(
             SessionPlannerApplicationService planner,
@@ -48,7 +52,8 @@ final class SessionPlannerBinder {
             SessionPlannerCatalogModel catalogModel,
             SessionPlannerParticipantsModel participantsModel,
             SessionPlannerSceneTimelineModel sceneTimelineModel,
-            SessionPlannerStatePanelModel statePanelModel
+            SessionPlannerStatePanelModel statePanelModel,
+            SessionPlannerGenerationModel generationModel
     ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.sessionModel = Objects.requireNonNull(sessionModel, "sessionModel");
@@ -56,6 +61,7 @@ final class SessionPlannerBinder {
         this.participantsModel = Objects.requireNonNull(participantsModel, "participantsModel");
         this.sceneTimelineModel = Objects.requireNonNull(sceneTimelineModel, "sceneTimelineModel");
         this.statePanelModel = Objects.requireNonNull(statePanelModel, "statePanelModel");
+        this.generationModel = Objects.requireNonNull(generationModel, "generationModel");
     }
 
     ShellBinding bind() {
@@ -69,12 +75,14 @@ final class SessionPlannerBinder {
         catalogView.bind(catalogContentModel);
         controlsView.bind(viewModel);
         timelineView.bind(viewModel);
+        timelineView.bindGeneration(generationModel);
         stateView.bind(viewModel);
         catalogView.onViewInputEvent(event -> consumeCatalog(planner, viewModel, event));
         controlsView.onAttachPlan(planId -> consumeAttachPlan(planner, viewModel, planId));
         Map<SessionPlannerViewModel.TimelineWidgetKind, Consumer<SessionPlannerViewModel.TimelineInput>>
                 timelineActions = timelineActions(planner, viewModel);
         timelineView.onTimelineInput(event -> consumeTimeline(viewModel, timelineActions, event));
+        timelineView.onGenerationInput(event -> consumeGeneration(planner, viewModel, event));
 
         viewModel.bindReadback(
                 sessionModel,
@@ -83,6 +91,25 @@ final class SessionPlannerBinder {
                 sceneTimelineModel,
                 statePanelModel);
         return new Binding(ShellControls.stack(catalogView, controlsView), timelineView, stateView);
+    }
+
+    private static void consumeGeneration(
+            SessionPlannerApplicationService planner,
+            SessionPlannerViewModel viewModel,
+            SessionPlannerTimelineMainView.GenerationInput event
+    ) {
+        if (event == null || !viewModel.hasCurrentSession()) return;
+        if (event.action() == SessionPlannerTimelineMainView.GenerationAction.APPLY) {
+            if (event.generationId() > 0L) {
+                planner.applyGeneratedEncounterLoot(new ApplyGeneratedSessionEncounterLootCommand(event.generationId()));
+            }
+            return;
+        }
+        Integer encounterCount = SessionPlannerVocabulary.parseOptionalEncounterCount(event.encounterCountText());
+        Long seed = SessionPlannerVocabulary.parseNonNegativeLong(event.seedText());
+        if (seed != null) {
+            planner.generateEncounterLoot(new GenerateSessionEncounterLootCommand(encounterCount, seed));
+        }
     }
 
     private static void consumeAttachPlan(

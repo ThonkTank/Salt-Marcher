@@ -295,6 +295,45 @@ public record SessionPlan(
                 nextLootId + 1);
     }
 
+    public SessionPlan replaceWithGeneration(GeneratedSessionPlan generatedPlan) {
+        if (generatedPlan == null || generatedPlan.scenes().isEmpty()) {
+            return withStatus("Generierter Sessionplan ist leer.");
+        }
+        List<SessionEncounter> generatedScenes = new ArrayList<>();
+        List<SessionLootPlaceholder> generatedLoot = new ArrayList<>();
+        long sceneId = nextEncounterId;
+        long lootId = nextLootId;
+        long firstEncounterSceneId = 0L;
+        for (GeneratedSessionPlan.GeneratedScene scene : generatedPlan.scenes()) {
+            long currentSceneId = sceneId++;
+            generatedScenes.add(new SessionEncounter(
+                    currentSceneId,
+                    scene.encounterPlanId(),
+                    new SessionEncounterAllocation(scene.budgetPercentage()),
+                    scene.title(),
+                    "",
+                    0L));
+            if (firstEncounterSceneId == 0L && scene.encounterPlanId() > 0L) {
+                firstEncounterSceneId = currentSceneId;
+            }
+            for (GeneratedSessionPlan.GeneratedLootReference loot : scene.loot()) {
+                generatedLoot.add(new SessionLootPlaceholder(
+                        lootId++, currentSceneId, loot.label(), loot.generationId(), loot.treasureId()));
+            }
+        }
+        long selected = firstEncounterSceneId > 0L ? firstEncounterSceneId : generatedScenes.getFirst().encounterId();
+        return copy(
+                participantRefs,
+                encounterDays,
+                generatedScenes,
+                List.of(),
+                generatedLoot,
+                selected,
+                "Encounter und Loot aus Generator uebernommen.",
+                sceneId,
+                lootId);
+    }
+
     public SessionPlan removeLootPlaceholder(long lootId) {
         List<SessionLootPlaceholder> nextLootPlaceholders = new ArrayList<>(lootPlaceholders);
         boolean removed = false;

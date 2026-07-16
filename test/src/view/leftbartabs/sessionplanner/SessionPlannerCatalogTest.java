@@ -116,6 +116,7 @@ public final class SessionPlannerCatalogTest {
         assertCatalogSize(catalog.current(), 0, "initial catalog is empty");
         assertTrue(!hasLabel(main, "Session #0"), "initial main does not show default Session #0");
         assertTrue(button(main, "Setzen").isDisabled(), "initial main disables session mutation");
+        assertTrue(button(main, "Vorschau erzeugen").isDisabled(), "generator is disabled without a session");
         encounterDaysField(main).setText("2");
         button(main, "Setzen").fire();
         assertCatalogSize(catalog.current(), 0, "session-bound action before create does not seed a session");
@@ -127,6 +128,7 @@ public final class SessionPlannerCatalogTest {
         assertEquals("Alpha", only(afterAlpha).displayName(), "create stores display name");
         assertEquals(alphaId, afterAlpha.selectedSessionId(), "create selects new session");
         assertEquals("Alpha", current.current().session().displayName(), "current session display name after create");
+        assertTrue(!button(main, "Vorschau erzeugen").isDisabled(), "generator enables for a current session");
 
         encounterDaysField(main).setText("2");
         button(main, "Setzen").fire();
@@ -230,6 +232,7 @@ public final class SessionPlannerCatalogTest {
         assertTrue(selectorCount >= 1L, "main exposes compact party selector");
         assertTrue(button(main, "Hinzufuegen").isDisabled(), "compact party add button starts disabled");
         assertTrue(hasLabel(main, "0 / ca. 0 Szenen"), "main exposes compact scene target");
+        assertTrue(hasLabel(main, "Encounter & Loot"), "main exposes the compact generator panel");
     }
 
     private static void assertSceneLootTargetsSceneCards() {

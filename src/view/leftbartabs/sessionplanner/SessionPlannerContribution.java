@@ -12,6 +12,7 @@ import shell.api.ShellLeftBarTabSpec;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
 import src.domain.sessionplanner.published.SessionPlannerCatalogModel;
 import src.domain.sessionplanner.published.SessionPlannerCurrentSessionModel;
+import src.domain.sessionplanner.published.SessionPlannerGenerationModel;
 import src.domain.sessionplanner.published.SessionPlannerParticipantsModel;
 import src.domain.sessionplanner.published.SessionPlannerSceneTimelineModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
@@ -24,6 +25,7 @@ public final class SessionPlannerContribution implements ShellContribution {
     private final SessionPlannerParticipantsModel participantsModel;
     private final SessionPlannerSceneTimelineModel sceneTimelineModel;
     private final SessionPlannerStatePanelModel statePanelModel;
+    private final SessionPlannerGenerationModel generationModel;
 
     public SessionPlannerContribution(
             SessionPlannerApplicationService planner,
@@ -33,12 +35,26 @@ public final class SessionPlannerContribution implements ShellContribution {
             SessionPlannerSceneTimelineModel sceneTimelineModel,
             SessionPlannerStatePanelModel statePanelModel
     ) {
+        this(planner, sessionModel, catalogModel, participantsModel, sceneTimelineModel, statePanelModel,
+                new SessionPlannerGenerationModel(null, null));
+    }
+
+    public SessionPlannerContribution(
+            SessionPlannerApplicationService planner,
+            SessionPlannerCurrentSessionModel sessionModel,
+            SessionPlannerCatalogModel catalogModel,
+            SessionPlannerParticipantsModel participantsModel,
+            SessionPlannerSceneTimelineModel sceneTimelineModel,
+            SessionPlannerStatePanelModel statePanelModel,
+            SessionPlannerGenerationModel generationModel
+    ) {
         this.planner = Objects.requireNonNull(planner, "planner");
         this.sessionModel = Objects.requireNonNull(sessionModel, "sessionModel");
         this.catalogModel = Objects.requireNonNull(catalogModel, "catalogModel");
         this.participantsModel = Objects.requireNonNull(participantsModel, "participantsModel");
         this.sceneTimelineModel = Objects.requireNonNull(sceneTimelineModel, "sceneTimelineModel");
         this.statePanelModel = Objects.requireNonNull(statePanelModel, "statePanelModel");
+        this.generationModel = Objects.requireNonNull(generationModel, "generationModel");
     }
 
     @Override
@@ -60,6 +76,7 @@ public final class SessionPlannerContribution implements ShellContribution {
                 catalogModel,
                 participantsModel,
                 sceneTimelineModel,
-                statePanelModel).bind();
+                statePanelModel,
+                generationModel).bind();
     }
 }

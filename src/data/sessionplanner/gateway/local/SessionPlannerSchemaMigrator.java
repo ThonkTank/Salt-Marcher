@@ -29,6 +29,10 @@ final class SessionPlannerSchemaMigrator {
                         + SessionPlannerPersistenceSchema.SESSION_LOOT_ENCOUNTER_ID_COLUMN
                         + " INTEGER NOT NULL DEFAULT 0");
             }
+            addLootReferenceColumnIfMissing(
+                    connection, statement, SessionPlannerPersistenceSchema.SESSION_LOOT_GENERATION_ID_COLUMN);
+            addLootReferenceColumnIfMissing(
+                    connection, statement, SessionPlannerPersistenceSchema.SESSION_LOOT_TREASURE_ID_COLUMN);
             if (!SqliteSchemaColumnSupport.hasColumn(
                     connection,
                     SessionPlannerPersistenceSchema.SESSION_PLANS_TABLE,
@@ -48,6 +52,19 @@ final class SessionPlannerSchemaMigrator {
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_ENCOUNTERS_ORDER_INDEX_SQL);
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_RESTS_ORDER_INDEX_SQL);
             statement.execute(SessionPlannerPersistenceSchema.CREATE_SESSION_LOOT_PLACEHOLDERS_ORDER_INDEX_SQL);
+        }
+    }
+
+    private static void addLootReferenceColumnIfMissing(
+            Connection connection,
+            Statement statement,
+            String column
+    ) throws SQLException {
+        if (!SqliteSchemaColumnSupport.hasColumn(
+                connection, SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE, column)) {
+            statement.execute(ALTER_TABLE
+                    + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
+                    + ADD_COLUMN + column + " INTEGER NOT NULL DEFAULT 0");
         }
     }
 

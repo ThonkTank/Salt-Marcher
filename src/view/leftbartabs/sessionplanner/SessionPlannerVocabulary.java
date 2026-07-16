@@ -25,6 +25,25 @@ final class SessionPlannerVocabulary {
         }
     }
 
+    static Integer parseOptionalEncounterCount(String raw) {
+        if (raw == null || raw.isBlank()) return null;
+        try {
+            int parsed = Integer.parseInt(raw.trim());
+            return parsed >= 1 && parsed <= 10 ? parsed : null;
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
+    static Long parseNonNegativeLong(String raw) {
+        try {
+            long parsed = Long.parseLong(raw == null ? "" : raw.trim());
+            return parsed >= 0L ? parsed : null;
+        } catch (NumberFormatException exception) {
+            return null;
+        }
+    }
+
     static String restLabel(SessionPlannerRestKind restKind) {
         return switch (restKind == null ? SessionPlannerRestKind.NONE : restKind) {
             case NONE -> "Keine Rast";

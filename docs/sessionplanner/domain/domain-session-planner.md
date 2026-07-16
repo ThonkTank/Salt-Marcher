@@ -15,6 +15,8 @@ Context Name: SessionPlanner
 - its public boundary is `SessionPlannerApi`
 - it does not own party truth, encounter-plan roster truth, creature truth, or
   loot truth
+- generated Loot remains a foreign `(generationId, treasureId)` reference; its
+  label is only a last-known display cache
 
 ## Published Language
 
@@ -34,6 +36,8 @@ The Session Planner application coordinates:
 - party-based adventuring-day calculations
 - saved encounter-plan budget reads through the encounter public boundary
 - session-local workflow mutations
+- generation preview orchestration and explicit timeline replacement through
+  Session Generation and Encounter public boundaries
 - publication of immutable, revisioned planner API state
 
 - planner state is exposed only through `SessionPlannerApi`

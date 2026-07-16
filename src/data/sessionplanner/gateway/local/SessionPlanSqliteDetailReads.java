@@ -81,7 +81,7 @@ final class SessionPlanSqliteDetailReads {
     List<SessionLootPlaceholderRecord> loadLootPlaceholders(Connection connection, long sessionId)
             throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement(
-                "SELECT loot_id, encounter_id, label, sort_order FROM "
+                "SELECT loot_id, encounter_id, label, generation_id, treasure_id, sort_order FROM "
                         + SessionPlannerPersistenceSchema.SESSION_LOOT_PLACEHOLDERS_TABLE
                         + " WHERE session_id = ? ORDER BY sort_order, loot_id")) {
             statement.setLong(1, sessionId);
@@ -92,6 +92,8 @@ final class SessionPlanSqliteDetailReads {
                             resultSet.getLong("loot_id"),
                             resultSet.getLong(SessionPlannerPersistenceSchema.SESSION_LOOT_ENCOUNTER_ID_COLUMN),
                             resultSet.getString("label"),
+                            resultSet.getLong(SessionPlannerPersistenceSchema.SESSION_LOOT_GENERATION_ID_COLUMN),
+                            resultSet.getLong(SessionPlannerPersistenceSchema.SESSION_LOOT_TREASURE_ID_COLUMN),
                             resultSet.getInt(SORT_ORDER)));
                 }
                 return lootPlaceholders;

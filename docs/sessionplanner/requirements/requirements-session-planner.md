@@ -24,6 +24,8 @@ Provide one session-owned planning surface that:
 - recommends how many short and long rests the planned encounter XP implies
 - lets the user place rests between planned scenes
 - keeps loot and gold planning visibly open without inventing fake gold math
+- previews and applies versioned Encounter-and-Loot generation without owning
+  generator rules, saved rosters, or generated Loot truth
 
 ## Non-Goals
 
@@ -34,6 +36,7 @@ Provide one session-owned planning surface that:
   loot internals into sessionplanner-owned truth
 - copying World Planner location details into sessionplanner-owned truth
 - deriving gold budgets from provisional heuristics
+- implementing generator probability, Treasure, Magic, Curse, or Packing rules
 - replacing the encounter state tab or the party dropdown
 
 ## Primary User Flow
@@ -55,7 +58,9 @@ Provide one session-owned planning surface that:
 10. The user selects one session scene for the preparatory state-panel
    context.
 11. The user adds loot placeholders while the gold budget remains explicitly
-   unresolved.
+    unresolved.
+12. The user may preview generated Encounter and Loot and explicitly replace the
+    timeline after all generator audits pass.
 
 ## Expected Capabilities
 
@@ -78,6 +83,8 @@ Provide one session-owned planning surface that:
 - preserve selected scene context for the preparatory state panel
 - allow loot placeholders that do not affect XP math and do not claim a gold
   budget is already available
+- persist generated Loot references and cached labels while resolving truth
+  through the Session Generation boundary
 
 ## Visible States
 
