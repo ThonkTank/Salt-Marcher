@@ -1,6 +1,6 @@
 package src.domain.encounter;
 
-import shell.api.ServiceRegistry;
+import org.jspecify.annotations.Nullable;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.CreatureDetailModel;
 import src.domain.creatures.published.CreatureEncounterCandidatesModel;
@@ -15,49 +15,49 @@ import src.domain.party.published.AdventuringDaySummaryModel;
 import src.domain.party.published.PartyMutationModel;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
-final class EncounterServiceAssembly {
+public final class EncounterServiceAssembly {
 
-    private final EncounterPublishedState publishedState = new EncounterPublishedState();
-
-    EncounterApplicationService createApplicationService(ServiceRegistry services) {
+    public static Component create(
+            CreaturesApplicationService creatures,
+            CreatureDetailModel creatureDetails,
+            CreatureEncounterCandidatesModel creatureCandidates,
+            EncounterTableApplicationService encounterTables,
+            EncounterTableCandidatesModel tableCandidates,
+            @Nullable WorldPlannerSnapshotModel worldPlanner,
+            PartyApplicationService party,
+            ActivePartyModel activeParty,
+            ActivePartyCompositionModel activePartyComposition,
+            AdventuringDaySummaryModel daySummary,
+            PartyMutationModel partyMutation,
+            EncounterPlanRepository planRepository
+    ) {
+        EncounterPublishedState publishedState = new EncounterPublishedState();
         EncounterForeignFacts facts = new EncounterForeignFacts(
-                services.require(CreaturesApplicationService.class),
-                services.require(CreatureDetailModel.class),
-                services.require(CreatureEncounterCandidatesModel.class),
-                services.require(EncounterTableApplicationService.class),
-                services.require(EncounterTableCandidatesModel.class),
-                services.find(WorldPlannerSnapshotModel.class).orElse(null),
-                services.require(PartyApplicationService.class),
-                services.require(ActivePartyModel.class),
-                services.require(ActivePartyCompositionModel.class),
-                services.require(AdventuringDaySummaryModel.class),
-                services.require(PartyMutationModel.class));
-        EncounterPlanGateway plans = new EncounterPlanGateway(services.require(EncounterPlanRepository.class), facts);
+                creatures, creatureDetails, creatureCandidates, encounterTables, tableCandidates,
+                worldPlanner, party, activeParty, activePartyComposition, daySummary, partyMutation);
+        EncounterPlanGateway plans = new EncounterPlanGateway(planRepository, facts);
         EncounterSessionRuntimeAccess runtime = new EncounterSessionRuntimeAccess(
                 facts,
                 plans,
                 new EncounterGenerator(facts));
-        return new EncounterApplicationService(runtime, plans, publishedState);
+        EncounterApplicationService application = new EncounterApplicationService(runtime, plans, publishedState);
+        return new Component(
+                application,
+                publishedState.stateModel(),
+                publishedState.builderInputsModel(),
+                publishedState.tuningPreviewModel(),
+                publishedState.savedPlansModel(),
+                publishedState.planBudgetModel());
     }
 
-    src.domain.encounter.published.EncounterStateModel stateModel(ServiceRegistry services) {
-        return publishedState.stateModel();
-    }
-
-    src.domain.encounter.published.EncounterBuilderInputsModel builderInputsModel(ServiceRegistry services) {
-        return publishedState.builderInputsModel();
-    }
-
-    src.domain.encounter.published.EncounterTuningPreviewModel tuningPreviewModel(ServiceRegistry services) {
-        return publishedState.tuningPreviewModel();
-    }
-
-    src.domain.encounter.published.SavedEncounterPlanListModel savedPlansModel(ServiceRegistry services) {
-        return publishedState.savedPlansModel();
-    }
-
-    src.domain.encounter.published.EncounterPlanBudgetModel planBudgetModel(ServiceRegistry services) {
-        return publishedState.planBudgetModel();
+    public record Component(
+            EncounterApplicationService application,
+            src.domain.encounter.published.EncounterStateModel state,
+            src.domain.encounter.published.EncounterBuilderInputsModel builderInputs,
+            src.domain.encounter.published.EncounterTuningPreviewModel tuningPreview,
+            src.domain.encounter.published.SavedEncounterPlanListModel savedPlans,
+            src.domain.encounter.published.EncounterPlanBudgetModel planBudget
+    ) {
     }
 
 }

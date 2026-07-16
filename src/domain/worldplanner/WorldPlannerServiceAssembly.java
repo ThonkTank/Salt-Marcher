@@ -5,7 +5,7 @@ import src.domain.worldplanner.model.world.port.WorldPlannerReferencePort;
 import src.domain.worldplanner.model.world.repository.WorldPlannerRepository;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
-final class WorldPlannerServiceAssembly {
+public final class WorldPlannerServiceAssembly {
 
     private static final String LOAD_FAILURE = "World Planner konnte nicht geladen werden.";
 
@@ -14,7 +14,7 @@ final class WorldPlannerServiceAssembly {
     private final WorldPlannerSnapshotModel snapshotModel = new WorldPlannerSnapshotModel();
     private boolean initialSnapshotPublished;
 
-    WorldPlannerServiceAssembly(
+    public WorldPlannerServiceAssembly(
             WorldPlannerRepository repository,
             WorldPlannerReferencePort referenceValidator
     ) {
@@ -22,12 +22,12 @@ final class WorldPlannerServiceAssembly {
         this.referenceValidator = Objects.requireNonNull(referenceValidator, "referenceValidator");
     }
 
-    WorldPlannerApplicationService createApplicationService() {
+    public WorldPlannerApplicationService createApplicationService() {
         publishInitialSnapshot();
         return new WorldPlannerApplicationService(repository, referenceValidator, snapshotModel);
     }
 
-    WorldPlannerSnapshotModel snapshotModel() {
+    public WorldPlannerSnapshotModel snapshotModel() {
         publishInitialSnapshot();
         return snapshotModel;
     }

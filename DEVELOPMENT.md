@@ -24,7 +24,7 @@ JavaFX tests use headless Monocle and do not require Xvfb.
 
 ## Project Shape
 
-- `bootstrap/`: application startup and contribution discovery
+- `bootstrap/`: explicit application startup and composition
 - `shell/`: generic shell API and host runtime
 - `src/features/**`: feature runtime
 - `src/view/**`: JavaFX views

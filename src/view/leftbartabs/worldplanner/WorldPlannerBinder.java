@@ -5,11 +5,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
+import org.jspecify.annotations.Nullable;
 import shell.api.InspectorEntrySpec;
-import shell.api.ServiceRegistry;
+import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellControls;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.creatures.published.CreatureCatalogModel;
 import src.domain.encounter.EncounterApplicationService;
@@ -35,21 +35,30 @@ final class WorldPlannerBinder {
     private static final int FACTIONS = 1;
     private static final int LOCATIONS = 2;
 
-    private final ShellRuntimeContext runtimeContext;
+    private final WorldPlannerApplicationService worldPlanner;
+    private final @Nullable EncounterApplicationService encounter;
+    private final WorldPlannerSnapshotModel snapshotModel;
+    private final @Nullable CreatureCatalogModel creatureCatalog;
+    private final @Nullable EncounterTableCatalogModel encounterTableCatalog;
+    private final InspectorSink inspector;
 
-    WorldPlannerBinder(ShellRuntimeContext runtimeContext) {
-        this.runtimeContext = Objects.requireNonNull(runtimeContext, "runtimeContext");
+    WorldPlannerBinder(
+            WorldPlannerApplicationService worldPlanner,
+            @Nullable EncounterApplicationService encounter,
+            WorldPlannerSnapshotModel snapshotModel,
+            @Nullable CreatureCatalogModel creatureCatalog,
+            @Nullable EncounterTableCatalogModel encounterTableCatalog,
+            InspectorSink inspector
+    ) {
+        this.worldPlanner = Objects.requireNonNull(worldPlanner, "worldPlanner");
+        this.encounter = encounter;
+        this.snapshotModel = Objects.requireNonNull(snapshotModel, "snapshotModel");
+        this.creatureCatalog = creatureCatalog;
+        this.encounterTableCatalog = encounterTableCatalog;
+        this.inspector = Objects.requireNonNull(inspector, "inspector");
     }
 
     ShellBinding bind() {
-        ServiceRegistry services = runtimeContext.services();
-        WorldPlannerApplicationService worldPlanner = services.require(WorldPlannerApplicationService.class);
-        EncounterApplicationService encounter = services.find(EncounterApplicationService.class).orElse(null);
-        WorldPlannerSnapshotModel snapshotModel = services.require(WorldPlannerSnapshotModel.class);
-        CreatureCatalogModel creatureCatalog = services.find(CreatureCatalogModel.class).orElse(null);
-        EncounterTableCatalogModel encounterTableCatalog =
-                services.find(EncounterTableCatalogModel.class).orElse(null);
-
         WorldPlannerViewModel viewModel = new WorldPlannerViewModel(encounter != null);
         WorldPlannerControlsView controlsView = new WorldPlannerControlsView();
         SearchFilterControlsView searchFilterView = new SearchFilterControlsView();
@@ -114,7 +123,7 @@ final class WorldPlannerBinder {
 
     private void consumeState(
             WorldPlannerApplicationService worldPlanner,
-            EncounterApplicationService encounter,
+            @Nullable EncounterApplicationService encounter,
             WorldPlannerViewModel viewModel,
             StateInput event
     ) {
@@ -132,7 +141,7 @@ final class WorldPlannerBinder {
 
     private void consumeNpcState(
             WorldPlannerApplicationService worldPlanner,
-            EncounterApplicationService encounter,
+            @Nullable EncounterApplicationService encounter,
             WorldPlannerViewModel viewModel,
             NpcSnapshot snapshot,
             ActionSnapshot actions
@@ -207,7 +216,7 @@ final class WorldPlannerBinder {
     }
 
     private static void addNpcToEncounter(
-            EncounterApplicationService encounter,
+            @Nullable EncounterApplicationService encounter,
             WorldPlannerViewModel viewModel
     ) {
         long statblockId = viewModel.selectedNpcStatblockId();
@@ -220,11 +229,11 @@ final class WorldPlannerBinder {
     private void openDetails(WorldPlannerViewModel viewModel) {
         String key = viewModel.detailKey();
         if (key.isBlank()) {
-            runtimeContext.inspector().clear();
+            inspector.clear();
             return;
         }
         DetailProjection projection = viewModel.detailProjection();
-        runtimeContext.inspector().push(new InspectorEntrySpec(
+        inspector.push(new InspectorEntrySpec(
                 viewModel.detailTitle(),
                 key,
                 () -> detailContent(projection),

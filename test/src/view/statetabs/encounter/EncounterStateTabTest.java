@@ -20,17 +20,15 @@ import javafx.scene.control.Labeled;
 import javafx.scene.control.ScrollPane;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.data.creatures.model.CreaturesPersistenceSchema;
-import src.domain.creatures.CreaturesServiceContribution;
+import src.domain.creatures.CreaturesServiceAssembly;
 import src.domain.creatures.model.catalog.CreatureCatalogData;
 import src.domain.creatures.model.catalog.CreatureCatalogData.CreatureProfile;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.encounter.EncounterApplicationService;
-import src.domain.encounter.EncounterServiceContribution;
+import src.domain.encounter.EncounterServiceAssembly;
 import src.domain.encounter.model.plan.EncounterPlan;
 import src.domain.encounter.model.plan.EncounterPlanCreature;
 import src.domain.encounter.model.plan.repository.EncounterPlanRepository;
@@ -39,6 +37,10 @@ import src.domain.encountertable.model.catalog.EncounterTableCandidateData;
 import src.domain.encountertable.model.catalog.EncounterTableSummaryData;
 import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.PartyServiceAssembly;
+import src.domain.encountertable.EncounterTableServiceAssembly;
+import src.data.encounter.repository.SqliteEncounterPlanRepository;
+import src.data.party.repository.SqlitePartyRosterRepository;
 import src.domain.party.published.CalculateAdventuringDayCommand;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.CreateCharacterCommand;
@@ -77,7 +79,7 @@ public final class EncounterStateTabTest {
 
     private static void assertEncounterStateTabOpensThroughShellBinding() {
         TestRuntime runtime = TestRuntime.create();
-        ShellBinding binding = new EncounterStateContribution().bind(runtime.runtimeContext());
+        ShellBinding binding = runtime.contribution().bind();
         EncounterStateView view = encounterStateView(binding);
         assertTextPresent(view, "Encounter", "ENCOUNTER-STATE-TAB-001 title");
         assertTextPresent(view, "Monster per +Add hinzufuegen...", "ENCOUNTER-STATE-TAB-001 empty roster");
@@ -85,7 +87,7 @@ public final class EncounterStateTabTest {
 
     private static void assertSavedEncounterReadbackRendersInStateTab() {
         TestRuntime runtime = TestRuntime.create();
-        ShellBinding binding = new EncounterStateContribution().bind(runtime.runtimeContext());
+        ShellBinding binding = runtime.contribution().bind();
         EncounterStateView view = encounterStateView(binding);
         runtime.openSavedEncounter();
         assertTextPresent(view, "Gate Ambush", "ENCOUNTER-STATE-TAB-002 saved plan title");
@@ -184,42 +186,47 @@ public final class EncounterStateTabTest {
 
     private static final class TestRuntime {
 
-        private final ServiceRegistry registry;
+        private final CreaturesServiceAssembly.Component creatures;
+        private final EncounterServiceAssembly.Component encounter;
         private final long planId;
 
-        private TestRuntime(ServiceRegistry registry, long planId) {
-            this.registry = Objects.requireNonNull(registry, "registry");
+        private TestRuntime(
+                CreaturesServiceAssembly.Component creatures,
+                EncounterServiceAssembly.Component encounter,
+                long planId
+        ) {
+            this.creatures = Objects.requireNonNull(creatures, "creatures");
+            this.encounter = Objects.requireNonNull(encounter, "encounter");
             this.planId = planId;
         }
 
         static TestRuntime create() {
-            ServiceRegistry registry = registry();
-            seedParty(registry.require(PartyApplicationService.class));
+            PartyServiceAssembly.Component party =
+                    PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+            seedParty(party.application());
             seedCreatureCatalogPersistence();
-            long savedPlanId = seedSavedEncounter(registry.require(EncounterPlanRepository.class));
-            return new TestRuntime(registry, savedPlanId);
-        }
-
-        ShellRuntimeContext runtimeContext() {
-            return new ShellRuntimeContext(new NoopInspectorSink(), registry);
+            CreaturesServiceAssembly.Component creatures =
+                    CreaturesServiceAssembly.create(new FixtureCreatureCatalogPort());
+            EncounterTableServiceAssembly.Component tables =
+                    EncounterTableServiceAssembly.create(new EmptyEncounterTableCatalogPort());
+            SqliteEncounterPlanRepository plans = new SqliteEncounterPlanRepository();
+            EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
+                    creatures.application(), creatures.detail(), creatures.encounterCandidates(),
+                    tables.application(), tables.candidates(), null,
+                    party.application(), party.activeParty(), party.activeComposition(),
+                    party.adventuringDaySummary(), party.mutation(), plans);
+            long savedPlanId = seedSavedEncounter(plans);
+            return new TestRuntime(creatures, encounter, savedPlanId);
         }
 
         void openSavedEncounter() {
-            registry.require(EncounterApplicationService.class)
-                    .applyState(ApplyEncounterStateCommand.openSavedPlan(planId));
+            encounter.application().applyState(ApplyEncounterStateCommand.openSavedPlan(planId));
         }
 
-        private static ServiceRegistry registry() {
-            ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-            builder.register(CreatureCatalogPort.class, new FixtureCreatureCatalogPort());
-            builder.register(EncounterTableCatalogPort.class, new EmptyEncounterTableCatalogPort());
-            new src.data.party.PartyServiceContribution().register(builder);
-            new src.data.encounter.EncounterServiceContribution().register(builder);
-            new CreaturesServiceContribution().register(builder);
-            new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
-            new src.domain.party.PartyServiceContribution().register(builder);
-            new EncounterServiceContribution().register(builder);
-            return builder.build();
+        EncounterStateContribution contribution() {
+            return new EncounterStateContribution(
+                    creatures.detail(), creatures.application(), encounter.state(), encounter.application(),
+                    null, new NoopInspectorSink());
         }
 
         private static void seedParty(PartyApplicationService party) {

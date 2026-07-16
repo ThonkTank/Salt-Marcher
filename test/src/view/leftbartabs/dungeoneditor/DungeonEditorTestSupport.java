@@ -63,7 +63,6 @@ import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.Window;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellSlot;
@@ -2256,7 +2255,7 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static TestBinding bindTest(TestRuntime runtime, double width, double height) {
-        ShellBinding shellBinding = new DungeonEditorContribution().bind(runtime.context());
+        ShellBinding shellBinding = new DungeonEditorContribution(runtime.editorDependencies()).bind();
         Parent controlsRoot = slot(shellBinding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         DungeonEditorControlsView controls = descendant(controlsRoot, DungeonEditorControlsView.class);
         DungeonMapView mapView = slot(shellBinding, ShellSlot.COCKPIT_MAIN, DungeonMapView.class);
@@ -2273,9 +2272,9 @@ final class DungeonEditorTestSupport extends DungeonEditorTestRuntime {
     }
 
     static TestBinding bindShellTest(TestRuntime runtime, double width, double height) {
-        AppShell shell = new AppShell(runtime.context().services());
-        DungeonEditorContribution contribution = new DungeonEditorContribution();
-        ShellBinding shellBinding = contribution.bind(shell.runtimeContext());
+        AppShell shell = new AppShell();
+        DungeonEditorContribution contribution = new DungeonEditorContribution(runtime.editorDependencies());
+        ShellBinding shellBinding = contribution.bind();
         ShellLeftBarTabSpec registrationSpec = (ShellLeftBarTabSpec) contribution.registrationSpec();
         shell.registerLeftBarTab(registrationSpec, shellBinding);
         shell.navigateTo(registrationSpec.key());

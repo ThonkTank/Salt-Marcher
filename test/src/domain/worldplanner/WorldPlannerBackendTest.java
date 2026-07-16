@@ -6,8 +6,16 @@ import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.List;
 import org.junit.jupiter.api.Test;
-import shell.api.ServiceRegistry;
+import src.domain.creatures.CreaturesServiceAssembly;
+import src.domain.creatures.model.catalog.CreatureCatalogData;
+import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
+import src.domain.encountertable.model.catalog.EncounterTableCandidateData;
+import src.domain.encountertable.model.catalog.EncounterTableSummaryData;
+import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
+import src.domain.encountertable.EncounterTableServiceAssembly;
+import src.data.worldplanner.repository.SqliteWorldPlannerRepository;
 import src.data.worldplanner.mapper.WorldPlannerMapper;
 import src.data.worldplanner.model.WorldNpcRecord;
 import src.data.worldplanner.model.WorldPlannerPersistenceSchema;
@@ -40,9 +48,9 @@ public final class WorldPlannerBackendTest {
 
     @Test
     void WORLD_PLANNER_BACKEND_001() {
-        ServiceRegistry registry = registry();
-        WorldPlannerApplicationService service = registry.require(WorldPlannerApplicationService.class);
-        WorldPlannerSnapshotModel model = registry.require(WorldPlannerSnapshotModel.class);
+        WorldPlannerRuntime runtime = productionRuntime();
+        WorldPlannerApplicationService service = runtime.application();
+        WorldPlannerSnapshotModel model = runtime.snapshot();
 
         service.createNpc(new CreateWorldNpcCommand(
                 "Captain Vale",
@@ -115,31 +123,31 @@ public final class WorldPlannerBackendTest {
         assertInvalidFiniteInventoryRejected();
         assertForeignReferencesAreRejectedBeforePersistence();
         assertMissingReferenceServicesFailClosed();
+        assertReferenceProviderFailuresSurfaceWithoutWrite();
     }
 
     private static WorldPlannerSnapshot reloadedSnapshot() {
-        ServiceRegistry registry = registry();
-        WorldPlannerApplicationService service = registry.require(WorldPlannerApplicationService.class);
-        service.refresh(new RefreshWorldPlannerCommand());
-        return registry.require(WorldPlannerSnapshotModel.class).current();
+        WorldPlannerRuntime runtime = productionRuntime();
+        runtime.application().refresh(new RefreshWorldPlannerCommand());
+        return runtime.snapshot().current();
     }
 
-    private static ServiceRegistry registry() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        new src.data.worldplanner.WorldPlannerServiceContribution().register(builder);
-        registerPositiveReferencePort(builder);
-        new WorldPlannerServiceContribution().register(builder);
-        return builder.build();
+    private static WorldPlannerRuntime productionRuntime() {
+        return runtime(new SqliteWorldPlannerRepository(), new PositiveReferencePort());
+    }
+
+    private static WorldPlannerRuntime runtime(
+            WorldPlannerRepository repository,
+            WorldPlannerReferencePort referencePort
+    ) {
+        WorldPlannerServiceAssembly assembly = new WorldPlannerServiceAssembly(repository, referencePort);
+        return new WorldPlannerRuntime(assembly.createApplicationService(), assembly.snapshotModel());
     }
 
     private static void assertStorageErrorPreservesLastStableSnapshot() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(WorldPlannerRepository.class, new FailingAfterFirstLoadRepository());
-        registerPositiveReferencePort(builder);
-        new WorldPlannerServiceContribution().register(builder);
-        ServiceRegistry registry = builder.build();
-        WorldPlannerSnapshotModel model = registry.require(WorldPlannerSnapshotModel.class);
-        WorldPlannerApplicationService service = registry.require(WorldPlannerApplicationService.class);
+        WorldPlannerRuntime runtime = runtime(new FailingAfterFirstLoadRepository(), new PositiveReferencePort());
+        WorldPlannerSnapshotModel model = runtime.snapshot();
+        WorldPlannerApplicationService service = runtime.application();
 
         assertEquals(1, model.current().npcs().size(), "stable error fixture npc count");
         service.refresh(new RefreshWorldPlannerCommand());
@@ -148,51 +156,35 @@ public final class WorldPlannerBackendTest {
     }
 
     private static void assertReadbackOnlyConsumerLoadsPersistedSnapshot() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(WorldPlannerRepository.class, new StableFixtureRepository());
-        registerPositiveReferencePort(builder);
-        new WorldPlannerServiceContribution().register(builder);
-        ServiceRegistry registry = builder.build();
-        WorldPlannerSnapshotModel model = registry.require(WorldPlannerSnapshotModel.class);
+        WorldPlannerSnapshotModel model = runtime(
+                new StableFixtureRepository(), new PositiveReferencePort()).snapshot();
 
         assertEquals(1, model.current().npcs().size(), "readback-only fixture npc count");
         assertEquals("Stable NPC", model.current().npcs().get(0).displayName(), "readback-only fixture npc");
     }
 
     private static void assertServiceFirstMutationSurvivesFirstModelLookup() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(WorldPlannerRepository.class, new StableFixtureRepository());
-        registerPositiveReferencePort(builder);
-        new WorldPlannerServiceContribution().register(builder);
-        ServiceRegistry registry = builder.build();
-        WorldPlannerApplicationService service = registry.require(WorldPlannerApplicationService.class);
+        WorldPlannerRuntime runtime = runtime(new StableFixtureRepository(), new PositiveReferencePort());
+        WorldPlannerApplicationService service = runtime.application();
 
         service.createNpc(new CreateWorldNpcCommand("Fresh NPC", 202L, "", "", "", ""));
-        WorldPlannerSnapshot current = registry.require(WorldPlannerSnapshotModel.class).current();
+        WorldPlannerSnapshot current = runtime.snapshot().current();
 
         assertEquals(2, current.npcs().size(), "service-first model lookup npc count");
         assertEquals("NPC erstellt.", current.statusText(), "service-first transient status text");
     }
 
     private static void assertMalformedRowsBecomeStorageErrors() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(WorldPlannerRepository.class, new MalformedRecordRepository());
-        registerPositiveReferencePort(builder);
-        new WorldPlannerServiceContribution().register(builder);
-        ServiceRegistry registry = builder.build();
-        WorldPlannerSnapshotModel model = registry.require(WorldPlannerSnapshotModel.class);
+        WorldPlannerSnapshotModel model = runtime(
+                new MalformedRecordRepository(), new PositiveReferencePort()).snapshot();
 
         assertEquals(WorldPlannerReadStatus.STORAGE_ERROR, model.current().status(), "malformed row status");
         assertEquals(0, model.current().npcs().size(), "malformed row does not publish partial npc");
     }
 
     private static void assertInvalidLifecycleRowsBecomeStorageErrors() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(WorldPlannerRepository.class, new InvalidLifecycleRecordRepository());
-        registerPositiveReferencePort(builder);
-        new WorldPlannerServiceContribution().register(builder);
-        ServiceRegistry registry = builder.build();
-        WorldPlannerSnapshotModel model = registry.require(WorldPlannerSnapshotModel.class);
+        WorldPlannerSnapshotModel model = runtime(
+                new InvalidLifecycleRecordRepository(), new PositiveReferencePort()).snapshot();
 
         assertEquals(WorldPlannerReadStatus.STORAGE_ERROR, model.current().status(), "invalid lifecycle row status");
         assertEquals(0, model.current().npcs().size(), "invalid lifecycle does not publish active npc");
@@ -216,21 +208,16 @@ public final class WorldPlannerBackendTest {
         resetDatabase();
         createLegacyMalformedFiniteDatabase(finiteValueSql, quantityValueSql);
 
-        ServiceRegistry registry = registry();
-        WorldPlannerSnapshotModel model = registry.require(WorldPlannerSnapshotModel.class);
+        WorldPlannerSnapshotModel model = productionRuntime().snapshot();
 
         assertEquals(WorldPlannerReadStatus.STORAGE_ERROR, model.current().status(), label);
         assertEquals(0, model.current().factions().size(), label + " does not publish faction");
     }
 
     private static void assertSaveErrorPreservesLastStableSnapshot() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(WorldPlannerRepository.class, new FailingSaveRepository());
-        registerPositiveReferencePort(builder);
-        new WorldPlannerServiceContribution().register(builder);
-        ServiceRegistry registry = builder.build();
-        WorldPlannerSnapshotModel model = registry.require(WorldPlannerSnapshotModel.class);
-        WorldPlannerApplicationService service = registry.require(WorldPlannerApplicationService.class);
+        WorldPlannerRuntime runtime = runtime(new FailingSaveRepository(), new PositiveReferencePort());
+        WorldPlannerSnapshotModel model = runtime.snapshot();
+        WorldPlannerApplicationService service = runtime.application();
 
         assertEquals(1, model.current().npcs().size(), "stable save-error fixture npc count");
         service.createLocation(new CreateWorldLocationCommand("Blocked", "save fails"));
@@ -333,11 +320,7 @@ public final class WorldPlannerBackendTest {
 
     private static void assertForeignReferencesAreRejectedBeforePersistence() {
         CountingRepository repository = new CountingRepository();
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(WorldPlannerRepository.class, repository);
-        builder.register(WorldPlannerReferencePort.class, new RejectingReferenceValidator());
-        new WorldPlannerServiceContribution().register(builder);
-        WorldPlannerApplicationService service = builder.build().require(WorldPlannerApplicationService.class);
+        WorldPlannerApplicationService service = runtime(repository, new RejectingReferenceValidator()).application();
 
         service.createNpc(new CreateWorldNpcCommand("Foreign NPC", 999L, "", "", "", ""));
         service.createFaction(new CreateWorldFactionCommand("Foreign Table", "", 999L));
@@ -352,18 +335,43 @@ public final class WorldPlannerBackendTest {
     }
 
     private static void assertMissingReferenceServicesFailClosed() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(WorldPlannerRepository.class, new CountingRepository());
-        new WorldPlannerServiceContribution().register(builder);
-        ServiceRegistry registry = builder.build();
-        WorldPlannerApplicationService service = registry.require(WorldPlannerApplicationService.class);
+        WorldPlannerRuntime runtime = runtime(new CountingRepository(), new MissingReferencePort());
+        WorldPlannerApplicationService service = runtime.application();
 
         service.createNpc(new CreateWorldNpcCommand("Unknown NPC", 101L, "", "", "", ""));
         service.createFaction(new CreateWorldFactionCommand("Unknown Faction", "", 201L));
 
-        WorldPlannerSnapshot current = registry.require(WorldPlannerSnapshotModel.class).current();
+        WorldPlannerSnapshot current = runtime.snapshot().current();
         assertEquals(1, current.npcs().size(), "missing creature service rejects new npc reference");
         assertEquals(1, current.factions().size(), "missing encounter table service rejects new faction reference");
+    }
+
+    private static void assertReferenceProviderFailuresSurfaceWithoutWrite() {
+        CountingRepository repository = new CountingRepository();
+        WorldPlannerRuntime runtime = runtime(
+                repository,
+                WorldPlannerReferenceAssembly.catalogReferences(
+                        CreaturesServiceAssembly.create(new FailingCreatureCatalogPort()).references(),
+                        EncounterTableServiceAssembly.create(new FailingEncounterTableCatalogPort()).references()));
+        WorldPlannerApplicationService service = runtime.application();
+
+        service.createNpc(new CreateWorldNpcCommand("Unavailable Creature", 101L, "", "", "", ""));
+        assertReferenceStorageError(runtime.snapshot().current(), repository, "creature provider failure");
+
+        service.createFaction(new CreateWorldFactionCommand("Unavailable Table", "", 201L));
+        assertReferenceStorageError(runtime.snapshot().current(), repository, "table provider failure");
+    }
+
+    private static void assertReferenceStorageError(
+            WorldPlannerSnapshot snapshot,
+            CountingRepository repository,
+            String label
+    ) {
+        assertEquals(WorldPlannerReadStatus.STORAGE_ERROR, snapshot.status(), label + " status");
+        assertEquals("World Planner Referenzen konnten nicht geladen werden.", snapshot.statusText(), label + " text");
+        assertEquals(1, snapshot.npcs().size(), label + " preserves npc state");
+        assertEquals(1, snapshot.factions().size(), label + " preserves faction state");
+        assertEquals(0, repository.saveCount, label + " performs no write");
     }
 
     private static WorldPlannerState stableFixture() {
@@ -380,6 +388,7 @@ public final class WorldPlannerBackendTest {
     private static final class CountingRepository implements WorldPlannerRepository {
 
         private WorldPlannerState state = stableWorldFixture();
+        private int saveCount;
 
         @Override
         public WorldPlannerState load() {
@@ -388,9 +397,52 @@ public final class WorldPlannerBackendTest {
 
         @Override
         public WorldPlannerState save(WorldPlannerState state) {
+            saveCount++;
             this.state = state;
             return state;
         }
+    }
+
+    private static final class FailingCreatureCatalogPort implements CreatureCatalogPort {
+
+        @Override
+        public CreatureCatalogData.DistinctFilterValues loadFilterValues() {
+            throw unavailable();
+        }
+
+        @Override
+        public CreatureCatalogData.CatalogPageData searchCatalog(CreatureCatalogData.CatalogSearchSpec spec) {
+            throw unavailable();
+        }
+
+        @Override
+        public CreatureCatalogData.CreatureProfile loadCreatureDetail(long creatureId) {
+            throw unavailable();
+        }
+
+        @Override
+        public List<CreatureCatalogData.EncounterCandidateProfile> loadEncounterCandidates(
+                CreatureCatalogData.EncounterCandidateSpec spec
+        ) {
+            throw unavailable();
+        }
+    }
+
+    private static final class FailingEncounterTableCatalogPort implements EncounterTableCatalogPort {
+
+        @Override
+        public List<EncounterTableSummaryData> loadSummaries() {
+            throw unavailable();
+        }
+
+        @Override
+        public List<EncounterTableCandidateData> loadGenerationCandidates(List<Long> tableIds, int maximumXp) {
+            throw unavailable();
+        }
+    }
+
+    private static IllegalStateException unavailable() {
+        return new IllegalStateException("fixture catalog unavailable");
     }
 
     private static WorldPlannerState stableWorldFixture() {
@@ -427,10 +479,6 @@ public final class WorldPlannerBackendTest {
         }
     }
 
-    private static void registerPositiveReferencePort(ServiceRegistry.Builder builder) {
-        builder.register(WorldPlannerReferencePort.class, new PositiveReferencePort());
-    }
-
     private static final class PositiveReferencePort implements WorldPlannerReferencePort {
         @Override
         public boolean creatureStatblockExists(long creatureStatblockId) {
@@ -441,6 +489,24 @@ public final class WorldPlannerBackendTest {
         public boolean encounterTableExists(long encounterTableId) {
             return encounterTableId > 0L;
         }
+    }
+
+    private static final class MissingReferencePort implements WorldPlannerReferencePort {
+        @Override
+        public boolean creatureStatblockExists(long creatureStatblockId) {
+            return false;
+        }
+
+        @Override
+        public boolean encounterTableExists(long encounterTableId) {
+            return false;
+        }
+    }
+
+    private record WorldPlannerRuntime(
+            WorldPlannerApplicationService application,
+            WorldPlannerSnapshotModel snapshot
+    ) {
     }
 
     private static void createLegacyMalformedFiniteDatabase(String finiteValueSql, String quantityValueSql) {

@@ -22,20 +22,27 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.data.encounter.repository.SqliteEncounterPlanRepository;
+import src.data.party.repository.SqlitePartyRosterRepository;
+import src.data.worldplanner.repository.SqliteWorldPlannerRepository;
 import src.domain.creatures.CreaturesApplicationService;
+import src.domain.creatures.CreaturesServiceAssembly;
 import src.domain.creatures.model.catalog.CreatureCatalogData;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.encounter.published.EncounterStateModel;
 import src.domain.encounter.published.EncounterStateSnapshot;
+import src.domain.encounter.EncounterServiceAssembly;
 import src.domain.encountertable.EncounterTableApplicationService;
+import src.domain.encountertable.EncounterTableServiceAssembly;
 import src.domain.encountertable.model.catalog.EncounterTableCandidateData;
 import src.domain.encountertable.model.catalog.EncounterTableSummaryData;
 import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
 import src.domain.encountertable.published.RefreshEncounterTableCatalogCommand;
+import src.domain.party.PartyServiceAssembly;
+import src.domain.worldplanner.WorldPlannerServiceAssembly;
+import src.domain.worldplanner.model.world.port.WorldPlannerReferencePort;
 import src.domain.worldplanner.published.WorldNpcLifecycleStatus;
 import src.domain.worldplanner.published.WorldPlannerSnapshot;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
@@ -60,15 +67,20 @@ public final class WorldPlannerUiTest {
     }
 
     private static void runTest() {
-        ServiceRegistry services = services();
+        WorldPlannerUiServices services = services();
         CapturingInspectorSink inspector = new CapturingInspectorSink();
-        ShellBinding binding = new WorldPlannerContribution().bind(
-                new ShellRuntimeContext(inspector, services));
+        ShellBinding binding = new WorldPlannerContribution(
+                services.worldApplication(),
+                services.encounter().application(),
+                services.world().snapshotModel(),
+                services.creatures().catalog(),
+                services.tables().catalog(),
+                inspector).bind();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         Parent main = slot(binding, ShellSlot.COCKPIT_MAIN, Parent.class);
         Parent state = slot(binding, ShellSlot.COCKPIT_STATE, Parent.class);
-        WorldPlannerSnapshotModel model = services.require(WorldPlannerSnapshotModel.class);
-        EncounterStateModel encounterState = services.require(EncounterStateModel.class);
+        WorldPlannerSnapshotModel model = services.world().snapshotModel();
+        EncounterStateModel encounterState = services.encounter().state();
 
         assertNoButton(controls, "Refresh", "Refresh button removed from World Planner controls");
         assertNoLabelContains(controls, "0 NPCs", "NPC counter label removed from World Planner controls");
@@ -173,23 +185,46 @@ public final class WorldPlannerUiTest {
                 "Location list readback renders created location");
     }
 
-    private static ServiceRegistry services() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(CreatureCatalogPort.class, new FixtureCreatureCatalogPort());
-        builder.register(EncounterTableCatalogPort.class, new FixtureEncounterTableCatalogPort());
-        new src.data.worldplanner.WorldPlannerServiceContribution().register(builder);
-        new src.data.party.PartyServiceContribution().register(builder);
-        new src.data.encounter.EncounterServiceContribution().register(builder);
-        new src.domain.creatures.CreaturesServiceContribution().register(builder);
-        new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
-        new src.domain.party.PartyServiceContribution().register(builder);
-        new src.domain.worldplanner.WorldPlannerServiceContribution().register(builder);
-        new src.domain.encounter.EncounterServiceContribution().register(builder);
-        ServiceRegistry registry = builder.build();
-        registry.require(CreaturesApplicationService.class).refreshCatalog(null);
-        registry.require(EncounterTableApplicationService.class)
+    private static WorldPlannerUiServices services() {
+        CreaturesServiceAssembly.Component creatures =
+                CreaturesServiceAssembly.create(new FixtureCreatureCatalogPort());
+        EncounterTableServiceAssembly.Component tables =
+                EncounterTableServiceAssembly.create(new FixtureEncounterTableCatalogPort());
+        PartyServiceAssembly.Component party =
+                PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+        WorldPlannerServiceAssembly world = new WorldPlannerServiceAssembly(
+                new SqliteWorldPlannerRepository(), new PositiveReferencePort());
+        var worldApplication = world.createApplicationService();
+        EncounterServiceAssembly.Component encounter = EncounterServiceAssembly.create(
+                creatures.application(), creatures.detail(), creatures.encounterCandidates(),
+                tables.application(), tables.candidates(), world.snapshotModel(),
+                party.application(), party.activeParty(), party.activeComposition(),
+                party.adventuringDaySummary(), party.mutation(), new SqliteEncounterPlanRepository());
+        creatures.application().refreshCatalog(null);
+        tables.application()
                 .refreshCatalog(new RefreshEncounterTableCatalogCommand());
-        return registry;
+        return new WorldPlannerUiServices(creatures, tables, world, worldApplication, encounter);
+    }
+
+    private record WorldPlannerUiServices(
+            CreaturesServiceAssembly.Component creatures,
+            EncounterTableServiceAssembly.Component tables,
+            WorldPlannerServiceAssembly world,
+            src.domain.worldplanner.WorldPlannerApplicationService worldApplication,
+            EncounterServiceAssembly.Component encounter
+    ) {
+    }
+
+    private static final class PositiveReferencePort implements WorldPlannerReferencePort {
+        @Override
+        public boolean creatureStatblockExists(long id) {
+            return id > 0L;
+        }
+
+        @Override
+        public boolean encounterTableExists(long id) {
+            return id > 0L;
+        }
     }
 
     private static final class FixtureCreatureCatalogPort implements CreatureCatalogPort {

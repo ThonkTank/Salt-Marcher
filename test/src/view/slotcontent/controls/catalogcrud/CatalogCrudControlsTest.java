@@ -27,11 +27,13 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.data.hex.repository.SqliteHexMapRepository;
+import src.data.party.repository.SqlitePartyRosterRepository;
+import src.domain.hex.HexServiceAssembly;
 import src.domain.hex.published.HexEditorModel;
+import src.domain.party.PartyServiceAssembly;
 import src.view.leftbartabs.hexmap.HexMapContribution;
 
 @org.junit.jupiter.api.Tag("ui")
@@ -388,9 +390,10 @@ public final class CatalogCrudControlsTest {
     }
 
     private static void assertHexMapProductionCatalogRoute() {
-        ServiceRegistry services = hexMapServices();
-        ShellBinding binding = new HexMapContribution().bind(
-                new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, services));
+        HexServiceAssembly services = hexMapServices();
+        ShellBinding binding = new HexMapContribution(
+                services.editorApplication(), services.travelApplication(),
+                services.editorModel(), services.travelModel()).bind();
         Parent controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, Parent.class);
         CatalogCrudControlsView catalog = descendant(controls, CatalogCrudControlsView.class);
         Stage stage = new Stage();
@@ -404,7 +407,7 @@ public final class CatalogCrudControlsTest {
         popupButton(catalog, "Erstellen").fire();
         layoutOpenWindows();
 
-        String selectedName = services.require(HexEditorModel.class).current().selectedMap()
+        String selectedName = services.editorModel().current().selectedMap()
                 .orElseThrow(() -> new AssertionError("Hex production route did not select the created map."))
                 .displayName();
         assertEquals("Route Map", selectedName,
@@ -412,13 +415,11 @@ public final class CatalogCrudControlsTest {
         stage.close();
     }
 
-    private static ServiceRegistry hexMapServices() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        new src.data.hex.HexServiceContribution().register(builder);
-        new src.data.party.PartyServiceContribution().register(builder);
-        new src.domain.party.PartyServiceContribution().register(builder);
-        new src.domain.hex.HexServiceContribution().register(builder);
-        return builder.build();
+    private static HexServiceAssembly hexMapServices() {
+        PartyServiceAssembly.Component party =
+                PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+        return new HexServiceAssembly(
+                new SqliteHexMapRepository(), party.travelPositions(), party.application());
     }
 
     private static CatalogCrudControlsContentModel.CatalogState state(

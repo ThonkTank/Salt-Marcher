@@ -1,8 +1,6 @@
 package src.domain.party;
 
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicReference;
-import shell.api.ServiceRegistry;
 import src.domain.party.model.roster.repository.PartyRosterRepository;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;
@@ -12,76 +10,42 @@ import src.domain.party.published.PartyMutationModel;
 import src.domain.party.published.PartySnapshotModel;
 import src.domain.party.published.PartyTravelPositionsModel;
 
-final class PartyServiceAssembly {
+public final class PartyServiceAssembly {
 
-    private final AtomicReference<PartyRuntime> runtime = new AtomicReference<>();
-
-    PartyApplicationService createApplicationService(ServiceRegistry services) {
-        return runtime(services).applicationService;
+    private PartyServiceAssembly() {
     }
 
-    PartySnapshotModel partySnapshotModel(ServiceRegistry services) {
-        return runtime(services).partySnapshotModel;
+    public static Component create(PartyRosterRepository repository) {
+        PartySnapshotModel snapshot = new PartySnapshotModel();
+        ActivePartyModel activeParty = new ActivePartyModel();
+        ActivePartyCompositionModel activeComposition = new ActivePartyCompositionModel();
+        AdventuringDaySummaryModel daySummary = new AdventuringDaySummaryModel();
+        PartyTravelPositionsModel travelPositions = new PartyTravelPositionsModel();
+        PartyMutationModel mutation = new PartyMutationModel();
+        AdventuringDayCalculationModel dayCalculation = new AdventuringDayCalculationModel();
+        PartyApplicationService application = new PartyApplicationService(
+                Objects.requireNonNull(repository, "repository"),
+                snapshot,
+                activeParty,
+                activeComposition,
+                daySummary,
+                travelPositions,
+                mutation,
+                dayCalculation);
+        application.refreshPublishedState();
+        return new Component(application, snapshot, activeParty, activeComposition, daySummary,
+                travelPositions, mutation, dayCalculation);
     }
 
-    ActivePartyModel activePartyModel(ServiceRegistry services) {
-        return runtime(services).activePartyModel;
-    }
-
-    ActivePartyCompositionModel activePartyCompositionModel(ServiceRegistry services) {
-        return runtime(services).activePartyCompositionModel;
-    }
-
-    AdventuringDaySummaryModel adventuringDaySummaryModel(ServiceRegistry services) {
-        return runtime(services).adventuringDaySummaryModel;
-    }
-
-    PartyTravelPositionsModel partyTravelPositionsModel(ServiceRegistry services) {
-        return runtime(services).partyTravelPositionsModel;
-    }
-
-    PartyMutationModel partyMutationModel(ServiceRegistry services) {
-        return runtime(services).partyMutationModel;
-    }
-
-    AdventuringDayCalculationModel adventuringDayCalculationModel(ServiceRegistry services) {
-        return runtime(services).adventuringDayCalculationModel;
-    }
-
-    private PartyRuntime runtime(ServiceRegistry services) {
-        PartyRuntime existing = runtime.get();
-        if (existing != null) {
-            return existing;
-        }
-        PartyRuntime candidate = new PartyRuntime(services.require(PartyRosterRepository.class));
-        return runtime.compareAndSet(null, candidate)
-                ? candidate
-                : Objects.requireNonNull(runtime.get(), "runtime");
-    }
-
-    private static final class PartyRuntime {
-
-        private final PartySnapshotModel partySnapshotModel = new PartySnapshotModel();
-        private final ActivePartyModel activePartyModel = new ActivePartyModel();
-        private final ActivePartyCompositionModel activePartyCompositionModel = new ActivePartyCompositionModel();
-        private final AdventuringDaySummaryModel adventuringDaySummaryModel = new AdventuringDaySummaryModel();
-        private final PartyTravelPositionsModel partyTravelPositionsModel = new PartyTravelPositionsModel();
-        private final PartyMutationModel partyMutationModel = new PartyMutationModel();
-        private final AdventuringDayCalculationModel adventuringDayCalculationModel =
-                new AdventuringDayCalculationModel();
-        private final PartyApplicationService applicationService;
-
-        private PartyRuntime(PartyRosterRepository repository) {
-            applicationService = new PartyApplicationService(
-                    Objects.requireNonNull(repository, "repository"),
-                    partySnapshotModel,
-                    activePartyModel,
-                    activePartyCompositionModel,
-                    adventuringDaySummaryModel,
-                    partyTravelPositionsModel,
-                    partyMutationModel,
-                    adventuringDayCalculationModel);
-            applicationService.refreshPublishedState();
-        }
+    public record Component(
+            PartyApplicationService application,
+            PartySnapshotModel snapshot,
+            ActivePartyModel activeParty,
+            ActivePartyCompositionModel activeComposition,
+            AdventuringDaySummaryModel adventuringDaySummary,
+            PartyTravelPositionsModel travelPositions,
+            PartyMutationModel mutation,
+            AdventuringDayCalculationModel adventuringDayCalculation
+    ) {
     }
 }

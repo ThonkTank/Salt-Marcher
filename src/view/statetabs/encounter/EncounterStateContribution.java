@@ -1,11 +1,12 @@
 package src.view.statetabs.encounter;
 
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import shell.api.ContributionKey;
+import shell.api.InspectorSink;
 import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellStateTabSpec;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.CreatureDetailModel;
@@ -16,25 +17,41 @@ import src.view.slotcontent.details.creature.CreatureDetailsView;
 
 public final class EncounterStateContribution implements ShellContribution {
 
+    private final CreatureDetailModel detailModel;
+    private final CreaturesApplicationService creatures;
+    private final EncounterStateModel stateModel;
+    private final EncounterApplicationService encounters;
+    private final @Nullable WorldPlannerApplicationService worldPlanner;
+    private final InspectorSink inspector;
+
+    public EncounterStateContribution(
+            CreatureDetailModel detailModel,
+            CreaturesApplicationService creatures,
+            EncounterStateModel stateModel,
+            EncounterApplicationService encounters,
+            @Nullable WorldPlannerApplicationService worldPlanner,
+            InspectorSink inspector
+    ) {
+        this.detailModel = Objects.requireNonNull(detailModel, "detailModel");
+        this.creatures = Objects.requireNonNull(creatures, "creatures");
+        this.stateModel = Objects.requireNonNull(stateModel, "stateModel");
+        this.encounters = Objects.requireNonNull(encounters, "encounters");
+        this.worldPlanner = worldPlanner;
+        this.inspector = Objects.requireNonNull(inspector, "inspector");
+    }
+
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellStateTabSpec(new ContributionKey("encounter"), "Encounter", 30);
     }
 
     @Override
-    public ShellBinding bind(ShellRuntimeContext runtimeContext) {
-        ShellRuntimeContext safeRuntimeContext = Objects.requireNonNull(runtimeContext, "runtimeContext");
-        var services = safeRuntimeContext.services();
-        var detailModel = services.require(CreatureDetailModel.class);
-        var creatures = services.require(CreaturesApplicationService.class);
-        var stateModel = services.require(EncounterStateModel.class);
-        var encounters = services.require(EncounterApplicationService.class);
-        var worldPlanner = services.find(WorldPlannerApplicationService.class).orElse(null);
+    public ShellBinding bind() {
         EncounterStateViewModel viewModel = new EncounterStateViewModel(
                 encounters,
                 worldPlanner,
                 creatures,
-                creatureId -> CreatureDetailsView.openInspector(safeRuntimeContext.inspector(), detailModel, creatureId));
+                creatureId -> CreatureDetailsView.openInspector(inspector, detailModel, creatureId));
         EncounterBuilderStateView builderView = new EncounterBuilderStateView();
         EncounterInitiativeStateView initiativeView = new EncounterInitiativeStateView();
         EncounterCombatStateView combatView = new EncounterCombatStateView();

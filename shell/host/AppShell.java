@@ -6,9 +6,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
 import shell.api.ContributionKey;
-import shell.api.ServiceRegistry;
+import shell.api.InspectorSink;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellStateTabSpec;
 import shell.api.ShellLeftBarTabSpec;
 import shell.api.ShellTopBarSpec;
@@ -24,23 +23,16 @@ public final class AppShell extends BorderPane {
     private final ShellNavigationSidebar navigationSidebar = new ShellNavigationSidebar();
     private final ShellToolbarStrip toolbar = new ShellToolbarStrip();
     private final ShellWorkspacePane workspace = new ShellWorkspacePane();
-    private final ShellRuntimeContext runtimeContext;
-
     private @Nullable ContributionKey activeTabKey;
 
     public AppShell() {
-        this(ServiceRegistry.empty());
-    }
-
-    public AppShell(ServiceRegistry serviceRegistry) {
-        this.runtimeContext = new ShellRuntimeContext(workspace.inspectorPane(), serviceRegistry);
         setTop(toolbar);
         setLeft(navigationSidebar);
         setCenter(workspace);
     }
 
-    public ShellRuntimeContext runtimeContext() {
-        return runtimeContext;
+    public InspectorSink inspector() {
+        return workspace.inspectorPane();
     }
 
     public void registerLeftBarTab(ShellLeftBarTabSpec registrationSpec, ShellBinding binding) {

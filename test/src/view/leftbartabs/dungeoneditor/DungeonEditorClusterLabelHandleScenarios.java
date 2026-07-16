@@ -228,7 +228,7 @@ final class DungeonEditorClusterLabelHandleScenarios {
                 "DE-LABEL-010 passive room label hover");
         assertRoomLabelHitAndEditorPresentation(binding, runtime, roomIds, roomLabelCenter, roomLabelText);
         DungeonEditorRuntimeOperations operations =
-                new DungeonEditorFeatureShellBinding(runtime.context()).operations();
+                new DungeonEditorFeatureShellBinding(runtime.editorDependencies()).operations();
         operations.catalog().selectMap(roomMapId);
         operations.transitionStairs().saveLabelName(
                 DungeonEditorRuntimeLabelTarget.room(roomIds.roomId()),

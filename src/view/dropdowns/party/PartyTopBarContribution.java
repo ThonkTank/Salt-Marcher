@@ -1,10 +1,10 @@
 package src.view.dropdowns.party;
 
+import java.util.Objects;
 import shell.api.ContributionKey;
 import shell.api.ShellBinding;
 import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellTopBarSpec;
 import src.domain.party.PartyApplicationService;
 import src.domain.party.published.AdventuringDaySummaryModel;
@@ -17,16 +17,32 @@ import src.view.slotcontent.topbar.dropdown.DropdownPopupView;
 
 public final class PartyTopBarContribution implements ShellContribution {
 
+    private final PartyApplicationService partyService;
+    private final PartySnapshotModel snapshotModel;
+    private final AdventuringDaySummaryModel summaryModel;
+    private final PartyMutationModel mutationModel;
+
+    public PartyTopBarContribution(
+            PartyApplicationService partyService,
+            PartySnapshotModel snapshotModel,
+            AdventuringDaySummaryModel summaryModel,
+            PartyMutationModel mutationModel
+    ) {
+        this.partyService = Objects.requireNonNull(partyService, "partyService");
+        this.snapshotModel = Objects.requireNonNull(snapshotModel, "snapshotModel");
+        this.summaryModel = Objects.requireNonNull(summaryModel, "summaryModel");
+        this.mutationModel = Objects.requireNonNull(mutationModel, "mutationModel");
+    }
+
     @Override
     public ShellContributionSpec registrationSpec() {
         return new ShellTopBarSpec(new ContributionKey("party"), 20);
     }
 
     @Override
-    public ShellBinding bind(ShellRuntimeContext runtimeContext) {
+    public ShellBinding bind() {
         PartyTopBarViewModel viewModel = new PartyTopBarViewModel();
         DropdownPopupContentModel popupContentModel = new DropdownPopupContentModel();
-        PartyApplicationService partyService = runtimeContext.services().require(PartyApplicationService.class);
         PartyRosterTopBarView rosterView = new PartyRosterTopBarView();
         PartyEditorTopBarView editorView = new PartyEditorTopBarView();
         PartyTopBarView panelView = new PartyTopBarView(rosterView, editorView);
@@ -35,9 +51,6 @@ public final class PartyTopBarContribution implements ShellContribution {
         panelView.bind(viewModel);
         rosterView.bind(viewModel);
         editorView.bind(viewModel);
-        PartySnapshotModel snapshotModel = runtimeContext.services().require(PartySnapshotModel.class);
-        AdventuringDaySummaryModel summaryModel = runtimeContext.services().require(AdventuringDaySummaryModel.class);
-        PartyMutationModel mutationModel = runtimeContext.services().require(PartyMutationModel.class);
         applyPopupPresentation(popupContentModel, viewModel.triggerTextProperty().get());
         viewModel.triggerTextProperty().addListener((ignored, before, after) ->
                 applyPopupPresentation(popupContentModel, after));

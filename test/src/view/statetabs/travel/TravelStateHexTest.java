@@ -11,16 +11,18 @@ import javafx.scene.Parent;
 import javafx.scene.control.Label;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.data.hex.repository.SqliteHexMapRepository;
+import src.data.party.repository.SqlitePartyRosterRepository;
 import src.domain.hex.HexEditorApplicationService;
+import src.domain.hex.HexServiceAssembly;
 import src.domain.hex.model.map.HexCoordinate;
 import src.domain.hex.published.CreateHexMapCommand;
 import src.domain.hex.published.HexEditorModel;
 import src.domain.hex.published.HexTravelModel;
 import src.domain.party.PartyApplicationService;
+import src.domain.party.PartyServiceAssembly;
 import src.domain.party.published.CharacterDraft;
 import src.domain.party.published.CreateCharacterCommand;
 import src.domain.party.published.MembershipState;
@@ -58,8 +60,8 @@ public final class TravelStateHexTest {
     }
 
     private static void assertEmptyHexTravelState() {
-        ServiceRegistry services = productionServices();
-        ShellBinding binding = new TravelStateContribution().bind(runtimeContext(services));
+        HexTravelFixture services = productionServices();
+        ShellBinding binding = new TravelStateContribution(services.hex().travelModel()).bind();
         TravelStateView view = travelStateView(binding);
         assertTextPresent(view, "W", "HEX-TRAVEL-STATE-001 empty icon");
         assertTextPresent(view, "Kein Hex-Ort gewaehlt", "HEX-TRAVEL-STATE-001 empty location");
@@ -67,20 +69,20 @@ public final class TravelStateHexTest {
     }
 
     private static void assertCompactHexTravelReadback() {
-        ServiceRegistry services = productionServices();
-        ShellBinding binding = new TravelStateContribution().bind(runtimeContext(services));
+        HexTravelFixture services = productionServices();
+        ShellBinding binding = new TravelStateContribution(services.hex().travelModel()).bind();
         TravelStateView view = travelStateView(binding);
-        HexEditorApplicationService editor = services.require(HexEditorApplicationService.class);
+        HexEditorApplicationService editor = services.hex().editorApplication();
         editor.createMap(new CreateHexMapCommand("Westmark", 2));
-        long mapId = services.require(HexEditorModel.class).current().selectedMap()
+        long mapId = services.hex().editorModel().current().selectedMap()
                 .orElseThrow(() -> new IllegalStateException("HEX-TRAVEL-STATE-002 expected selected Hex map."))
                 .mapId()
                 .value();
-        PartyApplicationService party = services.require(PartyApplicationService.class);
+        PartyApplicationService party = services.party().application();
         party.createCharacter(new CreateCharacterCommand(
                 new CharacterDraft("Travel Guide", "Player", 3, 12, 14),
                 MembershipState.ACTIVE));
-        long characterId = services.require(PartySnapshotModel.class).current().snapshot().activeMembers().stream()
+        long characterId = services.party().snapshot().current().snapshot().activeMembers().stream()
                 .map(src.domain.party.published.PartyMemberDetails::id)
                 .filter(id -> id != null && id > 0L)
                 .reduce((first, second) -> second)
@@ -102,20 +104,17 @@ public final class TravelStateHexTest {
         assertTextPresent(view, "Reisegruppe auf der Hex-Karte bewegen", "HEX-TRAVEL-STATE-002 hint");
     }
 
-    private static ServiceRegistry productionServices() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        new src.data.hex.HexServiceContribution().register(builder);
-        new src.data.party.PartyServiceContribution().register(builder);
-        new src.domain.party.PartyServiceContribution().register(builder);
-        new src.domain.hex.HexServiceContribution().register(builder);
-        return builder.build();
+    private static HexTravelFixture productionServices() {
+        PartyServiceAssembly.Component party =
+                PartyServiceAssembly.create(new SqlitePartyRosterRepository());
+        HexServiceAssembly hex = new HexServiceAssembly(
+                new SqliteHexMapRepository(),
+                party.travelPositions(),
+                party.application());
+        return new HexTravelFixture(party, hex);
     }
 
-    private static ShellRuntimeContext runtimeContext(ServiceRegistry services) {
-        if (services.require(HexTravelModel.class) == null) {
-            throw new IllegalStateException("Expected HexTravelModel in production services.");
-        }
-        return new ShellRuntimeContext(new NoopInspectorSink(), services);
+    private record HexTravelFixture(PartyServiceAssembly.Component party, HexServiceAssembly hex) {
     }
 
     private static TravelStateView travelStateView(ShellBinding binding) {

@@ -9,9 +9,29 @@ import shell.api.ShellContribution;
 import shell.api.ShellContributionSpec;
 import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
-import shell.api.ShellRuntimeContext;
+import src.domain.hex.HexEditorApplicationService;
+import src.domain.hex.HexTravelApplicationService;
+import src.domain.hex.published.HexEditorModel;
+import src.domain.hex.published.HexTravelModel;
 
 public final class HexMapContribution implements ShellContribution {
+
+    private final HexEditorApplicationService editor;
+    private final HexTravelApplicationService travel;
+    private final HexEditorModel editorModel;
+    private final HexTravelModel travelModel;
+
+    public HexMapContribution(
+            HexEditorApplicationService editor,
+            HexTravelApplicationService travel,
+            HexEditorModel editorModel,
+            HexTravelModel travelModel
+    ) {
+        this.editor = Objects.requireNonNull(editor, "editor");
+        this.travel = Objects.requireNonNull(travel, "travel");
+        this.editorModel = Objects.requireNonNull(editorModel, "editorModel");
+        this.travelModel = Objects.requireNonNull(travelModel, "travelModel");
+    }
 
     @Override
     public ShellContributionSpec registrationSpec() {
@@ -25,8 +45,7 @@ public final class HexMapContribution implements ShellContribution {
     }
 
     @Override
-    public ShellBinding bind(ShellRuntimeContext runtimeContext) {
-        Objects.requireNonNull(runtimeContext, "runtimeContext");
-        return new HexMapBinder(runtimeContext).bind();
+    public ShellBinding bind() {
+        return new HexMapBinder(editor, travel, editorModel, travelModel).bind();
     }
 }

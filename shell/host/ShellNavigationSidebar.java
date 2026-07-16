@@ -21,7 +21,7 @@ import shell.api.ShellLeftBarTabMode;
 import shell.api.ShellLeftBarTabSpec;
 
 /**
- * Passive left navigation that renders left-bar tabs discovered by the shell.
+ * Passive left navigation that renders explicitly composed left-bar tabs.
  */
 final class ShellNavigationSidebar extends VBox {
 

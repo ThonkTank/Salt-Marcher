@@ -1,45 +1,49 @@
 package src.domain.creatures;
 
-import java.util.Objects;
-import shell.api.ServiceRegistry;
 import src.domain.creatures.model.catalog.port.CreatureCatalogPort;
 import src.domain.creatures.published.CreatureCatalogModel;
 import src.domain.creatures.published.CreatureDetailModel;
+import src.domain.creatures.published.CreatureDetailResult;
 import src.domain.creatures.published.CreatureEncounterCandidatesModel;
 import src.domain.creatures.published.CreatureFilterOptionsModel;
+import src.domain.creatures.published.CreatureLookupStatus;
+import src.domain.creatures.published.CreatureReferenceApi;
 
-final class CreaturesServiceAssembly {
+public final class CreaturesServiceAssembly {
 
-    private static final String REGISTRY_PARAMETER = "registry";
-
-    CreaturesApplicationService createApplicationService(ServiceRegistry registry) {
-        ServiceRegistry services = Objects.requireNonNull(registry, REGISTRY_PARAMETER);
-        return new CreaturesApplicationService(
-                services.require(CreatureCatalogPort.class),
-                services.require(CreatureFilterOptionsModel.class),
-                services.require(CreatureCatalogModel.class),
-                services.require(CreatureDetailModel.class),
-                services.require(CreatureEncounterCandidatesModel.class));
+    private CreaturesServiceAssembly() {
     }
 
-    CreatureFilterOptionsModel createFilterOptionsModel(ServiceRegistry registry) {
-        Objects.requireNonNull(registry, REGISTRY_PARAMETER);
-        return new CreatureFilterOptionsModel();
+    public static Component create(CreatureCatalogPort catalogPort) {
+        CreatureFilterOptionsModel filterOptions = new CreatureFilterOptionsModel();
+        CreatureCatalogModel catalog = new CreatureCatalogModel();
+        CreatureDetailModel detail = new CreatureDetailModel();
+        CreatureEncounterCandidatesModel encounterCandidates = new CreatureEncounterCandidatesModel();
+        CreaturesApplicationService application = new CreaturesApplicationService(
+                catalogPort, filterOptions, catalog, detail, encounterCandidates);
+        CreatureReferenceApi references = creatureId -> {
+            if (creatureId <= 0L) {
+                return new CreatureDetailResult(CreatureLookupStatus.NOT_FOUND, null);
+            }
+            try {
+                var found = catalogPort.loadCreatureDetail(creatureId);
+                return new CreatureDetailResult(
+                        found == null ? CreatureLookupStatus.NOT_FOUND : CreatureLookupStatus.SUCCESS,
+                        CreatureCatalogProjection.creatureDetail(found));
+            } catch (IllegalStateException exception) {
+                return new CreatureDetailResult(CreatureLookupStatus.STORAGE_ERROR, null);
+            }
+        };
+        return new Component(application, references, filterOptions, catalog, detail, encounterCandidates);
     }
 
-    CreatureCatalogModel createCatalogModel(ServiceRegistry registry) {
-        Objects.requireNonNull(registry, REGISTRY_PARAMETER);
-        return new CreatureCatalogModel();
+    public record Component(
+            CreaturesApplicationService application,
+            CreatureReferenceApi references,
+            CreatureFilterOptionsModel filterOptions,
+            CreatureCatalogModel catalog,
+            CreatureDetailModel detail,
+            CreatureEncounterCandidatesModel encounterCandidates
+    ) {
     }
-
-    CreatureDetailModel createDetailModel(ServiceRegistry registry) {
-        Objects.requireNonNull(registry, REGISTRY_PARAMETER);
-        return new CreatureDetailModel();
-    }
-
-    CreatureEncounterCandidatesModel createEncounterCandidatesModel(ServiceRegistry registry) {
-        Objects.requireNonNull(registry, REGISTRY_PARAMETER);
-        return new CreatureEncounterCandidatesModel();
-    }
-
 }

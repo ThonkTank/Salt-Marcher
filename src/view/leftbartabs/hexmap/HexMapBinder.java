@@ -4,10 +4,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javafx.scene.Node;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellControls;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.hex.HexEditorApplicationService;
 import src.domain.hex.HexTravelApplicationService;
@@ -34,18 +32,24 @@ final class HexMapBinder {
     private static final long UNRESOLVED_ID = 0L;
     private static final int DEFAULT_CREATE_RADIUS = 2;
 
-    private final ShellRuntimeContext runtimeContext;
+    private final HexEditorApplicationService editor;
+    private final HexTravelApplicationService travel;
+    private final HexEditorModel editorModel;
+    private final HexTravelModel travelModel;
 
-    HexMapBinder(ShellRuntimeContext runtimeContext) {
-        this.runtimeContext = Objects.requireNonNull(runtimeContext, "runtimeContext");
+    HexMapBinder(
+            HexEditorApplicationService editor,
+            HexTravelApplicationService travel,
+            HexEditorModel editorModel,
+            HexTravelModel travelModel
+    ) {
+        this.editor = Objects.requireNonNull(editor, "editor");
+        this.travel = Objects.requireNonNull(travel, "travel");
+        this.editorModel = Objects.requireNonNull(editorModel, "editorModel");
+        this.travelModel = Objects.requireNonNull(travelModel, "travelModel");
     }
 
     ShellBinding bind() {
-        ServiceRegistry services = runtimeContext.services();
-        HexEditorApplicationService editor = services.require(HexEditorApplicationService.class);
-        HexTravelApplicationService travel = services.require(HexTravelApplicationService.class);
-        HexEditorModel editorModel = services.require(HexEditorModel.class);
-        HexTravelModel travelModel = services.require(HexTravelModel.class);
         HexMapViewModel viewModel = new HexMapViewModel();
         HexMapControlsView controls = new HexMapControlsView();
         CatalogCrudControlsView mapCatalog = new CatalogCrudControlsView();

@@ -1,30 +1,41 @@
 package src.domain.encountertable;
 
-import java.util.Objects;
-import shell.api.ServiceRegistry;
 import src.domain.encountertable.model.catalog.port.EncounterTableCatalogPort;
-import src.domain.encountertable.published.EncounterTableCatalogModel;
 import src.domain.encountertable.published.EncounterTableCandidatesModel;
+import src.domain.encountertable.published.EncounterTableCatalogModel;
+import src.domain.encountertable.published.EncounterTableCatalogResult;
+import src.domain.encountertable.published.EncounterTableReadStatus;
+import src.domain.encountertable.published.EncounterTableReferenceApi;
 
-final class EncounterTableServiceAssembly {
+public final class EncounterTableServiceAssembly {
 
-    private static final String REGISTRY_PARAMETER = "registry";
-
-    EncounterTableApplicationService createApplicationService(ServiceRegistry services) {
-        ServiceRegistry registry = Objects.requireNonNull(services, REGISTRY_PARAMETER);
-        return new EncounterTableApplicationService(
-                registry.require(EncounterTableCatalogPort.class),
-                registry.require(EncounterTableCatalogModel.class),
-                registry.require(EncounterTableCandidatesModel.class));
+    private EncounterTableServiceAssembly() {
     }
 
-    EncounterTableCatalogModel catalogModel(ServiceRegistry services) {
-        Objects.requireNonNull(services, REGISTRY_PARAMETER);
-        return new EncounterTableCatalogModel();
+    public static Component create(EncounterTableCatalogPort catalogPort) {
+        EncounterTableCatalogModel catalog = new EncounterTableCatalogModel();
+        EncounterTableCandidatesModel candidates = new EncounterTableCandidatesModel();
+        EncounterTableReferenceApi references = () -> {
+            try {
+                return new EncounterTableCatalogResult(
+                        EncounterTableReadStatus.SUCCESS,
+                        EncounterTableCatalogProjection.summaries(catalogPort.loadSummaries()));
+            } catch (IllegalStateException exception) {
+                return new EncounterTableCatalogResult(EncounterTableReadStatus.STORAGE_ERROR, java.util.List.of());
+            }
+        };
+        return new Component(
+                new EncounterTableApplicationService(catalogPort, catalog, candidates),
+                references,
+                catalog,
+                candidates);
     }
 
-    EncounterTableCandidatesModel candidatesModel(ServiceRegistry services) {
-        Objects.requireNonNull(services, REGISTRY_PARAMETER);
-        return new EncounterTableCandidatesModel();
+    public record Component(
+            EncounterTableApplicationService application,
+            EncounterTableReferenceApi references,
+            EncounterTableCatalogModel catalog,
+            EncounterTableCandidatesModel candidates
+    ) {
     }
 }

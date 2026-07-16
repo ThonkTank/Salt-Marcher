@@ -5,10 +5,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.function.Consumer;
 import javafx.scene.Node;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
 import shell.api.ShellControls;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.domain.sessionplanner.SessionPlannerApplicationService;
 import src.domain.sessionplanner.published.AddSessionLootPlaceholderCommand;
@@ -37,26 +35,30 @@ final class SessionPlannerBinder {
 
     private static final BigDecimal ALLOCATION_STEP = BigDecimal.TEN;
 
-    private final ShellRuntimeContext runtimeContext;
+    private final SessionPlannerApplicationService planner;
+    private final SessionPlannerCurrentSessionModel sessionModel;
+    private final SessionPlannerCatalogModel catalogModel;
+    private final SessionPlannerParticipantsModel participantsModel;
+    private final SessionPlannerSceneTimelineModel sceneTimelineModel;
+    private final SessionPlannerStatePanelModel statePanelModel;
 
-    SessionPlannerBinder(ShellRuntimeContext runtimeContext) {
-        this.runtimeContext = Objects.requireNonNull(runtimeContext, "runtimeContext");
+    SessionPlannerBinder(
+            SessionPlannerApplicationService planner,
+            SessionPlannerCurrentSessionModel sessionModel,
+            SessionPlannerCatalogModel catalogModel,
+            SessionPlannerParticipantsModel participantsModel,
+            SessionPlannerSceneTimelineModel sceneTimelineModel,
+            SessionPlannerStatePanelModel statePanelModel
+    ) {
+        this.planner = Objects.requireNonNull(planner, "planner");
+        this.sessionModel = Objects.requireNonNull(sessionModel, "sessionModel");
+        this.catalogModel = Objects.requireNonNull(catalogModel, "catalogModel");
+        this.participantsModel = Objects.requireNonNull(participantsModel, "participantsModel");
+        this.sceneTimelineModel = Objects.requireNonNull(sceneTimelineModel, "sceneTimelineModel");
+        this.statePanelModel = Objects.requireNonNull(statePanelModel, "statePanelModel");
     }
 
     ShellBinding bind() {
-        ServiceRegistry services = runtimeContext.services();
-        SessionPlannerApplicationService planner =
-                services.require(SessionPlannerApplicationService.class);
-        SessionPlannerCurrentSessionModel sessionModel =
-                services.require(SessionPlannerCurrentSessionModel.class);
-        SessionPlannerCatalogModel catalogModel =
-                services.require(SessionPlannerCatalogModel.class);
-        SessionPlannerParticipantsModel participantsModel =
-                services.require(SessionPlannerParticipantsModel.class);
-        SessionPlannerSceneTimelineModel sceneTimelineModel =
-                services.require(SessionPlannerSceneTimelineModel.class);
-        SessionPlannerStatePanelModel statePanelModel =
-                services.require(SessionPlannerStatePanelModel.class);
         SessionPlannerViewModel viewModel = new SessionPlannerViewModel();
         CatalogCrudControlsContentModel catalogContentModel = viewModel.catalogContentModel();
         SessionPlannerControlsView controlsView = new SessionPlannerControlsView();

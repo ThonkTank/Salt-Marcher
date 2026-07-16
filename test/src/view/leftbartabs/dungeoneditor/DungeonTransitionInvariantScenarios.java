@@ -5,8 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import shell.api.ServiceRegistry;
-import src.domain.dungeon.DungeonServiceContribution;
+import src.domain.dungeon.DungeonServiceAssembly;
 import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
@@ -25,7 +24,6 @@ import src.domain.dungeon.model.core.structure.transition.TransitionCatalog.Tran
 import src.domain.dungeon.model.core.structure.transition.TransitionDestination;
 import src.domain.dungeon.model.core.structure.transition.TransitionDestinationTarget;
 import src.domain.dungeon.DungeonAuthoredApplicationService;
-import src.domain.dungeon.DungeonEditorRuntimeApplicationService;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorDungeonState;
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues.MapId;
 
@@ -199,10 +197,11 @@ final class DungeonTransitionInvariantScenarios {
                         null));
         MissingPreviousMapRepository repository =
                 new MissingPreviousMapRepository(sourceMap, targetMap, missingPreviousMapId);
-        ServiceRegistry services = servicesWithRepository(repository);
+        DungeonServiceAssembly.Component services =
+                DungeonEditorTestPersistence.createDungeonServices(repository);
         DungeonEditorDungeonState dungeonState = new DungeonEditorDungeonState();
         DungeonAuthoredApplicationService.OperationResult result = services
-                .require(DungeonEditorRuntimeApplicationService.class)
+                .editor()
                 .openSession(dungeonState, runtimeSession -> runtimeSession.saveTransitionLink(
                         new MapId(sourceMapId),
                         new DungeonAuthoredApplicationService.TransitionLinkInput(
@@ -228,13 +227,6 @@ final class DungeonTransitionInvariantScenarios {
                 "transition link use case still writes target reverse link when previous map is missing");
         assertFalse(repository.savedMapIds().contains(missingPreviousMapId),
                 "transition link use case cannot mutate a missing previous map");
-    }
-
-    private static ServiceRegistry servicesWithRepository(DungeonMapRepository repository) {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        builder.register(DungeonMapRepository.class, repository);
-        new DungeonServiceContribution().register(builder);
-        return builder.build();
     }
 
     private static void assertProtectedDeletePolicy() {

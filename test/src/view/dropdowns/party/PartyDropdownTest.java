@@ -19,10 +19,10 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
+import src.data.party.repository.SqlitePartyRosterRepository;
+import src.domain.party.PartyServiceAssembly;
 import src.data.party.model.PartyPersistenceSchema;
 import src.domain.party.published.ActivePartyCompositionModel;
 import src.domain.party.published.ActivePartyModel;
@@ -112,12 +112,15 @@ public final class PartyDropdownTest {
     }
 
     private static PartyDropdownFixture setupDropdown() {
-        ServiceRegistry services = services();
-        PartySnapshotModel snapshots = services.require(PartySnapshotModel.class);
-        ActivePartyModel activeParty = services.require(ActivePartyModel.class);
-        ActivePartyCompositionModel activeComposition = services.require(ActivePartyCompositionModel.class);
-        ShellBinding binding = new PartyTopBarContribution().bind(
-                new ShellRuntimeContext(NoopInspectorSink.INSTANCE, services));
+        PartyServiceAssembly.Component services = services();
+        PartySnapshotModel snapshots = services.snapshot();
+        ActivePartyModel activeParty = services.activeParty();
+        ActivePartyCompositionModel activeComposition = services.activeComposition();
+        ShellBinding binding = new PartyTopBarContribution(
+                services.application(),
+                services.snapshot(),
+                services.adventuringDaySummary(),
+                services.mutation()).bind();
         Parent topBar = slot(binding, ShellSlot.TOP_BAR, Parent.class);
         HBox root = new HBox(topBar);
         Stage stage = new Stage();
@@ -187,11 +190,8 @@ public final class PartyDropdownTest {
                 label + " top-bar trigger reflects restored active party");
     }
 
-    private static ServiceRegistry services() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        new src.data.party.PartyServiceContribution().register(builder);
-        new src.domain.party.PartyServiceContribution().register(builder);
-        return builder.build();
+    private static PartyServiceAssembly.Component services() {
+        return PartyServiceAssembly.create(new SqlitePartyRosterRepository());
     }
 
     private static PartyMemberDetails onlyActiveMember(PartySnapshotModel snapshots) {

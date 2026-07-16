@@ -23,9 +23,7 @@ import javafx.stage.Stage;
 import javafx.stage.Window;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
-import shell.api.ServiceRegistry;
 import shell.api.ShellBinding;
-import shell.api.ShellRuntimeContext;
 import shell.api.ShellSlot;
 import src.data.creatures.model.CreaturesPersistenceSchema;
 import src.domain.encounter.published.EncounterBuilderInputsModel;
@@ -34,6 +32,8 @@ import src.domain.worldplanner.published.WorldLocationSummary;
 import src.domain.worldplanner.published.WorldPlannerReadStatus;
 import src.domain.worldplanner.published.WorldPlannerSnapshot;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
+import src.data.creatures.query.SqliteCreatureCatalogQueryAdapter;
+import src.data.encountertable.query.SqliteEncounterTableCatalogAdapter;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -70,16 +70,15 @@ public final class CatalogInitialLoadTest {
             CatalogFixture fixture = setupCatalog();
             assertInitialCatalogRows(fixture.main(), "setup catalog initial rows");
             assertWorldPlannerSourceControls(
-                    fixture.registry(),
+                    fixture.runtime(),
                     fixture.controls(),
                     "CATALOG-INITIAL-LOAD-002");
         });
     }
 
     private static CatalogFixture setupCatalog() {
-        ServiceRegistry registry = services();
-        ShellRuntimeContext context = new ShellRuntimeContext(EmptyInspectorSink.INSTANCE, registry);
-        ShellBinding binding = new CatalogContribution().bind(context);
+        CatalogTestRuntime runtime = services();
+        ShellBinding binding = runtime.contribution(EmptyInspectorSink.INSTANCE).bind();
         CatalogControlsView controls = slot(binding, ShellSlot.COCKPIT_CONTROLS, CatalogControlsView.class);
         CatalogMainView main = slot(binding, ShellSlot.COCKPIT_MAIN, CatalogMainView.class);
 
@@ -89,7 +88,7 @@ public final class CatalogInitialLoadTest {
         stage.show();
         root.applyCss();
         root.layout();
-        return new CatalogFixture(registry, controls, main);
+        return new CatalogFixture(runtime, controls, main);
     }
 
     private static void assertInitialCatalogRows(CatalogMainView main, String label) {
@@ -106,30 +105,21 @@ public final class CatalogInitialLoadTest {
                 label + " Catalog count label did not reflect DB-backed total: " + countLabel.getText());
     }
 
-    private static ServiceRegistry services() {
-        ServiceRegistry.Builder builder = new ServiceRegistry.Builder();
-        new src.data.creatures.CreaturesServiceContribution().register(builder);
-        new src.data.encounter.EncounterServiceContribution().register(builder);
-        new src.data.encountertable.EncounterTableServiceContribution().register(builder);
-        new src.data.party.PartyServiceContribution().register(builder);
-        new src.domain.creatures.CreaturesServiceContribution().register(builder);
-        new src.domain.encountertable.EncounterTableServiceContribution().register(builder);
-        new src.domain.party.PartyServiceContribution().register(builder);
-        new src.domain.encounter.EncounterServiceContribution().register(builder);
-        builder.register(WorldPlannerSnapshotModel.class, new WorldPlannerSnapshotModel(
-                CatalogInitialLoadTest::worldPlannerSnapshot,
-                listener -> () -> { }));
-        return builder.build();
+    private static CatalogTestRuntime services() {
+        return CatalogTestRuntime.create(
+                new SqliteCreatureCatalogQueryAdapter(),
+                new SqliteEncounterTableCatalogAdapter(),
+                new WorldPlannerSnapshotModel(CatalogInitialLoadTest::worldPlannerSnapshot, listener -> () -> { }));
     }
 
-    private static void assertWorldPlannerSourceControls(ServiceRegistry registry, Parent controls, String label) {
+    private static void assertWorldPlannerSourceControls(CatalogTestRuntime runtime, Parent controls, String label) {
         Button factionButton = button(controls, "Fraktionen");
         factionButton.fire();
         CheckBox faction = popupDescendant(CheckBox.class, "Scarlet Knives");
         faction.fire();
         selectComboItem(comboBox(controls), "#501 | Old Gate");
 
-        EncounterBuilderInputsModel inputsModel = registry.require(EncounterBuilderInputsModel.class);
+        EncounterBuilderInputsModel inputsModel = runtime.builderInputs();
         assertTrue(inputsModel.current().worldFactionIds().equals(List.of(1L)),
                 label + " Encounter builder did not receive selected World Planner faction ids: "
                         + inputsModel.current().worldFactionIds());
@@ -319,7 +309,7 @@ public final class CatalogInitialLoadTest {
     }
 
     private record CatalogFixture(
-            ServiceRegistry registry,
+            CatalogTestRuntime runtime,
             CatalogControlsView controls,
             CatalogMainView main
     ) {

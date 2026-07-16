@@ -3,6 +3,7 @@ package src.domain.worldplanner;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BooleanSupplier;
 import src.domain.worldplanner.model.world.WorldFaction;
 import src.domain.worldplanner.model.world.WorldFactionInventoryLimit;
 import src.domain.worldplanner.model.world.WorldLocation;
@@ -29,6 +30,7 @@ public final class WorldPlannerApplicationService {
     private static final String COMMAND_PARAMETER = "command";
     private static final String LOAD_FAILURE = "World Planner konnte nicht geladen werden.";
     private static final String SAVE_FAILURE = "World Planner konnte nicht gespeichert werden.";
+    private static final String REFERENCE_FAILURE = "World Planner Referenzen konnten nicht geladen werden.";
 
     private final WorldPlannerRepository repository;
     private final WorldPlannerReferencePort referenceValidator;
@@ -54,7 +56,8 @@ public final class WorldPlannerApplicationService {
         runIgnoringStorageFailure(() -> {
             WorldPlannerState state = load();
             long statblockId = command.creatureStatblockId();
-            if (!WorldPlannerIds.isPositive(statblockId) || !referenceValidator.creatureStatblockExists(statblockId)) {
+            if (!WorldPlannerIds.isPositive(statblockId)
+                    || !referenceExists(() -> referenceValidator.creatureStatblockExists(statblockId))) {
                 save(state.withStatus("Creature Statblock nicht gefunden."));
                 return;
             }
@@ -136,7 +139,8 @@ public final class WorldPlannerApplicationService {
         runIgnoringStorageFailure(() -> {
             WorldPlannerState state = load();
             long tableId = command.primaryEncounterTableId();
-            if (!WorldPlannerIds.isPositive(tableId) || !referenceValidator.encounterTableExists(tableId)) {
+            if (!WorldPlannerIds.isPositive(tableId)
+                    || !referenceExists(() -> referenceValidator.encounterTableExists(tableId))) {
                 save(state.withStatus("Encounter Table nicht gefunden."));
                 return;
             }
@@ -183,7 +187,7 @@ public final class WorldPlannerApplicationService {
             long statblockId = command.creatureStatblockId();
             if (faction == null
                     || !WorldPlannerIds.isPositive(statblockId)
-                    || !referenceValidator.creatureStatblockExists(statblockId)) {
+                    || !referenceExists(() -> referenceValidator.creatureStatblockExists(statblockId))) {
                 save(state.withStatus("Fraktion oder Creature Statblock nicht gefunden."));
                 return;
             }
@@ -239,7 +243,7 @@ public final class WorldPlannerApplicationService {
             long tableId = command.encounterTableId();
             if (location == null
                     || !WorldPlannerIds.isPositive(tableId)
-                    || !referenceValidator.encounterTableExists(tableId)) {
+                    || !referenceExists(() -> referenceValidator.encounterTableExists(tableId))) {
                 save(state.withStatus("Location oder Encounter Table nicht gefunden."));
                 return;
             }
@@ -267,6 +271,15 @@ public final class WorldPlannerApplicationService {
             snapshotModel.publish(WorldPlannerSnapshotProjection.from(repository.save(state)));
         } catch (IllegalStateException exception) {
             snapshotModel.publishStorageError(SAVE_FAILURE);
+            throw exception;
+        }
+    }
+
+    private boolean referenceExists(BooleanSupplier lookup) {
+        try {
+            return lookup.getAsBoolean();
+        } catch (IllegalStateException exception) {
+            snapshotModel.publishStorageError(REFERENCE_FAILURE);
             throw exception;
         }
     }
