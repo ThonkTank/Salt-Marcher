@@ -13,6 +13,8 @@ import javafx.scene.layout.VBox;
 import org.jspecify.annotations.Nullable;
 import java.util.Objects;
 import java.util.function.Supplier;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
 import shell.api.InspectorEntrySpec;
 import shell.api.InspectorSink;
 
@@ -20,6 +22,9 @@ import shell.api.InspectorSink;
  * Top-right shared history-aware inspector for read-mostly detail content.
  */
 final class InspectorPane extends VBox implements InspectorSink {
+
+    private static final DiagnosticId SUPPLIER_FAILURE =
+            new DiagnosticId("shell.inspector-supplier-failure");
 
     private final Label detailTitle = new Label();
     private final VBox detailContent = new VBox();
@@ -32,8 +37,10 @@ final class InspectorPane extends VBox implements InspectorSink {
     private final Button closeBtn = new Button("\u00d7");
 
     private final InspectorHistory history = new InspectorHistory();
+    private final Diagnostics diagnostics;
 
-    InspectorPane() {
+    InspectorPane(Diagnostics diagnostics) {
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
         setPrefWidth(380);
         setMinWidth(320);
         getStyleClass().add("surface-root");
@@ -114,7 +121,7 @@ final class InspectorPane extends VBox implements InspectorSink {
         try {
             return supplier.get();
         } catch (IllegalArgumentException | IllegalStateException exception) {
-            // The shell should stay passive and resilient if a view publishes invalid content.
+            diagnostics.failure(SUPPLIER_FAILURE, exception.getClass());
             return null;
         }
     }

@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-16
 Source of Truth: Persistence path, reference rules, and error behavior for the
 `sessionplanner` session record.
 
@@ -46,6 +46,9 @@ The persisted session record stores only sessionplanner-owned truth:
   when an encounter plan is linked
 - selected scene context
 - session-local rests, placeholders, and planner status or selection truth
+- ordered generated reward references containing session scene identity, typed
+  Session Generation run identity, treasure identity, and a last-known display
+  label
 
 The session record does not persist:
 
@@ -55,6 +58,9 @@ The session record does not persist:
 - creature statblocks or creature lifecycle truth
 - copied World Planner location details
 - loot-object internals or fake gold-budget fields
+- generation previews, preview fingerprints, engine or catalog metadata,
+  encounter-generation specifications, generated reward contents, packing, or
+  audit rows
 
 ## Reference Rules
 
@@ -69,6 +75,13 @@ The session record does not persist:
 - session-owned scene ordering, allocations, rests, placeholders, and selection
   state remain in sessionplanner persistence even when foreign source data is
   reloaded
+- every generated reward reference MUST name an existing session-owned scene.
+  Quest and environment rewards use encounter-free scenes; encounter-channel
+  rewards use their generated encounter scene. Run and treasure identities
+  remain foreign stable references and are not SQLite foreign keys into another
+  feature's tables
+- `lastKnownLabel` is a planner-owned display fallback and MUST NOT be treated
+  as generated reward truth
 
 ## Validation And Error Behavior
 
@@ -79,10 +92,15 @@ The session record does not persist:
   floating-point approximation
 - persistence payloads MUST reject copied foreign rosters, character detail,
   creature detail, and loot internals
+- generated reward writes MUST reject non-positive scene or treasure
+  identities, blank generation-run identities, orphaned session-scene
+  references, duplicate ordered references, and malformed labels
 - storage and schema failures MUST surface through Session Planner API result
   statuses instead of leaking adapter exceptions to consumers
 - failed writes MUST keep the last stable planner-owned current session state
   visible instead of publishing a half-persisted mutation
+- applying one generation MUST persist all new scene and generated reward
+  references in the same Session Planner transaction
 
 ## Stability Rules
 
@@ -94,12 +112,17 @@ The session record does not persist:
   or loot mutations through foreign boundaries
 - the current pointer model identifies the active persisted session and does
   not collapse the persisted catalog back to a single-session domain limit
+- the canonical normalized generated-reward child table is introduced by a
+  contiguous Session Planner feature migration and is replaced atomically with
+  the other child collections for one session
 
 ## Verification Notes
 
 - This contract is currently `Review-Owned`.
 - Review must reject persisted fields that duplicate encounter rosters, party
   character internals, creature detail, or loot internals.
+- Review must reject persisted preview fingerprints or copied Session
+  Generation result rows.
 - Review must reject persistence types or internal collaborators crossing
   `SessionPlannerApi`.
 
@@ -108,3 +131,4 @@ The session record does not persist:
 - [Session Planner Domain Model](../domain/domain-session-planner.md) (line 1)
 - [Session Planner Architecture](../architecture/architecture-session-planner.md) (line 1)
 - [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+- [Session Generation Contract](../../sessiongeneration/contract/contract-session-generation.md)

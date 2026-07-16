@@ -233,7 +233,7 @@ state, render state, or travel behavior.
 - old-install upgrades for `dungeon_structure_levels`,
   `dungeon_room_clusters.structure_object_id`, transition stair-anchor columns,
   and broad additive ALTER lists are retired; databases that still require
-  those paths need explicit data cleanup or coordinator-approved repair before
+  those paths need explicit data cleanup or owner-approved repair before
   they are treated as supported authored maps
 - direct runtime token movement does not justify new authored-position tables;
   runtime party position remains owned outside dungeon persistence

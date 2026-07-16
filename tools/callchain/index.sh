@@ -77,9 +77,10 @@ EOF
 
 rm -rf "$SOURCE_ROOT"
 mkdir -p "$SOURCE_ROOT" "$(dirname "$CPG_FILE")"
-cp -a "$REPO_ROOT/bootstrap" "$SOURCE_ROOT/bootstrap"
+cp -a "$REPO_ROOT/app" "$SOURCE_ROOT/app"
 cp -a "$REPO_ROOT/shell" "$SOURCE_ROOT/shell"
-cp -a "$REPO_ROOT/src" "$SOURCE_ROOT/src"
+cp -a "$REPO_ROOT/platform" "$SOURCE_ROOT/platform"
+cp -a "$REPO_ROOT/features" "$SOURCE_ROOT/features"
 
 rm -f "$CPG_FILE"
 printf 'Indexing SaltMarcher sources with Joern...\n'

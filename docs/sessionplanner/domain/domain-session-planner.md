@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-15
+Last Reviewed: 2026-07-16
 Source of Truth: Session planner context role, session-record ownership, and
 domain invariants.
 
@@ -14,7 +14,7 @@ Context Name: SessionPlanner
 - `sessionplanner` owns the authored planning record for one adventure session
 - its public boundary is `SessionPlannerApi`
 - it does not own party truth, encounter-plan roster truth, creature truth, or
-  loot truth
+  generated-run truth
 
 ## Published Language
 
@@ -24,8 +24,8 @@ revisioned planner state.
 - the feature publishes planner-owned workflows and one immutable state surface
 - it does not publish encounter persistence carriers, creature-detail carriers,
   or party mutation carriers; those stay owned by their original contexts
-- it publishes a read-only prepared-scene catalog for one-time runtime import;
-  reading it does not change the planner's current-session pointer
+- generation preview state publishes a typed fingerprint and readiness state;
+  it does not republish engine or catalog versions as a user-selectable ruleset
 
 ## Application Boundary
 
@@ -35,6 +35,8 @@ The Session Planner application coordinates:
 - active-party composition reads needed to resolve participant references
 - party-based adventuring-day calculations
 - saved encounter-plan budget reads through the encounter public boundary
+- generation previews through `SessionGenerationApi`
+- generated-plan batch import through Encounter's public boundary
 - session-local workflow mutations
 - publication of immutable, revisioned planner API state
 
@@ -60,6 +62,9 @@ Aggregate Root: SessionPlan
 - per-scene budget allocations when an encounter plan is linked
 - selected scene context
 - placed rests and loot placeholders
+- ordered references from session scenes to generated rewards, consisting of
+  scene identity, typed generation-run identity, treasure identity, and a
+  last-known display label
 - session-local status and selection truth
 
 It derives:
@@ -68,9 +73,18 @@ It derives:
 - remaining and exceeded XP budget
 - recommended rest counts
 - importable saved encounter-plan budget summaries
+- whether the current generation preview fingerprint still matches the current
+  session and generation controls
 
 The aggregate does not embed party membership, encounter rosters, creature
-detail, or loot-object internals.
+detail, generated encounter specifications, generated reward contents, packing
+rows, audits, engine versions, or catalog snapshots.
+
+`GenerationPreviewLock` is derived runtime state, not part of `SessionPlan`.
+Its fingerprint covers session identity and revision, resolved participant
+levels, adventure-day fraction, optional encounter count, and seed. It is
+`READY` only when those values still match the preview and all hard audits
+pass; otherwise it is `STALE` or non-applicable.
 
 ## Commands And Invariants
 
@@ -87,6 +101,8 @@ Commands entering the runtime model are:
 - set or clear a rest in one scene gap
 - add or remove a loot placeholder
 - select the current session scene context
+- accept one current generation preview after Encounter returns the complete
+  generated-plan import mapping
 
 Core invariants:
 
@@ -103,6 +119,17 @@ Core invariants:
 - sessionplanner persists only references and planner-owned metadata, never
   foreign encounter or party internals
 - loot placeholders do not contribute fake XP or fake gold values
+- a generation preview cannot mutate the aggregate before Apply
+- one Apply mutation adds imported encounter-plan references in generation
+  order and adds only stable generated-reward references
+- every generated reward reference names an existing session scene
+- every generated reward reference uses a non-blank typed generation-run
+  identity and positive treasure identity
+- encounter-channel rewards reference their generated encounter scene; quest
+  and environment rewards create encounter-free session scenes
+- removing a scene prunes its generated reward references
+- preview fingerprints and preview contents are derived runtime state and are
+  never persisted as authored session truth
 
 ## Consistency Model
 
@@ -110,6 +137,8 @@ Core invariants:
   allocations, selection, rests, and placeholders
 - party, encounter, creature, and later loot truth are re-read through their
   owning boundaries instead of being copied into session persistence
+- generated reward detail is re-read from Session Generation by run and
+  treasure identity; the last-known label remains a display fallback only
 
 ## References
 
@@ -118,3 +147,4 @@ Core invariants:
 - [Session Planner Persistence Contract](../contract/contract-session-planner-persistence.md) (line 1)
 - [Party Domain Model](../../party/domain/domain-party.md) (line 1)
 - [Encounter Domain Model](../../encounter/domain/domain-encounter.md) (line 1)
+- [Session Generation Domain Model](../../sessiongeneration/domain/domain-session-generation.md)

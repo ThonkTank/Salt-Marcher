@@ -14,9 +14,9 @@ plugins {
 }
 
 val launcherName = providers.gradleProperty("saltMarcherLauncherName").orElse("saltmarcher")
-val mainClassName = providers.gradleProperty("saltMarcherMainClass").orElse("bootstrap.SaltMarcherApp")
+val mainClassName = providers.gradleProperty("saltMarcherMainClass").orElse("app.SaltMarcherApp")
 val preloaderClassName = providers.gradleProperty("saltMarcherPreloaderClass")
-    .orElse("bootstrap.SaltMarcherPreloader")
+    .orElse("app.SaltMarcherPreloader")
 val javafxVersion = "21.0.2"
 val verificationMaxParallelForks = 1
 
@@ -40,7 +40,7 @@ javafx {
 sourceSets {
     main {
         java {
-            setSrcDirs(listOf("app", "shell", "platform", "features", "bootstrap", "src"))
+            setSrcDirs(listOf("app", "shell", "platform", "features"))
         }
         resources {
             setSrcDirs(listOf("resources"))

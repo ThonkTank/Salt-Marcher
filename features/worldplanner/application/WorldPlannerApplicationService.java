@@ -1,0 +1,409 @@
+package features.worldplanner.application;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.function.BooleanSupplier;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import features.worldplanner.domain.world.WorldFaction;
+import features.worldplanner.domain.world.WorldFactionInventoryLimit;
+import features.worldplanner.domain.world.WorldLocation;
+import features.worldplanner.domain.world.WorldNpc;
+import features.worldplanner.domain.world.WorldNpcLifecycleState;
+import features.worldplanner.domain.world.WorldPlannerIds;
+import features.worldplanner.domain.world.WorldPlannerState;
+import features.worldplanner.domain.world.port.WorldPlannerReferencePort;
+import features.worldplanner.domain.world.repository.WorldPlannerRepository;
+import features.worldplanner.api.AddWorldFactionNpcCommand;
+import features.worldplanner.api.AddWorldLocationEncounterTableCommand;
+import features.worldplanner.api.AddWorldLocationFactionCommand;
+import features.worldplanner.api.CreateWorldFactionCommand;
+import features.worldplanner.api.CreateWorldLocationCommand;
+import features.worldplanner.api.CreateWorldNpcCommand;
+import features.worldplanner.api.RefreshWorldPlannerCommand;
+import features.worldplanner.api.SetWorldFactionInventoryLimitCommand;
+import features.worldplanner.api.SetWorldNpcLifecycleStatusCommand;
+import features.worldplanner.api.UpdateWorldNpcNotesCommand;
+
+public final class WorldPlannerApplicationService implements features.worldplanner.api.WorldPlannerApi {
+
+    private static final String COMMAND_PARAMETER = "command";
+    private static final String LOAD_FAILURE = "World Planner konnte nicht geladen werden.";
+    private static final String SAVE_FAILURE = "World Planner konnte nicht gespeichert werden.";
+    private static final String REFERENCE_FAILURE = "World Planner Referenzen konnten nicht geladen werden.";
+    private static final DiagnosticId LOAD_DIAGNOSTIC = new DiagnosticId("worldplanner.load.storage-failure");
+    private static final DiagnosticId SAVE_DIAGNOSTIC = new DiagnosticId("worldplanner.save.storage-failure");
+    private static final DiagnosticId REFERENCE_DIAGNOSTIC = new DiagnosticId("worldplanner.reference.failure");
+
+    private final WorldPlannerRepository repository;
+    private final WorldPlannerReferencePort referenceValidator;
+    private final WorldPlannerPublishedState publishedState;
+    private final ExecutionLane executionLane;
+    private final Diagnostics diagnostics;
+
+    WorldPlannerApplicationService(
+            WorldPlannerRepository repository,
+            WorldPlannerReferencePort referenceValidator,
+            WorldPlannerPublishedState publishedState
+    ) {
+        this(
+                repository,
+                referenceValidator,
+                publishedState,
+                DirectExecutionLane.INSTANCE,
+                NoopDiagnostics.INSTANCE);
+    }
+
+    public WorldPlannerApplicationService(
+            WorldPlannerRepository repository,
+            WorldPlannerReferencePort referenceValidator,
+            WorldPlannerPublishedState publishedState,
+            ExecutionLane executionLane,
+            Diagnostics diagnostics
+    ) {
+        this.repository = Objects.requireNonNull(repository, "repository");
+        this.referenceValidator = Objects.requireNonNull(referenceValidator, "referenceValidator");
+        this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
+    }
+
+    public void refresh(RefreshWorldPlannerCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(this::load);
+    }
+
+    public void createNpc(CreateWorldNpcCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            long statblockId = command.creatureStatblockId();
+            if (!WorldPlannerIds.isPositive(statblockId)
+                    || !referenceExists(() -> referenceValidator.creatureStatblockExists(statblockId))) {
+                save(state.withStatus("Creature Statblock nicht gefunden."));
+                return;
+            }
+            WorldNpc.Notes notes = new WorldNpc.Notes(
+                    command.appearanceNotes(),
+                    command.behaviorNotes(),
+                    command.historyNotes(),
+                    command.generalNotes());
+            WorldNpc npc = new WorldNpc(
+                    state.nextNpcId(),
+                    command.displayName(),
+                    statblockId,
+                    notes.appearanceNotes(),
+                    notes.behaviorNotes(),
+                    notes.historyNotes(),
+                    notes.generalNotes(),
+                    WorldNpcLifecycleState.ACTIVE);
+            save(new WorldPlannerState(
+                    append(state.npcs(), npc),
+                    state.factions(),
+                    state.locations(),
+                    state.nextNpcId() + 1L,
+                    state.nextFactionId(),
+                    state.nextLocationId(),
+                    "NPC erstellt."));
+        });
+    }
+
+    public void updateNpcNotes(UpdateWorldNpcNotesCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldNpc npc = state.npc(command.npcId());
+            if (npc == null) {
+                save(state.withStatus("NPC nicht gefunden."));
+                return;
+            }
+            WorldNpc.Notes notes = new WorldNpc.Notes(
+                    command.appearanceNotes(),
+                    command.behaviorNotes(),
+                    command.historyNotes(),
+                    command.generalNotes());
+            save(replaceNpc(state, npc.updateNotes(notes), "NPC-Notizen aktualisiert."));
+        });
+    }
+
+    public void setNpcLifecycleStatus(SetWorldNpcLifecycleStatusCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            if (command.status() == null) {
+                save(state.withStatus("NPC Status nicht gefunden."));
+                return;
+            }
+            WorldNpc npc = state.npc(command.npcId());
+            if (npc == null) {
+                save(state.withStatus("NPC nicht gefunden."));
+                return;
+            }
+            if (command.expectedCreatureStatblockId() > 0L
+                    && command.expectedCreatureStatblockId() != npc.creatureStatblockId()) {
+                save(state.withStatus("NPC passt nicht zum Encounter-Statblock."));
+                return;
+            }
+            WorldNpc replacement = WorldNpcLifecycleState.valueOf(command.status().name()) == WorldNpcLifecycleState.DEFEATED
+                    ? npc.markDefeated()
+                    : npc.reactivate();
+            save(replaceNpc(
+                    state,
+                    replacement,
+                    replacement.status() == WorldNpcLifecycleState.DEFEATED
+                            ? "NPC besiegt markiert."
+                            : "NPC reaktiviert."));
+        });
+    }
+
+    public void createFaction(CreateWorldFactionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            long tableId = command.primaryEncounterTableId();
+            if (!WorldPlannerIds.isPositive(tableId)
+                    || !referenceExists(() -> referenceValidator.encounterTableExists(tableId))) {
+                save(state.withStatus("Encounter Table nicht gefunden."));
+                return;
+            }
+            WorldFaction faction = new WorldFaction(
+                    state.nextFactionId(),
+                    command.displayName(),
+                    command.notes(),
+                    tableId,
+                    List.of(),
+                    List.of());
+            save(new WorldPlannerState(
+                    state.npcs(),
+                    append(state.factions(), faction),
+                    state.locations(),
+                    state.nextNpcId(),
+                    state.nextFactionId() + 1L,
+                    state.nextLocationId(),
+                    "Fraktion erstellt."));
+        });
+    }
+
+    public void addFactionNpc(AddWorldFactionNpcCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldFaction faction = state.faction(command.factionId());
+            if (faction == null || state.npc(command.npcId()) == null) {
+                save(state.withStatus("Fraktion oder NPC nicht gefunden."));
+                return;
+            }
+            if (faction.npcIds().contains(command.npcId())) {
+                save(state.withStatus("NPC ist bereits Teil der Fraktion."));
+                return;
+            }
+            save(replaceFaction(state, faction.addNpc(command.npcId()), "NPC zur Fraktion hinzugefuegt."));
+        });
+    }
+
+    public void setFactionInventoryLimit(SetWorldFactionInventoryLimitCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldFaction faction = state.faction(command.factionId());
+            long statblockId = command.creatureStatblockId();
+            if (faction == null
+                    || !WorldPlannerIds.isPositive(statblockId)
+                    || !referenceExists(() -> referenceValidator.creatureStatblockExists(statblockId))) {
+                save(state.withStatus("Fraktion oder Creature Statblock nicht gefunden."));
+                return;
+            }
+            if (command.finite() && command.quantity() < 0) {
+                save(state.withStatus("Fraktionsbestand ungueltig."));
+                return;
+            }
+            WorldFactionInventoryLimit limit =
+                    new WorldFactionInventoryLimit(statblockId, command.finite(), command.quantity());
+            save(replaceFaction(state, faction.setInventoryLimit(limit), "Fraktionsbestand aktualisiert."));
+        });
+    }
+
+    public void createLocation(CreateWorldLocationCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldLocation location =
+                    new WorldLocation(state.nextLocationId(), command.displayName(), command.notes(), List.of(), List.of());
+            save(new WorldPlannerState(
+                    state.npcs(),
+                    state.factions(),
+                    append(state.locations(), location),
+                    state.nextNpcId(),
+                    state.nextFactionId(),
+                    state.nextLocationId() + 1L,
+                    "Location erstellt."));
+        });
+    }
+
+    public void addLocationFaction(AddWorldLocationFactionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldLocation location = state.location(command.locationId());
+            if (location == null || state.faction(command.factionId()) == null) {
+                save(state.withStatus("Location oder Fraktion nicht gefunden."));
+                return;
+            }
+            if (location.factionIds().contains(command.factionId())) {
+                save(state.withStatus("Fraktion ist bereits mit der Location verlinkt."));
+                return;
+            }
+            save(replaceLocation(state, location.addFaction(command.factionId()), "Fraktion zur Location hinzugefuegt."));
+        });
+    }
+
+    public void addLocationEncounterTable(AddWorldLocationEncounterTableCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        execute(() -> {
+            WorldPlannerState state = load();
+            WorldLocation location = state.location(command.locationId());
+            long tableId = command.encounterTableId();
+            if (location == null
+                    || !WorldPlannerIds.isPositive(tableId)
+                    || !referenceExists(() -> referenceValidator.encounterTableExists(tableId))) {
+                save(state.withStatus("Location oder Encounter Table nicht gefunden."));
+                return;
+            }
+            if (location.encounterTableIds().contains(tableId)) {
+                save(state.withStatus("Encounter Table ist bereits mit der Location verlinkt."));
+                return;
+            }
+            save(replaceLocation(state, location.addEncounterTable(tableId), "Encounter Table zur Location hinzugefuegt."));
+        });
+    }
+
+    private WorldPlannerState load() {
+        try {
+            WorldPlannerState state = repository.load();
+            publishedState.publish(WorldPlannerSnapshotProjection.from(state));
+            return state;
+        } catch (IllegalStateException exception) {
+            diagnostics.failure(LOAD_DIAGNOSTIC, exception.getClass());
+            publishedState.publishStorageError(LOAD_FAILURE);
+            throw exception;
+        }
+    }
+
+    private void save(WorldPlannerState state) {
+        try {
+            publishedState.publish(WorldPlannerSnapshotProjection.from(repository.save(state)));
+        } catch (IllegalStateException exception) {
+            diagnostics.failure(SAVE_DIAGNOSTIC, exception.getClass());
+            publishedState.publishStorageError(SAVE_FAILURE);
+            throw exception;
+        }
+    }
+
+    private boolean referenceExists(BooleanSupplier lookup) {
+        try {
+            return lookup.getAsBoolean();
+        } catch (ReferenceProviderUnavailableException exception) {
+            publishedState.publishStorageError(REFERENCE_FAILURE);
+            throw exception;
+        } catch (IllegalStateException exception) {
+            diagnostics.failure(REFERENCE_DIAGNOSTIC, exception.getClass());
+            publishedState.publishStorageError(REFERENCE_FAILURE);
+            throw exception;
+        }
+    }
+
+    private void execute(StorageAction action) {
+        executionLane.execute(() -> {
+            try {
+                action.execute();
+            } catch (IllegalStateException exception) {
+                // The terminal load, save, or reference boundary already published and diagnosed the failure.
+            }
+        });
+    }
+
+    private static WorldPlannerState replaceNpc(WorldPlannerState state, WorldNpc replacement, String statusText) {
+        return new WorldPlannerState(
+                replaceNpc(state.npcs(), replacement),
+                state.factions(),
+                state.locations(),
+                state.nextNpcId(),
+                state.nextFactionId(),
+                state.nextLocationId(),
+                statusText);
+    }
+
+    private static WorldPlannerState replaceFaction(
+            WorldPlannerState state,
+            WorldFaction replacement,
+            String statusText
+    ) {
+        return new WorldPlannerState(
+                state.npcs(),
+                replaceFaction(state.factions(), replacement),
+                state.locations(),
+                state.nextNpcId(),
+                state.nextFactionId(),
+                state.nextLocationId(),
+                statusText);
+    }
+
+    private static WorldPlannerState replaceLocation(
+            WorldPlannerState state,
+            WorldLocation replacement,
+            String statusText
+    ) {
+        return new WorldPlannerState(
+                state.npcs(),
+                state.factions(),
+                replaceLocation(state.locations(), replacement),
+                state.nextNpcId(),
+                state.nextFactionId(),
+                state.nextLocationId(),
+                statusText);
+    }
+
+    private static <T> List<T> append(List<T> values, T value) {
+        List<T> nextValues = new ArrayList<>(values);
+        nextValues.add(value);
+        return nextValues;
+    }
+
+    private static List<WorldNpc> replaceNpc(List<WorldNpc> values, WorldNpc replacement) {
+        List<WorldNpc> nextValues = new ArrayList<>(values);
+        for (int index = 0; index < nextValues.size(); index++) {
+            if (nextValues.get(index).npcId() == replacement.npcId()) {
+                nextValues.set(index, replacement);
+            }
+        }
+        return List.copyOf(nextValues);
+    }
+
+    private static List<WorldFaction> replaceFaction(List<WorldFaction> values, WorldFaction replacement) {
+        List<WorldFaction> nextValues = new ArrayList<>(values);
+        for (int index = 0; index < nextValues.size(); index++) {
+            if (nextValues.get(index).factionId() == replacement.factionId()) {
+                nextValues.set(index, replacement);
+            }
+        }
+        return List.copyOf(nextValues);
+    }
+
+    private static List<WorldLocation> replaceLocation(List<WorldLocation> values, WorldLocation replacement) {
+        List<WorldLocation> nextValues = new ArrayList<>(values);
+        for (int index = 0; index < nextValues.size(); index++) {
+            if (nextValues.get(index).locationId() == replacement.locationId()) {
+                nextValues.set(index, replacement);
+            }
+        }
+        return List.copyOf(nextValues);
+    }
+
+    private interface StorageAction {
+        void execute();
+    }
+}

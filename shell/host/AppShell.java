@@ -5,6 +5,8 @@ import org.jspecify.annotations.Nullable;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
 import shell.api.ContributionKey;
 import shell.api.InspectorSink;
 import shell.api.ShellBinding;
@@ -22,10 +24,15 @@ public final class AppShell extends BorderPane {
     private final Map<ContributionKey, ShellStateTabSpec> stateTabItems = new LinkedHashMap<>();
     private final ShellNavigationSidebar navigationSidebar = new ShellNavigationSidebar();
     private final ShellToolbarStrip toolbar = new ShellToolbarStrip();
-    private final ShellWorkspacePane workspace = new ShellWorkspacePane();
+    private final ShellWorkspacePane workspace;
     private @Nullable ContributionKey activeTabKey;
 
     public AppShell() {
+        this(NoopDiagnostics.INSTANCE);
+    }
+
+    public AppShell(Diagnostics diagnostics) {
+        workspace = new ShellWorkspacePane(Objects.requireNonNull(diagnostics, "diagnostics"));
         setTop(toolbar);
         setLeft(navigationSidebar);
         setCenter(workspace);

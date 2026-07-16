@@ -23,7 +23,7 @@ SaltMarcher stores SQLite data below the XDG data directory. If
 `XDG_DATA_HOME` is set, data lives in `$XDG_DATA_HOME/salt-marcher/`; otherwise
 it lives in `~/.local/share/salt-marcher/`. The current database file is
 `game.db`; the resolving rule is owned by
-`src/data/persistencecore/sqlite/AbstractSqliteConnectionFactory.java`.
+[`platform.persistence`](docs/project/contract/persistence-lifecycle.md).
 
 ## Bugs And Requests
 
@@ -34,12 +34,11 @@ surface.
 
 ## Project Map
 
-- `bootstrap/`: explicit application startup and composition
+- `app/`: explicit application startup, composition, and lifecycle
 - `shell/`: generic shell API and host runtime
-- `src/features/`: feature-runtime implementations for migrated surfaces
-- `src/domain/`: domain models, use cases, published state, and ports
-- `src/data/`: local persistence gateways, mappers, schemas, and SQLite support
-- `src/view/`: legacy JavaFX view contributions and controls
+- `platform/`: feature-neutral execution, persistence, diagnostics, state, and UI mechanisms
+- `features/`: vertical feature APIs, domains, applications, adapters, and composition roots
+- `resources/`: static resources and centralized application styling
 - `docs/`: canonical project and feature documentation
 - `tools/`: Gradle build logic, quality configuration, and local tools
 

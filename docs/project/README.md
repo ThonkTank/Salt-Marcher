@@ -34,6 +34,11 @@ lives under `docs/<feature>/`; see [docs/README.md](../README.md).
 - [Verification Core](architecture/verification-core.md) -- public verification
   surfaces and outcome-check wiring.
 
+## Contracts
+
+- [Persistence Lifecycle](contract/persistence-lifecycle.md) -- shared SQLite
+  location, connection, version, backup, and recovery semantics.
+
 ## Delivery
 
 - [Active delivery index](delivery/README.md)

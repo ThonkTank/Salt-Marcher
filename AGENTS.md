@@ -45,8 +45,8 @@ secrets, paid services, or external data transmission.
 
 | Surface | Owner document | Required skill |
 | --- | --- | --- |
-| Source architecture (target `app/**`, `shell/**`, `platform/**`, `features/**`; legacy production roots while migration is active) | `docs/project/architecture/source-architecture.md` | - |
-| `features/dungeon/**`, legacy Dungeon production code while migration is active, `docs/dungeon/**` | `docs/dungeon/README.md` | - |
+| Source architecture (`app/**`, `shell/**`, `platform/**`, `features/**`) | `docs/project/architecture/source-architecture.md` | - |
+| `features/dungeon/**`, `docs/dungeon/**` | `docs/dungeon/README.md` | - |
 | Documentation placement | `docs/project/documentation.md` | - |
 | Verification policy | `docs/project/verification/quality-platforms.md` | `verification` |
 | Agent instructions | `docs/project/architecture/agent-instructions.md` | `agent-instruction-engineering` |

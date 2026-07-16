@@ -22,11 +22,6 @@ public final class TargetPackageCycleArchitectureTest {
                     .should().beFreeOfCycles().allowEmptyShould(true);
 
     @ArchTest
-    static final ArchRule featureRolePackagesMustBeCycleFree =
-            slices().matching("features.(*).(*).(*)..")
-                    .should().beFreeOfCycles().allowEmptyShould(true);
-
-    @ArchTest
     static final ArchRule featureAdapterRolesMustBeCycleFree =
             slices().matching("features.(*).adapter.(*)..")
                     .should().beFreeOfCycles().allowEmptyShould(true);

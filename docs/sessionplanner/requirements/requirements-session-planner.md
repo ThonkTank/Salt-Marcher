@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-06
+Last Reviewed: 2026-07-16
 Source of Truth: User-facing behavior and acceptance criteria for the session
 planner session record and planning workspace.
 
@@ -23,7 +23,8 @@ Provide one session-owned planning surface that:
 - attaches saved encounter plans as optional scene encounter references
 - recommends how many short and long rests the planned encounter XP implies
 - lets the user place rests between planned scenes
-- keeps loot and gold planning visibly open without inventing fake gold math
+- previews deterministic session generation before it changes the authored plan
+- applies a current preview as encounter-plan and generated-reward references
 
 ## Non-Goals
 
@@ -34,8 +35,10 @@ Provide one session-owned planning surface that:
   loot internals into sessionplanner-owned truth
 - copying World Planner location details into sessionplanner-owned truth
 - deriving gold budgets from provisional heuristics
+- owning generation formulas, generated reward detail, or generated encounter
+  import
 - replacing the encounter state tab or the party dropdown
-- owning live runtime-scene state
+- showing a generation ruleset selector or ruleset-version label
 
 ## Primary User Flow
 
@@ -55,8 +58,21 @@ Provide one session-owned planning surface that:
    scenes, and places short or long rests between scenes.
 10. The user selects one session scene for the preparatory state-panel
    context.
-11. The user adds loot placeholders while the gold budget remains explicitly
-   unresolved.
+11. The user requests a generation preview. The planner fingerprints the
+    current session identity and revision, resolved participant levels,
+    adventure-day fraction, optional encounter count, and seed.
+12. The user reviews the generated encounters, rewards, warnings, and audit
+    outcome. The preview does not mutate the session.
+13. If any fingerprint input changes, the preview remains visible as stale and
+    Apply is locked until the user regenerates.
+14. The user applies a current preview. Encounter first imports the complete
+    generated encounter batch atomically; after explicit destructive
+    confirmation Session Planner replaces the current scene, rest, and manual
+    loot-placeholder content with the returned plan references in generation
+    order and stable generated-reward references. Session identity,
+    participants, and adventure-day fraction remain unchanged.
+    Encounter-channel rewards attach to their generated encounter scenes;
+    quest and environment rewards create encounter-free session scenes.
 
 ## Expected Capabilities
 
@@ -79,6 +95,15 @@ Provide one session-owned planning surface that:
 - preserve selected scene context for the preparatory state panel
 - allow loot placeholders that do not affect XP math and do not claim a gold
   budget is already available
+- request a non-blocking Session Generation preview and keep the last stable
+  preview visible while a newer request is pending or fails
+- distinguish ready, stale, invalid, and failed generation states
+- lock Apply when the preview fingerprint differs from current inputs or when
+  a hard generation audit failed
+- show no ruleset selector or ruleset-version label
+- apply only the exact current generation identity, import all generated
+  encounters as one Encounter batch, and store reward references rather than
+  copied generated reward detail
 
 ## Visible States
 
@@ -94,6 +119,8 @@ Current state:
 - imported encounter-linked scene cards use real encounter-plan budget reads
 - gold budgeting remains a visible placeholder
 - loot placeholders are structural only
+- generated previews are derived runtime state and are not part of the authored
+  session until successfully applied
 
 Target state:
 
@@ -101,6 +128,8 @@ Target state:
   record
 - later iterations may attach real loot and gold rules and richer encounter
   composition controls without changing the owning feature boundary
+- applied generations add encounter-plan references and stable generated reward
+  references without transferring generation truth into Session Planner
 
 ## Acceptance Criteria
 
@@ -122,8 +151,25 @@ Target state:
 - placed rests can appear only between adjacent scenes
 - loot placeholders stay visible while gold budgeting remains explicitly marked
   as unavailable
-- prepared scenes are available through a read-only runtime import surface
-  without changing the planner's current-session pointer
+- requesting generation does not mutate scenes, rests, selections, encounter
+  plans, or generated reward references
+- a preview fingerprint covers session identity and revision plus every
+  generation input; any mismatch leaves the preview readable but locks Apply
+- a failed generation request keeps the last stable preview and authored
+  session unchanged
+- Apply is available only for a current preview whose hard audits pass
+- Encounter import succeeds for the whole generated batch before Session
+  Planner persists its scene and reward references; a partial import result is
+  never applied
+- persisted generated reward references contain only session scene identity,
+  typed Session Generation run identity, treasure identity, ordering, and a
+  last-known display label
+- quest and environment rewards become encounter-free Session scenes, while an
+  encounter-channel reward references its corresponding generated encounter
+  scene
+- removing a scene removes its generated reward references without deleting
+  the Session Generation run or Encounter-owned saved plan
+- the Session Planner generation UI shows no ruleset selector or ruleset label
 
 ## References
 
@@ -131,3 +177,5 @@ Target state:
 - [Session Planner Persistence Contract](../contract/contract-session-planner-persistence.md) (line 1)
 - [Session Planner Domain Model](../domain/domain-session-planner.md) (line 1)
 - [Encounter Plan Budget Contract](../../encounter/contract/contract-encounter-plan-budget.md) (line 1)
+- [Session Generation Requirements](../../sessiongeneration/requirements/requirements-session-generation.md)
+- [Encounter Generated Import Contract](../../encounter/contract/contract-encounter-generated-import.md)

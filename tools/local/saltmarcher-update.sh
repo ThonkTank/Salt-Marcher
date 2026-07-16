@@ -90,7 +90,7 @@ fi
 
 tmp_xdg="$(mktemp -d)"
 tar -xzf "$backup" -C "$tmp_xdg"
-XDG_DATA_HOME="$tmp_xdg" tools/gradle/run-observable-gradle.sh test --tests bootstrap.SmokeStartupTest
+XDG_DATA_HOME="$tmp_xdg" tools/gradle/run-observable-gradle.sh test --tests app.SmokeStartupTest
 python3 - "$STATUS_FILE" "$newest_tag" "$backup" <<'PY'
 import json, sys, time
 path, tag, backup = sys.argv[1:4]

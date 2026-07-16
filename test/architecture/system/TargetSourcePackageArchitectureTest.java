@@ -45,7 +45,7 @@ public final class TargetSourcePackageArchitectureTest {
             }
             try (var sources = Files.walk(rootPath)) {
                 for (Path source : sources.filter(TargetSourcePackageArchitectureTest::isJavaSource).toList()) {
-                    rejectTargetPackageInLegacyRoot(projectRoot, source, violations);
+                    rejectLegacySource(projectRoot, source, violations);
                 }
             }
         }
@@ -69,16 +69,12 @@ public final class TargetSourcePackageArchitectureTest {
         }
     }
 
-    private static void rejectTargetPackageInLegacyRoot(
+    private static void rejectLegacySource(
             Path projectRoot,
             Path source,
             List<String> violations
-    ) throws IOException {
-        String packageName = declaredPackage(source);
-        if (TARGET_ROOTS.stream().anyMatch(root -> inPackage(packageName, root))) {
-            violations.add(projectRoot.relativize(source) + " declares target package '" + packageName
-                    + "' from a legacy source root");
-        }
+    ) {
+        violations.add(projectRoot.relativize(source) + " remains under a forbidden legacy production root");
     }
 
     private static String declaredPackage(Path source) throws IOException {
@@ -89,7 +85,4 @@ public final class TargetSourcePackageArchitectureTest {
                 .orElse("");
     }
 
-    private static boolean inPackage(String actual, String expected) {
-        return actual.equals(expected) || actual.startsWith(expected + ".");
-    }
 }

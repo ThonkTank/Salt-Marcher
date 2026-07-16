@@ -132,7 +132,7 @@ Classify every row as exactly one of:
   objective and not proportional to fix in the same pass, but must be recorded
   through the caller's debt mechanism before clean handoff.
 - `Materialized`: supported incidental debt has already been recorded through
-  the caller's debt mechanism with evidence available to the coordinator.
+  the caller's debt mechanism with evidence available to the caller.
 - `User-Excluded`: the caller explicitly excluded the debt family or affected
   paths.
 - `False Positive`: code evidence disproves the concern.

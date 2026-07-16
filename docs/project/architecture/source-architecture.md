@@ -34,7 +34,8 @@ feature publishes `api` only for capabilities consumed outside its
 implementation, owns `domain` only for business truth and invariants, and owns
 `application` only for use-case orchestration. A feature with stored truth owns
 an `adapter/sqlite`; a feature with JavaFX presentation owns an
-`adapter/javafx`. Empty role packages are forbidden. Dungeon remains one
+`adapter/javafx`; bundled read-only reference data belongs in an
+`adapter/resource`. Empty role packages are forbidden. Dungeon remains one
 feature and publishes separate Authored, Editor, and Travel APIs.
 
 ## Permanent Boundaries
@@ -52,15 +53,15 @@ feature and publishes separate Authored, Editor, and Travel APIs.
   `platform.execution`, `platform.persistence`, `platform.diagnostics`,
   `platform.state`, and `platform.ui`; new catch-all packages are forbidden.
 - A feature MUST expose cross-feature capabilities only from its `api` package.
-  Application and composition code may consume foreign APIs; the Dungeon and
-  Hex JavaFX adapters may additionally consume the Maps API for their shared
-  passive canvases. Other roles MUST NOT import foreign features, and no
-  consumer may import another feature's domain, application, adapters, or
+  Application, JavaFX adapter, and composition code may consume foreign APIs;
+  no consumer may import another feature's domain, application, adapters, or
   composition entry point.
-- Feature API and domain roles MUST remain independent from `platform`.
-  Application code may use execution, state, and diagnostics contracts; SQLite
-  adapters may use persistence and diagnostics; JavaFX adapters may use UI
-  contracts; feature composition may wire any platform capability.
+- Feature domain roles MUST remain independent from `platform`. Observable API
+  contracts may use feature-neutral state and UI-dispatch contracts.
+  Application code may use execution, state, UI-dispatch, and diagnostics
+  contracts; SQLite adapters may use persistence and diagnostics; JavaFX
+  adapters may use UI contracts; feature composition may wire any platform
+  capability.
 - Feature API calls that can touch persistence or files MUST be non-blocking.
   JavaFX state changes MUST be dispatched explicitly to the UI thread.
 - Published feature state MUST be immutable and revisioned. A late asynchronous

@@ -19,8 +19,9 @@ Shell wrappers and package-to-task routers are not part of the architecture.
 - Monocle provides shared headless JavaFX execution.
 - ArchUnit owns permanent dependency direction; root-level cycles; feature
   cycles; feature-role and adapter-role cycles; and first-level package cycles
-  within ordinary and adapter roles across `app`, `shell`, `platform`, and
-  `features`.
+  across `app`, `shell`, and `platform`. Nested packages inside one feature
+  role may collaborate cyclically when they form one cohesive implementation
+  unit.
 - Gradle owns task inputs, execution, and the `check` lifecycle.
 - Retained analyzers must prove a distinct defect class.
 

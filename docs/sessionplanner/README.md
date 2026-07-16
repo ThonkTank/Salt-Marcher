@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-06
+Last Reviewed: 2026-07-16
 Source of Truth: Entry point and document map for the session planner feature.
 
 # Session Planner Feature Docs
@@ -13,7 +13,7 @@ encounter references, budget allocations, encounter-day assumptions, and
 selection state into one persisted session record.
 
 It does not own party truth, encounter-plan roster truth, creature truth,
-loot truth, or gold-economy rules.
+generated reward truth, loot truth, or generation rules.
 
 ## Document Set
 
@@ -32,6 +32,11 @@ loot truth, or gold-economy rules.
 ### Domain
 
 - [Session Planner Domain Model](./domain/domain-session-planner.md)
+
+## Integrations
+
+- [Session Generation Feature](../sessiongeneration/README.md)
+- [Encounter Generated Import](../encounter/contract/contract-encounter-generated-import.md)
 
 ## References
 
