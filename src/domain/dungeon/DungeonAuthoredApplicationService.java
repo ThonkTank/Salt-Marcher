@@ -60,11 +60,6 @@ import src.domain.dungeon.model.runtime.usecase.LoadDungeonSnapshotUseCase;
 import src.domain.dungeon.model.runtime.usecase.PreviewDungeonEditorSurfaceMoveUseCase;
 import src.domain.dungeon.model.runtime.usecase.PublishDungeonEditorHandlesUseCase;
 
-@SuppressWarnings({
-        "PMD.CouplingBetweenObjects",
-        "PMD.ExcessiveImports",
-        "PMD.TooManyMethods"
-})
 public final class DungeonAuthoredApplicationService {
     private static final DungeonMapOperationFeedbackRules OPERATION_FEEDBACK_POLICY =
             new DungeonMapOperationFeedbackRules();

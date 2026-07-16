@@ -11,7 +11,6 @@ import src.domain.hex.published.HexEditorSnapshot;
 import src.domain.hex.published.HexTravelSnapshot;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 final class HexMapViewModel {
 
     private static final String NO_MAP_TEXT = "Keine Hex-Karte geladen.";

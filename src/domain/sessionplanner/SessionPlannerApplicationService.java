@@ -25,7 +25,6 @@ import src.domain.sessionplanner.published.SetSessionEncounterDaysCommand;
 import src.domain.sessionplanner.published.SetSessionRestGapCommand;
 import src.domain.sessionplanner.published.UpdateSessionEncounterSceneCommand;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 public final class SessionPlannerApplicationService {
 
     private static final String COMMAND_PARAMETER = "command";

@@ -1,6 +1,6 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-07-15
 Source of Truth: Persistence path and schema ownership rules for the `creatures`
 feature.
 
@@ -8,37 +8,32 @@ feature.
 
 This document is normative for the `creatures` feature's persistence path.
 
-## Root Contract
+## Adapter Boundary
 
-- `src/data/creatures/CreaturesServiceContribution.java` is the only root
-  service entrypoint for the feature.
-- Bootstrap discovers it generically under `src/data/<feature>/`.
-- The contribution registers `CreaturesApplicationService.class` through the
-  shell-owned service registry, `shell.api.ServiceRegistry`. Domain ports are
-  implementation collaborators and must not be exported as runtime services.
-- View assembly code reads that capability only through the shell-owned
-  service lookup surface. The current Java lookup method is
-  `ShellRuntimeContext.services()`.
+- The creatures SQLite adapter satisfies feature-owned application ports and
+  remains private to the creatures composition entry point.
+- The application composition supplies the creatures API explicitly; no
+  registry, discovery convention, or adapter type is a public boundary.
+- SQL rows, mappers, gateways, and schema helpers MUST NOT cross the feature
+  API.
 
 ## Mandatory Schema
 
-- `src/data/creatures/model/CreaturesPersistenceSchema.java` is the canonical
-  in-code schema declaration for the feature.
+- The feature-owned persistence schema declaration is the canonical in-code
+  schema owner.
 - The schema currently owns:
   - `creatures`
   - `creature_biomes`
   - `creature_subtypes`
   - `creature_actions`
-- `CreaturesSchemaMigrator` and `CreaturesSchemaTableManager` derive base-table
-  creation, additive column checks, and index creation from that schema
-  declaration.
+- feature-owned migration steps derive base-table creation, additive column
+  checks, and index creation from that schema declaration
 
 ## Read Path Responsibilities
 
-- `SqliteCreatureCatalogLocalGateway` owns connection lifecycle and schema
-  readiness only.
-- Query construction and row-mapping responsibilities are split across
-  package-private SQLite stores under `src/data/creatures/gateway/local/`.
+- the shared platform owns connection lifecycle; the Creatures SQLite adapter
+  owns feature schema readiness
+- Query construction and row mapping remain private SQLite-adapter concerns.
 - Shared SQL filter-clause and parameter-binding helpers stay local to that
   package and must not become public feature boundaries.
 
@@ -48,33 +43,27 @@ This document is normative for the `creatures` feature's persistence path.
   successful lookup result
 - malformed or incomplete source rows MUST be rejected or mapped to a clear
   storage-failure result instead of silently fabricating creature truth
-- storage and schema failures MUST surface through the creatures published
-  result status vocabulary rather than leaking SQLite or gateway exceptions to
-  the view layer
+- storage and schema failures MUST surface through Creatures API result status
+  vocabulary rather than leaking SQLite exceptions to consumers
 - filter normalization with domain meaning belongs to the creatures domain
   boundary; the persistence slice validates only source-shape and storage
   readiness concerns
 
 ## Stability Rules
 
-- Adding another persistence-exporting feature must not require routine edits
-  outside `src/`.
-- The creatures query adapter is injected into `CreaturesApplicationService`;
-  no feature-specific bootstrap wiring is allowed.
-- Creature persistence helpers may be refactored internally as long as
-  `CreatureCatalogLookup` remains the only domain-owned read-only port used by
-  the data slice.
+- The creatures query adapter is injected through the feature composition
+  entry point.
+- Creature persistence helpers may be refactored internally while one
+  feature-owned read port remains the application-to-SQLite boundary.
 
 ## Verification Notes
 
 - This contract is currently `Review-Owned`.
-- Review must reject public runtime-service exports other than
-  `CreaturesApplicationService.class`.
 - Review must reject source-local table rows or SQLite helper types crossing
-  into domain or view-facing boundaries.
+  into the feature API.
 
 ## References
 
 - [Creatures Domain Model](../domain/domain-creatures.md) (line 1)
 - [Catalog Tab UI](../requirements/requirements-creatures-catalog.md) (line 1)
-- [Data Layer Standard](../../project/architecture/patterns/data-layer.md) (line 1)
+- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

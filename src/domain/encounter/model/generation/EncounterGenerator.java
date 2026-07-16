@@ -20,7 +20,6 @@ import src.domain.encounter.model.reference.EncounterCreatureReference;
 import src.domain.encounter.model.reference.EncounterTableCandidateCriteria;
 import src.domain.encounter.model.session.PartyBudgetFacts;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.GodClass", "PMD.TooManyMethods"})
 public final class EncounterGenerator {
 
     private static final int SEARCH_LIMIT = 240;

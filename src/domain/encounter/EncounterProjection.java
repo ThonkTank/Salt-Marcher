@@ -32,13 +32,6 @@ import src.domain.encounter.published.SavedEncounterPlanListResult;
 import src.domain.encounter.published.SavedEncounterPlanStatus;
 import src.domain.encounter.published.SavedEncounterPlanSummary;
 
-@SuppressWarnings({
-        "PMD.CouplingBetweenObjects",
-        "PMD.ExcessiveImports",
-        "PMD.GodClass",
-        "PMD.CyclomaticComplexity",
-        "PMD.TooManyMethods"
-})
 final class EncounterProjection {
 
     private EncounterProjection() {

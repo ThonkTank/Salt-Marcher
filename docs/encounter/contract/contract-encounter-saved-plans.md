@@ -1,7 +1,7 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-10
-Source of Truth: Service contract for the encounter-owned saved-plan chooser
+Source of Truth: API contract for the encounter-owned saved-plan chooser
 facts consumed by SessionPlanner.
 
 # Encounter Saved Plans Contract
@@ -13,8 +13,8 @@ by SessionPlanner.
 
 ## Read Surface
 
-- `SessionEncounterFactsRepository.listEncounterPlans()`
-  returns one `EncounterPlanListFact`
+- `EncounterApi` provides a typed saved-plan list operation returning one
+  `EncounterPlanListFact`
 - `EncounterPlanListFact`
   returns availability, a list of `SavedEncounterPlanFact`, and a status text
 - `SavedEncounterPlanFact`
@@ -26,8 +26,7 @@ by SessionPlanner.
 - the list is read-only
 - encounter owns the summary-text formatting and supplies it as a thin chooser
   display form
-- there is no separate encounter `published/*Model` reply channel for loading
-  the list
+- the list is loaded through `EncounterApi`; there is no second reply channel
 - the list does not expose encounter persistence rows directly
 - creature detail remains creature-owned and does not appear in the summary
 

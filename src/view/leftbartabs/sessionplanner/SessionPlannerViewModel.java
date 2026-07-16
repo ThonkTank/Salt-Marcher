@@ -23,7 +23,6 @@ import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
 import src.view.slotcontent.controls.catalogcrud.CatalogCrudControlsContentModel;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 final class SessionPlannerViewModel {
 
     private static final long NO_SCENE_TOKEN = 0L;

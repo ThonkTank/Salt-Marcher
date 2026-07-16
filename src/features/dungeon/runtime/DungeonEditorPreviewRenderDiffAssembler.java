@@ -13,7 +13,6 @@ import src.domain.dungeon.published.DungeonEditorPreview;
 import src.domain.dungeon.published.DungeonEditorSurface;
 import src.domain.dungeon.published.DungeonTopologyElementRef;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 final class DungeonEditorPreviewRenderDiffAssembler {
     private DungeonEditorPreviewRenderDiffAssembler() {
     }

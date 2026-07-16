@@ -1,6 +1,6 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-07-15
 Source of Truth: Persistence path and schema ownership rules for the
 `encountertable` feature.
 
@@ -8,20 +8,19 @@ Source of Truth: Persistence path and schema ownership rules for the
 
 This document is normative for the `encountertable` feature's persistence path.
 
-## Root Contract
+## Adapter Boundary
 
-- `src/data/encountertable/EncounterTableServiceContribution.java` is the only
-  root service entrypoint for the feature.
-- Bootstrap discovers it generically under `src/data/<feature>/`.
-- The contribution registers `EncounterTableApplicationService.class` through
-  the shell-owned service registry.
-- Domain ports are implementation collaborators and must not be exported as
-  runtime services.
+- The encounter-table SQLite adapter satisfies feature-owned application ports
+  and remains private to the encounter-table composition entry point.
+- The application composition supplies `EncounterTableApi` explicitly; no
+  registry, discovery convention, port implementation, or adapter type is a
+  public boundary.
+- SQL rows and adapter failures MUST NOT cross `EncounterTableApi`.
 
 ## Mandatory Schema
 
-- `src/data/encountertable/model/EncounterTablePersistenceSchema.java` is the
-  canonical in-code schema declaration for this feature.
+- The feature-owned persistence schema declaration is the canonical in-code
+  schema owner.
 - The schema owns:
   - `encounter_tables`
   - `encounter_table_entries`
@@ -29,12 +28,10 @@ This document is normative for the `encountertable` feature's persistence path.
 
 ## Read Path Responsibilities
 
-- `SqliteEncounterTableLocalGateway` owns connection lifecycle and schema
-  readiness.
-- `EncounterTableSqliteStore` owns SQL for table summaries and weighted
-  generation candidate lookup.
-- `SqliteEncounterTableCatalogAdapter` maps persistence records to the
-  domain-owned `EncounterTableCatalog` port.
+- the shared platform owns connection lifecycle; the Encounter Table SQLite
+  adapter owns feature schema readiness, SQL, and row translation
+- one feature-owned read port separates application orchestration from SQLite
+  mechanics
 
 ## Validation And Error Behavior
 
@@ -42,30 +39,29 @@ This document is normative for the `encountertable` feature's persistence path.
   successful results
 - malformed table rows, entry rows, or loot-link rows MUST become
   storage-failure results instead of synthesized candidate truth
-- the persistence slice MUST preserve its read-only boundary and reject
-  mutation-style operations in this parity step
 - optional loot-link reads MAY be absent, but storage failures MUST surface
   through encounter-table-owned result statuses rather than leaking SQLite
   exceptions
 
 ## Stability Rules
 
-- The data slice is read-only for this parity step.
-- Encounter-table candidate lookup may join creature rows for snapshots, but it
-  must not mutate creature data.
+- Target Encounter Table persistence returns only table-owned membership, creature
+  IDs, weights, summaries, and optional loot-link IDs. It MUST NOT read or join
+  Creatures-owned rows.
+- The application layer resolves creature facts through `CreaturesApi` and
+  combines them with table-owned weights for candidate results.
 - Optional loot links are warning context only and do not block encounter
   generation.
 
 ## Verification Notes
 
-- This contract is currently `Review-Owned`.
-- Review must reject write-model mutation boundaries inside the
-  `encountertable` persistence slice for this parity step.
-- Review must reject public runtime-service exports other than
-  `EncounterTableApplicationService.class`.
+- Review must reject persistence types or internal collaborators crossing
+  `EncounterTableApi`.
+- Review must reject cross-feature SQL reads or joins into Creatures-owned
+  tables.
 
 ## References
 
 - [Encounter Table Domain Model](../domain/domain-encountertable.md) (line 1)
 - [Encounter Table Feature Spec](../requirements/requirements-encountertable.md) (line 1)
-- [Data Layer Standard](../../project/architecture/patterns/data-layer.md) (line 1)
+- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

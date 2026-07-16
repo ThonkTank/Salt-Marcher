@@ -1,4 +1,4 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
 Last Reviewed: 2026-04-20
 Source of Truth: Entry point and document map for the creatures feature.
@@ -10,14 +10,8 @@ Source of Truth: Entry point and document map for the creatures feature.
 The creatures feature owns read-only creature catalog access for reference and
 encounter-generation workflows.
 
-Its public backend surface is split into:
-
-- `src/domain/creatures/CreaturesApplicationService.java` as the creatures
-  application-service root
-- `src/domain/creatures/published/` for public query, result, status, and payload
-  types consumed by view and domain callers
-- `src/domain/creatures/application/` plus the owning domain modules for
-  use-case orchestration and outbound ports used by data adapters
+Its public backend surface is `CreaturesApi`; implementation packages remain
+feature-private.
 
 ## Documentation Set
 

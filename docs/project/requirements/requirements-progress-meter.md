@@ -1,26 +1,18 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-08
-Source of Truth: Reusable passive JavaFX progress-meter primitive under
-`src/view/slotcontent/primitives/progressmeter/`.
+Last Reviewed: 2026-07-15
+Source of Truth: Observable behavior of the reusable JavaFX progress meter.
 
 # Progress Meter
 
 ## Component Purpose
 
-`ProgressMeterView` is a reusable slotcontent primitive with the strict triad
-shape:
+The reusable meter renders a compact track, filled region, centered text overlay,
+optional tooltip, and optional amount popup in one JavaFX control.
 
-- `ProgressMeterView`
-- `ProgressMeterViewInputEvent`
-- `ProgressMeterContentModel`
-
-The primitive renders a compact track, filled region, centered text overlay,
-optional tooltip, and optional amount popup in one passive JavaFX control.
-
-The primitive owns only JavaFX rendering plus primitive-local popup
-presentation state such as the current amount draft. It does not calculate HP,
-XP, thresholds, labels, readiness, or business state.
+The meter presents values supplied by its owning feature and keeps only local
+popup interaction state such as the current amount draft. It does not calculate
+HP, XP, thresholds, labels, readiness, or other business state.
 
 ## Visible Surfaces
 
@@ -31,13 +23,13 @@ XP, thresholds, labels, readiness, or business state.
 
 ## Interactions
 
-- Active roots provide projected text, fraction, accessible text, sizing
+- Owning features provide projected text, fraction, accessible text, sizing
   style, fill style, tooltip text, initial amount, and action metadata through
-  `ProgressMeterContentModel`.
-- Popup-based amount actions emit amount snapshots through
-  `ProgressMeterViewInputEvent` instead of direct feature callbacks.
-- The primitive may be composed anywhere a passive reusable progress meter is
-  needed without registering a shell entrypoint.
+  the meter's public presentation input.
+- Popup-based amount actions report amount snapshots to the owning feature
+  instead of mutating feature state.
+- The meter may appear anywhere a reusable progress display is needed without
+  becoming a separate navigation destination.
 
 ## Visible States
 
@@ -49,15 +41,16 @@ XP, thresholds, labels, readiness, or business state.
 
 ## Acceptance Criteria
 
-- `ProgressMeterView` remains a passive reusable primitive and does not own
+- the progress meter remains passive and does not own
   business calculations for HP, XP, thresholds, or readiness
-- active roots supply all projected business meaning, while the primitive owns
+- owning features supply all projected business meaning, while the meter owns
   only rendering and widget-local layout
-- amount actions emit `ProgressMeterViewInputEvent` snapshots to the owning
-  surface instead of mutating domain state directly inside the primitive
-- popup draft state and popup availability live in `ProgressMeterContentModel`
-- popup-based amount editing reuses the shared anchored-popup surface instead
-  of introducing a second popup-host mechanism
+- amount actions report snapshots to the owning feature instead of mutating
+  domain state directly inside the meter
+- popup draft and availability remain local interaction state and do not become
+  feature truth
+- popup-based amount editing follows the shared anchored-popup behavior for
+  placement, dismissal, and focus return
 
 ## References
 

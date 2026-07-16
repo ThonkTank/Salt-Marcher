@@ -29,7 +29,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceVal
 import src.domain.dungeon.model.runtime.helper.DungeonEditorSessionPreviewHelper;
 import src.domain.dungeon.model.runtime.helper.DungeonEditorSnapshotStateProjectionHelper;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.ExcessivePublicCount"})
 public final class DungeonEditorRuntimeApplicationService {
 
     private static final String INVALID_STAIR_GEOMETRY_STATUS = "Treppengeometrie ungueltig.";
@@ -60,7 +59,6 @@ public final class DungeonEditorRuntimeApplicationService {
         T create(RuntimeSession session);
     }
 
-    @SuppressWarnings("PMD.TooManyMethods")
     public static final class RuntimeSession {
         private final DungeonAuthoredApplicationService authoredService;
         private final DungeonAuthoredApplicationService.Session authored;

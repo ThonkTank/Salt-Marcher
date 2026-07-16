@@ -7,7 +7,6 @@ import src.domain.dungeon.model.core.structure.feature.FeatureMarkerKind;
 import src.domain.dungeon.model.core.structure.stair.StairShape;
 import src.domain.dungeon.published.DungeonEditorTool;
 
-@SuppressWarnings("PMD.TooManyMethods")
 final class DungeonEditorToolRegistry {
     private static final DungeonEditorToolRegistry INSTANCE = new DungeonEditorToolRegistry();
 

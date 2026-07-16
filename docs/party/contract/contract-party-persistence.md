@@ -1,6 +1,6 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
+Last Reviewed: 2026-07-15
 Source of Truth: Persistence path and schema ownership rules for the `party`
 feature.
 
@@ -8,28 +8,19 @@ feature.
 
 This document is normative for the `party` feature's persistence path.
 
-## Root Contract
+## Adapter Boundary
 
-- `src/data/party/PartyServiceContribution.java` is the only root service
-  entrypoint for the feature.
-- Bootstrap discovers it generically under `src/data/<feature>/`.
-- The contribution registers the exported party runtime services through the
-  shell-owned service registry, `shell.api.ServiceRegistry`.
-- `PartyApplicationService.class` is the party command boundary only. Party
-  readback is exported through the published runtime models
-  `PartySnapshotModel.class`, `ActivePartyModel.class`,
-  `ActivePartyCompositionModel.class`, `AdventuringDaySummaryModel.class`,
-  `PartyTravelPositionsModel.class`, `PartyMutationModel.class`, and
-  `AdventuringDayCalculationModel.class`.
-- Domain ports and other implementation collaborators are implementation
-  details and must not be registered as runtime services.
-- View assembly code and foreign feature adapters read those services only
-  through the shell-owned service lookup on `ShellRuntimeContext.services()`.
+- The party SQLite adapter satisfies party-owned application ports and remains
+  private to the party composition entry point.
+- The application composition supplies `PartyApi` explicitly to consumers; no
+  registry, discovery convention, published mutable model, or adapter type is
+  a public boundary.
+- SQL rows, mappers, gateways, and schema helpers MUST NOT cross `PartyApi`.
 
 ## Mandatory Schema
 
-- `src/data/party/model/PartyPersistenceSchema.java` is the canonical in-code
-  schema declaration for the feature.
+- The feature-owned persistence schema declaration is the canonical in-code
+  schema owner.
 - The schema currently owns:
   - `player_characters`
   - `party_roster_metadata`
@@ -37,9 +28,9 @@ This document is normative for the `party` feature's persistence path.
   overworld locations plus the party-token attachment flag. These columns are
   part of character state, not a campaign-level travel table and not dungeon
   authored truth.
-- `SqlitePartyLocalGateway` must derive table creation and additive column
+- feature-owned migration steps derive table creation and additive column
   migration from this schema artifact instead of spreading canonical
-  definitions across unrelated classes.
+  definitions across unrelated classes
 
 ## Current Mapping
 
@@ -54,8 +45,8 @@ space:
 - party-token attachment stores whether a character currently follows the
   shared party token position
 
-The data layer maps those columns through source-local party records into
-party-domain values. Dungeon persistence remains responsible for authored map
+The Party SQLite adapter maps those columns through private records into Party
+domain values. Dungeon persistence remains responsible for authored map
 truth only; it does not persist character positions.
 
 ## Validation And Error Behavior
@@ -65,28 +56,22 @@ truth only; it does not persist character positions.
   truth
 - dungeon and overworld travel references MUST be validated as party-owned
   scalar location references rather than expanded into authored map truth
-- storage and schema failures MUST surface through party-owned published result
-  statuses rather than leaking SQLite exceptions to the view layer
+- storage and schema failures MUST surface through Party API result statuses
+  rather than leaking SQLite exceptions to consumers
 
 ## Stability Rules
 
-- Adding another persistence-exporting feature must not require routine edits
-  outside `src/`.
-- The party roster write port remains a data-owned collaborator injected into
-  `PartyApplicationService`; no feature-specific bootstrap wiring is allowed.
-- Legacy runtime-service wiring through `RuntimeServiceProvider` or
-  `RuntimeServiceRegistry` is forbidden.
+- The party roster write port remains an internal collaborator injected by the
+  party composition entry point.
 - Character-specific runtime state belongs in party persistence unless another
   bounded context owns the character information itself.
-- Foreign features must not depend on party root return values for readback.
-  They must use owner-local adapters backed by the exported party models.
+- Foreign features MUST use `PartyApi` for party commands and readback.
 
 ## Verification Notes
 
 - This contract is currently `Review-Owned`.
-- Review must reject runtime-service exports of domain ports or internal
-  collaborators while allowing the party command root plus the published party
-  read models.
+- Review must reject persistence types or internal collaborators crossing
+  `PartyApi`.
 - Review must reject authored dungeon truth leaking into party-owned
   character-travel persistence.
 
@@ -94,4 +79,4 @@ truth only; it does not persist character positions.
 
 - [Party Domain Model](../domain/domain-party.md) (line 1)
 - [Party Dropdown UI](../requirements/requirements-party-dropdown.md) (line 1)
-- [Data Layer Standard](../../project/architecture/patterns/data-layer.md) (line 1)
+- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

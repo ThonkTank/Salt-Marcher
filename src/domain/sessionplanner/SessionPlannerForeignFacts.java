@@ -31,7 +31,6 @@ import src.domain.sessionplanner.model.session.SessionPartyMemberProfile;
 import src.domain.sessionplanner.model.session.SessionSavedEncounterPlanFact;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.ExcessiveImports", "PMD.TooManyMethods"})
 final class SessionPlannerForeignFacts {
 
     private static final long NO_LOCATION_ID = 0L;

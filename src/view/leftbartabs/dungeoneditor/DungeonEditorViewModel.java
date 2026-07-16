@@ -38,13 +38,6 @@ import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEd
 import src.view.slotcontent.main.dungeonmap.DungeonMapContentModel.InlineLabelEditState;
 import src.view.slotcontent.main.dungeonmap.DungeonMapViewInputEvent;
 
-@SuppressWarnings({
-    "PMD.CouplingBetweenObjects",
-    "PMD.CyclomaticComplexity",
-    "PMD.ExcessiveImports",
-    "PMD.TooManyMethods",
-    "PMD.GodClass"
-})
 final class DungeonEditorViewModel {
     private static final long NO_TRANSITION_ID = 0L;
 

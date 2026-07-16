@@ -1,88 +1,106 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-07-12
-Source of Truth: Concise source architecture statement after the M0-M5
-architecture migration cycles.
+Last Reviewed: 2026-07-15
+Source of Truth: Target source shape, dependency direction, and
+architecture-significant quality constraints for the SaltMarcher desktop app.
 
-# Source Architecture Statement
+# Source Architecture
 
-## Principles
+## Purpose And Concerns
 
-SaltMarcher source architecture is judged by behavior, dependency direction,
-and maintainability outcomes, not by role-family suffixes or form doctrine.
+This specification serves maintainers changing features, persistence, the
+JavaFX shell, and application startup. It answers where behavior belongs, how
+features collaborate, and which boundaries protect UI responsiveness, local
+data, and diagnosability.
 
-1. **Locality.** A small behavior change touches few files, ideally one owning
-   area.
-2. **Short chains.** UI intent reaches the first state mutation or readback in
-   at most three meaningful hops. Classes whose only job is forwarding are
-   removed instead of renamed.
-3. **Typed boundaries.** Enums and value types cross boundaries as themselves:
-   no String round-trips, duplicate enum definitions, or stringly typed `kind`
-   constants where a type exists.
-4. **One representation per purpose.** State is reshaped only when a real
-   consumer needs the target shape.
-5. **Logic lives where its data lives.** Behavior belongs with the state and
-   invariants it changes; it is not squeezed into view or feature god files.
-6. **Structure is judged by outcomes.** Cycle-free packages, dependency
-   direction, green behavior tests, implemented approved designs, and
-   production handoff decide structure.
+SaltMarcher remains one local JavaFX desktop process, one SQLite database, and
+one Gradle application. The target is a modular monolith, not a distributed
+system or a set of Gradle subprojects.
 
-## Repository Shape
+## Target Shape
 
 ```text
-bootstrap/    application startup and generic discovery
-shell/        passive cockpit host and shell contracts
-src/features/ feature-owned runtime code
-src/view/     cockpit contributions
-src/domain/   application core by context
-src/data/     outbound adapters
-resources/    static resources and centralized stylesheets
-docs/         project and feature documentation
-tools/        build infrastructure, quality platforms, and scripts
+app/       explicit application composition and lifecycle
+shell/     passive JavaFX host and shell contracts
+platform/  execution, persistence, diagnostics, and state mechanisms
+features/  capability-driven feature roles and required adapters
+resources/ static resources and centralized application styling
+docs/      durable product, domain, contract, architecture, and proof truth
+tools/     retained build and development tooling
 ```
 
-## Code Pointers
+Feature roles follow owned behavior rather than a mandatory folder template. A
+feature publishes `api` only for capabilities consumed outside its
+implementation, owns `domain` only for business truth and invariants, and owns
+`application` only for use-case orchestration. A feature with stored truth owns
+an `adapter/sqlite`; a feature with JavaFX presentation owns an
+`adapter/javafx`. Empty role packages are forbidden. Dungeon remains one
+feature and publishes separate Authored, Editor, and Travel APIs.
 
-- Startup stays generic in `bootstrap/AppBootstrap.java` and
-  `bootstrap/ShellViewDiscovery.java`; routine feature work does not add
-  handwritten bootstrap wiring.
-- The shell stays a passive host through `shell/api/ShellBinding.java` and
-  `shell/host/AppShell.java`; feature code talks to shell contracts, not shell
-  internals.
-- Migrated view contributions compose their own UI routes, for example
-  `src/view/leftbartabs/catalog/CatalogContribution.java` with
-  `src/view/leftbartabs/catalog/CatalogViewModel.java`.
-- Domain services own behavior routes and publication, for example
-  `src/domain/encounter/EncounterApplicationService.java` and
-  `src/domain/dungeon/DungeonEditorRuntimeApplicationService.java`.
-- Render-heavy UI state stays behind dedicated model/view seams such as
-  `src/view/slotcontent/main/dungeonmap/DungeonMapContentModel.java`.
-- `src/data/**` is the outbound adapter zone for SQLite, files, imports, and
-  other concrete sources; it adapts to public feature or domain boundaries.
+## Permanent Boundaries
 
-## Boundaries
+- `app` MUST compose platform services, feature entry points, and shell
+  contributions explicitly and deterministically. It may depend on every
+  target root but MUST NOT own feature behavior or long-lived feature state.
+- `shell` MUST remain independent from feature implementations. Features may
+  use `shell.api` contracts; the shell receives already constructed
+  contributions and MUST NOT locate feature services. Shell internals may use
+  feature-neutral platform mechanisms; `shell.api` contracts remain free of
+  platform implementation types.
+- `platform` MUST contain only feature-neutral mechanisms. It MUST NOT import
+  `app`, `shell`, or feature code. Its capability packages are
+  `platform.execution`, `platform.persistence`, `platform.diagnostics`,
+  `platform.state`, and `platform.ui`; new catch-all packages are forbidden.
+- A feature MUST expose cross-feature capabilities only from its `api` package.
+  Application and composition code may consume foreign APIs; the Dungeon and
+  Hex JavaFX adapters may additionally consume the Maps API for their shared
+  passive canvases. Other roles MUST NOT import foreign features, and no
+  consumer may import another feature's domain, application, adapters, or
+  composition entry point.
+- Feature API and domain roles MUST remain independent from `platform`.
+  Application code may use execution, state, and diagnostics contracts; SQLite
+  adapters may use persistence and diagnostics; JavaFX adapters may use UI
+  contracts; feature composition may wire any platform capability.
+- Feature API calls that can touch persistence or files MUST be non-blocking.
+  JavaFX state changes MUST be dispatched explicitly to the UI thread.
+- Published feature state MUST be immutable and revisioned. A late asynchronous
+  result MUST NOT overwrite newer state.
+- Feature SQLite adapters own their stored truth and migration steps. Shared
+  connection, integrity, backup, and recovery mechanisms belong to `platform`.
+  JDBC and SQLite driver APIs are allowed only in feature SQLite adapters and
+  `platform.persistence`.
+- Technical diagnostics MUST remain local and MUST NOT record feature payloads,
+  secrets, or user-authored content.
 
-`bootstrap/**` may discover and register generic shell/service contributions.
-`shell/**` hosts UI surfaces and exposes stable shell contracts. `src/view/**`
-and `src/features/**` own presentation/runtime routes named by the current
-code. `src/domain/**` owns behavior and published application state. `src/data/**`
-owns source mechanics and translation to public boundaries.
+Internal Java types have no compatibility obligation while all consumers move
+atomically in one green slice. Persisted data and observable behavior retain
+their contract and requirement owners.
 
-Public seams consumed by multiple areas stay byte-compatible until every
-consumer is migrated or an owner document explicitly changes the seam with
-proof. Behavior truth remains in requirements, contracts, domain docs,
-owner requirements, behavior tests, and the running application.
+## Delivery State
+
+Temporary repository state, verification scope, and the next deletion boundary
+live only in [Active Delivery](../delivery/README.md). They do not modify this
+target.
+
+The target-package ArchUnit rules are mechanically enforced by
+`architectureTest` and `check`.
+
+## Rationale
+
+Vertical ownership keeps one behavior change local to its feature. Explicit
+composition makes dependencies visible to the compiler. Non-blocking I/O keeps
+the JavaFX event thread responsive. Versioned persistence and local diagnostics
+make failures recoverable without transmitting user data.
+
+Generic classpath discovery, a shell-owned service locator, horizontal
+domain/view/data roots, and package-form compatibility were rejected because
+they hide dependencies, fragment ownership, and make safe migration harder.
 
 ## References
 
-- [Layering Architecture Standard](patterns/layering-architecture.md) owns the
-  package-level dependency direction statement.
-- [Bootstrap Standard](patterns/bootstrap.md) and
-  [Shell Layer Standard](patterns/shell-layer.md) own startup and shell hosting.
-- [Data Layer Standard](patterns/data-layer.md) owns the adapter-zone decision
-  for `src/data/**`.
-- [Styling Standard](patterns/styling.md) owns centralized styling rules.
-- [Verification Core Architecture](verification-core.md) owns public
-  verification surfaces and the outcome-check wiring.
+- [Feature Boundary Standard](patterns/feature-boundaries.md)
+- [Application Composition Standard](patterns/application-composition.md)
+- [Shell Layer Standard](patterns/shell-layer.md)
+- [Styling Standard](patterns/styling.md)
+- [Verification Core Architecture](verification-core.md)
 - [Documentation Standard](../documentation.md)
-- [Agent Instruction Standard](agent-instructions.md)

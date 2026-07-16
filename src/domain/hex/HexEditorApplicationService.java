@@ -26,7 +26,6 @@ import src.domain.hex.published.SelectHexTileCommand;
 import src.domain.hex.published.SetHexEditorToolCommand;
 import src.domain.hex.published.UpdateHexMapCommand;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public final class HexEditorApplicationService {
 
     private final EditorMutations mutations;

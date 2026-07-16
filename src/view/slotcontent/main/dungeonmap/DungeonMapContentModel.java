@@ -478,7 +478,6 @@ public final class DungeonMapContentModel {
         };
     }
 
-    @SuppressWarnings("PMD.CyclomaticComplexity")
     private static PreparedElementKind preparedElementKind(DungeonEditorRuntimePointerTarget.ElementKind elementKind) {
         if (elementKind == null) {
             return PreparedElementKind.EMPTY;
@@ -500,7 +499,6 @@ public final class DungeonMapContentModel {
         };
     }
 
-    @SuppressWarnings("PMD.CyclomaticComplexity")
     private static PreparedElementKind preparedElementKind(PreparedTopologyKind topologyKind) {
         return switch (topologyKind == null ? PreparedTopologyKind.EMPTY : topologyKind) {
             case ROOM -> PreparedElementKind.ROOM;
@@ -515,7 +513,6 @@ public final class DungeonMapContentModel {
         };
     }
 
-    @SuppressWarnings("PMD.CyclomaticComplexity")
     private static PreparedTopologyKind preparedTopologyKind(DungeonEditorRuntimePointerTarget.TopologyKind topologyKind) {
         if (topologyKind == null) {
             return PreparedTopologyKind.EMPTY;
@@ -1502,7 +1499,6 @@ public final class DungeonMapContentModel {
                     VertexTarget.empty());
         }
 
-        @SuppressWarnings("PMD.ExcessiveParameterList")
         public static PointerTarget target(
                 PreparedTargetKind targetKind,
                 PreparedLabelKind labelKind,

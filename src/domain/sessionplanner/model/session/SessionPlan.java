@@ -7,7 +7,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-@SuppressWarnings("PMD.CyclomaticComplexity")
 public record SessionPlan(
         long sessionId,
         String displayName,

@@ -38,13 +38,13 @@ Persisted authored truth includes:
 - derived area, relation, and traversal facts
 - preview state
 - render or hit structures
-- ViewModel-local selection state
+- presentation-local selection state
 - party-owned runtime travel state
 
 ## Adapter Boundary
 
-- `DungeonMapRepository` owns authored write-model persistence
-- `DungeonMapSearch` owns read-oriented map lookup
+- one feature-owned application port owns authored write-model persistence
+- one feature-owned application port owns read-oriented map lookup
 - SQLite adapters translate source-local rows into dungeon-domain values and
   aggregates
 - multi-map authored repository writes MUST commit all supplied domain maps
@@ -55,8 +55,8 @@ Persisted authored truth includes:
 
 ## Schema Ownership
 
-- `src/data/dungeon/model/DungeonPersistenceSchema.java` is the in-code schema
-  declaration
+- the feature-owned Dungeon persistence schema declaration is the in-code
+  schema owner
 - `dungeon_topology_elements` is authoritative for persisted topology identity
 - compatibility detail tables remain source-local storage and correlation
   detail, not alternate semantic owners

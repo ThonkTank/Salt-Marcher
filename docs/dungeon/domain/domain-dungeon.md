@@ -1,4 +1,4 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
 Last Reviewed: 2026-06-08
 Source of Truth: Dungeon write model, ownership boundaries, and domain
@@ -16,10 +16,8 @@ This document owns domain truth only.
 Context Role: Authored Dungeon Map Context
 Context Name: Dungeon
 
-- `dungeon` owns authored dungeon map truth in the `core` model family plus
-  neutral editor session/application seams and travel runtime state in the
-  `runtime` model family over that same authored truth; migrated Dungeon Editor
-  interaction/session workflows are feature-runtime-owned
+- `dungeon` owns authored dungeon map truth plus editor-session and travel
+  application state over that same authored truth
 - `DungeonMap` is the aggregate root for one authored map
 - authored committed snapshots, authored operation results, authored selection
   inspectors, and runtime travel session surfaces are projections over the same
@@ -30,8 +28,8 @@ Context Name: Dungeon
 
 ## Published Language
 
-`published/` owns public dungeon commands, queries, results, IDs, statuses,
-authored map facts, authored operation results, and runtime travel facts.
+The Dungeon APIs own public commands, queries, results, IDs, statuses, authored
+map facts, authored operation results, and runtime travel facts.
 
 Published dungeon carriers must not own:
 
@@ -63,11 +61,10 @@ Derived state must not become a second source of truth. This includes:
 - render overlays
 - runtime party position
 
-Application-owned neutral editor session values/effects and travel session
-state may exist outside the authored write model when they are not persisted as
-dungeon truth. Those domain runtime seams are not authored `core` state.
-Migrated Dungeon Editor pointer interpretation, transient interaction state, and
-draft workflows are feature-runtime-owned.
+Application-owned editor-session values/effects and travel-session state may
+exist outside the authored write model when they are not persisted as dungeon
+truth. Pointer interpretation, transient interaction state, and draft workflows
+are application concerns, not authored domain truth.
 
 ## Aggregate Model
 
@@ -186,27 +183,17 @@ entry cell; it is not a renderable transition feature cell. Editor render and
 hit-test projection derive an edge marker from the anchor edge, while cell
 surfaces remain reserved for `CELL` anchors.
 
-## Domain-Owned External Boundaries
+## Application Ports And Foreign APIs
 
-- `DungeonMapRepository`
-- `DungeonMapSearch`
-- `TravelPartyStateRepository` for synchronous party travel-state reads
-- `TravelPartyPositionRepository` for outbound party travel-position writes
+The Dungeon application owns non-blocking persistence and search ports for
+authored maps. Its SQLite adapter implements those ports; adapters never surface
+JDBC types or exceptions through Dungeon APIs.
 
-Application services coordinate load, mutate, save, search, and runtime travel
-session publication through these repositories and searches.
-Party-aware runtime travel-session composition belongs to the
-`dungeon/model/runtime/**` family. It reads party travel state through the
-dungeon-owned `TravelPartyStateRepository` and writes party travel position through
-the dungeon-owned `TravelPartyPositionRepository`; dungeon still does not own
-party roster truth or persisted party travel position.
-
-Active root boundaries:
-
-- `DungeonEditorFeatureRuntimeRoot` owns the feature-runtime authored editor
-  operations provider for map catalog, projection, pointer, narration, label,
-  stair, and transition writes over authored dungeon truth
-- `DungeonTravelRuntimeApplicationService`
+Party-aware travel composition consumes `PartyApi`, supplied explicitly during
+application composition, for party state and outbound travel-position changes.
+Dungeon does not own party roster truth or persisted party travel position.
+`DungeonEditorApi` and `DungeonTravelApi` expose the typed, revisioned editor
+and travel capabilities without publishing repositories or adapters.
 
 ## Invariants
 
@@ -218,11 +205,10 @@ Active root boundaries:
 - authored feature markers use `FEATURE_MARKER` topology refs and do not reuse
   stair or transition identity
 - preview state never mutates authored truth
-- target room geometry authority comes from reusable floor-cell and
-  boundary-segment component ownership; boundary-corner and wall-run handle
-  derivation now also routes through that component boundary surface, while
-  cluster-local relative boundary rows still transport persistence-facing
-  direction and storage compatibility during the remaining migration
+- room geometry authority comes from reusable floor-cell and boundary-segment
+  component ownership; boundary-corner and wall-run handles derive through
+  that component boundary, and persistence adapters translate its segments
+  without creating a second relative-row domain truth
 - runtime travel state never becomes authored dungeon persistence
 - data rows and view models may transport dungeon facts, but they are not the
   owner of dungeon meaning
@@ -240,18 +226,17 @@ Active root boundaries:
   `DungeonOperationResult`, `DungeonInspectorSnapshot`, editor runtime
   snapshots, travel runtime session snapshots, and travel-action results rooted
   in authored dungeon truth
-- `dungeon/model/core/**` owns authored dungeon truth and the structures
+- the Dungeon authored core owns authored truth and the structures
   that mutate it
-- `dungeon/model/runtime/**` owns neutral editor session values and session
-  application seams over authored dungeon facts; migrated Dungeon Editor
-  pointer interpretation, transient interaction objects, draft workflows, and
-  runtime composition are owned by `src/features/dungeon/runtime/**`
-- `dungeon/model/runtime/**` owns runtime travel-session composition that
+- `DungeonEditorApi` and its application owner own editor session values,
+  pointer interpretation, transient interaction, drafts, and composition over
+  authored facts
+- `DungeonTravelApi` and its application owner own travel-session composition that
   combines raw dungeon facts with party-owned position state
 - `dungeon` does not own party roster truth or persisted party travel position
 - `dungeon` does not publish render-ready cells, edges, labels, markers,
-  graph nodes, or graph links for the map canvas; those are view-owned
-  ContentModel projections
+  graph nodes, or graph links for the map canvas; those are presentation-owned
+  projections derived from Dungeon API state
 
 ## References
 
@@ -262,5 +247,3 @@ Active root boundaries:
 - [Dungeon Map Adoption Architecture](../../maps/architecture/architecture-maps-dungeon-adoption.md) (line 1)
 - [Dungeon Map Surface Contract](../../maps/contract/contract-maps-dungeon-surface.md) (line 1)
 - [Dungeon Persistence Contract](../contract/contract-dungeon-persistence.md) (line 1)
-- [Dungeon Core Model Invariants](../verification/verification-dungeon-core-model-invariants.md) (line 1)
-- [Dungeon Editor-Wide Invariants](../verification/verification-dungeon-editor-wide-invariants.md) (line 1)

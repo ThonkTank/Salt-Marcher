@@ -16,7 +16,6 @@ import src.domain.sessionplanner.published.SessionPlannerStatePanelModel;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
 import src.domain.shared.published.PublishedState;
 
-@SuppressWarnings({"PMD.DataClass", "PMD.TooManyMethods"})
 final class SessionPlannerPublishedState {
 
     private static final long NO_SESSION_ID = 0L;

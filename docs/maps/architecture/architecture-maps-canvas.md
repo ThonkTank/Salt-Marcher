@@ -1,130 +1,108 @@
-Status: Draft
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
-Source of Truth: Legacy shared map-canvas architecture record. The former
-`MapCanvasView` implementation seam has been removed; current dungeon rendering
-is adopter-local under the reusable three-role slotcontent model.
+Last Reviewed: 2026-07-15
+Source of Truth: Target ownership, dependency direction, and composition for the
+reusable passive map canvas.
 
 # Maps Canvas Architecture
 
-## Purpose
+## Purpose And Concerns
 
-This specification records the legacy implementation architecture between the
-passive map canvas and adopting map features. It remains a Review-Owned debt
-record for map-canvas constraints, not a claim that a shared `MapCanvasView`
-still exists in production sources.
+This specification defines the reusable canvas owned by the Maps feature. It
+serves maintainers of map presentation and adopting features that translate
+their own map facts into canvas-native scenes.
 
-It owns:
+It answers:
 
-- the shared role model
-- the shared capability paths
-- the rule that adopters translate canvas coordinates to their own native
-  coordinate systems and back through one adapter
-- the rule that exactly one domain-to-canvas path and exactly one
-  pointer-to-domain path exist for each adopter surface
+- where passive camera, drawing, hit-testing, and pointer capture belong
+- how an adopter supplies a scene without exposing its domain to Maps
+- how canvas input returns to an adopter without Maps learning adopter meaning
+- how the application composes the canvas and its adopters explicitly
 
-It does not own adopter-native payload fields or adopter gameplay behavior.
+It does not own dungeon or hex behavior, coordinates, persistence, commands, or
+domain invariants.
 
-This document is not the canonical target model for reusable `slotcontent/**`.
-The canonical reusable-slotcontent architecture lives only in
-[Source Architecture](../../project/architecture/source-architecture.md).
-The canvas-specific `CanvasPointerEvent` and `MapRenderScene` seams described
-here are current implementation debt relative to that owner.
+## Target Ownership
 
-## Roles
+```text
+features/maps/
+  api/             immutable canvas scene, hit, pointer, and capability types
+  domain/          canvas-native camera and viewport invariants
+  application/     passive scene, camera, hit, and input orchestration
+  adapter/javafx/  rendering, viewport observation, and pointer capture
+  <feature root>   Maps composition entry point used by app
+```
 
-- removed legacy `MapCanvasView` seam
-- adopter-owned canvas-facing map-slot `ContentModel`
-- adopter-facing Binder
-- adopter feature boundary
-- adopter-native `published/**` surface payload
-- adopter-local render scene such as the dungeon map render state
+The Maps API is the only cross-feature boundary. Adopters may depend on
+`features.maps.api`; Maps must not import an adopter's API or implementation.
 
-Adopter-local class names ending in `*ViewModel` are compatibility names, not
-a second architecture beside the canonical `ContributionModel` /
-`ContentModel` role language.
+## Boundaries
 
-## Boundary Rules
+- All scene geometry and pointer coordinates crossing the Maps API are
+  canvas-native.
+- One immutable scene revision supplies both draw order and ordered hit evidence.
+- The JavaFX adapter renders the supplied scene and captures technical input. It
+  does not interpret dungeon-grid, hex-grid, editing, or travel meaning.
+- Camera, pan, zoom, viewport, resize, and reset behavior remain Maps-owned
+  passive presentation behavior.
+- Each adopter owns one translation boundary in its `adapter/javafx` package
+  between its feature API and the Maps API.
+- Adopter domain and application packages never depend on JavaFX or Maps
+  presentation types.
+- Maps owns no SQLite state under the current contract.
+- Maps therefore has no SQLite adapter. Target roles follow owned capability;
+  empty form packages are forbidden.
 
-- the passive map view speaks canvas-space only
-- each adopter owns exactly one canvas-facing map-slot `ContentModel`
-  that projects adopter-native published content into its local render scene
-- dungeon converts `canvas <-> dungeon grid`
-- hex converts `canvas <-> internal hex coordinates`
-- the passive map view never reconstructs adopter-native coordinates itself
-- each current adopter surface uses one render scene for draw order, hit
-  order, and hit identity
-- current dungeon surfaces emit pointer output through their same-stem
-  `ViewInputEvent` seam
-- only the adopter-facing Binder may know the adopter boundary and
-  adopter-published carriers
-- the adopter-facing map-slot `ContentModel` owns scene projection state,
-  but not adopter-boundary access
-- active-root `ContributionModel`s must not mirror adopter surface payloads or
-  own a second render-state path to canvas
-- no new work may reintroduce `CanvasPointerEvent`, `MapRenderScene`, or
-  `MapCanvasView` as canonical reusable role types beyond this removed legacy
-  implementation seam
+## Composition View
+
+`app` constructs the Maps feature explicitly, obtains its typed canvas
+capability, and passes that capability to each adopting feature entry point. An
+adopter entry point constructs its own API, application, adapters, and shell
+contribution. The shell receives already constructed contributions and does not
+discover or locate canvas or adopter services.
 
 ## Capability Paths
 
 ### Surface Read
 
-`surface Binder -> adopter boundary -> published surface payload -> canvas-facing map-slot ContentModel -> adopter-local render scene -> adopter-local map View`
+`adopter API state -> adopter JavaFX adapter -> Maps API scene -> Maps application -> Maps JavaFX adapter`
 
-### Preview And Apply
+### Pointer Input
 
-`adopter-local map View -> same-stem ViewInputEvent -> surface Binder wiring -> same-root IntentHandler -> co-located ContentModel or ContributionModel state -> surface Binder -> adopter boundary -> published surface payload -> canvas-facing map-slot ContentModel -> adopter-local render scene -> adopter-local map View`
-
-### Action
-
-`adopter-local map View or surface controls -> surface Binder wiring -> same-root IntentHandler -> co-located ContentModel or ContributionModel state -> surface Binder -> adopter boundary -> published surface payload -> canvas-facing map-slot ContentModel -> adopter-local render scene -> adopter-local map View`
+`Maps JavaFX adapter -> Maps API pointer sample -> adopter JavaFX adapter -> adopter API command`
 
 ### Draw And Hit
 
-`published surface payload -> canvas-facing map-slot ContentModel -> adopter-local render scene -> adopter-local map View -> same-stem hit snapshot`
+`one Maps API scene revision -> ordered draw primitives + ordered hit evidence -> Maps JavaFX adapter`
 
-The passive map surface consumes prepared scene hit areas directly from the
-adopter-local render scene; it does not rebuild cross-family hit precedence on
-its own.
+The adopter translation boundary derives canvas-native geometry and stable hit
+references from adopter API state. It also translates a technical hit reference
+back to an adopter API command or query. Maps does not reconstruct either
+translation.
 
-## Current Implementation
+## Decisions And Rationale
 
-- The former shared `src/view/slotcontent/primitives/mapcanvas/**` canvas root
-  has been removed.
-- The surviving current dungeon surface is local to
-  `src/view/slotcontent/main/dungeonmap/**`.
-- Removed `MapRenderScene` and `CanvasPointerEvent` seams must not be treated as
-  reusable target-role types.
-- The current dungeon map View exposes one same-stem pointer snapshot seam
-  through `DungeonMapViewInputEvent`; it does not expose separate
-  phase-specific callback APIs.
-- Active-root Binders own adopter-specific pointer translation wiring and bind
-  the adopter boundary to the one canvas-facing map-slot `ContentModel`.
-- Some adopter classes still carry `*ViewModel` names; those are compatibility
-  names and new code must follow the owning feature's canonical role language.
+- A feature-owned API keeps cross-feature dependencies compile-time visible.
+- One scene revision prevents draw and hit state from diverging.
+- One adopter translation boundary prevents competing coordinate and identity
+  mappings.
+- Explicit application composition exposes lifecycle and dependencies without a
+  runtime registry or classpath convention.
+- A JavaFX adapter, rather than a role-name convention, owns technical rendering
+  and input capture.
 
-## Forbidden Shortcuts
+Rejected target forms include shared adopter-native payloads, direct Maps access
+to adopter application services, multiple projection owners for one surface,
+and runtime discovery or service lookup.
 
-- no passive-view direct calls into adopter application services
-- no second hit model beside the drawn scene
-- no second domain-to-canvas projection owner beside the canvas-facing
-  map-slot `ContentModel`
-- no direct rendering of adopter-native payloads in the adopter-local map View
-- no shared frontend root language that uses dungeon-grid or hex-native
-  coordinates
-- no adopter-boundary imports in the adopter-local map View
-- no pointer-to-domain path that skips the same-stem `ViewInputEvent`, the
-  same-root `IntentHandler`, the canvas-facing `ContentModel`, or the Binder
+## Verification
 
-## Verification Notes
-
-- This architecture is currently `Review-Owned`.
-- Review must treat `CanvasPointerEvent`, `MapRenderScene`, and `MapCanvasView`
-  as removed legacy implementation seams, not as new canonical reusable role
-  families.
-- Review must reject a second canvas-facing projection seam for the same
-  adopter surface.
+- `architectureTest` checks the target feature and cross-feature dependency
+  direction.
+- Production-route JUnit tests prove shared scene draw/hit consistency, passive
+  camera behavior, empty scenes, and adopter coordinate translation.
+- Review rejects a second scene-to-hit owner or adopter implementation imports
+  from Maps.
 
 ## References
 
@@ -132,3 +110,5 @@ its own.
 - [Maps Canvas Contract](../contract/contract-maps-canvas.md)
 - [Dungeon Map Adoption Architecture](architecture-maps-dungeon-adoption.md)
 - [Hex Map Adoption Architecture](architecture-maps-hex-adoption.md)
+- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)
+- [Application Composition Standard](../../project/architecture/patterns/application-composition.md)

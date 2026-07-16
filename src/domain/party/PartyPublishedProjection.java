@@ -56,7 +56,6 @@ import src.domain.party.published.RestCadenceStatus;
 import src.domain.party.published.RestCadenceUrgency;
 import src.domain.party.published.RestMilestone;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.ExcessiveImports", "PMD.GodClass", "PMD.TooManyMethods"})
 final class PartyPublishedProjection {
 
     private PartyPublishedProjection() {

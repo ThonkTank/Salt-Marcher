@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-18
+Last Reviewed: 2026-07-15
 Source of Truth: Editor-facing hex-map behavior, visible states, and acceptance
 criteria.
 
@@ -22,8 +22,7 @@ markers without inventing a second map source of truth.
 
 ## Current State
 
-- SaltMarcher ships a dedicated Hex Map editor surface in
-  `src/view/leftbartabs/hexmap`.
+- SaltMarcher ships a dedicated Hex Map editor surface.
 - The local SaltMarcher Hex editor owns the shipped editor target state: map
   selector, create and edit map flows, radius-change warning for authored data
   loss, selection tool, terrain brush, terrain palette, tile detail inspection,

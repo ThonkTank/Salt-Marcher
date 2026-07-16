@@ -20,8 +20,9 @@ the single test source set and requires no build registry entry.
 - Behavior tests prove accepted observable outcomes through production routes.
 - JUnit owns scenario discovery, selection, and scenario-level XML results.
 - Monocle owns headless JavaFX execution.
-- ArchUnit owns production dependency and cycle rules across all production
-  roots.
+- ArchUnit owns dependency and cycle rules across the target `app`, `shell`,
+  `platform`, and `features` roots. Migration-specific verification scope lives
+  only in [Active Delivery](../delivery/README.md).
 - Gradle owns task inputs and incremental execution.
 - A static analyzer remains only when it catches a useful defect class not
   already covered by the compiler, tests, ArchUnit, or another retained tool.

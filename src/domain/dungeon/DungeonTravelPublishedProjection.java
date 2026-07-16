@@ -20,7 +20,6 @@ import src.domain.dungeon.published.TravelDungeonAction;
 import src.domain.dungeon.published.TravelDungeonSnapshot;
 import src.domain.dungeon.published.TravelDungeonWorkspaceState;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 final class DungeonTravelPublishedProjection {
 
     private DungeonTravelPublishedProjection() {

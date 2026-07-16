@@ -23,7 +23,6 @@ Provide a runtime encounter builder that:
 - saving initiative, combat HP, defeated state, XP-result state, or loot-result
   state as part of an encounter plan
 - room-aware dungeon population
-- feature-specific bootstrap wiring
 
 ## Primary User Flow
 

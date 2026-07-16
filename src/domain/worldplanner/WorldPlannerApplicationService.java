@@ -24,7 +24,6 @@ import src.domain.worldplanner.published.SetWorldNpcLifecycleStatusCommand;
 import src.domain.worldplanner.published.UpdateWorldNpcNotesCommand;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 public final class WorldPlannerApplicationService {
 
     private static final String COMMAND_PARAMETER = "command";
