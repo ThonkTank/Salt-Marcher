@@ -31,7 +31,7 @@ final class DungeonEditorRuntimeContext {
         this.mainViewInterpreter = Objects.requireNonNull(mainViewInterpreter, "mainViewInterpreter");
     }
 
-    static Startup create(
+    static DungeonEditorRuntimeContext create(
             DungeonEditorRuntimeDependencies dependencies,
             DungeonEditorMainViewInteractionState interactionState
     ) {
@@ -44,11 +44,7 @@ final class DungeonEditorRuntimeContext {
                 new InterpretDungeonEditorMainViewInputUseCase(safeInteractionState);
         return safeDependencies.editorRuntimeApplicationService().openSession(
                 dungeonState,
-                runtimeSession -> {
-                    DungeonEditorRuntimeContext context =
-                            new DungeonEditorRuntimeContext(runtimeSession, interpreter);
-                    return new Startup(context, context.fromSnapshot(runtimeSession.publishCurrent()));
-                });
+                runtimeSession -> new DungeonEditorRuntimeContext(runtimeSession, interpreter));
     }
 
     boolean hasSelectedMap() {
@@ -408,13 +404,6 @@ final class DungeonEditorRuntimeContext {
             case CLUSTER -> DungeonAuthoredApplicationService.LabelTargetKind.CLUSTER;
             case EMPTY -> DungeonAuthoredApplicationService.LabelTargetKind.EMPTY;
         };
-    }
-
-    record Startup(DungeonEditorRuntimeContext context, Result initialResult) {
-        Startup {
-            context = Objects.requireNonNull(context, "context");
-            initialResult = initialResult == null ? Result.none() : initialResult;
-        }
     }
 
     record Result(

@@ -4,6 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalLong;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.UnaryOperator;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.execution.ExecutionLane;
 import src.domain.sessionplanner.model.session.EncounterDays;
 import src.domain.sessionplanner.model.session.SessionActivePartyMembersFact;
 import src.domain.sessionplanner.model.session.SessionPartyMemberProfile;
@@ -27,59 +33,177 @@ import src.domain.sessionplanner.published.UpdateSessionEncounterSceneCommand;
 
 public final class SessionPlannerApplicationService {
 
+    private static final DiagnosticId STORAGE_FAILURE = new DiagnosticId("sessionplanner.storage-failure");
+
     private static final String COMMAND_PARAMETER = "command";
     private static final long INITIAL_SESSION_ID = 1L;
     private static final long NO_SESSION_ID = 0L;
-    private static final String LOAD_FAILURE_STATUS = "Session konnte nicht geladen werden.";
     private static final String SAVE_FAILURE_STATUS = "Session konnte nicht gespeichert werden.";
 
     private final SessionPlanRepository repository;
     private final SessionPlannerForeignFacts facts;
     private final SessionPlannerPublishedState publishedState;
+    private final ExecutionLane executionLane;
+    private final Diagnostics diagnostics;
+    private final AtomicBoolean initializationRequested = new AtomicBoolean();
 
     SessionPlannerApplicationService(
             SessionPlanRepository repository,
             SessionPlannerForeignFacts facts,
-            SessionPlannerPublishedState publishedState
+            SessionPlannerPublishedState publishedState,
+            ExecutionLane executionLane,
+            Diagnostics diagnostics
     ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.facts = Objects.requireNonNull(facts, "facts");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
+    }
+
+    public void initialize() {
+        if (initializationRequested.compareAndSet(false, true)) {
+            executeStorageCommand(publishedState::initialize);
+        }
+    }
+
+    void refreshForeignFacts() {
+        executeStorageCommand(publishedState::publishLoadedCurrentSession);
     }
 
     public void createSession(SessionPlannerCatalogCommand.CreateSessionCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> createSessionOnLane(command));
+    }
+
+    public void selectSession(SessionPlannerCatalogCommand.SelectSessionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> selectSessionOnLane(command));
+    }
+
+    public void renameSession(SessionPlannerCatalogCommand.RenameSessionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> renameSessionOnLane(command));
+    }
+
+    public void deleteSession(SessionPlannerCatalogCommand.DeleteSessionCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> deleteSessionOnLane(command));
+    }
+
+    public void addParticipant(SessionPlannerParticipantCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.addParticipant(command.characterId())));
+    }
+
+    public void removeParticipant(SessionPlannerParticipantCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.removeParticipant(command.characterId())));
+    }
+
+    public void setEncounterDays(SetSessionEncounterDaysCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(
+                session -> session.setEncounterDays(new EncounterDays(command.encounterDays()))));
+    }
+
+    public void addScene(AddSessionSceneCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(SessionPlan::addScene));
+    }
+
+    public void attachEncounter(AttachSessionEncounterCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.attachEncounter(command.encounterPlanId())));
+    }
+
+    public void removeEncounter(SessionPlannerEncounterCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.removeEncounter(command.encounterId())));
+    }
+
+    public void moveEncounterUp(SessionPlannerEncounterCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.moveEncounterUp(command.encounterId())));
+    }
+
+    public void moveEncounterDown(SessionPlannerEncounterCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.moveEncounterDown(command.encounterId())));
+    }
+
+    public void selectEncounter(SessionPlannerEncounterCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.selectEncounter(command.encounterId())));
+    }
+
+    public void setEncounterAllocation(SessionPlannerEncounterAllocationCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.setEncounterAllocation(
+                command.encounterId(),
+                command.budgetPercentage())));
+    }
+
+    public void updateEncounterScene(UpdateSessionEncounterSceneCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> updateEncounterSceneOnLane(command));
+    }
+
+    public void setRestGap(SetSessionRestGapCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.setRestPlacement(toRestPlacement(
+                command.leftEncounterId(),
+                command.rightEncounterId(),
+                command.restKind()))));
+    }
+
+    public void clearRestGap(ClearSessionRestGapCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.clearRestPlacement(
+                command.leftEncounterId(),
+                command.rightEncounterId())));
+    }
+
+    public void addLootPlaceholder(AddSessionLootPlaceholderCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.addLootPlaceholder(command.encounterId())));
+    }
+
+    public void removeLootPlaceholder(RemoveSessionLootPlaceholderCommand command) {
+        Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executeStorageCommand(() -> mutateCurrent(session -> session.removeLootPlaceholder(command.lootId())));
+    }
+
+    private void createSessionOnLane(SessionPlannerCatalogCommand.CreateSessionCommand command) {
+        OptionalLong nextId = nextSessionId();
+        if (nextId.isEmpty()) {
+            return;
+        }
         String requestedName = command.displayName();
-        SessionPlan seeded = seedSession(nextSessionId());
+        SessionPlan seeded = seedSession(nextId.getAsLong());
         if (!requestedName.isBlank()) {
             seeded = seeded.rename(requestedName);
         }
         saveNewCurrent(seeded.withStatus("Neue Session erstellt."));
     }
 
-    public void selectSession(SessionPlannerCatalogCommand.SelectSessionCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
+    private void selectSessionOnLane(SessionPlannerCatalogCommand.SelectSessionCommand command) {
         long sessionId = command.sessionId();
-        if (sessionId <= NO_SESSION_ID) {
-            return;
+        if (sessionId > NO_SESSION_ID) {
+            repository.loadById(sessionId).ifPresent(this::selectLoadedSession);
         }
-        Optional<SessionPlan> loaded = repository.loadById(sessionId);
-        loaded.ifPresent(this::selectLoadedSession);
     }
 
-    public void renameSession(SessionPlannerCatalogCommand.RenameSessionCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
+    private void renameSessionOnLane(SessionPlannerCatalogCommand.RenameSessionCommand command) {
         if (command.sessionId() <= NO_SESSION_ID || command.displayName().isBlank()) {
             return;
         }
         repository.rename(command.sessionId(), command.displayName());
-        Optional<SessionPlan> loaded = repository.loadById(command.sessionId());
-        loaded.ifPresent(session -> publishedState.publishCurrentSession(
+        repository.loadById(command.sessionId()).ifPresent(session -> publishedState.publishCurrentSession(
                 session.clearStatus().withStatus("Session umbenannt.")));
     }
 
-    public void deleteSession(SessionPlannerCatalogCommand.DeleteSessionCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
+    private void deleteSessionOnLane(SessionPlannerCatalogCommand.DeleteSessionCommand command) {
         long sessionId = command.sessionId();
         if (sessionId <= NO_SESSION_ID) {
             return;
@@ -90,99 +214,28 @@ public final class SessionPlannerApplicationService {
             saveNewCurrent(seedSession(repository.nextSessionId()).withStatus("Session geloescht."));
             return;
         }
-        Optional<SessionPlan> fallback = repository.loadById(remaining.get(0).sessionId());
-        fallback.ifPresent(session -> selectFallback(session.clearStatus().withStatus("Session geloescht.")));
+        repository.loadById(remaining.get(0).sessionId())
+                .ifPresent(session -> selectFallback(session.clearStatus().withStatus("Session geloescht.")));
     }
 
-    public void addParticipant(SessionPlannerParticipantCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().addParticipant(command.characterId()));
+    private void updateEncounterSceneOnLane(UpdateSessionEncounterSceneCommand command) {
+        mutateCurrent(session -> {
+            if (command.locationId() > 0L && !facts.locationExists(command.locationId())) {
+                return session.withStatus("Location nicht gefunden.");
+            }
+            return session.updateEncounterScene(
+                    command.encounterId(), command.sceneTitle(), command.sceneNotes(), command.locationId());
+        });
     }
 
-    public void removeParticipant(SessionPlannerParticipantCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().removeParticipant(command.characterId()));
-    }
-
-    public void setEncounterDays(SetSessionEncounterDaysCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().setEncounterDays(new EncounterDays(command.encounterDays())));
-    }
-
-    public void addScene(AddSessionSceneCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().addScene());
-    }
-
-    public void attachEncounter(AttachSessionEncounterCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().attachEncounter(command.encounterPlanId()));
-    }
-
-    public void removeEncounter(SessionPlannerEncounterCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().removeEncounter(command.encounterId()));
-    }
-
-    public void moveEncounterUp(SessionPlannerEncounterCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().moveEncounterUp(command.encounterId()));
-    }
-
-    public void moveEncounterDown(SessionPlannerEncounterCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().moveEncounterDown(command.encounterId()));
-    }
-
-    public void selectEncounter(SessionPlannerEncounterCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().selectEncounter(command.encounterId()));
-    }
-
-    public void setEncounterAllocation(SessionPlannerEncounterAllocationCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().setEncounterAllocation(
-                command.encounterId(),
-                command.budgetPercentage()));
-    }
-
-    public void updateEncounterScene(UpdateSessionEncounterSceneCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        SessionPlan session = loadCurrentSession();
-        if (command.locationId() > 0L && !facts.locationExists(command.locationId())) {
-            saveCurrent(session.withStatus("Location nicht gefunden."));
-            return;
-        }
-        saveCurrent(session.updateEncounterScene(
-                command.encounterId(),
-                command.sceneTitle(),
-                command.sceneNotes(),
-                command.locationId()));
-    }
-
-    public void setRestGap(SetSessionRestGapCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().setRestPlacement(toRestPlacement(
-                command.leftEncounterId(),
-                command.rightEncounterId(),
-                command.restKind())));
-    }
-
-    public void clearRestGap(ClearSessionRestGapCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().clearRestPlacement(
-                command.leftEncounterId(),
-                command.rightEncounterId()));
-    }
-
-    public void addLootPlaceholder(AddSessionLootPlaceholderCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().addLootPlaceholder(command.encounterId()));
-    }
-
-    public void removeLootPlaceholder(RemoveSessionLootPlaceholderCommand command) {
-        Objects.requireNonNull(command, COMMAND_PARAMETER);
-        saveCurrent(loadCurrentSession().removeLootPlaceholder(command.lootId()));
+    private void executeStorageCommand(Runnable command) {
+        executionLane.execute(() -> {
+            try {
+                command.run();
+            } catch (IllegalStateException exception) {
+                reportStorageFailure(exception);
+            }
+        });
     }
 
     private void selectLoadedSession(SessionPlan sessionPlan) {
@@ -195,37 +248,51 @@ public final class SessionPlannerApplicationService {
         publishedState.publishCurrentSession(sessionPlan);
     }
 
-    private SessionPlan loadCurrentSession() {
+    private Optional<SessionPlan> loadCurrentSession() {
         try {
             Optional<SessionPlan> currentSession = repository.loadCurrent();
             if (currentSession.isPresent()) {
-                return currentSession.get().clearStatus();
+                return Optional.of(currentSession.get().clearStatus());
             }
-            return seedSession(INITIAL_SESSION_ID);
+            return Optional.of(seedSession(INITIAL_SESSION_ID));
         } catch (IllegalStateException exception) {
-            return seedSession(INITIAL_SESSION_ID).withStatus(LOAD_FAILURE_STATUS);
+            reportStorageFailure(exception);
+            return Optional.empty();
         }
     }
 
-    private void saveCurrent(SessionPlan sessionPlan) {
-        publishedState.publishCurrentSession(persist(sessionPlan, false));
+    private void mutateCurrent(UnaryOperator<SessionPlan> mutation) {
+        Optional<SessionPlan> loaded = loadCurrentSession();
+        if (loaded.isEmpty()) {
+            return;
+        }
+        SessionPlan stable = loaded.get();
+        saveCurrent(stable, mutation.apply(stable));
+    }
+
+    private void saveCurrent(SessionPlan stableSession, SessionPlan candidate) {
+        SessionPlan saved;
+        try {
+            saved = repository.save(Objects.requireNonNull(candidate, "candidate"));
+        } catch (IllegalStateException exception) {
+            reportStorageFailure(exception);
+            publishedState.publishCurrentSessionWithoutCatalogRefresh(
+                    stableSession.withStatus(SAVE_FAILURE_STATUS));
+            return;
+        }
+        publishedState.publishCurrentSession(saved);
     }
 
     private void saveNewCurrent(SessionPlan sessionPlan) {
-        publishedState.publishCurrentSession(persist(sessionPlan, true));
-    }
-
-    private SessionPlan persist(SessionPlan sessionPlan, boolean persistAsCurrent) {
-        SessionPlan candidate = Objects.requireNonNull(sessionPlan, "sessionPlan");
+        SessionPlan saved;
         try {
-            SessionPlan saved = repository.save(candidate);
-            if (persistAsCurrent) {
-                repository.setCurrentSessionId(saved.sessionId());
-            }
-            return saved;
+            saved = repository.save(Objects.requireNonNull(sessionPlan, "sessionPlan"));
+            repository.setCurrentSessionId(saved.sessionId());
         } catch (IllegalStateException exception) {
-            return candidate.clearStatus().withStatus(SAVE_FAILURE_STATUS);
+            reportStorageFailure(exception);
+            return;
         }
+        publishedState.publishCurrentSession(saved);
     }
 
     private SessionPlan seedSession(long sessionId) {
@@ -240,12 +307,17 @@ public final class SessionPlannerApplicationService {
         }
     }
 
-    private long nextSessionId() {
+    private OptionalLong nextSessionId() {
         try {
-            return Math.max(INITIAL_SESSION_ID, repository.nextSessionId());
+            return OptionalLong.of(Math.max(INITIAL_SESSION_ID, repository.nextSessionId()));
         } catch (IllegalStateException exception) {
-            return INITIAL_SESSION_ID;
+            reportStorageFailure(exception);
+            return OptionalLong.empty();
         }
+    }
+
+    private void reportStorageFailure(IllegalStateException exception) {
+        diagnostics.failure(STORAGE_FAILURE, exception.getClass());
     }
 
     private static List<Long> participantRefs(SessionActivePartyMembersFact activeParty) {

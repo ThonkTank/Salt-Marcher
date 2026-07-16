@@ -37,45 +37,47 @@ public final class SmokeStartupTest {
         Instant deadline = Instant.now().plus(TIMEOUT);
         testsupport.JavaFxRuntime.startup(() -> {
         });
-        AppShell shell = new AppBootstrap().createShell();
-        new Scene(shell, 1150, 700);
-        shell.applyCss();
-        shell.layout();
-        List<ToggleButton> navigation = navigationButtons(shell);
-        require(
-                navigation.stream().map(Node::getAccessibleText).toList().equals(List.of(
-                        "Session Planner",
-                        "World Planner",
-                        "Dungeon-Editor",
-                        "Dungeon-Reise",
-                        "Hex-Karte",
-                        "Encounter-Planer")),
-                "Expected exact explicit navigation manifest in shell order.");
-        require(
-                shell.lookup(".title-large") instanceof Label title && "Dungeon-Editor".equals(title.getText()),
-                "Expected Dungeon-Editor as explicit default landing.");
-        require(
-                navigation.stream().filter(ToggleButton::isSelected).map(Node::getAccessibleText).toList()
-                        .equals(List.of("Dungeon-Editor")),
-                "Expected only the default landing navigation entry to be selected.");
-        require(
-                shell.lookup(".toolbar") instanceof Pane toolbar && toolbar.getChildren().size() == 4,
-                "Expected title, spacer, and exactly two explicit top-bar contributions.");
-        List<String> topBarTooltips = shell.lookupAll(".toolbar .button").stream()
-                .filter(Button.class::isInstance)
-                .map(Button.class::cast)
-                .map(Button::getTooltip)
-                .filter(java.util.Objects::nonNull)
-                .map(javafx.scene.control.Tooltip::getText)
-                .sorted()
-                .toList();
-        require(topBarTooltips.equals(List.of(
-                        "Adventuring-Day-Rechner öffnen",
-                        "Party-Panel öffnen (Alt+P)")),
-                "Expected distinct Adventuring Day and Party top-bar surfaces, but was " + topBarTooltips + ".");
-        assertStateTabManifest(shell, navigation);
-        openTempSqliteConnection();
-        require(Instant.now().isBefore(deadline), "Smoke startup exceeded timeout.");
+        try (AppBootstrap bootstrap = new AppBootstrap()) {
+            AppShell shell = bootstrap.createShell();
+            new Scene(shell, 1150, 700);
+            shell.applyCss();
+            shell.layout();
+            List<ToggleButton> navigation = navigationButtons(shell);
+            require(
+                    navigation.stream().map(Node::getAccessibleText).toList().equals(List.of(
+                            "Session Planner",
+                            "World Planner",
+                            "Dungeon-Editor",
+                            "Dungeon-Reise",
+                            "Hex-Karte",
+                            "Encounter-Planer")),
+                    "Expected exact explicit navigation manifest in shell order.");
+            require(
+                    shell.lookup(".title-large") instanceof Label title && "Dungeon-Editor".equals(title.getText()),
+                    "Expected Dungeon-Editor as explicit default landing.");
+            require(
+                    navigation.stream().filter(ToggleButton::isSelected).map(Node::getAccessibleText).toList()
+                            .equals(List.of("Dungeon-Editor")),
+                    "Expected only the default landing navigation entry to be selected.");
+            require(
+                    shell.lookup(".toolbar") instanceof Pane toolbar && toolbar.getChildren().size() == 4,
+                    "Expected title, spacer, and exactly two explicit top-bar contributions.");
+            List<String> topBarTooltips = shell.lookupAll(".toolbar .button").stream()
+                    .filter(Button.class::isInstance)
+                    .map(Button.class::cast)
+                    .map(Button::getTooltip)
+                    .filter(java.util.Objects::nonNull)
+                    .map(javafx.scene.control.Tooltip::getText)
+                    .sorted()
+                    .toList();
+            require(topBarTooltips.equals(List.of(
+                            "Adventuring-Day-Rechner öffnen",
+                            "Party-Panel öffnen (Alt+P)")),
+                    "Expected distinct Adventuring Day and Party top-bar surfaces, but was " + topBarTooltips + ".");
+            assertStateTabManifest(shell, navigation);
+            openTempSqliteConnection();
+            require(Instant.now().isBefore(deadline), "Smoke startup exceeded timeout.");
+        }
     }
 
     private static List<ToggleButton> navigationButtons(AppShell shell) {

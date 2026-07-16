@@ -1,48 +1,97 @@
 package src.domain.shared.published;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import platform.state.LatestState;
+import platform.state.UpdateToken;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
 
 public final class PublishedState<T> {
 
-    private final Collection<Consumer<T>> listeners;
-    private T current;
+    private final LatestState<T> state;
+    private final UiDispatcher dispatcher;
+    private final boolean retainDuplicateSubscribers;
+    private final Map<Consumer<T>, Runnable> uniqueSubscriptions = new LinkedHashMap<>();
 
     public PublishedState(T initialValue) {
-        this(initialValue, new LinkedHashSet<>());
+        this(initialValue, DirectUiDispatcher.INSTANCE, false);
+    }
+
+    public PublishedState(T initialValue, UiDispatcher dispatcher) {
+        this(initialValue, dispatcher, false);
+    }
+
+    private PublishedState(T initialValue, UiDispatcher dispatcher, boolean retainDuplicateSubscribers) {
+        state = new LatestState<>(Objects.requireNonNull(initialValue, "initialValue"));
+        this.dispatcher = Objects.requireNonNull(dispatcher, "dispatcher");
+        this.retainDuplicateSubscribers = retainDuplicateSubscribers;
     }
 
     public static <T> PublishedState<T> retainingDuplicateSubscribers(T initialValue) {
-        return new PublishedState<>(initialValue, new ArrayList<>());
-    }
-
-    private PublishedState(T initialValue, Collection<Consumer<T>> listeners) {
-        this.listeners = Objects.requireNonNull(listeners, "listeners");
-        current = Objects.requireNonNull(initialValue, "initialValue");
+        return new PublishedState<>(initialValue, DirectUiDispatcher.INSTANCE, true);
     }
 
     public T current() {
-        return current;
+        return state.current().value();
+    }
+
+    public long revision() {
+        return state.current().revision();
     }
 
     public Runnable subscribe(Consumer<T> listener) {
         Consumer<T> subscriber = Objects.requireNonNull(listener, "listener");
-        listeners.add(subscriber);
-        return () -> listeners.remove(subscriber);
+        if (retainDuplicateSubscribers) {
+            return subscribeDistinct(subscriber);
+        }
+        synchronized (uniqueSubscriptions) {
+            if (!uniqueSubscriptions.containsKey(subscriber)) {
+                uniqueSubscriptions.put(subscriber, subscribeDistinct(subscriber));
+            }
+        }
+        return () -> unsubscribeUnique(subscriber);
     }
 
-    public void publish(T nextValue) {
-        current = Objects.requireNonNull(nextValue, "nextValue");
-        for (Consumer<T> listener : List.copyOf(listeners)) {
-            listener.accept(current);
+    private Runnable subscribeDistinct(Consumer<T> subscriber) {
+        AtomicBoolean initialReplay = new AtomicBoolean(true);
+        AtomicBoolean active = new AtomicBoolean(true);
+        Runnable unsubscribe = state.subscribe(snapshot -> {
+            if (initialReplay.getAndSet(false)) {
+                return;
+            }
+            dispatcher.dispatch(() -> {
+                if (active.get() && snapshot.revision() == state.current().revision()) {
+                    subscriber.accept(snapshot.value());
+                }
+            });
+        });
+        return () -> {
+            active.set(false);
+            unsubscribe.run();
+        };
+    }
+
+    private void unsubscribeUnique(Consumer<T> subscriber) {
+        Runnable unsubscribe;
+        synchronized (uniqueSubscriptions) {
+            unsubscribe = uniqueSubscriptions.remove(subscriber);
+        }
+        if (unsubscribe != null) {
+            unsubscribe.run();
         }
     }
 
+    public void publish(T nextValue) {
+        UpdateToken token = state.beginUpdate();
+        state.publish(token, Objects.requireNonNull(nextValue, "nextValue"));
+    }
+
     public void replace(T nextValue) {
-        current = Objects.requireNonNull(nextValue, "nextValue");
+        UpdateToken token = state.beginUpdate();
+        state.replace(token, Objects.requireNonNull(nextValue, "nextValue"));
     }
 }

@@ -82,6 +82,7 @@ final class SessionPlannerBinder {
                 participantsModel,
                 sceneTimelineModel,
                 statePanelModel);
+        planner.initialize();
         return new Binding(ShellControls.stack(catalogView, controlsView), timelineView, stateView);
     }
 

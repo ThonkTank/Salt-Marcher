@@ -3,6 +3,9 @@ package src.domain.hex;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.execution.ExecutionLane;
 import src.domain.hex.model.map.HexCoordinate;
 import src.domain.hex.model.map.HexEditorMode;
 import src.domain.hex.model.map.HexEditorState;
@@ -17,6 +20,7 @@ import src.domain.hex.model.map.HexTerrain;
 import src.domain.hex.model.map.repository.HexMapRepository;
 import src.domain.hex.published.CreateHexMapCommand;
 import src.domain.hex.published.HexEditorModel;
+import src.domain.hex.published.HexEditorModel.ToolIntent;
 import src.domain.hex.published.LoadHexEditorCommand;
 import src.domain.hex.published.PaintHexTerrainCommand;
 import src.domain.hex.published.RenameHexMapCommand;
@@ -28,77 +32,110 @@ import src.domain.hex.published.UpdateHexMapCommand;
 
 public final class HexEditorApplicationService {
 
+    private static final DiagnosticId STORAGE_FAILURE = new DiagnosticId("hex.storage-failure");
+    private static final String STORAGE_FAILURE_TEXT = "Hex-Daten konnten nicht geladen oder gespeichert werden.";
+
     private final EditorMutations mutations;
+    private final ExecutionLane executionLane;
 
     HexEditorApplicationService(
             HexMapRepository repository,
             HexEditorWorkspace workspace,
-            HexEditorModel model
+            HexEditorModel model,
+            ExecutionLane executionLane,
+            Diagnostics diagnostics
     ) {
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
         mutations = new EditorMutations(
                 Objects.requireNonNull(repository, "repository"),
                 new EditorPublisher(
                         Objects.requireNonNull(repository, "repository"),
                         Objects.requireNonNull(workspace, "workspace"),
-                        Objects.requireNonNull(model, "model")));
+                        Objects.requireNonNull(model, "model")),
+                Objects.requireNonNull(diagnostics, "diagnostics"));
     }
 
     public void createMap(CreateHexMapCommand command) {
-        mutations.createMap(command.displayName(), command.radius());
+        CreateHexMapCommand safeCommand = Objects.requireNonNull(command, "command");
+        executionLane.execute(() -> mutations.createMap(safeCommand.displayName(), safeCommand.radius()));
     }
 
     public void loadEditor(LoadHexEditorCommand command) {
         Objects.requireNonNull(command, "command");
-        mutations.loadEditorState();
+        executionLane.execute(mutations::loadEditorState);
     }
 
     public void selectMap(SelectHexMapCommand command) {
-        mutations.selectMap(command.mapId());
+        SelectHexMapCommand safeCommand = Objects.requireNonNull(command, "command");
+        executionLane.execute(() -> mutations.selectMap(safeCommand.mapId()));
+    }
+
+    public void reloadAndSelectMap(LoadHexEditorCommand loadCommand, SelectHexMapCommand selectCommand) {
+        Objects.requireNonNull(loadCommand, "loadCommand");
+        SelectHexMapCommand safeSelect = Objects.requireNonNull(selectCommand, "selectCommand");
+        executionLane.execute(() -> {
+            mutations.loadEditorState();
+            mutations.selectMap(safeSelect.mapId());
+        });
     }
 
     public void updateMap(UpdateHexMapCommand command) {
-        mutations.updateMap(
-                command.mapId(),
-                command.displayName(),
-                command.radius(),
-                command.confirmDestructiveShrink());
+        UpdateHexMapCommand safeCommand = Objects.requireNonNull(command, "command");
+        executionLane.execute(() -> mutations.updateMap(
+                safeCommand.mapId(),
+                safeCommand.displayName(),
+                safeCommand.radius(),
+                safeCommand.confirmDestructiveShrink()));
     }
 
     public void renameMap(RenameHexMapCommand command) {
-        mutations.renameMap(command.mapId(), command.displayName());
+        RenameHexMapCommand safeCommand = Objects.requireNonNull(command, "command");
+        executionLane.execute(() -> mutations.renameMap(safeCommand.mapId(), safeCommand.displayName()));
     }
 
     public void selectTile(SelectHexTileCommand command) {
-        mutations.selectTile(command.mapId(), command.q(), command.r());
+        SelectHexTileCommand safeCommand = Objects.requireNonNull(command, "command");
+        ToolIntent toolIntent = mutations.currentToolIntent();
+        executionLane.execute(() -> mutations.selectTile(
+                safeCommand.mapId(), safeCommand.q(), safeCommand.r(), toolIntent));
     }
 
     public void paintTerrain(PaintHexTerrainCommand command) {
-        mutations.paintTerrain(command.mapId(), command.q(), command.r(), command.terrain());
+        PaintHexTerrainCommand safeCommand = Objects.requireNonNull(command, "command");
+        ToolIntent toolIntent = mutations.currentToolIntent();
+        executionLane.execute(() -> mutations.paintTerrain(
+                safeCommand.mapId(), safeCommand.q(), safeCommand.r(), safeCommand.terrain(), toolIntent));
     }
 
     public void saveMarker(SaveHexMarkerCommand command) {
-        mutations.saveMarker(
-                command.mapId(),
-                command.markerId(),
-                command.q(),
-                command.r(),
-                command.name(),
-                command.type(),
-                command.note());
+        SaveHexMarkerCommand safeCommand = Objects.requireNonNull(command, "command");
+        ToolIntent toolIntent = mutations.currentToolIntent();
+        executionLane.execute(() -> mutations.saveMarker(
+                safeCommand.mapId(),
+                safeCommand.markerId(),
+                safeCommand.q(),
+                safeCommand.r(),
+                safeCommand.name(),
+                safeCommand.type(),
+                safeCommand.note(),
+                toolIntent));
     }
 
     public void setActiveTool(SetHexEditorToolCommand command) {
-        mutations.setActiveTool(command.tool(), command.terrain());
+        SetHexEditorToolCommand safeCommand = Objects.requireNonNull(command, "command");
+        mutations.setActiveTool(safeCommand.tool(), safeCommand.terrain());
     }
 
     private static final class EditorMutations {
 
         private final HexMapRepository repository;
         private final EditorPublisher publisher;
+        private final Diagnostics diagnostics;
 
-        EditorMutations(HexMapRepository repository, EditorPublisher publisher) {
+        EditorMutations(HexMapRepository repository, EditorPublisher publisher, Diagnostics diagnostics) {
             this.repository = repository;
             this.publisher = publisher;
+            this.diagnostics = diagnostics;
         }
 
         void createMap(String displayName, int radius) {
@@ -107,16 +144,20 @@ public final class HexEditorApplicationService {
                 HexMap savedMap = repository.save(HexMap.create(mapId, displayName, radius));
                 repository.setSelectedMap(savedMap.mapId());
                 publisher.publishLoaded(Optional.of(savedMap), Optional.empty(), "Hex map created.", "", "");
-            } catch (IllegalArgumentException | IllegalStateException exception) {
+            } catch (IllegalArgumentException exception) {
                 publisher.publishFailure(exception.getMessage());
+            } catch (IllegalStateException exception) {
+                publishStorageFailure(exception);
             }
         }
 
         void loadEditorState() {
             try {
                 publisher.publishLoaded(repository.loadSelected(), publisher.currentState().selectedTile(), "", "", "");
-            } catch (IllegalArgumentException | IllegalStateException exception) {
+            } catch (IllegalArgumentException exception) {
                 publisher.publish(publisher.currentState().withFailure(exception.getMessage()));
+            } catch (IllegalStateException exception) {
+                publishStorageFailure(exception);
             }
         }
 
@@ -130,8 +171,10 @@ public final class HexEditorApplicationService {
                 }
                 repository.setSelectedMap(mapId);
                 publisher.publishLoaded(selectedMap, Optional.empty(), "Hex map selected.", "", "");
-            } catch (IllegalArgumentException | IllegalStateException exception) {
+            } catch (IllegalArgumentException exception) {
                 publisher.publishFailure(exception.getMessage());
+            } catch (IllegalStateException exception) {
+                publishStorageFailure(exception);
             }
         }
 
@@ -144,8 +187,10 @@ public final class HexEditorApplicationService {
                     return;
                 }
                 updateLoadedMap(loaded.get(), displayName, radius, confirmDestructiveShrink);
-            } catch (IllegalArgumentException | IllegalStateException exception) {
+            } catch (IllegalArgumentException exception) {
                 publisher.publishFailure(exception.getMessage());
+            } catch (IllegalStateException exception) {
+                publishStorageFailure(exception);
             }
         }
 
@@ -164,12 +209,14 @@ public final class HexEditorApplicationService {
                         "Hex map renamed.",
                         "",
                         "");
-            } catch (IllegalArgumentException | IllegalStateException exception) {
+            } catch (IllegalArgumentException exception) {
                 publisher.publishFailure(exception.getMessage());
+            } catch (IllegalStateException exception) {
+                publishStorageFailure(exception);
             }
         }
 
-        void selectTile(long mapIdValue, int q, int r) {
+        void selectTile(long mapIdValue, int q, int r, ToolIntent submittedToolIntent) {
             try {
                 HexMapIdentity mapId = new HexMapIdentity(mapIdValue);
                 HexCoordinate coordinate = new HexCoordinate(q, r);
@@ -180,18 +227,15 @@ public final class HexEditorApplicationService {
                 }
                 HexMap map = loaded.get();
                 map.requireInside(coordinate);
-                publisher.publishLoadedWithActiveTool(
-                        Optional.of(map),
-                        Optional.of(coordinate),
-                        "Hex tile selected.",
-                        HexEditorMode.defaultMode(),
-                        publisher.currentState().activeTerrain());
-            } catch (IllegalArgumentException | IllegalStateException exception) {
+                publishSelectedTile(map, coordinate, submittedToolIntent);
+            } catch (IllegalArgumentException exception) {
                 publisher.publishFailure(exception.getMessage());
+            } catch (IllegalStateException exception) {
+                publishStorageFailure(exception);
             }
         }
 
-        void paintTerrain(long mapIdValue, int q, int r, String terrainName) {
+        void paintTerrain(long mapIdValue, int q, int r, String terrainName, ToolIntent submittedToolIntent) {
             try {
                 HexMapIdentity mapId = new HexMapIdentity(mapIdValue);
                 HexCoordinate coordinate = new HexCoordinate(q, r);
@@ -203,18 +247,30 @@ public final class HexEditorApplicationService {
                 }
                 HexMap paintedMap = loaded.get().paintTerrain(coordinate, terrain);
                 HexMap savedMap = repository.saveTerrain(paintedMap.mapId(), coordinate, terrain);
-                publisher.publishLoadedWithActiveTool(
+                publisher.publishLoadedCompletion(
                         Optional.of(savedMap),
                         Optional.of(coordinate),
                         "Hex terrain painted.",
                         HexEditorMode.PAINT_TERRAIN,
-                        terrain);
-            } catch (IllegalArgumentException | IllegalStateException exception) {
+                        terrain,
+                        submittedToolIntent.revision());
+            } catch (IllegalArgumentException exception) {
                 publisher.publishFailure(exception.getMessage());
+            } catch (IllegalStateException exception) {
+                publishStorageFailure(exception);
             }
         }
 
-        void saveMarker(long mapIdValue, long markerIdValue, int q, int r, String name, String typeName, String note) {
+        void saveMarker(
+                long mapIdValue,
+                long markerIdValue,
+                int q,
+                int r,
+                String name,
+                String typeName,
+                String note,
+                ToolIntent submittedToolIntent
+        ) {
             try {
                 HexMapIdentity mapId = new HexMapIdentity(mapIdValue);
                 HexCoordinate coordinate = new HexCoordinate(q, r);
@@ -224,17 +280,51 @@ public final class HexEditorApplicationService {
                     publisher.publishMissingMap();
                     return;
                 }
-                MarkerPersistence.save(repository, publisher, mapId, markerIdValue, coordinate, name, type, note, loaded.get());
-            } catch (IllegalArgumentException | IllegalStateException exception) {
+                MarkerPersistence.save(
+                        repository,
+                        publisher,
+                        mapId,
+                        markerIdValue,
+                        coordinate,
+                        name,
+                        type,
+                        note,
+                        loaded.get(),
+                        submittedToolIntent);
+            } catch (IllegalArgumentException exception) {
                 publisher.publishFailure(exception.getMessage());
+            } catch (IllegalStateException exception) {
+                publishStorageFailure(exception);
             }
         }
 
+        ToolIntent currentToolIntent() {
+            return publisher.currentToolIntent();
+        }
+
         void setActiveTool(String modeName, String terrainName) {
-            HexEditorState loaded = publisher.currentState();
-            publisher.publish(loaded.withActiveTool(
+            publisher.publishImmediateToolIntent(
                     EditorKeys.mode(modeName),
-                    EditorKeys.terrain(terrainName)).withStatus("Hex editor tool selected."));
+                    EditorKeys.terrain(terrainName));
+        }
+
+        private void publishSelectedTile(
+                HexMap map,
+                HexCoordinate coordinate,
+                ToolIntent submittedToolIntent
+        ) {
+            publisher.publishLoadedCompletion(
+                    Optional.of(map),
+                    Optional.of(coordinate),
+                    "Hex tile selected.",
+                    HexEditorMode.defaultMode(),
+                    EditorKeys.terrain(submittedToolIntent.activeTerrain()),
+                    submittedToolIntent.revision());
+        }
+
+        private void publishStorageFailure(IllegalStateException exception) {
+            diagnostics.failure(STORAGE_FAILURE, exception.getClass());
+            publisher.publishFailure(STORAGE_FAILURE_TEXT);
         }
 
         private void updateLoadedMap(
@@ -271,7 +361,8 @@ public final class HexEditorApplicationService {
                 String name,
                 HexMarkerKind type,
                 String note,
-                HexMap map
+                HexMap map,
+                ToolIntent submittedToolIntent
         ) {
             HexMarkerIdentity resolvedMarkerId = markerIdValue <= 0L
                     ? new HexMarkerIdentity(repository.nextMarkerId(mapId))
@@ -279,12 +370,13 @@ public final class HexEditorApplicationService {
             HexMarker marker = new HexMarker(resolvedMarkerId, coordinate, name, type, note);
             HexMap markerMap = map.saveMarker(resolvedMarkerId, coordinate, name, type, note);
             HexMap savedMap = repository.saveMarker(markerMap.mapId(), marker);
-            publisher.publishLoadedWithActiveTool(
+            publisher.publishLoadedCompletion(
                     Optional.of(savedMap),
                     Optional.of(coordinate),
                     "Hex marker saved.",
                     HexEditorMode.PLACE_MARKER,
-                    publisher.currentState().activeTerrain());
+                    EditorKeys.terrain(submittedToolIntent.activeTerrain()),
+                    submittedToolIntent.revision());
         }
     }
 
@@ -326,12 +418,13 @@ public final class HexEditorApplicationService {
             return publish(nextState);
         }
 
-        HexEditorState publishLoadedWithActiveTool(
+        HexEditorState publishLoadedCompletion(
                 Optional<HexMap> selectedMap,
                 Optional<HexCoordinate> selectedTile,
                 String statusText,
                 HexEditorMode activeMode,
-                HexTerrain activeTerrain
+                HexTerrain activeTerrain,
+                long submittedToolRevision
         ) {
             HexEditorState previous = workspace.state();
             Optional<HexMap> safeSelectedMap = selectedMap == null ? Optional.empty() : selectedMap;
@@ -345,7 +438,7 @@ public final class HexEditorApplicationService {
                     statusText,
                     "",
                     "");
-            return publish(nextState);
+            return publishCompletion(nextState, submittedToolRevision);
         }
 
         HexEditorState publishFailure(String failureText) {
@@ -360,6 +453,20 @@ public final class HexEditorApplicationService {
             HexEditorState nextState = workspace.replace(state);
             model.publish(HexEditorSnapshotProjection.project(nextState));
             return nextState;
+        }
+
+        private HexEditorState publishCompletion(HexEditorState state, long submittedToolRevision) {
+            HexEditorState nextState = workspace.replace(state);
+            model.publishCompletion(HexEditorSnapshotProjection.project(nextState), submittedToolRevision);
+            return nextState;
+        }
+
+        ToolIntent currentToolIntent() {
+            return model.currentToolIntent();
+        }
+
+        void publishImmediateToolIntent(HexEditorMode activeMode, HexTerrain activeTerrain) {
+            model.publishImmediateToolIntent(activeMode.name(), activeTerrain.name());
         }
 
         HexEditorState currentState() {

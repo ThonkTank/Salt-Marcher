@@ -13,25 +13,37 @@ Java roots; feature collaboration uses provider APIs; explicit composition,
 versioned SQLite recovery, local diagnostics, green CI, independent review, and
 owner acceptance are complete; this file is deleted.
 
-Current tree: `codex/greenfield-r1-explicit-composition` at R1 Explicit
-Composition. R0 Rule Cutover is merged by PR #471 at `869e14566`.
+Current tree: `codex/greenfield-r2-platform-runtime` at the integrated R2
+Platform Runtime candidate, based on merged R1 commit `6878a5cad`.
 
-R1 candidate: `AppBootstrap` owns one deterministic manifest and wires
-feature-owned typed components into passive constructor-injected shell
-contributions. The four classpath-discovery helpers, sixteen service
-contributions, `ServiceRegistry`, and `ShellRuntimeContext` are deleted. Tests
-exercise the same production assemblies and exact startup manifest. Horizontal
-package moves remain owned by R4.
+Completed: R0 Rule Cutover merged by PR #471. R1 Explicit Composition merged
+by PR #473 with required CI green; discovery, service location, and service
+contributions are deleted, and cross-feature references use typed provider
+APIs.
 
-Current proof: `git diff --cached --check` passes with no output. The direct
-panel's supported behavior, documentation, and cross-feature boundary findings
-are repaired. Provider-owned typed read APIs preserve the failing-provider
-no-write route; focused tests are `BUILD SUCCESSFUL in 12s`, and the exact full
-`check` is `BUILD SUCCESSFUL in 3m 13s` with one task executed. The focused
-architecture review of that exact boundary is clean; R1 is publication-ready.
+R2 candidate: one application-owned serial execution lane, explicit JavaFX UI
+dispatch, revisioned latest-state publication, and payload-free local
+diagnostics are wired through production composition. Material persistence
+commands run off JavaFX; feature state and immutable Dungeon frames cross the
+UI seam explicitly; stale Creature, Hex, Dungeon, catalog-event, and Session
+failure routes have deterministic regression coverage. Application shutdown
+closes the lane. R3 still owns SQLite lifecycle/recovery; R4 still owns
+vertical package moves.
 
-Publication gate: `git diff --cached --check`, literal green full `./gradlew
-check --console=plain`, and a clean independent review of that exact staged
-state. Push and merge only after required PR CI is green.
+Proof: after two direct review passes, all supported R2 state ownership,
+ordering, startup-I/O, shutdown-drain, and failure-publication findings were
+repaired with deterministic regressions. The final integrated regression set
+passed in 15s and full `./gradlew check --console=plain` passed in 4m 6s.
+Pre-existing multi-step SQLite recovery remains R3-owned. The exact final
+staged state still requires refreshed proof before publication.
 
-Next action: publish R1, then start R2 from updated `main`.
+Publication gate per migration slice: `git diff --cached --check` and literal
+green full `./gradlew check --console=plain`. Push and merge only after required
+PR CI is green. Do not run another slice review after the current R2 closure
+fixes; complete R3 through R5 first, then run one independent direct review
+panel over the fully migrated system before final installation and owner
+acceptance.
+
+Next action: publish the proved R2 pull request. Then execute R3 through R5
+without intermediate review-polish loops; review the combined final
+architecture once.

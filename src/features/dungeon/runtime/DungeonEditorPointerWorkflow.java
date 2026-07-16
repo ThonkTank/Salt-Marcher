@@ -25,7 +25,7 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
         PointerWorkflowIntent intent =
                 DungeonEditorPointerWorkflowIntentResolver.resolve(safeRequest.selectedTool(), safeRequest.gesture());
         if (!intent.workflowAccepted()) {
-            clearPointerSession();
+            commandPublisher.execute(pointerSession::clear);
             return PointerInteractionResult.ignored();
         }
         PointerInteractionTargets targets = safeRequest.targets();
@@ -47,26 +47,33 @@ final class DungeonEditorPointerWorkflow implements DungeonEditorPointerInteract
                 hoverTarget,
                 safeRequest.projectionLevel());
         PointerSample sample = DungeonEditorPointerSamplePolicy.pointerSample(targets, sampleTarget, intent);
-        boolean accepted = pointerSession.accept(
-                safeRequest.action(),
-                intent.effectiveTool(),
-                sample,
-                safeRequest.projectionLevel());
-        boolean dispatched = accepted && safeRequest.action() != null;
-        if (dispatched) {
-            commandPublisher.apply(() -> applyPointer(
-                    safeRequest.action(),
-                    intent.effectiveTool(),
-                    sample,
-                    intent.wallSingleClickMode(),
-                    safeRequest.transitionDestination()));
-        }
+        commandPublisher.execute(() -> applyPointerInExecutionLane(safeRequest, intent, sample));
         return new PointerInteractionResult(true, hoverTarget);
     }
 
     @Override
     public void clearPointerSession() {
-        pointerSession.clear();
+        commandPublisher.execute(pointerSession::clear);
+    }
+
+    private void applyPointerInExecutionLane(
+            PointerInteractionRequest request,
+            PointerWorkflowIntent intent,
+            PointerSample sample
+    ) {
+        boolean accepted = pointerSession.accept(
+                request.action(),
+                intent.effectiveTool(),
+                sample,
+                request.projectionLevel());
+        if (accepted && request.action() != null) {
+            commandPublisher.applyInExecutionLane(() -> applyPointer(
+                    request.action(),
+                    intent.effectiveTool(),
+                    sample,
+                    intent.wallSingleClickMode(),
+                    request.transitionDestination()));
+        }
     }
 
     private static PointerInteractionRequest emptyRequest() {

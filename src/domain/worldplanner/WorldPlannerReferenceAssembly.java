@@ -35,7 +35,7 @@ public final class WorldPlannerReferenceAssembly {
             }
             var result = creatures.find(creatureStatblockId);
             if (result.status() == CreatureLookupStatus.STORAGE_ERROR) {
-                throw unavailable("Creatures");
+                throw unavailable();
             }
             return result.status() == CreatureLookupStatus.SUCCESS
                     && result.detail() != null
@@ -49,14 +49,22 @@ public final class WorldPlannerReferenceAssembly {
             }
             var result = encounterTables.catalog();
             if (result.status() == EncounterTableReadStatus.STORAGE_ERROR) {
-                throw unavailable("Encounter Tables");
+                throw unavailable();
             }
             return result.tables().stream()
                     .anyMatch(table -> table.tableId() == encounterTableId);
         }
 
-        private static IllegalStateException unavailable(String provider) {
-            return new IllegalStateException(provider + " reference provider unavailable");
+        private static ReferenceProviderUnavailableException unavailable() {
+            return new ReferenceProviderUnavailableException();
+        }
+    }
+
+    static final class ReferenceProviderUnavailableException extends IllegalStateException {
+
+        private static final long serialVersionUID = 1L;
+
+        private ReferenceProviderUnavailableException() {
         }
     }
 }

@@ -12,11 +12,14 @@ import shell.host.AppShell;
  */
 public final class SaltMarcherApp extends Application {
 
+    private AppBootstrap bootstrap;
+
     @Override
     public void start(Stage primaryStage) {
         Platform.setImplicitExit(true);
 
-        AppShell shell = new AppBootstrap().createShell();
+        bootstrap = new AppBootstrap();
+        AppShell shell = bootstrap.createShell();
         Scene scene = new Scene(shell, 1150, 700);
         scene.getStylesheets().add(SaltMarcherApp.class.getResource("/salt-marcher.css").toExternalForm());
 
@@ -34,5 +37,12 @@ public final class SaltMarcherApp extends Application {
 
     public static void main(String[] args) {
         launch(args);
+    }
+
+    @Override
+    public void stop() {
+        if (bootstrap != null) {
+            bootstrap.close();
+        }
     }
 }

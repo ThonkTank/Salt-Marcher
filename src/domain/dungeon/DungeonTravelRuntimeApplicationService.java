@@ -2,6 +2,8 @@ package src.domain.dungeon;
 
 import java.util.List;
 import java.util.Objects;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
 import src.domain.dungeon.model.runtime.travel.projection.TravelActionFacts.SelectedAction;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSession;
 import src.domain.dungeon.model.runtime.travel.session.TravelDungeonSessionSurface.OverlayMode;
@@ -17,23 +19,42 @@ public final class DungeonTravelRuntimeApplicationService {
     private final DungeonTravelSurfaceLoader surfaceLoader;
     private final DungeonTravelNavigator navigator;
     private final DungeonTravelPublishedState publishedState;
+    private final ExecutionLane executionLane;
 
     public DungeonTravelRuntimeApplicationService(
             DungeonTravelSurfaceLoader surfaceLoader,
             DungeonTravelNavigator navigator,
             DungeonTravelPublishedState publishedState
     ) {
+        this(surfaceLoader, navigator, publishedState, DirectExecutionLane.INSTANCE);
+    }
+
+    DungeonTravelRuntimeApplicationService(
+            DungeonTravelSurfaceLoader surfaceLoader,
+            DungeonTravelNavigator navigator,
+            DungeonTravelPublishedState publishedState,
+            ExecutionLane executionLane
+    ) {
         this.surfaceLoader = Objects.requireNonNull(surfaceLoader, "surfaceLoader");
         this.navigator = Objects.requireNonNull(navigator, "navigator");
         this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
     }
 
     public void refresh() {
+        executionLane.execute(this::refreshOnLane);
+    }
+
+    private void refreshOnLane() {
         session.applySurface(surfaceLoader.loadCurrentPosition(session.currentPosition()));
         publishSnapshot();
     }
 
     public void performAction(int selectedActionRowIndex) {
+        executionLane.execute(() -> performActionOnLane(selectedActionRowIndex));
+    }
+
+    private void performActionOnLane(int selectedActionRowIndex) {
         session.applySurface(navigator.move(
                 session.currentPosition(),
                 session.currentSurface(),
@@ -42,6 +63,10 @@ public final class DungeonTravelRuntimeApplicationService {
     }
 
     public void selectMap(long mapId) {
+        executionLane.execute(() -> selectMapOnLane(mapId));
+    }
+
+    private void selectMapOnLane(long mapId) {
         if (mapId > NO_MAP_ID) {
             session.applySurface(surfaceLoader.loadSelectedMap(mapId));
         }
@@ -49,11 +74,19 @@ public final class DungeonTravelRuntimeApplicationService {
     }
 
     public void shiftProjectionLevel(int projectionLevelShift) {
+        executionLane.execute(() -> shiftProjectionLevelOnLane(projectionLevelShift));
+    }
+
+    private void shiftProjectionLevelOnLane(int projectionLevelShift) {
         session.setProjectionLevel(session.projectionLevel() + projectionLevelShift);
         publishSnapshot();
     }
 
     public void setOverlay(DungeonOverlaySettings overlaySettings) {
+        executionLane.execute(() -> setOverlayOnLane(overlaySettings));
+    }
+
+    private void setOverlayOnLane(DungeonOverlaySettings overlaySettings) {
         DungeonOverlaySettings safeOverlay = overlaySettings == null
                 ? DungeonOverlaySettings.defaults()
                 : overlaySettings;

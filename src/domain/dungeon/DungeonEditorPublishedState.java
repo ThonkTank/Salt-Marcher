@@ -8,21 +8,30 @@ import src.domain.dungeon.published.DungeonEditorMapSurfaceSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateModel;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.shared.published.PublishedState;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
 
 final class DungeonEditorPublishedState {
 
-    private final PublishedState<DungeonEditorControlsSnapshot> controls =
-            PublishedState.retainingDuplicateSubscribers(DungeonEditorControlsSnapshot.empty(""));
-    private final PublishedState<DungeonEditorMapSurfaceSnapshot> mapSurface =
-            PublishedState.retainingDuplicateSubscribers(DungeonEditorMapSurfaceSnapshot.empty());
-    private final PublishedState<DungeonEditorStateSnapshot> state =
-            PublishedState.retainingDuplicateSubscribers(DungeonEditorStateSnapshot.empty(""));
-    private final DungeonEditorControlsModel controlsModel =
-            new DungeonEditorControlsModel(controls::current, controls::subscribe);
-    private final DungeonEditorMapSurfaceModel mapSurfaceModel =
-            new DungeonEditorMapSurfaceModel(mapSurface::current, mapSurface::subscribe);
-    private final DungeonEditorStateModel stateModel =
-            new DungeonEditorStateModel(state::current, state::subscribe);
+    private final PublishedState<DungeonEditorControlsSnapshot> controls;
+    private final PublishedState<DungeonEditorMapSurfaceSnapshot> mapSurface;
+    private final PublishedState<DungeonEditorStateSnapshot> state;
+    private final DungeonEditorControlsModel controlsModel;
+    private final DungeonEditorMapSurfaceModel mapSurfaceModel;
+    private final DungeonEditorStateModel stateModel;
+
+    DungeonEditorPublishedState() {
+        this(DirectUiDispatcher.INSTANCE);
+    }
+
+    DungeonEditorPublishedState(UiDispatcher dispatcher) {
+        controls = new PublishedState<>(DungeonEditorControlsSnapshot.empty(""), dispatcher);
+        mapSurface = new PublishedState<>(DungeonEditorMapSurfaceSnapshot.empty(), dispatcher);
+        state = new PublishedState<>(DungeonEditorStateSnapshot.empty(""), dispatcher);
+        controlsModel = new DungeonEditorControlsModel(controls::current, controls::subscribe);
+        mapSurfaceModel = new DungeonEditorMapSurfaceModel(mapSurface::current, mapSurface::subscribe);
+        stateModel = new DungeonEditorStateModel(state::current, state::subscribe);
+    }
 
     DungeonEditorControlsModel controlsModel() {
         return controlsModel;

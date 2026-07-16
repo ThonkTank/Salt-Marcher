@@ -5,6 +5,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.state.LatestState;
+import platform.state.UpdateToken;
 import src.domain.creatures.model.catalog.CreatureCatalogData;
 import src.domain.creatures.model.catalog.CreatureCatalogData.CatalogSortField;
 import src.domain.creatures.model.catalog.CreatureCatalogData.CreatureProfile;
@@ -38,6 +45,12 @@ public final class CreaturesApplicationService {
     private static final int MAX_ENCOUNTER_CANDIDATE_LIMIT = 1000;
     private static final String DESCENDING_SORT_DIRECTION = "DESCENDING";
     private static final String COMMAND_PARAMETER = "command";
+    private static final DiagnosticId FILTER_OPTIONS_FAILURE =
+            new DiagnosticId("creatures.filter-options.storage-failure");
+    private static final DiagnosticId CATALOG_FAILURE = new DiagnosticId("creatures.catalog.storage-failure");
+    private static final DiagnosticId DETAIL_FAILURE = new DiagnosticId("creatures.detail.storage-failure");
+    private static final DiagnosticId ENCOUNTER_CANDIDATES_FAILURE =
+            new DiagnosticId("creatures.encounter-candidates.storage-failure");
 
     private static final List<String> CHALLENGE_RATINGS = List.of(
             "0", "1/8", "1/4", "1/2",
@@ -86,6 +99,10 @@ public final class CreaturesApplicationService {
     private final CreatureCatalogModel catalogModel;
     private final CreatureDetailModel detailModel;
     private final CreatureEncounterCandidatesModel encounterCandidatesModel;
+    private final ExecutionLane executionLane;
+    private final Diagnostics diagnostics;
+    private final LatestState<Long> catalogRequests = new LatestState<>(0L);
+    private final Object catalogPublicationLock = new Object();
 
     public CreaturesApplicationService(
             CreatureCatalogPort lookup,
@@ -94,15 +111,40 @@ public final class CreaturesApplicationService {
             CreatureDetailModel detailModel,
             CreatureEncounterCandidatesModel encounterCandidatesModel
     ) {
+        this(
+                lookup,
+                filterOptionsModel,
+                catalogModel,
+                detailModel,
+                encounterCandidatesModel,
+                DirectExecutionLane.INSTANCE,
+                NoopDiagnostics.INSTANCE);
+    }
+
+    public CreaturesApplicationService(
+            CreatureCatalogPort lookup,
+            CreatureFilterOptionsModel filterOptionsModel,
+            CreatureCatalogModel catalogModel,
+            CreatureDetailModel detailModel,
+            CreatureEncounterCandidatesModel encounterCandidatesModel,
+            ExecutionLane executionLane,
+            Diagnostics diagnostics
+    ) {
         this.lookup = Objects.requireNonNull(lookup, "lookup");
         this.filterOptionsModel = Objects.requireNonNull(filterOptionsModel, "filterOptionsModel");
         this.catalogModel = Objects.requireNonNull(catalogModel, "catalogModel");
         this.detailModel = Objects.requireNonNull(detailModel, "detailModel");
         this.encounterCandidatesModel = Objects.requireNonNull(encounterCandidatesModel, "encounterCandidatesModel");
+        this.executionLane = Objects.requireNonNull(executionLane, "executionLane");
+        this.diagnostics = Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     public void refreshFilterOptions(RefreshCreatureFilterOptionsCommand command) {
         Objects.requireNonNull(command, COMMAND_PARAMETER);
+        executionLane.execute(this::refreshFilterOptionsInLane);
+    }
+
+    private void refreshFilterOptionsInLane() {
         try {
             filterOptionsModel.publish(new CreatureFilterOptionsResult(
                     CreatureReadStatus.SUCCESS,
@@ -110,6 +152,7 @@ public final class CreaturesApplicationService {
                             lookup.loadFilterValues(),
                             CHALLENGE_RATINGS)));
         } catch (IllegalStateException exception) {
+            diagnostics.failure(FILTER_OPTIONS_FAILURE, exception.getClass());
             filterOptionsModel.publish(new CreatureFilterOptionsResult(
                     CreatureReadStatus.STORAGE_ERROR,
                     CreatureCatalogProjection.filterOptions(
@@ -120,18 +163,31 @@ public final class CreaturesApplicationService {
 
     public void refreshCatalog(RefreshCreatureCatalogCommand command) {
         CatalogRequest request = CatalogRequest.from(command);
+        UpdateToken requestToken;
+        synchronized (catalogPublicationLock) {
+            requestToken = catalogRequests.beginUpdate();
+        }
+        executionLane.execute(() -> refreshCatalogInLane(request, requestToken));
+    }
+
+    private void refreshCatalogInLane(CatalogRequest request, UpdateToken requestToken) {
         try {
             if (!request.hasValidChallengeRatingRange()) {
-                publishCatalog(CreatureQueryStatus.INVALID_QUERY, request.emptyPage());
+                publishCatalog(requestToken, CreatureQueryStatus.INVALID_QUERY, request.emptyPage());
                 return;
             }
-            publishCatalog(CreatureQueryStatus.SUCCESS, lookup.searchCatalog(request.spec()));
+            publishCatalog(requestToken, CreatureQueryStatus.SUCCESS, lookup.searchCatalog(request.spec()));
         } catch (IllegalStateException exception) {
-            publishCatalog(CreatureQueryStatus.STORAGE_ERROR, request.emptyPage());
+            diagnostics.failure(CATALOG_FAILURE, exception.getClass());
+            publishCatalog(requestToken, CreatureQueryStatus.STORAGE_ERROR, request.emptyPage());
         }
     }
 
     public void selectCreatureDetail(SelectCreatureDetailCommand command) {
+        executionLane.execute(() -> selectCreatureDetailInLane(command));
+    }
+
+    private void selectCreatureDetailInLane(SelectCreatureDetailCommand command) {
         try {
             long creatureId = command == null ? NO_CREATURE_ID : command.creatureId();
             if (creatureId <= 0) {
@@ -141,12 +197,17 @@ public final class CreaturesApplicationService {
             CreatureProfile detail = lookup.loadCreatureDetail(creatureId);
             publishDetail(detail == null ? CreatureLookupStatus.NOT_FOUND : CreatureLookupStatus.SUCCESS, detail);
         } catch (IllegalStateException exception) {
+            diagnostics.failure(DETAIL_FAILURE, exception.getClass());
             publishDetail(CreatureLookupStatus.STORAGE_ERROR, null);
         }
     }
 
     public void refreshEncounterCandidates(RefreshCreatureEncounterCandidatesCommand command) {
         EncounterCandidateRequest request = EncounterCandidateRequest.from(command);
+        executionLane.execute(() -> refreshEncounterCandidatesInLane(request));
+    }
+
+    private void refreshEncounterCandidatesInLane(EncounterCandidateRequest request) {
         try {
             if (!request.hasValidXpRange()) {
                 publishEncounterCandidates(CreatureQueryStatus.INVALID_QUERY, List.of());
@@ -154,14 +215,23 @@ public final class CreaturesApplicationService {
             }
             publishEncounterCandidates(CreatureQueryStatus.SUCCESS, lookup.loadEncounterCandidates(request.spec()));
         } catch (IllegalStateException exception) {
+            diagnostics.failure(ENCOUNTER_CANDIDATES_FAILURE, exception.getClass());
             publishEncounterCandidates(CreatureQueryStatus.STORAGE_ERROR, List.of());
         }
     }
 
-    private void publishCatalog(CreatureQueryStatus status, CreatureCatalogData.CatalogPageData page) {
-        catalogModel.publish(new CreatureCatalogPageResult(
-                status,
-                CreatureCatalogProjection.catalogPage(page)));
+    private void publishCatalog(
+            UpdateToken requestToken,
+            CreatureQueryStatus status,
+            CreatureCatalogData.CatalogPageData page
+    ) {
+        synchronized (catalogPublicationLock) {
+            if (catalogRequests.replace(requestToken, requestToken.revision())) {
+                catalogModel.publish(new CreatureCatalogPageResult(
+                        status,
+                        CreatureCatalogProjection.catalogPage(page)));
+            }
+        }
     }
 
     private void publishDetail(

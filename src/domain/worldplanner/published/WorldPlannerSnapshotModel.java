@@ -5,18 +5,24 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import platform.ui.UiDispatcher;
+import src.domain.shared.published.PublishedState;
 
 public final class WorldPlannerSnapshotModel {
 
     private final Supplier<WorldPlannerSnapshot> currentSupplier;
     private final Function<Consumer<WorldPlannerSnapshot>, Runnable> subscribeAction;
-    private StatefulSnapshotStore statefulStore;
+    private PublishedState<WorldPlannerSnapshot> statefulStore;
 
     public WorldPlannerSnapshotModel() {
-        this(new StatefulSnapshotStore());
+        this(new PublishedState<>(initialSnapshot()));
     }
 
-    private WorldPlannerSnapshotModel(StatefulSnapshotStore store) {
+    public WorldPlannerSnapshotModel(UiDispatcher dispatcher) {
+        this(new PublishedState<>(initialSnapshot(), dispatcher));
+    }
+
+    private WorldPlannerSnapshotModel(PublishedState<WorldPlannerSnapshot> store) {
         this(store::current, store::subscribe);
         statefulStore = store;
     }
@@ -43,13 +49,21 @@ public final class WorldPlannerSnapshotModel {
 
     public void publish(WorldPlannerSnapshot snapshot) {
         if (statefulStore != null) {
-            statefulStore.publish(snapshot);
+            statefulStore.publish(snapshot == null ? initialSnapshot() : snapshot);
         }
     }
 
     public void publishStorageError(String message) {
         if (statefulStore != null) {
-            statefulStore.publishStorageError(message);
+            WorldPlannerSnapshot current = statefulStore.current();
+            statefulStore.publish(new WorldPlannerSnapshot(
+                    WorldPlannerReadStatus.STORAGE_ERROR,
+                    current.npcs(),
+                    current.factions(),
+                    current.locations(),
+                    message == null || message.isBlank()
+                            ? "World Planner konnte nicht geladen werden."
+                            : message));
         }
     }
 
@@ -57,48 +71,12 @@ public final class WorldPlannerSnapshotModel {
         return new WorldPlannerSnapshot(WorldPlannerReadStatus.STORAGE_ERROR, List.of(), List.of(), List.of(), "");
     }
 
-    private static final class StatefulSnapshotStore {
-
-        private final List<Consumer<WorldPlannerSnapshot>> listeners = new java.util.ArrayList<>();
-        private WorldPlannerSnapshot current = new WorldPlannerSnapshot(
+    private static WorldPlannerSnapshot initialSnapshot() {
+        return new WorldPlannerSnapshot(
                 WorldPlannerReadStatus.SUCCESS,
                 List.of(),
                 List.of(),
                 List.of(),
                 "");
-
-        void publish(WorldPlannerSnapshot snapshot) {
-            current = snapshot == null
-                    ? new WorldPlannerSnapshot(WorldPlannerReadStatus.SUCCESS, List.of(), List.of(), List.of(), "")
-                    : snapshot;
-            notifyListeners();
-        }
-
-        void publishStorageError(String message) {
-            current = new WorldPlannerSnapshot(
-                    WorldPlannerReadStatus.STORAGE_ERROR,
-                    current.npcs(),
-                    current.factions(),
-                    current.locations(),
-                    message == null || message.isBlank()
-                            ? "World Planner konnte nicht geladen werden."
-                            : message);
-            notifyListeners();
-        }
-
-        private WorldPlannerSnapshot current() {
-            return current;
-        }
-
-        private Runnable subscribe(Consumer<WorldPlannerSnapshot> listener) {
-            listeners.add(listener);
-            return () -> listeners.remove(listener);
-        }
-
-        private void notifyListeners() {
-            for (Consumer<WorldPlannerSnapshot> listener : List.copyOf(listeners)) {
-                listener.accept(current);
-            }
-        }
     }
 }

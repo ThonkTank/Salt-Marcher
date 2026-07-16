@@ -2,7 +2,8 @@ package src.features.dungeon.shell;
 
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javafx.application.Platform;
+import java.util.concurrent.atomic.AtomicLong;
+import platform.ui.UiDispatcher;
 import src.features.dungeon.runtime.DungeonEditorFeatureRuntimeRoot;
 import src.features.dungeon.runtime.DungeonEditorRenderFrame;
 import src.features.dungeon.runtime.DungeonEditorRuntimeDependencies;
@@ -10,10 +11,13 @@ import src.features.dungeon.runtime.DungeonEditorRuntimeOperations;
 
 public final class DungeonEditorFeatureShellBinding {
     private final DungeonEditorFeatureRuntimeRoot runtimeRoot;
+    private final UiDispatcher uiDispatcher;
 
     public DungeonEditorFeatureShellBinding(DungeonEditorRuntimeDependencies dependencies) {
-        runtimeRoot = DungeonEditorFeatureRuntimeRoot.create(
-                Objects.requireNonNull(dependencies, "dependencies"));
+        DungeonEditorRuntimeDependencies safeDependencies =
+                Objects.requireNonNull(dependencies, "dependencies");
+        runtimeRoot = DungeonEditorFeatureRuntimeRoot.create(safeDependencies);
+        uiDispatcher = safeDependencies.uiDispatcher();
     }
 
     public DungeonEditorRuntimeOperations operations() {
@@ -22,7 +26,7 @@ public final class DungeonEditorFeatureShellBinding {
 
     public Runnable subscribe(PublicationSink sink) {
         PublicationSink safeSink = Objects.requireNonNull(sink, "sink");
-        JavaFxPublicationDelivery delivery = new JavaFxPublicationDelivery(safeSink);
+        PublicationDelivery delivery = new PublicationDelivery(safeSink, uiDispatcher);
         Runnable unsubscribeRuntime = runtimeRoot.subscribe(delivery::deliver);
         return () -> {
             delivery.close();
@@ -31,35 +35,36 @@ public final class DungeonEditorFeatureShellBinding {
     }
 
     public void publishCurrent(PublicationSink sink) {
-        JavaFxPublicationDelivery delivery =
-                new JavaFxPublicationDelivery(Objects.requireNonNull(sink, "sink"));
+        PublicationDelivery delivery =
+                new PublicationDelivery(Objects.requireNonNull(sink, "sink"), uiDispatcher);
         delivery.deliver(runtimeRoot.currentFrame());
     }
 
-    private static final class JavaFxPublicationDelivery {
+    static final class PublicationDelivery {
         private final PublicationSink sink;
+        private final UiDispatcher uiDispatcher;
         private final AtomicBoolean open = new AtomicBoolean(true);
+        private final AtomicLong deliveryRevision = new AtomicLong();
 
-        private JavaFxPublicationDelivery(PublicationSink sink) {
-            this.sink = sink;
+        PublicationDelivery(PublicationSink sink, UiDispatcher uiDispatcher) {
+            this.sink = Objects.requireNonNull(sink, "sink");
+            this.uiDispatcher = Objects.requireNonNull(uiDispatcher, "uiDispatcher");
         }
 
-        private void deliver(DungeonEditorRenderFrame frame) {
-            if (Platform.isFxApplicationThread()) {
-                applyIfOpen(frame);
-                return;
-            }
-            Platform.runLater(() -> applyIfOpen(frame));
+        void deliver(DungeonEditorRenderFrame frame) {
+            long revision = deliveryRevision.incrementAndGet();
+            uiDispatcher.dispatch(() -> applyIfCurrent(revision, frame));
         }
 
-        private void applyIfOpen(DungeonEditorRenderFrame frame) {
-            if (open.get()) {
+        private void applyIfCurrent(long revision, DungeonEditorRenderFrame frame) {
+            if (open.get() && revision == deliveryRevision.get()) {
                 sink.apply(frame);
             }
         }
 
-        private void close() {
+        void close() {
             open.set(false);
+            deliveryRevision.incrementAndGet();
         }
     }
 

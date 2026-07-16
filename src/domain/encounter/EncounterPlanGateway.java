@@ -2,6 +2,8 @@ package src.domain.encounter;
 
 import java.util.List;
 import java.util.Optional;
+import platform.diagnostics.DiagnosticId;
+import platform.diagnostics.Diagnostics;
 import src.domain.encounter.model.generation.EncounterBudgetSummary;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyMathHelper;
 import src.domain.encounter.model.generation.helper.EncounterDifficultyTargetHelper;
@@ -19,6 +21,8 @@ import src.domain.encounter.model.session.PlanOutcome;
 
 final class EncounterPlanGateway {
 
+    private static final DiagnosticId STORAGE_FAILURE = new DiagnosticId("encounter.storage-failure");
+
     private static final long MIN_PLAN_ID = 1L;
     private static final String STORAGE_NOT_REGISTERED_MESSAGE = "Encounter plan storage is not registered.";
     private static final String PLAN_INVALID_MESSAGE = "Encounter plan is invalid.";
@@ -29,10 +33,12 @@ final class EncounterPlanGateway {
 
     private final EncounterPlanRepository plans;
     private final EncounterForeignFacts facts;
+    private final Diagnostics diagnostics;
 
-    EncounterPlanGateway(EncounterPlanRepository plans, EncounterForeignFacts facts) {
+    EncounterPlanGateway(EncounterPlanRepository plans, EncounterForeignFacts facts, Diagnostics diagnostics) {
         this.plans = java.util.Objects.requireNonNull(plans, "plans");
         this.facts = java.util.Objects.requireNonNull(facts, "facts");
+        this.diagnostics = java.util.Objects.requireNonNull(diagnostics, "diagnostics");
     }
 
     Optional<BudgetData> loadBudget() {
@@ -65,6 +71,7 @@ final class EncounterPlanGateway {
         } catch (IllegalArgumentException exception) {
             return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), PLAN_INVALID_MESSAGE));
         } catch (IllegalStateException exception) {
+            reportStorageFailure(exception);
             return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), PLAN_SAVE_FAILED_MESSAGE));
         }
     }
@@ -78,6 +85,7 @@ final class EncounterPlanGateway {
         } catch (IllegalArgumentException exception) {
             return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), PLAN_ID_INVALID_MESSAGE));
         } catch (IllegalStateException exception) {
+            reportStorageFailure(exception);
             return new PlanOutcome(Optional.empty(), defaultMessage(exception.getMessage(), PLAN_LOAD_FAILED_MESSAGE));
         }
     }
@@ -91,6 +99,7 @@ final class EncounterPlanGateway {
         try {
             return SavedEncounterPlansLoadResult.success(plans.list());
         } catch (IllegalStateException exception) {
+            reportStorageFailure(exception);
             return SavedEncounterPlansLoadResult.storageError("Encounter plans could not be loaded.");
         }
     }
@@ -99,6 +108,7 @@ final class EncounterPlanGateway {
         try {
             return loadPlanBudget(planId);
         } catch (IllegalStateException exception) {
+            reportStorageFailure(exception);
             return EncounterPlanBudgetLoadResult.storageError(PLAN_BUDGET_LOAD_FAILED);
         }
     }
@@ -172,6 +182,10 @@ final class EncounterPlanGateway {
 
     private static String defaultMessage(String message, String fallback) {
         return message == null || message.isBlank() ? fallback : message;
+    }
+
+    private void reportStorageFailure(IllegalStateException exception) {
+        diagnostics.failure(STORAGE_FAILURE, exception.getClass());
     }
 
     private static String difficultyLabel(int adjustedXp, EncounterDifficultyThresholds thresholds) {

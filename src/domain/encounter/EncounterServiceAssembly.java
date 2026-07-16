@@ -1,6 +1,12 @@
 package src.domain.encounter;
 
 import org.jspecify.annotations.Nullable;
+import platform.diagnostics.Diagnostics;
+import platform.diagnostics.NoopDiagnostics;
+import platform.execution.DirectExecutionLane;
+import platform.execution.ExecutionLane;
+import platform.ui.DirectUiDispatcher;
+import platform.ui.UiDispatcher;
 import src.domain.creatures.CreaturesApplicationService;
 import src.domain.creatures.published.CreatureDetailModel;
 import src.domain.creatures.published.CreatureEncounterCandidatesModel;
@@ -31,16 +37,42 @@ public final class EncounterServiceAssembly {
             PartyMutationModel partyMutation,
             EncounterPlanRepository planRepository
     ) {
-        EncounterPublishedState publishedState = new EncounterPublishedState();
+        return create(
+                creatures, creatureDetails, creatureCandidates, encounterTables, tableCandidates,
+                worldPlanner, party, activeParty, activePartyComposition, daySummary, partyMutation,
+                planRepository, DirectExecutionLane.INSTANCE, DirectUiDispatcher.INSTANCE, NoopDiagnostics.INSTANCE);
+    }
+
+    public static Component create(
+            CreaturesApplicationService creatures,
+            CreatureDetailModel creatureDetails,
+            CreatureEncounterCandidatesModel creatureCandidates,
+            EncounterTableApplicationService encounterTables,
+            EncounterTableCandidatesModel tableCandidates,
+            @Nullable WorldPlannerSnapshotModel worldPlanner,
+            PartyApplicationService party,
+            ActivePartyModel activeParty,
+            ActivePartyCompositionModel activePartyComposition,
+            AdventuringDaySummaryModel daySummary,
+            PartyMutationModel partyMutation,
+            EncounterPlanRepository planRepository,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            Diagnostics diagnostics
+    ) {
+        EncounterPublishedState publishedState = new EncounterPublishedState(
+                java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher"));
         EncounterForeignFacts facts = new EncounterForeignFacts(
                 creatures, creatureDetails, creatureCandidates, encounterTables, tableCandidates,
                 worldPlanner, party, activeParty, activePartyComposition, daySummary, partyMutation);
-        EncounterPlanGateway plans = new EncounterPlanGateway(planRepository, facts);
+        EncounterPlanGateway plans = new EncounterPlanGateway(
+                planRepository, facts, java.util.Objects.requireNonNull(diagnostics, "diagnostics"));
         EncounterSessionRuntimeAccess runtime = new EncounterSessionRuntimeAccess(
                 facts,
                 plans,
                 new EncounterGenerator(facts));
-        EncounterApplicationService application = new EncounterApplicationService(runtime, plans, publishedState);
+        EncounterApplicationService application = new EncounterApplicationService(
+                runtime, plans, publishedState, java.util.Objects.requireNonNull(executionLane, "executionLane"));
         return new Component(
                 application,
                 publishedState.stateModel(),
