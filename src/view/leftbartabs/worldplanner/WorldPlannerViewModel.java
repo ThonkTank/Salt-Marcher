@@ -385,11 +385,11 @@ record StateInput(
 ) {
     StateInput {
         activeModuleIndex = Math.max(0, activeModuleIndex);
-        npc = npc == null ? new NpcSnapshot("", -1, "", "", "", "") : npc;
-        faction = faction == null ? new FactionSnapshot("", -1, -1, -1, false, "") : faction;
+        npc = npc == null ? new NpcSnapshot("", -1, "", "", "", "", "0") : npc;
+        faction = faction == null ? new FactionSnapshot("", -1, -1, -1, false, "", "0") : faction;
         location = location == null ? new LocationSnapshot("", -1, -1) : location;
         actions = actions == null
-                ? new ActionSnapshot(false, false, false, false, false, false, false, false, false)
+                ? new ActionSnapshot(false, false, false, false, false, false, false, false, false, false, false)
                 : actions;
     }
 }
@@ -400,8 +400,13 @@ record NpcSnapshot(
         String appearanceNotes,
         String behaviorNotes,
         String historyNotes,
-        String generalNotes
+        String generalNotes,
+        String dispositionModifierText
 ) {
+    NpcSnapshot(String displayName, int statblockChoiceIndex, String appearanceNotes, String behaviorNotes,
+            String historyNotes, String generalNotes) {
+        this(displayName, statblockChoiceIndex, appearanceNotes, behaviorNotes, historyNotes, generalNotes, "0");
+    }
     NpcSnapshot {
         displayName = WorldPlannerVocabulary.text(displayName);
         statblockChoiceIndex = Math.max(-1, statblockChoiceIndex);
@@ -409,6 +414,7 @@ record NpcSnapshot(
         behaviorNotes = WorldPlannerVocabulary.text(behaviorNotes);
         historyNotes = WorldPlannerVocabulary.text(historyNotes);
         generalNotes = WorldPlannerVocabulary.text(generalNotes);
+        dispositionModifierText = WorldPlannerVocabulary.text(dispositionModifierText);
     }
 }
 
@@ -418,14 +424,21 @@ record FactionSnapshot(
         int npcChoiceIndex,
         int inventoryStatblockChoiceIndex,
         boolean finiteInventory,
-        String inventoryQuantityText
+        String inventoryQuantityText,
+        String dispositionText
 ) {
+    FactionSnapshot(String displayName, int primaryEncounterTableChoiceIndex, int npcChoiceIndex,
+            int inventoryStatblockChoiceIndex, boolean finiteInventory, String inventoryQuantityText) {
+        this(displayName, primaryEncounterTableChoiceIndex, npcChoiceIndex, inventoryStatblockChoiceIndex,
+                finiteInventory, inventoryQuantityText, "0");
+    }
     FactionSnapshot {
         displayName = WorldPlannerVocabulary.text(displayName);
         primaryEncounterTableChoiceIndex = Math.max(-1, primaryEncounterTableChoiceIndex);
         npcChoiceIndex = Math.max(-1, npcChoiceIndex);
         inventoryStatblockChoiceIndex = Math.max(-1, inventoryStatblockChoiceIndex);
         inventoryQuantityText = WorldPlannerVocabulary.text(inventoryQuantityText);
+        dispositionText = WorldPlannerVocabulary.text(dispositionText);
     }
 }
 
@@ -450,8 +463,16 @@ record ActionSnapshot(
         boolean addNpcRequested,
         boolean setInventoryLimitRequested,
         boolean linkFactionRequested,
-        boolean linkTableRequested
+        boolean linkTableRequested,
+        boolean setNpcDispositionRequested,
+        boolean setFactionDispositionRequested
 ) {
+    ActionSnapshot(boolean createRequested, boolean saveNotesRequested, boolean defeatRequested,
+            boolean reactivateRequested, boolean addToEncounterRequested, boolean addNpcRequested,
+            boolean setInventoryLimitRequested, boolean linkFactionRequested, boolean linkTableRequested) {
+        this(createRequested, saveNotesRequested, defeatRequested, reactivateRequested, addToEncounterRequested,
+                addNpcRequested, setInventoryLimitRequested, linkFactionRequested, linkTableRequested, false, false);
+    }
 }
 
 record NpcProjection(

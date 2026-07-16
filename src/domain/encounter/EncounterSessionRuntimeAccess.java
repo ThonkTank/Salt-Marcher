@@ -26,31 +26,54 @@ final class EncounterSessionRuntimeAccess implements EncounterSession.SessionRep
     private final EncounterForeignFacts facts;
     private final EncounterPlanGateway plans;
     private final src.domain.encounter.model.generation.EncounterGenerator generator;
+    private final List<Long> partyMemberIds;
+    private final long worldLocationId;
+    private final boolean scoped;
 
     EncounterSessionRuntimeAccess(
             EncounterForeignFacts facts,
             EncounterPlanGateway plans,
             src.domain.encounter.model.generation.EncounterGenerator generator
     ) {
+        this(facts, plans, generator, List.of(), 0L, false);
+    }
+
+    private EncounterSessionRuntimeAccess(
+            EncounterForeignFacts facts,
+            EncounterPlanGateway plans,
+            src.domain.encounter.model.generation.EncounterGenerator generator,
+            List<Long> partyMemberIds,
+            long worldLocationId,
+            boolean scoped
+    ) {
         this.facts = java.util.Objects.requireNonNull(facts, "facts");
         this.plans = java.util.Objects.requireNonNull(plans, "plans");
         this.generator = java.util.Objects.requireNonNull(generator, "generator");
+        this.partyMemberIds = partyMemberIds == null ? List.of() : List.copyOf(partyMemberIds);
+        this.worldLocationId = Math.max(0L, worldLocationId);
+        this.scoped = scoped;
+    }
+
+    EncounterSessionRuntimeAccess scoped(List<Long> memberIds, long locationId) {
+        return new EncounterSessionRuntimeAccess(facts, plans, generator, memberIds, locationId, true);
     }
 
     @Override
     public List<PartyMemberData> loadActiveParty() {
-        return facts.loadActiveParty();
+        return scoped ? facts.loadActiveParty(partyMemberIds) : facts.loadActiveParty();
     }
 
     @Override
     public Optional<BudgetData> loadBudget() {
-        return plans.loadBudget();
+        return scoped ? plans.loadBudget(facts.loadPartyBudgetFacts(partyMemberIds)) : plans.loadBudget();
     }
 
     @Override
     public GenerationResultData generate(EncounterGenerationRequest request) {
         try {
-            EncounterGenerationResult result = generator.generate(facts.resolveWorldSource(request));
+            EncounterGenerationRequest scopedRequest = facts.withWorldLocation(request, worldLocationId);
+            EncounterGenerationResult result = generator.generate(
+                    facts.resolveWorldSource(scopedRequest), scoped ? facts.loadPartyBudgetFacts(partyMemberIds) : null);
             return generationData(result);
         } catch (IllegalStateException exception) {
             return new GenerationResultData(false, List.of(), "Encounter generation failed.", Optional.empty(), false);

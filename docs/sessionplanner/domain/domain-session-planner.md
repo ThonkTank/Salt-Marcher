@@ -24,6 +24,8 @@ revisioned planner state.
 - the feature publishes planner-owned workflows and one immutable state surface
 - it does not publish encounter persistence carriers, creature-detail carriers,
   or party mutation carriers; those stay owned by their original contexts
+- it publishes a read-only prepared-scene catalog for one-time runtime import;
+  reading it does not change the planner's current-session pointer
 
 ## Application Boundary
 

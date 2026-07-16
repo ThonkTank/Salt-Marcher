@@ -44,6 +44,7 @@ public final class SmokeStartupTest {
         List<ToggleButton> navigation = navigationButtons(shell);
         require(
                 navigation.stream().map(Node::getAccessibleText).toList().equals(List.of(
+                        "Szenen",
                         "Session Planner",
                         "Dungeon-Editor",
                         "Dungeon-Reise",

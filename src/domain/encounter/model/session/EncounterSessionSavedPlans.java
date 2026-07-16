@@ -25,6 +25,14 @@ final class EncounterSessionSavedPlans {
         return activeSavedPlanId.isPresent();
     }
 
+    long activeSavedPlanId() {
+        return activeSavedPlanId.orElse(0L);
+    }
+
+    void restore(long planId) {
+        activeSavedPlanId = planId > 0L ? OptionalLong.of(planId) : OptionalLong.empty();
+    }
+
     void saveCurrentPlan(
             EncounterSession.SessionRepository access,
             EncounterSessionContext context,

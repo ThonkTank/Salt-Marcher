@@ -10,6 +10,8 @@ public final class WorldPlannerPersistenceSchema {
     public static final String LOCATIONS_TABLE = "world_planner_locations";
     public static final String LOCATION_FACTIONS_TABLE = "world_planner_location_factions";
     public static final String LOCATION_TABLES_TABLE = "world_planner_location_encounter_tables";
+    public static final String NPC_DISPOSITION_COLUMN = "disposition_modifier";
+    public static final String FACTION_DISPOSITION_COLUMN = "disposition";
     private static final String CREATE_TABLE_IF_NOT_EXISTS = "CREATE TABLE IF NOT EXISTS ";
 
     public static final String CREATE_NPCS_SQL =
@@ -21,6 +23,8 @@ public final class WorldPlannerPersistenceSchema {
                     + "behavior_notes TEXT NOT NULL, "
                     + "history_notes TEXT NOT NULL, "
                     + "general_notes TEXT NOT NULL, "
+                    + NPC_DISPOSITION_COLUMN + " INTEGER NOT NULL DEFAULT 0 CHECK("
+                    + NPC_DISPOSITION_COLUMN + " BETWEEN -50 AND 50), "
                     + "status TEXT NOT NULL"
                     + ")";
 
@@ -29,6 +33,8 @@ public final class WorldPlannerPersistenceSchema {
                     + "faction_id INTEGER PRIMARY KEY, "
                     + "display_name TEXT NOT NULL, "
                     + "notes TEXT NOT NULL, "
+                    + FACTION_DISPOSITION_COLUMN + " INTEGER NOT NULL DEFAULT 0 CHECK("
+                    + FACTION_DISPOSITION_COLUMN + " BETWEEN -50 AND 50), "
                     + "primary_encounter_table_id INTEGER NOT NULL"
                     + ")";
 
@@ -39,6 +45,10 @@ public final class WorldPlannerPersistenceSchema {
                     + "sort_order INTEGER NOT NULL, "
                     + "PRIMARY KEY(faction_id, npc_id)"
                     + ")";
+
+    public static final String CREATE_FACTION_NPC_UNIQUE_INDEX_SQL =
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_world_planner_npc_single_faction ON "
+                    + FACTION_NPCS_TABLE + "(npc_id)";
 
     public static final String CREATE_FACTION_LIMITS_SQL =
             CREATE_TABLE_IF_NOT_EXISTS + FACTION_LIMITS_TABLE + " ("

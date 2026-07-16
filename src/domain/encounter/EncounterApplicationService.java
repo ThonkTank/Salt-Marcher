@@ -16,6 +16,10 @@ import src.domain.encounter.published.ApplyEncounterStateCommand;
 import src.domain.encounter.published.EncounterBuilderInputs;
 import src.domain.encounter.published.RefreshEncounterPlanBudgetCommand;
 import src.domain.encounter.published.UpdateEncounterBuilderInputsCommand;
+import src.domain.encounter.published.EncounterRuntimeContextApi;
+import src.domain.encounter.model.session.EncounterSessionMemento;
+import src.domain.encounter.model.session.SceneNpcData;
+import src.domain.encounter.model.session.repository.EncounterRuntimeStateRepository;
 
 /**
  * Public encounter command boundary below the view layer.
@@ -55,9 +59,10 @@ public final class EncounterApplicationService {
     EncounterApplicationService(
             EncounterSessionRuntimeAccess runtimeAccess,
             EncounterPlanGateway plans,
-            EncounterPublishedState publishedState
+            EncounterPublishedState publishedState,
+            EncounterRuntimeStateRepository runtimeStates
     ) {
-        this(RuntimeCommandActions.create(runtimeAccess, plans, publishedState));
+        this(RuntimeCommandActions.create(runtimeAccess, plans, publishedState, runtimeStates));
     }
 
     EncounterApplicationService(CommandActions commands) {
@@ -74,6 +79,13 @@ public final class EncounterApplicationService {
 
     public void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command) {
         commands.refreshPlanBudget(command);
+    }
+
+    public EncounterRuntimeContextApi runtimeContexts() {
+        if (commands instanceof EncounterRuntimeContextApi api) {
+            return api;
+        }
+        return command -> new EncounterRuntimeContextApi.SyncResult(false, "Encounter-Kontexte sind nicht verfügbar.");
     }
 
     private static EncounterSessionCommand toSessionCommand(ApplyEncounterStateCommand command) {
@@ -154,35 +166,44 @@ public final class EncounterApplicationService {
         void refreshPlanBudget(RefreshEncounterPlanBudgetCommand command);
     }
 
-    private static final class RuntimeCommandActions implements CommandActions {
+    private static final class RuntimeCommandActions implements CommandActions, EncounterRuntimeContextApi {
 
         private final EncounterSessionRuntimeAccess runtimeAccess;
         private final EncounterPlanGateway plans;
         private final EncounterPublishedState publishedState;
-        private final EncounterSession session = new EncounterSession();
+        private final EncounterRuntimeStateRepository runtimeStates;
+        private final Map<String, EncounterSessionMemento> restoredStates;
+        private final Map<String, ContextRuntime> contexts = new java.util.LinkedHashMap<>();
+        private String focusedContextKey = "legacy";
 
         private RuntimeCommandActions(
                 EncounterSessionRuntimeAccess runtimeAccess,
                 EncounterPlanGateway plans,
-                EncounterPublishedState publishedState
+                EncounterPublishedState publishedState,
+                EncounterRuntimeStateRepository runtimeStates
         ) {
             this.runtimeAccess = Objects.requireNonNull(runtimeAccess, "runtimeAccess");
             this.plans = Objects.requireNonNull(plans, "plans");
             this.publishedState = Objects.requireNonNull(publishedState, "publishedState");
+            this.runtimeStates = Objects.requireNonNull(runtimeStates, "runtimeStates");
+            this.restoredStates = new java.util.LinkedHashMap<>(runtimeStates.loadAll());
         }
 
         private static RuntimeCommandActions create(
                 EncounterSessionRuntimeAccess runtimeAccess,
                 EncounterPlanGateway plans,
-                EncounterPublishedState publishedState
+                EncounterPublishedState publishedState,
+                EncounterRuntimeStateRepository runtimeStates
         ) {
-            RuntimeCommandActions actions = new RuntimeCommandActions(runtimeAccess, plans, publishedState);
+            RuntimeCommandActions actions = new RuntimeCommandActions(runtimeAccess, plans, publishedState, runtimeStates);
             actions.initialize();
             return actions;
         }
 
         private void initialize() {
-            session.apply(EncounterSessionCommand.refresh(), runtimeAccess);
+            ContextRuntime legacy = new ContextRuntime(new EncounterSession(), runtimeAccess, List.of(), false);
+            legacy.session.apply(EncounterSessionCommand.refresh(), legacy.access);
+            contexts.put(focusedContextKey, legacy);
             publishCurrentSession();
             publishSavedPlans();
             publishPlanBudget(0L);
@@ -191,7 +212,10 @@ public final class EncounterApplicationService {
         @Override
         public void applyState(ApplyEncounterStateCommand command) {
             EncounterSessionCommand effective = toSessionCommand(command);
-            session.apply(effective, runtimeAccess);
+            ContextRuntime current = current();
+            current.session.apply(effective, current.access);
+            current.reconcileSceneNpcs();
+            persist();
             publishCurrentSession();
             if (effective.action().republishesSavedPlans()) {
                 publishSavedPlans();
@@ -200,7 +224,10 @@ public final class EncounterApplicationService {
 
         @Override
         public void updateBuilderInputs(UpdateEncounterBuilderInputsCommand command) {
-            session.apply(EncounterSessionCommand.updateBuilderInputs(toGenerationInputs(command)), runtimeAccess);
+            ContextRuntime current = current();
+            current.session.apply(EncounterSessionCommand.updateBuilderInputs(toGenerationInputs(command)), current.access);
+            current.reconcileSceneNpcs();
+            persist();
             publishCurrentSession();
         }
 
@@ -210,7 +237,7 @@ public final class EncounterApplicationService {
         }
 
         private void publishCurrentSession() {
-            publishedState.publishCurrentSession(session, plans);
+            publishedState.publishCurrentSession(current().session, plans);
         }
 
         private void publishSavedPlans() {
@@ -219,6 +246,106 @@ public final class EncounterApplicationService {
 
         private void publishPlanBudget(long planId) {
             publishedState.publishPlanBudget(plans.loadPlanBudgetForPublication(planId));
+        }
+
+        @Override
+        public SyncResult synchronize(SynchronizeEncounterContextsCommand command) {
+            if (command == null || command.contexts().isEmpty()) {
+                return new SyncResult(false, "Mindestens ein Encounter-Kontext ist erforderlich.");
+            }
+            try {
+                java.util.Set<String> retained = new java.util.LinkedHashSet<>();
+                for (Context context : command.contexts()) {
+                    if (context.key().isBlank()) {
+                        continue;
+                    }
+                    retained.add(context.key());
+                    ContextRuntime runtime = contexts.get(context.key());
+                    EncounterSessionRuntimeAccess scoped = runtimeAccess.scoped(
+                            context.partyMemberIds(), context.worldLocationId());
+                    if (runtime == null) {
+                        runtime = new ContextRuntime(new EncounterSession(), scoped, sceneNpcs(context), true);
+                        EncounterSessionMemento restored = restoredStates.remove(context.key());
+                        if (restored == null) {
+                            runtime.session.apply(EncounterSessionCommand.refresh(), scoped);
+                            if (context.initialEncounterPlanId() > 0L) {
+                                runtime.session.apply(toSessionCommand(
+                                        ApplyEncounterStateCommand.openSavedPlan(context.initialEncounterPlanId())), scoped);
+                            }
+                        } else {
+                            runtime.session.restore(restored, scoped);
+                            runtime.session.reconcileParty(scoped);
+                        }
+                        contexts.put(context.key(), runtime);
+                    } else {
+                        runtime.access = scoped;
+                        runtime.sceneNpcs = sceneNpcs(context);
+                        runtime.session.reconcileParty(scoped);
+                    }
+                    runtime.reconcileSceneNpcs();
+                }
+                contexts.keySet().removeIf(key -> !retained.contains(key));
+                if (!contexts.containsKey(command.focusedContextKey())) {
+                    return new SyncResult(false, "Fokussierter Encounter-Kontext fehlt.");
+                }
+                focusedContextKey = command.focusedContextKey();
+                persist();
+                publishCurrentSession();
+                return new SyncResult(true, "Encounter-Kontexte synchronisiert.");
+            } catch (IllegalStateException exception) {
+                return new SyncResult(false, "Encounter-Kontexte konnten nicht synchronisiert werden.");
+            }
+        }
+
+        private ContextRuntime current() {
+            ContextRuntime runtime = contexts.get(focusedContextKey);
+            if (runtime == null) {
+                throw new IllegalStateException("Focused encounter context is missing.");
+            }
+            return runtime;
+        }
+
+        private static List<SceneNpcData> sceneNpcs(Context context) {
+            return context.npcs().stream()
+                    .map(npc -> new SceneNpcData(
+                            npc.worldNpcId(), npc.creatureId(),
+                            SceneNpcData.Role.valueOf(npc.role().name()), npc.active()))
+                    .toList();
+        }
+
+        private void persist() {
+            Map<String, EncounterSessionMemento> snapshots = new java.util.LinkedHashMap<>();
+            for (Map.Entry<String, ContextRuntime> entry : contexts.entrySet()) {
+                if (!"legacy".equals(entry.getKey())) {
+                    snapshots.put(entry.getKey(), entry.getValue().session.memento());
+                }
+            }
+            runtimeStates.saveAll(snapshots);
+        }
+
+        private static final class ContextRuntime {
+            private final EncounterSession session;
+            private EncounterSessionRuntimeAccess access;
+            private List<SceneNpcData> sceneNpcs;
+            private final boolean sceneManaged;
+
+            private ContextRuntime(
+                    EncounterSession session,
+                    EncounterSessionRuntimeAccess access,
+                    List<SceneNpcData> sceneNpcs,
+                    boolean sceneManaged
+            ) {
+                this.session = session;
+                this.access = access;
+                this.sceneNpcs = List.copyOf(sceneNpcs);
+                this.sceneManaged = sceneManaged;
+            }
+
+            private void reconcileSceneNpcs() {
+                if (sceneManaged) {
+                    session.reconcileSceneNpcs(sceneNpcs, access);
+                }
+            }
         }
     }
 

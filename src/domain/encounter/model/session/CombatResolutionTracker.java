@@ -61,4 +61,8 @@ final class CombatResolutionTracker {
     ResultStateData resultState() {
         return resultState;
     }
+
+    void restore(ResultStateData state) {
+        resultState = state == null ? ResultStateData.empty() : state;
+    }
 }

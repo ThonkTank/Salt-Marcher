@@ -74,4 +74,28 @@ final class EncounterSessionBuilder {
                 generation.state(),
                 savedPlans.hasActivePlan());
     }
+
+    EncounterSessionMemento.BuilderSlice memento() {
+        EncounterSessionRosterState rosterState = roster.snapshot();
+        EncounterSessionGenerationState generationState = generation.state();
+        return new EncounterSessionMemento.BuilderSlice(
+                generationState.builderInputs(), rosterState.creatures(), rosterState.pendingUndo(), roster.nextUndoToken(),
+                generation.alternatives(), generationState.generatedAdvisories(), generationState.selectedAlternativeIndex(),
+                generationState.generatedAdjustedXp(), generationState.generatedDifficulty(), generationState.generatedTitle(),
+                generationState.generationHistoryPresent(), savedPlans.activeSavedPlanId());
+    }
+
+    void restore(EncounterSessionMemento.BuilderSlice slice) {
+        roster.restore(slice.roster(), slice.pendingUndo(), slice.nextUndoToken());
+        generation.restore(slice.builderInputs(), slice.generatedAlternatives(), slice.generatedAdvisories(),
+                slice.selectedAlternativeIndex(), slice.generatedAdjustedXp(), slice.generatedDifficulty(),
+                slice.generatedTitle(), slice.generationHistoryPresent());
+        savedPlans.restore(slice.activeSavedPlanId());
+    }
+
+    void retainSceneEnemies(List<Long> worldNpcIds) { roster.removeWorldNpcsExcept(worldNpcIds); }
+    boolean containsWorldNpc(long worldNpcId) { return roster.containsWorldNpc(worldNpcId); }
+    void addSceneWorldNpc(EncounterCreatureData creature, EncounterSessionContext context) {
+        roster.addSceneWorldNpc(creature, context);
+    }
 }

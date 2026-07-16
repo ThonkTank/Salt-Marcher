@@ -18,6 +18,10 @@ final class CombatInitiativeTracker {
     }
 
     void open(EncounterSessionContext context, List<EncounterCreatureData> roster) {
+        open(context, roster, List.of());
+    }
+
+    void open(EncounterSessionContext context, List<EncounterCreatureData> roster, List<EncounterCreatureData> allies) {
         if (roster.isEmpty()) {
             context.setStatus(OPEN_INITIATIVE_NEEDS_CREATURE_STATUS);
             return;
@@ -46,6 +50,11 @@ final class CombatInitiativeTracker {
                     label + " (" + signed(creature.initiativeBonus()) + ")",
                     CombatantKind.MONSTER,
                     rolled));
+        }
+        for (EncounterCreatureData ally : allies) {
+            pendingRows.add(new InitiativeEntryData(
+                    ally.id(), ally.name(), CombatantKind.ALLY_NPC,
+                    CombatRosterBuilder.defaultMonsterInitiative(ally.initiativeBonus())));
         }
         context.enterMode(Mode.INITIATIVE, INITIATIVE_READY_STATUS);
     }
@@ -79,7 +88,12 @@ final class CombatInitiativeTracker {
             if (creature == null) {
                 continue;
             }
-            fallbackIndex = combatRosterBuilder.addMonsters(combatRoster, creature, input.initiative(), fallbackIndex);
+            if (entry.kind().alliedNpc()) {
+                combatRosterBuilder.addAlly(combatRoster, creature, input.initiative());
+                fallbackIndex++;
+            } else {
+                fallbackIndex = combatRosterBuilder.addMonsters(combatRoster, creature, input.initiative(), fallbackIndex);
+            }
         }
         combatRoster.sort();
         combatTurnTracker.beginCombat(combatTurns, combatRoster);
@@ -88,6 +102,29 @@ final class CombatInitiativeTracker {
 
     List<InitiativeEntryData> entries() {
         return List.copyOf(pendingRows);
+    }
+
+    void reconcileParty(List<PartyMemberData> party) {
+        List<InitiativeEntryData> next = new ArrayList<>();
+        List<PartyMemberData> members = party == null ? List.of() : List.copyOf(party);
+        for (int index = 0; index < members.size(); index++) {
+            PartyMemberData member = members.get(index);
+            InitiativeEntryData existing = pendingRows.stream()
+                    .filter(row -> row.id().equals(member.id()) && row.kind().playerCharacter())
+                    .findFirst().orElse(null);
+            next.add(existing == null
+                    ? new InitiativeEntryData(member.id(), member.name() + " (Lv. " + member.level() + ")",
+                            CombatantKind.playerCharacterKind(), CombatRosterBuilder.defaultPlayerInitiative(index))
+                    : existing);
+        }
+        pendingRows.stream().filter(row -> !row.kind().playerCharacter()).forEach(next::add);
+        pendingRows.clear();
+        pendingRows.addAll(next);
+    }
+
+    void restore(List<InitiativeEntryData> entries) {
+        pendingRows.clear();
+        pendingRows.addAll(entries == null ? List.of() : entries);
     }
 
     private static Optional<InitiativeEntryData> initiativeEntry(List<InitiativeEntryData> entries, String id) {

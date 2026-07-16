@@ -142,6 +142,39 @@ final class EncounterForeignFacts implements EncounterGenerator.ForeignFacts {
         return List.copyOf(members);
     }
 
+    List<PartyMemberData> loadActiveParty(List<Long> selectedIds) {
+        List<Long> ids = selectedIds == null ? List.of() : List.copyOf(selectedIds);
+        return loadActiveParty().stream().filter(member -> ids.contains(member.numericId())).toList();
+    }
+
+    PartyBudgetFacts loadPartyBudgetFacts(List<Long> selectedIds) {
+        List<PartyMemberData> members = loadActiveParty(selectedIds);
+        if (members.isEmpty()) {
+            return PartyBudgetFacts.noActiveParty();
+        }
+        List<Integer> levels = members.stream().map(PartyMemberData::level).toList();
+        int average = (int) Math.round(levels.stream().mapToInt(Integer::intValue).average().orElse(1.0));
+        AdventuringDayResult day = adventuringDaySummary.current();
+        int consumed = day.status() == ReadStatus.SUCCESS ? day.summary().consumedXp() : 0;
+        int total = day.status() == ReadStatus.SUCCESS ? day.summary().totalBudgetXp() : 0;
+        int globalSize = Math.max(1, loadActiveParty().size());
+        return PartyBudgetFacts.success(levels, average,
+                Math.max(0, consumed * members.size() / globalSize),
+                Math.max(0, total * members.size() / globalSize));
+    }
+
+    EncounterGenerationRequest withWorldLocation(EncounterGenerationRequest request, long locationId) {
+        if (request == null || locationId <= 0L) {
+            return request;
+        }
+        EncounterGenerationInputs input = request.inputs();
+        EncounterGenerationInputs scoped = new EncounterGenerationInputs(
+                input.creatureTypes(), input.creatureSubtypes(), input.biomes(), input.targetDifficulty(),
+                input.tuning(), input.encounterTableIds(), input.worldFactionIds(), locationId, input.finiteCreatureStockCaps());
+        return new EncounterGenerationRequest(scoped, request.alternativeCount(), request.generationSeed(),
+                request.excludedCreatureIds(), request.lockedCreatures());
+    }
+
     boolean awardXp(List<Long> partyMemberIds, int xpPerCharacter) {
         party.awardXp(new AwardPartyXpCommand(partyMemberIds, xpPerCharacter));
         return partyMutation.current().status() == MutationStatus.SUCCESS;

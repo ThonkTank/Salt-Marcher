@@ -65,6 +65,19 @@ public record Combatant(
                 order);
     }
 
+    public static Combatant allyNpc(
+            String sourceId,
+            String displayName,
+            MonsterCombatProfile profile,
+            long worldNpcId,
+            int initiative,
+            int order
+    ) {
+        return new Combatant(sourceId + ":1", displayName, CombatantKind.ALLY_NPC, profile.creatureId(),
+                worldNpcId, profile.maxHp(), profile.maxHp(), profile.armorClass(), initiative, 1, 0,
+                "Verbündeter · " + profile.detail(), "", order);
+    }
+
     public boolean isPlayerCharacter() {
         return kind.playerCharacter();
     }
@@ -74,7 +87,8 @@ public record Combatant(
     }
 
     public boolean sharesMobBucketWith(Combatant other) {
-        return worldNpcId == 0L && other.worldNpcId() == 0L && creatureId == other.creatureId() && initiative == other.initiative();
+        return kind == other.kind() && worldNpcId == 0L && other.worldNpcId() == 0L
+                && creatureId == other.creatureId() && initiative == other.initiative();
     }
 
     public String mobName() {

@@ -86,6 +86,8 @@ Inspector surfaces so the user can:
 - reactivate a defeated named NPC
 - expose location choices through a public boundary for future
   Session Planner-owned integration
+- store faction disposition and NPC modifiers toward the PCs so runtime scenes
+  can derive friendly, neutral, and hostile Encounter roles
 
 ## Acceptance Criteria
 
@@ -108,6 +110,8 @@ Inspector surfaces so the user can:
   reactivated.
 - World Planner exposes location references without storing or defining
   Session Planner-owned records.
+- an NPC belongs to at most one faction and its effective disposition is the
+  clamped sum of faction base and NPC modifier
 - Creature statblocks, encounter-table membership, encounter rosters, party
   members, combat HP, dungeon maps, and hex maps stay in their owning
   contexts.

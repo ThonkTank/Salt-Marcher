@@ -21,6 +21,7 @@ only the user-accepted roster when the user saves a plan.
 - [Plan Budget Contract](contract/contract-encounter-plan-budget.md)
 - [Builder Inputs Contract](contract/contract-encounter-builder-inputs.md)
 - [Encounter State Contract](contract/contract-encounter-state.md)
+- [Runtime Session Contract](contract/contract-encounter-runtime-sessions.md)
 - [Encounter Table Feature README](../encountertable/README.md)
 - [Encounter UI](requirements/requirements-encounter-state-tab.md)
 
@@ -41,3 +42,4 @@ Out of scope:
 - persisting initiative, combat, result, or loot state as encounter-plan truth
 - dungeon room placement or biome ownership
 - bootstrap or shell policy
+- runtime-scene composition or focus

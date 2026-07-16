@@ -109,9 +109,9 @@ It derives:
 Generated alternatives remain ephemeral derived state until the user saves the
 current roster as an encounter plan.
 
-The current builder, initiative, combat, and result session state is
-domain-owned runtime state. It is not persisted as a saved encounter plan, but
-it is also not view-owned mutable state.
+Builder, initiative, combat, and result state is domain-owned runtime state.
+It is persisted separately per runtime context for restart recovery and never
+becomes saved encounter-plan truth or view-owned mutable state.
 
 ## Aggregate Model
 
@@ -207,4 +207,5 @@ runtime state.
 - [Encounter Builder Inputs Contract](../contract/contract-encounter-builder-inputs.md)
 - [Encounter Saved Plans Contract](../contract/contract-encounter-saved-plans.md)
 - [Encounter State Contract](../contract/contract-encounter-state.md)
+- [Runtime Session Contract](../contract/contract-encounter-runtime-sessions.md)
 - [Encounter UI](../requirements/requirements-encounter-state-tab.md)
