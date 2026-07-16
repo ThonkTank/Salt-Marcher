@@ -28,7 +28,7 @@ The CPG is written to `build/callchain/saltmarcher-cpg.bin.zip`.
 ```bash
 JOERN_HOME=build/callchain/joern/joern-cli \
   tools/callchain/render-callchain.sh \
-  src.domain.dungeon.DungeonTravelRuntimeApplicationService#applyDungeonTravelSession
+  features.dungeon.application.DungeonTravelRuntimeApplicationService#applyDungeonTravelSession
 ```
 
 Text-first outputs are written under `build/callchain/out/<selector>/`:

@@ -148,9 +148,7 @@ public final class TargetDependencyArchitectureTest {
             if (!feature.equals(target.feature)) {
                 return switch (featureArea) {
                     case APPLICATION, COMPOSITION -> target.featureArea != FeatureArea.API;
-                    case JAVAFX_ADAPTER -> target.featureArea != FeatureArea.API
-                            || !"maps".equals(target.feature)
-                            || !mayUseMapsApi();
+                    case JAVAFX_ADAPTER -> target.featureArea != FeatureArea.API;
                     case API, DOMAIN, SQLITE_ADAPTER, INVALID, NONE -> true;
                 };
             }
@@ -163,6 +161,8 @@ public final class TargetDependencyArchitectureTest {
                 case SQLITE_ADAPTER -> target.featureArea == FeatureArea.JAVAFX_ADAPTER
                         || target.featureArea == FeatureArea.COMPOSITION;
                 case JAVAFX_ADAPTER -> target.featureArea != FeatureArea.API
+                        && target.featureArea != FeatureArea.DOMAIN
+                        && target.featureArea != FeatureArea.APPLICATION
                         && target.featureArea != FeatureArea.JAVAFX_ADAPTER;
                 case COMPOSITION, NONE -> false;
                 case INVALID -> true;
@@ -172,10 +172,6 @@ public final class TargetDependencyArchitectureTest {
         private boolean mayUseShellApi() {
             return featureArea == FeatureArea.JAVAFX_ADAPTER
                     || featureArea == FeatureArea.COMPOSITION;
-        }
-
-        private boolean mayUseMapsApi() {
-            return "dungeon".equals(feature) || "hex".equals(feature);
         }
 
         private boolean forbidsMechanism(String packageName) {
@@ -215,13 +211,14 @@ public final class TargetDependencyArchitectureTest {
                 return false;
             }
             return switch (featureArea) {
+                case API -> !inAnyPlatformPackage(packageName, "state", "ui");
                 case APPLICATION -> !inAnyPlatformPackage(
-                        packageName, "execution", "state", "diagnostics");
+                        packageName, "execution", "state", "ui", "diagnostics");
                 case SQLITE_ADAPTER -> !inAnyPlatformPackage(
                         packageName, "persistence", "diagnostics");
                 case JAVAFX_ADAPTER -> !inAnyPlatformPackage(packageName, "ui");
                 case COMPOSITION -> !isValidPlatformPackage(packageName);
-                case API, DOMAIN, INVALID, NONE -> true;
+                case DOMAIN, INVALID, NONE -> true;
             };
         }
 

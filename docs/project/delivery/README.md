@@ -13,15 +13,18 @@ Java roots; feature collaboration uses provider APIs; explicit composition,
 versioned SQLite recovery, local diagnostics, green CI, independent review, and
 owner acceptance are complete; this file is deleted.
 
-Current tree: `codex/greenfield-r3-sqlite-lifecycle` contains the complete R3
-SQLite Lifecycle candidate, based on merged R2 commit `84639ebea`.
+Current tree: `codex/greenfield-r4-vertical-packages` contains the complete R4
+Vertical Packages candidate, based on merged R3 commit `93e44bf49`.
 
 Completed: R0 Rule Cutover merged by PR #471. R1 Explicit Composition merged
 by PR #473 with required CI green; discovery, service location, and service
 contributions are deleted, and cross-feature references use typed provider
 APIs. R2 Platform Runtime merged by PR #475 with required CI green; one
 application-owned execution lane, explicit UI dispatch, revisioned state, and
-payload-free local diagnostics are active in production.
+payload-free local diagnostics are active in production. R3 SQLite Lifecycle
+merged by PR #477 with required CI green; one application-owned database now
+owns connection configuration, versioned feature migrations, integrity,
+verified local backup, and physical-corruption recovery.
 
 R3 scope: move shared database path, connection configuration, integrity,
 local versioned backup, and tested recovery behind `platform.persistence` and
@@ -37,6 +40,31 @@ Dungeon Editor behavior suite passed in 2m 14s. Final full
 test change. Recovery is limited to physical corruption; logical foreign-key
 failure is proven fail-closed without replacing the primary.
 
+R3 publication: PR #477 required CI passed in 1m 39s and merged as
+`93e44bf49`.
+
+R4 scope: move every production Java package from `bootstrap` and `src` into
+`app` or a capability-owned `features/<name>` role; preserve one Dungeon
+feature, explicit feature composition, stored truth, and observable behavior.
+Update tests, resource/package references, build entry points, and dependency
+direction in the same slice, then delete the empty legacy production roots.
+R5 owns final repository cleanup, whole-system qualification, holistic review,
+installation proof, and delivery-owner retirement.
+
+R4 candidate proof: `bootstrap` and `src` contain zero production Java; the
+main source set contains exactly `app`, `shell`, `platform`, and `features`.
+All target sources and tests compile, `architectureTest` passed in 40s, full
+`uiTest` passed in 1m 55s, and final `./gradlew check --console=plain` passed in
+2m 39s after the last production and test change.
+
+R4 rule correction: observable feature APIs may use the shared state/UI
+contracts, JavaFX adapters may invoke their own application and typed domain
+values plus foreign APIs, and application publication may use explicit UI
+dispatch. The arbitrary nested-package cycle rule was removed; feature,
+feature-role, and adapter-role cycles remain enforced. One real
+Encounter/World Planner feature cycle was removed through an app-wired typed
+callback.
+
 R2 proof: after two direct review passes, all supported R2 state ownership,
 ordering, startup-I/O, shutdown-drain, and failure-publication findings were
 repaired with deterministic regressions. The final integrated regression set
@@ -50,6 +78,6 @@ fixes; complete R3 through R5 first, then run one independent direct review
 panel over the fully migrated system before final installation and owner
 acceptance.
 
-Next action: publish the proven R3 candidate, require green PR CI, merge it,
-sync `main`, and start R4 vertical package moves without an intermediate
-review-polish loop.
+Next action: publish the proven R4 candidate, require green PR CI, merge it,
+sync `main`, and execute R5 final cleanup and whole-system qualification before
+the one holistic migration review.

@@ -1,0 +1,17 @@
+package features.dungeon.api;
+
+public record DungeonBoundarySnapshot(
+        String kind,
+        long id,
+        String label,
+        DungeonEdgeRef edge,
+        DungeonTopologyElementRef topologyRef
+) {
+
+    public DungeonBoundarySnapshot {
+        kind = kind == null || kind.isBlank() ? "boundary" : kind;
+        id = Math.max(1L, id);
+        label = label == null || label.isBlank() ? kind : label;
+        topologyRef = topologyRef == null ? DungeonTopologyElementRef.empty() : topologyRef;
+    }
+}

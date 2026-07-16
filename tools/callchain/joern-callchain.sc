@@ -22,9 +22,10 @@ import scala.collection.mutable
 
   def projectMethod(method: Method): Boolean = {
     val fullName = Option(method.fullName).getOrElse("")
-    fullName.startsWith("bootstrap.") ||
+    fullName.startsWith("app.") ||
       fullName.startsWith("shell.") ||
-      fullName.startsWith("src.")
+      fullName.startsWith("platform.") ||
+      fullName.startsWith("features.")
   }
 
   def visible(method: Method): Boolean =

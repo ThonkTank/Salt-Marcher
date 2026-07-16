@@ -68,7 +68,7 @@ Render a selected method:
 ```bash
 JOERN_HOME=build/callchain/joern/joern-cli \
   tools/callchain/render-callchain.sh \
-  src.domain.dungeon.DungeonTravelRuntimeApplicationService#applyDungeonTravelSession
+  features.dungeon.application.DungeonTravelRuntimeApplicationService#applyDungeonTravelSession
 ```
 
 Use `--depth <n>` to control transitive expansion. Start with a shallow depth
@@ -93,7 +93,7 @@ Text-first outputs are written under `build/callchain/out/<selector>/`:
 Prefer selectors that include package, class, and method:
 
 ```text
-src.domain.dungeon.DungeonTravelRuntimeApplicationService#applyDungeonTravelSession
+features.dungeon.application.DungeonTravelRuntimeApplicationService#applyDungeonTravelSession
 ```
 
 If a selector is ambiguous:
