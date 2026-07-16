@@ -1,5 +1,9 @@
 package src.data.creatures.gateway.local;
 
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteConnectionSource;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
 import org.jspecify.annotations.Nullable;
 import src.data.creatures.model.CreatureCatalogPageRecord;
 import src.data.creatures.model.CreatureCatalogSearchCriteriaRecord;
@@ -18,23 +22,23 @@ import java.util.Objects;
  */
 public final class SqliteCreatureCatalogLocalGateway {
 
-    private final CreaturesSqliteConnectionFactory connectionFactory;
-    private final CreaturesSchemaMigrator schemaMigrator;
+    private final SqliteConnectionSource connections;
     private final CreatureCatalogFilterValuesSqliteStore filterValuesStore = new CreatureCatalogFilterValuesSqliteStore();
     private final CreatureCatalogSearchSqliteStore catalogSearchStore = new CreatureCatalogSearchSqliteStore();
     private final CreatureDetailSqliteStore creatureDetailStore = new CreatureDetailSqliteStore();
     private final EncounterCandidateSqliteStore encounterCandidateStore = new EncounterCandidateSqliteStore();
 
     public SqliteCreatureCatalogLocalGateway() {
-        this(new CreaturesSqliteConnectionFactory(), new CreaturesSchemaMigrator());
+        this(SqliteDatabase.defaultDatabase(
+                SqliteDatabase.DEFAULT_DATABASE_FILE_NAME,
+                NoopDiagnostics.INSTANCE));
     }
 
-    SqliteCreatureCatalogLocalGateway(
-            CreaturesSqliteConnectionFactory connectionFactory,
-            CreaturesSchemaMigrator schemaMigrator
-    ) {
-        this.connectionFactory = Objects.requireNonNull(connectionFactory, "connectionFactory");
-        this.schemaMigrator = Objects.requireNonNull(schemaMigrator, "schemaMigrator");
+    public SqliteCreatureCatalogLocalGateway(SqliteDatabase database) {
+        CreaturesSchemaMigrator schemaMigrator = new CreaturesSchemaMigrator();
+        this.connections = Objects.requireNonNull(database, "database").connections(
+                "creatures",
+                new SqliteMigration(1, schemaMigrator::ensureSchema));
     }
 
     public CreatureFilterValuesRecord loadFilterValues() {
@@ -75,13 +79,6 @@ public final class SqliteCreatureCatalogLocalGateway {
     }
 
     private Connection openReadyConnection() throws SQLException {
-        Connection connection = connectionFactory.openConnection();
-        try {
-            schemaMigrator.ensureSchema(connection);
-            return connection;
-        } catch (SQLException exception) {
-            connection.close();
-            throw exception;
-        }
+        return connections.openConnection();
     }
 }

@@ -8,6 +8,7 @@ import platform.diagnostics.Diagnostics;
 import platform.diagnostics.SystemLoggerDiagnostics;
 import platform.execution.ExecutionLane;
 import platform.execution.SerialExecutionLane;
+import platform.persistence.SqliteDatabase;
 import platform.ui.JavaFxUiDispatcher;
 import platform.ui.UiDispatcher;
 import shell.api.ShellBinding;
@@ -56,19 +57,30 @@ public final class AppBootstrap implements AutoCloseable {
     private final Diagnostics diagnostics;
     private final ExecutionLane executionLane;
     private final UiDispatcher uiDispatcher;
+    private final SqliteDatabase database;
 
     public AppBootstrap() {
         this(new SystemLoggerDiagnostics());
     }
 
     private AppBootstrap(Diagnostics diagnostics) {
-        this(diagnostics, new SerialExecutionLane(diagnostics), new JavaFxUiDispatcher());
+        this(
+                diagnostics,
+                new SerialExecutionLane(diagnostics),
+                new JavaFxUiDispatcher(),
+                SqliteDatabase.defaultDatabase(SqliteDatabase.DEFAULT_DATABASE_FILE_NAME, diagnostics));
     }
 
-    AppBootstrap(Diagnostics diagnostics, ExecutionLane executionLane, UiDispatcher uiDispatcher) {
+    AppBootstrap(
+            Diagnostics diagnostics,
+            ExecutionLane executionLane,
+            UiDispatcher uiDispatcher,
+            SqliteDatabase database
+    ) {
         this.diagnostics = java.util.Objects.requireNonNull(diagnostics, "diagnostics");
         this.executionLane = java.util.Objects.requireNonNull(executionLane, "executionLane");
         this.uiDispatcher = java.util.Objects.requireNonNull(uiDispatcher, "uiDispatcher");
+        this.database = java.util.Objects.requireNonNull(database, "database");
     }
 
     public AppShell createShell() {
@@ -86,18 +98,24 @@ public final class AppBootstrap implements AutoCloseable {
     }
 
     private Components createComponents() {
-        CreatureCatalogPort creatureCatalog = new SqliteCreatureCatalogQueryAdapter();
-        EncounterTableCatalogPort encounterTableCatalog = new SqliteEncounterTableCatalogAdapter();
+        CreatureCatalogPort creatureCatalog = new SqliteCreatureCatalogQueryAdapter(database);
+        EncounterTableCatalogPort encounterTableCatalog = new SqliteEncounterTableCatalogAdapter(database);
+        var partyRepository = new SqlitePartyRosterRepository(database);
+        var worldRepository = new SqliteWorldPlannerRepository(database);
+        var encounterRepository = new SqliteEncounterPlanRepository(database);
+        var dungeonRepository = new SqliteDungeonMapRepository(database);
+        var hexRepository = new SqliteHexMapRepository(database);
+        var sessionRepository = new SqliteSessionPlanRepository(database);
         CreaturesServiceAssembly.Component creatures = CreaturesServiceAssembly.create(
                 creatureCatalog, executionLane, uiDispatcher, diagnostics);
         EncounterTableServiceAssembly.Component encounterTables =
                 EncounterTableServiceAssembly.create(
                         encounterTableCatalog, executionLane, uiDispatcher, diagnostics);
         PartyServiceAssembly.Component party = PartyServiceAssembly.create(
-                new SqlitePartyRosterRepository(), executionLane, uiDispatcher, diagnostics);
+                partyRepository, executionLane, uiDispatcher, diagnostics);
 
         WorldPlannerServiceAssembly worldAssembly = new WorldPlannerServiceAssembly(
-                new SqliteWorldPlannerRepository(),
+                worldRepository,
                 WorldPlannerReferenceAssembly.catalogReferences(creatures.references(), encounterTables.references()),
                 executionLane,
                 uiDispatcher,
@@ -117,13 +135,13 @@ public final class AppBootstrap implements AutoCloseable {
                 party.activeComposition(),
                 party.adventuringDaySummary(),
                 party.mutation(),
-                new SqliteEncounterPlanRepository(),
+                encounterRepository,
                 executionLane,
                 uiDispatcher,
                 diagnostics);
 
         DungeonServiceAssembly.Component dungeon = DungeonServiceAssembly.create(
-                new SqliteDungeonMapRepository(),
+                dungeonRepository,
                 party.activeParty(),
                 party.travelPositions(),
                 party.application(),
@@ -132,10 +150,10 @@ public final class AppBootstrap implements AutoCloseable {
                 uiDispatcher,
                 diagnostics);
         HexServiceAssembly hex = new HexServiceAssembly(
-                new SqliteHexMapRepository(), party.travelPositions(), party.application(),
+                hexRepository, party.travelPositions(), party.application(),
                 executionLane, uiDispatcher, diagnostics);
         SessionPlannerServiceAssembly session = new SessionPlannerServiceAssembly(
-                new SqliteSessionPlanRepository(),
+                sessionRepository,
                 party.application(),
                 party.activeParty(),
                 party.adventuringDayCalculation(),
@@ -257,6 +275,7 @@ public final class AppBootstrap implements AutoCloseable {
     @Override
     public void close() {
         executionLane.close();
+        database.close();
     }
 
 }

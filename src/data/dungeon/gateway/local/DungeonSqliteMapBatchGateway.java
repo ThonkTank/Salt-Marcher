@@ -5,6 +5,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteConnectionSource;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
+import src.data.dungeon.model.DungeonPersistenceSchema;
 import src.data.dungeon.model.DungeonMapRecord;
 
 public final class DungeonSqliteMapBatchGateway {
@@ -12,16 +17,22 @@ public final class DungeonSqliteMapBatchGateway {
     private final DungeonSqliteConnectionSupport connectionSupport;
 
     public DungeonSqliteMapBatchGateway() {
-        this(new DungeonSqliteConnectionFactory(), new DungeonSqliteSchemaManager());
+        this(SqliteDatabase.defaultDatabase(
+                DungeonPersistenceSchema.DATABASE_FILE_NAME,
+                NoopDiagnostics.INSTANCE));
     }
 
-    DungeonSqliteMapBatchGateway(
-            DungeonSqliteConnectionFactory connectionFactory,
-            DungeonSqliteSchemaManager schemaManager
-    ) {
+    public DungeonSqliteMapBatchGateway(SqliteDatabase database) {
+        DungeonSqliteSchemaManager schemaManager = new DungeonSqliteSchemaManager();
+        this.connectionSupport = new DungeonSqliteConnectionSupport(
+                Objects.requireNonNull(database, "database").connections(
+                        "dungeon",
+                        new SqliteMigration(1, schemaManager::ensureSchema)));
+    }
+
+    DungeonSqliteMapBatchGateway(SqliteConnectionSource connections) {
         connectionSupport = new DungeonSqliteConnectionSupport(
-                Objects.requireNonNull(connectionFactory, "connectionFactory"),
-                Objects.requireNonNull(schemaManager, "schemaManager"));
+                Objects.requireNonNull(connections, "connections"));
     }
 
     public List<DungeonMapRecord> saveMaps(List<DungeonMapRecord> records) {

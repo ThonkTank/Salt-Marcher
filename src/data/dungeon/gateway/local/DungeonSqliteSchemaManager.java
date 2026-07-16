@@ -3,8 +3,8 @@ package src.data.dungeon.gateway.local;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import platform.persistence.SqliteSchemaColumnSupport;
 import src.data.dungeon.model.DungeonPersistenceSchema;
-import src.data.persistencecore.sqlite.SqliteSchemaColumnSupport;
 
 final class DungeonSqliteSchemaManager {
 

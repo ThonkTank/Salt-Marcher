@@ -1,9 +1,9 @@
 package src.data.encounter.model;
 
-import src.data.persistencecore.model.SqliteTableSpec;
+import platform.persistence.SqliteTableSpec;
 
-import static src.data.persistencecore.model.SqliteTableSpec.column;
-import static src.data.persistencecore.model.SqliteTableSpec.table;
+import static platform.persistence.SqliteTableSpec.column;
+import static platform.persistence.SqliteTableSpec.table;
 
 public final class EncounterPersistenceSchema {
 

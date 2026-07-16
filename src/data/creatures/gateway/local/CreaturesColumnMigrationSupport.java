@@ -1,6 +1,6 @@
 package src.data.creatures.gateway.local;
 
-import src.data.persistencecore.sqlite.SqliteSchemaColumnSupport;
+import platform.persistence.SqliteSchemaColumnSupport;
 
 import java.sql.Connection;
 import java.sql.SQLException;

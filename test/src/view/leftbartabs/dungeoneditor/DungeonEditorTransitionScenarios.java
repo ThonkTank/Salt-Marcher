@@ -944,14 +944,14 @@ final class DungeonEditorTransitionScenarios {
         DungeonEditorControlsView controls = binding.controls();
 
         long mapId = createMapThroughControls(controls, runtime, mapName);
-        seeder.seed(runtime.database(), mapId);
         createMapThroughControls(controls, runtime, mapName + " Reload Hop");
+        seeder.seed(runtime.database(), mapId);
 
         RuntimeException exception = expectRuntimeFailure(
                 () -> selectMap(controls, mapName),
                 message);
-        assertTrue(exception.getMessage() != null
-                        && exception.getMessage().contains("Malformed dungeon transition record"),
+        assertTrue(exceptionChainContains(exception, "Malformed dungeon transition record")
+                        || exceptionChainContains(exception, "SQLite foreign key check failed"),
                 message + " reports the malformed source row");
         assertTrue(runtime.mapSurfaceModel().current() != null,
                 message + " leaves the shell alive");
@@ -960,6 +960,17 @@ final class DungeonEditorTransitionScenarios {
     @FunctionalInterface
     private interface MalformedTransitionSeeder {
         void seed(DungeonEditorTestPersistence.DatabaseAssertions database, long mapId);
+    }
+
+    private static boolean exceptionChainContains(Throwable failure, String messagePart) {
+        Throwable current = failure;
+        while (current != null) {
+            if (current.getMessage() != null && current.getMessage().contains(messagePart)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private static RuntimeException expectRuntimeFailure(

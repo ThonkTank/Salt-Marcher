@@ -23,7 +23,7 @@ SaltMarcher stores SQLite data below the XDG data directory. If
 `XDG_DATA_HOME` is set, data lives in `$XDG_DATA_HOME/salt-marcher/`; otherwise
 it lives in `~/.local/share/salt-marcher/`. The current database file is
 `game.db`; the resolving rule is owned by
-`src/data/persistencecore/sqlite/AbstractSqliteConnectionFactory.java`.
+[`platform.persistence`](docs/project/contract/persistence-lifecycle.md).
 
 ## Bugs And Requests
 

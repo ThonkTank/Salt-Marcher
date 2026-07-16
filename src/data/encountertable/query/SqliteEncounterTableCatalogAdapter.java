@@ -3,6 +3,7 @@ package src.data.encountertable.query;
 import java.util.List;
 import java.util.Objects;
 import java.util.ArrayList;
+import platform.persistence.SqliteDatabase;
 import src.data.encountertable.gateway.local.SqliteEncounterTableLocalGateway;
 import src.data.encountertable.mapper.EncounterTableMapper;
 import src.domain.encountertable.model.catalog.EncounterTableCandidateData;
@@ -15,6 +16,10 @@ public final class SqliteEncounterTableCatalogAdapter implements EncounterTableC
 
     public SqliteEncounterTableCatalogAdapter() {
         this(new SqliteEncounterTableLocalGateway());
+    }
+
+    public SqliteEncounterTableCatalogAdapter(SqliteDatabase database) {
+        this(new SqliteEncounterTableLocalGateway(database));
     }
 
     SqliteEncounterTableCatalogAdapter(SqliteEncounterTableLocalGateway gateway) {

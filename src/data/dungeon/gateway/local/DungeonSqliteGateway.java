@@ -1,5 +1,9 @@
 package src.data.dungeon.gateway.local;
 
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteConnectionSource;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
 import src.data.dungeon.model.DungeonMapRecord;
 import src.data.dungeon.model.DungeonPersistenceSchema;
 
@@ -11,6 +15,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.Optional;
 
 public final class DungeonSqliteGateway {
@@ -24,16 +29,19 @@ public final class DungeonSqliteGateway {
     private final DungeonSqliteIdentityReservation identityReservation;
 
     public DungeonSqliteGateway() {
-        this(new DungeonSqliteConnectionFactory(), new DungeonSqliteSchemaManager());
+        this(SqliteDatabase.defaultDatabase(
+                DungeonPersistenceSchema.DATABASE_FILE_NAME,
+                NoopDiagnostics.INSTANCE));
     }
 
-    DungeonSqliteGateway(
-            DungeonSqliteConnectionFactory connectionFactory,
-            DungeonSqliteSchemaManager schemaManager
-    ) {
-        connectionSupport = new DungeonSqliteConnectionSupport(connectionFactory, schemaManager);
-        batchGateway = new DungeonSqliteMapBatchGateway(connectionFactory, schemaManager);
-        identityReservation = new DungeonSqliteIdentityReservation(connectionFactory, schemaManager);
+    public DungeonSqliteGateway(SqliteDatabase database) {
+        DungeonSqliteSchemaManager schemaManager = new DungeonSqliteSchemaManager();
+        SqliteConnectionSource connections = Objects.requireNonNull(database, "database").connections(
+                "dungeon",
+                new SqliteMigration(1, schemaManager::ensureSchema));
+        connectionSupport = new DungeonSqliteConnectionSupport(connections);
+        batchGateway = new DungeonSqliteMapBatchGateway(connections);
+        identityReservation = new DungeonSqliteIdentityReservation(connections);
     }
 
     public List<DungeonMapRecord> searchMaps(String query) {
@@ -93,6 +101,10 @@ public final class DungeonSqliteGateway {
         }
         List<DungeonMapRecord> savedRecords = batchGateway.saveMaps(List.of(record));
         return savedRecords.isEmpty() ? record : savedRecords.get(0);
+    }
+
+    public List<DungeonMapRecord> saveMaps(List<DungeonMapRecord> records) {
+        return batchGateway.saveMaps(records);
     }
 
     public void deleteMap(long mapId) {

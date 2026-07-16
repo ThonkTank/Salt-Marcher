@@ -6,6 +6,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Objects;
+import platform.persistence.SqliteConnectionSource;
 import src.data.dungeon.model.DungeonPersistenceSchema;
 
 final class DungeonSqliteIdentityReservation {
@@ -24,13 +25,9 @@ final class DungeonSqliteIdentityReservation {
 
     private final DungeonSqliteConnectionSupport connectionSupport;
 
-    DungeonSqliteIdentityReservation(
-            DungeonSqliteConnectionFactory connectionFactory,
-            DungeonSqliteSchemaManager schemaManager
-    ) {
+    DungeonSqliteIdentityReservation(SqliteConnectionSource connections) {
         connectionSupport = new DungeonSqliteConnectionSupport(
-                Objects.requireNonNull(connectionFactory, "connectionFactory"),
-                Objects.requireNonNull(schemaManager, "schemaManager"));
+                Objects.requireNonNull(connections, "connections"));
     }
 
     long nextStairId() {

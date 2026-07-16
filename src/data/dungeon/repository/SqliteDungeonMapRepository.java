@@ -1,7 +1,7 @@
 package src.data.dungeon.repository;
 
+import platform.persistence.SqliteDatabase;
 import src.data.dungeon.gateway.local.DungeonSqliteGateway;
-import src.data.dungeon.gateway.local.DungeonSqliteMapBatchGateway;
 import src.data.dungeon.mapper.DungeonMapRecordMapper;
 import src.domain.dungeon.model.core.structure.DungeonMap;
 import src.domain.dungeon.model.core.repository.DungeonMapRepository;
@@ -14,18 +14,17 @@ import java.util.Optional;
 public final class SqliteDungeonMapRepository implements DungeonMapRepository {
 
     private final DungeonSqliteGateway gateway;
-    private final DungeonSqliteMapBatchGateway batchGateway;
 
     public SqliteDungeonMapRepository() {
-        this(new DungeonSqliteGateway(), new DungeonSqliteMapBatchGateway());
+        this(new DungeonSqliteGateway());
     }
 
-    SqliteDungeonMapRepository(
-            DungeonSqliteGateway gateway,
-            DungeonSqliteMapBatchGateway batchGateway
-    ) {
+    public SqliteDungeonMapRepository(SqliteDatabase database) {
+        this(new DungeonSqliteGateway(database));
+    }
+
+    SqliteDungeonMapRepository(DungeonSqliteGateway gateway) {
         this.gateway = Objects.requireNonNull(gateway, "gateway");
-        this.batchGateway = Objects.requireNonNull(batchGateway, "batchGateway");
     }
 
     @Override
@@ -73,7 +72,7 @@ public final class SqliteDungeonMapRepository implements DungeonMapRepository {
         if (dungeonMaps == null || dungeonMaps.isEmpty()) {
             return List.of();
         }
-        return batchGateway.saveMaps(dungeonMaps.stream()
+        return gateway.saveMaps(dungeonMaps.stream()
                         .map(DungeonMapRecordMapper::toRecord)
                         .toList())
                 .stream()

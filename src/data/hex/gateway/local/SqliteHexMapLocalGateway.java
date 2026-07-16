@@ -5,25 +5,30 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import platform.diagnostics.NoopDiagnostics;
+import platform.persistence.SqliteConnectionSource;
+import platform.persistence.SqliteDatabase;
+import platform.persistence.SqliteMigration;
 import src.data.hex.model.HexMapRecord;
 import src.data.hex.model.HexMapSnapshotRecord;
 import src.data.hex.model.HexMarkerRecord;
+import src.data.hex.model.HexPersistenceSchema;
 
 public final class SqliteHexMapLocalGateway {
 
-    private final HexSqliteConnectionFactory connectionFactory;
-    private final HexSqliteSchemaMigrator schemaMigrator;
+    private final SqliteConnectionSource connections;
 
     public SqliteHexMapLocalGateway() {
-        this(new HexSqliteConnectionFactory(), new HexSqliteSchemaMigrator());
+        this(SqliteDatabase.defaultDatabase(
+                HexPersistenceSchema.DATABASE_FILE_NAME,
+                NoopDiagnostics.INSTANCE));
     }
 
-    SqliteHexMapLocalGateway(
-            HexSqliteConnectionFactory connectionFactory,
-            HexSqliteSchemaMigrator schemaMigrator
-    ) {
-        this.connectionFactory = Objects.requireNonNull(connectionFactory, "connectionFactory");
-        this.schemaMigrator = Objects.requireNonNull(schemaMigrator, "schemaMigrator");
+    public SqliteHexMapLocalGateway(SqliteDatabase database) {
+        HexSqliteSchemaMigrator schemaMigrator = new HexSqliteSchemaMigrator();
+        this.connections = Objects.requireNonNull(database, "database").connections(
+                "hex",
+                new SqliteMigration(1, schemaMigrator::ensureSchema));
     }
 
     public Optional<HexMapSnapshotRecord> loadSelected() {
@@ -111,13 +116,6 @@ public final class SqliteHexMapLocalGateway {
     }
 
     private Connection openReadyConnection() throws SQLException {
-        Connection connection = connectionFactory.openConnection();
-        try {
-            schemaMigrator.ensureSchema(connection);
-            return connection;
-        } catch (SQLException exception) {
-            connection.close();
-            throw exception;
-        }
+        return connections.openConnection();
     }
 }
