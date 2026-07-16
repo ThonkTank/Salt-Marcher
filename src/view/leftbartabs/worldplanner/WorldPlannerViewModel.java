@@ -22,7 +22,6 @@ import src.domain.worldplanner.published.WorldPlannerSnapshot;
 import src.view.slotcontent.controls.searchfilter.SearchFilterControlsContentModel;
 import src.view.slotcontent.controls.searchfilter.SearchFilterControlsView;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods", "PMD.GodClass"})
 final class WorldPlannerViewModel {
 
     private static final String VIEW_PARAMETER = "view";

@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-19
+Last Reviewed: 2026-07-15
 Source of Truth: Routing entrypoint for the hex gameplay and presentation
 documentation bundle.
 
@@ -39,8 +39,8 @@ Generic shared map-canvas behavior remains canonical in `docs/maps/`.
 
 ## Current State
 
-- SaltMarcher now ships a first-class navigable Hex Map root under
-  `src/view/leftbartabs/hexmap`. The `Hex-Karte` surface can create maps,
+- SaltMarcher ships a first-class navigable Hex Map root. The `Hex-Karte`
+  surface can create maps,
   edit map metadata, inspect tiles, paint terrain, place simple tile-owned
   markers, show the party token on the Hex map, and move the existing party
   token through a Hex-owned `Reisegruppe` tool.

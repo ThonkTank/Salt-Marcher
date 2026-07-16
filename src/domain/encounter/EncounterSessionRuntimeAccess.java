@@ -21,7 +21,6 @@ import src.domain.encounter.model.session.PartyMemberData;
 import src.domain.encounter.model.session.PlanOutcome;
 import src.domain.encounter.model.generation.GeneratedEncounterCreatureData;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 final class EncounterSessionRuntimeAccess implements EncounterSession.SessionRepository {
 
     private final EncounterForeignFacts facts;

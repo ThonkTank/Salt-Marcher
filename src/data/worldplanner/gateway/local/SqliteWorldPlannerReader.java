@@ -13,7 +13,6 @@ import src.data.worldplanner.model.WorldNpcRecord;
 import src.data.worldplanner.model.WorldPlannerPersistenceSchema;
 import src.data.worldplanner.model.WorldPlannerSnapshotRecord;
 
-@SuppressWarnings("PMD.TooManyMethods")
 final class SqliteWorldPlannerReader {
 
     private static final String FACTION_ID = "faction_id";

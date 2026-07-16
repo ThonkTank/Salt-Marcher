@@ -38,8 +38,8 @@ Run verification from the repository root.
 
 | Surface | Owner document | Required skill |
 | --- | --- | --- |
-| Source architecture (`bootstrap/**`, `shell/**`, `src/**`, `src/data/**`) | `docs/project/architecture/source-architecture.md` | - |
-| `src/domain/dungeon/**`, `docs/dungeon/**` | `docs/dungeon/README.md` | - |
+| Source architecture (target `app/**`, `shell/**`, `platform/**`, `features/**`; legacy production roots while migration is active) | `docs/project/architecture/source-architecture.md` | - |
+| `features/dungeon/**`, legacy Dungeon production code while migration is active, `docs/dungeon/**` | `docs/dungeon/README.md` | - |
 | Documentation placement | `docs/project/documentation.md` | - |
 | Verification policy | `docs/project/verification/quality-platforms.md` | `verification` |
 | Agent instructions | `docs/project/architecture/agent-instructions.md` | `agent-instruction-engineering` |

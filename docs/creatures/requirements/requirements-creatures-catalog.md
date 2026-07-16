@@ -10,7 +10,7 @@ controls, list management, and main list behavior.
 
 The catalog tab is the shared reference browser for read-only game catalogs.
 It owns the left-bar tab shell entrypoint and hosts content-specific catalog
-presentations through one generic tab ViewModel.
+presentations through one shared presentation state.
 
 Current state:
 

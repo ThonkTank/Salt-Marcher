@@ -3,7 +3,6 @@ package src.features.dungeon.runtime;
 import src.domain.dungeon.published.DungeonEditorControlsSnapshot;
 import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 final class DungeonEditorRuntimeDraftSession {
     private final DungeonEditorStatePanelLabelNameDrafts statePanelLabelNameDrafts =
             new DungeonEditorStatePanelLabelNameDrafts();

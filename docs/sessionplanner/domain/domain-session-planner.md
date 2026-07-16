@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-10
+Last Reviewed: 2026-07-15
 Source of Truth: Session planner context role, session-record ownership, and
 domain invariants.
 
@@ -12,53 +12,32 @@ Context Role: Roster Truth Context
 Context Name: SessionPlanner
 
 - `sessionplanner` owns the authored planning record for one adventure session
-- its public backend boundary is
-  `src/domain/sessionplanner/SessionPlannerApplicationService.java`
+- its public boundary is `SessionPlannerApi`
 - it does not own party truth, encounter-plan roster truth, creature truth, or
   loot truth
 
 ## Published Language
 
-`published/` owns planner commands, rest-kind vocabulary, the read-only
-planner snapshot, and the planner session observation model.
+`SessionPlannerApi` owns planner commands, rest-kind vocabulary, and immutable
+revisioned planner state.
 
-Current state:
-
-- the current published surface already exposes focused planner workflow
-  commands plus four directly exported read-only planner models for session,
-  participants, scene timeline, and state-panel context
-
-Target state:
-
-- the feature keeps publishing planner-owned workflow triggers, snapshots, and
-  read-only session observation models
+- the feature publishes planner-owned workflows and one immutable state surface
 - it does not publish encounter persistence carriers, creature-detail carriers,
   or party mutation carriers; those stay owned by their original contexts
 
 ## Application Boundary
 
-The root application service coordinates:
+The Session Planner application coordinates:
 
 - session-plan reads and writes through a planner-owned repository port
 - active-party composition reads needed to resolve participant references
 - party-based adventuring-day calculations
 - saved encounter-plan budget reads through the encounter public boundary
 - session-local workflow mutations
-- publication of the planner-owned read-only observation models
+- publication of immutable, revisioned planner API state
 
-Current state:
-
-- the current code already routes planner writes through dedicated
-  `model/session/usecase/*UseCase` owners over `SessionPlan`
-- it now keeps multiple repository-backed sessions through planner-owned
-  session repositories, canonical load/save use cases, and a current-session
-  pointer
-- the read-only planner state models are exported directly instead of being
-  loaded through a root query method
-
-Target state:
-
-- the root boundary remains orchestration only while `SessionPlan` owns the
+- planner state is exposed only through `SessionPlannerApi`
+- the application boundary remains orchestration only while `SessionPlan` owns the
   authored planning truth
 - party and encounter rules stay in their owning contexts
 
@@ -111,7 +90,7 @@ Core invariants:
 
 - planner XP math is based on public party and encounter reads only
 - session participant count is the number of session participant references
-- the current persistence model holds multiple session records and one current
+- the persistence model holds multiple session records and one current
   session pointer
 - scenes keep the session-local order chosen by the planner
 - rests can exist only between adjacent scenes
@@ -124,18 +103,6 @@ Core invariants:
 - loot placeholders do not contribute fake XP or fake gold values
 
 ## Consistency Model
-
-Current state:
-
-- the current code keeps a persisted session catalog plus one current pointer
-  through planner-owned session repositories and canonical load/save session
-  use cases
-- reopening the planner after reload or application restart preserves
-  planner-owned
-  participant refs, scene order, scene metadata, location references,
-  allocations, rests, placeholders, and selection for that current session only
-
-Target state:
 
 - reopening a session restores session-owned participant refs, scene order,
   allocations, selection, rests, and placeholders

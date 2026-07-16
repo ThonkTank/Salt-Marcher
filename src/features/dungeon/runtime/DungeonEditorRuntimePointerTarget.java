@@ -487,7 +487,6 @@ public record DungeonEditorRuntimePointerTarget(
         DOOR,
         WALL_VERTEX;
 
-        @SuppressWarnings("PMD.CyclomaticComplexity")
         public static ElementKind fromTopology(TopologyKind topologyKind) {
             return switch (topologyKind == null ? TopologyKind.EMPTY : topologyKind) {
                 case ROOM -> ROOM;

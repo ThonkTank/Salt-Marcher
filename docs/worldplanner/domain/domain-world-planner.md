@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-26
+Last Reviewed: 2026-07-15
 Source of Truth: World Planner bounded-context ownership, write model,
 invariants, lifecycle state, and foreign-reference boundaries.
 
@@ -12,8 +12,7 @@ Context Role: Roster Truth Context
 Context Name: WorldPlanner
 
 - `worldplanner` owns authored NPC, faction, and location planning truth.
-- Its public backend boundary is
-  `src/domain/worldplanner/WorldPlannerApplicationService.java`.
+- Its public boundary is `WorldPlannerApi`.
 - It reads creature, encounter-table, and Encounter-owned combat/result facts
   through public boundaries, and exposes location choices for later
   Session Planner-owned integration.
@@ -23,8 +22,7 @@ Context Name: WorldPlanner
 
 ## Published Language
 
-`published/` owns command carriers, read-only models, and passive carriers
-for:
+`WorldPlannerApi` owns command carriers and immutable read state for:
 
 - NPC catalog and detail readback
 - faction catalog, membership, inventory, and encounter-source readback

@@ -1,4 +1,4 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
 Last Reviewed: 2026-06-07
 Source of Truth: Routing entrypoint for the dungeon gameplay and domain
@@ -19,11 +19,11 @@ Generic map-canvas behavior and dungeon map-surface adoption now live in
 ### Agent Reading Order
 
 1. Start here to find the owning document family.
-2. Read [Dungeon Domain Architecture](./architecture/architecture-dungeon-domain.md)
-   for `src/domain/dungeon/**` structure, model families, and dependency
-   direction.
+2. Read [Dungeon Architecture](./architecture/architecture-dungeon-domain.md)
+   for feature ownership, authored-core boundaries, runtime capabilities, and
+   target dependency direction.
 3. Read [Dungeon Domain Model](./domain/domain-dungeon.md) for domain truth,
-   write-model ownership, published language, and invariants.
+   write-model ownership, API language, and invariants.
 4. Read the relevant requirements document for user-visible behavior. Executable
    evidence lives in the matching JUnit tests.
 
@@ -45,10 +45,6 @@ Generic map-canvas behavior and dungeon map-surface adoption now live in
 ### Domain
 
 - [Dungeon Domain Model](./domain/domain-dungeon.md)
-
-### Delivery
-
-- [Dungeon Delivery Notes](./delivery/delivery-dungeon.md)
 
 ### Related Maps Docs
 

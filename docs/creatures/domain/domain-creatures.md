@@ -1,7 +1,7 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
-Source of Truth: Creatures reference catalog ownership, published lookup
+Last Reviewed: 2026-07-15
+Source of Truth: Creatures reference catalog ownership, public lookup
 language, and domain rationale.
 
 # Creatures Domain Model
@@ -12,26 +12,25 @@ Context Role: Reference Catalog Context
 Context Name: Creatures
 
 - `creatures` is a reference catalog context over imported creature truth.
-- Its public backend boundary is
-  `src/domain/creatures/CreaturesApplicationService.java`.
+- Its public boundary is `CreaturesApi`.
 - The feature intentionally exposes catalog search, filtering, detail lookup,
   and encounter-candidate lookup without owning encounter generation policy or
   creature lifecycle truth.
 
 ## Published Language
 
-`published/` owns public catalog queries, result pages, lookup statuses, filter
-options, creature details, action details, catalog rows, and encounter-candidate
-reference profiles.
+`CreaturesApi` owns public catalog queries, result pages, lookup statuses,
+filter options, creature details, action details, catalog rows, and
+encounter-candidate reference profiles.
 
-Published catalog carriers describe imported creature facts and lookup results.
+Creatures API carriers describe imported creature facts and lookup results.
 They do not encode encounter ranking, choice, balancing, or composition policy.
 
 ## Application Boundary
 
-`application/` owns query normalization, paging coordination, detail lookup,
-filter option loading, and domain lookup-port coordination. The root
-application service maps imported catalog truth into `published/` carriers.
+The application boundary owns query normalization, paging coordination, detail
+lookup, filter option loading, and domain lookup-port coordination. It maps
+imported catalog truth into API carriers.
 
 It does not own encounter ranking, candidate scoring, or creature lifecycle
 policy.
@@ -48,20 +47,20 @@ shape.
 Write Model: None
 
 `creatures` does not own authored creature mutation flows in SaltMarcher. The
-feature consumes imported creature reference truth and republishes it through
-its own published lookup language.
+feature consumes imported creature reference truth and exposes it through its
+own API language.
 
 Derived state:
 
 - filtered catalog result pages
 - normalized filter option sets
-- published creature detail projections
+- creature detail projections
 - encounter-candidate reference profiles for downstream generator policy
 
 ## Invariants
 
 - creature catalog lookups remain read-only within SaltMarcher
-- published creature detail and encounter-candidate carriers reflect imported
+- API creature detail and encounter-candidate carriers reflect imported
   creature truth rather than encounter-balancing policy
 - missing or broken source data becomes lookup failure state, not synthesized
   creature facts
@@ -88,7 +87,7 @@ Reclassify `creatures` before adding any of:
 ## Ubiquitous Language
 
 - `Creature Catalog`: imported creature reference data.
-- `Creature Detail`: published reference profile for one creature.
+- `Creature Detail`: public reference profile for one creature.
 - `Catalog Query`: public lookup request over imported reference truth.
 - `Encounter Candidate`: reference creature profile consumed by encounter
   generation.

@@ -1,49 +1,36 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-08
-Source of Truth: Shared JavaFX anchored popup host under
-`src/view/slotcontent/primitives/popup/`.
+Last Reviewed: 2026-07-15
+Source of Truth: Observable behavior of the shared JavaFX anchored popup host.
 
 # Anchored Popup
 
 ## Component Purpose
 
-`AnchoredPopupView` is a reusable slotcontent primitive with the strict triad
-shape:
-
-- `AnchoredPopupView`
-- `AnchoredPopupViewInputEvent`
-- `AnchoredPopupContentModel`
-
-The primitive centralizes JavaFX `Popup` host mechanics for project-owned
-popup surfaces. `AnchoredPopupContentModel` owns popup visibility, placement,
-offset/width, and focus-request state. The view owns only the JavaFX popup
-host and emits technical shown/hidden input events.
+The anchored popup centralizes JavaFX popup hosting, visibility, placement,
+offset, width, focus restoration, auto-hide, and Escape handling.
 
 ## Rules
 
-- Owning feature Views still build popup content and wire same-root translation
-  from popup input events.
+- Owning features build popup content and handle feature actions.
 - Use below placement for small inline popups and trailing placement for top-bar
   dropdowns aligned to the trigger's right edge.
-- Use `DialogSurfaceView` as content for form-like popups with headers and
-  fixed actions.
-- Feature or reusable business actions must not be expressed as direct popup
-  callback APIs on the primitive itself.
+- Use the shared dialog surface for form-like popups with headers and fixed
+  actions.
+- The popup host must not own feature or business actions.
 
 ## Acceptance Criteria
 
-- `AnchoredPopupView` centralizes popup-host mechanics instead of repeating
+- the shared host centralizes popup mechanics instead of repeating
   anchoring, hide-on-Escape, auto-hide, and focus-return logic in feature Views
-- owning feature Views still own popup content construction and same-root event
-  translation
+- owning features retain popup content and action ownership
 - small inline popups use below placement, while trailing top-bar popups use
   trailing placement
-- dialog-like popup content composes `DialogSurfaceView` instead of duplicating
+- dialog-like popup content uses the shared dialog surface instead of duplicating
   header and footer layout in each caller
-- popup visibility and placement state live in `AnchoredPopupContentModel`
+- popup visibility and placement remain host state, not feature truth
 
 ## References
 
 - [Dialog Surface](requirements-dialog-surface.md)
-- [Dropdown Helper Slotcontent](requirements-dropdown-popup.md)
+- [Reusable Top-Bar Dropdown Popup](requirements-dropdown-popup.md)

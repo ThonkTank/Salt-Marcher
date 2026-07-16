@@ -162,6 +162,6 @@ reference mirrors.
 ## References
 
 - [Documentation Standard](../documentation.md)
-- [Layering Architecture Standard](../architecture/patterns/layering-architecture.md)
+- [Feature Boundary Standard](../architecture/patterns/feature-boundaries.md)
 - [Agent Instruction Standard](../architecture/agent-instructions.md)
 - [Source References Skill](../../../tools/quality/skills/source-references/SKILL.md)

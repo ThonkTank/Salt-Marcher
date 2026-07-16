@@ -19,7 +19,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceVal
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorViewMode;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 final class DungeonEditorRuntimeContext {
     private final DungeonEditorRuntimeApplicationService.RuntimeSession session;
     private final InterpretDungeonEditorMainViewInputUseCase mainViewInterpreter;

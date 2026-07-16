@@ -342,6 +342,4 @@ Delete and corridor binding behavior:
 ## References
 
 - [Dungeon Feature Requirements](./requirements-dungeon.md)
-- [Dungeon Editor-Wide Invariants](../verification/verification-dungeon-editor-wide-invariants.md)
-- [Dungeon Editor tool matrices](../verification/)
 - [Maps Canvas Requirements](../../maps/requirements/requirements-maps-canvas.md) (line 1), [Dungeon Map Surface Contract](../../maps/contract/contract-maps-dungeon-surface.md) (line 1), and [Dungeon Map Adoption Architecture](../../maps/architecture/architecture-maps-dungeon-adoption.md) (line 1)

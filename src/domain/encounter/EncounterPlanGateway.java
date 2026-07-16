@@ -17,7 +17,6 @@ import src.domain.encounter.model.session.ListPlansOutcome;
 import src.domain.encounter.model.session.PartyBudgetFacts;
 import src.domain.encounter.model.session.PlanOutcome;
 
-@SuppressWarnings("PMD.TooManyMethods")
 final class EncounterPlanGateway {
 
     private static final long MIN_PLAN_ID = 1L;

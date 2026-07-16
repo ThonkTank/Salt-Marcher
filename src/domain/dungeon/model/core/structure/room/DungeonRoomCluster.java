@@ -10,7 +10,6 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.DungeonBoundaryKey;
 import src.domain.dungeon.model.core.geometry.Edge;
 
-@SuppressWarnings({"PMD.GodClass", "PMD.TooManyMethods"})
 public final class DungeonRoomCluster {
     private final long clusterId;
     private final long mapId;

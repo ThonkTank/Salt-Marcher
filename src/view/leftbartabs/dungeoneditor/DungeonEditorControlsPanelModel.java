@@ -11,7 +11,6 @@ import src.domain.dungeon.published.DungeonOverlaySettings;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.features.dungeon.runtime.DungeonEditorOverlaySettings;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 final class DungeonEditorControlsPanelModel {
     private final MapCatalogPanel mapCatalog = new MapCatalogPanel();
     private final ProjectionOverlayPanel projectionOverlay =
@@ -486,7 +485,6 @@ final class DungeonEditorControlsPanelModel {
     }
     }
 
-    @SuppressWarnings("PMD.TooManyMethods")
     private static final class ProjectionOverlayPanel {
     private static final String OVERLAY_OFF_MODE = "OFF";
     private static final String OVERLAY_NEARBY_MODE = "NEARBY";
@@ -617,7 +615,6 @@ final class DungeonEditorControlsPanelModel {
     }
     }
 
-    @SuppressWarnings("PMD.TooManyMethods")
     private static final class ToolPalettePanel {
     private static final DungeonEditorTool SELECT_TOOL = DungeonEditorTool.SELECT;
     private static final DungeonEditorTool ROOM_PAINT_TOOL = DungeonEditorTool.ROOM_PAINT;

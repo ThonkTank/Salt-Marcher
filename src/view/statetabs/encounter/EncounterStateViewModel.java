@@ -15,7 +15,6 @@ import src.domain.encounter.published.SavedEncounterPlanSummary;
 import src.domain.worldplanner.WorldPlannerApplicationService;
 import src.domain.worldplanner.published.SetWorldNpcLifecycleStatusCommand;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.GodClass", "PMD.TooManyMethods"})
 final class EncounterStateViewModel {
 
     private static final long UNRESOLVED_ID = 0L;

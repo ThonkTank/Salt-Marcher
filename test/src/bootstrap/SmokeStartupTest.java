@@ -4,11 +4,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.control.Label;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.layout.Pane;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
-import shell.api.ShellContribution;
+import shell.host.AppShell;
 import src.data.persistencecore.sqlite.SmokeStartupSqliteConnectionFactory;
 
 @org.junit.jupiter.api.Tag("ui")
@@ -29,20 +33,34 @@ public final class SmokeStartupTest {
         Instant deadline = Instant.now().plus(TIMEOUT);
         testsupport.JavaFxRuntime.startup(() -> {
         });
-        List<ShellContribution> contributions = new ShellViewDiscovery().discover();
-        require(!contributions.isEmpty(), "Expected at least one shell contribution.");
-        require(hasContribution(contributions, "leftbartabs"), "Expected left-bar contributions.");
-        require(hasContribution(contributions, "statetabs"), "Expected state-tab contributions.");
-        require(hasContribution(contributions, "dropdowns"), "Expected top-bar/dropdown contributions.");
-        new AppBootstrap().createShell();
+        AppShell shell = new AppBootstrap().createShell();
+        new Scene(shell, 1150, 700);
+        shell.applyCss();
+        shell.layout();
+        require(!shell.lookupAll(".nav-btn").isEmpty(), "Expected composed navigation entries.");
+        require(
+                shell.lookup(".title-large") instanceof Label title && !title.getText().isBlank(),
+                "Expected startup navigation to expose a titled workspace.");
+        require(
+                shell.lookup(".toolbar") instanceof Pane toolbar && toolbar.getChildren().size() > 2,
+                "Expected at least one composed top-bar contribution.");
+        require(hasReachableStateTabs(shell), "Expected composed state-tab entries on a navigable workspace.");
         openTempSqliteConnection();
         require(Instant.now().isBefore(deadline), "Smoke startup exceeded timeout.");
     }
 
-    private static boolean hasContribution(List<ShellContribution> contributions, String packageSegment) {
-        return contributions.stream()
-                .map(contribution -> contribution.getClass().getName())
-                .anyMatch(name -> name.contains(".view." + packageSegment + "."));
+    private static boolean hasReachableStateTabs(AppShell shell) {
+        for (Node node : shell.lookupAll(".nav-btn")) {
+            if (node instanceof ToggleButton button) {
+                button.fire();
+                shell.applyCss();
+                shell.layout();
+                if (!shell.lookupAll(".scene-tab").isEmpty()) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static void openTempSqliteConnection() throws Exception {

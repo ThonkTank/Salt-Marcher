@@ -67,7 +67,6 @@ final class DungeonEditorMainViewInputBoundaryTranslationHelper {
                 handle.sourceEdge().to().level()));
     }
 
-    @SuppressWarnings("PMD.CyclomaticComplexity")
     private static HitTarget toHitTarget(DungeonEditorRuntimePointerTarget target) {
         DungeonEditorRuntimePointerTarget safeTarget =
                 target == null ? DungeonEditorRuntimePointerTarget.empty() : target;

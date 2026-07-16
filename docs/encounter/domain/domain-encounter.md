@@ -1,6 +1,6 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-05-10
+Last Reviewed: 2026-07-15
 Source of Truth: Encounter feature ownership, saved-plan write model, runtime
 generation policy, and domain invariants.
 
@@ -15,22 +15,19 @@ Context Name: Encounter
 - It also owns runtime encounter-generation policy for creating suggested
   rosters from the active party, creature catalog, and encounter tables.
 - It does not own party truth, creature truth, or encounter-table membership.
-- It consumes foreign application services and read models only:
-  - `src.domain.party.PartyApplicationService`
-  - `src.domain.creatures.CreaturesApplicationService`
-  - `src.domain.encountertable.EncounterTableApplicationService`
-  - `src.domain.worldplanner.published.WorldPlannerSnapshotModel`
+- It consumes foreign facts only through `PartyApi`, `CreaturesApi`,
+  `EncounterTableApi`, and `WorldPlannerApi`.
 
 ## Published Language
 
-`published/` owns three view-facing flat runtime surfaces plus shared request
-and chooser-display language:
+`EncounterApi` owns view-facing immutable runtime state plus shared request and
+chooser-display language.
 
-- `EncounterStateModel`, `ApplyEncounterStateCommand`, and
-  `EncounterStateSnapshot`
-- `EncounterBuilderInputsModel`, `UpdateEncounterBuilderInputsCommand`, and
-  `EncounterBuilderInputs`
-- `EncounterTuningPreviewModel` and `EncounterTuningPreviewResult`
+- immutable, revisioned `EncounterStateSnapshot`, `ApplyEncounterStateCommand`,
+  and typed command results
+- immutable, revisioned `EncounterBuilderInputs`,
+  `UpdateEncounterBuilderInputsCommand`, and typed update results
+- `EncounterTuningPreviewResult`
 
 It also owns shared request/read vocabulary such as difficulty bands, tuning
 preview labels, one saved-plan chooser display carrier, and status enums.
@@ -40,62 +37,46 @@ language only. The application boundary resolves them into concrete generation
 values before invoking draft construction.
 
 Saved encounter plans publish only the chooser display language reused by the
-encounter builder. SessionPlanner-specific list and budget/detail work forms
-leave encounter through the foreign `SessionEncounterFactsRepository` service seam
-instead of an encounter-owned `published/*Model` reply channel. The chooser
+encounter builder. SessionPlanner-specific list and budget/detail facts leave
+the feature through `EncounterApi`; no second reply channel or repository is a
+cross-feature boundary. The chooser
 surface is intentionally thin and does not mirror the internal
 `EncounterPlanSummary` record. Creature details remain owned by the creatures
 context and are reloaded when a saved plan is opened.
 
-The generation and plan models must not depend on any
-`src.domain.*.published.*` carriers as invariant inputs. The application
-boundary translates public commands and foreign published results into
+The generation and plan models MUST NOT depend on API carriers as invariant
+inputs. The application boundary translates public commands and foreign API results into
 encounter application values before invoking policies, factories, or plan
 ports.
 
 ## Application Boundary
 
-`application/` coordinates foreign party, creature, encounter-table, and
-world-planner inputs, translates foreign `published/` results into encounter
-application values, and delegates generation or saved-plan work. The root
-application service is command-only and refreshes only the encounter-owned
-session-state `published/*Model` handles instead of exporting the internal
-session carrier shape or a same-context root read method family.
+The application boundary coordinates foreign party, creature, encounter-table,
+and world-planner inputs, translates foreign API results into encounter
+application values, and delegates generation or saved-plan work. It publishes
+only encounter-owned immutable, revisioned API state instead of exporting
+internal session carriers.
 
-`EncounterGenerationUseCase` remains orchestration and foreign-service
-coordination only. `LoadEncounterBudgetUseCase` exposes party-derived
-encounter thresholds without constructing a generated encounter.
-`LoadEncounterPlanBudgetUseCase` exposes one saved encounter plan as
-party-specific internal planning facts for downstream planning surfaces.
-The catalog tuning preview remains a read-only published model payload rather
-than a root query result.
+Generation orchestration coordinates foreign APIs without owning their truth.
+A separate budget read exposes party-derived encounter thresholds without
+constructing a generated encounter. A saved-plan budget read exposes one plan
+as party-specific planning facts for downstream planning surfaces.
+The catalog tuning preview remains a read-only Encounter API result.
 
-Saved-plan use cases own save, list, and load orchestration through the
-`EncounterPlanRepository` outbound port. Data adapters persist plan rows and
-creature rows; the domain model keeps the saved roster invariant independent of
-SQLite shape.
+Saved-plan use cases own save, list, and load orchestration through one
+feature-owned persistence port. The SQLite adapter persists plan and creature
+rows; the domain model keeps the saved roster invariant independent of storage
+shape.
 
-## Architecture Status
+## Architecture Constraints
 
-Current state:
-
-- `encounter` owns saved encounter-plan roster truth.
-- `encounter` owns balancing, candidate narrowing, and ranking behavior for
-  generated encounters.
-- `application/` owns orchestration and foreign-service coordination.
-- `generation/` owns stateless balancing, targeting, ranking, and role/tag
-  heuristics.
-- `plan/` owns the saved encounter-plan aggregate and outbound port.
-
-Target state:
-
-- orchestration remains in `application/`
-- immutable generation facts stay in `generation/value/`
-- named balancing, targeting, ranking, role, and tag rules live in
-  `generation/policy/`
-- deterministic draft construction lives in `generation/factory/`
-- saved encounter-plan roster truth stays in `plan/aggregate/` and
-  `plan/value/`
+- Encounter owns saved-plan roster truth, balancing, candidate narrowing, and
+  ranking behavior.
+- Application code owns orchestration and foreign-API coordination.
+- Domain code owns immutable generation facts, named balancing and ranking
+  policies, deterministic draft construction, and the saved-plan aggregate.
+- Package and helper decomposition inside those roles is an internal choice,
+  not a compatibility or architecture contract.
 
 ## Write Model And Derived State
 
@@ -141,14 +122,13 @@ identity, display labels, and creature quantities. It does not embed creature
 statblocks, party members, initiative, combat HP, loot resolution, or dungeon
 room placement.
 
-- `plan/aggregate/EncounterPlan` owns plan identity and roster membership.
-- `plan/value/EncounterPlanCreature` owns one creature-id and quantity pair.
-- `plan/value/EncounterPlanSummary` owns list-screen summary language.
-- `plan/port/EncounterPlanRepository` is the outbound persistence port.
+- `EncounterPlan` owns plan identity and roster membership.
+- `EncounterPlanCreature` owns one creature-id and quantity pair.
+- `EncounterPlanSummary` owns list-screen summary language.
+- A feature-owned application port owns outbound saved-plan persistence.
 
-`generation/value/`, `generation/policy/`, and `generation/factory/` remain
-stateless policy modules used to construct candidate rosters before a saved
-plan exists.
+Generation values, policies, and factories remain stateless domain modules used
+to construct candidate rosters before a saved plan exists.
 
 ## Commands And Invariants
 
@@ -179,11 +159,11 @@ Core invariants:
 ## Consistency Model
 
 Encounter generation reads party, creature, and encounter-table snapshots
-through public application-service boundaries. It does not save party,
+through their public APIs. It does not save party,
 creature, or encounter-table state.
 
-Saved encounter plans are persisted through the encounter-owned
-`EncounterPlanRepository` port. Opening a plan rebuilds the runtime roster from
+Saved encounter plans are persisted through an encounter-owned application
+port. Opening a plan rebuilds the runtime roster from
 the saved creature identities and current creature details; initiative, combat,
 result, and generator-alternative state are cleared because they are session
 runtime state.
@@ -197,8 +177,8 @@ runtime state.
 - `GeneratedEncounter`: exported generated encounter suggestion.
 - `EncounterPlan`: saved encounter roster aggregate.
 - `SavedEncounterPlanChoice`: published saved-plan chooser display row.
-- `SessionEncounterFactsRepository.EncounterPlanFact`: sessionplanner-facing
-  saved-plan planning readout.
+- `EncounterPlanFact`: Session Planner-facing saved-plan planning readout
+  exposed by `EncounterApi`.
 
 ## Domain Policies
 

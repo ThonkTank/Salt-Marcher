@@ -25,7 +25,6 @@ import src.domain.sessionplanner.published.SessionPlannerSceneTimelineProjection
 import src.domain.sessionplanner.published.SessionPlannerSessionSnapshot;
 import src.domain.sessionplanner.published.SessionPlannerStatePanelProjection;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.GodClass", "PMD.TooManyMethods"})
 final class SessionPlannerProjection {
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");

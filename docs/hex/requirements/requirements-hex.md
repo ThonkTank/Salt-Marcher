@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-19
+Last Reviewed: 2026-07-15
 Source of Truth: User-facing behavior, capabilities, and acceptance criteria for
 the hex feature.
 
@@ -26,8 +26,8 @@ Provide one hex-map workflow that lets a GM:
 
 ## Current State
 
-- SaltMarcher now ships a first-class navigable Hex Map editor surface under
-  `src/view/leftbartabs/hexmap`. The current `Hex-Karte` tab can create maps,
+- SaltMarcher ships a first-class navigable Hex Map editor surface. The current
+  `Hex-Karte` tab can create maps,
   edit map metadata, inspect tiles, paint terrain, and place simple tile-owned
   markers through Hex domain and SQLite persistence routes.
 - SaltMarcher now ships party-token Hex readback and movement through the

@@ -6,7 +6,6 @@ import src.domain.dungeon.model.core.geometry.Cell;
 import src.domain.dungeon.model.core.geometry.Direction;
 
 public final class StairGeometryDerivation {
-    @SuppressWarnings("PMD.CyclomaticComplexity")
     public Result derive(Cell start, Cell end, StairShape shape) {
         if (start == null || end == null) {
             return Result.rejected(Rejection.MISSING_ENDPOINT);

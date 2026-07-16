@@ -19,7 +19,6 @@ import src.domain.dungeon.published.DungeonEditorViewMode;
 import src.domain.dungeon.published.DungeonInspectorSnapshot;
 import src.domain.dungeon.published.DungeonOverlaySettings;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 public record DungeonEditorPreparedFrameFacts(
         List<MapEntry> mapEntries,
         String selectedMapKey,
@@ -384,7 +383,6 @@ public record DungeonEditorPreparedFrameFacts(
         }
     }
 
-    @SuppressWarnings("PMD.DataClass")
     public record PreviewRenderDiffFrame(
             List<PreviewAreaDiffFrame> changedAreas,
             List<PreviewAreaDiffFrame> removedAreas,
@@ -795,7 +793,6 @@ public record DungeonEditorPreparedFrameFacts(
         DOOR,
         WALL_VERTEX;
 
-        @SuppressWarnings("PMD.CyclomaticComplexity")
         static PreparedElementKind fromRuntime(DungeonEditorRuntimePointerTarget.ElementKind elementKind) {
             if (elementKind == null) {
                 return EMPTY;
@@ -829,7 +826,6 @@ public record DungeonEditorPreparedFrameFacts(
         TRANSITION,
         FEATURE_MARKER;
 
-        @SuppressWarnings("PMD.CyclomaticComplexity")
         static PreparedTopologyKind fromRuntime(DungeonEditorRuntimePointerTarget.TopologyKind topologyKind) {
             if (topologyKind == null) {
                 return EMPTY;
@@ -873,7 +869,6 @@ public record DungeonEditorPreparedFrameFacts(
         WALL,
         DOOR;
 
-        @SuppressWarnings("PMD.LawOfDemeter")
         static PreparedBoundaryKind fromRuntime(DungeonEditorRuntimePointerTarget.BoundaryKind boundaryKind) {
             return boundaryKind == DungeonEditorRuntimePointerTarget.BoundaryKind.DOOR ? DOOR : WALL;
         }

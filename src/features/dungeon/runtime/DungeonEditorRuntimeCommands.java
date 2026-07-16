@@ -11,7 +11,6 @@ import src.domain.dungeon.published.DungeonEditorStateSnapshot;
 import src.domain.dungeon.published.DungeonEditorTool;
 import src.domain.dungeon.published.DungeonEditorViewMode;
 
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.TooManyMethods"})
 final class DungeonEditorRuntimeCommands
         implements DungeonEditorMapCatalogOperations,
                 DungeonEditorControlOperations,

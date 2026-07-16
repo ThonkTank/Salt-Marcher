@@ -1,28 +1,27 @@
 Status: Active
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-26
-Source of Truth: Adventuring-day calculator slotcontent.
+Last Reviewed: 2026-07-15
+Source of Truth: Adventuring-day calculator behavior inside the Adventuring Day
+dropdown.
 
 # Adventuring Day Calculator
 
 ## Component Purpose
 
-The Adventuring Day calculator is passive top-bar slotcontent embedded by the
-Adventuring Day dropdown. It renders the original-style budget and progress
-calculator controls while the owning dropdown ViewModel supplies calculation
-results through Binder wiring.
+The Adventuring Day calculator appears inside the Adventuring Day dropdown. It
+presents the original-style budget and progress controls and shows calculation
+results for either the active party or custom level/count rows.
 
 Current state:
 
-- The View owns JavaFX controls, row editing, mode toggles, summary rendering,
-  and timeline rendering.
-- The dropdown Binder supplies active party levels and maps calculator results
-  between the dropdown ViewModel and this passive View.
-- Domain calls stay in `AdventuringDayTopBarViewModel`.
+- The calculator supports row editing, mode toggles, summary output, and timeline
+  output.
+- Active-party levels and calculated results come from the owning Party feature.
+- The calculator presentation does not define adventuring-day calculation rules.
 
 ## Visible Surfaces
 
-- The calculator has no standalone shell registration.
+- The calculator has no separate navigation destination.
 - It appears inside the Adventuring Day top-bar popup scroll area.
 
 ## Interactions
@@ -44,16 +43,16 @@ Current state:
 
 ## Acceptance Criteria
 
-- the calculator remains passive slotcontent with no standalone shell
-  registration
+- the calculator remains contained in the Adventuring Day dropdown and has no
+  separate navigation destination
 - switching from active-party mode to direct row editing does not mutate the
   party roster
 - budget mode exposes daily threshold and rest-milestone output for the current
   rows
 - progress mode maps the entered XP amount into adventuring-day progress,
   rest-count, level-up summary, and timeline events
-- domain calculations stay outside the passive View and are supplied through
-  Binder and ViewModel wiring
+- adventuring-day calculations come from the owning Party feature, while the
+  calculator surface presents inputs and results without defining those rules
 
 ## References
 

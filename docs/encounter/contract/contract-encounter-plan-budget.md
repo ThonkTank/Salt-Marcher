@@ -1,7 +1,7 @@
-Status: Active
+Status: Active Target
 Owner: SaltMarcher Team
 Last Reviewed: 2026-05-10
-Source of Truth: Service contract for the encounter-owned saved-plan planning
+Source of Truth: API contract for the encounter-owned saved-plan planning
 facts consumed by SessionPlanner.
 
 # Encounter Plan Budget Contract
@@ -14,8 +14,8 @@ facts.
 
 ## Read Surface
 
-- `SessionEncounterFactsRepository.loadEncounterPlan(long planId)`
-  returns one `EncounterPlanFact`
+- `EncounterApi` provides a typed saved-plan planning operation returning one
+  `EncounterPlanFact`
 
 ## Payload
 
@@ -38,8 +38,8 @@ facts.
 - the service does not expose encounter persistence rows directly
 - creature XP stays creature-owned and is reloaded through creature detail
   reads instead of being duplicated into encounter-plan persistence
-- SessionPlanner consumes the facts through its owned foreign-facts port rather
-  than through an encounter `published/*Model` answer channel
+- SessionPlanner consumes the facts through `EncounterApi`, supplied during
+  explicit application composition
 
 ## References
 

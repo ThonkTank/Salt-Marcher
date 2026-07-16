@@ -46,7 +46,6 @@ import src.domain.party.published.UpdateCharacterCommand;
 /**
  * Public backend facade for party management.
  */
-@SuppressWarnings({"PMD.CouplingBetweenObjects", "PMD.ExcessiveImports", "PMD.TooManyMethods"})
 public final class PartyApplicationService {
 
     private final PartyRosterRepository repository;

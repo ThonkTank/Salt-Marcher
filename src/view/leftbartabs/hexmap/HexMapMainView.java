@@ -32,7 +32,6 @@ public final class HexMapMainView extends ScrollPane {
     private static final String KEY_ACTIVE_TOOL = "hex.activeTool";
     private static final String KEY_ACTIVE_TERRAIN = "hex.activeTerrain";
     private static final String KEY_HITS = "hex.hits";
-    private static final String PMD_LAW_OF_DEMETER = "PMD.LawOfDemeter";
     static final String KEY_TILE_DRAW_COUNT = "hex.tileDrawCount";
     private static final int HIT_Q = 0;
     private static final int HIT_R = 1;
@@ -212,7 +211,7 @@ public final class HexMapMainView extends ScrollPane {
         return normalizedX + normalizedY * 0.75 <= 1.0;
     }
 
-    @SuppressWarnings({"unchecked", PMD_LAW_OF_DEMETER})
+    @SuppressWarnings("unchecked")
     private List<double[]> rawHits() {
         Object value = tileCanvas.getProperties().get(KEY_HITS);
         return value instanceof List<?> hits ? (List<double[]>) hits : List.of();
@@ -229,19 +228,16 @@ public final class HexMapMainView extends ScrollPane {
         };
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private static long rawLongProperty(Node node, String key) {
         Object value = node.getProperties().get(key);
         return value instanceof Number number ? number.longValue() : 0L;
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private static HexEditorMode rawToolProperty(Node node) {
         Object value = node.getProperties().get(KEY_ACTIVE_TOOL);
         return value instanceof HexEditorMode tool ? tool : HexEditorMode.SELECT;
     }
 
-    @SuppressWarnings(PMD_LAW_OF_DEMETER)
     private static HexTerrain rawTerrainProperty(Node node) {
         Object value = node.getProperties().get(KEY_ACTIVE_TERRAIN);
         return value instanceof HexTerrain terrain ? terrain : HexTerrain.GRASSLAND;

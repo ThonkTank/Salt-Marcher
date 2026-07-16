@@ -56,14 +56,6 @@ import src.domain.worldplanner.published.WorldLocationSummary;
 import src.domain.worldplanner.published.WorldPlannerSnapshot;
 import src.domain.worldplanner.published.WorldPlannerSnapshotModel;
 
-@SuppressWarnings({
-        "PMD.CouplingBetweenObjects",
-        "PMD.ExcessiveImports",
-        "PMD.ExcessiveParameterList",
-        "PMD.GodClass",
-        "PMD.PublicMemberInNonPublicType",
-        "PMD.TooManyMethods"
-})
 final class EncounterForeignFacts implements EncounterGenerator.ForeignFacts {
 
     private static final int DEFAULT_CREATURE_LIMIT = 250;

@@ -1,6 +1,6 @@
 Status: Draft
 Owner: SaltMarcher Team
-Last Reviewed: 2026-06-26
+Last Reviewed: 2026-07-15
 Source of Truth: Persistence boundary, stored truth, reference rules, and
 error behavior for World Planner authored state.
 
@@ -14,20 +14,14 @@ feature.
 World Planner persistence stores only World Planner-authored NPC, faction,
 location, lifecycle, note, link, source-constraint, and inventory-limit truth.
 
-## Root Contract
+## Adapter Boundary
 
-- `src/data/worldplanner/WorldPlannerServiceContribution.java` is the planned
-  root source-adapter entrypoint.
-- Bootstrap discovers it generically under `src/data/<feature>/`.
-- The data contribution registers source-backed repository adapters needed by
-  the World Planner domain service assembly.
-- The exported domain runtime surface is planned as
-  `WorldPlannerApplicationService.class` plus read-only same-context
-  published models.
-- Domain ports, repositories, gateways, mappers, schema classes, and source
-  records remain implementation details.
-- View assembly reads World Planner behavior only through
-  `ShellRuntimeContext.services()`.
+- The World Planner SQLite adapter satisfies feature-owned application ports
+  and remains private to the World Planner composition entry point.
+- The application composition supplies `WorldPlannerApi` explicitly;
+  registry, discovery, mutable published models, repositories, gateways,
+  mappers, schema classes, and source records are not public boundaries.
+- SQL records and adapter failures MUST NOT cross `WorldPlannerApi`.
 
 ## Stored Truth
 
@@ -76,10 +70,9 @@ World Planner persistence does not store:
 - A faction must not persist more than one primary encounter-table reference.
 - Candidate combat losses must not mutate durable NPC lifecycle or faction
   stock until user confirmation is recorded.
-- Storage and schema failures must surface through World Planner-owned
-  published result statuses instead of leaking SQLite exceptions to the view
-  layer.
-- Failed writes must leave the last stable published World Planner state
+- Storage and schema failures must surface through World Planner API result
+  statuses instead of leaking SQLite exceptions to consumers.
+- Failed writes must leave the last stable revisioned World Planner API state
   visible.
 
 ## Compatibility And Migration
@@ -110,4 +103,4 @@ or pending confirmation workflows.
 
 - [World Planner Domain Model](../domain/domain-world-planner.md) (line 1)
 - [World Planner Architecture](../architecture/architecture-world-planner.md) (line 1)
-- [Data Layer Standard](../../project/architecture/patterns/data-layer.md) (line 1)
+- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

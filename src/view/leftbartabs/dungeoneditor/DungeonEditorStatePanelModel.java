@@ -17,7 +17,6 @@ import src.features.dungeon.runtime.DungeonEditorStatePanelStairGeometryDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelTransitionDescriptionDrafts;
 import src.features.dungeon.runtime.DungeonEditorStatePanelTransitionDestinationDrafts;
 
-@SuppressWarnings("PMD.CouplingBetweenObjects")
 final class DungeonEditorStatePanelModel {
     private final ReadOnlyObjectWrapper<StateProjection> stateProjection =
             new ReadOnlyObjectWrapper<>(StateProjection.initial());
@@ -664,7 +663,6 @@ final class DungeonEditorStatePanelModel {
     }
     }
 
-    @SuppressWarnings("PMD.TooManyMethods")
     private static final class TransitionPanel {
     private static final long NO_TRANSITION_ID = 0L;
     private static final long NO_SELECTED_MAP_ID = 0L;

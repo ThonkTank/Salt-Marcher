@@ -10,7 +10,6 @@ import src.domain.dungeon.model.runtime.editor.session.DungeonEditorSessionValue
 import src.domain.dungeon.model.runtime.editor.session.DungeonEditorWorkspaceValues;
 import src.domain.dungeon.published.DungeonEditorTool;
 
-@SuppressWarnings("PMD.TooManyMethods")
 final class DungeonEditorStairDraftRuntimeOperation {
     private static final String INVALID_PREFIX = "Treppengeometrie ungueltig: ";
     private static final String START_STATUS = "Treppenstart gesetzt. Zielpunkt auf anderer Ebene waehlen.";

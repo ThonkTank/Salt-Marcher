@@ -43,7 +43,6 @@ final class DungeonEditorPointerWorkflowIntentResolver {
         return new PointerInteractionDecision(hoverChoice, sampleChoice);
     }
 
-    @SuppressWarnings("PMD.CyclomaticComplexity")
     private static PointerTargetChoice hoverTargetChoice(
             PointerWorkflowIntent intent,
             DungeonEditorRuntimePointerTarget primaryTarget

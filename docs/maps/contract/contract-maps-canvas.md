@@ -1,131 +1,125 @@
-Status: Draft
+Status: Active Target
 Owner: SaltMarcher Team
-Last Reviewed: 2026-04-24
-Source of Truth: Legacy shared canvas-side contract record. The former
-`MapCanvasView` / `CanvasPointerEvent` seam has been removed; current dungeon
-rendering is adopter-local while the view layer migrates to the reusable
-three-role slotcontent model.
+Last Reviewed: 2026-07-15
+Source of Truth: Feature API contract for passive map scenes, hits, and pointer
+samples shared with adopting features.
 
 # Maps Canvas Contract
 
-## Purpose
+## Purpose, Owners, And Consumers
 
-This contract records the removed shared-canvas boundary language below any
-adopter-native map surface. It remains a Review-Owned debt record and must not
-be read as proof that `MapCanvasView` still exists in production sources.
+This feature-boundary contract defines the canvas-native values exchanged
+through `features/maps/api`.
 
-Owners:
+- provider: Maps feature
+- consumers: adopting feature JavaFX adapters and application composition
+- non-owners: adopter domain, application, persistence, and gameplay semantics
 
-- producers: canvas-facing adopter `ContentModel`s
-- consumers: adopter-local map Views, adopter-facing Binders, and
-  adopter-facing `IntentHandler` wiring
-
-It does not own adopter-native requests, adopter-native payloads, or adopter
-domain truth.
-
-This is not the canonical target reusable-slotcontent contract. The canonical
-reusable-slotcontent target lives only in [Source Architecture](../../project/architecture/source-architecture.md).
-The `MapRenderScene` and `CanvasPointerEvent` seams below describe removed
-implementation boundary debt relative to that owner.
-
-## Rules
-
-- shared renderer input coordinates MUST be canvas-native
-- shared pointer output coordinates MUST be canvas-native
-- shared hit identity MUST come from the same rendered scene that the passive
-  map view draws
-- shared hit ordering MUST come from the same rendered scene that the passive
-  map view draws
-- removed `MapRenderScene` was the shared renderer input root
-- removed `CanvasPointerEvent` was the shared pointer-output root
-- all geometry in an adopter-local render scene MUST be canvas-native
-- the shared canvas boundary MUST NOT expose adopter-native commands, queries,
-  or coordinates directly
+The API owns technical scene, camera, hit, and pointer semantics. It does not own
+dungeon-grid or hex-grid coordinates, adopter commands, adopter identities, or
+stored truth.
 
 ## Contract Surface
 
-### `CanvasPoint`
+### Canvas Point
 
 Required fields:
 
-- `x`
-- `y`
+- finite `x`
+- finite `y`
 
-### `CanvasHit`
+### Canvas Hit
 
 Required fields:
 
-- `hitRef`
-- `primitive`
+- opaque adopter-provided `hitRef`
+- canvas-native hit primitive or area
 
 Optional fields:
 
-- `selectionRef`
+- opaque adopter-provided `selectionRef`
 
-`hitRef` and `selectionRef` MUST identify content from the same render-scene
-instance that was drawn for the hit test.
+References identify content only within the scene revision that carries them.
+Maps may return them to the producing adopter but must not interpret them.
 
-### Removed Legacy `CanvasPointerEvent`
+### Canvas Scene
 
 Required fields:
 
-- `phase`
-- `buttons`
-- `modifiers`
-- `canvasPoint`
+- monotonically comparable scene revision
+- ordered draw primitives
+- ordered hit evidence derived from those primitives
+
+Optional families:
+
+- surfaces and boundaries
+- glyphs and text
+- relations
+- actors and markers
+- overlays
+- explicit empty-state presentation
+
+All geometry is canvas-native. Draw order and hit order come from the same
+immutable scene revision.
+
+### Canvas Pointer Sample
+
+Required fields:
+
+- phase: press, drag, release, move, or level-scroll
+- pressed buttons
+- modifiers
+- canvas point
+- scene revision observed during hit-testing
 
 Optional fields:
 
-- `hit`
+- canvas hit
+- scroll delta when the phase carries scrolling
 
-The removed `MapCanvasView` emitted `CanvasPointerEvent` through one technical
-outbound seam. Current adopter-local map Views must keep the same constraint by
-emitting one same-stem `ViewInputEvent` family instead of several phase-specific
-callback families.
+One pointer-sample family covers all phases. This is an API payload decision,
+not a naming rule for adapter classes or callbacks.
 
-### Removed Legacy `MapRenderScene`
+### Canvas Capability
 
-Required families:
-
-- `surfaces`
-- `boundaries`
-- `glyphs`
-- `texts`
-- `relations`
-- `actors`
-- `hitAreas`
-- `overlays`
-
-`hitAreas` is the prepared technical hit-evidence list for the same rendered
-scene. The passive map surface consumes that order directly instead of
-reconstructing cross-family hit priority locally.
+The capability accepts a current canvas scene and publishes technical pointer
+samples. Camera and viewport changes may publish canvas state but never mutate
+adopter truth.
 
 ## Validation And Error Behavior
 
-- a pointer event with no hit MUST still carry a valid `canvasPoint`
-- stale or unknown scene refs MUST be treated as no-hit
-- omitted optional fields mean absence, not implicit adopter defaults
-- the passive map surface MUST remain renderable with an empty render scene
-- a consumer MUST treat same-stem map `ViewInputEvent` snapshots as technical
-  input only; adopter meaning is resolved outside the passive map surface
+- Non-finite coordinates or geometry are rejected at the Maps API boundary.
+- A pointer sample without a hit still carries a valid canvas point and scene
+  revision.
+- A hit whose revision is stale or unknown is returned as no-hit; Maps does not
+  guess an adopter target.
+- Missing optional fields mean absence, not adopter-specific defaults.
+- An empty scene remains renderable and hittable as no-hit.
+- Duplicate scene revisions with different content are rejected.
+- Adapter failures must not mutate the last accepted scene or adopter state.
 
-## Compatibility Notes
+## Compatibility And Versioning
 
-Any earlier shared map contract that used adopter-native coordinates as the
-shared frontend root is superseded by this contract.
+Internal Java types may change atomically with all consumers in one green slice.
+The semantic obligations in this contract remain stable: canvas-native exchange,
+one scene revision for draw and hit, opaque adopter identity, passive camera
+behavior, and no adopter meaning inside Maps.
 
-## Verification Notes
+Adding optional primitive families is backward-compatible. Changing coordinate,
+revision, identity, or hit-order semantics requires an explicit contract
+migration with every adopter updated together.
 
-- This contract is currently `Review-Owned`.
-- Review must treat `MapRenderScene`, `CanvasPointerEvent`, and `MapCanvasView`
-  as removed implementation carriers, not as new canonical reusable role
-  families.
-- Review must reject any shared map contract that exposes dungeon-grid or
-  hex-native coordinates as the canonical canvas boundary.
-- Review must reject any second shared pointer-output family beside the
-  adopter-local same-stem `ViewInputEvent`.
+## Verification
+
+- Production-route JUnit tests cover empty and populated scenes, draw/hit
+  consistency, every pointer phase, stale revisions, camera stability, and
+  adopter round-trip identity.
+- `architectureTest` checks that adopters depend only on `features.maps.api`.
+- This contract is Review-Owned for payload semantics not expressed by those
+  tests.
 
 ## References
 
 - [Maps Canvas Requirements](../requirements/requirements-maps-canvas.md)
 - [Maps Canvas Architecture](../architecture/architecture-maps-canvas.md)
+- [Feature Boundary Standard](../../project/architecture/patterns/feature-boundaries.md)

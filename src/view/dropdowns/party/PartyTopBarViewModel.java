@@ -29,13 +29,6 @@ import src.domain.party.published.RestType;
 import src.domain.party.published.SetPartyMembershipCommand;
 import src.domain.party.published.UpdateCharacterCommand;
 
-@SuppressWarnings({
-        "PMD.CouplingBetweenObjects",
-        "PMD.CyclomaticComplexity",
-        "PMD.GodClass",
-        "PMD.PublicMemberInNonPublicType",
-        "PMD.TooManyMethods"
-})
 final class PartyTopBarViewModel {
 
     private static final int MAX_CHARACTER_LEVEL = 20;
@@ -720,7 +713,6 @@ final class PartyTopBarViewModel {
         }
     }
 
-    @SuppressWarnings("PMD.TooManyMethods")
     private static final class SnapshotPresentation {
 
         private final String triggerText;
